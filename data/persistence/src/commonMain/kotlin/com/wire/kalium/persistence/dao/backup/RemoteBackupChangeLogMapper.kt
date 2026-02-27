@@ -25,8 +25,12 @@ import com.wire.kalium.persistence.dao.receipt.UserReadReceiptSyncEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionsSyncEntity
 import com.wire.kalium.persistence.dao.reaction.UserReactionsSyncEntity
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 
 internal object RemoteBackupChangeLogMapper {
+
+    private val json = Json { ignoreUnknownKeys = true }
 
     @Suppress("FunctionParameterNaming")
     fun toChangeLogEntry(
@@ -216,7 +220,7 @@ internal object RemoteBackupChangeLogMapper {
                 lastEditDate = syncLastEditDate,
                 text = syncText,
                 quotedMessageId = syncQuotedMessageId,
-                mentionsJson = syncMentionsJson ?: "[]",
+                mentions = parseMentionsFromJson(syncMentionsJson),
             )
 
             MessageEntity.ContentType.ASSET -> SyncableMessagePayloadEntity.Asset(
@@ -257,7 +261,7 @@ internal object RemoteBackupChangeLogMapper {
                 lastEditDate = syncLastEditDate,
                 text = syncText,
                 quotedMessageId = syncQuotedMessageId,
-                mentionsJson = syncMentionsJson ?: "[]",
+                mentions = parseMentionsFromJson(syncMentionsJson),
                 attachmentsJson = syncAttachmentsJson ?: "[]",
             )
 
@@ -460,6 +464,15 @@ internal object RemoteBackupChangeLogMapper {
             domain = value.substring(separatorIndex + 1)
         )
     }
+
+    private fun parseMentionsFromJson(mentionsJson: String?): List<MessageEntity.Mention> =
+        mentionsJson?.takeIf { it.isNotEmpty() }?.let {
+            try {
+                json.decodeFromString<List<MessageEntity.Mention>>(it)
+            } catch (_: SerializationException) {
+                emptyList()
+            }
+        } ?: emptyList()
 
     private fun <T> T?.requireField(fieldName: String): T = requireNotNull(this) {
         "Field '$fieldName' is missing in changelog payload query."

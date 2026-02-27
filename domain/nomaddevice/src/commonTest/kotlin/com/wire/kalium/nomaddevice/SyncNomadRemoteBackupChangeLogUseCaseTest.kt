@@ -35,6 +35,7 @@ import com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent
 import com.wire.kalium.persistence.dao.backup.ConversationLastReadSyncEntity
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
 import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -71,7 +72,13 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
                             lastEditDate = Instant.fromEpochMilliseconds(1200L),
                             text = "hello from db",
                             quotedMessageId = "quoted-message",
-                            mentionsJson = """[{"start":0,"length":5,"userId":{"value":"mention-user","domain":"wire.test"}}]"""
+                            mentions = listOf(
+                                MessageEntity.Mention(
+                                    start = 0,
+                                    length = 5,
+                                    userId = QualifiedIDEntity("mention-user", "wire.test")
+                                )
+                            )
                         )
                     )
                 ),

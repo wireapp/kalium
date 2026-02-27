@@ -85,7 +85,7 @@ sealed interface SyncableMessagePayloadEntity {
         override val lastEditDate: Instant?,
         val text: String?,
         val quotedMessageId: String?,
-        val mentionsJson: String,
+        val mentions: List<MessageEntity.Mention>,
     ) : SyncableMessagePayloadEntity {
         override val contentType: MessageEntity.ContentType = MessageEntity.ContentType.TEXT
     }
@@ -97,7 +97,7 @@ sealed interface SyncableMessagePayloadEntity {
         override val lastEditDate: Instant?,
         val text: String?,
         val quotedMessageId: String?,
-        val mentionsJson: String,
+        val mentions: List<MessageEntity.Mention>,
         val attachmentsJson: String,
     ) : SyncableMessagePayloadEntity {
         override val contentType: MessageEntity.ContentType = MessageEntity.ContentType.MULTIPART
