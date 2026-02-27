@@ -89,6 +89,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -97,6 +98,7 @@ import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.yield
@@ -1878,6 +1880,35 @@ class CallRepositoryTest {
             callEntityFlow.emit(null)
             assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenACall_whenUpdatingCallQualityData_thenCallQualityDataIsUpdatedCorrectlyAndCallQualityDataObserverEmitsData() = runTest {
+        // given
+        val conversationId = Arrangement.randomConversationId
+        val callQualityData = CallQualityData(CallQuality.POOR, 1,2,3)
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
+
+        callRepository.observeCallQualityData(conversationId).test {
+            // when
+            callRepository.updateCallQualityData(conversationId, callQualityData)
+            advanceUntilIdle()
+
+            // then
+            assertEquals(callQualityData, awaitItem())
+        }
+    }
+
+    @Test
+    fun givenACall_whenNoCallQualityDataUpdated_thenCallQualityDataObserverDoesNotEmitAnyData() = runTest {
+        // given
+        val conversationId = Arrangement.randomConversationId
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
+
+        callRepository.observeCallQualityData(conversationId).test {
+            // when-then
+            expectNoEvents()
         }
     }
 
