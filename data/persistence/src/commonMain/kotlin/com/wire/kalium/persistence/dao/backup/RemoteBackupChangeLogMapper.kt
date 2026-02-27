@@ -311,6 +311,7 @@ internal object RemoteBackupChangeLogMapper {
         val syncLocationName: String?,
         val syncLocationZoom: Int?,
     ) {
+        @Suppress("CyclomaticComplexMethod")
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other == null || this::class != other::class) return false
@@ -349,6 +350,7 @@ internal object RemoteBackupChangeLogMapper {
             return true
         }
 
+        @Suppress("CyclomaticComplexMethod")
         override fun hashCode(): Int {
             var result = syncAssetSize?.hashCode() ?: 0
             result = 31 * result + (syncAssetWidth ?: 0)

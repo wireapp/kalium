@@ -23,7 +23,6 @@ import com.wire.kalium.persistence.RemotebackupChangeLogQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
-import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -115,14 +114,6 @@ internal class RemoteBackupChangeLogDAOImpl(
     override suspend fun getPendingChanges(): List<ChangeLogEntry> =
         withContext(readDispatcher.value) {
             queries.getPendingChanges(mapper = mapper::toChangeLogEntry).executeAsList()
-        }
-
-    override suspend fun getConversationLastReadForLastPendingChanges(limit: Long): List<ConversationLastReadSyncEntity> =
-        withContext(readDispatcher.value) {
-            queries.getConversationLastReadForLastPendingChanges(
-                limit = limit,
-                mapper = mapper::toConversationLastReadSyncEntity
-            ).executeAsList()
         }
 
     override suspend fun getLastPendingChangesBatch(limit: Long): ChangeLogSyncBatch =
