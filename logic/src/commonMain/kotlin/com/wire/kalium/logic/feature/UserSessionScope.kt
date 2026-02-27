@@ -536,7 +536,7 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
-import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.DelicateKaliumApi
@@ -570,7 +570,7 @@ public class UserSessionScope internal constructor(
     private val rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
-    private val persistMessageHookNotifier: PersistMessageHookNotifier,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
     userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
@@ -1067,7 +1067,7 @@ public class UserSessionScope internal constructor(
             messageRepository = messageRepository,
             selfUserId = userId,
             notificationEventsManager = NotificationEventsManagerImpl,
-            persistMessageHookNotifier = persistMessageHookNotifier
+            persistMessageHookNotifier = persistenceEventHookNotifier
         )
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
@@ -1690,7 +1690,12 @@ public class UserSessionScope internal constructor(
                 deleteConversationUseCase
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-            DeleteMessageHandlerImpl(messageRepository, assetRepository, NotificationEventsManagerImpl, userId),
+            DeleteMessageHandlerImpl(
+                messageRepository,
+                assetRepository,
+                NotificationEventsManagerImpl,
+                userId
+            ),
             messageEncoder,
             receiptMessageHandler,
             buttonActionConfirmationHandler,
@@ -2311,7 +2316,7 @@ public class UserSessionScope internal constructor(
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
-            persistMessageHookNotifier,
+            persistenceEventHookNotifier,
             this,
             userScopedLogger
         )
