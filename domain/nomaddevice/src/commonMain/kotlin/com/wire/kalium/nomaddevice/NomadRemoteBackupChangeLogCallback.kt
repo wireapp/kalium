@@ -71,8 +71,6 @@ internal fun createNomadRemoteBackupChangeLogHookNotifierInternal(
 internal class NomadRemoteBackupChangeLogDataSource(
     private val remoteBackupChangeLogDAOProvider: (UserId) -> RemoteBackupChangeLogDAO?,
     private val eventTimestampMsProvider: () -> Long,
-    private val warnLogger: (String) -> Unit = { nomadLogger.w(it) },
-    private val errorLogger: (String, Throwable) -> Unit = { msg, _ -> nomadLogger.i(msg) },
 ) : NomadRemoteBackupChangeLogRepository {
 
     @Suppress("ReturnCount")
@@ -87,7 +85,7 @@ internal class NomadRemoteBackupChangeLogDataSource(
                 messageTimestampMs = message.date.toEpochMilliseconds()
             )
         }.onFailure { _ ->
-            errorLogger(
+            nomadLogger.e(
                 "Failed to write MESSAGE_UPSERT changelog for conversation " +
                     "'${message.conversationId.toLogString()}' and message '${message.messageId}'.",
                 RuntimeException("MESSAGE_UPSERT failed")
@@ -104,7 +102,7 @@ internal class NomadRemoteBackupChangeLogDataSource(
                 timestampMs = eventTimestampMsProvider()
             )
         }.onFailure { _ ->
-            errorLogger(
+            nomadLogger.e(
                 "Failed to write MESSAGE_DELETE changelog for conversation " +
                     "'${data.conversationId.toLogString()}' and message '${data.messageId}'.",
                 RuntimeException("MESSAGE_DELETE failed")
@@ -121,7 +119,7 @@ internal class NomadRemoteBackupChangeLogDataSource(
                 timestampMs = eventTimestampMsProvider()
             )
         }.onFailure { _ ->
-            errorLogger(
+            nomadLogger.e(
                 "Failed to write REACTIONS_SYNC changelog for conversation " +
                     "'${data.conversationId.toLogString()}' and message '${data.messageId}'.",
                 RuntimeException("REACTIONS_SYNC failed")
@@ -140,7 +138,7 @@ internal class NomadRemoteBackupChangeLogDataSource(
                     timestampMs = eventTimestampMsProvider()
                 )
             }.onFailure { _ ->
-                errorLogger(
+                nomadLogger.e(
                     "Failed to write READ_RECEIPTS_SYNC changelog for conversation " +
                         "'${data.conversationId.toLogString()}' and message '$messageId'.",
                     RuntimeException("READ_RECEIPTS_SYNC failed")
@@ -162,7 +160,7 @@ internal class NomadRemoteBackupChangeLogDataSource(
                 timestampMs = eventTimestampMsProvider()
             )
         }.onFailure { _ ->
-            errorLogger(
+            nomadLogger.e(
                 "Failed to write CONVERSATION_DELETE changelog for conversation " +
                     "'${data.conversationId.toLogString()}'.",
                 RuntimeException("CONVERSATION_DELETE failed")
@@ -181,7 +179,7 @@ internal class NomadRemoteBackupChangeLogDataSource(
                 timestampMs = eventTimestampMsProvider()
             )
         }.onFailure { _ ->
-            errorLogger(
+            nomadLogger.e(
                 "Failed to write CONVERSATION_CLEAR changelog for conversation " +
                     "'${data.conversationId.toLogString()}'.",
                 RuntimeException("CONVERSATION_CLEAR failed")
@@ -192,7 +190,7 @@ internal class NomadRemoteBackupChangeLogDataSource(
     private fun resolveDaoForUser(selfUserId: UserId, eventTag: String): RemoteBackupChangeLogDAO? {
         return remoteBackupChangeLogDAOProvider(selfUserId).also { dao ->
             if (dao == null) {
-                warnLogger("Skipping $eventTag changelog write: missing user storage for '${selfUserId.toLogString()}'.")
+                nomadLogger.w("Skipping $eventTag changelog write: missing user storage for '${selfUserId.toLogString()}'.")
             }
         }
     }
