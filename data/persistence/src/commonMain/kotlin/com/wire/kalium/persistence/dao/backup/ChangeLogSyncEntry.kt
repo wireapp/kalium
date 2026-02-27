@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.backup
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionsSyncEntity
 import com.wire.kalium.persistence.dao.receipt.MessageReadReceiptsSyncEntity
 import kotlinx.datetime.Instant
@@ -98,7 +99,7 @@ sealed interface SyncableMessagePayloadEntity {
         val text: String?,
         val quotedMessageId: String?,
         val mentions: List<MessageEntity.Mention>,
-        val attachmentsJson: String,
+        val attachments: List<MessageAttachmentEntity>,
     ) : SyncableMessagePayloadEntity {
         override val contentType: MessageEntity.ContentType = MessageEntity.ContentType.MULTIPART
     }

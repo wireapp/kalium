@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.backup
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.receipt.MessageReadReceiptsSyncEntity
 import com.wire.kalium.persistence.dao.receipt.UserReadReceiptSyncEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionsSyncEntity
@@ -262,7 +263,7 @@ internal object RemoteBackupChangeLogMapper {
                 text = syncText,
                 quotedMessageId = syncQuotedMessageId,
                 mentions = parseMentionsFromJson(syncMentionsJson),
-                attachmentsJson = syncAttachmentsJson ?: "[]",
+                attachments = parseAttachmentsFromJson(syncAttachmentsJson),
             )
 
             else -> SyncableMessagePayloadEntity.Unsupported(
@@ -469,6 +470,15 @@ internal object RemoteBackupChangeLogMapper {
         mentionsJson?.takeIf { it.isNotEmpty() }?.let {
             try {
                 json.decodeFromString<List<MessageEntity.Mention>>(it)
+            } catch (_: SerializationException) {
+                emptyList()
+            }
+        } ?: emptyList()
+
+    private fun parseAttachmentsFromJson(attachmentsJson: String?): List<MessageAttachmentEntity> =
+        attachmentsJson?.takeIf { it.isNotEmpty() }?.let {
+            try {
+                json.decodeFromString<List<MessageAttachmentEntity>>(it)
             } catch (_: SerializationException) {
                 emptyList()
             }

@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch
 import com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent
 import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionsSyncEntity
 import com.wire.kalium.persistence.dao.reaction.UserReactionsSyncEntity
 import com.wire.kalium.persistence.dao.receipt.MessageReadReceiptsSyncEntity
@@ -43,27 +44,15 @@ import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMultipart
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceText
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceVideoMetaData
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.put
 import pbandk.ByteArr
 import pbandk.encodeToByteArray
 import kotlin.io.encoding.Base64
 
-internal class NomadRemoteBackupChangeLogEventMapper(
-    private val jsonParser: Json = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
-) {
+internal class NomadRemoteBackupChangeLogEventMapper {
     fun mapBatchToApiEvents(batch: ChangeLogSyncBatch): List<NomadMessageEvent> {
         val events = batch.events.mapNotNull { it.toApiEventOrNull() }.toMutableList()
         val lastReads = batch.conversationLastReads.map {
@@ -231,7 +220,7 @@ internal class NomadRemoteBackupChangeLogEventMapper(
                             quotedMessageId = quotedMessageId
                         )
                     },
-                    attachments = attachmentsJson.parseAttachmentsFromJson()
+                    attachments = attachments.toNomadDeviceAttachments()
                 )
             )
         )
@@ -289,56 +278,44 @@ internal class NomadRemoteBackupChangeLogEventMapper(
             )
         }
 
-    private fun String.parseAttachmentsFromJson(): List<NomadDeviceAttachment> {
-        val parsed = runCatching { jsonParser.parseToJsonElement(this).jsonArray }.getOrNull() ?: return emptyList()
-        return parsed.mapNotNull { attachmentElement ->
-            val attachmentObject = attachmentElement as? JsonObject ?: return@mapNotNull null
-            val isCellAttachment = attachmentObject.booleanLikeOrNull("cell_asset") ?: true
-            if (isCellAttachment) return@mapNotNull null
-
-            val assetId = attachmentObject.stringOrNull("id") ?: return@mapNotNull null
-            val mimeType = attachmentObject.stringOrNull("mime_type") ?: return@mapNotNull null
-            val size = attachmentObject.longOrNull("asset_size") ?: 0L
-            val width = attachmentObject.intOrNull("asset_width")
-            val height = attachmentObject.intOrNull("asset_height")
-            val duration = attachmentObject.longOrNull("asset_duration_ms")
-            val name = attachmentObject.stringOrNull("asset_path")
-
+    @Suppress("CyclomaticComplexMethod")
+    private fun List<MessageAttachmentEntity>.toNomadDeviceAttachments(): List<NomadDeviceAttachment> =
+        filter { !it.cellAsset }.map { attachment ->
             NomadDeviceAttachment(
                 content = NomadDeviceAttachment.Content.Asset(
                     NomadDeviceAsset(
-                        mimeType = mimeType,
-                        size = size,
-                        name = name,
+                        mimeType = attachment.mimeType,
+                        size = attachment.assetSize ?: 0L,
+                        name = attachment.assetPath,
                         otrKey = ByteArr(byteArrayOf()),
                         sha256 = ByteArr(byteArrayOf()),
-                        assetId = assetId,
+                        assetId = attachment.assetId,
                         metaData = when {
-                            duration != null && (width != null || height != null) ->
+                            attachment.assetDuration != null && (attachment.assetWidth != null || attachment.assetHeight != null) ->
                                 NomadDeviceAsset.MetaData.Video(
                                     NomadDeviceVideoMetaData(
-                                        width = width,
-                                        height = height,
-                                        durationInMillis = duration
+                                        width = attachment.assetWidth,
+                                        height = attachment.assetHeight,
+                                        durationInMillis = attachment.assetDuration
                                     )
                                 )
 
-                            duration != null ->
+                            attachment.assetDuration != null ->
                                 NomadDeviceAsset.MetaData.Audio(
-                                    NomadDeviceAudioMetaData(durationInMillis = duration)
+                                    NomadDeviceAudioMetaData(durationInMillis = attachment.assetDuration)
                                 )
 
-                            width != null || height != null ->
+                            attachment.assetWidth != null || attachment.assetHeight != null ->
                                 NomadDeviceAsset.MetaData.Image(
                                     NomadDeviceImageMetaData(
-                                        width = width ?: 0,
-                                        height = height ?: 0
+                                        width = attachment.assetWidth ?: 0,
+                                        height = attachment.assetHeight ?: 0
                                     )
                                 )
 
-                            name != null ->
+                            attachment.assetPath != null ->
                                 NomadDeviceAsset.MetaData.Generic(
-                                    NomadDeviceGenericMetaData(name = name)
+                                    NomadDeviceGenericMetaData(name = attachment.assetPath)
                                 )
 
                             else -> null
@@ -347,28 +324,4 @@ internal class NomadRemoteBackupChangeLogEventMapper(
                 )
             )
         }
-    }
-
-    private fun JsonObject.stringOrNull(key: String): String? =
-        (this[key] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotEmpty() }
-
-    private fun JsonObject.intOrNull(key: String): Int? {
-        val primitive = (this[key] as? JsonPrimitive) ?: return null
-        return primitive.intOrNull ?: primitive.contentOrNull?.toIntOrNull()
-    }
-
-    private fun JsonObject.longOrNull(key: String): Long? {
-        val primitive = (this[key] as? JsonPrimitive) ?: return null
-        return primitive.longOrNull ?: primitive.contentOrNull?.toLongOrNull()
-    }
-
-    private fun JsonObject.booleanLikeOrNull(key: String): Boolean? {
-        val primitive = (this[key] as? JsonPrimitive) ?: return null
-        primitive.booleanOrNull?.let { return it }
-        return when (primitive.contentOrNull?.lowercase()) {
-            "1", "true" -> true
-            "0", "false" -> false
-            else -> null
-        }
-    }
 }
