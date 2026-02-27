@@ -99,7 +99,7 @@ data class LastRead(
     @SerialName("conversation_id")
     val conversationId: String,
     @SerialName("last_read")
-    val lastRead: String
+    val lastReadTimestamp: Long
 )
 
 @Serializable

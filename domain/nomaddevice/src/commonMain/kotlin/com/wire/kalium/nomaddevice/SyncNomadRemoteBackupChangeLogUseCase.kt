@@ -156,7 +156,7 @@ public class SyncNomadRemoteBackupChangeLogUseCase internal constructor(
         val lastReads = batch.conversationLastReads.map {
             LastRead(
                 conversationId = it.conversationId.toString(),
-                lastRead = it.lastReadDate.toString()
+                lastReadTimestamp = it.lastReadTimestampMs
             )
         }
         if (lastReads.isNotEmpty()) {
