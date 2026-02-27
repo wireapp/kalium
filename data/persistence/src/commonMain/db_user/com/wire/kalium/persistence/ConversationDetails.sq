@@ -144,7 +144,13 @@ WHERE
     OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
     OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
     )
-    AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
+    AND (
+        protocol IN ('PROTEUS', 'MIXED')
+        OR (
+            protocol = 'MLS'
+            AND (:strict_mls = 0 OR mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET'))
+        )
+    )
     AND archived = :fromArchive
     AND isActive
     AND deletedLocally = 0

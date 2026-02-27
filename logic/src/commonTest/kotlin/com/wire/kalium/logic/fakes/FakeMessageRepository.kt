@@ -163,8 +163,7 @@ internal open class FakeMessageRepository : MessageRepository {
 
     override suspend fun resetAssetTransferStatus() {}
 
-    override suspend fun markMessagesAsDecryptionResolved(
-        conversationId: ConversationId,
+    override suspend fun markProteusMessagesAsDecryptionResolved(
         userId: UserId,
         clientId: ClientId
     ): Either<CoreFailure, Unit> = Unit.right()

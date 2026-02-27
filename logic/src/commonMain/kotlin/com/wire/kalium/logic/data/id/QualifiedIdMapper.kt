@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.data.id
 
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mockable
 
@@ -30,11 +33,13 @@ internal class QualifiedIdMapperImpl internal constructor(
     private val selfUserId: UserId?
 ) : QualifiedIdMapper {
     override fun fromStringToQualifiedID(id: String): QualifiedID {
+        require(id.isNotBlank()) { "Qualified ID cannot be blank" }
+
         val components = id.split(VALUE_DOMAIN_SEPARATOR).filter { it.isNotBlank() }
         val count = id.count { it == VALUE_DOMAIN_SEPARATOR }
         return when {
             components.isEmpty() -> {
-                QualifiedID(value = "", domain = "")
+                throw IllegalArgumentException("Qualified ID value cannot be empty")
             }
 
             count > 1 -> {
@@ -53,7 +58,21 @@ internal class QualifiedIdMapperImpl internal constructor(
         }
     }
 
-    private fun selfUserDomain(): String = selfUserId?.domain ?: ""
+    private fun selfUserDomain(): String = selfUserId?.domain?.takeIf { it.isNotBlank() } ?: run {
+        val cause = IllegalStateException("self_user_domain_missing_or_blank")
+        kaliumLogger.logStructuredJson(
+            level = KaliumLogLevel.ERROR,
+            leadingMessage = "qualified-id mapper missing self domain",
+            jsonStringKeyValues = mapOf(
+                "event" to "qualified_id_mapper_missing_self_domain",
+                "action" to "fallback_to_empty_domain",
+                "selfUserPresent" to (selfUserId != null),
+                "cause" to (cause.message ?: "unknown"),
+                "stackTrace" to cause.stackTraceToString(),
+            )
+        )
+        ""
+    }
 }
 
 public fun QualifiedIdMapper(selfUserId: UserId?): QualifiedIdMapper = QualifiedIdMapperImpl(selfUserId)

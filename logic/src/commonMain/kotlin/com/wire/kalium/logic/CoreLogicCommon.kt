@@ -23,9 +23,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.PlatformRootPathsProvider
-import com.wire.kalium.logic.di.PlatformUserStorageProvider
 import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
@@ -34,11 +32,16 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallbackManagerImpl
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.feature.message.PersistenceEventHookRegistry
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.persistence.util.configurePersistenceDebug
+import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
+import com.wire.kalium.userstorage.di.UserStorageProvider
 
 public abstract class CoreLogicCommon internal constructor(
     protected val rootPath: String,
@@ -46,6 +49,14 @@ public abstract class CoreLogicCommon internal constructor(
     protected val kaliumConfigs: KaliumConfigs,
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
+    init {
+        configurePersistenceDebug(kaliumConfigs.isDebug)
+    }
+
+    private val persistenceEventHookRegistry = PersistenceEventHookRegistry()
+    internal val persistenceEventHookNotifier: PersistenceEventHookNotifier
+        get() = persistenceEventHookRegistry
+
     protected abstract val globalPreferences: GlobalPrefProvider
     protected abstract val globalDatabaseBuilder: GlobalDatabaseBuilder
     internal abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
@@ -102,6 +113,22 @@ public abstract class CoreLogicCommon internal constructor(
         userId: UserId,
         action: UserSessionScope.() -> T
     ): T = getSessionScope(userId).action()
+
+    /**
+     * Registers a persistence event hook notifier.
+     * Hook invocation is synchronous from Logic's perspective.
+     */
+    public fun registerPersistenceEventHook(hookNotifier: PersistenceEventHookNotifier) {
+        persistenceEventHookRegistry.register(hookNotifier)
+    }
+
+    public fun unregisterPersistenceEventHook(hookNotifier: PersistenceEventHookNotifier) {
+        persistenceEventHookRegistry.unregister(hookNotifier)
+    }
+
+    public fun clearHook() {
+        persistenceEventHookRegistry.clear()
+    }
 
     internal abstract val globalCallManager: GlobalCallManager
 

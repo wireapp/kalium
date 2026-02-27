@@ -18,10 +18,8 @@
 package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangement
@@ -46,7 +44,7 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
         useCase(TestConversation.ID)
         advanceUntilIdle()
 
-        coVerify { arrangement.fetchMLSVerificationStatusUseCase(any(), any()) }
+        coVerify { arrangement.fetchMLSVerificationStatusUseCase(any()) }
             .wasNotInvoked()
     }
 
@@ -59,7 +57,7 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
         useCase(TestConversation.ID)
         advanceUntilIdle()
 
-        coVerify { arrangement.fetchMLSVerificationStatusUseCase(any(), any()) }
+        coVerify { arrangement.fetchMLSVerificationStatusUseCase(any()) }
             .wasNotInvoked()
     }
 
@@ -73,7 +71,7 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
         useCase(TestConversation.ID)
         advanceUntilIdle()
 
-        coVerify { arrangement.fetchMLSVerificationStatusUseCase(any(), eq(protocolInfo.groupId)) }
+        coVerify { arrangement.fetchMLSVerificationStatusUseCase(eq(protocolInfo.groupId)) }
             .wasInvoked()
     }
 
@@ -82,17 +80,14 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
     ) : FetchMLSVerificationStatusArrangement by FetchMLSVerificationStatusArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
         suspend fun arrange() = let {
             block()
-            withMLSTransactionReturning(Either.Right(Unit))
             mockFetchMLSVerificationStatus()
             this to FetchConversationMLSVerificationStatusUseCaseImpl(
                 conversationRepository = conversationRepository,
-                fetchMLSVerificationStatusUseCase = fetchMLSVerificationStatusUseCase,
-                transactionProvider = cryptoTransactionProvider
+                fetchMLSVerificationStatusUseCase = fetchMLSVerificationStatusUseCase
             )
         }
     }

@@ -58,13 +58,14 @@ import com.wire.kalium.network.api.unbound.acme.DtoAuthorizationChallengeType
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.time
+import dev.mokkery.MockMode
+import dev.mokkery.matcher.any
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -90,17 +91,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.getE2EISettings()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.acmeApi.getACMEDirectories(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.e2eiClient.directoryResponse(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -121,17 +122,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.getE2EISettings()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.getACMEDirectories(any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.directoryResponse(any<ByteArray>())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -152,17 +153,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.getE2EISettings()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.getACMEDirectories(any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.e2eiClient.directoryResponse(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -181,17 +182,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewAccountRequest(any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.setAccountResponse(any<ByteArray>())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -210,17 +211,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewAccountRequest(any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.e2eiClient.setAccountResponse(any<ByteArray>())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -240,17 +241,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewOrderRequest(any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.setOrderResponse(any<ByteArray>())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -269,17 +270,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewOrderRequest(any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.e2eiClient.setOrderResponse(any<ByteArray>())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -301,17 +302,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -333,17 +334,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -364,17 +365,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -401,17 +402,17 @@ class E2EIRepositoryTest {
 
         assertEquals(expected, result.value as AuthorizationResult)
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.exactly(authorizationsUrls.size)) {
             arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
-        }.wasInvoked(authorizationsUrls.size.time)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.exactly(authorizationsUrls.size)) {
             arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
-        }.wasInvoked(authorizationsUrls.size.time)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.exactly(authorizationsUrls.size)) {
             arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
-        }.wasInvoked(authorizationsUrls.size.time)
+        }
     }
 
     @Test
@@ -431,17 +432,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewDpopChallengeRequest(any<String>(), any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.setDPoPChallengeResponse(any<ByteArray>())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -460,17 +461,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewDpopChallengeRequest(any<String>(), any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -490,17 +491,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -520,17 +521,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -550,17 +551,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -580,17 +581,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.checkOrderRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.checkOrderResponse(any<ByteArray>())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -609,17 +610,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.checkOrderRequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.e2eiClient.checkOrderResponse(any<ByteArray>())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -639,17 +640,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.finalizeRequest(any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.finalizeResponse(any<ByteArray>())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -668,17 +669,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.finalizeRequest(any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.e2eiClient.finalizeResponse(any<ByteArray>())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -697,13 +698,13 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.certificateRequest(any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -722,13 +723,13 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClient.certificateRequest(any<String>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.sendACMERequest(any<String>(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -746,17 +747,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClientProvider.getE2EIClient(any(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.currentClientIdProvider.invoke()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -774,17 +775,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.e2eiClientProvider.getE2EIClient(any(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.currentClientIdProvider.invoke()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -804,17 +805,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.getE2EISettings()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.acmeApi.getACMEFederationCertificateChain(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.coreCryptoCentral.registerIntermediateCa(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -835,18 +836,18 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.getE2EISettings()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.getACMEFederationCertificateChain(any())
-        }.wasInvoked(once)
+        }
 
         certificateList.forEach { certificateValue ->
-            coVerify {
+            verifySuspend {
                 arrangement.coreCryptoCentral.registerIntermediateCa(eq(certificateValue))
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -868,17 +869,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.getE2EISettings()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.acmeApi.getACMEFederationCertificateChain(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(mode = VerifyMode.not) {
             arrangement.coreCryptoCentral.registerIntermediateCa(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -902,21 +903,21 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.getE2EISettings()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.acmeApi.getTrustAnchors(eq(RANDOM_URL))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.coreCryptoCentral.registerTrustAnchors(eq(Arrangement.RANDOM_BYTE_ARRAY.decodeToString()))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.setShouldFetchE2EITrustAnchors(eq(false))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -933,9 +934,9 @@ class E2EIRepositoryTest {
         // then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.getShouldFetchE2EITrustAnchor()
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -948,9 +949,9 @@ class E2EIRepositoryTest {
             assertIs<E2EIFailure.Disabled>(it)
         }
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.getE2EISettings()
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -963,9 +964,9 @@ class E2EIRepositoryTest {
             assertIs<E2EIFailure.MissingDiscoveryUrl>(it)
         }
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.getE2EISettings()
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -978,166 +979,166 @@ class E2EIRepositoryTest {
             assertEquals(RANDOM_URL, it)
         }
 
-        coVerify {
+        verifySuspend {
             arrangement.userConfigRepository.getE2EISettings()
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         suspend fun withGetE2EIClientSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClientProvider.getE2EIClient(any(), any())
             }.returns(Either.Right(e2eiClient))
         }
 
         suspend fun withGetCoreCryptoSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsClientProvider.getCoreCrypto(any())
             }.returns(Either.Right(coreCryptoCentral))
         }
 
         suspend fun withE2EIClientLoadDirectoriesSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.directoryResponse(any())
             }.returns(ACME_DIRECTORIES)
         }
 
         suspend fun withGetNewAccountSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.getNewAccountRequest(any())
             }.returns(RANDOM_BYTE_ARRAY)
         }
 
         suspend fun withGetNewOrderSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.getNewOrderRequest(any())
             }.returns(RANDOM_BYTE_ARRAY)
         }
 
         suspend fun withGetNewAuthzRequestSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.getNewAuthzRequest(any(), any())
             }.returns(RANDOM_BYTE_ARRAY)
         }
 
         suspend fun withCheckOrderRequestSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.checkOrderRequest(any(), any())
             }.returns(RANDOM_BYTE_ARRAY)
         }
 
         suspend fun withFinalizeRequestSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.finalizeRequest(any())
             }.returns(RANDOM_BYTE_ARRAY)
         }
 
         suspend fun withCertificateRequestSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.certificateRequest(any())
             }.returns(RANDOM_BYTE_ARRAY)
         }
 
         suspend fun withRotateKeysAndMigrateConversationsReturns(result: Either<E2EIFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
             }.returns(result)
         }
 
         suspend fun withCurrentClientIdProviderSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
             }.returns(Either.Right(TestClient.CLIENT_ID))
         }
 
         suspend fun withFinalizeResponseSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.finalizeResponse(any())
             }.returns("")
         }
 
         suspend fun withCheckOrderResponseSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.checkOrderResponse(any())
             }.returns("")
         }
 
         suspend fun withGetNewDpopChallengeRequest() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.getNewDpopChallengeRequest(any(), any())
             }.returns(RANDOM_BYTE_ARRAY)
         }
 
         suspend fun withGetNewOidcChallengeRequest() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.getNewOidcChallengeRequest(any(), any())
             }.returns(RANDOM_BYTE_ARRAY)
         }
 
         suspend fun withSetOrderResponseSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.setOrderResponse(any())
             }.returns(ACME_ORDER)
         }
 
         suspend fun withSetAuthzResponseSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 e2eiClient.setAuthzResponse(any())
             }.returns(OIDC_AUTHZ)
         }
 
         suspend fun withGetMLSClientSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsClientProvider.getMLSClient(any())
             }.returns(Either.Right(mlsClient))
         }
 
         suspend fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getE2EISettings()
             }.returns(result)
         }
 
         suspend fun withGetShouldFetchE2EITrustAnchors(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getShouldFetchE2EITrustAnchor()
             }.returns(result)
         }
 
         suspend fun withSetShouldFetchE2EIGetTrustAnchors() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setShouldFetchE2EITrustAnchors(any())
             }.returns(Unit)
         }
 
 
         suspend fun withAcmeDirectoriesApiSucceed() = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.getACMEDirectories(any())
             }.returns(NetworkResponse.Success(ACME_DIRECTORIES_RESPONSE, mapOf(), 200))
         }
 
         suspend fun withAcmeDirectoriesApiFails() = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.getACMEDirectories(any())
             }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
         suspend fun withSendAcmeRequestApiSucceed() = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.sendACMERequest(any(), any())
             }.returns(NetworkResponse.Success(ACME_REQUEST_RESPONSE, mapOf(), 200))
         }
 
         suspend fun withSendAcmeRequestApiFails() = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.sendACMERequest(any(), any())
             }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
         suspend fun withSendAuthorizationRequestSucceed(url: String, challengeType: DtoAuthorizationChallengeType) = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.sendAuthorizationRequest(eq(url), any())
             }.returns(
                 NetworkResponse.Success(
@@ -1149,75 +1150,75 @@ class E2EIRepositoryTest {
         }
 
         suspend fun withSendAuthorizationRequestFails() = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.sendAuthorizationRequest(any(), any())
             }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
         suspend fun withSendChallengeRequestApiSucceed() = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.sendChallengeRequest(any(), any())
             }.returns(NetworkResponse.Success(ACME_CHALLENGE_RESPONSE, mapOf(), 200))
         }
 
         suspend fun withSendChallengeRequestApiSucceedWithInvalidStatus() = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.sendChallengeRequest(any(), any())
             }.returns(NetworkResponse.Success(ACME_CHALLENGE_RESPONSE.copy(status = "invalid"), mapOf(), 200))
         }
 
         suspend fun withSendChallengeRequestApiFails() = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.sendChallengeRequest(any(), any())
             }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
         suspend fun withAcmeFederationApiSucceed(certificateList: List<String>) = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.getACMEFederationCertificateChain(any())
             }.returns(NetworkResponse.Success(certificateList, mapOf(), 200))
         }
 
         suspend fun withAcmeFederationApiFails() = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.getACMEFederationCertificateChain(any())
             }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
         suspend fun withFetchAcmeTrustAnchorsApiFails() = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.getTrustAnchors(any())
             }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
         suspend fun withFetchAcmeTrustAnchorsApiSucceed() = apply {
-            coEvery {
+            everySuspend {
                 acmeApi.getTrustAnchors(any())
             }.returns(NetworkResponse.Success(RANDOM_BYTE_ARRAY, mapOf(), 200))
         }
 
         suspend fun withRegisterIntermediateCABag() = apply {
-            coEvery {
+            everySuspend {
                 coreCryptoCentral.registerIntermediateCa(any())
             }.returns(Unit)
         }
 
         suspend fun withRegisterTrustAnchors() = apply {
-            coEvery {
+            everySuspend {
                 coreCryptoCentral.registerTrustAnchors(any())
             }.returns(Unit)
         }
 
-        val e2eiApi: E2EIApi = mock(E2EIApi::class)
-        val acmeApi: ACMEApi = mock(ACMEApi::class)
-        val e2eiClientProvider: E2EIClientProvider = mock(E2EIClientProvider::class)
-        val e2eiClient = mock(E2EIClient::class)
-        val coreCryptoCentral = mock(CoreCryptoCentral::class)
-        val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val mlsClient = mock(MLSClient::class)
-        val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val e2eiApi: E2EIApi = mock<E2EIApi>()
+        val acmeApi: ACMEApi = mock<ACMEApi>()
+        val e2eiClientProvider: E2EIClientProvider = mock<E2EIClientProvider>()
+        val e2eiClient = mock<E2EIClient>(mode = MockMode.autoUnit)
+        val coreCryptoCentral = mock<CoreCryptoCentral>()
+        val mlsClientProvider: MLSClientProvider = mock<MLSClientProvider>()
+        val mlsConversationRepository = mock<MLSConversationRepository>()
+        val mlsClient = mock<MLSClient>()
+        val currentClientIdProvider: CurrentClientIdProvider = mock<CurrentClientIdProvider>()
+        val userConfigRepository = mock<UserConfigRepository>()
 
         fun arrange() =
             this to E2EIRepositoryImpl(

@@ -20,8 +20,6 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangement
@@ -47,7 +45,7 @@ class ObserveE2EIConversationsVerificationStatusesUseCaseTest {
         handler()
         advanceUntilIdle()
 
-        coVerify { arrangement.fetchMLSVerificationStatusUseCase(any(), eq(TestConversation.GROUP_ID)) }
+        coVerify { arrangement.fetchMLSVerificationStatusUseCase(eq(TestConversation.GROUP_ID)) }
             .wasInvoked()
     }
 
@@ -56,17 +54,14 @@ class ObserveE2EIConversationsVerificationStatusesUseCaseTest {
     private class Arrangement(
         private val block: Arrangement.() -> Unit
     ) : FetchMLSVerificationStatusArrangement by FetchMLSVerificationStatusArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
 
         suspend fun arrange() = let {
             block()
             mockFetchMLSVerificationStatus()
-            withMLSTransactionReturning(Either.Right(Unit))
             this to ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
                 epochChangesObserver = epochChangesObserver,
                 fetchMLSVerificationStatus = fetchMLSVerificationStatusUseCase,
-                transactionProvider = cryptoTransactionProvider,
                 kaliumLogger = kaliumLogger,
             )
         }

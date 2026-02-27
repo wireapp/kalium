@@ -202,6 +202,9 @@ class IncrementalSyncWorkerTest {
             coEvery {
                 eventProcessor.processEvent(any(), any())
             }.returns(result)
+            coEvery {
+                eventProcessor.flushPendingSideEffects()
+            }.returns(Either.Right(Unit))
         }
 
         suspend fun withEventProcessorSucceeding() = withEventProcessorReturning(Either.Right(null))

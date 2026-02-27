@@ -41,6 +41,7 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
 import com.wire.kalium.logic.test_util.TestNetworkException.generic
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
+import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
@@ -54,8 +55,10 @@ import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -290,6 +293,120 @@ class UserRepositoryTest {
         coVerify {
             arrangement.userDetailsApi.getMultipleUsers(eq(ListUserRequest.qualifiedIds(knownUserIds.map { userId -> userId.toApi() })))
         }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMalformedQualifiedIdsInDb_whenListUsersReturnsBadRequest_thenShouldDeleteMalformedUsersAndRetry() = runTest {
+        // Given
+        val usersInDb = listOf(
+            UserIDEntity(value = "id1", domain = "domain1.com"),
+            UserIDEntity(value = "id2", domain = ""),
+        )
+        val expectedRequestIds = listOf(UserId("id1", "domain1.com").toApi())
+        val (arrangement, userRepository) = Arrangement()
+            .arrange {
+                withAllOtherUsersIdSuccess(usersInDb)
+            }
+        val malformedQualifiedIdsError = KaliumException.InvalidRequestError(
+            ErrorResponse(
+                code = 400,
+                message = "Error in \$['qualified_ids'][1].domain: alphanumeric character: not enough input",
+                label = "bad-request"
+            )
+        )
+        coEvery {
+            arrangement.userDetailsApi.getMultipleUsers(any())
+        }.thenReturnSequentially(
+            NetworkResponse.Error(malformedQualifiedIdsError),
+            NetworkResponse.Success(LIST_USERS_DTO, mapOf(), 200)
+        )
+        coEvery {
+            arrangement.userDAO.deleteUserByQualifiedID(any())
+        }.returns(Unit)
+
+        // When
+        userRepository.fetchAllOtherUsers().shouldSucceed()
+
+        // Then
+        coVerify {
+            arrangement.userDAO.deleteUserByQualifiedID(eq(UserIDEntity(value = "id2", domain = "")))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(eq(ListUserRequest.qualifiedIds(expectedRequestIds)))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMalformedQualifiedIdsInDb_whenListUsersReturns400WithNonBadRequestLabel_thenShouldDeleteMalformedUsersAndRetry() = runTest {
+        // Given
+        val usersInDb = listOf(
+            UserIDEntity(value = "id1", domain = "domain1.com"),
+            UserIDEntity(value = "id2", domain = ""),
+        )
+        val expectedRequestIds = listOf(UserId("id1", "domain1.com").toApi())
+        val (arrangement, userRepository) = Arrangement()
+            .arrange {
+                withAllOtherUsersIdSuccess(usersInDb)
+            }
+        val malformedQualifiedIdsError = KaliumException.InvalidRequestError(
+            ErrorResponse(
+                code = 400,
+                message = "Error in \$['qualified_ids'][1].domain: alphanumeric character: not enough input",
+                label = "bad-request"
+            )
+        )
+        coEvery {
+            arrangement.userDetailsApi.getMultipleUsers(any())
+        }.thenReturnSequentially(
+            NetworkResponse.Error(malformedQualifiedIdsError),
+            NetworkResponse.Success(LIST_USERS_DTO, mapOf(), 200)
+        )
+        coEvery {
+            arrangement.userDAO.deleteUserByQualifiedID(any())
+        }.returns(Unit)
+
+        // When
+        userRepository.fetchAllOtherUsers().shouldSucceed()
+
+        // Then
+        coVerify {
+            arrangement.userDAO.deleteUserByQualifiedID(eq(UserIDEntity(value = "id2", domain = "")))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(eq(ListUserRequest.qualifiedIds(expectedRequestIds)))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenGenericBadRequestContainingQualifiedIdsAndDomain_whenFetchingAllOtherUsers_thenShouldNotTriggerCleanupRetry() = runTest {
+        // Given
+        val usersInDb = listOf(
+            UserIDEntity(value = "id1", domain = "domain1.com"),
+            UserIDEntity(value = "id2", domain = ""),
+        )
+        val (arrangement, userRepository) = Arrangement()
+            .arrange {
+                withAllOtherUsersIdSuccess(usersInDb)
+            }
+
+        val genericBadRequestError = KaliumException.InvalidRequestError(
+            ErrorResponse(
+                code = 400,
+                message = "Request invalid: qualified_ids has invalid domain",
+                label = "bad-request"
+            )
+        )
+        coEvery {
+            arrangement.userDetailsApi.getMultipleUsers(any())
+        }.returns(NetworkResponse.Error(genericBadRequestError))
+
+        // When
+        userRepository.fetchAllOtherUsers().shouldFail()
+
+        // Then
+        coVerify {
+            arrangement.userDAO.deleteUserByQualifiedID(any())
+        }.wasNotInvoked()
     }
 
     @Test

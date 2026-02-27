@@ -24,10 +24,10 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
 import com.wire.kalium.logic.data.message.reaction.MessageReactions
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.backup.mapper.toQualifiedIdOrNull
 import com.wire.kalium.logic.feature.backup.mapper.toConversation
 import com.wire.kalium.logic.feature.backup.mapper.toMessage
 import com.wire.kalium.logic.feature.backup.mapper.toUser
@@ -140,7 +140,7 @@ internal class RestoreMPBackupUseCaseImpl(
 
     private suspend fun ImportResultPager.persistUsers(onPageProcessed: () -> Unit) {
         usersPager.pages().forEach { page ->
-            backupRepository.insertUsers(page.map { it.toUser() })
+            backupRepository.insertUsers(page.mapNotNull { it.toUser() })
                 .onFailure { error ->
                     kaliumLogger.e("Restore users error: $error")
                 }
@@ -150,7 +150,7 @@ internal class RestoreMPBackupUseCaseImpl(
 
     private suspend fun ImportResultPager.persistConversations(onPageProcessed: () -> Unit) {
         conversationsPager.pages().forEach { page ->
-            val conversations = page.map { it.toConversation() }
+            val conversations = page.mapNotNull { it.toConversation() }
 
             backupRepository.insertConversations(conversations)
                 .onFailure { error ->
@@ -165,7 +165,7 @@ internal class RestoreMPBackupUseCaseImpl(
     private suspend fun ImportResultPager.persistMessages(onPageProcessed: () -> Unit) {
         messagesPager.pages().asFlow().buffer(10)
             .collect { page ->
-                backupRepository.insertMessages(page.map { it.toMessage(selfUserId) })
+                backupRepository.insertMessages(page.mapNotNull { it.toMessage(selfUserId) })
                     .onFailure { error ->
                         kaliumLogger.e("Restore messages error: $error")
                     }
@@ -178,14 +178,20 @@ internal class RestoreMPBackupUseCaseImpl(
         reactionsPager.pages().asFlow().buffer(10)
             .collect { page ->
                 backupRepository.insertReactions(
-                    reactions = page.map { reaction ->
+                    reactions = page.mapNotNull { reaction ->
+                        val conversationId = reaction.conversationId
+                            .toQualifiedIdOrNull("restore.reaction.conversationId")
+                            ?: return@mapNotNull null
+
                         MessageReactions(
                             messageId = reaction.messageId,
-                            conversationId = reaction.conversationId.let { QualifiedID(it.id, it.domain) },
-                            reactions = reaction.emojiReactions.map {
+                            conversationId = conversationId,
+                            reactions = reaction.emojiReactions.map { emojiReaction ->
                                 MessageReactionWithUsers(
-                                    emoji = it.emoji,
-                                    users = it.users.map { QualifiedID(it.id, it.domain) }
+                                    emoji = emojiReaction.emoji,
+                                    users = emojiReaction.users.mapNotNull {
+                                        it.toQualifiedIdOrNull("restore.reaction.userId")
+                                    }
                                 )
                             }
                         )

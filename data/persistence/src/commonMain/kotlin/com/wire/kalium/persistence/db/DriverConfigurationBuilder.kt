@@ -25,4 +25,5 @@ package com.wire.kalium.persistence.db
 class DriverConfigurationBuilder {
     var isWALEnabled = false
     var areForeignKeyConstraintsEnforced = true
+    var useGradleSafeSqliterLogging = false
 }

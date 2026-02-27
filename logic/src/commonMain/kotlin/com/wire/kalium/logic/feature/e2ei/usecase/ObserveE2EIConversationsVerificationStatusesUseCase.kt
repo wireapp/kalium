@@ -17,9 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 
 /**
@@ -33,7 +31,6 @@ internal interface ObserveE2EIConversationsVerificationStatusesUseCase {
 internal class ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
     private val fetchMLSVerificationStatus: FetchMLSVerificationStatusUseCase,
     private val epochChangesObserver: EpochChangesObserver,
-    private val transactionProvider: CryptoTransactionProvider,
     kaliumLogger: KaliumLogger
 ) : ObserveE2EIConversationsVerificationStatusesUseCase {
 
@@ -44,10 +41,7 @@ internal class ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
         epochChangesObserver.observe()
             .collect { groupWithEpoch ->
                 logger.d("Epoch for group ${groupWithEpoch.groupId.toLogString()} changed ${groupWithEpoch.epoch}")
-                transactionProvider.mlsTransaction("ObserveE2EIConversationsVerificationStatuses") { mlsContext ->
-                    fetchMLSVerificationStatus(mlsContext, groupWithEpoch.groupId)
-                    Unit.right()
-                }
+                fetchMLSVerificationStatus(groupWithEpoch.groupId)
             }
     }
 }

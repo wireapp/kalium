@@ -28,8 +28,11 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.cryptography.CryptoQualifiedID
+import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.cryptography.MLSCiphersuite
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
+import com.wire.kalium.cryptography.WireIdentity
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any as mokkeryAny
@@ -196,9 +199,19 @@ class DummyMLSClient(
         TODO("Not yet implemented")
     }
 
+    override suspend fun getGroupState(groupId: String): E2EIConversationState {
+        return context.getGroupState(groupId)
+    }
+
+    override suspend fun getUserIdentities(
+        groupId: String,
+        users: List<CryptoQualifiedID>
+    ): Map<String, List<WireIdentity>> {
+        return context.getUserIdentities(groupId, users)
+    }
+
     override suspend fun <R> transaction(name: String, block: suspend (context: MlsCoreCryptoContext) -> R): R {
         return block(context)
     }
 
 }
-

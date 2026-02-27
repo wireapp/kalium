@@ -62,7 +62,3 @@ kotlin {
         }
     }
 }
-
-android {
-    testOptions.unitTests.all { it.enabled = false }
-}

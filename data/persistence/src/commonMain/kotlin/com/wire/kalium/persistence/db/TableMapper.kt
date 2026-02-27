@@ -49,11 +49,13 @@ import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.NewClient
 import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
+import com.wire.kalium.persistence.RemotebackupChangeLog
 import com.wire.kalium.persistence.SelfUser
 import com.wire.kalium.persistence.Service
 import com.wire.kalium.persistence.UnreadEvent
 import com.wire.kalium.persistence.User
 import com.wire.kalium.persistence.adapter.BotServiceAdapter
+import com.wire.kalium.persistence.adapter.ChangeLogEventTypeAdapter
 import com.wire.kalium.persistence.adapter.ContentTypeAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessListAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
@@ -261,5 +263,10 @@ internal object TableMapper {
 
     val messageSystemContentAdapter = MessageSystemContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
+    )
+
+    val remoteBackupChangeLogAdapter = RemotebackupChangeLog.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        event_typeAdapter = ChangeLogEventTypeAdapter
     )
 }

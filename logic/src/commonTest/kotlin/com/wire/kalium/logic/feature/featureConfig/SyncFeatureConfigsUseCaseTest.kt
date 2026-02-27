@@ -878,7 +878,6 @@ class SyncFeatureConfigsUseCaseTest {
         init {
             runBlocking {
                 withRemoteFeatureConfigsReturning(Either.Right(FeatureConfigTest.newModel()))
-
                 withGuestRoomLinkEnabledReturning(
                     GuestRoomLinkStatus(
                         isGuestRoomLinkEnabled = true,

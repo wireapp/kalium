@@ -19,39 +19,78 @@
 package com.wire.kalium.logic.data.properties
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.conversation.FolderWithConversations
-import com.wire.kalium.logic.data.conversation.folders.toFolder
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.FolderWithConversations
+import com.wire.kalium.logic.data.conversation.folders.toFolder
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
+import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.intOrNull
 
-@Mockable
-internal interface UserPropertyRepository {
+internal interface ReadReceiptsPropertyRepository {
     suspend fun getReadReceiptsStatus(): Boolean
     suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>>
     suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit>
     suspend fun deleteReadReceiptsProperty(): Either<CoreFailure, Unit>
+}
+
+internal interface TypingIndicatorPropertyRepository {
     suspend fun getTypingIndicatorStatus(): Boolean
     suspend fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>>
     suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit>
     suspend fun removeTypingIndicatorProperty(): Either<CoreFailure, Unit>
+}
+
+internal interface ScreenshotCensoringPropertyRepository {
+    suspend fun setScreenshotCensoringEnabled(): Either<CoreFailure, Unit>
+    suspend fun deleteScreenshotCensoringProperty(): Either<CoreFailure, Unit>
+}
+
+internal interface UserPropertiesSyncRepository {
+    suspend fun syncPropertiesStatuses(): Either<CoreFailure, Unit>
+}
+
+internal interface ConversationFoldersPropertyRepository {
     suspend fun getConversationFolders(): Either<CoreFailure, List<FolderWithConversations>>
 }
 
+@Mockable
+internal interface UserPropertyRepository :
+    ReadReceiptsPropertyRepository,
+    TypingIndicatorPropertyRepository,
+    ScreenshotCensoringPropertyRepository,
+    UserPropertiesSyncRepository,
+    ConversationFoldersPropertyRepository
+
 internal class UserPropertyDataSource(
+    readReceipts: ReadReceiptsPropertyRepository,
+    typingIndicator: TypingIndicatorPropertyRepository,
+    screenshotCensoring: ScreenshotCensoringPropertyRepository,
+    userPropertiesSync: UserPropertiesSyncRepository,
+    conversationFolders: ConversationFoldersPropertyRepository,
+) : UserPropertyRepository,
+    ReadReceiptsPropertyRepository by readReceipts,
+    TypingIndicatorPropertyRepository by typingIndicator,
+    ScreenshotCensoringPropertyRepository by screenshotCensoring,
+    UserPropertiesSyncRepository by userPropertiesSync,
+    ConversationFoldersPropertyRepository by conversationFolders
+
+internal class ReadReceiptsPropertyDataSource(
     private val propertiesApi: PropertiesApi,
     private val userConfigRepository: UserConfigRepository,
-    private val selfUserId: UserId
-) : UserPropertyRepository {
+) : ReadReceiptsPropertyRepository {
+
     override suspend fun getReadReceiptsStatus(): Boolean =
         userConfigRepository.isReadReceiptsEnabled()
             .firstOrNull()
@@ -70,6 +109,12 @@ internal class UserPropertyDataSource(
     }.flatMap {
         userConfigRepository.setReadReceiptsStatus(false)
     }
+}
+
+internal class TypingIndicatorPropertyDataSource(
+    private val propertiesApi: PropertiesApi,
+    private val userConfigRepository: UserConfigRepository,
+) : TypingIndicatorPropertyRepository {
 
     override suspend fun getTypingIndicatorStatus(): Boolean =
         userConfigRepository.isTypingIndicatorEnabled()
@@ -90,9 +135,64 @@ internal class UserPropertyDataSource(
     }.flatMap {
         userConfigRepository.setTypingIndicatorStatus(false)
     }
+}
+
+internal class ScreenshotCensoringPropertyDataSource(
+    private val propertiesApi: PropertiesApi,
+    private val userConfigRepository: UserConfigRepository,
+) : ScreenshotCensoringPropertyRepository {
+
+    override suspend fun setScreenshotCensoringEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
+        propertiesApi.setProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE, 1)
+    }.flatMap {
+        userConfigRepository.setScreenshotCensoringConfig(true)
+    }
+
+    override suspend fun deleteScreenshotCensoringProperty(): Either<CoreFailure, Unit> = wrapApiRequest {
+        propertiesApi.deleteProperty(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE)
+    }.flatMap {
+        userConfigRepository.setScreenshotCensoringConfig(false)
+    }
+}
+
+internal class UserPropertiesSyncDataSource(
+    private val propertiesApi: PropertiesApi,
+    private val userConfigRepository: UserConfigRepository,
+) : UserPropertiesSyncRepository {
+
+    override suspend fun syncPropertiesStatuses(): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            propertiesApi.getPropertiesValues()
+        }.flatMap { properties ->
+            val readReceiptsEnabled = properties.findIntValue(PropertyKey.WIRE_RECEIPT_MODE) == 1
+            val typingIndicatorEnabled = properties.findIntValue(PropertyKey.WIRE_TYPING_INDICATOR_MODE)?.let { it != 0 } ?: true
+            val screenshotCensoringEnabled = properties.findIntValue(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE) == 1
+
+            userConfigRepository.setReadReceiptsStatus(readReceiptsEnabled)
+                .flatMap { userConfigRepository.setTypingIndicatorStatus(typingIndicatorEnabled) }
+                .flatMap { userConfigRepository.setScreenshotCensoringConfig(screenshotCensoringEnabled) }
+        }
+}
+
+internal class ConversationFoldersPropertyDataSource(
+    private val propertiesApi: PropertiesApi,
+    private val selfUserId: UserId,
+) : ConversationFoldersPropertyRepository {
 
     override suspend fun getConversationFolders(): Either<CoreFailure, List<FolderWithConversations>> = wrapApiRequest {
         propertiesApi.getLabels()
+    }.map { labelListResponse ->
+        labelListResponse.labels.map { label -> label.toFolder(selfUserId.domain) }
     }
-        .map { it.labels.map { label -> label.toFolder(selfUserId.domain) } }
+}
+
+private fun JsonObject.findIntValue(propertyKey: PropertyKey): Int? = this[propertyKey.key].toIntOrNull()
+
+private fun JsonElement?.toIntOrNull(): Int? {
+    val primitive = this as? JsonPrimitive ?: return null
+    return if (primitive.isString) {
+        primitive.content.toIntOrNull()
+    } else {
+        primitive.intOrNull
+    }
 }

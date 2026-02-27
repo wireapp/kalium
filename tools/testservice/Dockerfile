@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk
+FROM eclipse-temurin:17-jdk-noble
 
 # disable prompts from the txdata
 ENV DEBIAN_FRONTEND=noninteractive
@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     clang \
     curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -19,7 +20,7 @@ COPY . .
 
 RUN ./gradlew :tools:testservice:shadowJar
 
-FROM eclipse-temurin:17-jdk
+FROM eclipse-temurin:17-jdk-noble
 
 WORKDIR /app
 

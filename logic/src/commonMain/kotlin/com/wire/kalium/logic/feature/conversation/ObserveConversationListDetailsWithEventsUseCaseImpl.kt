@@ -31,10 +31,11 @@ import kotlinx.coroutines.flow.flowOf
  * This use case will observe and return the list of conversation details for the current user.
  * @see ConversationDetails
  */
-public fun interface ObserveConversationListDetailsWithEventsUseCase {
+public interface ObserveConversationListDetailsWithEventsUseCase {
     public suspend operator fun invoke(
         fromArchive: Boolean,
-        conversationFilter: ConversationFilter
+        conversationFilter: ConversationFilter,
+        strictMlsFilter: Boolean = true,
     ): Flow<List<ConversationDetailsWithEvents>>
 }
 
@@ -46,7 +47,8 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
 
     override suspend operator fun invoke(
         fromArchive: Boolean,
-        conversationFilter: ConversationFilter
+        conversationFilter: ConversationFilter,
+        strictMlsFilter: Boolean,
     ): Flow<List<ConversationDetailsWithEvents>> {
         return when (conversationFilter) {
             ConversationFilter.Favorites -> {
@@ -68,7 +70,7 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
             ConversationFilter.Channels,
             ConversationFilter.Groups,
             ConversationFilter.OneOnOne ->
-                conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter)
+                conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter, strictMlsFilter)
         }
     }
 }

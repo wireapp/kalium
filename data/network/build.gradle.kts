@@ -112,12 +112,6 @@ kotlin {
     }
 }
 
-android {
-    testOptions.unitTests.all {
-        it.enabled = false
-    }
-}
-
 tasks.register<Exec>("generateNewApiVersion") {
     group = "custom"
     description = "Generates a new API version by calling the generate_new_api_version.sh script"

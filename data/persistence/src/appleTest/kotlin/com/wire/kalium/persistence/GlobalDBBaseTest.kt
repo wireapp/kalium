@@ -39,7 +39,13 @@ actual abstract class GlobalDBBaseTest {
 
     actual fun createDatabase(): GlobalDatabaseBuilder {
         return globalDatabaseProvider(
-            PlatformDatabaseData(StorageData.FileBacked(storePath)), StandardTestDispatcher(), null, false
+            PlatformDatabaseData(
+                storageData = StorageData.FileBacked(storePath),
+                useGradleSafeSqliterLogging = true
+            ),
+            StandardTestDispatcher(),
+            null,
+            false
         )
     }
 }

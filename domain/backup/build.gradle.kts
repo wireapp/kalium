@@ -31,13 +31,6 @@ kaliumLibrary {
     multiplatform { jsModuleName.set("@wireapp/kalium-backup") }
 }
 
-android {
-    // Because of native libraries, we can only test Android code on instrumentation tests
-    testOptions.unitTests.all {
-        it.enabled = false
-    }
-}
-
 kotlin {
     // Makes visibility modifiers mandatory
     // Useful for a library that will be called by other clients
@@ -96,10 +89,10 @@ kotlin {
         val androidMain by getting {
             dependsOn(nonJsMain)
         }
-        val androidInstrumentedTest by getting {
+        val androidDeviceTest by getting {
             dependsOn(nonJsTest)
         }
-        val androidUnitTest by getting {
+        val androidHostTest by getting {
             // Although UNIT tests for Android are disabled (only run Instrumented), we need to add this in order to resolve
             // expect/actual definitions during test compilation phase.
             dependsOn(nonJsTest)

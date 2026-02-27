@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformRotation
@@ -27,22 +28,22 @@ internal actual open class FlowManagerServiceImpl(
     appContext: PlatformContext
 ) : FlowManagerService {
     actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: setVideoPreview ignored")
     }
 
     actual override suspend fun flipToFrontCamera(conversationId: ConversationId) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: flipToFrontCamera ignored")
     }
 
     actual override suspend fun flipToBackCamera(conversationId: ConversationId) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: flipToBackCamera ignored")
     }
 
     actual override suspend fun setUIRotation(rotation: PlatformRotation) {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: setUIRotation ignored")
     }
 
     actual override suspend fun startFlowManager() {
-        TODO("Not yet implemented")
+        kaliumLogger.w("Calls not supported on iOS: startFlowManager ignored")
     }
 }

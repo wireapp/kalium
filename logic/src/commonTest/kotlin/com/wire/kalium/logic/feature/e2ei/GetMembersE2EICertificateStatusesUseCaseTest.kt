@@ -20,8 +20,10 @@ package com.wire.kalium.logic.feature.e2ei
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toCrypto
@@ -30,11 +32,11 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatu
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import kotlinx.coroutines.runBlocking
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -116,24 +118,28 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
-        fun arrange() = run {
-            runBlocking {
-                withMLSTransactionReturning(Either.Right(Unit))
-                block()
-            }
+        val mlsClientProvider = mock(MLSClientProvider::class)
+        val mlsClient = mock(MLSClient::class)
+
+        suspend fun withMLSClientSuccess() {
+            coEvery { mlsClientProvider.getMLSClient(any()) }.returns(Either.Right(mlsClient))
+        }
+
+        suspend fun arrange() = run {
+            withMLSClientSuccess()
+            block()
             this@Arrangement to GetMembersE2EICertificateStatusesUseCaseImpl(
+                mlsClientProvider = mlsClientProvider,
                 mlsConversationRepository = mlsConversationRepository,
-                conversationRepository = conversationRepository,
-                transactionProvider = cryptoTransactionProvider
+                conversationRepository = conversationRepository
             )
         }
     }
 
     private companion object {
-        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         private val USER_ID = UserId("value", "domain")
         private val CRYPTO_QUALIFIED_CLIENT_ID =
