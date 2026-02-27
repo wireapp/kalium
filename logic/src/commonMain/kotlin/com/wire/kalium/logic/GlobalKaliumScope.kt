@@ -208,10 +208,14 @@ public class GlobalKaliumScope internal constructor(
 
     internal val updateApiVersionsWorker: UpdateApiVersionsWorker by lazy { UpdateApiVersionsWorker(updateApiVersions) }
 
-    private val globalWorkScheduler: GlobalWorkScheduler = workSchedulerProvider.globalWorkScheduler(this)
+    private val globalWorkScheduler: GlobalWorkScheduler by lazy {
+        workSchedulerProvider.globalWorkScheduler(this)
+    }
     public val updateApiVersionsScheduler: UpdateApiVersionsScheduler get() = globalWorkScheduler
 
     init {
-        globalWorkScheduler.schedulePeriodicApiVersionUpdate()
+        if (clientPlatform != "ios") {
+            globalWorkScheduler.schedulePeriodicApiVersionUpdate()
+        }
     }
 }
