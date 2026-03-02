@@ -32,9 +32,9 @@ import kotlinx.coroutines.sync.withLock
  * Handles multiple rapid calls for the same user by cancelling the previous job and starting a new one, ensuring that [backupForUser]
  * is called only once after the last change within the debounce period.
  */
-public class NomadCryptoStateChangeHookNotifier(
+internal class NomadCryptoStateChangeHookNotifier(
     private val scope: CoroutineScope,
-    private val backupForUser: suspend (UserId) -> Unit,
+    private val repository: NomadCryptoStateBackupRepository,
     private val debounceMs: Long = 500L,
 ) : CryptoStateChangeHookNotifier {
 
@@ -46,7 +46,7 @@ public class NomadCryptoStateChangeHookNotifier(
             debounceJobs[userId]?.cancel()
             debounceJobs[userId] = scope.launch {
                 delay(debounceMs)
-                backupForUser(userId)
+                repository.backupAndUpload(userId)
                 mutex.withLock {
                     debounceJobs.remove(userId)
                 }

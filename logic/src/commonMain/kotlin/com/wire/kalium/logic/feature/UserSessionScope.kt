@@ -48,6 +48,7 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.KaliumFileSystemImpl
 import com.wire.kalium.logic.data.backup.BackupDataSource
 import com.wire.kalium.logic.data.backup.BackupRepository
+import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteDataSource
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.InCallReactionsDataSource
@@ -611,6 +612,8 @@ public class UserSessionScope internal constructor(
         }
     }
 
+
+
     private suspend fun waitUntilClientIdIsAvailable() {
         if (_clientId == null) {
             clientRepository.observeCurrentClientId().filterNotNull().first()
@@ -1065,6 +1068,9 @@ public class UserSessionScope internal constructor(
             userStorage = userStorage,
             cryptoTransactionProvider = cryptoTransactionProvider,
             globalPreferences = globalPreferences,
+            cryptoStateBackupRemoteRepository = CryptoStateBackupRemoteDataSource(
+                authenticatedNetworkContainer.nomadDeviceSyncApi
+            ),
         )
 
     public val multiPlatformBackup: MultiPlatformBackupScope
@@ -2796,11 +2802,6 @@ public class UserSessionScope internal constructor(
             callBackgroundManager.startProcessing()
         }
 
-        launch {
-            // todo (ym):
-            //  temporary solution to trigger crypto-db backup. Later moved/hooked with callbacks mechanism on state mutation + debounce
-            backup.backupCryptoDB()
-        }
     }
 }
 

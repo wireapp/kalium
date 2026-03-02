@@ -36,7 +36,7 @@ class NomadCryptoStateChangeHookNotifierTest {
         val calls = mutableListOf<UserId>()
         val notifier = NomadCryptoStateChangeHookNotifier(
             scope = scope,
-            backupForUser = { calls += it },
+            repository = FakeRepository(calls),
             debounceMs = DEBOUNCE_MS
         )
 
@@ -54,7 +54,7 @@ class NomadCryptoStateChangeHookNotifierTest {
         val calls = mutableListOf<UserId>()
         val notifier = NomadCryptoStateChangeHookNotifier(
             scope = scope,
-            backupForUser = { calls += it },
+            repository = FakeRepository(calls),
             debounceMs = DEBOUNCE_MS
         )
 
@@ -74,7 +74,7 @@ class NomadCryptoStateChangeHookNotifierTest {
         val calls = mutableListOf<UserId>()
         val notifier = NomadCryptoStateChangeHookNotifier(
             scope = scope,
-            backupForUser = { calls += it },
+            repository = FakeRepository(calls),
             debounceMs = DEBOUNCE_MS
         )
 
@@ -85,6 +85,32 @@ class NomadCryptoStateChangeHookNotifierTest {
         scheduler.runCurrent()
 
         assertEquals(listOf(USER_ID, OTHER_USER_ID), calls)
+    }
+
+    @Test
+    fun givenFactory_whenDebounceCompletes_thenBackupInvoked() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<UserId>()
+        val notifier = createNomadCryptoStateChangeHookNotifier(
+            scope = scope,
+            backupForUser = { calls += it },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS)
+        scheduler.runCurrent()
+
+        assertEquals(listOf(USER_ID), calls)
+    }
+
+    private class FakeRepository(
+        private val calls: MutableList<UserId>
+    ) : NomadCryptoStateBackupRepository {
+        override suspend fun backupAndUpload(userId: UserId) {
+            calls += userId
+        }
     }
 
     private companion object {
