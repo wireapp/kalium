@@ -18,11 +18,14 @@
 package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.domain.CellConversationRepository
+import com.wire.kalium.cells.domain.model.Conversation
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.firstOrNull
@@ -55,6 +58,35 @@ internal class CellConversationDataSource(
         withContext(dispatchers.io) {
             wrapStorageRequest {
                 conversation.hasConversationWithCell()
+            }
+        }
+
+    override suspend fun getGroupConversationDetailsWithCellEnabled(): Either<StorageFailure, List<Conversation>> =
+        withContext(dispatchers.io) {
+            wrapStorageRequest {
+                conversation.getAllConversations().firstOrNull()?.mapNotNull { conv ->
+                    if (conv.type == ConversationEntity.Type.GROUP &&
+                        conv.wireCell != null &&
+                        conv.name != null
+                    ) {
+                        Conversation(
+                            id = conv.id.toString(),
+                            name = conv.name!!,
+                            isChannel = conv.isChannel,
+                            channelAccess = conv.channelAccess?.let { access ->
+                                when (access) {
+                                    ConversationEntity.ChannelAccess.PRIVATE ->
+                                        ConversationDetails.Group.Channel.ChannelAccess.PRIVATE
+
+                                    ConversationEntity.ChannelAccess.PUBLIC ->
+                                        ConversationDetails.Group.Channel.ChannelAccess.PUBLIC
+                                }
+                            }
+                        )
+                    } else {
+                        null
+                    }
+                } ?: emptyList()
             }
         }
 }

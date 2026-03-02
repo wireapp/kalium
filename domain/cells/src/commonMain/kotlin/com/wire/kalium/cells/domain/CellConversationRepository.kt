@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.cells.domain
 
+import com.wire.kalium.cells.domain.model.Conversation
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mockable
 
@@ -27,4 +29,5 @@ internal interface CellConversationRepository {
     suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
     suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>>
     suspend fun hasConversationWithCell(): Either<StorageFailure, Boolean>
+    suspend fun getGroupConversationDetailsWithCellEnabled(): Either<StorageFailure, List<Conversation>>
 }
