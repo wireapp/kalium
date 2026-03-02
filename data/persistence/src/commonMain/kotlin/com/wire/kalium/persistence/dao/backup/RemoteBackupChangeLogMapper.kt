@@ -20,13 +20,20 @@ package com.wire.kalium.persistence.dao.backup
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.receipt.MessageReadReceiptsSyncEntity
 import com.wire.kalium.persistence.dao.receipt.UserReadReceiptSyncEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionsSyncEntity
 import com.wire.kalium.persistence.dao.reaction.UserReactionsSyncEntity
+import com.wire.kalium.persistence.kaliumLogger
+import com.wire.kalium.persistence.util.JsonSerializer
+import com.wire.kalium.persistence.util.isDebug
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerializationException
 
 internal object RemoteBackupChangeLogMapper {
+
+    private val serializer = JsonSerializer()
 
     @Suppress("FunctionParameterNaming")
     fun toChangeLogEntry(
@@ -216,7 +223,7 @@ internal object RemoteBackupChangeLogMapper {
                 lastEditDate = syncLastEditDate,
                 text = syncText,
                 quotedMessageId = syncQuotedMessageId,
-                mentionsJson = syncMentionsJson ?: "[]",
+                mentions = messageMentionsFromJsonString(syncMentionsJson),
             )
 
             MessageEntity.ContentType.ASSET -> SyncableMessagePayloadEntity.Asset(
@@ -257,8 +264,8 @@ internal object RemoteBackupChangeLogMapper {
                 lastEditDate = syncLastEditDate,
                 text = syncText,
                 quotedMessageId = syncQuotedMessageId,
-                mentionsJson = syncMentionsJson ?: "[]",
-                attachmentsJson = syncAttachmentsJson ?: "[]",
+                mentions = messageMentionsFromJsonString(syncMentionsJson),
+                attachments = messageAttachmentsFromJsonString(syncAttachmentsJson),
             )
 
             else -> SyncableMessagePayloadEntity.Unsupported(
@@ -384,6 +391,26 @@ internal object RemoteBackupChangeLogMapper {
             return result
         }
     }
+
+    private fun messageMentionsFromJsonString(messageMentions: String?): List<MessageEntity.Mention> = messageMentions?.let {
+        try {
+            serializer.decodeFromString(it)
+        } catch (e: SerializationException) {
+            if (isDebug) throw e
+            kaliumLogger.e("messageMentionsFromJsonString: Invalid JSON received", e)
+            emptyList()
+        }
+    } ?: emptyList()
+
+    private fun messageAttachmentsFromJsonString(messageAttachments: String?): List<MessageAttachmentEntity> = messageAttachments?.let {
+        try {
+            serializer.decodeFromString(it)
+        } catch (e: SerializationException) {
+            if (isDebug) throw e
+            kaliumLogger.e("messageAttachmentsFromJsonString: Invalid JSON received", e)
+            emptyList()
+        }
+    } ?: emptyList()
 
     private fun parseReactionsSyncEntity(
         conversationId: QualifiedIDEntity,
