@@ -122,7 +122,7 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         val lastReadEvent = assertIs<NomadMessageEvent.LastReadEvent>(request.events.last())
         assertEquals(1, lastReadEvent.lastRead.size)
         assertEquals(CONVERSATION_ID.toString(), lastReadEvent.lastRead.first().conversationId)
-        assertEquals("2026-02-25T10:15:00Z", lastReadEvent.lastRead.first().lastRead)
+        assertEquals("2026-02-25T10:15:00Z", lastReadEvent.lastRead.first().lastReadTimestamp)
     }
 
     @Test
@@ -366,14 +366,6 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         override suspend fun logConversationClear(conversationId: QualifiedIDEntity, timestampMs: Long) = Unit
 
         override suspend fun getPendingChanges(): List<ChangeLogEntry> = batch.events.map { it.change }
-
-        override suspend fun getLastPendingChangesWithPayload(limit: Long): List<ChangeLogSyncEvent> = batch.events
-
-        override fun observeLastPendingChangesWithPayload(limit: Long): Flow<List<ChangeLogSyncEvent>> = flowOf(batch.events)
-
-        override suspend fun getConversationLastReadForLastPendingChanges(limit: Long): List<ConversationLastReadSyncEntity> =
-            batch.conversationLastReads
-
         override suspend fun getLastPendingChangesBatch(limit: Long): ChangeLogSyncBatch = batch
 
         override fun observeLastPendingChangesBatch(limit: Long): Flow<ChangeLogSyncBatch> = flowOf(batch)
