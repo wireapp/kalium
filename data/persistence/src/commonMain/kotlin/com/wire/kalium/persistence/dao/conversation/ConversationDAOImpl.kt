@@ -274,6 +274,15 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updateConversationModifiedDateToMaxOfSources(
+        targetId: QualifiedIDEntity,
+        sourceIds: Collection<QualifiedIDEntity>
+    ) {
+        withContext(writeDispatcher.value) {
+            conversationQueries.updateConversationModifiedDateToMaxOfSources(sourceIds, targetId)
+        }
+    }
+
     override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant?) {
         withContext(writeDispatcher.value) {
             if (date != null) {

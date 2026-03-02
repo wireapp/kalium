@@ -26,7 +26,7 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import dev.mokkery.MockMode
@@ -189,7 +189,7 @@ class PersistMessageUseCaseTest {
         }
     }
 
-    private class RecordingPersistMessageHookNotifier : PersistMessageHookNotifier {
+    private class RecordingPersistMessageHookNotifier : PersistenceEventHookNotifier {
         val calls = mutableListOf<Pair<PersistedMessageData, UserId>>()
 
         override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {

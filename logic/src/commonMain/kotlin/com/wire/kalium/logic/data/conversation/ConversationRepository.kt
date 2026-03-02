@@ -202,6 +202,10 @@ internal interface ConversationRepository {
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: Instant? = null): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
+    suspend fun updateConversationModifiedDateToMaxOfSources(
+        targetId: ConversationId,
+        sourceIds: Collection<ConversationId>
+    ): Either<StorageFailure, Unit>
     suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
     suspend fun updateAccessInfo(
         conversationID: ConversationId,
@@ -613,6 +617,17 @@ internal class ConversationDataSource internal constructor(
         date: Instant
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest { conversationDAO.updateConversationModifiedDate(qualifiedID.toDao(), date) }
+
+    override suspend fun updateConversationModifiedDateToMaxOfSources(
+        targetId: ConversationId,
+        sourceIds: Collection<ConversationId>
+    ): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            conversationDAO.updateConversationModifiedDateToMaxOfSources(
+                targetId = targetId.toDao(),
+                sourceIds = sourceIds.map { it.toDao() }
+            )
+        }
 
     override suspend fun updateAccessInfo(
         conversationID: ConversationId,

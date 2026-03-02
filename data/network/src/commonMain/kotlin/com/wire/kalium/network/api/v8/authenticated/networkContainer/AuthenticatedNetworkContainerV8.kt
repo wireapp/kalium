@@ -37,6 +37,7 @@ import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
+import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
@@ -58,6 +59,7 @@ import com.wire.kalium.network.api.v8.authenticated.LogoutApiV8
 import com.wire.kalium.network.api.v8.authenticated.MLSMessageApiV8
 import com.wire.kalium.network.api.v8.authenticated.MLSPublicKeyApiV8
 import com.wire.kalium.network.api.v8.authenticated.MessageApiV8
+import com.wire.kalium.network.api.v0.authenticated.NomadDeviceSyncApiV0
 import com.wire.kalium.network.api.v8.authenticated.NotificationApiV8
 import com.wire.kalium.network.api.v8.authenticated.PreKeyApiV8
 import com.wire.kalium.network.api.v8.authenticated.PropertiesApiV8
@@ -115,6 +117,7 @@ internal class AuthenticatedNetworkContainerV8 internal constructor(
             networkClient,
             EnvelopeProtoMapperImpl()
         )
+    override val nomadDeviceSyncApi: NomadDeviceSyncApi get() = NomadDeviceSyncApiV0(networkClient)
 
     override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV8(networkClient)
 
