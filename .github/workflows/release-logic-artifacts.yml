@@ -1,0 +1,157 @@
+name: Release Logic Artifacts
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  detekt:
+    if: github.repository == 'wireapp/kalium'
+    uses: ./.github/workflows/codestyle.yml
+
+  logic-jvm-android-quality:
+    needs: [detekt]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+        with:
+          enable-kvm: true
+
+      - name: Run logic JVM and Android host tests
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :logic:jvmTest :logic:testAndroidHostTest
+
+  logic-ios-quality:
+    needs: [detekt]
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.1.0"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Run logic iOS simulator tests
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :logic:iosSimulatorArm64Test
+
+  build-logic-android-kmp:
+    needs: [logic-jvm-android-quality, logic-ios-quality]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Build logic Android/KMP artifacts
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar
+
+      - name: Collect logic Android/KMP artifacts
+        run: |
+          mkdir -p release/android-kmp
+          find logic/build/outputs/aar -maxdepth 1 -name "*.aar" -exec cp {} release/android-kmp/ \;
+          find logic/build/libs -maxdepth 1 -name "*.jar" -exec cp {} release/android-kmp/ \;
+          test -n "$(ls -A release/android-kmp)"
+
+      - name: Upload logic Android/KMP artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: logic-android-kmp
+          path: release/android-kmp/*
+          retention-days: 3
+
+  build-logic-ios:
+    needs: [logic-jvm-android-quality, logic-ios-quality]
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.1.0"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Build logic iOS XCFramework
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :logic:assembleKaliumLogicReleaseXCFramework
+
+      - name: Zip logic iOS XCFramework
+        run: |
+          XCFRAMEWORK_DIR="logic/build/XCFrameworks/release/KaliumLogic.xcframework"
+          if [ ! -d "$XCFRAMEWORK_DIR" ]; then
+            echo "::error::KaliumLogic.xcframework not found at $XCFRAMEWORK_DIR"
+            exit 1
+          fi
+          mkdir -p release/ios
+          (
+            cd logic/build/XCFrameworks/release
+            zip -rXq KaliumLogic.xcframework.zip KaliumLogic.xcframework
+          )
+          mv logic/build/XCFrameworks/release/KaliumLogic.xcframework.zip release/ios/
+
+      - name: Upload logic iOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: logic-ios
+          path: release/ios/*
+          retention-days: 3
+
+  publish-gh-release:
+    needs: [build-logic-android-kmp, build-logic-ios]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Android/KMP artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: logic-android-kmp
+          path: release-artifacts/android-kmp
+
+      - name: Download iOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: logic-ios
+          path: release-artifacts/ios
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            release-artifacts/android-kmp/*
+            release-artifacts/ios/*
+          fail_on_unmatched_files: true
