@@ -417,6 +417,7 @@ com.wire.kalium.network.api.base.authenticated.featureConfigs
 com.wire.kalium.network.api.base.authenticated.keypackage
 com.wire.kalium.network.api.base.authenticated.logout
 com.wire.kalium.network.api.base.authenticated.message
+com.wire.kalium.network.api.base.authenticated.nomaddevice
 com.wire.kalium.network.api.base.authenticated.notification
 com.wire.kalium.network.api.base.authenticated.prekey
 com.wire.kalium.network.api.base.authenticated.properties
