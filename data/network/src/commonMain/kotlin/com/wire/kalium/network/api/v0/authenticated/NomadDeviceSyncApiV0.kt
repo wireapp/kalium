@@ -27,6 +27,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import okio.Source
 
 internal open class NomadDeviceSyncApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
@@ -39,6 +40,20 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
             httpClient.post(PATH_MESSAGE_EVENTS) {
                 setBody(request)
                 contentType(ContentType.Application.Json)
+            }
+        }
+
+    override suspend fun uploadCryptoState(
+        backupSource: () -> Source,
+        backupSize: Long
+    ): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.post(NomadDeviceSyncApi.PATH_CRYPTO_STATE) {
+                setBody(body)
+                contentType(ContentType.Application.OctetStream)
+                // todo, add here an instance of OutgoingContent.WriteChannel that will read from the backupSource
+                //  and write to the request body channel, this way we can avoid loading the whole backup in memory
+                // similar as in asset upload, but without the multipart, since we only need to send the binary data
             }
         }
 

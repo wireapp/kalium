@@ -20,7 +20,17 @@ package com.wire.kalium.network.api.base.authenticated.nomaddevice
 
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.utils.NetworkResponse
+import okio.Source
 
 interface NomadDeviceSyncApi {
     suspend fun postMessageEvents(request: NomadMessageEventsRequest): NetworkResponse<Unit>
+
+    suspend fun uploadCryptoState(
+        backupSource: () -> Source,
+        backupSize: Long
+    ): NetworkResponse<Unit>
+
+    companion object {
+        const val PATH_CRYPTO_STATE = "crypto/state"
+    }
 }
