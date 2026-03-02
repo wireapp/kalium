@@ -56,6 +56,7 @@ import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeleteSessionUseCase
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistUseCase
+import com.wire.kalium.logic.feature.session.GetAllSessionsUseCase
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.ObserveSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
@@ -146,6 +147,7 @@ public class GlobalKaliumScope internal constructor(
         get() =
             AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO)
     public val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+    public val getAllSessions: GetAllSessionsUseCase get() = GetAllSessionsUseCase(sessionRepository)
     public val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
     public val observeValidAccounts: ObserveValidAccountsUseCase by lazy {
         ObserveValidAccountsUseCaseImpl(
