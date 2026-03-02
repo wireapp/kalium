@@ -405,6 +405,80 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenOlderTargetAndNewerSources_whenUpdatingModifiedDateToMaxOfSources_thenTargetDateIsUpdatedToSourceMax() =
+        runTest(dispatcher) {
+            val targetId = QualifiedIDEntity("target", "wire.com")
+            val sourceId1 = QualifiedIDEntity("source1", "wire.com")
+            val sourceId2 = QualifiedIDEntity("source2", "wire.com")
+
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = targetId,
+                    lastModified = Instant.fromEpochMilliseconds(10)
+                )
+            )
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = sourceId1,
+                    lastModified = Instant.fromEpochMilliseconds(20)
+                )
+            )
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = sourceId2,
+                    lastModified = Instant.fromEpochMilliseconds(30)
+                )
+            )
+
+            conversationDAO.updateConversationModifiedDateToMaxOfSources(
+                targetId = targetId,
+                sourceIds = listOf(sourceId1, sourceId2)
+            )
+
+            val updatedTarget = conversationDAO.getConversationById(targetId)
+
+            assertNotNull(updatedTarget)
+            assertEquals(Instant.fromEpochMilliseconds(30), updatedTarget.lastModifiedDate)
+        }
+
+    @Test
+    fun givenNewerTargetAndOlderSources_whenUpdatingModifiedDateToMaxOfSources_thenTargetDateIsNotDecreased() =
+        runTest(dispatcher) {
+            val targetId = QualifiedIDEntity("target", "wire.com")
+            val sourceId1 = QualifiedIDEntity("source1", "wire.com")
+            val sourceId2 = QualifiedIDEntity("source2", "wire.com")
+
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = targetId,
+                    lastModified = Instant.fromEpochMilliseconds(30)
+                )
+            )
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = sourceId1,
+                    lastModified = Instant.fromEpochMilliseconds(1)
+                )
+            )
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = sourceId2,
+                    lastModified = Instant.fromEpochMilliseconds(2)
+                )
+            )
+
+            conversationDAO.updateConversationModifiedDateToMaxOfSources(
+                targetId = targetId,
+                sourceIds = listOf(sourceId1, sourceId2)
+            )
+
+            val updatedTarget = conversationDAO.getConversationById(targetId)
+
+            assertNotNull(updatedTarget)
+            assertEquals(Instant.fromEpochMilliseconds(30), updatedTarget.lastModifiedDate)
+        }
+
+    @Test
     fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest(dispatcher) {
         // given
         val expectedLastReadDate = Instant.fromEpochMilliseconds(1648654560000)

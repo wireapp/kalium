@@ -149,7 +149,7 @@ inline fun <T : Any> wrapProteusRequest(proteusRequest: () -> T): Either<Proteus
         throw e
     } catch (e: Exception) {
         kaliumLogger.e(
-            """{ "ProteusException": "${e.message},"
+            """{ "Unknown ProteusException": "${e.message},"
                 |"cause": ${e.cause} },
                 |"stackTrace": ${e.stackTraceToString()} """.trimMargin()
         )

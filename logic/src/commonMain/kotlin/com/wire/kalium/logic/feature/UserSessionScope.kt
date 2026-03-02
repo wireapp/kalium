@@ -536,7 +536,7 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
-import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.DelicateKaliumApi
@@ -570,7 +570,7 @@ public class UserSessionScope internal constructor(
     private val rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
-    private val persistMessageHookNotifier: PersistMessageHookNotifier,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
     userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
@@ -1069,7 +1069,7 @@ public class UserSessionScope internal constructor(
             messageRepository = messageRepository,
             selfUserId = userId,
             notificationEventsManager = NotificationEventsManagerImpl,
-            persistMessageHookNotifier = persistMessageHookNotifier
+            persistMessageHookNotifier = persistenceEventHookNotifier
         )
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
@@ -1611,7 +1611,9 @@ public class UserSessionScope internal constructor(
     private val receiptRepository = ReceiptRepositoryImpl(userStorage.database.receiptDAO)
     private val persistReaction: PersistReactionUseCase
         get() = PersistReactionUseCaseImpl(
-            reactionRepository
+            reactionRepository = reactionRepository,
+            selfUserId = userId,
+            persistenceEventHookNotifier = persistenceEventHookNotifier,
         )
 
     private val mlsUnpacker: MLSMessageUnpacker
@@ -1636,7 +1638,8 @@ public class UserSessionScope internal constructor(
         get() = ReceiptMessageHandlerImpl(
             selfUserId = this.userId,
             receiptRepository = receiptRepository,
-            messageRepository = messageRepository
+            messageRepository = messageRepository,
+            persistenceEventHookNotifier = persistenceEventHookNotifier,
         )
 
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
@@ -1689,10 +1692,17 @@ public class UserSessionScope internal constructor(
                 userId,
                 isMessageSentInSelfConversation,
                 conversations.clearConversationAssetsLocally,
-                deleteConversationUseCase
+                deleteConversationUseCase,
+                persistenceEventHookNotifier,
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-            DeleteMessageHandlerImpl(messageRepository, assetRepository, NotificationEventsManagerImpl, userId),
+            DeleteMessageHandlerImpl(
+                messageRepository,
+                assetRepository,
+                NotificationEventsManagerImpl,
+                userId,
+                persistenceEventHookNotifier
+            ),
             messageEncoder,
             receiptMessageHandler,
             buttonActionConfirmationHandler,
@@ -1752,7 +1762,9 @@ public class UserSessionScope internal constructor(
             userRepository,
             conversationRepository,
             NotificationEventsManagerImpl,
-            deleteConversationUseCase
+            deleteConversationUseCase,
+            persistenceEventHookNotifier,
+            userId,
         )
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
@@ -2313,7 +2325,7 @@ public class UserSessionScope internal constructor(
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
-            persistMessageHookNotifier,
+            persistenceEventHookNotifier,
             this,
             userScopedLogger
         )
@@ -2597,7 +2609,9 @@ public class UserSessionScope internal constructor(
     private fun createPushTokenUpdater() = PushTokenUpdater(
         clientRepository,
         notificationTokenRepository,
-        pushTokenRepository
+        pushTokenRepository,
+        globalScope.sessionRepository,
+        userId
     )
 
     private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase by lazy {
