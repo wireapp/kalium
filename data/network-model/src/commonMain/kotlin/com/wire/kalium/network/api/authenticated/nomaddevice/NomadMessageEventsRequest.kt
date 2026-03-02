@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.authenticated.nomaddevice
 
+import com.wire.kalium.network.api.model.QualifiedID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -52,9 +53,9 @@ sealed interface NomadMessageEvent {
         @SerialName("conversation")
         val conversation: Conversation,
         @SerialName("reaction")
-        val reaction: JsonElement? = null,
+        val reaction: ReactionsPayload? = null,
         @SerialName("read_receipt")
-        val readReceipt: JsonElement? = null
+        val readReceipt: ReadReceiptsPayload? = null
     ) : NomadMessageEvent {
         init {
             require((reaction == null) xor (readReceipt == null)) {
@@ -85,14 +86,13 @@ sealed interface NomadMessageEvent {
     @SerialName("last_read")
     data class LastReadEvent(
         @SerialName("last_read")
-         val lastRead: List<LastRead>
+        val lastRead: List<LastRead>
     ) : NomadMessageEvent {
         init {
             require(lastRead.isNotEmpty()) { "last_read must not be empty." }
         }
     }
 }
-
 
 @Serializable
 data class LastRead(
@@ -108,4 +108,32 @@ data class Conversation(
     val id: String,
     @SerialName("domain")
     val domain: String
+)
+
+@Serializable
+data class ReactionsPayload(
+    @SerialName("reactions_by_user")
+    val reactionsByUser: List<ReactionByUser>
+)
+
+@Serializable
+data class ReactionByUser(
+    @SerialName("user_id")
+    val userId: QualifiedID,
+    @SerialName("emojis")
+    val emojis: List<String>
+)
+
+@Serializable
+data class ReadReceiptsPayload(
+    @SerialName("read_receipts")
+    val readReceipts: List<ReadReceiptEntry>
+)
+
+@Serializable
+data class ReadReceiptEntry(
+    @SerialName("user_id")
+    val userId: QualifiedID,
+    @SerialName("date")
+    val date: String
 )

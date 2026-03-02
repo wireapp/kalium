@@ -33,8 +33,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
 
-@IgnoreIOS
 internal class NomadDeviceSyncApiV0Test : ApiTest() {
 
     @Test
@@ -123,7 +123,7 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
               "events": [
                 {
                   "type": "last_read",
-                  "lastRead": [
+                  "last_read": [
                     {
                       "conversation_id": "conv_1",
                       "last_read": 1772014500000

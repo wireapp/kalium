@@ -22,8 +22,6 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
-import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
@@ -37,6 +35,7 @@ import com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent
 import com.wire.kalium.persistence.dao.backup.ConversationLastReadSyncEntity
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
 import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -73,7 +72,13 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
                             lastEditDate = Instant.fromEpochMilliseconds(1200L),
                             text = "hello from db",
                             quotedMessageId = "quoted-message",
-                            mentionsJson = """[{"start":0,"length":5,"userId":{"value":"mention-user","domain":"wire.test"}}]"""
+                            mentions = listOf(
+                                MessageEntity.Mention(
+                                    start = 0,
+                                    length = 5,
+                                    userId = QualifiedIDEntity("mention-user", "wire.test")
+                                )
+                            )
                         )
                     )
                 ),
@@ -117,7 +122,7 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         val lastReadEvent = assertIs<NomadMessageEvent.LastReadEvent>(request.events.last())
         assertEquals(1, lastReadEvent.lastRead.size)
         assertEquals(CONVERSATION_ID.toString(), lastReadEvent.lastRead.first().conversationId)
-        assertEquals("2026-02-25T10:15:00Z", lastReadEvent.lastRead.first().lastRead)
+        assertEquals(1772014500, lastReadEvent.lastRead.first().lastReadTimestamp)
     }
 
     @Test
@@ -336,12 +341,6 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
             requests += request
             return response
         }
-
-        override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> =
-            error("Not required for this test")
-
-        override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> =
-            error("Not required for this test")
     }
 
     private class FakeRemoteBackupChangeLogDAO(
@@ -367,14 +366,6 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         override suspend fun logConversationClear(conversationId: QualifiedIDEntity, timestampMs: Long) = Unit
 
         override suspend fun getPendingChanges(): List<ChangeLogEntry> = batch.events.map { it.change }
-
-        override suspend fun getLastPendingChangesWithPayload(limit: Long): List<ChangeLogSyncEvent> = batch.events
-
-        override fun observeLastPendingChangesWithPayload(limit: Long): Flow<List<ChangeLogSyncEvent>> = flowOf(batch.events)
-
-        override suspend fun getConversationLastReadForLastPendingChanges(limit: Long): List<ConversationLastReadSyncEntity> =
-            batch.conversationLastReads
-
         override suspend fun getLastPendingChangesBatch(limit: Long): ChangeLogSyncBatch = batch
 
         override fun observeLastPendingChangesBatch(limit: Long): Flow<ChangeLogSyncBatch> = flowOf(batch)
