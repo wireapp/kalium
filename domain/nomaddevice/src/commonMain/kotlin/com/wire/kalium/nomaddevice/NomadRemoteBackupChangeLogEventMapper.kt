@@ -43,7 +43,7 @@ internal class NomadRemoteBackupChangeLogEventMapper {
         val lastReads = batch.conversationLastReads.map {
             LastRead(
                 conversationId = it.conversationId.toString(),
-                lastReadTimestamp = it.lastReadTimestampMs
+                lastReadTimestamp = it.lastReadDate.toEpochMilliseconds()
             )
         }
         if (lastReads.isNotEmpty()) {
@@ -152,7 +152,7 @@ internal class NomadRemoteBackupChangeLogEventMapper {
         )
     }
 
-    private fun SyncableMessagePayloadEntity.Asset.toNomadDeviceAssetMetaData(): NomadDeviceAsset.MetaData? = when {
+    private fun SyncableMessagePayloadEntity.Asset.toNomadDeviceAssetMetaData(): NomadDeviceAsset.MetaData<*>? = when {
         durationMs != null && (width != null || height != null) ->
             NomadDeviceAsset.MetaData.Video(
                 NomadDeviceVideoMetaData(
