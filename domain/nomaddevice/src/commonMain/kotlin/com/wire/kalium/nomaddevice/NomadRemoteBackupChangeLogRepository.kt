@@ -21,11 +21,21 @@ package com.wire.kalium.nomaddevice
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.messaging.hooks.ConversationClearEventData
+import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
+import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistedMessageData
+import com.wire.kalium.messaging.hooks.ReactionEventData
+import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 
 /**
  * Repository for writing persisted message hook events to remote backup changelog.
  */
 internal interface NomadRemoteBackupChangeLogRepository {
     suspend fun logSyncableMessageUpsert(message: PersistedMessageData, selfUserId: UserId): Either<StorageFailure, Unit>
+    suspend fun logSyncableMessageDelete(data: MessageDeleteEventData, selfUserId: UserId): Either<StorageFailure, Unit>
+    suspend fun logSyncableReaction(data: ReactionEventData, selfUserId: UserId): Either<StorageFailure, Unit>
+    suspend fun logSyncableReadReceipt(data: ReadReceiptEventData, selfUserId: UserId): Either<StorageFailure, Unit>
+    suspend fun logSyncableConversationDelete(data: ConversationDeleteEventData, selfUserId: UserId): Either<StorageFailure, Unit>
+    suspend fun logSyncableConversationClear(data: ConversationClearEventData, selfUserId: UserId): Either<StorageFailure, Unit>
 }
