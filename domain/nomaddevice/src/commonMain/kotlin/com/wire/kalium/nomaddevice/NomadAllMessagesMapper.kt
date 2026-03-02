@@ -22,16 +22,20 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationWithMessages
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadStoredMessage
+import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
+import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
+import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAsset
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAttachment
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessageContent
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
+import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.Base64
 
@@ -50,9 +54,10 @@ internal class NomadAllMessagesMapper {
         selfUserId: UserId,
     ): NomadMappedMessages {
         var skipped = 0
+        val selfUserQualifiedId = selfUserId.toDaoQualifiedId()
         val mappedMessages = response.conversations.flatMap { conversationWithMessages ->
             conversationWithMessages.messages.mapNotNull { storedMessage ->
-                mapMessageOrNull(conversationWithMessages, storedMessage, selfUserId).also { mapped ->
+                mapMessageOrNull(conversationWithMessages, storedMessage, selfUserQualifiedId).also { mapped ->
                     if (mapped == null) skipped += 1
                 }
             }
@@ -68,7 +73,7 @@ internal class NomadAllMessagesMapper {
     private fun mapMessageOrNull(
         conversationWithMessages: NomadConversationWithMessages,
         storedMessage: NomadStoredMessage,
-        selfUserId: UserId,
+        selfUserQualifiedId: QualifiedIDEntity,
     ): MessageEntity.Regular? {
         val payloadBytes = runCatching { Base64.Default.decode(storedMessage.payload) }.getOrElse {
             logSkip(storedMessage, conversationWithMessages, "invalid base64 payload")
@@ -92,7 +97,7 @@ internal class NomadAllMessagesMapper {
             status = MessageEntity.Status.SENT,
             visibility = MessageEntity.Visibility.VISIBLE,
             content = content,
-            isSelfMessage = senderUserId == selfUserId.toDaoQualifiedId(),
+            isSelfMessage = senderUserId == selfUserQualifiedId,
             readCount = 0L,
             expireAfterMs = null,
             selfDeletionEndDate = null,
@@ -102,9 +107,9 @@ internal class NomadAllMessagesMapper {
             editStatus = payload.lastEditTime?.let {
                 MessageEntity.EditStatus.Edited(Instant.fromEpochMilliseconds(it))
             } ?: MessageEntity.EditStatus.NotEdited,
-            reactions = com.wire.kalium.persistence.dao.reaction.ReactionsEntity.EMPTY,
+            reactions = ReactionsEntity.EMPTY,
             expectsReadConfirmation = false,
-            deliveryStatus = com.wire.kalium.persistence.dao.message.DeliveryStatusEntity.CompleteDelivery
+            deliveryStatus = DeliveryStatusEntity.CompleteDelivery
         )
     }
 
@@ -236,10 +241,10 @@ private fun Long.toInstantGuessingUnit(): Instant =
         Instant.fromEpochSeconds(this)
     }
 
-private fun com.wire.kalium.network.api.authenticated.nomaddevice.Conversation.toDaoConversationId(): QualifiedIDEntity =
+private fun Conversation.toDaoConversationId(): QualifiedIDEntity =
     QualifiedIDEntity(value = id, domain = domain)
 
-private fun com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId.toDaoQualifiedId(): QualifiedIDEntity =
+private fun NomadDeviceQualifiedId.toDaoQualifiedId(): QualifiedIDEntity =
     QualifiedIDEntity(value = value, domain = domain)
 
 private fun UserId.toDaoQualifiedId(): QualifiedIDEntity = QualifiedIDEntity(value = value, domain = domain)

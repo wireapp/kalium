@@ -39,7 +39,6 @@ internal interface NomadMessagesDAO {
     ): NomadMessageStoreResult
 }
 
-@Suppress("LongParameterList")
 internal class NomadMessagesDAOImpl internal constructor(
     private val upsertUsers: suspend (List<UserEntity>) -> Unit,
     private val upsertConversations: suspend (List<ConversationEntity>) -> Unit,
@@ -84,6 +83,8 @@ internal class NomadMessagesDAOImpl internal constructor(
         }
 
         return NomadMessageStoreResult(
+            // Approximate count: insertOrIgnoreMessages silently skips duplicates,
+            // so the actual number of newly inserted rows may be lower.
             storedMessages = messages.size,
             batches = batches
         )
@@ -139,7 +140,7 @@ internal class NomadMessagesDAOImpl internal constructor(
                     receiptMode = ConversationEntity.ReceiptMode.DISABLED,
                     messageTimer = null,
                     userMessageTimer = null,
-                    hasIncompleteMetadata = false,
+                    hasIncompleteMetadata = true,
                     archived = false,
                     archivedInstant = null,
                     mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,

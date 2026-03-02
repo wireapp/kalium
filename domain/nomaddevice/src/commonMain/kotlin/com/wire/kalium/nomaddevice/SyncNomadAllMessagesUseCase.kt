@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.nomaddevice.dao.NomadMessageStoreResult
 import com.wire.kalium.nomaddevice.dao.NomadMessagesDAO
@@ -78,7 +79,7 @@ public class SyncNomadAllMessagesUseCase internal constructor(
 
     private suspend fun storeFetchedMessages(
         selfUserId: UserId,
-        response: com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse,
+        response: NomadAllMessagesResponse,
     ): Either<CoreFailure, NomadAllMessagesSyncResult> {
         val mapped = mapper.map(response, selfUserId)
         val dao = nomadMessagesDAOProvider(selfUserId)
