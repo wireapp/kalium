@@ -19,13 +19,13 @@ package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.model.Owner
+import com.wire.kalium.cells.util.toQualifiedIdOrNull
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
 /**
  * Use case to get the list of owners for a given conversation.
@@ -76,14 +76,6 @@ internal class GetOwnersUseCaseImpl(
             is Either.Right -> GetOwnersUseCaseResult.Success(owners.value)
             is Either.Left -> GetOwnersUseCaseResult.Failure(owners.value)
         }
-    }
-
-    private fun String?.toQualifiedIdOrNull(): QualifiedIDEntity? {
-        val sanitized = this?.trim().orEmpty()
-        if (sanitized.isEmpty()) return null
-        val value = sanitized.substringBefore('@')
-        val domain = sanitized.substringAfter('@', missingDelimiterValue = "")
-        return QualifiedIDEntity(value = value, domain = domain)
     }
 }
 

@@ -18,7 +18,7 @@
 package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellConversationRepository
-import com.wire.kalium.cells.domain.ConversationDetail
+import com.wire.kalium.cells.domain.model.Conversation
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
@@ -45,8 +45,8 @@ class GetConversationsUseCaseTest {
         val (_, useCase) = Arrangement()
             .withConversationDetails(
                 listOf(
-                    ConversationDetail(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null),
-                    ConversationDetail(CONVERSATION_ID_2, CONVERSATION_NAME_2, isChannel = true, channelAccess = ConversationDetails.Group.Channel.ChannelAccess.PUBLIC)
+                    Conversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null),
+                    Conversation(CONVERSATION_ID_2, CONVERSATION_NAME_2, isChannel = true, channelAccess = ConversationDetails.Group.Channel.ChannelAccess.PUBLIC)
                 )
             )
             .arrange()
@@ -70,7 +70,7 @@ class GetConversationsUseCaseTest {
         val (_, useCase) = Arrangement()
             .withConversationDetails(
                 listOf(
-                    ConversationDetail(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null)
+                    Conversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null)
                 )
             )
             .arrange()
@@ -111,7 +111,7 @@ class GetConversationsUseCaseTest {
         val (_, useCase) = Arrangement()
             .withConversationDetails(
                 listOf(
-                    ConversationDetail(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = true, channelAccess = ConversationDetails.Group.Channel.ChannelAccess.PRIVATE)
+                    Conversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = true, channelAccess = ConversationDetails.Group.Channel.ChannelAccess.PRIVATE)
                 )
             )
             .arrange()
@@ -129,7 +129,7 @@ class GetConversationsUseCaseTest {
         val (_, useCase) = Arrangement()
             .withConversationDetails(
                 listOf(
-                    ConversationDetail(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null)
+                    Conversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null)
                 )
             )
             .arrange()
@@ -145,9 +145,9 @@ class GetConversationsUseCaseTest {
     private class Arrangement {
         private val conversationRepository = mock(CellConversationRepository::class)
 
-        private var conversationDetailsResult: Either<StorageFailure, List<ConversationDetail>> = listOf<ConversationDetail>().right()
+        private var conversationDetailsResult: Either<StorageFailure, List<Conversation>> = listOf<Conversation>().right()
 
-        fun withConversationDetails(details: List<ConversationDetail>) = apply {
+        fun withConversationDetails(details: List<Conversation>) = apply {
             conversationDetailsResult = details.right()
         }
 
