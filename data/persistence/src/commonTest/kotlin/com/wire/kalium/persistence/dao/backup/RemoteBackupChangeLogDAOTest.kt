@@ -20,17 +20,36 @@ package com.wire.kalium.persistence.dao.backup
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.reaction.ReactionDAO
+import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
+import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
+import com.wire.kalium.persistence.utils.stubs.newConversationEntity
+import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
 
     private lateinit var dao: RemoteBackupChangeLogDAO
+    private lateinit var userDAO: UserDAO
+    private lateinit var conversationDAO: ConversationDAO
+    private lateinit var messageDAO: MessageDAO
+    private lateinit var reactionDAO: ReactionDAO
+    private lateinit var receiptDAO: ReceiptDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -38,6 +57,11 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
         dao = db.remoteBackupChangeLogDAO
+        userDAO = db.userDAO
+        conversationDAO = db.conversationDAO
+        messageDAO = db.messageDAO
+        receiptDAO = db.receiptDAO
+        reactionDAO = db.reactionDAO
     }
 
     @Test
