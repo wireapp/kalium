@@ -18,35 +18,19 @@
 
 package com.wire.kalium.nomaddevice
 
-import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.network.api.authenticated.nomaddevice.LastRead
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
-import com.wire.kalium.network.api.authenticated.nomaddevice.ReadReceiptEntry
-import com.wire.kalium.network.api.authenticated.nomaddevice.ReadReceiptsPayload
-import com.wire.kalium.network.api.authenticated.nomaddevice.ReactionByUser
-import com.wire.kalium.network.api.authenticated.nomaddevice.ReactionsPayload
-import com.wire.kalium.network.api.model.QualifiedID
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch
 import com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent
 import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
-import com.wire.kalium.persistence.dao.reaction.MessageReactionsSyncEntity
-import com.wire.kalium.persistence.dao.reaction.UserReactionsSyncEntity
-import com.wire.kalium.persistence.dao.receipt.MessageReadReceiptsSyncEntity
-import com.wire.kalium.persistence.dao.receipt.UserReadReceiptSyncEntity
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAsset
-import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAttachment
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAudioMetaData
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceGenericMetaData
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceImageMetaData
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceLocation
-import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMention
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessageContent
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMultipart
-import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceText
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceVideoMetaData
 import pbandk.ByteArr
@@ -126,9 +110,16 @@ internal class NomadRemoteBackupChangeLogEventMapper {
         )
     }
 
-    @Suppress("LongMethod")
     private fun SyncableMessagePayloadEntity.toNomadDeviceContentOrNull(): NomadDeviceMessageContent? = when (this) {
-        is SyncableMessagePayloadEntity.Text -> NomadDeviceMessageContent(
+        is SyncableMessagePayloadEntity.Text -> toNomadDeviceTextContent()
+        is SyncableMessagePayloadEntity.Asset -> toNomadDeviceAssetContentOrNull()
+        is SyncableMessagePayloadEntity.Location -> toNomadDeviceLocationContentOrNull()
+        is SyncableMessagePayloadEntity.Multipart -> toNomadDeviceMultipartContent()
+        is SyncableMessagePayloadEntity.Unsupported -> null
+    }
+
+    private fun SyncableMessagePayloadEntity.Text.toNomadDeviceTextContent(): NomadDeviceMessageContent =
+        NomadDeviceMessageContent(
             content = NomadDeviceMessageContent.Content.Text(
                 NomadDeviceText(
                     text = text.orEmpty(),
@@ -138,78 +129,80 @@ internal class NomadRemoteBackupChangeLogEventMapper {
             )
         )
 
-        is SyncableMessagePayloadEntity.Asset -> {
-            val mime = mimeType ?: return null
-            val sizeValue = size ?: return null
-            val otrKeyValue = otrKey ?: return null
-            val sha256Value = sha256 ?: return null
-            val remoteAssetId = assetId ?: return null
-            NomadDeviceMessageContent(
-                content = NomadDeviceMessageContent.Content.Asset(
-                    NomadDeviceAsset(
-                        mimeType = mime,
-                        size = sizeValue,
-                        name = name,
-                        otrKey = ByteArr(otrKeyValue),
-                        sha256 = ByteArr(sha256Value),
-                        assetId = remoteAssetId,
-                        assetToken = assetToken,
-                        assetDomain = assetDomain,
-                        encryption = encryptionAlgorithm,
-                        metaData = when {
-                            durationMs != null && (width != null || height != null) ->
-                                NomadDeviceAsset.MetaData.Video(
-                                    NomadDeviceVideoMetaData(
-                                        width = width,
-                                        height = height,
-                                        durationInMillis = durationMs
-                                    )
-                                )
+    private fun SyncableMessagePayloadEntity.Asset.toNomadDeviceAssetContentOrNull(): NomadDeviceMessageContent? {
 
-                            durationMs != null ->
-                                NomadDeviceAsset.MetaData.Audio(
-                                    NomadDeviceAudioMetaData(
-                                        durationInMillis = durationMs,
-                                        normalization = normalizedLoudness?.let { ByteArr(it) }
-                                    )
-                                )
+        @Suppress("ComplexCondition")
+        if (mimeType == null || size == null || otrKey == null || sha256 == null || assetId == null) return null
 
-                            width != null || height != null ->
-                                NomadDeviceAsset.MetaData.Image(
-                                    NomadDeviceImageMetaData(
-                                        width = width ?: 0,
-                                        height = height ?: 0
-                                    )
-                                )
-
-                            name != null ->
-                                NomadDeviceAsset.MetaData.Generic(
-                                    NomadDeviceGenericMetaData(name = name)
-                                )
-
-                            else -> null
-                        }
-                    )
+        return NomadDeviceMessageContent(
+            content = NomadDeviceMessageContent.Content.Asset(
+                NomadDeviceAsset(
+                    mimeType = mimeType!!,
+                    size = size!!,
+                    name = name,
+                    otrKey = ByteArr(otrKey!!),
+                    sha256 = ByteArr(sha256!!),
+                    assetId = assetId!!,
+                    assetToken = assetToken,
+                    assetDomain = assetDomain,
+                    encryption = encryptionAlgorithm,
+                    metaData = toNomadDeviceAssetMetaData()
                 )
             )
-        }
+        )
+    }
 
-        is SyncableMessagePayloadEntity.Location -> {
-            val longitudeValue = longitude ?: return null
-            val latitudeValue = latitude ?: return null
-            NomadDeviceMessageContent(
-                content = NomadDeviceMessageContent.Content.Location(
-                    NomadDeviceLocation(
-                        longitude = longitudeValue,
-                        latitude = latitudeValue,
-                        name = name,
-                        zoom = zoom
-                    )
+    private fun SyncableMessagePayloadEntity.Asset.toNomadDeviceAssetMetaData(): NomadDeviceAsset.MetaData? = when {
+        durationMs != null && (width != null || height != null) ->
+            NomadDeviceAsset.MetaData.Video(
+                NomadDeviceVideoMetaData(
+                    width = width,
+                    height = height,
+                    durationInMillis = durationMs
                 )
             )
-        }
 
-        is SyncableMessagePayloadEntity.Multipart -> NomadDeviceMessageContent(
+        durationMs != null ->
+            NomadDeviceAsset.MetaData.Audio(
+                NomadDeviceAudioMetaData(
+                    durationInMillis = durationMs,
+                    normalization = normalizedLoudness?.let { ByteArr(it) }
+                )
+            )
+
+        width != null || height != null ->
+            NomadDeviceAsset.MetaData.Image(
+                NomadDeviceImageMetaData(
+                    width = width ?: 0,
+                    height = height ?: 0
+                )
+            )
+
+        name != null ->
+            NomadDeviceAsset.MetaData.Generic(
+                NomadDeviceGenericMetaData(name = name)
+            )
+
+        else -> null
+    }
+
+    private fun SyncableMessagePayloadEntity.Location.toNomadDeviceLocationContentOrNull(): NomadDeviceMessageContent? {
+        if (longitude == null || latitude == null) return null
+
+        return NomadDeviceMessageContent(
+            content = NomadDeviceMessageContent.Content.Location(
+                NomadDeviceLocation(
+                    longitude = longitude!!,
+                    latitude = latitude!!,
+                    name = name,
+                    zoom = zoom
+                )
+            )
+        )
+    }
+
+    private fun SyncableMessagePayloadEntity.Multipart.toNomadDeviceMultipartContent(): NomadDeviceMessageContent =
+        NomadDeviceMessageContent(
             content = NomadDeviceMessageContent.Content.Multipart(
                 NomadDeviceMultipart(
                     text = if (text == null && quotedMessageId == null && mentions.isEmpty()) {
@@ -226,87 +219,4 @@ internal class NomadRemoteBackupChangeLogEventMapper {
             )
         )
 
-        is SyncableMessagePayloadEntity.Unsupported -> null
-    }
-
-    private fun MessageReactionsSyncEntity.toReactionPayload() = ReactionsPayload(
-        reactionsByUser = reactionsByUser.map { it.toReactionByUser() }
-    )
-
-    private fun UserReactionsSyncEntity.toReactionByUser() = ReactionByUser(
-        userId = userId.toApiQualifiedId(),
-        emojis = emojis.sorted()
-    )
-
-    private fun MessageReadReceiptsSyncEntity.toReadReceiptsPayload() = ReadReceiptsPayload(
-        readReceipts = receipts.map { it.toReadReceiptEntry() }
-    )
-
-    private fun UserReadReceiptSyncEntity.toReadReceiptEntry() = ReadReceiptEntry(
-        userId = userId.toApiQualifiedId(),
-        date = date.toString()
-    )
-
-    private fun QualifiedIDEntity.toApiConversation(): Conversation = Conversation(id = value, domain = domain)
-
-    private fun QualifiedIDEntity.toApiQualifiedId() = QualifiedID(value = value, domain = domain)
-
-    private fun QualifiedIDEntity.toNomadDeviceQualifiedId(): NomadDeviceQualifiedId =
-        NomadDeviceQualifiedId(value = value, domain = domain)
-
-    private fun List<MessageEntity.Mention>.toNomadDeviceMentions(): List<NomadDeviceMention> =
-        map { mention ->
-            NomadDeviceMention(
-                userId = mention.userId.toNomadDeviceQualifiedId(),
-                start = mention.start,
-                length = mention.length
-            )
-        }
-
-    @Suppress("CyclomaticComplexMethod")
-    private fun List<MessageAttachmentEntity>.toNomadDeviceAttachments(): List<NomadDeviceAttachment> =
-        filter { !it.cellAsset }.map { attachment ->
-            NomadDeviceAttachment(
-                content = NomadDeviceAttachment.Content.Asset(
-                    NomadDeviceAsset(
-                        mimeType = attachment.mimeType,
-                        size = attachment.assetSize ?: 0L,
-                        name = attachment.assetPath,
-                        otrKey = ByteArr(byteArrayOf()),
-                        sha256 = ByteArr(byteArrayOf()),
-                        assetId = attachment.assetId,
-                        metaData = when {
-                            attachment.assetDuration != null && (attachment.assetWidth != null || attachment.assetHeight != null) ->
-                                NomadDeviceAsset.MetaData.Video(
-                                    NomadDeviceVideoMetaData(
-                                        width = attachment.assetWidth,
-                                        height = attachment.assetHeight,
-                                        durationInMillis = attachment.assetDuration
-                                    )
-                                )
-
-                            attachment.assetDuration != null ->
-                                NomadDeviceAsset.MetaData.Audio(
-                                    NomadDeviceAudioMetaData(durationInMillis = attachment.assetDuration)
-                                )
-
-                            attachment.assetWidth != null || attachment.assetHeight != null ->
-                                NomadDeviceAsset.MetaData.Image(
-                                    NomadDeviceImageMetaData(
-                                        width = attachment.assetWidth ?: 0,
-                                        height = attachment.assetHeight ?: 0
-                                    )
-                                )
-
-                            attachment.assetPath != null ->
-                                NomadDeviceAsset.MetaData.Generic(
-                                    NomadDeviceGenericMetaData(name = attachment.assetPath)
-                                )
-
-                            else -> null
-                        }
-                    )
-                )
-            )
-        }
 }

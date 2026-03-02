@@ -23,8 +23,10 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
+import com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
 import com.wire.kalium.userstorage.di.UserStorageProvider
 
@@ -71,40 +73,65 @@ public class SyncNomadRemoteBackupChangeLogUseCase internal constructor(
         pageSize = pageSize
     )
 
-    public suspend operator fun invoke(selfUserId: UserId): Either<CoreFailure, NomadRemoteBackupChangeLogSyncResult> {
-        val batch = when (val result = repository.getLastPendingChangesBatch(selfUserId, pageSize)) {
-            is Either.Left -> return result.value.left()
-            is Either.Right -> result.value
+    public suspend operator fun invoke(selfUserId: UserId): Either<CoreFailure, NomadRemoteBackupChangeLogSyncResult> =
+        when (val batchResult = repository.getLastPendingChangesBatch(selfUserId, pageSize)) {
+            is Either.Left -> batchResult.value.left()
+            is Either.Right -> syncBatch(selfUserId, batchResult.value)
         }
 
+    private suspend fun syncBatch(
+        selfUserId: UserId,
+        batch: ChangeLogSyncBatch
+    ): Either<CoreFailure, NomadRemoteBackupChangeLogSyncResult> =
         if (batch.events.isEmpty()) {
-            return NomadRemoteBackupChangeLogSyncResult(syncedEntries = 0, postedEvents = 0).right()
+            NomadRemoteBackupChangeLogSyncResult(syncedEntries = 0, postedEvents = 0).right()
+        } else {
+            syncNonEmptyBatch(selfUserId, batch)
         }
 
+    private suspend fun syncNonEmptyBatch(
+        selfUserId: UserId,
+        batch: ChangeLogSyncBatch
+    ): Either<CoreFailure, NomadRemoteBackupChangeLogSyncResult> {
         val mappedEvents = eventMapper.mapBatchToApiEvents(batch)
+        return when (val postResult = postMappedEvents(selfUserId, batch, mappedEvents)) {
+            is Either.Left -> postResult.value.left()
+            is Either.Right -> deleteChanges(
+                selfUserId = selfUserId,
+                batch = batch,
+                postedEvents = mappedEvents.size
+            )
+        }
+    }
+
+    private suspend fun postMappedEvents(
+        selfUserId: UserId,
+        batch: ChangeLogSyncBatch,
+        mappedEvents: List<NomadMessageEvent>,
+    ): Either<CoreFailure, Unit> =
         if (mappedEvents.isNotEmpty()) {
-            val request = NomadMessageEventsRequest(events = mappedEvents)
-            when (val result = repository.postMessageEvents(selfUserId, request)) {
-                is Either.Left -> return result.value.left()
-                is Either.Right -> Unit
-            }
+            repository.postMessageEvents(selfUserId, NomadMessageEventsRequest(events = mappedEvents))
         } else {
             nomadLogger.w(
                 "Dropping ${batch.events.size} changelog entries that cannot be mapped to Nomad events " +
                         "for '${selfUserId.toLogString()}'."
             )
+            Unit.right()
         }
 
+    private suspend fun deleteChanges(
+        selfUserId: UserId,
+        batch: ChangeLogSyncBatch,
+        postedEvents: Int,
+    ): Either<CoreFailure, NomadRemoteBackupChangeLogSyncResult> {
         val changesToDelete = batch.events.map { it.change }
-        when (val result = repository.deleteChanges(selfUserId, changesToDelete)) {
-            is Either.Left -> return result.value.left()
-            is Either.Right -> Unit
+        return when (val deleteResult = repository.deleteChanges(selfUserId, changesToDelete)) {
+            is Either.Left -> deleteResult.value.left()
+            is Either.Right -> NomadRemoteBackupChangeLogSyncResult(
+                syncedEntries = changesToDelete.size,
+                postedEvents = postedEvents
+            ).right()
         }
-
-        return NomadRemoteBackupChangeLogSyncResult(
-            syncedEntries = changesToDelete.size,
-            postedEvents = mappedEvents.size
-        ).right()
     }
 
     private companion object {
