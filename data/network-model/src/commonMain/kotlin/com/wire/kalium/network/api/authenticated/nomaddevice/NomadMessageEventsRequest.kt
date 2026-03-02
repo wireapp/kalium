@@ -21,7 +21,6 @@ package com.wire.kalium.network.api.authenticated.nomaddevice
 import com.wire.kalium.network.api.model.QualifiedID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class NomadMessageEventsRequest(
