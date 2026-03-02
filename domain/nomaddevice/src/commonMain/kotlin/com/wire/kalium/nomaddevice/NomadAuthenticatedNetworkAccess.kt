@@ -18,6 +18,7 @@
 
 package com.wire.kalium.nomaddevice
 
+import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
@@ -32,4 +33,7 @@ public class NomadAuthenticatedNetworkAccess(
                     "Initialize the user session in CoreLogic and inject the same " +
                     "UserAuthenticatedNetworkProvider instance into Logic and Nomad."
             )
+
+    public fun nomadDeviceSyncApi(userId: UserId): NomadDeviceSyncApi =
+        authenticatedNetworkContainer(userId).nomadDeviceSyncApi
 }
