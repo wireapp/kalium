@@ -19,29 +19,56 @@
 package com.wire.kalium.nomaddevice
 
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
+import com.wire.kalium.messaging.hooks.ConversationClearEventData
+import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
+import com.wire.kalium.messaging.hooks.MessageDeleteEventData
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
+import com.wire.kalium.messaging.hooks.ReactionEventData
+import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import kotlinx.datetime.Clock
 
 /**
- * Nomad-side [PersistMessageHookNotifier] that writes syncable MESSAGE_UPSERT events to the remote backup changelog.
+ * Nomad-side [PersistenceEventHookNotifier] that writes syncable events to the remote backup changelog.
  */
 public class NomadRemoteBackupChangeLogHookNotifier internal constructor(
-    private val onPersistedMessage: suspend (PersistedMessageData, UserId) -> Unit
-) : PersistMessageHookNotifier {
+    private val repository: NomadRemoteBackupChangeLogRepository
+) : PersistenceEventHookNotifier {
 
     public constructor(
         userStorageProvider: UserStorageProvider,
         eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     ) : this(
-        createNomadRemoteBackupChangeLogCallback(
-            userStorageProvider = userStorageProvider,
-            eventTimestampMsProvider = eventTimestampMsProvider
+        NomadRemoteBackupChangeLogDataSource(
+            remoteBackupChangeLogDAOProvider = { userId ->
+                userStorageProvider.get(userId)?.database?.remoteBackupChangeLogDAO
+            },
+            eventTimestampMsProvider = eventTimestampMsProvider,
         )
     )
 
-    public override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
-        onPersistedMessage(message, selfUserId)
+    override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+        repository.logSyncableMessageUpsert(message, selfUserId)
+    }
+
+    override suspend fun onMessageDeleted(data: MessageDeleteEventData, selfUserId: UserId) {
+        repository.logSyncableMessageDelete(data, selfUserId)
+    }
+
+    override suspend fun onReactionPersisted(data: ReactionEventData, selfUserId: UserId) {
+        repository.logSyncableReaction(data, selfUserId)
+    }
+
+    override suspend fun onReadReceiptPersisted(data: ReadReceiptEventData, selfUserId: UserId) {
+        repository.logSyncableReadReceipt(data, selfUserId)
+    }
+
+    override suspend fun onConversationDeleted(data: ConversationDeleteEventData, selfUserId: UserId) {
+        repository.logSyncableConversationDelete(data, selfUserId)
+    }
+
+    override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
+        repository.logSyncableConversationClear(data, selfUserId)
     }
 }
