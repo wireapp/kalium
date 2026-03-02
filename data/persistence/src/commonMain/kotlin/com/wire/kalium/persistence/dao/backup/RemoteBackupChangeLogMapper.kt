@@ -20,18 +20,13 @@ package com.wire.kalium.persistence.dao.backup
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.receipt.MessageReadReceiptsSyncEntity
 import com.wire.kalium.persistence.dao.receipt.UserReadReceiptSyncEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionsSyncEntity
 import com.wire.kalium.persistence.dao.reaction.UserReactionsSyncEntity
 import kotlinx.datetime.Instant
-import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.Json
 
 internal object RemoteBackupChangeLogMapper {
-
-    private val json = Json { ignoreUnknownKeys = true }
 
     @Suppress("FunctionParameterNaming")
     fun toChangeLogEntry(
@@ -56,7 +51,7 @@ internal object RemoteBackupChangeLogMapper {
     ): ConversationLastReadSyncEntity =
         ConversationLastReadSyncEntity(
             conversationId = conversation_id,
-            lastReadTimestampMs = last_read_date.toEpochMilliseconds()
+            lastReadDate = last_read_date
         )
 
     @Suppress("LongParameterList", "FunctionParameterNaming")
@@ -221,7 +216,7 @@ internal object RemoteBackupChangeLogMapper {
                 lastEditDate = syncLastEditDate,
                 text = syncText,
                 quotedMessageId = syncQuotedMessageId,
-                mentions = parseMentionsFromJson(syncMentionsJson),
+                mentionsJson = syncMentionsJson ?: "[]",
             )
 
             MessageEntity.ContentType.ASSET -> SyncableMessagePayloadEntity.Asset(
@@ -262,8 +257,8 @@ internal object RemoteBackupChangeLogMapper {
                 lastEditDate = syncLastEditDate,
                 text = syncText,
                 quotedMessageId = syncQuotedMessageId,
-                mentions = parseMentionsFromJson(syncMentionsJson),
-                attachments = parseAttachmentsFromJson(syncAttachmentsJson),
+                mentionsJson = syncMentionsJson ?: "[]",
+                attachmentsJson = syncAttachmentsJson ?: "[]",
             )
 
             else -> SyncableMessagePayloadEntity.Unsupported(
@@ -316,6 +311,7 @@ internal object RemoteBackupChangeLogMapper {
         val syncLocationName: String?,
         val syncLocationZoom: Int?,
     ) {
+
         @Suppress("CyclomaticComplexMethod")
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -465,24 +461,6 @@ internal object RemoteBackupChangeLogMapper {
             domain = value.substring(separatorIndex + 1)
         )
     }
-
-    private fun parseMentionsFromJson(mentionsJson: String?): List<MessageEntity.Mention> =
-        mentionsJson?.takeIf { it.isNotEmpty() }?.let {
-            try {
-                json.decodeFromString<List<MessageEntity.Mention>>(it)
-            } catch (_: SerializationException) {
-                emptyList()
-            }
-        } ?: emptyList()
-
-    private fun parseAttachmentsFromJson(attachmentsJson: String?): List<MessageAttachmentEntity> =
-        attachmentsJson?.takeIf { it.isNotEmpty() }?.let {
-            try {
-                json.decodeFromString<List<MessageAttachmentEntity>>(it)
-            } catch (_: SerializationException) {
-                emptyList()
-            }
-        } ?: emptyList()
 
     private fun <T> T?.requireField(fieldName: String): T = requireNotNull(this) {
         "Field '$fieldName' is missing in changelog payload query."
