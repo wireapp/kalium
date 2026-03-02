@@ -28,6 +28,7 @@ import com.wire.kalium.network.api.v0.authenticated.NomadDeviceSyncApiV0
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
+import okio.Buffer
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -50,6 +51,28 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
 
         val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient)
         val response = api.postMessageEvents(REQUEST)
+
+        assertTrue(response.isSuccessful())
+    }
+
+    @Test
+    fun givenCryptoState_whenUploading_thenRequestShouldMatchContract() = runTest {
+        val cryptoStateBytes = byteArrayOf(1, 2, 3, 4)
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPost()
+                assertContentType(io.ktor.http.ContentType.Application.OctetStream)
+                assertPathEqual("/crypto/state")
+            }
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient)
+        val response = api.uploadCryptoState(
+            backupSource = { Buffer().write(cryptoStateBytes) },
+            backupSize = cryptoStateBytes.size.toLong()
+        )
 
         assertTrue(response.isSuccessful())
     }

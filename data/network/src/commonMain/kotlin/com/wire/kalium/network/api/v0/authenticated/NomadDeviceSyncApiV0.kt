@@ -26,8 +26,14 @@ import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.close
+import io.ktor.utils.io.writeFully
 import okio.Source
+import okio.buffer
+import okio.use
 
 internal open class NomadDeviceSyncApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
@@ -49,15 +55,33 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
     ): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.post(NomadDeviceSyncApi.PATH_CRYPTO_STATE) {
-                setBody(body)
+                setBody(CryptoStateContent(backupSource, backupSize))
                 contentType(ContentType.Application.OctetStream)
-                // todo, add here an instance of OutgoingContent.WriteChannel that will read from the backupSource
-                //  and write to the request body channel, this way we can avoid loading the whole backup in memory
-                // similar as in asset upload, but without the multipart, since we only need to send the binary data
             }
         }
 
+    private class CryptoStateContent(
+        private val backupSource: () -> Source,
+        private val backupSize: Long
+    ) : OutgoingContent.WriteChannelContent() {
+        override val contentLength: Long = backupSize
+
+        override suspend fun writeTo(channel: ByteWriteChannel) {
+            backupSource().buffer().use { source ->
+                val buffer = ByteArray(BUFFER_SIZE)
+                var readBytes = source.read(buffer)
+                while (readBytes > 0) {
+                    channel.writeFully(buffer, 0, readBytes)
+                    readBytes = source.read(buffer)
+                }
+            }
+            channel.flush()
+            channel.close()
+        }
+    }
+
     private companion object {
         const val PATH_MESSAGE_EVENTS = "message/events"
+        const val BUFFER_SIZE = 8 * 1024
     }
 }
