@@ -139,4 +139,16 @@ internal class RemoteBackupChangeLogDAOImpl(
             .asFlow()
             .map { getLastPendingChangesBatch(limit) }
             .flowOn(readDispatcher.value)
+
+    override suspend fun deleteChanges(changes: List<ChangeLogEntry>): Unit = withContext(writeDispatcher.value) {
+        queries.transaction {
+            changes.forEach { change ->
+                queries.deleteChange(
+                    conversationId = change.conversationId,
+                    messageId = change.messageId,
+                    eventType = change.eventType
+                )
+            }
+        }
+    }
 }

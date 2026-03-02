@@ -391,6 +391,10 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
 
         override fun observeLastPendingChangesBatch(limit: Long): Flow<com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch> =
             flowOf(com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch(emptyList(), emptyList()))
+
+        override suspend fun deleteChanges(changes: List<ChangeLogEntry>) {
+            // Not needed in these tests.
+        }
     }
 
     private companion object {
