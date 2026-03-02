@@ -45,13 +45,13 @@ internal class ObservableMLSConversationRepository(
     private val hookNotifier: CryptoStateChangeHookNotifier
 ) : MLSConversationRepository {
 
-    // todo(ym). Probably this should also trigger, but maybe too expensive? or we don't care :)
     override suspend fun decryptMessage(
         mlsContext: MlsCoreCryptoContext,
         message: ByteArray,
         groupID: GroupID
     ): Either<CoreFailure, List<DecryptedMessageBundle>> =
         delegate.decryptMessage(mlsContext, message, groupID)
+            .onSuccess { hookNotifier.onCryptoStateChanged(userId) }
 
     override suspend fun establishMLSGroup(
         mlsContext: MlsCoreCryptoContext,

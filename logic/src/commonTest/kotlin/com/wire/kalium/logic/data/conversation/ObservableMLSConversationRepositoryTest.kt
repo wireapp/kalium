@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
@@ -35,6 +36,24 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ObservableMLSConversationRepositoryTest {
+
+    @Test
+    fun givenDelegateSucceeds_whenDecryptingMessage_thenHookIsNotified() = runTest {
+        val arrangement = Arrangement().withDecryptMessageSuccess().arrange()
+
+        arrangement.repository.decryptMessage(arrangement.context, byteArrayOf(), GROUP_ID)
+
+        assertEquals(listOf(USER_ID), arrangement.hook.calls)
+    }
+
+    @Test
+    fun givenDelegateFails_whenDecryptingMessage_thenHookIsNotNotified() = runTest {
+        val arrangement = Arrangement().withDecryptMessageFailure().arrange()
+
+        arrangement.repository.decryptMessage(arrangement.context, byteArrayOf(), GROUP_ID)
+
+        assertEquals(emptyList(), arrangement.hook.calls)
+    }
 
     @Test
     fun givenDelegateSucceeds_whenEstablishingGroup_thenHookIsNotified() = runTest {
@@ -142,6 +161,19 @@ class ObservableMLSConversationRepositoryTest {
                 delegate.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
             }.returns(Either.Left(E2EIFailure.Generic(Exception("boom"))))
         }
+
+        suspend fun withDecryptMessageSuccess() = apply {
+            coEvery {
+                delegate.decryptMessage(any(), any(), any())
+            }.returns(Either.Right(emptyList()))
+        }
+
+        suspend fun withDecryptMessageFailure() = apply {
+            coEvery {
+                delegate.decryptMessage(any(), any(), any())
+            }.returns(CoreFailure.Unknown(null).left())
+        }
+
 
         fun arrange(): ArrangementResult = ArrangementResult(repository, hook, context, e2eiClient)
     }
