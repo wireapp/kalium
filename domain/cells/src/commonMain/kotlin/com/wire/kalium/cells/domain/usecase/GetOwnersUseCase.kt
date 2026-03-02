@@ -17,77 +17,73 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.domain.CellUsersRepository
-import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.Owner
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
 /**
- * Use case to get the list of owners for a given conversation and an optional search query.
+ * Use case to get the list of owners for a given conversation.
  */
 public interface GetOwnersUseCase {
     public suspend operator fun invoke(
-        conversationId: String?,
-        query: String = "",
+        conversationId: String?
     ): GetOwnersUseCaseResult
 }
 
 /**
- * Implementation of [GetOwnersUseCase] that retrieves the list of owners by fetching the nodes for the given conversation and query,
- * and then mapping the owner user IDs to their corresponding user details.
- * The resulting list of owners is distinct by their user ID.
- * The use case returns a [GetOwnersUseCaseResult] containing a list of [Owner] objects on success, or a [CoreFailure] on failure.
+ * Implementation of [GetOwnersUseCase] that retrieves the list of owners by fetching the conversation members
+ * and mapping their user details to [Owner] objects. The use case returns a [GetOwnersUseCaseResult]
+ * containing a list of [Owner] objects on success, or a [CoreFailure] on failure.
  *
- * @param cellsRepository The repository to fetch the nodes for the given conversation and query.
- * @param usersRepository The repository to fetch the user details for the owner user IDs.
+ * @param usersRepository The repository to fetch the user details for the conversation member IDs.
  */
 internal class GetOwnersUseCaseImpl(
-    private val cellsRepository: CellsRepository,
     private val usersRepository: CellUsersRepository,
 ) : GetOwnersUseCase {
 
     override suspend operator fun invoke(
-        conversationId: String?,
-        query: String
+        conversationId: String?
     ): GetOwnersUseCaseResult {
-        val result = cellsRepository.getNodesByPath(
-            query = query,
-            path = conversationId ?: "",
-            fileFilters = FileFilters()
-        ).flatMap { nodes ->
-            usersRepository.getUsers().map { userDetailsEntities ->
-                val ownerMap = mutableMapOf<String, Owner>()
+        val result = if (conversationId == null) {
+            usersRepository.getUsers()
+        } else {
+            val qualifiedConversationId = conversationId.toQualifiedIdOrNull()
+                ?: return GetOwnersUseCaseResult.Failure(CoreFailure.Unknown(IllegalArgumentException("conversation_id_missing")))
+            usersRepository.getConversationMemberDetails(qualifiedConversationId)
+        }
 
-                userDetailsEntities.forEach { userDetails ->
-                    val owner = Owner(
-                        id = UserId(userDetails.id.value, userDetails.id.domain),
-                        name = userDetails.name,
-                        handle = userDetails.handle,
-                        accentId = userDetails.accentId,
-                        teamId = userDetails.team?.let { TeamId(it) },
-                        previewPicture = userDetails.previewAssetId?.let { UserAssetId(it.value, it.domain) },
-                        completePicture = userDetails.completeAssetId?.let { UserAssetId(it.value, it.domain) }
-                    )
-                    ownerMap[userDetails.id.toString()] = owner
-                }
-
-                nodes.mapNotNull { node ->
-                    node.ownerUserId?.let { ownerMap[it] }
-                }.distinctBy { it.id }
+        val owners = result.map { members ->
+            members.map { userDetails ->
+                Owner(
+                    id = UserId(userDetails.id.value, userDetails.id.domain),
+                    name = userDetails.name,
+                    handle = userDetails.handle,
+                    accentId = userDetails.accentId,
+                    teamId = userDetails.team?.let { TeamId(it) },
+                    previewPicture = userDetails.previewAssetId?.let { UserAssetId(it.value, it.domain) },
+                    completePicture = userDetails.completeAssetId?.let { UserAssetId(it.value, it.domain) }
+                )
             }
         }
 
-        return when (result) {
-            is Either.Right -> GetOwnersUseCaseResult.Success(result.value)
-            is Either.Left -> GetOwnersUseCaseResult.Failure(result.value)
+        return when (owners) {
+            is Either.Right -> GetOwnersUseCaseResult.Success(owners.value)
+            is Either.Left -> GetOwnersUseCaseResult.Failure(owners.value)
         }
+    }
+
+    private fun String?.toQualifiedIdOrNull(): QualifiedIDEntity? {
+        val sanitized = this?.trim().orEmpty()
+        if (sanitized.isEmpty()) return null
+        val value = sanitized.substringBefore('@')
+        val domain = sanitized.substringAfter('@', missingDelimiterValue = "")
+        return QualifiedIDEntity(value = value, domain = domain)
     }
 }
 
