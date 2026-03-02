@@ -51,7 +51,7 @@ internal object RemoteBackupChangeLogMapper {
     ): ConversationLastReadSyncEntity =
         ConversationLastReadSyncEntity(
             conversationId = conversation_id,
-            lastReadTimestampMs = last_read_date.toEpochMilliseconds()
+            lastReadDate = last_read_date
         )
 
     @Suppress("LongParameterList", "FunctionParameterNaming")
