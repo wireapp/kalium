@@ -10,148 +10,110 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  detekt:
+  validate-tag:
     if: github.repository == 'wireapp/kalium'
-    uses: ./.github/workflows/codestyle.yml
-
-  logic-jvm-android-quality:
-    needs: [detekt]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java and Gradle
-        uses: ./.github/actions/setup-java-gradle
-        with:
-          enable-kvm: true
-
-      - name: Run logic JVM and Android host tests
-        env:
-          GITHUB_USER: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :logic:jvmTest :logic:testAndroidHostTest
-
-  logic-ios-quality:
-    needs: [detekt]
-    runs-on: macos-15
-    timeout-minutes: 45
-    steps:
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: "16.1.0"
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java and Gradle
-        uses: ./.github/actions/setup-java-gradle
-
-      - name: Run logic iOS simulator tests
-        env:
-          GITHUB_USER: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :logic:iosSimulatorArm64Test
-
-  build-logic-android-kmp:
-    needs: [logic-jvm-android-quality, logic-ios-quality]
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java and Gradle
-        uses: ./.github/actions/setup-java-gradle
-
-      - name: Build logic Android/KMP artifacts
-        env:
-          GITHUB_USER: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar
-
-      - name: Collect logic Android/KMP artifacts
+      - name: Get latest release tag
+        id: get_latest_release
         run: |
-          mkdir -p release/android-kmp
-          find logic/build/outputs/aar -maxdepth 1 -name "*.aar" -exec cp {} release/android-kmp/ \;
-          find logic/build/libs -maxdepth 1 -name "*.jar" -exec cp {} release/android-kmp/ \;
-          test -n "$(ls -A release/android-kmp)"
+          response=$(curl -s -w "\n%{http_code}" https://api.github.com/repos/${{ github.repository }}/releases/latest)
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
 
-      - name: Upload logic Android/KMP artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: logic-android-kmp
-          path: release/android-kmp/*
-          retention-days: 3
-
-  build-logic-ios:
-    needs: [logic-jvm-android-quality, logic-ios-quality]
-    runs-on: macos-15
-    timeout-minutes: 45
-    steps:
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: "16.1.0"
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Java and Gradle
-        uses: ./.github/actions/setup-java-gradle
-
-      - name: Build logic iOS XCFramework
-        env:
-          GITHUB_USER: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :logic:assembleKaliumLogicReleaseXCFramework
-
-      - name: Zip logic iOS XCFramework
-        run: |
-          XCFRAMEWORK_DIR="logic/build/XCFrameworks/release/KaliumLogic.xcframework"
-          if [ ! -d "$XCFRAMEWORK_DIR" ]; then
-            echo "::error::KaliumLogic.xcframework not found at $XCFRAMEWORK_DIR"
-            exit 1
+          if [[ "$http_code" != "200" ]]; then
+            echo "Failed to fetch latest release (HTTP $http_code)"
+            if [[ "$http_code" == "404" ]]; then
+              echo "No releases found — this appears to be the first release"
+              echo "latest_tag=none" >> $GITHUB_OUTPUT
+              exit 0
+            else
+              echo "API error occurred"
+              exit 1
+            fi
           fi
-          mkdir -p release/ios
-          (
-            cd logic/build/XCFrameworks/release
-            zip -rXq KaliumLogic.xcframework.zip KaliumLogic.xcframework
-          )
-          mv logic/build/XCFrameworks/release/KaliumLogic.xcframework.zip release/ios/
 
-      - name: Upload logic iOS artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: logic-ios
-          path: release/ios/*
-          retention-days: 3
+          latest_tag=$(echo "$body" | jq -r '.tag_name')
 
-  publish-gh-release:
-    needs: [build-logic-android-kmp, build-logic-ios]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Download Android/KMP artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: logic-android-kmp
-          path: release-artifacts/android-kmp
+          if [[ -z "$latest_tag" || "$latest_tag" == "null" ]]; then
+            echo "Could not extract tag from API response"
+            echo "latest_tag=none" >> $GITHUB_OUTPUT
+          else
+            echo "Latest release tag: $latest_tag"
+            echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Download iOS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: logic-ios
-          path: release-artifacts/ios
+      - name: Compare versions
+        run: |
+          current_tag="${{ github.ref_name }}"
+          latest_tag="${{ steps.get_latest_release.outputs.latest_tag }}"
 
-      - name: Publish release assets
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          files: |
-            release-artifacts/android-kmp/*
-            release-artifacts/ios/*
-          fail_on_unmatched_files: true
+          if [[ "$latest_tag" == "none" ]]; then
+            echo "No previous releases found. Proceeding with release for $current_tag"
+            exit 0
+          fi
+
+          cur_ver="${current_tag#v}"
+          cur_ver="${cur_ver%%-*}"
+
+          lat_ver="${latest_tag#v}"
+          lat_ver="${lat_ver%%-*}"
+
+          echo "Current base version: $cur_ver"
+          echo "Latest release base version: $lat_ver"
+
+          highest="$(printf '%s\n%s' "$cur_ver" "$lat_ver" | sort -V | tail -n1)"
+
+          if [[ "$cur_ver" != "$lat_ver" && "$highest" != "$cur_ver" ]]; then
+            echo "::error::Tag ($current_tag) base version ($cur_ver) is lower than latest release ($latest_tag) base version ($lat_ver)"
+            exit 1
+          else
+            echo "Tag ($current_tag) base version is equal or higher than latest release ($latest_tag)"
+          fi
+
+  build:
+    needs: validate-tag
+    uses: ./.github/workflows/build-kalium-unified.yml
+    with:
+      concurrency-group-suffix: release
+      run-quality-checks: true
+      build-config: |
+        [
+          {
+            "platform": "android-kmp",
+            "runner": "ubuntu-latest",
+            "timeout": 30,
+            "gradle-tasks": ":logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar",
+            "artifact-glob": "logic/build/outputs/aar/*.aar logic/build/libs/*.jar",
+            "artifact-name": "logic-android-kmp",
+            "post-build-script": "",
+            "xcode-version": "",
+            "xcframework-path": ""
+          },
+          {
+            "platform": "ios",
+            "runner": "macos-15",
+            "timeout": 45,
+            "xcode-version": "16.1.0",
+            "gradle-tasks": ":logic:assembleKaliumLogicReleaseXCFramework",
+            "artifact-glob": "",
+            "artifact-name": "logic-ios",
+            "post-build-script": "zip-xcframework",
+            "xcframework-path": "logic/build/XCFrameworks/release/KaliumLogic.xcframework"
+          }
+        ]
+    secrets: inherit
+
+  deploy:
+    needs: build
+    uses: ./.github/workflows/deploy-kalium.yml
+    with:
+      tag-name: ${{ github.ref_name }}
+      deployment-targets: |
+        [
+          {
+            "type": "github-release",
+            "artifacts": "logic-*",
+            "fail-on-unmatched": true
+          }
+        ]
