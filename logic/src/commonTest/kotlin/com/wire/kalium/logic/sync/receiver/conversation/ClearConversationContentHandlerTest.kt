@@ -34,6 +34,9 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
+import com.wire.kalium.messaging.hooks.ConversationClearEventData
+import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -42,6 +45,7 @@ import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class ClearConversationContentHandlerTest {
 
@@ -220,8 +224,37 @@ class ClearConversationContentHandlerTest {
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenConversationClearedSuccessfully_whenHandled_thenHookIsNotified() = runTest {
+        // given
+        val hookNotifier = RecordingPersistenceEventHookNotifier()
+        val (arrangement, handler) = Arrangement(hookNotifier = hookNotifier)
+            .arrange {
+                withMessageSentInSelfConversation(false)
+            }
 
-    private class Arrangement :
+        // when
+        handler.handle(
+            message = MESSAGE,
+            messageContent = MessageContent.Cleared(
+                conversationId = CONVERSATION_ID,
+                time = Instant.DISTANT_PAST,
+                needToRemoveLocally = false
+            ),
+            transactionContext = arrangement.transactionContext
+        )
+
+        // then
+        assertEquals(1, hookNotifier.conversationClearCalls.size)
+        val (data, selfUserId) = hookNotifier.conversationClearCalls.single()
+        assertEquals(CONVERSATION_ID, data.conversationId)
+        assertEquals(TestUser.USER_ID, selfUserId)
+    }
+
+
+    private class Arrangement(
+        private val hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier,
+    ) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         DeleteConversationArrangement by DeleteConversationArrangementImpl() {
@@ -239,7 +272,8 @@ class ClearConversationContentHandlerTest {
                 selfUserId = TestUser.USER_ID,
                 isMessageSentInSelfConversation = isMessageSentInSelfConversationUseCase,
                 clearLocalConversationAssets = clearConversationAssetsLocally,
-                deleteConversation = deleteConversation
+                deleteConversation = deleteConversation,
+                persistenceEventHookNotifier = hookNotifier,
             )
             withDeletingConversationSucceeding()
             withClearContentSucceeding()
@@ -247,6 +281,14 @@ class ClearConversationContentHandlerTest {
             block()
 
             this to clearConversationContentHandler
+        }
+    }
+
+    private class RecordingPersistenceEventHookNotifier : PersistenceEventHookNotifier {
+        val conversationClearCalls = mutableListOf<Pair<ConversationClearEventData, UserId>>()
+
+        override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
+            conversationClearCalls += data to selfUserId
         }
     }
 

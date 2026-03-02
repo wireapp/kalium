@@ -16,19 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.nomaddevice
+package com.wire.kalium.network.api.base.authenticated.nomaddevice
 
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
-import com.wire.kalium.messaging.hooks.PersistedMessageData
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
+import com.wire.kalium.network.utils.NetworkResponse
 
-/**
- * Nomad-side hook implementation that can be registered into CoreLogic.
- */
-public class NomadPersistMessageHookNotifier(
-    private val onPersistedMessage: suspend (PersistedMessageData, UserId) -> Unit
-) : PersistMessageHookNotifier {
-    public override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
-        onPersistedMessage(message, selfUserId)
-    }
+interface NomadDeviceSyncApi {
+    suspend fun postMessageEvents(request: NomadMessageEventsRequest): NetworkResponse<Unit>
 }

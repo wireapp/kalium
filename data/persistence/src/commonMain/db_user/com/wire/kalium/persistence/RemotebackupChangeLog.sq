@@ -53,3 +53,131 @@ insertConversationClear {
 
 getPendingChanges:
 SELECT * FROM RemotebackupChangeLog ORDER BY timestamp_ms ASC, message_timestamp_ms ASC, conversation_id ASC, message_id ASC, event_type ASC;
+
+getLastPendingChangesWithPayload:
+WITH latest AS (
+    SELECT *
+    FROM RemotebackupChangeLog
+    ORDER BY timestamp_ms DESC, message_timestamp_ms DESC, conversation_id DESC, message_id DESC, event_type DESC
+    LIMIT :limit
+)
+SELECT
+    latest.*,
+    Message.id AS sync_message_id,
+    Message.conversation_id AS sync_conversation_id,
+    Message.content_type AS sync_content_type,
+    Message.creation_date AS sync_creation_date,
+    Message.sender_user_id AS sync_sender_user_id,
+    Message.sender_client_id AS sync_sender_client_id,
+    Message.last_edit_date AS sync_last_edit_date,
+    TextContent.text_body AS sync_text,
+    TextContent.quoted_message_id AS sync_quoted_message_id,
+    IFNULL(
+        (SELECT '[' || GROUP_CONCAT(
+            '{"start":' || start || ', "length":' || length ||
+            ', "userId":{"value":"' || replace(substr(user_id, 0, instr(user_id, '@')), '@', '') || '"' ||
+            ',"domain":"' || replace(substr(user_id, instr(user_id, '@') + 1, length(user_id)), '@', '') || '"' ||
+            '}' || '}') || ']'
+         FROM MessageMention
+         WHERE
+             MessageMention.message_id = Message.id
+             AND MessageMention.conversation_id = Message.conversation_id
+        ),
+        '[]'
+    ) AS sync_mentions_json,
+    IFNULL(
+        (SELECT '[' || GROUP_CONCAT('{
+            "id":"' || asset_id || '",
+            "version_id":"' || asset_version_id || '",
+            "cell_asset":"' || cell_asset || '",
+            "mime_type":"' || asset_mime_type || '",
+            "asset_path":"' || IFNULL(asset_path, '') || '",
+            "asset_size":' || IFNULL(asset_size, 0) || ',
+            "local_path":"' || IFNULL(local_path, '') || '",
+            "asset_width":"' || IFNULL(asset_width, 0) || '",
+            "asset_height":"' || IFNULL(asset_height, 0) || '",
+            "asset_transfer_status":"' || asset_transfer_status || '",
+            "asset_duration_ms":"' || IFNULL(asset_duration_ms, 0) || '",
+            "content_hash":"' || IFNULL(content_hash, '') || '",
+            "content_url":"' || IFNULL(content_url, '') || '",
+            "preview_url":"' || IFNULL(preview_url, '') || '",
+            "asset_index":"' || IFNULL(asset_index, 0) || '",
+            "content_url_expires_at":"' || IFNULL(content_url_expires_at, 0) || '",
+            "edit_supported":"' || edit_supported || '"}') || ']'
+         FROM MessageAttachments
+         WHERE
+             MessageAttachments.message_id = Message.id
+             AND MessageAttachments.conversation_id = Message.conversation_id
+        ),
+        '[]'
+    ) AS sync_attachments_json,
+    AssetContent.asset_mime_type AS sync_asset_mime_type,
+    AssetContent.asset_size AS sync_asset_size,
+    AssetContent.asset_name AS sync_asset_name,
+    AssetContent.asset_otr_key AS sync_asset_otr_key,
+    AssetContent.asset_sha256 AS sync_asset_sha256,
+    AssetContent.asset_id AS sync_asset_id,
+    AssetContent.asset_token AS sync_asset_token,
+    AssetContent.asset_domain AS sync_asset_domain,
+    AssetContent.asset_encryption_algorithm AS sync_asset_encryption_algorithm,
+    AssetContent.asset_width AS sync_asset_width,
+    AssetContent.asset_height AS sync_asset_height,
+    AssetContent.asset_duration_ms AS sync_asset_duration_ms,
+    AssetContent.asset_normalized_loudness AS sync_asset_normalized_loudness,
+    LocationContent.longitude AS sync_location_longitude,
+    LocationContent.latitude AS sync_location_latitude,
+    LocationContent.name AS sync_location_name,
+    LocationContent.zoom AS sync_location_zoom,
+    (
+        SELECT GROUP_CONCAT(sender_and_emoji, '|')
+        FROM (
+            SELECT Reaction.sender_id || ':' || Reaction.emoji AS sender_and_emoji
+            FROM Reaction
+            WHERE
+                Reaction.message_id = latest.message_id
+                AND Reaction.conversation_id = latest.conversation_id
+            ORDER BY Reaction.sender_id, Reaction.emoji
+        )
+    ) AS reactions_sync_raw,
+    (
+        SELECT GROUP_CONCAT(user_and_date, '|')
+        FROM (
+            SELECT Receipt.user_id || ':' || Receipt.date AS user_and_date
+            FROM Receipt
+            WHERE
+                Receipt.message_id = latest.message_id
+                AND Receipt.conversation_id = latest.conversation_id
+                AND Receipt.type = 'READ'
+            ORDER BY Receipt.user_id, Receipt.date
+        )
+    ) AS read_receipts_sync_raw
+FROM latest
+LEFT JOIN Message
+    ON latest.event_type = 1
+    AND Message.id = latest.message_id
+    AND Message.conversation_id = latest.conversation_id
+LEFT JOIN MessageTextContent AS TextContent
+    ON Message.id = TextContent.message_id
+    AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent
+    ON Message.id = AssetContent.message_id
+    AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageConversationLocationContent AS LocationContent
+    ON Message.id = LocationContent.message_id
+    AND Message.conversation_id = LocationContent.conversation_id
+ORDER BY latest.timestamp_ms ASC, latest.message_timestamp_ms ASC, latest.conversation_id ASC, latest.message_id ASC;
+
+getConversationLastReadForLastPendingChanges:
+WITH latest AS (
+    SELECT *
+    FROM RemotebackupChangeLog
+    ORDER BY timestamp_ms DESC, message_timestamp_ms DESC, conversation_id DESC, message_id DESC, event_type DESC
+    LIMIT :limit
+)
+SELECT DISTINCT
+    latest.conversation_id AS conversation_id,
+    Conversation.last_read_date AS last_read_date
+FROM latest
+JOIN Conversation
+    ON Conversation.qualified_id = latest.conversation_id
+ORDER BY conversation_id ASC;

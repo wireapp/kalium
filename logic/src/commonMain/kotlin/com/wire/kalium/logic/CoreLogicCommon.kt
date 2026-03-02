@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("TooManyFunctions")
 package com.wire.kalium.logic
 
 import com.wire.kalium.logic.configuration.server.ServerConfig
@@ -34,11 +33,11 @@ import com.wire.kalium.logic.feature.auth.LogoutCallbackManagerImpl
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.message.CryptoStateChangeHookRegistry
-import com.wire.kalium.logic.feature.message.MessageHookRegistry
-import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
+import com.wire.kalium.logic.feature.message.PersistenceEventHookRegistry
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
-import com.wire.kalium.messaging.hooks.PersistMessageHookNotifier
+import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
@@ -56,9 +55,9 @@ public abstract class CoreLogicCommon internal constructor(
         configurePersistenceDebug(kaliumConfigs.isDebug)
     }
 
-    private val messageHookRegistry = MessageHookRegistry()
-    internal val persistMessageHookNotifier: PersistMessageHookNotifier
-        get() = messageHookRegistry
+    private val persistenceEventHookRegistry = PersistenceEventHookRegistry()
+    internal val persistenceEventHookNotifier: PersistenceEventHookNotifier
+        get() = persistenceEventHookRegistry
 
     private val cryptoStateChangeHookRegistry = CryptoStateChangeHookRegistry()
     internal val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier
@@ -122,19 +121,19 @@ public abstract class CoreLogicCommon internal constructor(
     ): T = getSessionScope(userId).action()
 
     /**
-     * Registers a message hook notifier.
+     * Registers a persistence event hook notifier.
      * Hook invocation is synchronous from Logic's perspective.
      */
-    public fun registerMessageHook(hookNotifier: PersistMessageHookNotifier) {
-        messageHookRegistry.register(hookNotifier)
+    public fun registerPersistenceEventHook(hookNotifier: PersistenceEventHookNotifier) {
+        persistenceEventHookRegistry.register(hookNotifier)
     }
 
-    public fun unregisterMessageHook(hookNotifier: PersistMessageHookNotifier) {
-        messageHookRegistry.unregister(hookNotifier)
+    public fun unregisterPersistenceEventHook(hookNotifier: PersistenceEventHookNotifier) {
+        persistenceEventHookRegistry.unregister(hookNotifier)
     }
 
     public fun clearHook() {
-        messageHookRegistry.clear()
+        persistenceEventHookRegistry.clear()
     }
 
     /**
