@@ -22,6 +22,8 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
@@ -340,6 +342,14 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         override suspend fun postMessageEvents(request: NomadMessageEventsRequest): NetworkResponse<Unit> {
             requests += request
             return response
+        }
+
+        override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> {
+            error("Not needed for test")
+        }
+
+        override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> {
+            error("Not needed for test")
         }
     }
 
