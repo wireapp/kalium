@@ -55,12 +55,12 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
     ): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.post(NomadDeviceSyncApi.PATH_CRYPTO_STATE) {
-                setBody(CryptoStateContent(backupSource, backupSize))
+                setBody(CryptoStateBodyContent(backupSource, backupSize))
                 contentType(ContentType.Application.OctetStream)
             }
         }
 
-    private class CryptoStateContent(
+    private class CryptoStateBodyContent(
         private val backupSource: () -> Source,
         private val backupSize: Long
     ) : OutgoingContent.WriteChannelContent() {
