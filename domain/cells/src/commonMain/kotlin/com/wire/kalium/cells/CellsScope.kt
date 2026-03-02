@@ -51,10 +51,12 @@ import com.wire.kalium.cells.domain.usecase.GetCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetGroupConversationsWithCellEnabledUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetGroupConversationsWithCellEnabledUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
@@ -348,6 +350,10 @@ public class CellsScope(
     }
     public val getOwnersUseCase: GetOwnersUseCase by lazy {
         GetOwnersUseCaseImpl(usersRepository)
+    }
+
+    public val getGroupConversationsWithCellEnabledUseCase: GetGroupConversationsWithCellEnabledUseCase by lazy {
+        GetGroupConversationsWithCellEnabledUseCaseImpl(cellsConversationRepository)
     }
 
     public val getMessageAttachmentsUseCase: GetMessageAttachmentsUseCase by lazy {

@@ -21,40 +21,28 @@ import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.model.Conversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
 
 /**
  * Use case to get the list of conversations that have cells enabled.
  */
-public interface GetConversationsUseCase {
+public interface GetGroupConversationsWithCellEnabledUseCase {
     public suspend operator fun invoke(): GetConversationsUseCaseResult
 }
 
 /**
- * Implementation of [GetConversationsUseCase] that retrieves the list of conversations
+ * Implementation of [GetGroupConversationsWithCellEnabledUseCase] that retrieves the list of conversations
  * including their channel status and access level from the repository and maps them
  * to [Conversation] objects. The use case returns a [GetConversationsUseCaseResult]
  * containing a list of [Conversation] objects on success, or a [CoreFailure] on failure.
  *
  * @param conversationRepository The repository to fetch the conversation data.
  */
-internal class GetConversationsUseCaseImpl(
+internal class GetGroupConversationsWithCellEnabledUseCaseImpl(
     private val conversationRepository: CellConversationRepository,
-) : GetConversationsUseCase {
+) : GetGroupConversationsWithCellEnabledUseCase {
 
     override suspend operator fun invoke(): GetConversationsUseCaseResult {
-        val result = conversationRepository.getGroupConversationDetailsWithCellEnabled().map { conversationDetails ->
-            conversationDetails.map { detail ->
-                Conversation(
-                    id = detail.id,
-                    name = detail.name,
-                    isChannel = detail.isChannel,
-                    channelAccess = detail.channelAccess
-                )
-            }
-        }
-
-        return when (result) {
+        return when (val result = conversationRepository.getGroupConversationDetailsWithCellEnabled()) {
             is Either.Right -> GetConversationsUseCaseResult.Success(result.value)
             is Either.Left -> GetConversationsUseCaseResult.Failure(result.value)
         }
