@@ -31,6 +31,6 @@ interface NomadDeviceSyncApi {
     ): NetworkResponse<Unit>
 
     companion object {
-        const val PATH_CRYPTO_STATE = "crypto/state"
+        const val PATH_CRYPTO_STATE = "crypto/state" // todo change to final when backend implementation is ready
     }
 }
