@@ -43,7 +43,7 @@ internal class NomadRemoteBackupChangeLogEventMapper {
         val lastReads = batch.conversationLastReads.map {
             LastRead(
                 conversationId = it.conversationId.toString(),
-                lastReadTimestamp = it.lastReadDate.toEpochMilliseconds()
+                lastReadTimestamp = it.lastReadDate.epochSeconds
             )
         }
         if (lastReads.isNotEmpty()) {

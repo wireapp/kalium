@@ -122,7 +122,7 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         val lastReadEvent = assertIs<NomadMessageEvent.LastReadEvent>(request.events.last())
         assertEquals(1, lastReadEvent.lastRead.size)
         assertEquals(CONVERSATION_ID.toString(), lastReadEvent.lastRead.first().conversationId)
-        assertEquals("2026-02-25T10:15:00Z", lastReadEvent.lastRead.first().lastReadTimestamp)
+        assertEquals(1772014500, lastReadEvent.lastRead.first().lastReadTimestamp)
     }
 
     @Test
