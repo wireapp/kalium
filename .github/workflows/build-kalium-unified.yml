@@ -47,7 +47,7 @@ jobs:
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :jvmTest
+        run: ./gradlew jvmTest -Djava.library.path=./native/libs
 
   android-tests:
     if: inputs.run-quality-checks
@@ -67,7 +67,7 @@ jobs:
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :testDebugUnitTest
+        run: ./gradlew testAndroidHostTest
 
   android-connected-tests:
     if: inputs.run-quality-checks
@@ -152,7 +152,7 @@ jobs:
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :iosSimulatorArm64Test
+        run: ./gradlew iosSimulatorArm64Test -PUSE_UNIFIED_CORE_CRYPTO=true
 
   # ── Build Matrix ───────────────────────────────────────────────
   build:
