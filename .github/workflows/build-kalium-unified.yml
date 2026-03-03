@@ -31,7 +31,25 @@ jobs:
     if: inputs.run-quality-checks
     uses: ./.github/workflows/codestyle.yml
 
-  jvm-android-tests:
+  jvm-tests:
+    if: inputs.run-quality-checks
+    needs: [detekt]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Run JVM tests
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew :jvmTest
+
+  android-tests:
     if: inputs.run-quality-checks
     needs: [detekt]
     runs-on: ubuntu-latest
@@ -45,11 +63,73 @@ jobs:
         with:
           enable-kvm: true
 
-      - name: Run logic JVM and Android host tests
+      - name: Run Android unit tests
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :logic:jvmTest :logic:testAndroidHostTest
+        run: ./gradlew :testDebugUnitTest
+
+  android-connected-tests:
+    if: inputs.run-quality-checks
+    needs: [detekt]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      matrix:
+        api-level: [31]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Free Disk Space Before Build
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/lib/android/sdk/ndk
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo apt-get clean
+          echo "Disk space after cleanup:"
+          df -h
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Build the samples
+        run: |
+          ./gradlew :sample:samples:compileAndroidDeviceTestSources
+
+      - name: Get AVD info
+        uses: ./.github/actions/get-avd-info
+        id: avd-info
+        with:
+          api-level: ${{ matrix.api-level }}
+
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Android Instrumentation Tests
+        uses: reactivecircus/android-emulator-runner@v2.35.0
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: ${{ steps.avd-info.outputs.arch }}
+          target: ${{ steps.avd-info.outputs.target }}
+          cores: 4
+          ram-size: 4096M
+          heap-size: 2048M
+          disable-animations: true
+          script: ./gradlew connectedAndroidTest
 
   ios-tests:
     if: inputs.run-quality-checks
@@ -72,16 +152,16 @@ jobs:
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew :logic:iosSimulatorArm64Test
+        run: ./gradlew :iosSimulatorArm64Test
 
   # ── Build Matrix ───────────────────────────────────────────────
   build:
     name: "Build ${{ matrix.platform }}"
-    needs: [jvm-android-tests, ios-tests]
+    needs: [jvm-tests, android-tests, android-connected-tests, ios-tests]
     # When quality checks are skipped, run immediately
     if: |
       always() &&
-      (inputs.run-quality-checks == false || (needs.jvm-android-tests.result == 'success' && needs.ios-tests.result == 'success'))
+      (inputs.run-quality-checks == false || (needs.jvm-tests.result == 'success' && needs.android-tests.result == 'success' && needs.android-connected-tests.result == 'success' && needs.ios-tests.result == 'success'))
     runs-on: ${{ matrix.runner }}
     timeout-minutes: ${{ matrix.timeout }}
     strategy:
