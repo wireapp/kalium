@@ -1,9 +1,9 @@
-name: Release Logic Artifacts
+name: Release Logic Artifacts (RC)
 
 on:
   push:
     tags:
-      - "v*"
+      - "v*-rc*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   validate-tag:
-    if: github.repository == 'wireapp/kalium' && !contains(github.ref_name, '-')
+    if: github.repository == 'wireapp/kalium'
     runs-on: ubuntu-latest
     steps:
       - name: Get latest release tag
@@ -75,7 +75,7 @@ jobs:
     needs: validate-tag
     uses: ./.github/workflows/build-kalium-unified.yml
     with:
-      concurrency-group-suffix: release
+      concurrency-group-suffix: release-rc
       run-quality-checks: true
       build-config: |
         [
@@ -109,6 +109,7 @@ jobs:
     uses: ./.github/workflows/deploy-kalium.yml
     with:
       tag-name: ${{ github.ref_name }}
+      prerelease: true
       deployment-targets: |
         [
           {
