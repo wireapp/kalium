@@ -83,7 +83,7 @@ internal class NomadAllMessagesMapper {
 
         val senderUserId = payload.senderUserId.toDaoQualifiedId()
         val creationDate = payload.creationDate.toInstantGuessingUnit()
-        val lastEditDate = payload.lastEditTime?.let { Instant.fromEpochMilliseconds(it) }
+        val lastEditDate = payload.lastEditTime?.toInstantGuessingUnit()
         val content = payload.content.toSyncableMessageContent(
             senderUserId = senderUserId,
             senderClientId = payload.senderClientId,
@@ -255,15 +255,15 @@ internal class NomadAllMessagesMapper {
 
 }
 
-private fun Long.toInstantGuessingUnit(): Instant =
-    if (this >= EPOCH_MILLIS_THRESHOLD) {
-        Instant.fromEpochMilliseconds(this)
-    } else {
-        Instant.fromEpochSeconds(this)
-    }
-
 private fun Conversation.toDaoConversationId(): QualifiedIDEntity =
     QualifiedIDEntity(value = id, domain = domain)
 
 private fun NomadDeviceQualifiedId.toDaoQualifiedId(): QualifiedIDEntity =
     QualifiedIDEntity(value = value, domain = domain)
+
+private fun Long.toInstantGuessingUnit(): Instant =
+    if (this < EPOCH_MILLIS_THRESHOLD) {
+        Instant.fromEpochSeconds(this)
+    } else {
+        Instant.fromEpochMilliseconds(this)
+    }

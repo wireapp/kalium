@@ -49,7 +49,6 @@ public data class NomadAllMessagesSyncResult(
     val batches: Int,
 )
 
-
 /**
  * Use case for synchronizing all messages from a Nomad device.
  *
@@ -121,18 +120,6 @@ public class SyncNomadAllMessagesUseCase internal constructor(
         }
     }
 
-    /**
-     * Stores the fetched messages from the API response into the local database.
-     *
-     * This method handles the database storage operation with proper error handling.
-     * If the user storage is unavailable, it returns a result with all messages marked as skipped.
-     * Otherwise, it attempts to store the mapped messages in batches.
-     *
-     * @param selfUserId The ID of the user whose messages are being stored.
-     * @param response The API response containing the messages to store.
-     * @return An [Either] containing either a [CoreFailure] if storage fails,
-     *         or a [NomadAllMessagesSyncResult] with the storage statistics.
-     */
     private suspend fun storeFetchedMessages(
         selfUserId: UserId,
         response: NomadAllMessagesResponse,
@@ -162,16 +149,6 @@ public class SyncNomadAllMessagesUseCase internal constructor(
         }
     }
 
-    /**
-     * Maps the storage operation result and mapped messages into a [NomadAllMessagesSyncResult].
-     *
-     * Calculates the final statistics including the number of downloaded, stored, and skipped messages,
-     * as well as the number of batches processed.
-     *
-     * @param mappedMessages The messages that were mapped from the API response.
-     * @param storeResult The result of the database storage operation.
-     * @return A [NomadAllMessagesSyncResult] containing the synchronization statistics.
-     */
     private fun mapResult(
         mappedMessages: NomadMappedMessages,
         storeResult: NomadMessageStoreResult,
@@ -187,18 +164,8 @@ public class SyncNomadAllMessagesUseCase internal constructor(
     }
 }
 
-/**
- * Converts a domain [UserId] to a network API [com.wire.kalium.network.api.model.UserId].
- *
- * @return A network UserId containing the same value and domain information.
- */
 private fun UserId.toNetworkUserId(): com.wire.kalium.network.api.model.UserId =
     com.wire.kalium.network.api.model.QualifiedID(value = value, domain = domain)
 
-/**
- * Converts a domain [UserId] to a DAO [QualifiedIDEntity].
- *
- * @return A QualifiedIDEntity containing the same value and domain information.
- */
 private fun UserId.toDaoUserId(): QualifiedIDEntity =
     QualifiedIDEntity(value = value, domain = domain)

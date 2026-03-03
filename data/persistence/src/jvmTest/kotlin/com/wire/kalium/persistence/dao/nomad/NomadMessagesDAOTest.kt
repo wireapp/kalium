@@ -22,6 +22,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.backup.NomadMessageToInsert
 import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
 import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
@@ -36,6 +37,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -111,10 +113,53 @@ class NomadMessagesDAOTest {
     }
 
     @Test
+    fun givenAssetLocationAndMultipartMessages_whenStoring_thenEachTypeIsStoredAsExpected() = runTest {
+        val database = newDatabase()
+        val dao = newDao(database)
+        val messages = listOf(
+            assetMessage(id = "m-asset", conversationId = "c1", senderId = "u1", timestampMs = 1_000),
+            locationMessage(id = "m-location", conversationId = "c1", senderId = "u1", timestampMs = 1_100),
+            multipartMessage(
+                id = "m-multipart",
+                conversationId = "c1",
+                senderId = "u1",
+                timestampMs = 1_200,
+                attachmentAssetIds = listOf("att-1")
+            ),
+        )
+
+        val result = dao.storeMessages(
+            selfUserId = SELF_USER_ID,
+            messages = messages,
+            batchSize = 20
+        )
+
+        assertEquals(3, result.storedMessages)
+        assertEquals(1, result.batches)
+
+        val assetStored = assertNotNull(database.messageDAO.getMessageById("m-asset", qid("c1")))
+        assertIs<MessageEntityContent.Asset>(assetStored.content)
+
+        val locationStored = assertNotNull(database.messageDAO.getMessageById("m-location", qid("c1")))
+        assertIs<MessageEntityContent.Location>(locationStored.content)
+
+        val multipartStored = assertNotNull(database.messageDAO.getMessageById("m-multipart", qid("c1")))
+        val multipartContent = assertIs<MessageEntityContent.Multipart>(multipartStored.content)
+        assertEquals(1, multipartContent.attachments.size)
+        assertEquals("att-1", multipartContent.attachments.single().assetId)
+
+        val rawAttachments = database.messageAttachments.getAttachments("m-multipart", qid("c1"))
+        assertEquals(1, rawAttachments.size)
+        assertEquals("att-1", rawAttachments.single().assetId)
+    }
+
+    @Test
     fun givenInvalidSecondBatch_whenStoring_thenOnlyThatBatchIsRolledBack() = runTest {
         val database = newDatabase()
         val dao = newDao(database)
         val validMessage = textMessage(id = "m1", conversationId = "c1", senderId = "u1", timestampMs = 1_000)
+        // MessageAttachments has a primary key on (conversation_id, message_id, asset_id).
+        // Reusing the same asset_id twice in one multipart payload triggers a constraint failure.
         val invalidMessage = multipartMessageWithDuplicateAttachmentIds(
             id = "m2",
             conversationId = "c2",
@@ -177,6 +222,20 @@ class NomadMessagesDAOTest {
         conversationId: String,
         senderId: String,
         timestampMs: Long,
+    ): NomadMessageToInsert = multipartMessage(
+        id = id,
+        conversationId = conversationId,
+        senderId = senderId,
+        timestampMs = timestampMs,
+        attachmentAssetIds = listOf("duplicate-asset", "duplicate-asset")
+    )
+
+    private fun multipartMessage(
+        id: String,
+        conversationId: String,
+        senderId: String,
+        timestampMs: Long,
+        attachmentAssetIds: List<String>,
     ): NomadMessageToInsert = NomadMessageToInsert(
         id = id,
         conversationId = qid(conversationId),
@@ -189,10 +248,58 @@ class NomadMessagesDAOTest {
             text = "multipart-$id",
             quotedMessageId = null,
             mentions = emptyList(),
-            attachments = listOf(
-                attachment(assetId = "duplicate-asset"),
-                attachment(assetId = "duplicate-asset"),
-            )
+            attachments = attachmentAssetIds.map { attachment(assetId = it) }
+        ),
+    )
+
+    private fun assetMessage(
+        id: String,
+        conversationId: String,
+        senderId: String,
+        timestampMs: Long,
+    ): NomadMessageToInsert = NomadMessageToInsert(
+        id = id,
+        conversationId = qid(conversationId),
+        date = Instant.fromEpochMilliseconds(timestampMs),
+        payload = SyncableMessagePayloadEntity.Asset(
+            creationDate = Instant.fromEpochMilliseconds(timestampMs),
+            senderUserId = qid(senderId),
+            senderClientId = "sender-client",
+            lastEditDate = null,
+            mimeType = "image/png",
+            size = 42L,
+            name = "asset-$id.png",
+            otrKey = byteArrayOf(1),
+            sha256 = byteArrayOf(2),
+            assetId = "asset-$id",
+            assetToken = null,
+            assetDomain = null,
+            encryptionAlgorithm = "A256GCM",
+            width = 320,
+            height = 200,
+            durationMs = null,
+            normalizedLoudness = null
+        ),
+    )
+
+    private fun locationMessage(
+        id: String,
+        conversationId: String,
+        senderId: String,
+        timestampMs: Long,
+    ): NomadMessageToInsert = NomadMessageToInsert(
+        id = id,
+        conversationId = qid(conversationId),
+        date = Instant.fromEpochMilliseconds(timestampMs),
+        payload = SyncableMessagePayloadEntity.Location(
+            creationDate = Instant.fromEpochMilliseconds(timestampMs),
+            senderUserId = qid(senderId),
+            senderClientId = "sender-client",
+            lastEditDate = null,
+            latitude = 52.52f,
+            longitude = 13.4f,
+            name = "Berlin",
+            zoom = 15,
         ),
     )
 
