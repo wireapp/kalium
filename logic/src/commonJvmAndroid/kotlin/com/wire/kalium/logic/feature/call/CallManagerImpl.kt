@@ -606,8 +606,10 @@ internal class CallManagerImpl internal constructor(
     private fun initNetworkHandler() {
         scope.launch {
             withCalling {
-                val onNetworkQualityChanged = OnNetworkQualityChanged()
-                    .keepingStrongReference()
+                val onNetworkQualityChanged = OnNetworkQualityChanged(
+                    callRepository = callRepository,
+                    qualifiedIdMapper = qualifiedIdMapper
+                ).keepingStrongReference()
 
                 wcall_set_network_quality_handler(
                     inst = deferredHandle.await(),

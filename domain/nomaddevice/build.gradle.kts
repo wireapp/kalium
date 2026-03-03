@@ -37,6 +37,7 @@ kotlin {
                 implementation(projects.domain.usernetwork)
                 implementation(projects.domain.userstorage)
                 implementation(projects.data.persistence)
+                implementation(libs.ktxSerialization)
                 implementation(libs.coroutines.core)
             }
         }
