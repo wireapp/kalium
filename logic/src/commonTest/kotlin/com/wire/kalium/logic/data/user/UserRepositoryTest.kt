@@ -493,7 +493,7 @@ class UserRepositoryTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        coVerify {
+        verify {
             arrangement.userDAO.observeAllUsersDetailsByConnectionStatus(any())
         }.wasInvoked(once)
     }
@@ -861,7 +861,7 @@ class UserRepositoryTest {
         }
 
         suspend fun withDaoObservingByConnectionStatusReturning(userEntities: List<UserDetailsEntity>) = apply {
-            coEvery {
+            every {
                 userDAO.observeAllUsersDetailsByConnectionStatus(any())
             }.returns(flowOf(userEntities))
         }

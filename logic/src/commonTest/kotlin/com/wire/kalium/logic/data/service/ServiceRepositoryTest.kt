@@ -19,9 +19,9 @@ package com.wire.kalium.logic.data.service
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.BotIdEntity
@@ -29,11 +29,13 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.ServiceEntity
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.first
@@ -101,7 +103,7 @@ class ServiceRepositoryTest {
             awaitComplete()
         }
 
-        coVerify {
+        verify {
             arrangement.serviceDAO.observeIsServiceMember(any(), any())
         }.wasInvoked(exactly = once)
     }
@@ -120,7 +122,7 @@ class ServiceRepositoryTest {
             }
         }
 
-        coVerify {
+        verify {
             arrangement.serviceDAO.observeIsServiceMember(any(), any())
         }.wasInvoked(exactly = once)
     }
@@ -149,7 +151,7 @@ class ServiceRepositoryTest {
             awaitComplete()
         }
 
-        coVerify {
+        verify {
             arrangement.serviceDAO.getAllServices()
         }.wasInvoked(exactly = once)
     }
@@ -170,7 +172,7 @@ class ServiceRepositoryTest {
             awaitComplete()
         }
 
-        coVerify {
+        verify {
             arrangement.serviceDAO.getAllServices()
         }.wasInvoked(exactly = once)
     }
@@ -199,7 +201,7 @@ class ServiceRepositoryTest {
             awaitComplete()
         }
 
-        coVerify {
+        verify {
             arrangement.serviceDAO.searchServicesByName(any())
         }.wasInvoked(exactly = once)
     }
@@ -220,7 +222,7 @@ class ServiceRepositoryTest {
             awaitComplete()
         }
 
-        coVerify {
+        verify {
             arrangement.serviceDAO.searchServicesByName(any())
         }.wasInvoked(exactly = once)
     }
@@ -253,7 +255,7 @@ class ServiceRepositoryTest {
     }
 
     private class Arrangement {
-                val serviceDAO: ServiceDAO = mock(ServiceDAO::class)
+        val serviceDAO: ServiceDAO = mock(ServiceDAO::class)
 
         private val serviceRepository: ServiceRepository = ServiceDataSource(serviceDAO)
 
@@ -269,37 +271,37 @@ class ServiceRepositoryTest {
             }.throws(error)
         }
 
-        suspend fun withObserveIsMemberSuccess(result: Flow<QualifiedIDEntity?>) = apply {
-            coEvery {
+        fun withObserveIsMemberSuccess(result: Flow<QualifiedIDEntity?>) = apply {
+            every {
                 serviceDAO.observeIsServiceMember(any(), any())
             }.returns(result)
         }
 
-        suspend fun withObserveIsMemberFailure(error: Throwable) = apply {
-            coEvery {
+        fun withObserveIsMemberFailure(error: Throwable) = apply {
+            every {
                 serviceDAO.observeIsServiceMember(any(), any())
             }.throws(error)
         }
 
-        suspend fun withGetAllServicesSuccess(result: Flow<List<ServiceEntity>>) = apply {
-            coEvery {
+        fun withGetAllServicesSuccess(result: Flow<List<ServiceEntity>>) = apply {
+            every {
                 serviceDAO.getAllServices()
             }.returns(result)
         }
 
-        suspend fun withGetAllServicesFailure(error: Throwable) = apply {
-            coEvery { serviceDAO.getAllServices() }
+        fun withGetAllServicesFailure(error: Throwable) = apply {
+            every { serviceDAO.getAllServices() }
                 .throws(error)
         }
 
-        suspend fun withSearchServicesByNameSuccess(result: Flow<List<ServiceEntity>>) = apply {
-            coEvery {
+        fun withSearchServicesByNameSuccess(result: Flow<List<ServiceEntity>>) = apply {
+            every {
                 serviceDAO.searchServicesByName(any())
             }.returns(result)
         }
 
-        suspend fun withSearchServicesByNameFailure(error: Throwable) = apply {
-            coEvery {
+        fun withSearchServicesByNameFailure(error: Throwable) = apply {
+            every {
                 serviceDAO.searchServicesByName(any())
             }.throws(error)
         }

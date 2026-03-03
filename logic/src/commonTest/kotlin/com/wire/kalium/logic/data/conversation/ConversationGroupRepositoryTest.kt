@@ -82,11 +82,13 @@ import io.ktor.http.HttpStatusCode
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
+import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -1211,7 +1213,7 @@ class ConversationGroupRepositoryTest {
 
         val result = conversationGroupRepository.observeGuestRoomLink(conversationId)
 
-        coVerify {
+        verify {
             arrangement.conversationDAO.observeGuestRoomLinkByConversationId(any())
         }.wasInvoked(exactly = once)
         result.first().shouldSucceed {
@@ -2123,7 +2125,7 @@ class ConversationGroupRepositoryTest {
         suspend fun withSuccessfulFetchOfGuestRoomLink(
             result: Flow<ConversationGuestLinkEntity?>
         ) = apply {
-            coEvery {
+            every {
                 conversationDAO.observeGuestRoomLinkByConversationId(any())
             }.returns(result)
         }

@@ -23,6 +23,7 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import io.mockative.any
 import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
@@ -132,7 +133,7 @@ class MemberDAOArrangementImpl : MemberDAOArrangement {
         userId: Matcher<UserIDEntity>,
         conversationId: Matcher<QualifiedIDEntity>
     ) {
-        coEvery {
+        every {
             memberDAO.observeIsUserMember(
                 matches { userId.matches(it) },
                 matches { conversationId.matches(it) }

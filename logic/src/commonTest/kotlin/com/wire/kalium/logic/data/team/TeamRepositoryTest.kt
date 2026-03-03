@@ -52,6 +52,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.every
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
@@ -189,7 +190,7 @@ class TeamRepositoryTest {
 
         val (arrangement, teamRepository) = Arrangement().arrange()
 
-        coEvery {
+        every {
             arrangement.teamDAO.getTeamById(oneOf("teamId"))
         }.returns(flowOf(teamEntity))
 
@@ -203,7 +204,7 @@ class TeamRepositoryTest {
     fun givenSelfUserDoesNotExist_whenGettingTeamById_thenNullShouldBePassed() = runTest {
         val (arrangement, teamRepository) = Arrangement().arrange()
 
-        coEvery {
+        every {
             arrangement.teamDAO.getTeamById(oneOf("teamId"))
         }.returns(flowOf(null))
 

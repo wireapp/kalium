@@ -57,6 +57,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -519,7 +520,7 @@ class ClientRepositoryTest {
         }
 
         suspend fun withObserveClientsList(result: List<ClientEntity>) = apply {
-            coEvery {
+            every {
                 clientDAO.observeClientsByUserId(any())
             }.returns(flowOf(result))
         }

@@ -97,6 +97,7 @@ import io.ktor.http.HttpStatusCode
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.eq
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -105,6 +106,7 @@ import io.mockative.matchers.Matcher
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -637,7 +639,7 @@ class ConversationRepositoryTest {
             assertIs<Either.Right<Boolean>>(isMemberResponse)
             assertEquals(isMemberResponse.value, isMember)
 
-            coVerify {
+            verify {
                 arrangement.memberDAO.observeIsUserMember(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
             }.wasInvoked(exactly = once)
 
@@ -661,7 +663,7 @@ class ConversationRepositoryTest {
             assertIs<Either.Right<Boolean>>(isMemberResponse)
             assertEquals(isMemberResponse.value, isMember)
 
-            coVerify {
+            verify {
                 arrangement.memberDAO.observeIsUserMember(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
             }.wasInvoked(exactly = once)
 
@@ -1072,7 +1074,7 @@ class ConversationRepositoryTest {
 
         conversationRepository.observeLegalHoldStatus(CONVERSATION_ID)
 
-        coVerify {
+        verify {
             arrange.conversationDAO.observeLegalHoldStatus(eq(CONVERSATION_ID.toDao()))
         }.wasInvoked(exactly = once)
     }
@@ -1085,7 +1087,7 @@ class ConversationRepositoryTest {
 
         conversationRepository.observeLegalHoldStatusChangeNotified(CONVERSATION_ID)
 
-        coVerify {
+        verify {
             arrange.conversationDAO.observeLegalHoldStatusChangeNotified(eq(CONVERSATION_ID.toDao()))
         }.wasInvoked(exactly = once)
     }
@@ -1227,13 +1229,13 @@ class ConversationRepositoryTest {
         }
 
         suspend fun withExpectedConversationWithOtherUser(conversation: ConversationEntity?) = apply {
-            coEvery {
+            every {
                 conversationDAO.observeOneOnOneConversationWithOtherUser(any())
             }.returns(flowOf(conversation))
         }
 
         suspend fun withExpectedConversationDetailsWithOtherUser(conversation: ConversationViewEntity?) = apply {
-            coEvery {
+            every {
                 conversationDAO.observeOneOnOneConversationDetailsWithOtherUser(any())
             }.returns(flowOf(conversation))
         }
@@ -1245,13 +1247,13 @@ class ConversationRepositoryTest {
         }
 
         suspend fun withConversationUnreadEvents(unreadEvents: List<ConversationUnreadEventEntity>) = apply {
-            coEvery {
+            every {
                 messageDAO.observeConversationsUnreadEvents()
             }.returns(flowOf(unreadEvents))
         }
 
         suspend fun withUnreadArchivedConversationsCount(unreadCount: Long) = apply {
-            coEvery {
+            every {
                 conversationDAO.observeUnreadArchivedConversationsCount()
             }.returns(flowOf(unreadCount))
         }
@@ -1263,19 +1265,19 @@ class ConversationRepositoryTest {
         }
 
         suspend fun withConversations(conversations: List<ConversationViewEntity>) = apply {
-            coEvery {
+            every {
                 conversationDAO.getAllConversationDetails(any(), any(), any())
             }.returns(flowOf(conversations))
         }
 
         suspend fun withLastMessages(messages: List<MessagePreviewEntity>) = apply {
-            coEvery {
+            every {
                 messageDAO.observeLastMessages()
             }.returns(flowOf(messages))
         }
 
         suspend fun withMessageDrafts(messageDrafts: List<MessageDraftEntity>) = apply {
-            coEvery {
+            every {
                 messageDraftDAO.observeMessageDrafts()
             }.returns(flowOf(messageDrafts))
         }
@@ -1461,13 +1463,13 @@ class ConversationRepositoryTest {
         }
 
         suspend fun withObserveLegalHoldStatus() = apply {
-            coEvery {
+            every {
                 conversationDAO.observeLegalHoldStatus(any())
             }.returns(flowOf(ConversationEntity.LegalHoldStatus.ENABLED))
         }
 
         suspend fun withObserveLegalHoldStatusChangeNotified() = apply {
-            coEvery {
+            every {
                 conversationDAO.observeLegalHoldStatusChangeNotified(any())
             }.returns(flowOf(true))
         }

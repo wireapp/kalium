@@ -58,6 +58,7 @@ import io.ktor.http.HttpStatusCode
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
@@ -657,7 +658,7 @@ class EventRepositoryTest {
         }
 
         suspend fun withUnprocessedEvents(events: Flow<List<EventEntity>>) = apply {
-            coEvery {
+            every {
                 eventDAO.observeUnprocessedEvents(any())
             }.returns(events)
         }

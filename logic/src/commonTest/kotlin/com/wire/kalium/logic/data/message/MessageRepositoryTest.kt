@@ -720,7 +720,7 @@ class MessageRepositoryTest {
         val sendMessagePartialFailureMapper = mock(SendMessagePartialFailureMapper::class)
         val messageMapper = mock(MessageMapper::class)
         suspend fun withMockedMessages(messages: List<MessageEntity>): Arrangement {
-            coEvery {
+            every {
                 messageDAO.getMessagesByConversationAndVisibility(any(), any(), any(), any())
             }.returns(flowOf(messages))
             coEvery {
@@ -892,7 +892,7 @@ class MessageRepositoryTest {
         }
 
         suspend fun withObserveMessageById(messageFlow: Flow<MessageEntity?>) = apply {
-            coEvery {
+            every {
                 messageDAO.observeMessageById(any(), any())
             }.returns(messageFlow)
         }
