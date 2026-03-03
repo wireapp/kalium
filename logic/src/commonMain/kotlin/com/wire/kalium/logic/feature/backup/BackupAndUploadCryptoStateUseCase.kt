@@ -20,10 +20,12 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import okio.blackholeSink
 import okio.buffer
 import okio.use
@@ -42,14 +44,24 @@ internal class BackupAndUploadCryptoStateUseCaseImpl(
     private val backupCryptoDBUseCase: BackupCryptoDBUseCase,
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository,
     private val kaliumFileSystem: KaliumFileSystem,
+    private val currentClientIdProvider: CurrentClientIdProvider,
 ) : BackupAndUploadCryptoStateUseCase {
     override suspend fun invoke(): BackupAndUploadCryptoStateResult =
         when (val backupResult = backupCryptoDBUseCase.invoke()) {
             is BackupCryptoDBResult.Success -> {
+                val clientId = when (val clientResult = currentClientIdProvider.invoke()) {
+                    is Either.Left -> {
+                        kaliumLogger.e("Failed to read current client id ${clientResult.value}")
+                        return BackupAndUploadCryptoStateResult.Failure(clientResult.value)
+                    }
+
+                    is Either.Right -> clientResult.value
+                }
                 val backupSize = kaliumFileSystem.source(backupResult.backupFilePath).use { source ->
                     source.buffer().readAll(blackholeSink())
                 }
                 val uploadResult = cryptoStateBackupRemoteRepository.uploadCryptoState(
+                    clientId = clientId.value,
                     sourceProvider = { kaliumFileSystem.source(backupResult.backupFilePath) },
                     size = backupSize
                 ).mapLeft { error ->
@@ -57,9 +69,10 @@ internal class BackupAndUploadCryptoStateUseCaseImpl(
                     error
                 }
                 when (uploadResult) {
-                    is com.wire.kalium.common.functional.Either.Left ->
+                    is Either.Left ->
                         BackupAndUploadCryptoStateResult.Failure(uploadResult.value)
-                    is com.wire.kalium.common.functional.Either.Right ->
+
+                    is Either.Right ->
                         BackupAndUploadCryptoStateResult.Success
                 }
             }

@@ -86,6 +86,7 @@ public class BackupScope internal constructor(
             backupCryptoDBUseCase = backupCryptoDB,
             cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository,
             kaliumFileSystem = kaliumFileSystem,
+            currentClientIdProvider = clientIdProvider,
         )
 
 }

@@ -612,8 +612,6 @@ public class UserSessionScope internal constructor(
         }
     }
 
-
-
     private suspend fun waitUntilClientIdIsAvailable() {
         if (_clientId == null) {
             clientRepository.observeCurrentClientId().filterNotNull().first()

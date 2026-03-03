@@ -23,11 +23,14 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import okio.buffer
@@ -41,52 +44,73 @@ class BackupAndUploadCryptoStateUseCaseTest {
     fun givenBackupSuccess_whenUploadingSucceeds_thenReturnsUnit() = runTest {
         val backupUseCase = mock<BackupCryptoDBUseCase>()
         val remoteRepository = mock<CryptoStateBackupRemoteRepository>()
+        val currentClientIdProvider = mock<CurrentClientIdProvider>()
         val fileSystem = FakeKaliumFileSystem()
         val backupPath = fileSystem.tempFilePath("crypto_state.zip")
         fileSystem.sink(backupPath, mustCreate = true).buffer().use { it.writeUtf8("data") }
 
         everySuspend { backupUseCase.invoke() } returns BackupCryptoDBResult.Success(backupPath, "crypto_state.zip")
-        everySuspend { remoteRepository.uploadCryptoState(any(), any()) } returns Either.Right(Unit)
+        everySuspend { currentClientIdProvider.invoke() } returns Either.Right(ClientId("client-id"))
+        everySuspend { remoteRepository.uploadCryptoState(any(), any(), any()) } returns Either.Right(Unit)
 
-        val useCase = BackupAndUploadCryptoStateUseCaseImpl(backupUseCase, remoteRepository, fileSystem)
+        val useCase = BackupAndUploadCryptoStateUseCaseImpl(
+            backupUseCase,
+            remoteRepository,
+            fileSystem,
+            currentClientIdProvider
+        )
 
         val result = useCase.invoke()
 
         assertIs<BackupAndUploadCryptoStateResult.Success>(result)
-        verifySuspend { remoteRepository.uploadCryptoState(any(), any()) }
+        verifySuspend { remoteRepository.uploadCryptoState("client-id", any(), any()) }
     }
 
     @Test
     fun givenBackupFailure_whenInvoked_thenReturnsFailure() = runTest {
         val backupUseCase = mock<BackupCryptoDBUseCase>()
         val remoteRepository = mock<CryptoStateBackupRemoteRepository>()
+        val currentClientIdProvider = mock<CurrentClientIdProvider>()
         val fileSystem = FakeKaliumFileSystem()
         val failure = CoreFailure.Unknown(RuntimeException("backup failed"))
 
         everySuspend { backupUseCase.invoke() } returns BackupCryptoDBResult.Failure(failure)
 
-        val useCase = BackupAndUploadCryptoStateUseCaseImpl(backupUseCase, remoteRepository, fileSystem)
+        val useCase = BackupAndUploadCryptoStateUseCaseImpl(
+            backupUseCase,
+            remoteRepository,
+            fileSystem,
+            currentClientIdProvider
+        )
 
         val result = useCase.invoke()
 
         assertIs<BackupAndUploadCryptoStateResult.Failure>(result)
+        verifySuspend(VerifyMode.exactly(0)) { currentClientIdProvider.invoke() }
     }
 
     @Test
     fun givenUploadFailure_whenInvoked_thenReturnsFailure() = runTest {
         val backupUseCase = mock<BackupCryptoDBUseCase>()
         val remoteRepository = mock<CryptoStateBackupRemoteRepository>()
+        val currentClientIdProvider = mock<CurrentClientIdProvider>()
         val fileSystem = FakeKaliumFileSystem()
         val backupPath = fileSystem.tempFilePath("crypto_state.zip")
         fileSystem.sink(backupPath, mustCreate = true).buffer().use { it.writeUtf8("data") }
         val error = KaliumException.GenericError(RuntimeException("upload failed"))
 
         everySuspend { backupUseCase.invoke() } returns BackupCryptoDBResult.Success(backupPath, "crypto_state.zip")
-        everySuspend { remoteRepository.uploadCryptoState(any(), any()) } returns Either.Left(
+        everySuspend { currentClientIdProvider.invoke() } returns Either.Right(ClientId("client-id"))
+        everySuspend { remoteRepository.uploadCryptoState(any(), any(), any()) } returns Either.Left(
             NetworkFailure.ServerMiscommunication(error)
         )
 
-        val useCase = BackupAndUploadCryptoStateUseCaseImpl(backupUseCase, remoteRepository, fileSystem)
+        val useCase = BackupAndUploadCryptoStateUseCaseImpl(
+            backupUseCase,
+            remoteRepository,
+            fileSystem,
+            currentClientIdProvider
+        )
 
         val result = useCase.invoke()
 

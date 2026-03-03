@@ -27,12 +27,16 @@ import okio.Source
 
 @Mockable
 internal interface CryptoStateBackupRemoteRepository {
-    suspend fun uploadCryptoState(sourceProvider: () -> Source, size: Long): Either<NetworkFailure, Unit>
+    suspend fun uploadCryptoState(clientId: String, sourceProvider: () -> Source, size: Long): Either<NetworkFailure, Unit>
 }
 
 internal class CryptoStateBackupRemoteDataSource(
     private val nomadDeviceSyncApi: NomadDeviceSyncApi,
 ) : CryptoStateBackupRemoteRepository {
-    override suspend fun uploadCryptoState(sourceProvider: () -> Source, size: Long): Either<NetworkFailure, Unit> =
-        wrapApiRequest { nomadDeviceSyncApi.uploadCryptoState(sourceProvider, size) }
+    override suspend fun uploadCryptoState(
+        clientId: String,
+        sourceProvider: () -> Source,
+        size: Long
+    ): Either<NetworkFailure, Unit> =
+        wrapApiRequest { nomadDeviceSyncApi.uploadCryptoState(clientId, sourceProvider, size) }
 }
