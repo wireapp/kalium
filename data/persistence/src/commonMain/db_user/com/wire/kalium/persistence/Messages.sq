@@ -188,6 +188,9 @@ CREATE TABLE MessageSystemContent (
 
 CREATE INDEX idx_system_content_type ON MessageSystemContent(content_type);
 
+selectChanges:
+SELECT changes();
+
 needsToBeNotified:
 WITH targetMessage(isSelfMessage, isMentioningSelfUser, isQuotingSelfUser, mutedStatus) AS (
 SELECT isSelfMessage,

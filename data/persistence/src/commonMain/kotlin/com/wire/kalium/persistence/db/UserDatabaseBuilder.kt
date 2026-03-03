@@ -84,6 +84,8 @@ import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftD
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDaoImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
+import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
+import com.wire.kalium.persistence.dao.backup.NomadMessagesDAOImpl
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDaoImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -377,6 +379,15 @@ class UserDatabaseBuilder internal constructor(
 
     val historyClientQueries: HistoryClientQueries
         get() = database.historyClientQueries
+
+    val nomadMessagesDAO: NomadMessagesDAO
+        get() = NomadMessagesDAOImpl(
+            usersQueries = database.usersQueries,
+            conversationsQueries = database.conversationsQueries,
+            messagesQueries = database.messagesQueries,
+            messageAttachmentsQueries = database.messageAttachmentsQueries,
+            writeDispatcher = writeDispatcher,
+        )
 
     val messageAttachments: MessageAttachmentsDao
         get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, readDispatcher, writeDispatcher)

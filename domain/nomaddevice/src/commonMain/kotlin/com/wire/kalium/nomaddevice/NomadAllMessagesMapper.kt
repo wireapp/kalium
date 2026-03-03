@@ -19,15 +19,15 @@
 package com.wire.kalium.nomaddevice
 
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationWithMessages
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadStoredMessage
-import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
+import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import com.wire.kalium.persistence.dao.message.MessageToInsert
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
+import com.wire.kalium.persistence.dao.backup.NomadMessageToInsert
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAsset
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAttachment
@@ -41,7 +41,7 @@ private const val EPOCH_MILLIS_THRESHOLD = 10_000_000_000L
 
 internal data class NomadMappedMessages(
     val totalMessages: Int,
-    val messages: List<MessageToInsert>,
+    val messages: List<NomadMessageToInsert>,
     val skippedMessages: Int,
 )
 
@@ -66,10 +66,11 @@ internal class NomadAllMessagesMapper {
         )
     }
 
+    @Suppress("ReturnCount")
     private fun mapMessageOrNull(
         conversationWithMessages: NomadConversationWithMessages,
         storedMessage: NomadStoredMessage,
-    ): MessageToInsert? {
+    ): NomadMessageToInsert? {
         val payloadBytes = runCatching { Base64.Default.decode(storedMessage.payload) }.getOrElse {
             logSkip(storedMessage, conversationWithMessages, "invalid base64 payload")
             return null
@@ -81,29 +82,37 @@ internal class NomadAllMessagesMapper {
         }
 
         val senderUserId = payload.senderUserId.toDaoQualifiedId()
-        val content = payload.content.toMessageContent(payloadBytes)
+        val creationDate = payload.creationDate.toInstantGuessingUnit()
+        val lastEditDate = payload.lastEditTime?.let { Instant.fromEpochMilliseconds(it) }
+        val content = payload.content.toSyncableMessageContent(
+            senderUserId = senderUserId,
+            senderClientId = payload.senderClientId,
+            creationDate = creationDate,
+            lastEditDate = lastEditDate,
+        )
         val conversationId = conversationWithMessages.conversation.toDaoConversationId()
 
-        return MessageToInsert(
+        return NomadMessageToInsert(
             id = storedMessage.messageId,
             conversationId = conversationId,
             date = storedMessage.timestamp.toInstantGuessingUnit(),
-            senderUserId = senderUserId,
-            senderClientId = payload.senderClientId,
-            visibility = MessageEntity.Visibility.VISIBLE,
-            status = MessageEntity.Status.SENT,
-            editStatus = payload.lastEditTime?.let {
-                MessageEntity.EditStatus.Edited(Instant.fromEpochMilliseconds(it))
-            } ?: MessageEntity.EditStatus.NotEdited,
-            expectsReadConfirmation = false,
-            content = content,
+            payload = content,
         )
     }
 
-    private fun NomadDeviceMessageContent.toMessageContent(rawPayload: ByteArray): MessageEntityContent.Regular =
+    private fun NomadDeviceMessageContent.toSyncableMessageContent(
+        senderUserId: QualifiedIDEntity,
+        senderClientId: String?,
+        creationDate: Instant,
+        lastEditDate: Instant?,
+    ): SyncableMessagePayloadEntity =
         when (val contentValue = content) {
-            is NomadDeviceMessageContent.Content.Text -> MessageEntityContent.Text(
-                messageBody = contentValue.value.text,
+            is NomadDeviceMessageContent.Content.Text -> SyncableMessagePayloadEntity.Text(
+                creationDate = creationDate,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId,
+                lastEditDate = lastEditDate,
+                text = contentValue.value.text,
                 mentions = contentValue.value.mentions.map { mention ->
                     MessageEntity.Mention(
                         start = mention.start,
@@ -114,16 +123,30 @@ internal class NomadAllMessagesMapper {
                 quotedMessageId = contentValue.value.quotedMessageId
             )
 
-            is NomadDeviceMessageContent.Content.Asset -> contentValue.value.toMessageAssetContent()
-            is NomadDeviceMessageContent.Content.Location -> MessageEntityContent.Location(
+            is NomadDeviceMessageContent.Content.Asset -> contentValue.value.toSyncableAssetContent(
+                senderUserId = senderUserId,
+                senderClientId = senderClientId,
+                creationDate = creationDate,
+                lastEditDate = lastEditDate,
+            )
+
+            is NomadDeviceMessageContent.Content.Location -> SyncableMessagePayloadEntity.Location(
+                creationDate = creationDate,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId,
+                lastEditDate = lastEditDate,
                 latitude = contentValue.value.latitude,
                 longitude = contentValue.value.longitude,
                 name = contentValue.value.name,
                 zoom = contentValue.value.zoom
             )
 
-            is NomadDeviceMessageContent.Content.Multipart -> MessageEntityContent.Multipart(
-                messageBody = contentValue.value.text?.text,
+            is NomadDeviceMessageContent.Content.Multipart -> SyncableMessagePayloadEntity.Multipart(
+                creationDate = creationDate,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId,
+                lastEditDate = lastEditDate,
+                text = contentValue.value.text?.text,
                 mentions = contentValue.value.text?.mentions.orEmpty().map { mention ->
                     MessageEntity.Mention(
                         start = mention.start,
@@ -137,29 +160,40 @@ internal class NomadAllMessagesMapper {
                 }
             )
 
-            null -> MessageEntityContent.Unknown(
-                typeName = null,
-                encodedData = rawPayload
+            null -> SyncableMessagePayloadEntity.Unsupported(
+                contentType = MessageEntity.ContentType.UNKNOWN,
+                creationDate = creationDate,
+                senderUserId = senderUserId,
+                senderClientId = senderClientId,
+                lastEditDate = lastEditDate,
             )
         }
 
-    private fun NomadDeviceAsset.toMessageAssetContent(): MessageEntityContent.Asset {
+    private fun NomadDeviceAsset.toSyncableAssetContent(
+        senderUserId: QualifiedIDEntity,
+        senderClientId: String?,
+        creationDate: Instant,
+        lastEditDate: Instant?,
+    ): SyncableMessagePayloadEntity.Asset {
         val metadata = metaData
-        return MessageEntityContent.Asset(
-            assetSizeInBytes = size,
-            assetName = name,
-            assetMimeType = mimeType,
-            assetOtrKey = otrKey.array,
-            assetSha256Key = sha256.array,
+        return SyncableMessagePayloadEntity.Asset(
+            creationDate = creationDate,
+            senderUserId = senderUserId,
+            senderClientId = senderClientId,
+            lastEditDate = lastEditDate,
+            mimeType = mimeType,
+            size = size,
+            name = name,
+            otrKey = otrKey.array,
+            sha256 = sha256.array,
             assetId = assetId,
             assetToken = assetToken,
             assetDomain = assetDomain,
-            assetEncryptionAlgorithm = encryption,
-            assetWidth = metadata.widthOrNull(),
-            assetHeight = metadata.heightOrNull(),
-            assetDurationMs = metadata.durationOrNull(),
-            assetNormalizedLoudness = metadata.normalizedLoudnessOrNull(),
-            assetDataPath = null
+            encryptionAlgorithm = encryption,
+            width = metadata.widthOrNull(),
+            height = metadata.heightOrNull(),
+            durationMs = metadata.durationOrNull(),
+            normalizedLoudness = metadata.normalizedLoudnessOrNull(),
         )
     }
 

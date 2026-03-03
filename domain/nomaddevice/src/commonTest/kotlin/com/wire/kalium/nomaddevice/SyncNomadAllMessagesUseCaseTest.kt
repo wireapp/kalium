@@ -29,10 +29,11 @@ import com.wire.kalium.network.api.authenticated.nomaddevice.NomadStoredMessage
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.nomaddevice.dao.NomadMessageStoreResult
-import com.wire.kalium.nomaddevice.dao.NomadMessagesDAO
-import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import com.wire.kalium.persistence.dao.message.MessageToInsert
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
+import com.wire.kalium.persistence.dao.backup.NomadMessageStoreResult
+import com.wire.kalium.persistence.dao.backup.NomadMessageToInsert
+import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessageContent
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
@@ -77,7 +78,7 @@ class SyncNomadAllMessagesUseCaseTest {
         assertEquals(2, success.batches)
         assertEquals(2, fakeDao.batchSize)
         assertEquals(3, fakeDao.messages.size)
-        assertEquals("hello", (fakeDao.messages.first().content as MessageEntityContent.Text).messageBody)
+        assertEquals("hello", (fakeDao.messages.first().payload as SyncableMessagePayloadEntity.Text).text)
     }
 
     @Test
@@ -157,11 +158,11 @@ class SyncNomadAllMessagesUseCaseTest {
 
     private class FakeNomadMessagesDAO : NomadMessagesDAO {
         var batchSize: Int = 0
-        val messages = mutableListOf<MessageToInsert>()
+        val messages = mutableListOf<NomadMessageToInsert>()
 
         override suspend fun storeMessages(
-            selfUserId: UserId,
-            messages: List<MessageToInsert>,
+            selfUserId: QualifiedIDEntity,
+            messages: List<NomadMessageToInsert>,
             batchSize: Int,
         ): NomadMessageStoreResult {
             this.batchSize = batchSize
