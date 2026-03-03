@@ -91,13 +91,18 @@ interface RemoteBackupChangeLogDAO {
     suspend fun getPendingChanges(): List<ChangeLogEntry>
 
     /**
-     * Get a transactional snapshot of the latest [limit] pending changes and their conversations' last-read dates.
+     * Get a transactional snapshot of the latest [limit] pending changes and their conversations' last-read timestamps.
      */
     suspend fun getLastPendingChangesBatch(limit: Long): ChangeLogSyncBatch
 
     /**
-     * Observe transactional snapshots of the latest [limit] pending changes and their conversations' last-read dates.
+     * Observe transactional snapshots of the latest [limit] pending changes and their conversations' last-read timestamps.
      */
     fun observeLastPendingChangesBatch(limit: Long): Flow<ChangeLogSyncBatch>
+
+    /**
+     * Delete the given changelog [changes] after they were successfully synced.
+     */
+    suspend fun deleteChanges(changes: List<ChangeLogEntry>)
 
 }

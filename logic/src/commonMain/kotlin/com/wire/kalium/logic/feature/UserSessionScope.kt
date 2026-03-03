@@ -2801,7 +2801,6 @@ public class UserSessionScope internal constructor(
             waitUntilClientIdIsAvailable()
             callBackgroundManager.startProcessing()
         }
-
     }
 }
 

@@ -163,7 +163,7 @@ interface AccountsDAO {
     suspend fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?>
     suspend fun allAccountList(): List<AccountInfoEntity>
     suspend fun allValidAccountList(): List<AccountInfoEntity>
-    fun observerValidAccountList(): Flow<List<AccountInfoEntity>>
+    suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>>
     suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>>
     suspend fun isFederated(userIDEntity: UserIDEntity): Boolean?
     suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean
@@ -236,7 +236,7 @@ internal class AccountsDAOImpl internal constructor(
         queries.allValidAccounts(mapper = mapper::fromAccount).executeAsList()
     }
 
-    override fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
+    override suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
         queries.allValidAccounts(mapper = mapper::fromAccount)
             .asFlow()
             .mapToList()

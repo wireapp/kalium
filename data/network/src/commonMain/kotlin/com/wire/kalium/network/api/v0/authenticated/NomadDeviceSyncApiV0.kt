@@ -19,10 +19,13 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -50,6 +53,16 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
                 setBody(request)
                 contentType(ContentType.Application.Json)
             }
+        }
+
+    override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> =
+        wrapKaliumResponse {
+            httpClient.get("$PATH_EVENT/$PATH_ALL_MESSAGES")
+        }
+
+    override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> =
+        wrapKaliumResponse {
+            httpClient.get("$PATH_EVENT/$PATH_CONVERSATION_METADATA")
         }
 
     override suspend fun uploadCryptoState(
@@ -107,6 +120,8 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
     private companion object {
         const val PATH_EVENT = "event"
         const val PATH_MESSAGES = "messages"
+        const val PATH_ALL_MESSAGES = "all-messages"
+        const val PATH_CONVERSATION_METADATA = "conversation/metadata"
         const val PATH_CRYPTO_STATE = "crypto/state"
         const val QUERY_DEVICE_ID = "device_id"
         const val BUFFER_SIZE = 8L * 1024

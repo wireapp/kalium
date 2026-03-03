@@ -30,6 +30,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import okio.Buffer
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -56,6 +57,55 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
     }
 
     @Test
+    fun givenNomadMessages_whenGettingAllMessages_thenRequestAndResponseShouldMatchContract() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = ALL_MESSAGES_RESPONSE_JSON,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertPathEqual("/event/all-messages")
+            }
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient)
+        val response = api.getAllMessages()
+
+        assertTrue(response.isSuccessful())
+        assertEquals(2, response.value.conversations.size)
+        val firstMessage = response.value.conversations.first().messages.first()
+        assertEquals(REACTION_RAW, firstMessage.reaction)
+        assertEquals(READ_RECEIPT_RAW, firstMessage.readReceipt)
+    }
+
+    @Test
+    fun givenConversationMetadata_whenGettingConversationMetadata_thenRequestAndResponseShouldMatchContract() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = CONVERSATION_METADATA_RESPONSE_JSON,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertPathEqual("/event/conversation/metadata")
+            }
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient)
+        val response = api.getConversationMetadata()
+
+        assertTrue(response.isSuccessful())
+        assertEquals(1, response.value.conversations.size)
+        assertEquals(1707235100L, response.value.conversations.first().metadata.lastRead)
+    }
+
+    @Test
+    fun givenEmptyLastReadEvent_whenConstructingMessageEvent_thenItShouldThrow() {
+        val exception = assertFailsWith<IllegalArgumentException> {
+            NomadMessageEvent.LastReadEvent(lastRead = emptyList())
+        }
+
+        assertFalse(exception.message.isNullOrBlank())
+    }
+
+    @Test
     fun givenCryptoState_whenUploading_thenRequestShouldMatchContract() = runTest {
         val cryptoStateBytes = byteArrayOf(1, 2, 3, 4)
         val networkClient = mockAuthenticatedNetworkClient(
@@ -79,15 +129,6 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
         )
 
         assertTrue(response.isSuccessful())
-    }
-
-    @Test
-    fun givenEmptyLastReadEvent_whenConstructingMessageEvent_thenItShouldThrow() {
-        val exception = assertFailsWith<IllegalArgumentException> {
-            NomadMessageEvent.LastReadEvent(lastRead = emptyList())
-        }
-
-        assertFalse(exception.message.isNullOrBlank())
     }
 
     private companion object {
@@ -118,6 +159,84 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
                       "last_read": 1772014800000
                     }
                   ]
+                }
+              ]
+            }
+            """.trimIndent()
+
+        const val REACTION_RAW =
+            "{\"reactions_by_user\":[{\"user_id\":{\"id\":\"user-1\",\"domain\":\"example.com\"},\"emojis\":[\"👍\"]}]}"
+
+        const val READ_RECEIPT_RAW =
+            "{\"read_receipts\":[{\"user_id\":{\"id\":\"user-1\",\"domain\":\"example.com\"},\"date\":\"2026-02-25T10:15:00Z\"}]}"
+
+        val REACTION_RAW_JSON = REACTION_RAW.replace("\"", "\\\"")
+        val READ_RECEIPT_RAW_JSON = READ_RECEIPT_RAW.replace("\"", "\\\"")
+
+        val ALL_MESSAGES_RESPONSE_JSON =
+            """
+            {
+              "conversations": [
+                {
+                  "conversation": {
+                    "id": "conv-123",
+                    "domain": "example.com"
+                  },
+                  "messages": [
+                    {
+                      "message_id": "msg-001234",
+                      "timestamp": 1707235200,
+                      "payload": "SGVsbG8gV29ybGQ=",
+                      "reaction": "$REACTION_RAW_JSON",
+                      "read_receipt": "$READ_RECEIPT_RAW_JSON"
+                    },
+                    {
+                      "message_id": "msg-00123",
+                      "timestamp": 1707235200,
+                      "payload": "SGVsbG8gV29ybGQ=",
+                      "reaction": "$REACTION_RAW_JSON",
+                      "read_receipt": "$READ_RECEIPT_RAW_JSON"
+                    }
+                  ]
+                },
+                {
+                  "conversation": {
+                    "id": "conv-12345",
+                    "domain": "example.com"
+                  },
+                  "messages": [
+                    {
+                      "message_id": "msg-00123",
+                      "timestamp": 1707235200,
+                      "payload": "SGVsbG8gV29ybGQ=",
+                      "reaction": "$REACTION_RAW_JSON",
+                      "read_receipt": "$READ_RECEIPT_RAW_JSON"
+                    },
+                    {
+                      "message_id": "msg-001234",
+                      "timestamp": 1707235200,
+                      "payload": "SGVsbG8gV29ybGQ=",
+                      "reaction": "$REACTION_RAW_JSON",
+                      "read_receipt": "$READ_RECEIPT_RAW_JSON"
+                    }
+                  ]
+                }
+              ]
+            }
+            """.trimIndent()
+
+        val CONVERSATION_METADATA_RESPONSE_JSON =
+            """
+            {
+              "conversations": [
+                {
+                  "conversation": {
+                    "id": "conv-12345",
+                    "domain": "example.com"
+                  },
+                  "metadata": {
+                    "last_read": 1707235100
+                  }
                 }
               ]
             }
