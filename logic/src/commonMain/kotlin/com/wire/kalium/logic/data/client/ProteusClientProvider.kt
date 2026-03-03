@@ -69,7 +69,7 @@ internal class ProteusClientProviderImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler
-) : ProteusClientProvider {
+) : ProteusClientProvider, CryptoBackupExporter {
 
     private var _proteusClient: ProteusClient? = null
     private var _coreCryptoCentral: CoreCryptoCentral? = null

@@ -90,7 +90,7 @@ internal class MLSClientProviderImpl(
     private val epochObserver: MLSEpochObserver,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val processingScope: CoroutineScope,
-) : MLSClientProvider {
+) : MLSClientProvider, CryptoBackupExporter {
 
     private var mlsClient: MLSClient? = null
     private var coreCryptoCentral: CoreCryptoCentral? = null

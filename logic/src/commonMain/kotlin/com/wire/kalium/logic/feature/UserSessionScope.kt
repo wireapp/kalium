@@ -527,6 +527,8 @@ import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
@@ -537,8 +539,6 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.DelicateKaliumApi
@@ -2785,12 +2785,6 @@ public class UserSessionScope internal constructor(
         launch {
             waitUntilClientIdIsAvailable()
             callBackgroundManager.startProcessing()
-        }
-
-        launch {
-            // todo (ym):
-            //  temporary solution to trigger crypto-db backup. Later moved/hooked with callbacks mechanism on state mutation + debounce
-            backup.backupCryptoDB()
         }
     }
 }
