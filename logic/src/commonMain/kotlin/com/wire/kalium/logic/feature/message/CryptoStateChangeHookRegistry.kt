@@ -18,39 +18,36 @@
 
 package com.wire.kalium.logic.feature.message
 
+import co.touchlab.stately.concurrency.AtomicReference
+import co.touchlab.stately.concurrency.value
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
-import kotlin.concurrent.Volatile
 import kotlin.coroutines.cancellation.CancellationException
 
 internal class CryptoStateChangeHookRegistry : CryptoStateChangeHookNotifier {
 
-    @Volatile
-    private var hookNotifier: CryptoStateChangeHookNotifier? = null
+    private val hookNotifier = AtomicReference<CryptoStateChangeHookNotifier?>(null)
 
     fun register(hookNotifier: CryptoStateChangeHookNotifier) {
-        if (this.hookNotifier == null) {
-            this.hookNotifier = hookNotifier
-        } else {
+        val success = this.hookNotifier.compareAndSet(null, hookNotifier)
+        if (!success) {
             error("Hook notifier already registered")
         }
     }
 
     fun unregister(hookNotifier: CryptoStateChangeHookNotifier) {
-        if (this.hookNotifier === hookNotifier) {
-            this.hookNotifier = null
-        }
+        this.hookNotifier.compareAndSet(hookNotifier, null)
     }
 
     fun clear() {
-        hookNotifier = null
+        hookNotifier.value = null
     }
 
     @Suppress("TooGenericExceptionCaught")
     override suspend fun onCryptoStateChanged(userId: UserId) {
         try {
-            hookNotifier?.onCryptoStateChanged(userId)
+            hookNotifier.value?.onCryptoStateChanged(userId)
         } catch (e: CancellationException) {
             throw e
         } catch (throwable: Exception) {

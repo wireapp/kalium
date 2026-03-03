@@ -45,6 +45,7 @@ import com.wire.kalium.persistence.util.configurePersistenceDebug
 import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
 import com.wire.kalium.userstorage.di.UserStorageProvider
 
+@Suppress("TooManyFunctions")
 public abstract class CoreLogicCommon internal constructor(
     protected val rootPath: String,
     protected val userAgent: String,
