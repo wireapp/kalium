@@ -28,7 +28,6 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.backup.NomadMessageStoreResult
 import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
 import com.wire.kalium.userstorage.di.UserStorageProvider
@@ -140,7 +139,6 @@ public class SyncNomadAllMessagesUseCase internal constructor(
 
         return wrapStorageRequest {
             dao.storeMessages(
-                selfUserId = selfUserId.toDaoUserId(),
                 messages = mapped.messages,
                 batchSize = batchSize
             )
@@ -166,6 +164,3 @@ public class SyncNomadAllMessagesUseCase internal constructor(
 
 private fun UserId.toNetworkUserId(): com.wire.kalium.network.api.model.UserId =
     com.wire.kalium.network.api.model.QualifiedID(value = value, domain = domain)
-
-private fun UserId.toDaoUserId(): QualifiedIDEntity =
-    QualifiedIDEntity(value = value, domain = domain)

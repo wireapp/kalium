@@ -67,7 +67,7 @@ class NomadMessagesDAOTest {
         )
 
         val result = dao.storeMessages(
-            selfUserId = SELF_USER_ID,
+
             messages = messages,
             batchSize = 2
         )
@@ -96,12 +96,12 @@ class NomadMessagesDAOTest {
         )
 
         val first = dao.storeMessages(
-            selfUserId = SELF_USER_ID,
+
             messages = messages,
             batchSize = 20
         )
         val second = dao.storeMessages(
-            selfUserId = SELF_USER_ID,
+
             messages = messages,
             batchSize = 20
         )
@@ -129,7 +129,7 @@ class NomadMessagesDAOTest {
         )
 
         val result = dao.storeMessages(
-            selfUserId = SELF_USER_ID,
+
             messages = messages,
             batchSize = 20
         )
@@ -169,7 +169,7 @@ class NomadMessagesDAOTest {
 
         assertFails {
             dao.storeMessages(
-                selfUserId = SELF_USER_ID,
+    
                 messages = listOf(validMessage, invalidMessage),
                 batchSize = 1
             )

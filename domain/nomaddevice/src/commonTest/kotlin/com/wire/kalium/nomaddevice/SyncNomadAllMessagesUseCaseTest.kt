@@ -29,7 +29,6 @@ import com.wire.kalium.network.api.authenticated.nomaddevice.NomadStoredMessage
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
 import com.wire.kalium.persistence.dao.backup.NomadMessageStoreResult
 import com.wire.kalium.persistence.dao.backup.NomadMessageToInsert
@@ -161,7 +160,6 @@ class SyncNomadAllMessagesUseCaseTest {
         val messages = mutableListOf<NomadMessageToInsert>()
 
         override suspend fun storeMessages(
-            selfUserId: QualifiedIDEntity,
             messages: List<NomadMessageToInsert>,
             batchSize: Int,
         ): NomadMessageStoreResult {

@@ -23,10 +23,6 @@ import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
-import com.wire.kalium.persistence.dao.UserEntity
-import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.withContext
@@ -46,7 +42,6 @@ data class NomadMessageToInsert(
 
 interface NomadMessagesDAO {
     suspend fun storeMessages(
-        selfUserId: QualifiedIDEntity,
         messages: List<NomadMessageToInsert>,
         batchSize: Int,
     ): NomadMessageStoreResult
@@ -61,7 +56,6 @@ internal class NomadMessagesDAOImpl internal constructor(
 ) : NomadMessagesDAO {
 
     override suspend fun storeMessages(
-        selfUserId: QualifiedIDEntity,
         messages: List<NomadMessageToInsert>,
         batchSize: Int,
     ): NomadMessageStoreResult {
@@ -73,8 +67,8 @@ internal class NomadMessagesDAOImpl internal constructor(
         withContext(writeDispatcher.value) {
             messages.chunked(normalizedBatchSize).forEach { batch ->
                 messagesQueries.transaction {
-                    insertOrIgnoreUsers(buildPlaceholderUsers(batch))
-                    insertOrUpdatePlaceholderConversations(buildPlaceholderConversations(selfUserId, batch))
+                    insertPlaceholderUsers(batch)
+                    insertPlaceholderConversations(batch)
                     insertedMessages += insertMessages(batch)
                 }
                 batches += 1
@@ -87,141 +81,29 @@ internal class NomadMessagesDAOImpl internal constructor(
         )
     }
 
-    private fun insertOrIgnoreUsers(users: List<UserEntity>) {
-        users.forEach { user ->
-            usersQueries.insertOrIgnoreUser(
-                qualified_id = user.id,
-                name = user.name,
-                handle = user.handle,
-                email = user.email,
-                phone = user.phone,
-                accent_id = user.accentId,
-                team = user.team,
-                connection_status = user.connectionStatus,
-                preview_asset_id = user.previewAssetId,
-                complete_asset_id = user.completeAssetId,
-                user_type = user.userType,
-                bot_service = user.botService,
-                deleted = user.deleted,
-                incomplete_metadata = false,
-                expires_at = user.expiresAt,
-                supported_protocols = user.supportedProtocols,
-            )
-        }
+    private fun insertPlaceholderUsers(messages: List<NomadMessageToInsert>) {
+        messages
+            .asSequence()
+            .map { it.payload.senderUserId }
+            .distinct()
+            .forEach { usersQueries.insertOrIgnoreUserId(it) }
     }
 
-    private fun insertOrUpdatePlaceholderConversations(conversations: List<ConversationEntity>) {
-        conversations.forEach { conversation ->
-            with(conversation) {
-                val protocolInfoLocal = protocolInfo
-                val mlsInfo = protocolInfoLocal as? ConversationEntity.ProtocolInfo.MLSCapable
-                conversationsQueries.insertConversationOrUpdateLastModifiedDate(
-                    qualified_id = id,
-                    name = name,
-                    type = type,
-                    team_id = teamId,
-                    mls_group_id = mlsInfo?.groupId,
-                    mls_group_state = mlsInfo?.groupState ?: ConversationEntity.GroupState.ESTABLISHED,
-                    mls_epoch = mlsInfo?.epoch?.toLong() ?: MLS_DEFAULT_EPOCH,
-                    protocol = when (protocolInfoLocal) {
-                        is ConversationEntity.ProtocolInfo.MLS -> ConversationEntity.Protocol.MLS
-                        is ConversationEntity.ProtocolInfo.Mixed -> ConversationEntity.Protocol.MIXED
-                        is ConversationEntity.ProtocolInfo.Proteus -> ConversationEntity.Protocol.PROTEUS
-                    },
-                    muted_status = mutedStatus,
-                    muted_time = mutedTime,
-                    creator_id = creatorId,
-                    last_modified_date = lastModifiedDate,
-                    last_notified_date = lastNotificationDate,
-                    access_list = access,
-                    access_role_list = accessRole,
-                    last_read_date = lastReadDate,
-                    mls_last_keying_material_update_date =
-                        mlsInfo?.keyingMaterialLastUpdate ?: Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
-                    mls_cipher_suite = mlsInfo?.cipherSuite ?: MLS_DEFAULT_CIPHER_SUITE,
-                    receipt_mode = receiptMode,
-                    message_timer = messageTimer,
-                    user_message_timer = userMessageTimer,
-                    incomplete_metadata = hasIncompleteMetadata,
-                    archived = archived,
-                    archived_date_time = archivedInstant,
-                    is_channel = isChannel,
-                    channel_access = channelAccess,
-                    channel_add_permission = channelAddPermission,
-                    wire_cell = wireCell,
+    private fun insertPlaceholderConversations(messages: List<NomadMessageToInsert>) {
+        messages
+            .groupBy { it.conversationId }
+            .forEach { (conversationId, conversationMessages) ->
+                conversationsQueries.insertIncompleteConversationOrBumpLastModifiedDate(
+                    qualified_id = conversationId,
+                    last_modified_date = conversationMessages.maxOf { it.date },
                 )
             }
-        }
     }
 
     private fun insertMessages(messages: List<NomadMessageToInsert>): Int =
         messages.count { message ->
             insertMessageWithContentOrThrow(message)
         }
-
-    private fun buildPlaceholderUsers(messages: List<NomadMessageToInsert>): List<UserEntity> =
-        messages
-            .asSequence()
-            .map { it.payload.senderUserId }
-            .distinct()
-            .map { senderId ->
-                UserEntity(
-                    id = senderId,
-                    name = null,
-                    handle = null,
-                    email = null,
-                    phone = null,
-                    accentId = DEFAULT_ACCENT_ID,
-                    team = null,
-                    previewAssetId = null,
-                    completeAssetId = null,
-                    availabilityStatus = UserAvailabilityStatusEntity.NONE,
-                    userType = UserTypeEntity.NONE,
-                    botService = null,
-                    deleted = false,
-                    expiresAt = null,
-                    defederated = false,
-                    supportedProtocols = null,
-                    activeOneOnOneConversationId = null
-                )
-            }
-            .toList()
-
-    private fun buildPlaceholderConversations(
-        selfUserId: QualifiedIDEntity,
-        messages: List<NomadMessageToInsert>,
-    ): List<ConversationEntity> =
-        messages
-            .groupBy { it.conversationId }
-            .map { (conversationId, conversationMessages) ->
-                ConversationEntity(
-                    id = conversationId,
-                    name = null,
-                    type = ConversationEntity.Type.GROUP,
-                    teamId = null,
-                    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                    creatorId = selfUserId.value,
-                    lastNotificationDate = null,
-                    lastModifiedDate = conversationMessages.maxOf { it.date },
-                    lastReadDate = Instant.DISTANT_PAST,
-                    access = emptyList(),
-                    accessRole = emptyList(),
-                    receiptMode = ConversationEntity.ReceiptMode.DISABLED,
-                    messageTimer = null,
-                    userMessageTimer = null,
-                    hasIncompleteMetadata = true,
-                    archived = false,
-                    archivedInstant = null,
-                    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
-                    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-                    isChannel = false,
-                    channelAccess = null,
-                    channelAddPermission = null,
-                    wireCell = null,
-                    historySharingRetentionSeconds = 0
-                )
-            }
 
     private fun insertMessageWithContentOrThrow(message: NomadMessageToInsert): Boolean {
         messagesQueries.insertOrIgnoreMessage(
@@ -407,10 +289,5 @@ internal class NomadMessagesDAOImpl internal constructor(
 
     private companion object {
         const val MIN_BATCH_SIZE = 1
-        const val DEFAULT_ACCENT_ID = 0
-
-        const val MLS_DEFAULT_EPOCH = 0L
-        const val MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI = 0L
-        val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     }
 }
