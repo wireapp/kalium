@@ -1,0 +1,52 @@
+name: "Deploy Kalium"
+
+on:
+  workflow_call:
+    inputs:
+      deployment-targets:
+        description: "JSON array of deployment targets"
+        required: true
+        type: string
+      tag-name:
+        description: "Tag name for the release (e.g. v1.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  deploy:
+    strategy:
+      matrix:
+        target: ${{ fromJson(inputs.deployment-targets) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        if: matrix.target.artifacts != ''
+        uses: actions/download-artifact@v7
+        with:
+          pattern: ${{ matrix.target.artifacts }}
+          path: release-artifacts/
+          merge-multiple: true
+
+      - name: Deploy to GitHub Release
+        if: matrix.target.type == 'github-release'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag-name }}
+          files: release-artifacts/*
+          fail_on_unmatched_files: ${{ matrix.target.fail-on-unmatched || true }}
+
+  deployment-summary:
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Create deployment summary
+        run: |
+          echo "## Kalium Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag**: ${{ inputs.tag-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Targets**: ${{ inputs.deployment-targets }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
