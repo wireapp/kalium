@@ -31,6 +31,8 @@ import io.ktor.http.contentType
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.close
 import io.ktor.utils.io.writeFully
+import io.ktor.utils.io.writeStringUtf8
+import okio.Buffer
 import okio.Source
 import okio.buffer
 import okio.use
@@ -55,26 +57,35 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
     ): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.post(NomadDeviceSyncApi.PATH_CRYPTO_STATE) {
-                setBody(CryptoStateBodyContent(backupSource, backupSize))
-                contentType(ContentType.Application.OctetStream)
+                setBody(StreamCryptoStateBodyContent(backupSource, backupSize))
             }
         }
 
-    private class CryptoStateBodyContent(
-        private val backupSource: () -> Source,
-        private val backupSize: Long
+    internal class StreamCryptoStateBodyContent(
+        private val fileContentStream: () -> Source,
+        private val fileSize: Long
     ) : OutgoingContent.WriteChannelContent() {
-        override val contentLength: Long = backupSize
-
+        override val contentType: ContentType =
+            ContentType.MultiPart.FormData.withParameter("boundary", BOUNDARY)
+        private val openingData: String by lazy {
+            buildString {
+                append("--$BOUNDARY\r\n")
+                append("Content-Disposition: form-data; name=\"file\"; filename=\"$CRYPTO_ZIP_FILENAME\"\r\n")
+                append("Content-Type: application/octet-stream\r\n")
+                append("Content-Length: $fileSize\r\n\r\n")
+            }
+        }
+        private val closingData = "\r\n--$BOUNDARY--\r\n"
         override suspend fun writeTo(channel: ByteWriteChannel) {
-            backupSource().buffer().use { source ->
-                val buffer = ByteArray(BUFFER_SIZE)
-                var readBytes = source.read(buffer)
-                while (readBytes > 0) {
-                    channel.writeFully(buffer, 0, readBytes)
-                    readBytes = source.read(buffer)
+            channel.writeStringUtf8(openingData)
+            fileContentStream().buffer().use { source ->
+                val buffer = Buffer()
+                while (source.read(buffer, BUFFER_SIZE) != -1L) {
+                    val byteArray = buffer.readByteArray()
+                    channel.writeFully(byteArray)
                 }
             }
+            channel.writeStringUtf8(closingData)
             channel.flush()
             channel.close()
         }
@@ -82,6 +93,8 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
 
     private companion object {
         const val PATH_MESSAGE_EVENTS = "message/events"
-        const val BUFFER_SIZE = 8 * 1024
+        const val BUFFER_SIZE = 8L * 1024
+        const val BOUNDARY = "frontier"
+        const val CRYPTO_ZIP_FILENAME = "CHANGELOG.zip"
     }
 }

@@ -63,7 +63,9 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertPost()
-                assertContentType(io.ktor.http.ContentType.Application.OctetStream)
+                assertContentType(
+                    io.ktor.http.ContentType.MultiPart.FormData.withParameter("boundary", "frontier")
+                )
                 assertPathEqual("/crypto/state")
             }
         )
