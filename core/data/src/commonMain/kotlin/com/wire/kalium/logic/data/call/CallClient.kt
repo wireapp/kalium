@@ -36,8 +36,8 @@ data class CallClient(
     @SerialName("clientid") val clientId: String,
     @SerialName("in_subconv") val isMemberOfSubconversation: Boolean = false,
     @SerialName("quality")
-    @Serializable(with = CallQuality.CallQualityAsIntSerializer::class)
-    val quality: CallQuality = CallQuality.LOW
+    @Serializable(with = CallResolutionQuality.CallQualityAsIntSerializer::class)
+    val quality: CallResolutionQuality = CallResolutionQuality.LOW
 )
 
 @Serializable
@@ -47,20 +47,20 @@ data class CallClientList(
     fun toJsonString(): String = LenientJsonSerializer.json.encodeToString(serializer(), this)
 }
 
-enum class CallQuality {
+enum class CallResolutionQuality {
     ANY,
     LOW,
     HIGH;
 
-    data object CallQualityAsIntSerializer : KSerializer<CallQuality> {
+    data object CallQualityAsIntSerializer : KSerializer<CallResolutionQuality> {
         override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("quality", PrimitiveKind.INT).nullable
 
-        override fun serialize(encoder: Encoder, value: CallQuality) {
+        override fun serialize(encoder: Encoder, value: CallResolutionQuality) {
             encoder.encodeInt(value.ordinal)
         }
 
         @OptIn(ExperimentalSerializationApi::class)
-        override fun deserialize(decoder: Decoder): CallQuality {
+        override fun deserialize(decoder: Decoder): CallResolutionQuality {
             val value = if (decoder.decodeNotNullMark()) decoder.decodeInt() else 0
             return when (value) {
                 1 -> LOW

@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.call
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import kotlin.uuid.Uuid
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapMLSRequest
@@ -79,7 +78,6 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -90,7 +88,6 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -101,6 +98,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlin.math.max
 import kotlin.time.toDuration
+import kotlin.uuid.Uuid
 
 internal val CALL_SUBCONVERSATION_ID = SubconversationId("conference")
 
@@ -153,6 +151,8 @@ internal interface CallRepository {
     suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata)
     suspend fun observeRecentlyEndedCallMetadata(): Flow<RecentlyEndedCallMetadata>
     suspend fun fetchServerTime(): String?
+    fun updateCallQualityData(conversationId: ConversationId, callQualityData: CallQualityData)
+    fun observeCallQualityData(conversationId: ConversationId): Flow<CallQualityData>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -175,9 +175,11 @@ internal class CallDataSource(
     private val federatedIdMapper: FederatedIdMapper,
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     initialCallMetadataProfile: CallMetadataProfile = CallMetadataProfile(), // For testing purposes
+    initialCallQualityDataProfile: CallQualityDataProfile = CallQualityDataProfile(), // For testing purposes
 ) : CallRepository {
 
     private var _callMetadataProfile: MutableStateFlow<CallMetadataProfile> = MutableStateFlow(initialCallMetadataProfile)
+    private var _callQualityDataProfile: MutableStateFlow<CallQualityDataProfile> = MutableStateFlow(initialCallQualityDataProfile)
 
     private val job = SupervisorJob() // TODO(calling): clear job method
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
@@ -556,25 +558,10 @@ internal class CallDataSource(
             .firstOrNull()
             ?.conversationId
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     private fun Flow<List<CallEntity>>.combineWithCallsMetadata(): Flow<List<Call>> =
         this.combine(_callMetadataProfile) { calls, callMetadataProfile ->
             calls.map { callEntity ->
-                callMetadataProfile[callEntity.conversationId.toModel()] // get flow of metadata for each call
-                    ?.map { callMetadata -> callEntity to callMetadata } // associate each CallEntity with CallMetadata
-                    ?: flowOf(callEntity to null)
-            }
-        }.flatMapLatest { listOfCallDataFlows ->
-            if (listOfCallDataFlows.isEmpty()) { // If there are no calls, return an empty flow as combine does not work with empty lists
-                flowOf(emptyList())
-            } else {
-                // Combine all flows for each call with metadata into a single flow with list of calls with metadata
-                combine(listOfCallDataFlows) { flowOfCallDataArray: Array<Pair<CallEntity, CallMetadata?>> ->
-                    flowOfCallDataArray.toList()
-                        .map { (callEntity, callMetadata) ->
-                            callMapper.toCall(callEntity = callEntity, metadata = callMetadata)
-                        }
-                }
+                callMapper.toCall(callEntity = callEntity, metadata = callMetadataProfile[callEntity.conversationId.toModel()])
             }
         }
 
@@ -742,12 +729,20 @@ internal class CallDataSource(
         callDAO.observeLastActiveCallByConversationId(callMapper.fromConversationIdToQualifiedIDEntity(conversationId))
             .combineWithCallMetadata()
 
+    override fun updateCallQualityData(conversationId: ConversationId, callQualityData: CallQualityData) =
+        _callQualityDataProfile.update { it.plus(conversationId, callQualityData) }
+
+    override fun observeCallQualityData(conversationId: ConversationId) =
+        _callQualityDataProfile.mapNotNull { it[conversationId] }
+
     companion object {
         val STALE_PARTICIPANT_TIMEOUT = 190.toDuration(kotlin.time.DurationUnit.SECONDS)
     }
 }
 
-private inline operator fun MutableStateFlow<CallMetadataProfile>.get(conversationId: ConversationId) = value[conversationId]?.value
+private operator fun MutableStateFlow<CallMetadataProfile>.get(conversationId: ConversationId) = value[conversationId]
 
 private inline fun MutableStateFlow<CallMetadataProfile>.update(conversationId: ConversationId, function: (CallMetadata) -> CallMetadata) =
-    value[conversationId]?.updateAndGet(function)
+    updateAndGet {
+        it[conversationId]?.let { currentMetadata -> it.plus(conversationId, function(currentMetadata)) } ?: it
+    }[conversationId]

@@ -16,15 +16,27 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.base.authenticated.nomaddevice
+package com.wire.kalium.network.api.authenticated.nomaddevice
 
-import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
-import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
-import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
-import com.wire.kalium.network.utils.NetworkResponse
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-interface NomadDeviceSyncApi {
-    suspend fun postMessageEvents(request: NomadMessageEventsRequest): NetworkResponse<Unit>
-    suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse>
-    suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse>
-}
+@Serializable
+data class NomadConversationMetadataResponse(
+    @SerialName("conversations")
+    val conversations: List<NomadConversationMetadataItem>
+)
+
+@Serializable
+data class NomadConversationMetadataItem(
+    @SerialName("conversation")
+    val conversation: Conversation,
+    @SerialName("metadata")
+    val metadata: NomadConversationMetadata
+)
+
+@Serializable
+data class NomadConversationMetadata(
+    @SerialName("last_read")
+    val lastRead: Long
+)

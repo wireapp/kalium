@@ -49,19 +49,15 @@ actual fun userDatabaseBuilder(
         throw NotImplementedError("Encrypted DB is not supported on JVM")
     }
 
+    val schema = UserDatabase.Schema
     val databasePath = storageData.file.resolve(DATABASE_NAME)
-    val databaseExists = databasePath.exists()
 
     // Make sure all intermediate directories exist
     storageData.file.mkdirs()
-
-    val rawDriver: SqlDriver = databaseDriver("jdbc:sqlite:${databasePath.absolutePath}") {
+    val url = "jdbc:sqlite:${databasePath.absolutePath}"
+    val rawDriver: SqlDriver = databaseDriver(uri = url, schema = schema) {
         isWALEnabled = enableWAL
         areForeignKeyConstraintsEnforced = true
-    }
-
-    if (!databaseExists) {
-        UserDatabase.Schema.create(rawDriver)
     }
 
     val invalidationController = DbInvalidationController(
@@ -123,11 +119,10 @@ fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder = InMemoryDatabaseCache.getOrCreate(userId) {
-    val rawDriver = databaseDriver(JdbcSqliteDriver.IN_MEMORY) {
+    val rawDriver = databaseDriver(uri = JdbcSqliteDriver.IN_MEMORY, schema = UserDatabase.Schema) {
         isWALEnabled = false
         areForeignKeyConstraintsEnforced = true
     }
-    UserDatabase.Schema.create(rawDriver)
     val storageData = StorageData.FileBacked(File("inMemory"))
 
     val invalidationController = DbInvalidationController(
