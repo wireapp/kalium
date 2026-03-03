@@ -18,18 +18,16 @@
 
 package com.wire.kalium.nomaddevice
 
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationWithMessages
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadStoredMessage
 import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
-import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.MessageToInsert
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
-import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAsset
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAttachment
@@ -43,7 +41,7 @@ private const val EPOCH_MILLIS_THRESHOLD = 10_000_000_000L
 
 internal data class NomadMappedMessages(
     val totalMessages: Int,
-    val messages: List<MessageEntity.Regular>,
+    val messages: List<MessageToInsert>,
     val skippedMessages: Int,
 )
 
@@ -51,13 +49,11 @@ internal class NomadAllMessagesMapper {
 
     fun map(
         response: NomadAllMessagesResponse,
-        selfUserId: UserId,
     ): NomadMappedMessages {
         var skipped = 0
-        val selfUserQualifiedId = selfUserId.toDaoQualifiedId()
         val mappedMessages = response.conversations.flatMap { conversationWithMessages ->
             conversationWithMessages.messages.mapNotNull { storedMessage ->
-                mapMessageOrNull(conversationWithMessages, storedMessage, selfUserQualifiedId).also { mapped ->
+                mapMessageOrNull(conversationWithMessages, storedMessage).also { mapped ->
                     if (mapped == null) skipped += 1
                 }
             }
@@ -73,8 +69,7 @@ internal class NomadAllMessagesMapper {
     private fun mapMessageOrNull(
         conversationWithMessages: NomadConversationWithMessages,
         storedMessage: NomadStoredMessage,
-        selfUserQualifiedId: QualifiedIDEntity,
-    ): MessageEntity.Regular? {
+    ): MessageToInsert? {
         val payloadBytes = runCatching { Base64.Default.decode(storedMessage.payload) }.getOrElse {
             logSkip(storedMessage, conversationWithMessages, "invalid base64 payload")
             return null
@@ -89,27 +84,19 @@ internal class NomadAllMessagesMapper {
         val content = payload.content.toMessageContent(payloadBytes)
         val conversationId = conversationWithMessages.conversation.toDaoConversationId()
 
-        return MessageEntity.Regular(
+        return MessageToInsert(
             id = storedMessage.messageId,
             conversationId = conversationId,
             date = storedMessage.timestamp.toInstantGuessingUnit(),
             senderUserId = senderUserId,
-            status = MessageEntity.Status.SENT,
-            visibility = MessageEntity.Visibility.VISIBLE,
-            content = content,
-            isSelfMessage = senderUserId == selfUserQualifiedId,
-            readCount = 0L,
-            expireAfterMs = null,
-            selfDeletionEndDate = null,
-            sender = null,
-            senderName = null,
             senderClientId = payload.senderClientId,
+            visibility = MessageEntity.Visibility.VISIBLE,
+            status = MessageEntity.Status.SENT,
             editStatus = payload.lastEditTime?.let {
                 MessageEntity.EditStatus.Edited(Instant.fromEpochMilliseconds(it))
             } ?: MessageEntity.EditStatus.NotEdited,
-            reactions = ReactionsEntity.EMPTY,
             expectsReadConfirmation = false,
-            deliveryStatus = DeliveryStatusEntity.CompleteDelivery
+            content = content,
         )
     }
 
@@ -246,5 +233,3 @@ private fun Conversation.toDaoConversationId(): QualifiedIDEntity =
 
 private fun NomadDeviceQualifiedId.toDaoQualifiedId(): QualifiedIDEntity =
     QualifiedIDEntity(value = value, domain = domain)
-
-private fun UserId.toDaoQualifiedId(): QualifiedIDEntity = QualifiedIDEntity(value = value, domain = domain)

@@ -23,7 +23,7 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageToInsert
 import kotlinx.datetime.Instant
 
 internal data class NomadMessageStoreResult(
@@ -34,7 +34,7 @@ internal data class NomadMessageStoreResult(
 internal interface NomadMessagesDAO {
     suspend fun storeMessages(
         selfUserId: UserId,
-        messages: List<MessageEntity.Regular>,
+        messages: List<MessageToInsert>,
         batchSize: Int,
     ): NomadMessageStoreResult
 }
@@ -42,7 +42,7 @@ internal interface NomadMessagesDAO {
 internal class NomadMessagesDAOImpl internal constructor(
     private val upsertUsers: suspend (List<UserEntity>) -> Unit,
     private val upsertConversations: suspend (List<ConversationEntity>) -> Unit,
-    private val insertMessages: suspend (List<MessageEntity>) -> Unit,
+    private val insertMessages: suspend (List<MessageToInsert>) -> Unit,
 ) : NomadMessagesDAO {
 
     internal constructor(
@@ -57,17 +57,13 @@ internal class NomadMessagesDAOImpl internal constructor(
             conversationDAO.insertOrUpdateLastModified(conversations)
         },
         insertMessages = { messages ->
-            messageDAO.insertOrIgnoreMessages(
-                messages = messages,
-                withUnreadEvents = false,
-                checkAssetUpdate = false,
-            )
+            messageDAO.insertOrIgnoreMessages(messages)
         }
     )
 
     override suspend fun storeMessages(
         selfUserId: UserId,
-        messages: List<MessageEntity.Regular>,
+        messages: List<MessageToInsert>,
         batchSize: Int,
     ): NomadMessageStoreResult {
         if (messages.isEmpty()) return NomadMessageStoreResult(storedMessages = 0, batches = 0)
@@ -90,7 +86,7 @@ internal class NomadMessagesDAOImpl internal constructor(
         )
     }
 
-    private fun buildPlaceholderUsers(messages: List<MessageEntity.Regular>): List<UserEntity> =
+    private fun buildPlaceholderUsers(messages: List<MessageToInsert>): List<UserEntity> =
         messages
             .asSequence()
             .map { it.senderUserId }
@@ -120,10 +116,10 @@ internal class NomadMessagesDAOImpl internal constructor(
 
     private fun buildPlaceholderConversations(
         selfUserId: UserId,
-        messages: List<MessageEntity.Regular>,
+        messages: List<MessageToInsert>,
     ): List<ConversationEntity> =
         messages
-            .groupBy(MessageEntity::conversationId)
+            .groupBy { it.conversationId }
             .map { (conversationId, conversationMessages) ->
                 ConversationEntity(
                     id = conversationId,
@@ -133,7 +129,7 @@ internal class NomadMessagesDAOImpl internal constructor(
                     protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                     creatorId = selfUserId.value,
                     lastNotificationDate = null,
-                    lastModifiedDate = conversationMessages.maxOf(MessageEntity::date),
+                    lastModifiedDate = conversationMessages.maxOf { it.date },
                     lastReadDate = Instant.DISTANT_PAST,
                     access = emptyList(),
                     accessRole = emptyList(),

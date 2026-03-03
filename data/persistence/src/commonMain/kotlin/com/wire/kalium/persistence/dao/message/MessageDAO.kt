@@ -66,6 +66,12 @@ interface MessageDAO {
      * @see insertOrIgnoreMessage
      */
     suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>, withUnreadEvents: Boolean = true, checkAssetUpdate: Boolean = true)
+
+    /**
+     * Lean insert path for messages that only carry [MessageEntityContent.Regular] content.
+     * Skips unread-event tracking, asset-update checks, and message-id deduplication logic.
+     */
+    suspend fun insertOrIgnoreMessages(messages: List<MessageToInsert>)
     suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System)
     suspend fun needsToBeNotified(id: String, conversationId: QualifiedIDEntity): Boolean
     suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity)

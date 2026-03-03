@@ -150,6 +150,160 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun insertOrIgnoreMessages(messages: List<MessageToInsert>) = withContext(writeDispatcher.value) {
+        queries.transaction {
+            messages.forEach { message ->
+                runCatching {
+                    insertBaseMessage(message)
+                    insertRegularContent(message)
+                }
+            }
+        }
+    }
+
+    private fun insertBaseMessage(message: MessageToInsert) {
+        queries.insertMessage(
+            id = message.id,
+            conversation_id = message.conversationId,
+            creation_date = message.date,
+            sender_user_id = message.senderUserId,
+            sender_client_id = message.senderClientId,
+            visibility = message.visibility,
+            last_edit_date = (message.editStatus as? MessageEntity.EditStatus.Edited)?.lastDate,
+            status = message.status,
+            content_type = contentTypeOf(message.content),
+            expects_read_confirmation = message.expectsReadConfirmation,
+            expire_after_millis = message.expireAfterMs,
+            self_deletion_end_date = message.selfDeletionEndDate,
+        )
+    }
+
+    @Suppress("ComplexMethod")
+    private fun insertRegularContent(message: MessageToInsert) {
+        val content = message.content
+        when (content) {
+            is MessageEntityContent.Text -> {
+                queries.insertMessageTextContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    text_body = content.messageBody,
+                    quoted_message_id = content.quotedMessageId,
+                    is_quote_verified = content.isQuoteVerified,
+                )
+                content.linkPreview.forEach {
+                    queries.insertMessageLinkPreview(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        url = it.url,
+                        url_offset = it.urlOffset,
+                        permanent_url = it.permanentUrl,
+                        summary = it.summary,
+                        title = it.title,
+                    )
+                }
+                content.mentions.forEach {
+                    queries.insertMessageMention(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        start = it.start,
+                        length = it.length,
+                        user_id = it.userId,
+                    )
+                }
+            }
+
+            is MessageEntityContent.Asset -> {
+                queries.insertMessageAssetContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    asset_size = content.assetSizeInBytes,
+                    asset_name = content.assetName,
+                    asset_mime_type = content.assetMimeType,
+                    asset_otr_key = content.assetOtrKey,
+                    asset_sha256 = content.assetSha256Key,
+                    asset_id = content.assetId,
+                    asset_token = content.assetToken,
+                    asset_domain = content.assetDomain,
+                    asset_encryption_algorithm = content.assetEncryptionAlgorithm,
+                    asset_width = content.assetWidth,
+                    asset_height = content.assetHeight,
+                    asset_duration_ms = content.assetDurationMs,
+                    asset_normalized_loudness = content.assetNormalizedLoudness,
+                )
+            }
+
+            is MessageEntityContent.Location -> {
+                queries.insertLocationMessageContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    latitude = content.latitude,
+                    longitude = content.longitude,
+                    name = content.name,
+                    zoom = content.zoom,
+                )
+            }
+
+            is MessageEntityContent.Multipart -> {
+                queries.insertMessageTextContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    text_body = content.messageBody,
+                    quoted_message_id = content.quotedMessageId,
+                    is_quote_verified = content.isQuoteVerified,
+                )
+                content.linkPreview.forEach {
+                    queries.insertMessageLinkPreview(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        url = it.url,
+                        url_offset = it.urlOffset,
+                        permanent_url = it.permanentUrl,
+                        summary = it.summary,
+                        title = it.title,
+                    )
+                }
+                content.mentions.forEach {
+                    queries.insertMessageMention(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        start = it.start,
+                        length = it.length,
+                        user_id = it.userId,
+                    )
+                }
+                content.attachments.forEachIndexed { index, attachment ->
+                    attachmentsQueries.insertCellAttachment(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        asset_id = attachment.assetId,
+                        asset_version_id = attachment.assetVersionId,
+                        cell_asset = true,
+                        asset_mime_type = attachment.mimeType,
+                        asset_path = attachment.assetPath,
+                        asset_size = attachment.assetSize,
+                        local_path = attachment.localPath ?: "",
+                        asset_width = attachment.assetWidth,
+                        asset_height = attachment.assetHeight,
+                        asset_duration_ms = attachment.assetDuration,
+                        asset_transfer_status = attachment.assetTransferStatus,
+                        asset_index = index,
+                    )
+                }
+            }
+
+            is MessageEntityContent.Unknown -> {
+                queries.insertMessageUnknownContent(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    unknown_encoded_data = content.encodedData,
+                    unknown_type_name = content.typeName,
+                )
+            }
+
+            else -> { /* no-op for content types not produced by nomad */ }
+        }
+    }
+
     override suspend fun persistSystemMessageToAllConversations(message: MessageEntity.System) {
         queries.insertOrIgnoreBulkSystemMessage(
             id = message.id,

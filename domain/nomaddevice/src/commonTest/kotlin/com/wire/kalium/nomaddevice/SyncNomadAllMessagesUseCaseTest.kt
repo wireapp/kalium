@@ -31,8 +31,8 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.nomaddevice.dao.NomadMessageStoreResult
 import com.wire.kalium.nomaddevice.dao.NomadMessagesDAO
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.MessageToInsert
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessageContent
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
@@ -42,7 +42,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -79,8 +78,6 @@ class SyncNomadAllMessagesUseCaseTest {
         assertEquals(2, fakeDao.batchSize)
         assertEquals(3, fakeDao.messages.size)
         assertEquals("hello", (fakeDao.messages.first().content as MessageEntityContent.Text).messageBody)
-        assertFalse(fakeDao.messages.first().isSelfMessage)
-        assertTrue(fakeDao.messages.last().isSelfMessage)
     }
 
     @Test
@@ -160,11 +157,11 @@ class SyncNomadAllMessagesUseCaseTest {
 
     private class FakeNomadMessagesDAO : NomadMessagesDAO {
         var batchSize: Int = 0
-        val messages = mutableListOf<MessageEntity.Regular>()
+        val messages = mutableListOf<MessageToInsert>()
 
         override suspend fun storeMessages(
             selfUserId: UserId,
-            messages: List<MessageEntity.Regular>,
+            messages: List<MessageToInsert>,
             batchSize: Int,
         ): NomadMessageStoreResult {
             this.batchSize = batchSize

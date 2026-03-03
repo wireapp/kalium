@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.MessageToInsert
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -33,7 +34,7 @@ class NomadMessagesDAOTest {
 
     @Test
     fun givenMessages_whenStoring_thenTheyAreInsertedInConfiguredBatches() = runTest {
-        val insertedBatches = mutableListOf<List<MessageEntity>>()
+        val insertedBatches = mutableListOf<List<MessageToInsert>>()
         var insertedUsers = emptyList<UserEntity>()
         var insertedConversations = emptyList<ConversationEntity>()
         val dao = NomadMessagesDAOImpl(
@@ -63,7 +64,7 @@ class NomadMessagesDAOTest {
 
     @Test
     fun givenZeroBatchSize_whenStoring_thenMinimumBatchSizeIsUsed() = runTest {
-        val insertedBatches = mutableListOf<List<MessageEntity>>()
+        val insertedBatches = mutableListOf<List<MessageToInsert>>()
         val dao = NomadMessagesDAOImpl(
             upsertUsers = {},
             upsertConversations = {},
@@ -89,22 +90,17 @@ class NomadMessagesDAOTest {
         conversationId: String,
         senderId: String,
         timestampMs: Long,
-    ) = MessageEntity.Regular(
+    ) = MessageToInsert(
         id = id,
         conversationId = QualifiedIDEntity(conversationId, "wire.test"),
         date = Instant.fromEpochMilliseconds(timestampMs),
         senderUserId = QualifiedIDEntity(senderId, "wire.test"),
-        status = MessageEntity.Status.SENT,
-        visibility = MessageEntity.Visibility.VISIBLE,
-        content = MessageEntityContent.Text(messageBody = "text-$id"),
-        isSelfMessage = false,
-        readCount = 0,
-        expireAfterMs = null,
-        selfDeletionEndDate = null,
-        sender = null,
-        senderName = null,
         senderClientId = "sender-client",
+        visibility = MessageEntity.Visibility.VISIBLE,
+        status = MessageEntity.Status.SENT,
         editStatus = MessageEntity.EditStatus.NotEdited,
+        expectsReadConfirmation = false,
+        content = MessageEntityContent.Text(messageBody = "text-$id"),
     )
 
     private companion object {

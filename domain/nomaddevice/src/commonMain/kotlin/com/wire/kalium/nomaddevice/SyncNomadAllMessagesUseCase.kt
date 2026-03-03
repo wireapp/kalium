@@ -81,7 +81,7 @@ public class SyncNomadAllMessagesUseCase internal constructor(
         selfUserId: UserId,
         response: NomadAllMessagesResponse,
     ): Either<CoreFailure, NomadAllMessagesSyncResult> {
-        val mapped = mapper.map(response, selfUserId)
+        val mapped = mapper.map(response)
         val dao = nomadMessagesDAOProvider(selfUserId)
         if (dao == null) {
             nomadLogger.w(
