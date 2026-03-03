@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2025 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,15 +15,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain
+package com.wire.kalium.cells.data
 
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.persistence.dao.UserDetailsEntity
-import io.mockative.Mockable
-
-@Mockable
-internal interface CellUsersRepository {
-    suspend fun getUserNames(): Either<StorageFailure, List<Pair<String, String>>>
-    suspend fun getUsers(): Either<StorageFailure, List<UserDetailsEntity>>
+public enum class MIMEType(public val value: String) {
+    PDF("application/pdf"),
+    DOCUMENT("*word*"),
+    IMAGE("image/*"),
+    EXCEL("*spreadsheet*|*excel*"),
+    PRESENTATION("*presentation*|*powerpoint*"),
+    VIDEO("video/*"),
+    AUDIO("audio/*"),
+    ARCHIVE("application/zip|application/vnd.rar|application/x-7z-compressed|application/x-tar|application/gzip|application/x-bzip2"),
+    TEXT("*text/plain*"),
 }
+
+public fun MIMEType.expandTerms(): List<String> =
+    value.split("|").map { it.trim() }

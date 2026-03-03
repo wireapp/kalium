@@ -38,4 +38,10 @@ internal class CellUsersDataSource(
             }
         }
     }
+
+    override suspend fun getUsers() = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            userDAO.getAllUsersDetails().firstOrNull()
+        }
+    }
 }

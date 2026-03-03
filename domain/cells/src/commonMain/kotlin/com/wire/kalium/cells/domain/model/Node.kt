@@ -26,6 +26,8 @@ public sealed class Node {
     public abstract val name: String?
     public abstract val uuid: String
     public abstract val userName: String?
+    public abstract val userHandle: String?
+    public abstract val ownerUserId: String?
     public abstract val conversationName: String?
     public abstract val modifiedTime: Long?
     public abstract val remotePath: String?
@@ -36,6 +38,8 @@ public sealed class Node {
         override val name: String?,
         override val uuid: String,
         override val userName: String? = null,
+        override val userHandle: String? = null,
+        override val ownerUserId: String? = null,
         override val conversationName: String? = null,
         override val modifiedTime: Long?,
         override val remotePath: String?,
@@ -52,6 +56,8 @@ public sealed class Node {
         override val name: String?,
         override val uuid: String,
         override val userName: String? = null,
+        override val userHandle: String? = null,
+        override val ownerUserId: String? = null,
         override val conversationName: String? = null,
         override val modifiedTime: Long? = null,
         override val remotePath: String?,
@@ -83,6 +89,8 @@ internal fun CellNode.toFileModel() = Node.File(
     publicLinkId = publicLinkId,
     modifiedTime = modified?.let { it * 1000 },
     tags = tags,
+    ownerUserId = ownerUserId,
+    userHandle = userHandle
 )
 
 private fun String.formatMimetype() = this.split(";")[0].trim()
@@ -96,4 +104,6 @@ internal fun CellNode.toFolderModel() = Node.Folder(
     size = size,
     tags = tags,
     publicLinkId = publicLinkId,
+    ownerUserId = ownerUserId,
+    userHandle = userHandle
 )
