@@ -20,7 +20,12 @@ package com.wire.kalium.persistence.dao.backup
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.reaction.ReactionDAO
+import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -31,6 +36,11 @@ import kotlin.test.assertTrue
 class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
 
     private lateinit var dao: RemoteBackupChangeLogDAO
+    private lateinit var userDAO: UserDAO
+    private lateinit var conversationDAO: ConversationDAO
+    private lateinit var messageDAO: MessageDAO
+    private lateinit var reactionDAO: ReactionDAO
+    private lateinit var receiptDAO: ReceiptDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -38,6 +48,11 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         deleteDatabase(selfUserId)
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
         dao = db.remoteBackupChangeLogDAO
+        userDAO = db.userDAO
+        conversationDAO = db.conversationDAO
+        messageDAO = db.messageDAO
+        receiptDAO = db.receiptDAO
+        reactionDAO = db.reactionDAO
     }
 
     @Test
@@ -249,6 +264,23 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         val result = dao.getPendingChanges()
 
         assertTrue(result.isEmpty())
+    }
+
+
+    @Test
+    fun givenPendingEntries_whenDeletingChanges_thenOnlyProvidedEntriesAreRemoved() = runTest(dispatcher) {
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_1)
+        dao.logMessageDelete(CONVERSATION_ID_1, MESSAGE_NONCE_2, TIMESTAMP_2)
+
+        val pendingBeforeDelete = dao.getPendingChanges()
+        assertEquals(2, pendingBeforeDelete.size)
+
+        dao.deleteChanges(listOf(pendingBeforeDelete.first()))
+
+        val pendingAfterDelete = dao.getPendingChanges()
+        assertEquals(1, pendingAfterDelete.size)
+        assertEquals(MESSAGE_NONCE_2, pendingAfterDelete.first().messageId)
+        assertEquals(ChangeLogEventType.MESSAGE_DELETE, pendingAfterDelete.first().eventType)
     }
 
     @Test

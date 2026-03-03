@@ -22,8 +22,15 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.NetworkQualityChangedHandler
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.logger.callingLogger
+import com.wire.kalium.logic.data.call.CallQuality
+import com.wire.kalium.logic.data.call.CallQualityData
+import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 
-internal class OnNetworkQualityChanged : NetworkQualityChangedHandler {
+internal class OnNetworkQualityChanged(
+    private val callRepository: CallRepository,
+    private val qualifiedIdMapper: QualifiedIdMapper
+) : NetworkQualityChangedHandler {
 
     override fun onNetworkQualityChanged(
         conversationId: String,
@@ -35,10 +42,17 @@ internal class OnNetworkQualityChanged : NetworkQualityChangedHandler {
         downstreamPacketLossPercentage: Int,
         arg: Pointer?
     ) {
-        // Not yet implemented
+        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+        val callQualityData = CallQualityData(
+            quality = CallQuality.fromInt(quality),
+            roundTripTimeInMilliseconds = roundTripTimeInMilliseconds,
+            upstreamPacketLossPercentage = upstreamPacketLossPercentage,
+            downstreamPacketLossPercentage = downstreamPacketLossPercentage
+        )
+        callRepository.updateCallQualityData(conversationId = conversationIdWithDomain, callQualityData = callQualityData)
         callingLogger.i(
             "[OnNetworkQualityChanged] - ConversationId: ${conversationId.obfuscateId()}" +
-                    " | UserId: ${userId?.obfuscateId()} | Quality: $quality"
+                    " | UserId: ${userId?.obfuscateId()} | Quality: $callQualityData"
         )
     }
 }
