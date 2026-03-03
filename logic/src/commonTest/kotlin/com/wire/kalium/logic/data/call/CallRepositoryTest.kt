@@ -1881,6 +1881,35 @@ class CallRepositoryTest {
         }
     }
 
+    @Test
+    fun givenACall_whenUpdatingCallQualityData_thenCallQualityDataIsUpdatedCorrectlyAndCallQualityDataObserverEmitsData() = runTest {
+        // given
+        val conversationId = Arrangement.randomConversationId
+        val callQualityData = CallQualityData(CallQuality.POOR, 1,2,3)
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
+
+        callRepository.observeCallQualityData(conversationId).test {
+            // when
+            callRepository.updateCallQualityData(conversationId, callQualityData)
+            advanceUntilIdle()
+
+            // then
+            assertEquals(callQualityData, awaitItem())
+        }
+    }
+
+    @Test
+    fun givenACall_whenNoCallQualityDataUpdated_thenCallQualityDataObserverDoesNotEmitAnyData() = runTest {
+        // given
+        val conversationId = Arrangement.randomConversationId
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
+
+        callRepository.observeCallQualityData(conversationId).test {
+            // when-then
+            expectNoEvents()
+        }
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,

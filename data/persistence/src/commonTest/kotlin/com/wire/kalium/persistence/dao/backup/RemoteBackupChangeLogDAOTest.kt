@@ -266,6 +266,23 @@ class RemoteBackupChangeLogDAOTest : BaseDatabaseTest() {
         assertTrue(result.isEmpty())
     }
 
+
+    @Test
+    fun givenPendingEntries_whenDeletingChanges_thenOnlyProvidedEntriesAreRemoved() = runTest(dispatcher) {
+        dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_1, MESSAGE_TIMESTAMP_1)
+        dao.logMessageDelete(CONVERSATION_ID_1, MESSAGE_NONCE_2, TIMESTAMP_2)
+
+        val pendingBeforeDelete = dao.getPendingChanges()
+        assertEquals(2, pendingBeforeDelete.size)
+
+        dao.deleteChanges(listOf(pendingBeforeDelete.first()))
+
+        val pendingAfterDelete = dao.getPendingChanges()
+        assertEquals(1, pendingAfterDelete.size)
+        assertEquals(MESSAGE_NONCE_2, pendingAfterDelete.first().messageId)
+        assertEquals(ChangeLogEventType.MESSAGE_DELETE, pendingAfterDelete.first().eventType)
+    }
+
     @Test
     fun givenMultipleEntries_whenGettingPendingChanges_thenEntriesAreOrderedByTimestamp() = runTest(dispatcher) {
         dao.logMessageUpsert(CONVERSATION_ID_1, MESSAGE_NONCE_1, TIMESTAMP_3, MESSAGE_TIMESTAMP_3)

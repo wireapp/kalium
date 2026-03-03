@@ -181,3 +181,9 @@ FROM latest
 JOIN Conversation
     ON Conversation.qualified_id = latest.conversation_id
 ORDER BY conversation_id ASC;
+
+deleteChange:
+DELETE FROM RemotebackupChangeLog
+WHERE conversation_id = :conversationId
+  AND message_id IS :messageId
+  AND event_type = :eventType;

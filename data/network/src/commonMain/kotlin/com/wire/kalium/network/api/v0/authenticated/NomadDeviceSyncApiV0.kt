@@ -19,10 +19,13 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -42,7 +45,19 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
             }
         }
 
+    override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> =
+        wrapKaliumResponse {
+            httpClient.get(PATH_ALL_MESSAGES)
+        }
+
+    override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> =
+        wrapKaliumResponse {
+            httpClient.get(PATH_CONVERSATION_METADATA)
+        }
+
     private companion object {
         const val PATH_MESSAGE_EVENTS = "message/events"
+        const val PATH_ALL_MESSAGES = "all-messages"
+        const val PATH_CONVERSATION_METADATA = "conversation/metadata"
     }
 }
