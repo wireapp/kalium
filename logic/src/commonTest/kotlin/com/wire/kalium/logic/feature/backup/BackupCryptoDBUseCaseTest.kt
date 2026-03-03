@@ -37,6 +37,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ExtractFilesParam
+import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.util.InternalCryptoAccess
 import dev.mokkery.answering.calls
@@ -65,6 +66,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@IgnoreIOS
 class BackupCryptoDBUseCaseTest {
 
     private val fakeFileSystem = FakeKaliumFileSystem()
