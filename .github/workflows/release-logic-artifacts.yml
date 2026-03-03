@@ -53,6 +53,11 @@ jobs:
             exit 0
           fi
 
+          if [[ ! "$latest_tag" =~ ^v[0-9] ]]; then
+            echo "Latest release tag ($latest_tag) is not a standard version tag. Skipping comparison."
+            exit 0
+          fi
+
           cur_ver="${current_tag#v}"
           cur_ver="${cur_ver%%-*}"
 
