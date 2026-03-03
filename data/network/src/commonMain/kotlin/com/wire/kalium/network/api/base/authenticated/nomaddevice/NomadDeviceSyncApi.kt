@@ -26,11 +26,9 @@ interface NomadDeviceSyncApi {
     suspend fun postMessageEvents(request: NomadMessageEventsRequest): NetworkResponse<Unit>
 
     suspend fun uploadCryptoState(
+        clientId: String,
         backupSource: () -> Source,
         backupSize: Long
     ): NetworkResponse<Unit>
 
-    companion object {
-        const val PATH_CRYPTO_STATE = "crypto/state" // todo change to final when backend implementation is ready
-    }
 }

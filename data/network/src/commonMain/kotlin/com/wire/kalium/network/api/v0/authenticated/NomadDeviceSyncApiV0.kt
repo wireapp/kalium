@@ -23,6 +23,7 @@ import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsR
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
@@ -45,22 +46,34 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
 
     override suspend fun postMessageEvents(request: NomadMessageEventsRequest): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.post(PATH_MESSAGE_EVENTS) {
+            httpClient.post("$PATH_EVENT/$PATH_MESSAGES") {
                 setBody(request)
                 contentType(ContentType.Application.Json)
             }
         }
 
     override suspend fun uploadCryptoState(
+        clientId: String,
         backupSource: () -> Source,
         backupSize: Long
     ): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.post(NomadDeviceSyncApi.PATH_CRYPTO_STATE) {
+            httpClient.post("$PATH_EVENT/$PATH_CRYPTO_STATE") {
+                parameter(QUERY_DEVICE_ID, clientId)
                 setBody(StreamCryptoStateBodyContent(backupSource, backupSize))
             }
         }
 
+    /**
+     * Custom [OutgoingContent] implementation to stream the crypto state backup as multipart/form-data without loading it all into memory.
+     * The content is structured as follows:
+     * --boundary
+     * Content-Disposition: form-data; name="file"; filename="CHANGELOG.zip"
+     * Content-Type: application/octet-stream
+     * Content-Length: <fileSize>
+     * <file content streamed from backupSource>
+     * --boundary--
+     */
     internal class StreamCryptoStateBodyContent(
         private val fileContentStream: () -> Source,
         private val fileSize: Long
@@ -92,7 +105,10 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
     }
 
     private companion object {
-        const val PATH_MESSAGE_EVENTS = "message/events"
+        const val PATH_EVENT = "event"
+        const val PATH_MESSAGES = "messages"
+        const val PATH_CRYPTO_STATE = "crypto/state"
+        const val QUERY_DEVICE_ID = "device_id"
         const val BUFFER_SIZE = 8L * 1024
         const val BOUNDARY = "frontier"
         const val CRYPTO_ZIP_FILENAME = "CHANGELOG.zip"

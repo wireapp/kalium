@@ -19,20 +19,20 @@
 package com.wire.kalium.api.v0.nomaddevice
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.api.tools.IgnoreIOS
 import com.wire.kalium.network.api.authenticated.nomaddevice.LastRead
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.api.v0.authenticated.NomadDeviceSyncApiV0
 import com.wire.kalium.network.utils.isSuccessful
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import okio.Buffer
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
-import kotlin.test.assertFailsWith
 
 internal class NomadDeviceSyncApiV0Test : ApiTest() {
 
@@ -44,7 +44,7 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             assertion = {
                 assertPost()
                 assertJson()
-                assertPathEqual("/message/events")
+                assertPathEqual("/event/messages")
                 assertJsonBodyContent(EXPECTED_REQUEST_JSON)
             }
         )
@@ -64,14 +64,16 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             assertion = {
                 assertPost()
                 assertContentType(
-                    io.ktor.http.ContentType.MultiPart.FormData.withParameter("boundary", "frontier")
+                    ContentType.MultiPart.FormData.withParameter("boundary", "frontier")
                 )
-                assertPathEqual("/crypto/state")
+                assertPathEqual("/event/crypto/state")
+                assertQueryParameter("device_id", "clientId")
             }
         )
 
         val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient)
         val response = api.uploadCryptoState(
+            clientId = "clientId",
             backupSource = { Buffer().write(cryptoStateBytes) },
             backupSize = cryptoStateBytes.size.toLong()
         )
