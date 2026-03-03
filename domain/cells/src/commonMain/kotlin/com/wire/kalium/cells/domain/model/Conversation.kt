@@ -25,4 +25,3 @@ public data class Conversation(
     val isChannel: Boolean = false,
     val channelAccess: ConversationDetails.Group.Channel.ChannelAccess? = null
 )
-

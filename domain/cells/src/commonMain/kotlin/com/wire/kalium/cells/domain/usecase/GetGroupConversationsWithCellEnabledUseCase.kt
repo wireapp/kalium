@@ -53,4 +53,3 @@ public sealed class GetConversationsUseCaseResult {
     public data class Success(val conversations: List<Conversation>) : GetConversationsUseCaseResult()
     public data class Failure(val failure: CoreFailure) : GetConversationsUseCaseResult()
 }
-

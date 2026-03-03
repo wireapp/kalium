@@ -20,7 +20,6 @@ package com.wire.kalium.cells.domain
 import com.wire.kalium.cells.domain.model.Conversation
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mockable
 
