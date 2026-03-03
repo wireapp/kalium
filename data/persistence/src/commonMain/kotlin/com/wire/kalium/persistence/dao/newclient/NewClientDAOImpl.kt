@@ -71,7 +71,7 @@ internal class NewClientDAOImpl(
         }
     }
 
-    override suspend fun observeNewClients(): Flow<List<NewClientEntity>> =
+    override fun observeNewClients(): Flow<List<NewClientEntity>> =
         newClientsQueries.selectNewClientsForUser(mapper::fromClient)
             .asFlow()
             .mapToList()

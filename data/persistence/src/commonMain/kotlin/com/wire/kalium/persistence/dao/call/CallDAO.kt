@@ -55,16 +55,16 @@ data class CallEntity(
 @Suppress("TooManyFunctions")
 interface CallDAO {
     suspend fun insertCall(call: CallEntity)
-    suspend fun observeCalls(): Flow<List<CallEntity>>
-    suspend fun observeIncomingCalls(): Flow<List<CallEntity>>
-    suspend fun observeOutgoingCalls(): Flow<List<CallEntity>>
-    suspend fun observeEstablishedCalls(): Flow<List<CallEntity>>
+    fun observeCalls(): Flow<List<CallEntity>>
+    fun observeIncomingCalls(): Flow<List<CallEntity>>
+    fun observeOutgoingCalls(): Flow<List<CallEntity>>
+    fun observeEstablishedCalls(): Flow<List<CallEntity>>
     suspend fun getEstablishedCall(): CallEntity
-    suspend fun observeOngoingCalls(): Flow<List<CallEntity>>
+    fun observeOngoingCalls(): Flow<List<CallEntity>>
     suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity)
     suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String?
     suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status?
-    suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
+    fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
     suspend fun getLastCallConversationTypeByConversationId(conversationId: QualifiedIDEntity): ConversationEntity.Type?
     suspend fun updateOpenCallsToClosedStatus()
     fun observeLastActiveCallByConversationId(conversationId: QualifiedIDEntity): Flow<CallEntity?>

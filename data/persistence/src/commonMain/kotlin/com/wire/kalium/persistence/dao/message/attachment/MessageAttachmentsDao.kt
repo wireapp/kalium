@@ -46,7 +46,7 @@ interface MessageAttachmentsDao {
     )
     suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity>
     suspend fun getAttachments(): List<MessageAttachmentEntity>
-    suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
+    fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
     suspend fun setAssetPath(assetId: String, path: String)
 }
 
@@ -65,12 +65,10 @@ internal class MessageAttachmentsDaoImpl(
         queries.getAllAttachments(::toDao).executeAsList()
     }
 
-    override suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>> = withContext(readDispatcher.value) {
-        queries.getAllAttachments(::toDao)
+    override fun observeAttachments(): Flow<List<MessageAttachmentEntity>> = queries.getAllAttachments(::toDao)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
-    }
 
     override suspend fun getAttachment(assetId: String): MessageAttachmentEntity = withContext(readDispatcher.value) {
         queries.getAttachment(asset_id = assetId, ::toDao).executeAsOne()

@@ -75,9 +75,9 @@ interface ClientDAO {
     suspend fun insertClient(client: InsertClientParam)
     suspend fun insertClients(clients: List<InsertClientParam>)
     suspend fun removeClientsAndReturnUsersWithNoClients(redundantClientsOfUsers: Map<UserIDEntity, List<String>>): List<QualifiedIDEntity>
-    suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>>
+    fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>>
     suspend fun getClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): List<Client>
-    suspend fun observeClientsByUserId(qualifiedID: QualifiedIDEntity): Flow<List<Client>>
+    fun observeClientsByUserId(qualifiedID: QualifiedIDEntity): Flow<List<Client>>
     suspend fun getClientsOfUsersByQualifiedIDs(ids: List<QualifiedIDEntity>): Map<QualifiedIDEntity, List<Client>>
     suspend fun deleteClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun deleteClient(userId: QualifiedIDEntity, clientId: String)
@@ -86,7 +86,7 @@ interface ClientDAO {
     suspend fun insertClientsAndRemoveRedundant(clients: List<InsertClientParam>)
     suspend fun tryMarkInvalid(invalidClientsList: List<Pair<QualifiedIDEntity, List<String>>>)
     suspend fun updateClientProteusVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean)
-    suspend fun observeClient(userId: QualifiedIDEntity, clientId: String): Flow<Client?>
+    fun observeClient(userId: QualifiedIDEntity, clientId: String): Flow<Client?>
 
     /**
      * Returns a map of users and their clients.

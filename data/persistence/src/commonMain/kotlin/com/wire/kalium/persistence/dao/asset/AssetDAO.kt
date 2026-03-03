@@ -34,7 +34,7 @@ data class AssetEntity(
 interface AssetDAO {
     suspend fun insertAsset(assetEntity: AssetEntity)
     suspend fun insertAssets(assetsEntity: List<AssetEntity>)
-    suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?>
+    fun getAssetByKey(assetKey: String): Flow<AssetEntity?>
     suspend fun updateAsset(assetEntity: AssetEntity)
     suspend fun deleteAsset(key: String)
     suspend fun getAssets(): List<AssetEntity>

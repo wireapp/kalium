@@ -68,9 +68,9 @@ internal fun mapToServiceEntity(
 @Mockable
 interface ServiceDAO {
     suspend fun byId(id: BotIdEntity): ServiceEntity?
-    suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?>
-    suspend fun getAllServices(): Flow<List<ServiceEntity>>
-    suspend fun searchServicesByName(query: String): Flow<List<ServiceEntity>>
+    fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?>
+    fun getAllServices(): Flow<List<ServiceEntity>>
+    fun searchServicesByName(query: String): Flow<List<ServiceEntity>>
     suspend fun insert(service: ServiceEntity)
     suspend fun insertMultiple(serviceList: List<ServiceEntity>)
 
@@ -85,19 +85,19 @@ internal class ServiceDAOImpl(
         serviceQueries.byId(id, mapper = ::mapToServiceEntity).executeAsOneOrNull()
     }
 
-    override suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?> =
+    override fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?> =
         serviceQueries.getUserIdFromMember(conversationId, id)
             .asFlow()
             .mapToOneOrNull(readDispatcher.value)
             .flowOn(readDispatcher.value)
 
-    override suspend fun getAllServices(): Flow<List<ServiceEntity>> =
+    override fun getAllServices(): Flow<List<ServiceEntity>> =
         serviceQueries.allServices(mapper = ::mapToServiceEntity)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
 
-    override suspend fun searchServicesByName(
+    override fun searchServicesByName(
         query: String
     ): Flow<List<ServiceEntity>> =
         serviceQueries.searchByName(query, mapper = ::mapToServiceEntity)

@@ -68,7 +68,7 @@ class TeamDAOImpl(
         }
     }
 
-    override suspend fun getTeamById(teamId: String) = queries.selectTeamById(id = teamId)
+    override fun getTeamById(teamId: String) = queries.selectTeamById(id = teamId)
         .asFlow()
         .mapToOneOrNull()
         .map { it?.let { mapper.toModel(team = it) } }

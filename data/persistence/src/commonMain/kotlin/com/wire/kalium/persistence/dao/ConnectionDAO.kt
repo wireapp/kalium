@@ -63,13 +63,13 @@ data class ConnectionEntity(
 
 @Mockable
 interface ConnectionDAO {
-    suspend fun getConnections(): Flow<List<ConnectionEntity>>
-    suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>>
+    fun getConnections(): Flow<List<ConnectionEntity>>
+    fun getConnectionRequests(): Flow<List<ConnectionEntity>>
     suspend fun insertConnection(connectionEntity: ConnectionEntity)
     suspend fun insertConnections(users: List<ConnectionEntity>)
     suspend fun updateConnectionLastUpdatedTime(lastUpdate: String, id: String)
     suspend fun deleteConnectionDataAndConversation(conversationId: QualifiedIDEntity)
-    suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>>
+    fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>>
     suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity)
     suspend fun setAllConnectionsAsNotified()
     suspend fun getConnection(id: ConversationIDEntity): ConnectionEntity?

@@ -27,5 +27,5 @@ interface MessageDraftDAO {
     suspend fun upsertMessageDraft(messageDraft: MessageDraftEntity)
     suspend fun getMessageDraft(conversationIDEntity: ConversationIDEntity): MessageDraftEntity?
     suspend fun removeMessageDraft(conversationIDEntity: ConversationIDEntity)
-    suspend fun observeMessageDrafts(): Flow<List<MessageDraftEntity>>
+    fun observeMessageDrafts(): Flow<List<MessageDraftEntity>>
 }

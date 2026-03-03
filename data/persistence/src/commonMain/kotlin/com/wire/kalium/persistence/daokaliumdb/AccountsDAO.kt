@@ -160,11 +160,11 @@ interface AccountsDAO {
         isPersistentWebSocketEnabled: Boolean
     )
 
-    suspend fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?>
+    fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?>
     suspend fun allAccountList(): List<AccountInfoEntity>
     suspend fun allValidAccountList(): List<AccountInfoEntity>
-    suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>>
-    suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>>
+    fun observerValidAccountList(): Flow<List<AccountInfoEntity>>
+    fun observeAllAccountList(): Flow<List<AccountInfoEntity>>
     suspend fun isFederated(userIDEntity: UserIDEntity): Boolean?
     suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean
     suspend fun currentAccount(): AccountInfoEntity?
@@ -178,7 +178,7 @@ interface AccountsDAO {
     suspend fun persistentWebSocketStatus(userIDEntity: UserIDEntity): Boolean
     suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity?
     fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity?
-    suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>>
+    fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>>
     suspend fun getAccountManagedBy(userIDEntity: UserIDEntity): ManagedByEntity?
     suspend fun validAccountWithServerConfigId(): Map<UserIDEntity, ServerConfigEntity>
 }
@@ -222,7 +222,7 @@ internal class AccountsDAOImpl internal constructor(
         }
     }
 
-    override suspend fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?> =
+    override fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?> =
         queries.accountInfo(userIDEntity, mapper = mapper::fromAccount)
             .asFlow()
             .mapToOneOrNull()
@@ -236,13 +236,13 @@ internal class AccountsDAOImpl internal constructor(
         queries.allValidAccounts(mapper = mapper::fromAccount).executeAsList()
     }
 
-    override suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
+    override fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
         queries.allValidAccounts(mapper = mapper::fromAccount)
             .asFlow()
             .mapToList()
             .flowOn(queriesContext)
 
-    override suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>> =
+    override fun observeAllAccountList(): Flow<List<AccountInfoEntity>> =
         queries.allAccounts(mapper = mapper::fromAccount)
             .asFlow()
             .mapToList()
@@ -315,7 +315,7 @@ internal class AccountsDAOImpl internal constructor(
         queries.persistentWebSocketStatus(userIDEntity).executeAsOne()
     }
 
-    override suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>> =
+    override fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>> =
         queries.allValidAccountsPersistentWebSocketStatus(mapper = mapper::fromPersistentWebSocketStatus)
             .asFlow()
             .mapToList()

@@ -72,8 +72,8 @@ interface MessageDAO {
 
     suspend fun updateMessagesStatus(status: MessageEntity.Status, id: List<String>, conversationId: QualifiedIDEntity)
     suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity?
-    suspend fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
-    suspend fun getMessagesByConversationAndVisibility(
+    fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?>
+    fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
         limit: Int,
         offset: Int,
@@ -84,7 +84,7 @@ interface MessageDAO {
 
     suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int = 10): List<NotificationMessageEntity>
 
-    suspend fun observeMessagesByConversationAndVisibilityAfterDate(
+    fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
@@ -101,12 +101,12 @@ interface MessageDAO {
 
     suspend fun updateLegalHoldMessageMembers(conversationId: QualifiedIDEntity, messageId: String, newMembers: List<QualifiedIDEntity>)
 
-    suspend fun observeMessageVisibility(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Visibility?>
-    suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
+    fun observeMessageVisibility(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Visibility?>
+    fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
 
-    suspend fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>>
-    suspend fun observeUnreadEvents(): Flow<Map<ConversationIDEntity, List<UnreadEventEntity>>>
-    suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>>
+    fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>>
+    fun observeUnreadEvents(): Flow<Map<ConversationIDEntity, List<UnreadEventEntity>>>
+    fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>>
 
     suspend fun resetAssetTransferStatus()
 
@@ -190,12 +190,12 @@ interface MessageDAO {
         offset: Int
     ): List<AssetMessageEntity>
 
-    suspend fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>>
+    fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>>
     suspend fun getMessageAssetTransferStatus(messageId: String, conversationId: QualifiedIDEntity): AssetTransferStatusEntity
     suspend fun getAllMessageAssetIdsForConversationId(conversationId: QualifiedIDEntity): List<String>
     suspend fun getSenderNameById(id: String, conversationId: QualifiedIDEntity): String?
     suspend fun getNextAudioMessageInConversation(prevMessageId: String, conversationId: QualifiedIDEntity): String?
-    suspend fun getPagedMessagesFlow(
+    fun getPagedMessagesFlow(
         contentTypes: Collection<MessageEntity.ContentType>,
         pageSize: Int,
     ): Flow<List<MessageEntity>>
@@ -210,7 +210,7 @@ interface MessageDAO {
         newCompositeContent: MessageEntityContent.Composite,
         newMessageId: String
     )
-    suspend fun observeAssetStatuses(): Flow<List<MessageAssetTransferStatus>>
+    fun observeAssetStatuses(): Flow<List<MessageAssetTransferStatus>>
 
     suspend fun updateAudioMessageNormalizedLoudness(conversationId: QualifiedIDEntity, messageId: String, normalizedLoudness: ByteArray)
 }

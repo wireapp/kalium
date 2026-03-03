@@ -32,14 +32,14 @@ class EventDAOImpl(
     private val writeDispatcher: WriteDispatcher,
 ) : EventDAO {
 
-    override suspend fun observeEvents(fromIdExclusive: Long): Flow<List<EventEntity>> {
+    override fun observeEvents(fromIdExclusive: Long): Flow<List<EventEntity>> {
         return eventsQueries.selectAll(::mapEvent)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
     }
 
-    override suspend fun observeUnprocessedEvents(limit: Long): Flow<List<EventEntity>> {
+    override fun observeUnprocessedEvents(limit: Long): Flow<List<EventEntity>> {
         return eventsQueries.selectUnprocessedEvents(limit, ::mapEvent)
             .asFlow()
             .mapToList()

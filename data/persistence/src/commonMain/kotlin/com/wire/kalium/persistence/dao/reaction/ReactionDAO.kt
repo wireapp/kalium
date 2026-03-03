@@ -67,12 +67,12 @@ interface ReactionDAO {
         senderUserId: UserIDEntity
     ): UserReactionsEntity
 
-    suspend fun observeMessageReactions(
+    fun observeMessageReactions(
         conversationId: QualifiedIDEntity,
         messageId: String
     ): Flow<List<MessageReactionEntity>>
 
-    suspend fun getPagedReactionsFlow(pageSize: Int): Flow<List<MessageReactionsEntity>>
+    fun getPagedReactionsFlow(pageSize: Int): Flow<List<MessageReactionsEntity>>
     suspend fun countMessageReactionsBackup(): Long
 }
 
@@ -141,14 +141,14 @@ class ReactionDAOImpl(
             .toSet()
     }
 
-    override suspend fun observeMessageReactions(conversationId: QualifiedIDEntity, messageId: String): Flow<List<MessageReactionEntity>> =
+    override fun observeMessageReactions(conversationId: QualifiedIDEntity, messageId: String): Flow<List<MessageReactionEntity>> =
         reactionsQueries.selectMessageReactionsByConversationIdAndMessageId(messageId, conversationId)
             .asFlow()
             .mapToList()
             .map { it.map(ReactionMapper::fromDAOToMessageReactionsEntity) }
             .flowOn(readDispatcher.value)
 
-    override suspend fun getPagedReactionsFlow(
+    override fun getPagedReactionsFlow(
         pageSize: Int,
     ): Flow<List<MessageReactionsEntity>> = flow {
         var offset = 0

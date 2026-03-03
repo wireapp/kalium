@@ -642,6 +642,10 @@ libraries:
         active: false
 
 WireRuleSet:
+#    PublicUseCaseSuspendFlowReturnRule:
+#      active: true
+    DaoSuspendFlowReturnRule:
+      active: true
     EnforceSerializableFields:
         active: true
         excludes: [ '**/build/**', '**/*Test/**', '**/protobuf/**' ]

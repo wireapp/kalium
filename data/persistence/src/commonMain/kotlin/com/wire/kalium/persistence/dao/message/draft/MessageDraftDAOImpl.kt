@@ -91,7 +91,7 @@ class MessageDraftDAOImpl internal constructor(
         }
     }
 
-    override suspend fun observeMessageDrafts(): Flow<List<MessageDraftEntity>> = queries.getDrafts(::toDao)
+    override fun observeMessageDrafts(): Flow<List<MessageDraftEntity>> = queries.getDrafts(::toDao)
         .asFlow()
         .mapToList()
         .flowOn(readDispatcher.value)

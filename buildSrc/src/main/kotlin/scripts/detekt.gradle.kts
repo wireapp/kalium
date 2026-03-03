@@ -21,6 +21,7 @@ package scripts
 import com.wire.kalium.plugins.libs
 import getLocalProperty
 import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 
 plugins {
     id("io.gitlab.arturbosch.detekt")
@@ -31,7 +32,7 @@ dependencies {
     detekt("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:$detektVersion")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-rules-libraries:$detektVersion")
-    detektPlugins("com.wire:detekt-rules:20260128-162246") {
+    detektPlugins("com.wire:detekt-rules:20260303-171847") {
         isChanging = true
     }
 }
@@ -56,7 +57,24 @@ tasks.withType<Detekt> {
     reports.xml.required.set(true)
     reports.txt.required.set(false)
 
+    // Analyze source files only.
+    include("**/*.kt", "**/*.kts")
+
     // general detekt ignore patterns of files, instead of by rule
+    exclude(
+        "buildSrc/**",
+        "**/build/**",
+        "**/test/**",
+        "**/*Test/**",
+        "**/protobuf/**",
+    )
+}
+
+tasks.withType<DetektCreateBaselineTask> {
+    // Analyze source files only.
+    include("**/*.kt", "**/*.kts")
+
+    // Keep baseline generation consistent with detekt task exclusions.
     exclude(
         "buildSrc/**",
         "**/build/**",

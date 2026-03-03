@@ -4,236 +4,38 @@
     <ID>MatchingDeclarationName:Widgets.kt$CustomScrollRegion : Widget</ID>
   </ManuallySuppressedIssues>
   <CurrentIssues>
-    <ID>AnnotationSpacing:HttpClientConnectionSpecsTest.kt$HttpClientConnectionSpecsTest$@Test</ID>
-    <ID>ArgumentListWrapping:ApplicationMessageHandlerTest.kt$ApplicationMessageHandlerTest$( 1000, "some-image.jpg", "image/jpg", AssetContent.AssetMetadata.Image(200, 200), AssetContent.RemoteData( ByteArray(16), ByteArray(16), "assetid", null, null, null ) )</ID>
-    <ID>ArgumentListWrapping:ApplicationMessageHandlerTest.kt$ApplicationMessageHandlerTest$( ByteArray(16), ByteArray(16), "assetid", null, null, null )</ID>
-    <ID>ArgumentListWrapping:AssetMessageHandlerTest.kt$AssetMessageHandlerTest$( eq(assetMessage.conversationId), eq(assetMessage.id) )</ID>
-    <ID>ArgumentListWrapping:AssetMessageHandlerTest.kt$AssetMessageHandlerTest$( matches { it.id == updateAssetMessage.id &amp;&amp; it.conversationId.toString() == updateAssetMessage.conversationId.toString() &amp;&amp; it.visibility == Message.Visibility.VISIBLE })</ID>
-    <ID>ArgumentListWrapping:AssetRepositoryTest.kt$AssetRepositoryTest.Arrangement$( any(), any(), any(), matches { val buffer = Buffer() buffer.write(assetData) it.write(buffer, assetData.size.toLong()) true } )</ID>
-    <ID>ArgumentListWrapping:AssetRepositoryTest.kt$AssetRepositoryTest.Arrangement$( any(), any(), matches { it == null }, matches { val buffer = Buffer() buffer.write(assetData) it.write(buffer, assetData.size.toLong()) true } )</ID>
-    <ID>ArgumentListWrapping:BaseDatabaseTest.kt$BaseDatabaseTest$(ApplicationProvider.getApplicationContext())</ID>
-    <ID>ArgumentListWrapping:ClientApiV0Test.kt$ClientApiV0Test$( "", statusCode = HttpStatusCode.Created, assertion = { assertDelete() assertPathEqual("/push/tokens/$pid") } )</ID>
-    <ID>ArgumentListWrapping:ClientApiV0Test.kt$ClientApiV0Test$( RegisterTokenJson.registerTokenResponse, statusCode = HttpStatusCode.Created, assertion = { assertPost() assertJsonBodyContent(VALID_PUSH_TOKEN_REQUEST.rawJson) } )</ID>
-    <ID>ArgumentListWrapping:ClientRemoteRepositoryTest.kt$ClientRemoteRepositoryTest.Companion$( senderId = "7239", client = "cliId", token = "7239", transport = "GCM" )</ID>
-    <ID>ArgumentListWrapping:ClientRepositoryTest.kt$ClientRepositoryTest.Arrangement$( clientRemoteRepository, clientRegistrationStorage, clientDAO, newClientDAO, selfUserId, clientApi, clientMapper )</ID>
-    <ID>ArgumentListWrapping:ClientRepositoryTest.kt$ClientRepositoryTest.Companion$( 420, "forbidden", "forbidden" )</ID>
-    <ID>ArgumentListWrapping:ConnectionRepositoryTest.kt$ConnectionRepositoryTest$(arrangement.transactionContext, UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)</ID>
-    <ID>ArgumentListWrapping:ConnectionRepositoryTest.kt$ConnectionRepositoryTest$(arrangement.transactionContext, UserId(userId.value, userId.domain), ConnectionState.NOT_CONNECTED)</ID>
-    <ID>ArgumentListWrapping:ConnectionRepositoryTest.kt$ConnectionRepositoryTest$(arrangement.transactionContext, UserId(userId.value, userId.domain), ConnectionState.PENDING)</ID>
-    <ID>ArgumentListWrapping:ConnectionRepositoryTest.kt$ConnectionRepositoryTest$(userId.value, userId.domain)</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( "", statusCode = HttpStatusCode.NoContent )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( "", statusCode = HttpStatusCode.NoContent, assertion = { assertPost() assertPathEqual("$PATH_CONVERSATIONS/$PATH_JOIN") } )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( "", statusCode = HttpStatusCode.NoContent, assertion = { assertPut() assertPathEqual("/conversations/anta.wire.link/ebafd3d4-1548-49f2-ac4e-b2757e6ca44b/access") assertJsonBodyContent(UPDATE_ACCESS_ROLE_REQUEST.rawJson) } )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( "", statusCode = HttpStatusCode.NoContent, assertion = { assertPut() assertPathEqual("/conversations/conversationDomain/conversationId/members/userDomain/userId") } )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( "", statusCode = HttpStatusCode.NoContent, assertion = { assertPut() assertPathEqual("/conversations/conversationDomain/conversationId/name") } )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( EventContentDTOJson.validAccessUpdate.rawJson, statusCode = HttpStatusCode.OK )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( EventContentDTOJson.validAccessUpdateWithDeprecatedAccessRoleField.rawJson, statusCode = HttpStatusCode.OK )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( EventContentDTOJson.validMemberJoin.rawJson, statusCode = HttpStatusCode.OK, assertion = { assertPost() assertPathEqual("$PATH_CONVERSATIONS/$PATH_JOIN") } )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( EventContentDTOJson.validMemberJoin.rawJson, statusCode = HttpStatusCode.OK, assertion = { assertPost() assertPathEqual("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_MEMBERS/$PATH_V2") } )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( EventContentDTOJson.validMemberLeave.rawJson, statusCode = HttpStatusCode.OK, assertion = { assertDelete() assertPathEqual( "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}" ) } )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( EventContentDTOJson.validNullAccessRole, statusCode = HttpStatusCode.OK )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( MEMBER_UPDATE_REQUEST.serializableData, ConversationId(conversationId, domain) )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( setOf(ConversationAccessDTO.PRIVATE), setOf(ConversationAccessRoleDTO.TEAM_MEMBER) )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV0Test.kt$ConversationApiV0Test$( setOf(ConversationAccessDTO.PRIVATE, ConversationAccessDTO.INVITE), setOf() )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV2Test.kt$ConversationApiV2Test$( ConversationDetailsResponse.withNullReceiptMode.rawJson, statusCode = HttpStatusCode.OK )</ID>
-    <ID>ArgumentListWrapping:ConversationApiV2Test.kt$ConversationApiV2Test$( EventContentDTOJson.validMemberJoin.rawJson, statusCode = HttpStatusCode.OK, assertion = { assertPost() assertPathEqual("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") } )</ID>
-    <ID>ArgumentListWrapping:ConversationDAOTest.kt$ConversationDAOTest$( accessRole = listOf(ConversationEntity.AccessRole.TEAM_MEMBER), access = listOf(ConversationEntity.Access.INVITE) )</ID>
-    <ID>ArgumentListWrapping:ConversationDAOTest.kt$ConversationDAOTest$( conversationEntity1.id, "${mySelfId.value}@${mySelfId.domain}" )</ID>
-    <ID>ArgumentListWrapping:ConversationDAOTest.kt$ConversationDAOTest$( expectedUserA.copy(clientId = clientCA1), conversationDAO.getE2EIConversationClientInfoByClientId(clientCA1) )</ID>
-    <ID>ArgumentListWrapping:ConversationDAOTest.kt$ConversationDAOTest$( expectedUserA.copy(clientId = clientCA2), conversationDAO.getE2EIConversationClientInfoByClientId(clientCA2) )</ID>
-    <ID>ArgumentListWrapping:ConversationDAOTest.kt$ConversationDAOTest$( expectedUserB.copy(clientId = clientCB1), conversationDAO.getE2EIConversationClientInfoByClientId(clientCB1) )</ID>
-    <ID>ArgumentListWrapping:ConversationDAOTest.kt$ConversationDAOTest$( expectedUserB.copy(clientId = clientCB2), conversationDAO.getE2EIConversationClientInfoByClientId(clientCB2) )</ID>
-    <ID>ArgumentListWrapping:ConversationExtensionsTest.kt$ConversationExtensionsTest$(searchQuery = searchQuery, fromArchive = fromArchive, conversationFilter = filter)</ID>
-    <ID>ArgumentListWrapping:ConversationFolderRepositoryTest.kt$ConversationFolderRepositoryTest$( id = "folder1", name = "Favorites", type = FolderType.FAVORITE, conversationIdList = listOf() )</ID>
-    <ID>ArgumentListWrapping:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest$( TestConversation.USER_1.copy(domain = failedDomain), TestUser.OTHER_FEDERATED_USER_ID )</ID>
-    <ID>ArgumentListWrapping:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest$( matches { it.users.size == expectedValidUsersCount &amp;&amp; it.users.first().domain != failedDomain }, any() )</ID>
-    <ID>ArgumentListWrapping:ConversationMessageTimerEventHandlerTest.kt$ConversationMessageTimerEventHandlerTest$( eq(Message.System( event.id, MessageContent.ConversationMessageTimerChanged( messageTimer = event.messageTimer ), event.conversationId, event.dateTime, event.senderUserId, Message.Status.Sent, Message.Visibility.VISIBLE, expirationData = null )))</ID>
-    <ID>ArgumentListWrapping:ConversationRepositoryTest.kt$ConversationRepositoryTest$( id = conversationIdEntity, type = ConversationEntity.Type.ONE_ON_ONE, otherUserId = QualifiedIDEntity("otherUser", "domain") )</ID>
-    <ID>ArgumentListWrapping:ConversationRepositoryTest.kt$ConversationRepositoryTest$( value = UpdateChannelAddPermissionResponse.PermissionUpdated( EventContentDTO.Conversation.ChannelAddPermissionUpdate( "conversationId", com.wire.kalium.network.api.model.ConversationId("conversationId", "domain"), ChannelAddPermissionDTO(ChannelAddPermissionTypeDTO.ADMINS), from = "userId", qualifiedFrom = com.wire.kalium.network.api.model.UserId("from_id", "from_domain"), time = Clock.System.now() ) ), mapOf(), HttpStatusCode.OK.value )</ID>
-    <ID>ArgumentListWrapping:ConversationRepositoryTest.kt$ConversationRepositoryTest.Companion$( UpdateConversationProtocolResponse.ProtocolUnchanged, emptyMap(), 204 )</ID>
-    <ID>ArgumentListWrapping:ConversationRepositoryTest.kt$ConversationRepositoryTest.Companion$( UpdateConversationProtocolResponse.ProtocolUpdated( EventContentDTO.Conversation.ProtocolUpdate( TestConversation.NETWORK_ID, ConversationProtocolDTO(ConvProtocol.MIXED), TestUser.NETWORK_ID ) ), emptyMap(), 200 )</ID>
-    <ID>ArgumentListWrapping:DatabaseExporterTest.kt$DatabaseExporterTest.Companion$( "I'm quoting others", quotedMessageId = OTHER_MESSAGE.id )</ID>
-    <ID>ArgumentListWrapping:DatabaseExporterTest.kt$DatabaseExporterTest.Companion$( "I'm quoting selfUser", quotedMessageId = SELF_MESSAGE.id )</ID>
-    <ID>ArgumentListWrapping:DatabaseExporterTest.kt$DatabaseExporterTest.Companion$( messageBody = "@$@${OTHER_USER_2.name}", mentions = listOf(OTHER_MENTION) )</ID>
-    <ID>ArgumentListWrapping:DatabaseExporterTest.kt$DatabaseExporterTest.Companion$( messageBody = "@${SELF_USER.name} @${OTHER_USER_2.name}", mentions = listOf(SELF_MENTION) )</ID>
-    <ID>ArgumentListWrapping:DatabaseExporterTest.kt$DatabaseExporterTest.Companion$( start = 0, length = 9, userId = SELF_USER_ID )</ID>
-    <ID>ArgumentListWrapping:DatabaseExporterTest.kt$DatabaseExporterTest.Companion$( start = 10, length = 11, userId = OTHER_USER_2.id )</ID>
-    <ID>ArgumentListWrapping:DomainRegistrationMapperTest.kt$DomainRegistrationMapperTest$( Arrangement.provideDomainRegistrationDTO(DomainRedirect.BACKEND, backendUrl = backendUrl), Arrangement.EMAIL )</ID>
-    <ID>ArgumentListWrapping:DomainRegistrationMapperTest.kt$DomainRegistrationMapperTest$( Arrangement.provideDomainRegistrationDTO(DomainRedirect.NONE), Arrangement.EMAIL )</ID>
-    <ID>ArgumentListWrapping:DomainRegistrationMapperTest.kt$DomainRegistrationMapperTest$( Arrangement.provideDomainRegistrationDTO(DomainRedirect.NO_REGISTRATION, dueToExistingAccount = true), Arrangement.EMAIL )</ID>
-    <ID>ArgumentListWrapping:DomainRegistrationMapperTest.kt$DomainRegistrationMapperTest$( Arrangement.provideDomainRegistrationDTO(DomainRedirect.SSO, ssoCode = ssoCode), Arrangement.EMAIL )</ID>
-    <ID>ArgumentListWrapping:E2EIRepositoryTest.kt$E2EIRepositoryTest.Arrangement.Companion$( true, RANDOM_URL, DateTimeUtil.currentInstant(), false, null )</ID>
-    <ID>ArgumentListWrapping:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest.Companion$( identifier = "identifier", keyAuth = null, challenge = ACME_CHALLENGE )</ID>
-    <ID>ArgumentListWrapping:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest.Companion$( oidcAuthorization = OIDC_AUTHZ, dpopAuthorization = DPOP_AUTHZ, nonce = RANDOM_NONCE )</ID>
-    <ID>ArgumentListWrapping:EnvelopeProtoMapperTest.kt$EnvelopeProtoMapperTest$( user, mapOf( Pair("241b5be49179d81b", ByteArray(0)), Pair("8bdacec7398a982e", ByteArray(0)), Pair("e47d908549239b72", ByteArray(0)), Pair("4c8346ce67fa0d7", ByteArray(0)) ) )</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$("1", "2", "3", "4")</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(TestMessage.TEXT_MESSAGE.conversationId)</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(eq(TestMessage.TEXT_MESSAGE.conversationId), (eq(threeSecondsEphemeralMessage.id)))</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(fourSecondsEphemeralMessage.id))</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(oneSecondEphemeralMessage.id))</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(threeSecondsEphemeralMessage.id))</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(twoSecondEphemeralMessage.id))</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(eq(oneSecondEphemeralMessage.conversationId), oneOf("1", "2", "3", "4"))</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(fourSecondsEphemeralMessage.id)</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(oneSecondEphemeralMessage.conversationId)</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(oneSecondEphemeralMessage.id)</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(threeSecondsEphemeralMessage.id)</ID>
-    <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$(twoSecondEphemeralMessage.id)</ID>
-    <ID>ArgumentListWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$( SelfDeletingMessagesConfigModel( enforcedTimeoutSeconds = null ), Status.DISABLED )</ID>
-    <ID>ArgumentListWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$( SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = 0), Status.ENABLED )</ID>
-    <ID>ArgumentListWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$( SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedDuration.inWholeSeconds), Status.ENABLED )</ID>
-    <ID>ArgumentListWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$( SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedTimeoutSeconds), Status.DISABLED )</ID>
-    <ID>ArgumentListWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$( SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedTimeoutSeconds), Status.ENABLED )</ID>
-    <ID>ArgumentListWrapping:FeatureConfigMapperTest.kt$FeatureConfigMapperTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.MLS, listOf(SupportedProtocolDTO.MLS), listOf(1), 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
-    <ID>ArgumentListWrapping:FeatureConfigRepositoryTest.kt$FeatureConfigRepositoryTest.Arrangement$( AppLockConfigDTO(true, 0), FeatureFlagStatusDTO.ENABLED )</ID>
-    <ID>ArgumentListWrapping:FeatureConfigRepositoryTest.kt$FeatureConfigRepositoryTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), allowedCipherSuites = listOf(1), defaultCipherSuite = 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
-    <ID>ArgumentListWrapping:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$(ConversationSyncReason.Other)</ID>
-    <ID>ArgumentListWrapping:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$(any(), eq(batch2.response.conversationsFound), eq(true), eq(ConversationSyncReason.Other))</ID>
-    <ID>ArgumentListWrapping:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$(batch2.response.conversationsFound)</ID>
-    <ID>ArgumentListWrapping:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$(true)</ID>
-    <ID>ArgumentListWrapping:FetchUsersClientsFromRemoteUseCaseTest.kt$FetchUsersClientsFromRemoteUseCaseTest$( SimpleClientResponse("111", DeviceTypeDTO.Phone), SimpleClientResponse("2222", DeviceTypeDTO.Desktop) )</ID>
-    <ID>ArgumentListWrapping:GetMessageAssetUseCaseTest.kt$GetMessageAssetUseCaseTest.Arrangement$( assetDataSource, messageRepository, userRepository, updateAssetMessageTransferStatus, testScope, testDispatcher )</ID>
-    <ID>ArgumentListWrapping:GetNotificationsUseCaseTest.kt$GetNotificationsUseCaseTest$( conversationId(1), "some convo", listOf(), false )</ID>
-    <ID>ArgumentListWrapping:GetUserMlsClientIdentitiesUseCaseTest.kt$GetUserMlsClientIdentitiesUseCaseTest.Companion$( scheme = "wireapp", handle = "userHandle", domain = "domain1" )</ID>
-    <ID>ArgumentListWrapping:GlobalDBBaseTest.kt$GlobalDBBaseTest$( PlatformDatabaseData(StorageData.FileBacked(storePath)), StandardTestDispatcher(), null, false )</ID>
-    <ID>ArgumentListWrapping:GroupConversationCreatorTest.kt$GroupConversationCreatorTest$(protocol = CreateConversationParam.Protocol.MLS, creatorClientId = creatorClientId)</ID>
-    <ID>ArgumentListWrapping:InstanceServiceTest.kt$InstanceServiceTest$("No directory for coreLogic was created", File(instancePath).exists())</ID>
-    <ID>ArgumentListWrapping:InstanceServiceTest.kt$InstanceServiceTest$("No global-storage/global-db file found in $instancePath", File("$instancePath/global-storage/global-db").exists())</ID>
-    <ID>ArgumentListWrapping:JoinConversationViaCodeUseCaseTest.kt$JoinConversationViaCodeUseCaseTest$( code, key, null, password, Either.Left( NetworkFailure.ServerMiscommunication( KaliumException.InvalidRequestError( ErrorResponse(403, "wrong password", "invalid-conversation-password") ) ) ) )</ID>
-    <ID>ArgumentListWrapping:JoinExistingMLSConversationUseCaseTest.kt$JoinExistingMLSConversationUseCaseTest$( any(), eq((conversation.protocol as Conversation.ProtocolInfo.MLS).groupId), any() )</ID>
-    <ID>ArgumentListWrapping:JoinExistingMLSConversationUseCaseTest.kt$JoinExistingMLSConversationUseCaseTest.Arrangement$( any(), matches { invocationCounter += 1 invocationCounter &lt;= times }, any() )</ID>
-    <ID>ArgumentListWrapping:JoinSubconversationUseCaseTest.kt$JoinSubconversationUseCaseTest$( any(), eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)), any() )</ID>
-    <ID>ArgumentListWrapping:JoinSubconversationUseCaseTest.kt$JoinSubconversationUseCaseTest$( any(), eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH.groupId)), any() )</ID>
-    <ID>ArgumentListWrapping:KeyPackageManagerTests.kt$KeyPackageManagerTests.Arrangement$( TestClient.CLIENT_ID, 0, true )</ID>
-    <ID>ArgumentListWrapping:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$( any(), any(), matches { it == listOf(TestUser.OTHER_USER_ID_2, TestUser.OTHER_USER_ID) })</ID>
-    <ID>ArgumentListWrapping:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$(matches { it.content is MessageContent.LegalHold.ForConversation.Disabled &amp;&amp; it.date == Instant.UNIX_FIRST_DATE })</ID>
-    <ID>ArgumentListWrapping:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$(matches { it.content is MessageContent.LegalHold.ForConversation.Enabled &amp;&amp; it.date == Instant.UNIX_FIRST_DATE })</ID>
-    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.DISABLED ), duringSlowSync = false )</ID>
-    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.DISABLED, defaultProtocol = SupportedProtocol.MLS ), duringSlowSync = false )</ID>
-    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, defaultProtocol = SupportedProtocol.MLS ), duringSlowSync = false )</ID>
-    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, defaultProtocol = SupportedProtocol.PROTEUS ), duringSlowSync = false )</ID>
-    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS) ), duringSlowSync = false )</ID>
-    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS) ), duringSlowSync = true )</ID>
-    <ID>ArgumentListWrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest$( MLSFailure.MessageRejected( NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync(missingUsers) ), TEST_CAUSE )</ID>
-    <ID>ArgumentListWrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest$( arrangement.mlsContext, Arrangement.GROUP_ID, listOf( QualifiedClientID(ClientId(CRYPTO_CLIENT_ID.value), UserId(CRYPTO_CLIENT_ID.userId.value, CRYPTO_CLIENT_ID.userId.domain)) ) )</ID>
-    <ID>ArgumentListWrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement.Companion$( MLSFailure.MessageRejected( NetworkFailure.MlsMessageRejectedFailure.ClientMismatch ), TEST_CAUSE )</ID>
-    <ID>ArgumentListWrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement.Companion$( MLSFailure.MessageRejected( NetworkFailure.MlsMessageRejectedFailure.CommitMissingReferences ), TEST_CAUSE )</ID>
-    <ID>ArgumentListWrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement.Companion$( MLSFailure.MessageRejected( NetworkFailure.MlsMessageRejectedFailure.StaleMessage ), TEST_CAUSE )</ID>
-    <ID>ArgumentListWrapping:MLSMigrationConfigHandlerTest.kt$MLSMigrationConfigHandlerTest$( MIGRATION_CONFIG.copy( startTime = Instant.DISTANT_PAST, endTime = Instant.DISTANT_PAST ), duringSlowSync = false )</ID>
-    <ID>ArgumentListWrapping:MLSMigrationConfigHandlerTest.kt$MLSMigrationConfigHandlerTest$( MIGRATION_CONFIG.copy( startTime = Instant.DISTANT_PAST, endTime = Instant.DISTANT_PAST ), duringSlowSync = true )</ID>
-    <ID>ArgumentListWrapping:MLSMigrationWorkerTest.kt$MLSMigrationWorkerTest.Arrangement.Companion$( startTime = null, endTime = null, status = Status.ENABLED )</ID>
-    <ID>ArgumentListWrapping:MessageDAOTest.kt$MessageDAOTest$( id = it.toString(), date = "2000-01-01T11:0$it:00.000Z".toInstant(), conversationId = conversationId, senderUserId = userEntity1.id, )</ID>
-    <ID>ArgumentListWrapping:MessageDAOTest.kt$MessageDAOTest$( messageId, conversationId, listOf(userEntity1.id, userEntity2.id), RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED )</ID>
-    <ID>ArgumentListWrapping:MessageNotificationsTest.kt$MessageNotificationsTest.Companion$( "I'm quoting others", quotedMessageId = OTHER_MESSAGE.id )</ID>
-    <ID>ArgumentListWrapping:MessageNotificationsTest.kt$MessageNotificationsTest.Companion$( "I'm quoting selfUser", quotedMessageId = SELF_MESSAGE.id )</ID>
-    <ID>ArgumentListWrapping:MessageNotificationsTest.kt$MessageNotificationsTest.Companion$( messageBody = "@$@${OTHER_USER_2.name}", mentions = listOf(OTHER_MENTION) )</ID>
-    <ID>ArgumentListWrapping:MessageNotificationsTest.kt$MessageNotificationsTest.Companion$( messageBody = "@${SELF_USER.name} @${OTHER_USER_2.name}", mentions = listOf(SELF_MENTION) )</ID>
-    <ID>ArgumentListWrapping:MessageNotificationsTest.kt$MessageNotificationsTest.Companion$( start = 0, length = 9, userId = SELF_USER_ID )</ID>
-    <ID>ArgumentListWrapping:MessageNotificationsTest.kt$MessageNotificationsTest.Companion$( start = 10, length = 11, userId = OTHER_USER_2.id )</ID>
-    <ID>ArgumentListWrapping:MessageRepositoryExtensionsTest.kt$MessageRepositoryExtensionsTest$( eq(CONVERSATION_ID_ENTITY), matches { val list = it.toList() list.size == 1 &amp;&amp; list[0] == MessageEntity.Visibility.VISIBLE }, eq(pagingConfig), any() )</ID>
-    <ID>ArgumentListWrapping:MessageRepositoryTest.kt$MessageRepositoryTest$( matches { it.recipients.isEmpty() &amp;&amp; it.messageOption == QualifiedMessageOption.IgnoreAll }, any() )</ID>
-    <ID>ArgumentListWrapping:MessageRepositoryTest.kt$MessageRepositoryTest$( matches { it.recipients.isEmpty() &amp;&amp; it.messageOption == QualifiedMessageOption.ReportAll }, any() )</ID>
-    <ID>ArgumentListWrapping:MessageRepositoryTest.kt$MessageRepositoryTest.Companion$( TestConversation.ID, "", listOf(NOTIFICATION_MESSAGE), true, true )</ID>
-    <ID>ArgumentListWrapping:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$(arrangement.userOne.first to arrangement.userOne.second)</ID>
-    <ID>ArgumentListWrapping:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$(arrangement.userOneInsertClientParams + arrangement.userTwoInsertClientParams)</ID>
-    <ID>ArgumentListWrapping:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$(arrangement.userTwo.first to arrangement.userTwo.second)</ID>
-    <ID>ArgumentListWrapping:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$(eq(arrangement.userOneInsertClientParams + arrangement.userTwoInsertClientParams))</ID>
-    <ID>ArgumentListWrapping:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$(eq(mapOf(arrangement.userOne.first to arrangement.userOne.second)))</ID>
-    <ID>ArgumentListWrapping:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$(eq(mapOf(arrangement.userTwo.first to arrangement.userTwo.second)))</ID>
-    <ID>ArgumentListWrapping:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$(mapOf(arrangement.userOne.first to arrangement.userOne.second))</ID>
-    <ID>ArgumentListWrapping:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$(mapOf(arrangement.userTwo.first to arrangement.userTwo.second))</ID>
-    <ID>ArgumentListWrapping:MessageStubs.kt$( listOf(QualifiedIDEntity("otherId", "otherDomain")), MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS )</ID>
-    <ID>ArgumentListWrapping:NewGroupConversationSystemMessagesCreatorTest.kt$NewGroupConversationSystemMessagesCreatorTest$( ConversationMemberDTO.Self( TestUser.SELF.id.toApi(), "wire_admin" ), emptyList() )</ID>
-    <ID>ArgumentListWrapping:NewGroupConversationSystemMessagesCreatorTest.kt$NewGroupConversationSystemMessagesCreatorTest$( TestConversation.ID, listOf(TestUser.OTHER.id), MessageContent.MemberChange.FailedToAdd.Type.Unknown )</ID>
-    <ID>ArgumentListWrapping:NewMessageEventHandlerTest.kt$NewMessageEventHandlerTest$(any(), eq(newMessageEvent), any())</ID>
-    <ID>ArgumentListWrapping:NewMessageEventHandlerTest.kt$NewMessageEventHandlerTest$(exactly = once)</ID>
-    <ID>ArgumentListWrapping:NewMessageEventHandlerTest.kt$NewMessageEventHandlerTest$(newMessageEvent)</ID>
-    <ID>ArgumentListWrapping:NotificationApiV0Test.kt$NotificationApiV0Test$( networkClient, fakeWebsocketClient(), TEST_BACKEND_CONFIG.links )</ID>
-    <ID>ArgumentListWrapping:NotifyConversationIsOpenUseCaseTest.kt$NotifyConversationIsOpenUseCaseTest$( any(), eq(details.otherUser), any() )</ID>
-    <ID>ArgumentListWrapping:ObserveChannelsCreationPermissionUseCaseTest.kt$ObserveChannelsCreationPermissionUseCaseTest$( UserTypeInfo.Regular(UserType.EXTERNAL), ChannelFeatureConfiguration.Enabled( createChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_AND_REGULAR_MEMBERS, createPublicChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY, ) )</ID>
-    <ID>ArgumentListWrapping:OnParticipantListChangedTest.kt$OnParticipantListChangedTest$( REMOTE_CONVERSATION_ID, data, null )</ID>
-    <ID>ArgumentListWrapping:ProtoContentMapperTest.kt$ProtoContentMapperTest$( TEST_MESSAGE_UUID, TEST_CONVERSATION_ID )</ID>
-    <ID>ArgumentListWrapping:ProtoContentMapperTest.kt$ProtoContentMapperTest$( quotedMessageId = "quotedMessageId", quotedMessageSha256 = null, true )</ID>
-    <ID>ArgumentListWrapping:ReceiptDAOTest.kt$ReceiptDAOTest$( OTHER_USER.id, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.DELIVERY, listOf("SomeUnknownMessage") )</ID>
-    <ID>ArgumentListWrapping:ReceiptDAOTest.kt$ReceiptDAOTest$( OTHER_USER.id, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id) )</ID>
-    <ID>ArgumentListWrapping:ReceiptDAOTest.kt$ReceiptDAOTest$( OTHER_USER.id, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.DELIVERY, listOf(otherMessageId) )</ID>
-    <ID>ArgumentListWrapping:ReceiptDAOTest.kt$ReceiptDAOTest$( OTHER_USER.id, TEST_CONVERSATION.id, insertedInstant, ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id) )</ID>
-    <ID>ArgumentListWrapping:ReceiptDAOTest.kt$ReceiptDAOTest$( SELF_USER_ID, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.DELIVERY, listOf(TEST_MESSAGE.id) )</ID>
-    <ID>ArgumentListWrapping:ReceiptDAOTest.kt$ReceiptDAOTest$( SELF_USER_ID, TEST_CONVERSATION.id, DateTimeUtil.currentInstant(), ReceiptTypeEntity.READ, listOf(TEST_MESSAGE.id) )</ID>
-    <ID>ArgumentListWrapping:RegisterMLSClientUseCaseTest.kt$RegisterMLSClientUseCaseTest.Arrangement.Companion$( true, RANDOM_URL, DateTimeUtil.currentInstant(), false, null )</ID>
-    <ID>ArgumentListWrapping:ResetMLSConversationUseCaseTest.kt$ResetMLSConversationUseCaseTest$(ConversationSyncReason.ConversationReset)</ID>
-    <ID>ArgumentListWrapping:ResetMLSConversationUseCaseTest.kt$ResetMLSConversationUseCaseTest$(conversationId = any(), transactionContext = any(), reason = eq(ConversationSyncReason.ConversationReset))</ID>
-    <ID>ArgumentListWrapping:RetryFailedMessageUseCaseTest.kt$RetryFailedMessageUseCaseTest$( matches { it is Message.Signaling // message edits are sent as signaling messages &amp;&amp; it.id != message.id // when editing we need to generate and set a new id &amp;&amp; it.content is MessageContent.TextEdited &amp;&amp; (it.content as MessageContent.TextEdited).editMessageId == message.id // original id in edited content }, any() )</ID>
-    <ID>ArgumentListWrapping:RetryFailedMessageUseCaseTest.kt$RetryFailedMessageUseCaseTest$(MessageEntity.Status.PENDING)</ID>
-    <ID>ArgumentListWrapping:RetryFailedMessageUseCaseTest.kt$RetryFailedMessageUseCaseTest$(eq(MessageEntity.Status.PENDING), eq(message.conversationId), eq(message.id))</ID>
-    <ID>ArgumentListWrapping:RetryFailedMessageUseCaseTest.kt$RetryFailedMessageUseCaseTest$(message.conversationId)</ID>
-    <ID>ArgumentListWrapping:RetryFailedMessageUseCaseTest.kt$RetryFailedMessageUseCaseTest$(message.id)</ID>
-    <ID>ArgumentListWrapping:SearchDAOTest.kt$SearchDAOTest$( MemberEntity( connectedPartOfConversation1.id, MemberEntity.Role.Member ), conversationToExclude.id )</ID>
-    <ID>ArgumentListWrapping:SearchDAOTest.kt$SearchDAOTest$( MemberEntity( connectedPartOfConversation2.id, MemberEntity.Role.Member ), conversationToExclude.id )</ID>
-    <ID>ArgumentListWrapping:SearchDAOTest.kt$SearchDAOTest$( MemberEntity( connectedUser1.id, MemberEntity.Role.Member ), conversation.id )</ID>
-    <ID>ArgumentListWrapping:SendFCMTokenToAPIUseCaseTest.kt$SendFCMTokenToAPIUseCaseTest.Arrangement$( currentClientIdProvider, clientRepository, notificationTokenRepository )</ID>
-    <ID>ArgumentListWrapping:SendMessagePartialFailureMapperTest.kt$SendMessagePartialFailureMapperTest$( MessageSent(Instant.parse("2022-04-21T20:56:22.393Z"), listOf(TEST_USER_ID, OTHER_USER_ID_2)), mapper.fromDTO(RESULT_DTO) )</ID>
-    <ID>ArgumentListWrapping:SendMessagePartialFailureMapperTest.kt$SendMessagePartialFailureMapperTest$(Instant.parse("2022-04-21T20:56:22.393Z"), emptyList(), expectedUsersFailedToSend.map { it.toApi() })</ID>
-    <ID>ArgumentListWrapping:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest$(Conversation.TypingIndicatorMode.STARTED)</ID>
-    <ID>ArgumentListWrapping:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest$(Conversation.TypingIndicatorMode.STOPPED)</ID>
-    <ID>ArgumentListWrapping:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest$(TestConversation.ID)</ID>
-    <ID>ArgumentListWrapping:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest$(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STARTED))</ID>
-    <ID>ArgumentListWrapping:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest$(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STOPPED))</ID>
-    <ID>ArgumentListWrapping:ShouldRemoteMuteCheckerTest.kt$ShouldRemoteMuteCheckerTest.Companion$( OTHER_USER_ID, Conversation.Member.Role.Admin )</ID>
-    <ID>ArgumentListWrapping:StaleEpochVerifierTest.kt$StaleEpochVerifierTest$( any(), eq(TestSubConversationDetails.groupId), eq(TestGroupInfo) )</ID>
-    <ID>ArgumentListWrapping:SyncConversationsUseCaseTest.kt$SyncConversationsUseCaseTest.Arrangement$(Conversation.Type.Group.Regular)</ID>
-    <ID>ArgumentListWrapping:SyncConversationsUseCaseTest.kt$SyncConversationsUseCaseTest.Arrangement$(eq(Conversation.Type.Group.Regular), protocol?.let { eq(it) } ?: any(), eq&lt;TeamId?>(null))</ID>
-    <ID>ArgumentListWrapping:SyncConversationsUseCaseTest.kt$SyncConversationsUseCaseTest.Arrangement$(null)</ID>
-    <ID>ArgumentListWrapping:SyncFeatureConfigsUseCaseTest.kt$SyncFeatureConfigsUseCaseTest$( ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY, ChannelFeatureConfiguration.TeamUserType.EVERYONE_IN_THE_TEAM )</ID>
-    <ID>ArgumentListWrapping:TestData.kt$( version, isEncrypted, hashData )</ID>
-    <ID>ArgumentListWrapping:TestEvent.kt$TestEvent$( eventId, TestClient.CLIENT.copy(id = clientId) )</ID>
-    <ID>ArgumentListWrapping:TypingIndicatorHandlerTest.kt$TypingIndicatorHandlerTest$(TestConversation.ID)</ID>
-    <ID>ArgumentListWrapping:TypingIndicatorHandlerTest.kt$TypingIndicatorHandlerTest$(TestUser.OTHER_USER_ID)</ID>
-    <ID>ArgumentListWrapping:TypingIndicatorHandlerTest.kt$TypingIndicatorHandlerTest$(eq(TestConversation.ID), eq(TestUser.OTHER_USER_ID))</ID>
-    <ID>ArgumentListWrapping:UpdateConversationReceiptModeUseCaseTest.kt$UpdateConversationReceiptModeUseCaseTest.Arrangement$( conversationRepository, persistMessage, selfUserId )</ID>
-    <ID>ArgumentListWrapping:UpdateKeyingMaterialsUseCaseTests.kt$UpdateKeyingMaterialsUseCaseTests$("No network")</ID>
-    <ID>ArgumentListWrapping:UpdateKeyingMaterialsUseCaseTests.kt$UpdateKeyingMaterialsUseCaseTests$(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS[0], NetworkFailure.NoNetworkConnection(IOException("No network")))</ID>
-    <ID>ArgumentListWrapping:UpdateKeyingMaterialsUseCaseTests.kt$UpdateKeyingMaterialsUseCaseTests$(IOException("No network"))</ID>
-    <ID>ArgumentListWrapping:UpdateSupportedProtocolsUseCaseTest.kt$UpdateSupportedProtocolsUseCaseTest$(matches { it.contains(SupportedProtocol.MLS) &amp;&amp; it.contains(SupportedProtocol.PROTEUS) })</ID>
-    <ID>ArgumentListWrapping:UserConversationDAOIntegrationTest.kt$UserConversationDAOIntegrationTest$( "3", "someDomain" )</ID>
-    <ID>ArgumentListWrapping:UserConversationDAOIntegrationTest.kt$UserConversationDAOIntegrationTest$( conversationId, listOf( MemberEntity( user = QualifiedIDEntity( "3", "someDomain" ), role = MemberEntity.Role.Admin ) ) )</ID>
-    <ID>ArgumentListWrapping:UserConversationDAOIntegrationTest.kt$UserConversationDAOIntegrationTest$( conversationId, listOf( MemberEntity( user = user1.id, role = MemberEntity.Role.Admin ), MemberEntity( user = user2.id, role = MemberEntity.Role.Member ), ) )</ID>
-    <ID>ArgumentListWrapping:UserConversationDAOIntegrationTest.kt$UserConversationDAOIntegrationTest$( memberList = members, conversationID = conversationIDEntity )</ID>
-    <ID>ArgumentListWrapping:UserConversationDAOIntegrationTest.kt$UserConversationDAOIntegrationTest$( user = QualifiedIDEntity( "3", "someDomain" ), role = MemberEntity.Role.Admin )</ID>
-    <ID>ArgumentListWrapping:UserConversationDAOIntegrationTest.kt$UserConversationDAOIntegrationTest$( user = user1.id, role = MemberEntity.Role.Admin )</ID>
-    <ID>ArgumentListWrapping:UserConversationDAOIntegrationTest.kt$UserConversationDAOIntegrationTest$( user = user2.id, role = MemberEntity.Role.Member )</ID>
-    <ID>ArgumentListWrapping:UserRepositoryArrangement.kt$UserRepositoryArrangementImpl$( matches { userId.matches(it) }, matches { conversationId.matches(it) })</ID>
-    <ID>ArgumentListWrapping:UserSearchApiWrapperTest.kt$UserSearchApiWrapperTest$( ConversationMemberExcludedOptions.ConversationExcluded( ConversationId( "someValue", "someDomain" ) ), selfUserIncluded = false )</ID>
-    <ID>ArgumentListWrapping:UserSearchApiWrapperTest.kt$UserSearchApiWrapperTest$( ConversationMemberExcludedOptions.ConversationExcluded( ConversationId( "someValue", "someDomain" ) ), selfUserIncluded = true )</ID>
-    <ID>ArgumentListWrapping:UserSearchApiWrapperTest.kt$UserSearchApiWrapperTest$( user = QualifiedIDEntity( "value3", "someDomain" ), role = MemberEntity.Role.Member )</ID>
-    <ID>ArgumentListWrapping:UserSearchApiWrapperTest.kt$UserSearchApiWrapperTest$( user = QualifiedIDEntity( selfUser.id.value, selfUser.id.domain ), role = MemberEntity.Role.Member )</ID>
-    <ID>ArgumentListWrapping:WrapApiRequestTest.kt$WrapApiRequestTest$( 500, "have you tried turning it off and on again?", "server_crash" )</ID>
-    <ID>ArgumentListWrapping:WrapRequestTest.kt$WrapRequestTest$( PreKeyDTO(-42, "this is a custom override for tests"), emptyMap(), HttpStatusCode.OK.value )</ID>
     <ID>ClassNaming:Cryptobox.module_@wireapp_cryptobox.kt$T$0</ID>
     <ID>ClassNaming:Size_t.kt$Size_t : IntegerType</ID>
     <ID>ClassNaming:Uint32_t.kt$Uint32_t : IntegerType</ID>
-    <ID>CyclomaticComplexMethod:ConversationDAOTest.kt$ConversationDAOTest$private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity</ID>
-    <ID>EmptyDefaultConstructor:CellsApiTest.kt$CellsApiTest.Arrangement$()</ID>
-    <ID>EmptyDefaultConstructor:CreatePublicLinkPasswordUseCaseTest.kt$CreatePublicLinkPasswordUseCaseTest.Arrangement$()</ID>
-    <ID>EmptyDefaultConstructor:DeletePublicLinkUseCaseTest.kt$DeletePublicLinkUseCaseTest.Arrangement$()</ID>
-    <ID>EmptyDefaultConstructor:UpdatePublicLinkPasswordUseCaseTest.kt$UpdatePublicLinkPasswordUseCaseTest.Arrangement$()</ID>
-    <ID>EmptyFunctionBlock:E2EIClientTest.kt$E2EIClientTest.&lt;no name provided>${ }</ID>
-    <ID>EmptyFunctionBlock:FileTestHelper.kt$FileTestHelper${ }</ID>
-    <ID>EmptyFunctionBlock:NodeUploadManagerTest.kt$TestRepository${}</ID>
-    <ID>EmptyKtFile:FetchApiVersionUseCaseTest.kt$.FetchApiVersionUseCaseTest.kt</ID>
-    <ID>EmptyKtFile:PersistMigratedMessagesUseCaseTest.kt$.PersistMigratedMessagesUseCaseTest.kt</ID>
-    <ID>EmptyKtFile:RestoreWebBackupUseCaseTest.kt$.RestoreWebBackupUseCaseTest.kt</ID>
+    <ID>DaoSuspendFlowReturnRule:ConversationDAO.kt$ConversationDAO$suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow&lt;ConversationEntity?></ID>
+    <ID>DaoSuspendFlowReturnRule:ConversationDAO.kt$ConversationDAO$suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow&lt;ConversationViewEntity?></ID>
+    <ID>DaoSuspendFlowReturnRule:ConversationDAOImpl.kt$ConversationDAOImpl$override suspend fun observeConversationById( qualifiedID: QualifiedIDEntity ): Flow&lt;ConversationEntity?></ID>
+    <ID>DaoSuspendFlowReturnRule:ConversationDAOImpl.kt$ConversationDAOImpl$override suspend fun observeConversationDetailsById( conversationId: QualifiedIDEntity ): Flow&lt;ConversationViewEntity?></ID>
+    <ID>DaoSuspendFlowReturnRule:MemberDAO.kt$MemberDAO$suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow&lt;List&lt;MemberEntity>></ID>
+    <ID>DaoSuspendFlowReturnRule:MemberDAO.kt$MemberDAOImpl$override suspend fun observeConversationMembers( qualifiedID: QualifiedIDEntity ): Flow&lt;List&lt;MemberEntity>></ID>
+    <ID>DaoSuspendFlowReturnRule:MetadataDAO.kt$MetadataDAO$suspend fun valueByKeyFlow(key: String): Flow&lt;String?></ID>
+    <ID>DaoSuspendFlowReturnRule:MetadataDAOImpl.kt$MetadataDAOImpl$override suspend fun valueByKeyFlow( key: String ): Flow&lt;String?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserConfigDAO.kt$UserConfigDAO$suspend fun observeAppsEnabled(): Flow&lt;Boolean></ID>
+    <ID>DaoSuspendFlowReturnRule:UserConfigDAO.kt$UserConfigDAO$suspend fun observeCertificateExpirationTime(url: String): Flow&lt;ULong?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserConfigDAO.kt$UserConfigDAO$suspend fun observeLegalHoldChangeNotified(): Flow&lt;Boolean?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserConfigDAO.kt$UserConfigDAO$suspend fun observeShouldNotifyForRevokedCertificate(): Flow&lt;Boolean?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserConfigDAO.kt$UserConfigDAO$suspend fun observeTrackingIdentifier(): Flow&lt;String?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserConfigDAO.kt$UserConfigDAOImpl$override suspend fun observeAppsEnabled(): Flow&lt;Boolean></ID>
+    <ID>DaoSuspendFlowReturnRule:UserConfigDAO.kt$UserConfigDAOImpl$override suspend fun observeCertificateExpirationTime(url: String): Flow&lt;ULong?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserConfigDAO.kt$UserConfigDAOImpl$override suspend fun observeLegalHoldChangeNotified(): Flow&lt;Boolean?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserConfigDAO.kt$UserConfigDAOImpl$override suspend fun observeShouldNotifyForRevokedCertificate(): Flow&lt;Boolean?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserConfigDAO.kt$UserConfigDAOImpl$override suspend fun observeTrackingIdentifier(): Flow&lt;String?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserDAO.kt$UserDAO$suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow&lt;UserDetailsEntity?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserDAOImpl.kt$UserDAOImpl$override suspend fun observeUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): Flow&lt;UserDetailsEntity?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserPrefsDAO.kt$UserPrefsDAO$override suspend fun areReadReceiptsEnabled(): Flow&lt;Boolean></ID>
+    <ID>DaoSuspendFlowReturnRule:UserPrefsDAO.kt$UserPrefsDAO$override suspend fun e2EINotificationTimeFlow(): Flow&lt;Long?></ID>
+    <ID>DaoSuspendFlowReturnRule:UserPrefsDAO.kt$UserPrefsDAO$override suspend fun isConferenceCallingEnabledFlow(): Flow&lt;Boolean></ID>
+    <ID>DaoSuspendFlowReturnRule:UserPrefsDAO.kt$UserPrefsDAO$override suspend fun isScreenshotCensoringEnabledFlow(): Flow&lt;Boolean></ID>
+    <ID>DaoSuspendFlowReturnRule:UserPrefsDAO.kt$UserPrefsDAO$override suspend fun isTypingIndicatorEnabled(): Flow&lt;Boolean></ID>
     <ID>Filename:ConversationStatus.kt$com.wire.kalium.logic.data.conversation.ConversationStatus.kt</ID>
-    <ID>Filename:CryptoTransactionProviderTest.kt$com.wire.kalium.logic.data.client.CryptoTransactionProviderTest.kt</ID>
-    <ID>Filename:FileUtilTest.kt$com.wire.kalium.util.FileUtilTest.kt</ID>
-    <ID>Filename:GetOtherUserClientsUseCaseTest.kt$com.wire.kalium.logic.feature.client.GetOtherUserClientsUseCaseTest.kt</ID>
     <ID>Filename:InputFlow.kt$com.wire.kalium.cli.commands.InputFlow.kt</ID>
-    <ID>Filename:LegalHoldSystemMessageHandlerTest.kt$com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldSystemMessageHandlerTest.kt</ID>
     <ID>Filename:SessionResult.kt$com.wire.kalium.logic.feature.session.SessionResult.kt</ID>
     <ID>Filename:Uint32_t.kt$com.wire.kalium.calling.types.Uint32_t.kt</ID>
-    <ID>Filename:commonJsConfig.kt$com.wire.kalium.plugins.commonJsConfig.kt</ID>
     <ID>Filename:coreLogic.kt$com.wire.kalium.cli.coreLogic.kt</ID>
     <ID>Filename:defaultHttpEngine.kt$com.wire.kalium.network.defaultHttpEngine.kt</ID>
     <ID>Filename:fileLogger.kt$com.wire.kalium.cli.fileLogger.kt</ID>
@@ -243,14 +45,10 @@
     <ID>Filename:main.kt$.main.kt</ID>
     <ID>Filename:main.kt$com.wire.kalium.cli.main.kt</ID>
     <ID>Filename:main.kt$com.wire.kalium.monkeys.main.kt</ID>
-    <ID>Filename:mlsMissingUsersMessageRejectionHandler.kt$com.wire.kalium.logic.feature.mls.mlsMissingUsersMessageRejectionHandler.kt</ID>
     <ID>Filename:monkey.kt$com.wire.kalium.monkeys.monkey.kt</ID>
-    <ID>Filename:readBinaryResource.kt$com.wire.kalium.cryptography.readBinaryResource.kt</ID>
     <ID>Filename:replayer.kt$com.wire.kalium.monkeys.replayer.kt</ID>
     <ID>Filename:toByteArray.kt$com.wire.kalium.util.long.toByteArray.kt</ID>
     <ID>Filename:toUTF16BEByteArray.kt$com.wire.kalium.util.string.toUTF16BEByteArray.kt</ID>
-    <ID>FinalNewline:ClientDTOSerializationTest.kt$com.wire.kalium.api.authenticated.client.ClientDTOSerializationTest.kt</ID>
-    <ID>FinalNewline:UpgradePersonalToTeamApiV7Test.kt$com.wire.kalium.api.v7.UpgradePersonalToTeamApiV7Test.kt</ID>
     <ID>FunctionNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open fun get_prekey_bundle(preKeyId: Number = definedExternally): Promise&lt;PreKeyBundle></ID>
     <ID>FunctionNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open fun get_serialized_last_resort_prekey(): Promise&lt;`T$0`></ID>
     <ID>FunctionNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open fun get_serialized_standard_prekeys(): Promise&lt;Array&lt;`T$0`>></ID>
@@ -285,37 +83,8 @@
     <ID>FunctionParameterNaming:Calling.kt$Calling$wcall_participant_changed_h: ParticipantChangedHandler</ID>
     <ID>FunctionParameterNaming:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession$pk_store: CryptoboxCRUDStore</ID>
     <ID>FunctionParameterNaming:KeyPair.module_@wireapp_proteus.kt$KeyPair.Companion$ed25519_key_pair: KeyPair</ID>
-    <ID>FunctionStartOfBodySpacing:IntExtTests.kt$IntExtTests$@Test fun givenAnInteger_whenConvertingToHex_HexValueIsAsExpected()</ID>
-    <ID>LargeClass:AssetRepositoryTest.kt$AssetRepositoryTest</ID>
-    <ID>LargeClass:E2EIRepositoryTest.kt$E2EIRepositoryTest</ID>
-    <ID>LargeClass:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest</ID>
-    <ID>LargeClass:LegalHoldHandlerTest.kt$LegalHoldHandlerTest</ID>
-    <ID>LargeClass:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest</ID>
-    <ID>LargeClass:MessageSenderTest.kt$MessageSenderTest</ID>
-    <ID>LargeClass:SyncFeatureConfigsUseCaseTest.kt$SyncFeatureConfigsUseCaseTest</ID>
-    <ID>LargeClass:UserDAOTest.kt$UserDAOTest : BaseDatabaseTest</ID>
-    <ID>LongMethod:ClientRepositoryTest.kt$ClientRepositoryTest$@Test fun whenSelfListOfClientsIsReturnSuccess_thenTheSuccessIsPropagated()</ID>
-    <ID>LongMethod:ConversationDAOTest.kt$ConversationDAOTest$private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity</ID>
-    <ID>LongMethod:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest$@Test fun givenUseCase_whenCallingInitialization_thenReturnInitializationResult()</ID>
-    <ID>LongMethod:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest$@Test fun givenUseCase_whenCreateAuthorizationsFailing_thenReturnFailure()</ID>
-    <ID>LongMethod:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$@Test fun givenMultipleMessageWithDifferentExpirationAsReceiver_whenEnqueuedForDeletionAndTimeElapsed_thenTheMessagesPastTheTimeShouldBeDeleted()</ID>
-    <ID>LongMethod:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$@Test fun givenMultipleMessageWithDifferentExpirationAsSender_whenEnqueuedForDeletionAndTimeElapsed_thenTheMessagesPastTheTimeShouldBeDeleted()</ID>
-    <ID>LongMethod:FeatureConfigRepositoryTest.kt$FeatureConfigRepositoryTest$@Test fun whenFeatureConfigSuccess_thenTheSuccessIsReturned()</ID>
-    <ID>LongMethod:FederationEventReceiverTest.kt$FederationEventReceiverTest$@Test fun givenConversationsWithFederatedUsers_whenReceivingFederationDeleteEvent_thenAllConversationsWithThemShouldBeCleared()</ID>
-    <ID>LongMethod:MessageDAOTest.kt$MessageDAOTest$@Test fun givenAssetMessageWithMimeType_WhenGettingAssetMessages_ThenListShouldContainAssetMessageWithMimeType()</ID>
-    <ID>LongMethod:MessageDAOTest.kt$MessageDAOTest$@Test fun givenMessagesAreInserted_whenGettingConfirmableMessageIds_thenOnlyMessagesWithinDateAreReturned()</ID>
-    <ID>LongMethod:MessageDAOTest.kt$MessageDAOTest$@Test fun givenMessagesAreInserted_whenGettingMessagesByConversation_thenOnlyRelevantMessagesAreReturned()</ID>
-    <ID>LongMethod:MessageMapperTest.kt$MessageMapperTest.Arrangement$@Suppress("LongParameterList") fun toEntityFromView( id: String = "", conversationId: QualifiedIDEntity = QualifiedIDEntity("someValue", "someDomain"), contentType: MessageEntity.ContentType = MessageEntity.ContentType.TEXT, date: Instant = Instant.DISTANT_FUTURE, senderUserId: QualifiedIDEntity = QualifiedIDEntity("someValue", "someDomain"), senderClientId: String? = "someId", status: MessageEntity.Status = MessageEntity.Status.READ, lastEditTimestamp: Instant? = null, visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE, expectsReadConfirmation: Boolean = false, expireAfterMillis: Long? = null, selfDeletionEndDate: Instant? = null, readCount: Long = 0, senderName: String? = null, senderHandle: String? = null, senderEmail: String? = null, senderPhone: String? = null, senderAccentId: Int = 0, senderTeamId: String? = null, senderConnectionStatus: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED, senderPreviewAssetId: QualifiedIDEntity? = null, senderCompleteAssetId: QualifiedIDEntity? = null, senderAvailabilityStatus: UserAvailabilityStatusEntity = UserAvailabilityStatusEntity.AVAILABLE, senderUserType: UserTypeEntity = UserTypeEntity.STANDARD, senderBotService: BotIdEntity? = null, senderIsDeleted: Boolean = false, senderExpiresAt: Instant? = null, senderDefederated: Boolean = false, senderSupportedProtocols: Set&lt;SupportedProtocolEntity>? = null, senderActiveOneOnOneConversationId: QualifiedIDEntity? = null, senderIsProteusVerified: Long = 0, senderIsUnderLegalHold: Long = 0, isSelfMessage: Boolean = false, text: String? = null, isQuotingSelfUser: Boolean? = null, assetSize: Long? = null, assetName: String? = null, assetMimeType: String? = null, assetOtrKey: ByteArray? = null, assetSha256: ByteArray? = null, assetId: String? = null, assetToken: String? = null, assetDomain: String? = null, assetEncryptionAlgorithm: String? = null, assetWidth: Int? = null, assetHeight: Int? = null, assetDuration: Long? = null, assetNormalizedLoudness: ByteArray? = null, assetDataPath: String? = null, callerId: QualifiedIDEntity? = null, memberChangeList: List&lt;QualifiedIDEntity>? = null, memberChangeType: MessageEntity.MemberChangeType? = null, unknownContentTypeName: String? = null, unknownContentData: ByteArray? = null, restrictedAssetMimeType: String? = null, restrictedAssetSize: Long? = null, restrictedAssetName: String? = null, failedToDecryptData: ByteArray? = null, decryptionErrorCode: Long? = null, isDecryptionResolved: Boolean? = null, conversationName: String? = null, reactionsJson: String = "[]", mentions: String = "[]", quotedMessageId: String? = null, quotedSenderId: QualifiedIDEntity? = null, isQuoteVerified: Boolean? = null, quotedSenderName: String? = null, quotedSenderAccentId: Int? = null, quotedMessageDateTime: Instant? = null, quotedMessageEditTimestamp: Instant? = null, quotedMessageVisibility: MessageEntity.Visibility? = null, quotedMessageContentType: MessageEntity.ContentType? = null, quotedTextBody: String? = null, quotedAssetMimeType: String? = null, quotedAssetName: String? = null, quotedLocationName: String? = null, isConversationAppsEnabled: Boolean? = null, newConversationReceiptMode: Boolean? = null, conversationReceiptModeChanged: Boolean? = null, messageTimerChanged: Long? = null, recipientsFailedWithNoClientsList: List&lt;QualifiedIDEntity>? = null, recipientsFailedDeliveryList: List&lt;QualifiedIDEntity>? = null, buttonsJson: String = "[]", federationDomainList: List&lt;String>? = null, federationType: MessageEntity.FederationType? = null, conversationProtocolChanged: ConversationEntity.Protocol? = null, latitude: Float? = null, longitude: Float? = null, locationName: String? = null, locationZoom: Int? = null, legalHoldMemberList: List&lt;QualifiedIDEntity>? = null, legalHoldType: MessageEntity.LegalHoldType? = null, attachments: String? = null, ): MessageEntity</ID>
-    <ID>LongMethod:MessageMapperUserTypeMappingTest.kt$MessageMapperUserTypeMappingTest$@Suppress("LongParameterList") private fun toEntityFromView( id: String = "test-message-id", conversationId: QualifiedIDEntity = QualifiedIDEntity("conv", "domain.com"), contentType: MessageEntity.ContentType = MessageEntity.ContentType.TEXT, date: Instant = Instant.DISTANT_FUTURE, senderUserId: QualifiedIDEntity = QualifiedIDEntity("sender", "domain.com"), senderClientId: String? = "client1", status: MessageEntity.Status = MessageEntity.Status.SENT, lastEditTimestamp: Instant? = null, visibility: MessageEntity.Visibility = MessageEntity.Visibility.VISIBLE, expectsReadConfirmation: Boolean = false, expireAfterMillis: Long? = null, selfDeletionEndDate: Instant? = null, readCount: Long = 0, senderName: String? = "Test User", senderHandle: String? = "testhandle", senderEmail: String? = null, senderPhone: String? = null, senderAccentId: Int = 1, senderTeamId: String? = null, senderConnectionStatus: ConnectionEntity.State = ConnectionEntity.State.ACCEPTED, senderPreviewAssetId: QualifiedIDEntity? = null, senderCompleteAssetId: QualifiedIDEntity? = null, senderAvailabilityStatus: UserAvailabilityStatusEntity = UserAvailabilityStatusEntity.NONE, senderUserType: UserTypeEntity = UserTypeEntity.STANDARD, senderBotService: BotIdEntity? = null, senderIsDeleted: Boolean = false, senderExpiresAt: Instant? = null, senderDefederated: Boolean = false, senderSupportedProtocols: Set&lt;SupportedProtocolEntity>? = setOf(SupportedProtocolEntity.PROTEUS), senderActiveOneOnOneConversationId: QualifiedIDEntity? = null, senderIsProteusVerified: Long = 0, senderIsUnderLegalHold: Long = 0, isSelfMessage: Boolean = false, text: String? = null, isQuotingSelfUser: Boolean? = null, assetSize: Long? = null, assetName: String? = null, assetMimeType: String? = null, assetOtrKey: ByteArray? = null, assetSha256: ByteArray? = null, assetId: String? = null, assetToken: String? = null, assetDomain: String? = null, assetEncryptionAlgorithm: String? = null, assetWidth: Int? = null, assetHeight: Int? = null, assetDuration: Long? = null, assetNormalizedLoudness: ByteArray? = null, assetDataPath: String? = null, callerId: QualifiedIDEntity? = null, memberChangeList: List&lt;QualifiedIDEntity>? = null, memberChangeType: MessageEntity.MemberChangeType? = null, unknownContentTypeName: String? = null, unknownContentData: ByteArray? = null, restrictedAssetMimeType: String? = null, restrictedAssetSize: Long? = null, restrictedAssetName: String? = null, failedToDecryptData: ByteArray? = null, decryptionErrorCode: Long? = null, isDecryptionResolved: Boolean? = null, conversationName: String? = null, reactionsJson: String = "[]", mentions: String = "[]", attachments: String? = null, quotedMessageId: String? = null, quotedSenderId: QualifiedIDEntity? = null, isQuoteVerified: Boolean? = null, quotedSenderName: String? = null, quotedSenderAccentId: Int? = null, quotedMessageDateTime: Instant? = null, quotedMessageEditTimestamp: Instant? = null, quotedMessageVisibility: MessageEntity.Visibility? = null, quotedMessageContentType: MessageEntity.ContentType? = null, quotedTextBody: String? = null, quotedAssetMimeType: String? = null, quotedAssetName: String? = null, quotedLocationName: String? = null, isConversationAppsEnabled: Boolean? = null, newConversationReceiptMode: Boolean? = null, conversationReceiptModeChanged: Boolean? = null, messageTimerChanged: Long? = null, recipientsFailedWithNoClientsList: List&lt;QualifiedIDEntity>? = null, recipientsFailedDeliveryList: List&lt;QualifiedIDEntity>? = null, buttonsJson: String = "[]", federationDomainList: List&lt;String>? = null, federationType: MessageEntity.FederationType? = null, conversationProtocolChanged: com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol? = null, latitude: Float? = null, longitude: Float? = null, locationName: String? = null, locationZoom: Int? = null, legalHoldMemberList: List&lt;QualifiedIDEntity>? = null, legalHoldType: MessageEntity.LegalHoldType? = null, ): MessageEntity</ID>
-    <ID>LongMethod:MessageStubs.kt$fun allMessageEntities( conversationId: QualifiedIDEntity = QualifiedIDEntity("convId", "convDomain"), senderUserId: QualifiedIDEntity, ): List&lt;MessageEntity></ID>
-    <ID>LongMethod:Multiplatform.kt$@Suppress("LongParameterList") internal fun Project.configureDefaultMultiplatform( enableApple: Boolean, enableJs: Boolean, enableJsTests: Boolean, includeNativeInterop: Boolean, enableIntegrationTests: Boolean, dependenciesToAdd: Set&lt;FrequentModules>, androidNamespaceSuffix: String = this.name, jsModuleNameOverride: String? = null, )</ID>
-    <ID>LongMethod:UserDAOTest.kt$UserDAOTest$@Test fun givenExistingUser_whenUpsertingIt_thenAllImportantFieldsAreProperlyUpdated()</ID>
-    <ID>LongParameterList:BaseMLSClientTest.kt$BaseMLSClientTest$( clientId: CryptoQualifiedClientId, allowedCipherSuites: List&lt;MLSCiphersuite>, defaultCipherSuite: MLSCiphersuite, mlsTransporter: MLSTransporter, epochObserver: MLSEpochObserver, coroutineScope: CoroutineScope )</ID>
     <ID>LongParameterList:Calling.kt$Calling$( userId: String, clientId: String, readyHandler: ReadyHandler, sendHandler: SendHandler, sftRequestHandler: SFTRequestHandler, incomingCallHandler: IncomingCallHandler, missedCallHandler: MissedCallHandler, answeredCallHandler: AnsweredCallHandler, establishedCallHandler: EstablishedCallHandler, closeCallHandler: CloseCallHandler, metricsHandler: MetricsHandler, callConfigRequestHandler: CallConfigRequestHandler, constantBitRateStateChangeHandler: ConstantBitRateStateChangeHandler, videoReceiveStateHandler: VideoReceiveStateHandler, arg: Pointer? )</ID>
     <ID>LongParameterList:IncomingCallHandler.kt$IncomingCallHandler$( conversationId: String, messageTime: Uint32_t, userId: String, clientId: String, isVideoCall: Boolean, shouldRing: Boolean, conversationType: Int, arg: Pointer? )</ID>
-    <ID>LongParameterList:MLSClientTest.kt$MLSClientTest.Arrangement$( val user: SampleUser, val mlsClient: MLSClient, val sendMessageFlow: MutableSharedFlow&lt;Pair&lt;ByteArray, MlsTransportResponse>>, val sendCommitBundleFlow: MutableSharedFlow&lt;Pair&lt;CommitBundle, MlsTransportResponse>>, val epochChangeFlow: MutableSharedFlow&lt;Pair&lt;MLSGroupId, ULong>>, private val sendMessageResponses: MutableList&lt;MlsTransportResponse>, private val sendCommitResponses: MutableList&lt;MlsTransportResponse> )</ID>
-    <ID>MagicNumber:BaseMLSClientTest.kt$BaseMLSClientTest$32</ID>
-    <ID>MagicNumber:BaseProteusClientTest.kt$BaseProteusClientTest$32</ID>
     <ID>MagicNumber:ConversationStatus.kt$MutedConversationStatus.AllMuted$3</ID>
     <ID>MagicNumber:GlobalCallManager.kt$LogHandlerImpl$3</ID>
     <ID>MagicNumber:NetworkUtils.kt$300</ID>
@@ -326,16 +95,12 @@
     <ID>MagicNumber:NetworkUtils.kt$599</ID>
     <ID>MagicNumber:settings.gradle.kts$3</ID>
     <ID>MatchingDeclarationName:ConversationStatus.kt$MutedConversationStatus</ID>
-    <ID>MatchingDeclarationName:CryptoTransactionProviderTest.kt$CryptoTransactionProviderCrashTest</ID>
     <ID>MatchingDeclarationName:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore : PreKeyStore</ID>
     <ID>MatchingDeclarationName:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession</ID>
     <ID>MatchingDeclarationName:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
-    <ID>MatchingDeclarationName:FileUtilTest.kt$FileTestHelper</ID>
-    <ID>MatchingDeclarationName:GetOtherUserClientsUseCaseTest.kt$ObserveClientsByUserIdUseCaseTest</ID>
     <ID>MatchingDeclarationName:IdentityKey.module_@wireapp_proteus.kt$IdentityKey</ID>
     <ID>MatchingDeclarationName:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair</ID>
     <ID>MatchingDeclarationName:KeyPair.module_@wireapp_proteus.kt$KeyPair</ID>
-    <ID>MatchingDeclarationName:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest</ID>
     <ID>MatchingDeclarationName:MemoryEngine.module_@wireapp_store-engine.kt$MemoryEngine : CRUDEngine</ID>
     <ID>MatchingDeclarationName:PreKey.module_@wireapp_proteus.kt$PreKey</ID>
     <ID>MatchingDeclarationName:PreKeyStore.module_@wireapp_proteus.kt$PreKeyStore</ID>
@@ -343,109 +108,9 @@
     <ID>MatchingDeclarationName:SecretKey.module_@wireapp_proteus.kt$SecretKey</ID>
     <ID>MatchingDeclarationName:SessionResult.kt$GetAllSessionsResult</ID>
     <ID>MatchingDeclarationName:Widgets.kt$CustomScrollRegion : Widget</ID>
-    <ID>MatchingDeclarationName:mlsMissingUsersMessageRejectionHandler.kt$FakeMLSMissingUsersRejectionHandler : MLSMissingUsersMessageRejectionHandler</ID>
-    <ID>MaxLineLength:BaseDatabaseTest.kt$BaseDatabaseTest$actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData</ID>
-    <ID>MaxLineLength:ConnectionRepositoryTest.kt$ConnectionRepositoryTest$val result = connectionRepository.updateConnectionStatus(arrangement.transactionContext, UserId(userId.value, userId.domain), ConnectionState.ACCEPTED)</ID>
-    <ID>MaxLineLength:ConnectionRepositoryTest.kt$ConnectionRepositoryTest$val result = connectionRepository.updateConnectionStatus(arrangement.transactionContext, UserId(userId.value, userId.domain), ConnectionState.NOT_CONNECTED)</ID>
-    <ID>MaxLineLength:ConnectionRepositoryTest.kt$ConnectionRepositoryTest$val result = connectionRepository.updateConnectionStatus(arrangement.transactionContext, UserId(userId.value, userId.domain), ConnectionState.PENDING)</ID>
-    <ID>MaxLineLength:ConversationExtensionsTest.kt$ConversationExtensionsTest$private</ID>
-    <ID>MaxLineLength:ConversationExtensionsTest.kt$ConversationExtensionsTest$queryConfig = ConversationExtensions.QueryConfig(searchQuery = searchQuery, fromArchive = fromArchive, conversationFilter = filter)</ID>
-    <ID>MaxLineLength:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest.Arrangement$suspend</ID>
-    <ID>MaxLineLength:E2EIClientTest.kt$E2EIClientTest.Companion$"eyJhbGciOiJSUzI1NiIsImtpZCI6ImM5YWZkYTM2ODJlYmYwOWViMzA1NWMxYzRiZDM5Yjc1MWZiZjgxOTUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTU0OTM2MTQ1MjMzNjgyNjc2OTAiLCJoZCI6IndpcmUuY29tIiwiZW1haWwiOiJtb2p0YWJhLmNoZW5hbmlAd2lyZS5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiYXRfaGFzaCI6IkRtZDhJQXdnWmVKX1QtUjBpRlpseGciLCJub25jZSI6IjEta2FZb1hRODdadEVlRGpVYTVQSVEiLCJuYW1lIjoiTW9qdGFiYSBDaGVuYW5pIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FHTm15eGFhaWFKa1Y4VDNmMW91d0RWVjNQck52UFBaVUpIZGdnMlJ4N0s0PXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6Ik1vanRhYmEiLCJmYW1pbHlfbmFtZSI6IkNoZW5hbmkiLCJsb2NhbGUiOiJlbiIsImlhdCI6MTY4MzQ4MjIyOSwiZXhwIjoxNjgzNDg1ODI5fQ.r0hh1CtVUXncdWHoXsfAvhf0VuWGDooSRQnNqq0GrzAbYVENGwg0dm8P10Cq_UmCjjh56nC5laMQUcBu-sKW9mRbdKnHwdXXregTSgelQJFoIlusb_3VyHcWDY8Yf9xyuyZbu3wcduL8IndTvy8Sq7mIzGKhsHnLIy1UgHbCGMrzfY2LYCi9Df1ADqA8romigo8fdEAVUi9TAIC8SgHOcqLJt8mxlhKSPPwkJw5yZ3CRvF2NMNsVkYpE9hVYbHcZd6EAmJnljKPJ-NQLXUdjaU3ail80YQko4rcgF2QMZ3LBSMGJpI5LM2UhDxnktqBTpE2nLdwCFg64INS48DPDXQ"</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), (eq(threeSecondsEphemeralMessage.id)))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(fourSecondsEphemeralMessage.id))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(oneSecondEphemeralMessage.id))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(twoSecondEphemeralMessage.id))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsReceiver.invoke(eq(oneSecondEphemeralMessage.conversationId), oneOf("1", "2", "3", "4"))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(fourSecondsEphemeralMessage.id))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(oneSecondEphemeralMessage.id))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(threeSecondsEphemeralMessage.id))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(TestMessage.TEXT_MESSAGE.conversationId), eq(twoSecondEphemeralMessage.id))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.deleteEphemeralMessageForSelfUserAsSender.invoke(eq(oneSecondEphemeralMessage.conversationId), oneOf("1", "2", "3", "4"))</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$arrangement.messageRepository.markSelfDeletionEndDate(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())</ID>
-    <ID>MaxLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$fun</ID>
-    <ID>MaxLineLength:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$coVerify { arrangement.persistConversations(any(), eq(batch2.response.conversationsFound), eq(true), eq(ConversationSyncReason.Other)) }</ID>
-    <ID>MaxLineLength:GroupConversationCreatorTest.kt$GroupConversationCreatorTest$val conversationOptions = CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS, creatorClientId = creatorClientId)</ID>
     <ID>MaxLineLength:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$external open</ID>
-    <ID>MaxLineLength:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$arrangement.persistMessage.invoke(matches { it.content is MessageContent.LegalHold.ForConversation.Disabled &amp;&amp; it.date == Instant.UNIX_FIRST_DATE })</ID>
-    <ID>MaxLineLength:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$arrangement.persistMessage.invoke(matches { it.content is MessageContent.LegalHold.ForConversation.Enabled &amp;&amp; it.date == Instant.UNIX_FIRST_DATE })</ID>
-    <ID>MaxLineLength:MLSMigrationWorkerTest.kt$MLSMigrationWorkerTest$fun</ID>
     <ID>MaxLineLength:MemoryEngine.module_@wireapp_store-engine.kt$MemoryEngine$override fun &lt;PrimaryKey, ChangesType> updateOrCreate(tableName: String, primaryKey: PrimaryKey, changes: ChangesType): Promise&lt;PrimaryKey></ID>
-    <ID>MaxLineLength:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest.Arrangement$coEvery { conversationRepository.observeLegalHoldStatus(any()) } returns flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED))</ID>
-    <ID>MaxLineLength:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(eq(mapOf(arrangement.userOne.first to arrangement.userOne.second)))</ID>
-    <ID>MaxLineLength:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(eq(mapOf(arrangement.userTwo.first to arrangement.userTwo.second)))</ID>
-    <ID>MaxLineLength:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$arrangement.clientRepository.storeUserClientListAndRemoveRedundantClients(eq(arrangement.userOneInsertClientParams + arrangement.userTwoInsertClientParams))</ID>
-    <ID>MaxLineLength:MessageSenderTest.kt$MessageSenderTest$fun</ID>
-    <ID>MaxLineLength:NewMessageEventHandlerTest.kt$NewMessageEventHandlerTest$coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage&lt;Any>(any(), eq(newMessageEvent), any()) }.wasInvoked(exactly = once)</ID>
-    <ID>MaxLineLength:PersistConversationsUseCaseTest.kt$PersistConversationsUseCaseTest$(it.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState == ConversationEntity.GroupState.ESTABLISHED</ID>
-    <ID>MaxLineLength:PersistConversationsUseCaseTest.kt$PersistConversationsUseCaseTest$(it.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState == ConversationEntity.GroupState.PENDING_JOIN</ID>
     <ID>MaxLineLength:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$constructor(publicIdentityKey: IdentityKey, preKeyId: Number, publicKey: PublicKey, signature: Uint8Array? = definedExternally, version: Number = definedExternally)</ID>
-    <ID>MaxLineLength:ReactionMapperTest.kt$ReactionMapperTest$val reactionsJson = """[{"emoji":"👍","count":2,"isSelf":true},{"emoji":"❤️","count":3,"isSelf":true},{"emoji":"😂","count":1,"isSelf":false}]"""</ID>
-    <ID>MaxLineLength:ResetMLSConversationUseCaseTest.kt$ResetMLSConversationUseCaseTest$arrangement.fetchConversationUseCase(conversationId = any(), transactionContext = any(), reason = eq(ConversationSyncReason.ConversationReset))</ID>
-    <ID>MaxLineLength:RetryFailedMessageUseCaseTest.kt$RetryFailedMessageUseCaseTest$arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.PENDING), eq(message.conversationId), eq(message.id))</ID>
-    <ID>MaxLineLength:SendKnockUserCaseTest.kt$SendKnockUserCaseTest.Arrangement$ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement by ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl()</ID>
-    <ID>MaxLineLength:SendLocationUseCaseTest.kt$SendLocationUseCaseTest.Arrangement$ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement by ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl()</ID>
-    <ID>MaxLineLength:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest$arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STARTED))</ID>
-    <ID>MaxLineLength:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest$arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STOPPED))</ID>
-    <ID>MaxLineLength:SyncConversationsUseCaseTest.kt$SyncConversationsUseCaseTest.Arrangement$conversationRepository.getConversationIds(eq(Conversation.Type.Group.Regular), protocol?.let { eq(it) } ?: any(), eq&lt;TeamId?>(null))</ID>
-    <ID>MaxLineLength:TypingIndicatorHandlerTest.kt$TypingIndicatorHandlerTest$arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(eq(TestConversation.ID), eq(TestUser.OTHER_USER_ID))</ID>
-    <ID>MaxLineLength:UpdateKeyingMaterialsUseCaseTests.kt$UpdateKeyingMaterialsUseCaseTests$.</ID>
-    <ID>MaxLineLength:UpdateSupportedProtocolsUseCaseTest.kt$UpdateSupportedProtocolsUseCaseTest$arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.MLS) &amp;&amp; it.contains(SupportedProtocol.PROTEUS) })</ID>
-    <ID>MaximumLineLength:BaseDatabaseTest.kt$BaseDatabaseTest$ </ID>
-    <ID>MaximumLineLength:ConnectionRepositoryTest.kt$ConnectionRepositoryTest$ </ID>
-    <ID>MaximumLineLength:ConversationExtensionsTest.kt$ConversationExtensionsTest$ </ID>
-    <ID>MaximumLineLength:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest.Arrangement$ </ID>
-    <ID>MaximumLineLength:E2EIClientTest.kt$E2EIClientTest.Companion$ </ID>
-    <ID>MaximumLineLength:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$ </ID>
-    <ID>MaximumLineLength:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$ </ID>
-    <ID>MaximumLineLength:GroupConversationCreatorTest.kt$GroupConversationCreatorTest$ </ID>
-    <ID>MaximumLineLength:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$ </ID>
-    <ID>MaximumLineLength:MLSMigrationWorkerTest.kt$MLSMigrationWorkerTest$ </ID>
-    <ID>MaximumLineLength:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest.Arrangement$ </ID>
-    <ID>MaximumLineLength:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$ </ID>
-    <ID>MaximumLineLength:MessageSenderTest.kt$MessageSenderTest$ </ID>
-    <ID>MaximumLineLength:NewMessageEventHandlerTest.kt$NewMessageEventHandlerTest$ </ID>
-    <ID>MaximumLineLength:PersistConversationsUseCaseTest.kt$PersistConversationsUseCaseTest$ </ID>
-    <ID>MaximumLineLength:ReactionMapperTest.kt$ReactionMapperTest$ </ID>
-    <ID>MaximumLineLength:ResetMLSConversationUseCaseTest.kt$ResetMLSConversationUseCaseTest$ </ID>
-    <ID>MaximumLineLength:RetryFailedMessageUseCaseTest.kt$RetryFailedMessageUseCaseTest$ </ID>
-    <ID>MaximumLineLength:SendKnockUserCaseTest.kt$SendKnockUserCaseTest.Arrangement$ </ID>
-    <ID>MaximumLineLength:SendLocationUseCaseTest.kt$SendLocationUseCaseTest.Arrangement$ </ID>
-    <ID>MaximumLineLength:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest$ </ID>
-    <ID>MaximumLineLength:SyncConversationsUseCaseTest.kt$SyncConversationsUseCaseTest.Arrangement$ </ID>
-    <ID>MaximumLineLength:TypingIndicatorHandlerTest.kt$TypingIndicatorHandlerTest$ </ID>
-    <ID>MaximumLineLength:UpdateKeyingMaterialsUseCaseTests.kt$UpdateKeyingMaterialsUseCaseTests$ </ID>
-    <ID>MaximumLineLength:UpdateSupportedProtocolsUseCaseTest.kt$UpdateSupportedProtocolsUseCaseTest$ </ID>
-    <ID>MayBeConst:AddAttachmentDraftUseCaseTest.kt$AddAttachmentDraftUseCaseTest.Companion$val mimeType = "image/jpeg"</ID>
-    <ID>MayBeConst:CallDAOTest.kt$CallDAOTest.Companion$val callId = "callId"</ID>
-    <ID>MayBeConst:CommonDokkaConfig.kt$private val DOKKA_CACHE_DIR = ".cache/dokka"</ID>
-    <ID>MayBeConst:ConversationDAOTest.kt$ConversationDAOTest.Companion$val messageTimer = 5000L</ID>
-    <ID>MayBeConst:CustomServerConfigRepositoryTest.kt$CustomServerConfigRepositoryTest.Companion$val SERVER_CONFIG_URL = "https://test.test/test.json"</ID>
-    <ID>MayBeConst:DeleteNodeAssetUseCaseTest.kt$DeleteNodeAssetUseCaseTest.Companion$private val localPath: String = "localPath"</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val ACCESS_TOKEN_RESPONSE = """ { "expires_in":"300", "token":"eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6ImdxTk8wZ1FzRndfUUNQNm5xeV9BUWxNVDFQSTAtZ3lRMWZTMGhJZklyTWcifX0.eyJpYXQiOjE2ODM0NjgwODIsImV4cCI6MTY5MTI0NDA4MiwibmJmIjoxNjgzNDY4MDgyLCJpc3MiOiJodHRwczovL3N0YWdpbmcuemluZnJhLmlvL2NsaWVudHMvNGVlZGJmZTE2ZDI1YmJmMy9hY2Nlc3MtdG9rZW4iLCJzdWIiOiJpbTp3aXJlYXBwPVpURTFNamMwTXpFeU5EUTBOR0poWTJFMU5XWm1OakEyWlRrMU1qSXlNek0vNGVlZGJmZTE2ZDI1YmJmM0BzdGFnaW5nLnppbmZyYS5pbyIsImF1ZCI6Imh0dHBzOi8vc3RhZ2luZy56aW5mcmEuaW8vY2xpZW50cy80ZWVkYmZlMTZkMjViYmYzL2FjY2Vzcy10b2tlbiIsImp0aSI6ImM3ZjRhODAxLTVhZTUtNDNlOC04ZGJiLWRiYjE1ZmEwODM1ZSIsIm5vbmNlIjoiaEJWWTdjRjNSWC1lSnF0cW9nbVl0dyIsImNoYWwiOiJMeGpJNVBUeVZ2UU56ZW9yUWNPUm44OURtR1BaZEc3SyIsImNuZiI6eyJraWQiOiI3YXR6MldkcGxwSzNhbmtKVmp6cm1telVEZmdhNkFTMjRCRm1VbEJ2V1lFIn0sInByb29mIjoiZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdDBlU0k2SWs5TFVDSXNJbU55ZGlJNklrVmtNalUxTVRraUxDSjRJam9pVVZkUldrTklRemxSVFhOaVFtWk5SbmRrTmpONlZtNTFVbFZNVVVKSU1sVnNaRGh5WDBWTFNtSXlTU0o5ZlEuZXlKcFlYUWlPakUyT0RNME5qZ3dOemtzSW1WNGNDSTZNVFk0TXpRMk9ERXdPU3dpYm1KbUlqb3hOamd6TkRZNE1EYzVMQ0p6ZFdJaU9pSnBiVHAzYVhKbFlYQndQVnBVUlRGTmFtTXdUWHBGZVU1RVVUQk9SMHBvV1RKRk1VNVhXbTFPYWtFeVdsUnJNVTFxU1hsTmVrMHZOR1ZsWkdKbVpURTJaREkxWW1KbU0wQnpkR0ZuYVc1bkxucHBibVp5WVM1cGJ5SXNJbXAwYVNJNkltSmlOek5qTVdJekxUZ3dNMlF0TkRVMFlTMDROakl5TFdNellqUXlORFpoTTJZME9TSXNJbTV2Ym1ObElqb2lhRUpXV1RkalJqTlNXQzFsU25GMGNXOW5iVmwwZHlJc0ltaDBiU0k2SWxCUFUxUWlMQ0pvZEhVaU9pSm9kSFJ3Y3pvdkwzTjBZV2RwYm1jdWVtbHVabkpoTG1sdkwyTnNhV1Z1ZEhNdk5HVmxaR0ptWlRFMlpESTFZbUptTXk5aFkyTmxjM010ZEc5clpXNGlMQ0pqYUdGc0lqb2lUSGhxU1RWUVZIbFdkbEZPZW1WdmNsRmpUMUp1T0RsRWJVZFFXbVJITjBzaWZRLkl1YjJqTkRXY1lKdTZ0V1liX181UlNSSEhQQWV1ZmwwRkRPQzc3STY4UDZtcG96QjMxeGtmUEZUb2p3ckJtSEhLZHFLOWdJTTQ5YWcxb2pTclNlZkNnIiwiY2xpZW50X2lkIjoiaW06d2lyZWFwcD1aVEUxTWpjME16RXlORFEwTkdKaFkyRTFOV1ptTmpBMlpUazFNakl5TXpNLzRlZWRiZmUxNmQyNWJiZjNAc3RhZ2luZy56aW5mcmEuaW8iLCJhcGlfdmVyc2lvbiI6Mywic2NvcGUiOiJ3aXJlX2NsaWVudF9pZCJ9.kFoRHJotAJQTgLXXrH4m9ySutFJb2cc4Raa1nbOyRxNTFZyQuwbJT1jGAlIbziQmVEIZ5vneOg0TqBAyEtw3BQ", "type":"DPoP" }"""</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val AUTHZ_URL1 = "https://acme.elna.wire.link/acme/keycloakteams/authz/1gpp07FUGPh6bFhnAZTuhhPIoGAx2xpw"</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val AUTHZ_URL2 = "https://acme.elna.wire.link/acme/keycloakteams/authz/mGCAn2FaKAVlO7n2MXdCaRjRsSwEHrel"</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val FINALIZE_ORDER_URL = "https://acme.elna.wire.link/acme/keycloakteams/order/c9mGRDNE7YRVRbk6jokwXNXPgU1n37iS/finalize"</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val NONCE = "TGR6Rk45RlR2WDlzanMxWEpYd21YaFR0SkZBYTNzUWk"</ID>
-    <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val OAUTH_ID_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImM5YWZkYTM2ODJlYmYwOWViMzA1NWMxYzRiZDM5Yjc1MWZiZjgxOTUiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJhenAiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiIzMzg4ODgxNTMwNzItNGZlcDZ0bjZrMTZ0bWNiaGc0bnQ0bHI2NXB2M2F2Z2kuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTU0OTM2MTQ1MjMzNjgyNjc2OTAiLCJoZCI6IndpcmUuY29tIiwiZW1haWwiOiJtb2p0YWJhLmNoZW5hbmlAd2lyZS5jb20iLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiYXRfaGFzaCI6IkRtZDhJQXdnWmVKX1QtUjBpRlpseGciLCJub25jZSI6IjEta2FZb1hRODdadEVlRGpVYTVQSVEiLCJuYW1lIjoiTW9qdGFiYSBDaGVuYW5pIiwicGljdHVyZSI6Imh0dHBzOi8vbGgzLmdvb2dsZXVzZXJjb250ZW50LmNvbS9hL0FHTm15eGFhaWFKa1Y4VDNmMW91d0RWVjNQck52UFBaVUpIZGdnMlJ4N0s0PXM5Ni1jIiwiZ2l2ZW5fbmFtZSI6Ik1vanRhYmEiLCJmYW1pbHlfbmFtZSI6IkNoZW5hbmkiLCJsb2NhbGUiOiJlbiIsImlhdCI6MTY4MzQ4MjIyOSwiZXhwIjoxNjgzNDg1ODI5fQ.r0hh1CtVUXncdWHoXsfAvhf0VuWGDooSRQnNqq0GrzAbYVENGwg0dm8P10Cq_UmCjjh56nC5laMQUcBu-sKW9mRbdKnHwdXXregTSgelQJFoIlusb_3VyHcWDY8Yf9xyuyZbu3wcduL8IndTvy8Sq7mIzGKhsHnLIy1UgHbCGMrzfY2LYCi9Df1ADqA8romigo8fdEAVUi9TAIC8SgHOcqLJt8mxlhKSPPwkJw5yZ3CRvF2NMNsVkYpE9hVYbHcZd6EAmJnljKPJ-NQLXUdjaU3ail80YQko4rcgF2QMZ3LBSMGJpI5LM2UhDxnktqBTpE2nLdwCFg64INS48DPDXQ"</ID>
-    <ID>MayBeConst:E2EIRepositoryTest.kt$E2EIRepositoryTest.Arrangement.Companion$val ACME_BASE_URL = "https://balderdash.hogwash.work:9000"</ID>
-    <ID>MayBeConst:E2EIRepositoryTest.kt$E2EIRepositoryTest.Arrangement.Companion$val RANDOM_ACCESS_TOKEN = "xxxxx"</ID>
-    <ID>MayBeConst:E2EIRepositoryTest.kt$E2EIRepositoryTest.Arrangement.Companion$val RANDOM_ID_TOKEN = "xxxxx"</ID>
-    <ID>MayBeConst:E2EIRepositoryTest.kt$E2EIRepositoryTest.Arrangement.Companion$val RANDOM_URL = "https://random.rn"</ID>
-    <ID>MayBeConst:E2EIRepositoryTest.kt$E2EIRepositoryTest.Arrangement.Companion$val REFRESH_TOKEN = "YRjxLpsjRqL7zYuKstXogqioA_P3Z4fiEuga0NCVRcDSc8cy_9msxg"</ID>
-    <ID>MayBeConst:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest.Companion$val ACME_BASE_URL = "https://balderdash.hogwash.work:9000"</ID>
-    <ID>MayBeConst:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest.Companion$val RANDOM_DPoP_TOKEN = "dpopToken"</ID>
-    <ID>MayBeConst:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest.Companion$val RANDOM_ID_TOKEN = "idToken"</ID>
-    <ID>MayBeConst:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest.Companion$val RANDOM_LOCATION = "https://balderdash.hogwash.work:9000"</ID>
-    <ID>MayBeConst:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest.Companion$val REFRESH_TOKEN = "YRjxLpsjRqL7zYuKstXogqioA_P3Z4fiEuga0NCVRcDSc8cy_9msxg"</ID>
-    <ID>MayBeConst:KeyPackageApiV5Test.kt$KeyPackageApiV5Test.Companion$val cipherSuite = 2</ID>
-    <ID>MayBeConst:OnParticipantListChangedTest.kt$OnParticipantListChangedTest.Companion$private val data = """ { "convid": "c9mGRDNE7YRVRbk6jokwXNXPgU1n37iS", "members": [ { "userid": "userid1", "clientid": "clientid1", "aestab": "1", "vrecv": "1", "muted": "0" }, { "userid": "userid2", "clientid": "clientid2", "aestab": "1", "vrecv": "1", "muted": "0" } ] } """</ID>
-    <ID>MayBeConst:PocIntegrationTest.kt$PocIntegrationTest.Companion$private val USER_EMAIL = "user@domain.com"</ID>
-    <ID>MayBeConst:PocIntegrationTest.kt$PocIntegrationTest.Companion$private val USER_PASSWORD = "password"</ID>
-    <ID>MayBeConst:RegisterMLSClientUseCaseTest.kt$RegisterMLSClientUseCaseTest.Arrangement.Companion$val RANDOM_URL = "https://random.rn"</ID>
-    <ID>MayBeConst:TestStubs.kt$TestStubs$val messageTimer = 5000L</ID>
     <ID>ModifierOrder:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$external open</ID>
     <ID>ModifierOrder:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$external open</ID>
     <ID>ModifierOrder:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$override open</ID>
@@ -461,300 +126,40 @@
     <ID>ModifierOrder:PreKeyStore.module_@wireapp_proteus.kt$PreKeyStore$external open</ID>
     <ID>ModifierOrder:PublicKey.module_@wireapp_proteus.kt$PublicKey$external open</ID>
     <ID>ModifierOrder:SecretKey.module_@wireapp_proteus.kt$SecretKey$external open</ID>
-    <ID>NestedBlockDepth:NetworkStateObserverImplTest.kt$NetworkStateObserverImplTest.Arrangement$fun changeNetworkBlocked(networkType: NetworkType, isBlocked: Boolean)</ID>
-    <ID>NestedBlockDepth:NetworkStateObserverImplTest.kt$NetworkStateObserverImplTest.Arrangement$fun changeNetworkCapabilities(networkType: NetworkType, withInternetValidated: Boolean)</ID>
-    <ID>NestedBlockDepth:NetworkStateObserverImplTest.kt$NetworkStateObserverImplTest.Arrangement$fun disconnectNetwork(networkType: NetworkType)</ID>
-    <ID>NestedBlockDepth:NetworkStateObserverImplTest.kt$NetworkStateObserverImplTest.Arrangement$private fun changeDefaultNetwork(network: Network)</ID>
-    <ID>NewLineAtEndOfFile:ClientDTOSerializationTest.kt$com.wire.kalium.api.authenticated.client.ClientDTOSerializationTest.kt</ID>
-    <ID>NewLineAtEndOfFile:UpgradePersonalToTeamApiV7Test.kt$com.wire.kalium.api.v7.UpgradePersonalToTeamApiV7Test.kt</ID>
-    <ID>NewLineAtEndOfFile:detekt.gradle.kts$scripts.detekt.gradle.kts</ID>
-    <ID>NoConsecutiveBlankLines:ACMEApiResponseJsonSample.kt$ACMEApiResponseJsonSample$ </ID>
-    <ID>NoConsecutiveBlankLines:Android.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:AppsFeatureHandlerTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:BackupDataSourceTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:BackupEndToEndTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:BackupPageStorageTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:BaseProteusClientTest.kt$BaseProteusClientTest$ </ID>
-    <ID>NoConsecutiveBlankLines:CallRepositoryTest.kt$CallRepositoryTest$ </ID>
-    <ID>NoConsecutiveBlankLines:CanMigrateFromPersonalToTeamUseCaseTest.kt$CanMigrateFromPersonalToTeamUseCaseTest$ </ID>
-    <ID>NoConsecutiveBlankLines:ClearConversationContentHandlerTest.kt$ClearConversationContentHandlerTest$ </ID>
-    <ID>NoConsecutiveBlankLines:ClientCapabilityDTOSerializerTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:ClientDAOTest.kt$ClientDAOTest$ </ID>
-    <ID>NoConsecutiveBlankLines:ClientDTOSerializationTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:ConfirmationDeliveryHandlerTest.kt$ConfirmationDeliveryHandlerTest$ </ID>
-    <ID>NoConsecutiveBlankLines:ConnectionDaoTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:ConnectionMapperTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:ConnectionMapperTest.kt$ConnectionMapperTest$ </ID>
-    <ID>NoConsecutiveBlankLines:ConnectionRepositoryTest.kt$ConnectionRepositoryTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:ConversationApiV8Test.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:ConversationApiV8Test.kt$ConversationApiV8Test$ </ID>
-    <ID>NoConsecutiveBlankLines:ConversationDAOTest.kt$ConversationDAOTest$ </ID>
-    <ID>NoConsecutiveBlankLines:ConversationFolderRepositoryTest.kt$ConversationFolderRepositoryTest$ </ID>
-    <ID>NoConsecutiveBlankLines:ConversationGroupRepositoryArrangement.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:CurrentClientIdProviderArrangement.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:DatabaseImporterTest.kt$DatabaseImporterTest$ </ID>
-    <ID>NoConsecutiveBlankLines:DomainUserTypeDTOMapperTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:E2EIClientProviderArrangement.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:E2EIRepositoryTest.kt$E2EIRepositoryTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest$ </ID>
-    <ID>NoConsecutiveBlankLines:EventGathererTest.kt$EventGathererTest$ </ID>
-    <ID>NoConsecutiveBlankLines:EventProcessorTest.kt$EventProcessorTest$ </ID>
-    <ID>NoConsecutiveBlankLines:FeatureConfigRepositoryArrangement.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$ </ID>
-    <ID>NoConsecutiveBlankLines:FlowTest.kt$FlowTest$ </ID>
-    <ID>NoConsecutiveBlankLines:GetCallConversationTypeProviderTest.kt$GetCallConversationTypeProviderTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:GetOrRegisterClientUseCaseTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:HashDataTest.kt$HashDataTest$ </ID>
-    <ID>NoConsecutiveBlankLines:IgnoreJvm.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:IsAllowedToRegisterMLSClientUseCaseTest.kt$IsAllowedToRegisterMLSClientUseCaseTest$ </ID>
-    <ID>NoConsecutiveBlankLines:IsFederationSearchAllowedUseCaseTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:KaliumBuild.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:KaliumPreferencesTest.kt$KaliumPreferencesTest$ </ID>
-    <ID>NoConsecutiveBlankLines:LogoutUseCaseTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:MLSClientManagerTest.kt$MLSClientManagerTest$ </ID>
-    <ID>NoConsecutiveBlankLines:MLSClientTest.kt$MLSClientTest$ </ID>
-    <ID>NoConsecutiveBlankLines:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$ </ID>
-    <ID>NoConsecutiveBlankLines:MLSConversationRepositoryArrangement.kt$MLSConversationRepositoryArrangementImpl$ </ID>
-    <ID>NoConsecutiveBlankLines:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest$ </ID>
-    <ID>NoConsecutiveBlankLines:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:MLSMessageUnpackerTest.kt$MLSMessageUnpackerTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:MLSMigrationConfigHandlerTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:MemberDAOTest.kt$MemberDAOTest$ </ID>
-    <ID>NoConsecutiveBlankLines:MessageDAOBenchmarkTest.kt$MessageDAOBenchmarkTest$ </ID>
-    <ID>NoConsecutiveBlankLines:MessageDAOTest.kt$MessageDAOTest$ </ID>
-    <ID>NoConsecutiveBlankLines:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest$ </ID>
-    <ID>NoConsecutiveBlankLines:MessageMapperUserTypeMappingTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:MessageMetadataDAOTest.kt$MessageMetadataDAOTest$ </ID>
-    <ID>NoConsecutiveBlankLines:MigrateFromPersonalToTeamUseCaseTest.kt$MigrateFromPersonalToTeamUseCaseTest$ </ID>
-    <ID>NoConsecutiveBlankLines:MoveConversationToFolderUseCaseTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:MoveNodeUseCaseTest.kt$MoveNodeUseCaseTest$ </ID>
-    <ID>NoConsecutiveBlankLines:NewConversationEventHandlerTest.kt$NewConversationEventHandlerTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:ObserveConversationMembersUseCaseTest.kt$ObserveConversationMembersUseCaseTest$ </ID>
-    <ID>NoConsecutiveBlankLines:OnParticipantListChangedTest.kt$OnParticipantListChangedTest$ </ID>
-    <ID>NoConsecutiveBlankLines:OneOnOneResolverArrangement.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:PreKeyRepositoryTest.kt$PreKeyRepositoryTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:RandomPasswordTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:ReceiptRepositoryTest.kt$ReceiptRepositoryTest$ </ID>
-    <ID>NoConsecutiveBlankLines:RecipientDeliveryFailureMapperTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:ResetMLSConversationUseCaseTest.kt$ResetMLSConversationUseCaseTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:RestartSlowSyncProcessForRecoveryUseCaseTest.kt$RestartSlowSyncProcessForRecoveryUseCaseTest$ </ID>
-    <ID>NoConsecutiveBlankLines:RestoreBackupUseCaseTest.kt$RestoreBackupUseCaseTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:RestoreMPBackupUseCaseTest.kt$RestoreMPBackupUseCaseTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:SendFCMTokenToAPIUseCaseTest.kt$SendFCMTokenToAPIUseCaseTest$ </ID>
-    <ID>NoConsecutiveBlankLines:SendFCMTokenToAPIUseCaseTest.kt$SendFCMTokenToAPIUseCaseTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:SessionRepositoryArrangement.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:SlowSyncCriteriaProviderTest.kt$SlowSyncCriteriaProviderTest$ </ID>
-    <ID>NoConsecutiveBlankLines:SlowSyncManagerTest.kt$SlowSyncManagerTest.Arrangement$ </ID>
-    <ID>NoConsecutiveBlankLines:StaleEpochVerifierTest.kt$StaleEpochVerifierTest$ </ID>
-    <ID>NoConsecutiveBlankLines:SupportedApiVersionTest.kt$SupportedApiVersionTest$ </ID>
-    <ID>NoConsecutiveBlankLines:SyncFeatureConfigsUseCaseTest.kt$SyncFeatureConfigsUseCaseTest$ </ID>
-    <ID>NoConsecutiveBlankLines:SyncStateObserverTest.kt$SyncStateObserverTest$ </ID>
-    <ID>NoConsecutiveBlankLines:UpdateNextTimeCallFeedbackUseCaseTest.kt$UpdateNextTimeCallFeedbackUseCaseTest$ </ID>
-    <ID>NoConsecutiveBlankLines:UpgradePersonalToTeamApiV7Test.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:UserDAOUserTypeMappingTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:UserDetailsApiV12Test.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:UserDetailsApiV12Test.kt$UserDetailsApiV12Test$ </ID>
-    <ID>NoConsecutiveBlankLines:UserTypeInfoTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:VerifyActivationCodeUseCaseTest.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:WrapRequestTest.kt$WrapRequestTest$ </ID>
-    <ID>NoMultipleSpaces:CommonDokkaConfig.kt$ </ID>
-    <ID>NoMultipleSpaces:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest$ </ID>
-    <ID>NoMultipleSpaces:HttpClientConnectionSpecsTest.kt$HttpClientConnectionSpecsTest$ </ID>
-    <ID>NoMultipleSpaces:IgnoreIOS.kt$IgnoreIOS$ </ID>
-    <ID>NoMultipleSpaces:LegalHoldHandlerTest.kt$LegalHoldHandlerTest$ </ID>
-    <ID>NoMultipleSpaces:ResetMLSConversationUseCaseTest.kt$ResetMLSConversationUseCaseTest$ </ID>
-    <ID>NoMultipleSpaces:ResetMLSConversationUseCaseTest.kt$ResetMLSConversationUseCaseTest.Arrangement$ </ID>
-    <ID>NoMultipleSpaces:ServerConfigTest.kt$ServerConfigTest$ </ID>
-    <ID>NoMultipleSpaces:UpdateConversationProtocolUseCaseTest.kt$UpdateConversationProtocolUseCaseTest$ </ID>
-    <ID>NoMultipleSpaces:UpdateConversationProtocolUseCaseTest.kt$UpdateConversationProtocolUseCaseTest.Arrangement$ </ID>
-    <ID>NoMultipleSpaces:UpdateKeyingMaterialsUseCaseTests.kt$UpdateKeyingMaterialsUseCaseTests.Arrangement.Companion$ </ID>
-    <ID>NoMultipleSpaces:ValidatePasswordUseCaseTest.kt$ValidatePasswordUseCaseTest.Companion$ </ID>
-    <ID>NoMultipleSpaces:readBinaryResource.kt$ </ID>
-    <ID>NoSemicolons:OnlyAffectedTestTask.kt$OnlyAffectedTestTask.TestTaskConfiguration.IOS_TEST_TASK$;</ID>
-    <ID>NoTrailingSpaces:AddConversationToFavoritesUseCaseTest.kt$AddConversationToFavoritesUseCaseTest.Arrangement$ </ID>
-    <ID>NoTrailingSpaces:AnalyticsRepositoryArrangement.kt$AnalyticsRepositoryArrangementImpl$ </ID>
-    <ID>NoTrailingSpaces:AnalyticsRepositoryTest.kt$AnalyticsRepositoryTest.Arrangement$ </ID>
-    <ID>NoTrailingSpaces:CanMigrateFromPersonalToTeamUseCaseTest.kt$CanMigrateFromPersonalToTeamUseCaseTest.Arrangement$ </ID>
-    <ID>NoTrailingSpaces:ClearConversationAssetsLocallyUseCaseTest.kt$ClearConversationAssetsLocallyUseCaseTest.Arrangement$ </ID>
-    <ID>NoTrailingSpaces:ConversationFolderRepositoryTest.kt$ConversationFolderRepositoryTest.Arrangement$ </ID>
-    <ID>NoTrailingSpaces:CreateMPBackupUseCaseTest.kt$CreateMPBackupUseCaseTest.Companion$ </ID>
-    <ID>NoTrailingSpaces:EventMigration109Test.kt$EventMigration109Test$ </ID>
-    <ID>NoTrailingSpaces:GetFavoriteFolderUseCaseTest.kt$GetFavoriteFolderUseCaseTest.Arrangement$ </ID>
-    <ID>NoTrailingSpaces:IsConversationHistorySupportedForConversationUseCaseTest.kt$IsConversationHistorySupportedForConversationUseCaseTest$ </ID>
-    <ID>NoTrailingSpaces:RawJsonStringSerializerTest.kt$RawJsonStringSerializerTest$ </ID>
-    <ID>NoTrailingSpaces:SSOFinalizeLoginUseCaseTest.kt$SSOFinalizeLoginUseCaseTest$ </ID>
-    <ID>NoTrailingSpaces:SSOMetaDataUseCaseTest.kt$SSOMetaDataUseCaseTest$ </ID>
-    <ID>NoTrailingSpaces:SSOSettingsUseCaseTest.kt$SSOSettingsUseCaseTest$ </ID>
-    <ID>NoTrailingSpaces:SecurityHelperTest.kt$SecurityHelperTest$ </ID>
-    <ID>NoTrailingSpaces:SyncStateObserverTest.kt$SyncStateObserverTest$ </ID>
-    <ID>NoTrailingSpaces:VerifyActivationCodeUseCaseTest.kt$VerifyActivationCodeUseCaseTest$ </ID>
-    <ID>NoUnusedImports:AccountsDAOTest.kt$com.wire.kalium.persistence.globalDB.AccountsDAOTest.kt</ID>
-    <ID>NoUnusedImports:ApiTest.kt$com.wire.kalium.api.ApiTest.kt</ID>
-    <ID>NoUnusedImports:AssetRepositoryTest.kt$com.wire.kalium.logic.data.asset.AssetRepositoryTest.kt</ID>
-    <ID>NoUnusedImports:BaseDatabaseTest.kt$com.wire.kalium.persistence.BaseDatabaseTest.kt</ID>
-    <ID>NoUnusedImports:CallHelperTest.kt$com.wire.kalium.logic.data.call.CallHelperTest.kt</ID>
-    <ID>NoUnusedImports:CallRepositoryArrangement.kt$com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement.kt</ID>
-    <ID>NoUnusedImports:CommonAndroidConfig.kt$com.wire.kalium.plugins.CommonAndroidConfig.kt</ID>
-    <ID>NoUnusedImports:CommonUtilsTest.kt$com.wire.kalium.logic.util.CommonUtilsTest.kt</ID>
-    <ID>NoUnusedImports:ConversationResponseTest.kt$com.wire.kalium.api.v2.ConversationResponseTest.kt</ID>
-    <ID>NoUnusedImports:ConversionDAOArrangement.kt$com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangement.kt</ID>
-    <ID>NoUnusedImports:CreateMPBackupUseCaseTest.kt$com.wire.kalium.logic.feature.backup.CreateMPBackupUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:CryptoTransactionProviderArrangement.kt$com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement.kt</ID>
-    <ID>NoUnusedImports:E2EIClientProviderTest.kt$com.wire.kalium.logic.client.E2EIClientProviderTest.kt</ID>
-    <ID>NoUnusedImports:FederatedSearchParserTest.kt$com.wire.kalium.logic.feature.search.FederatedSearchParserTest.kt</ID>
-    <ID>NoUnusedImports:GlobalDBBaseTest.kt$com.wire.kalium.persistence.GlobalDBBaseTest.kt</ID>
-    <ID>NoUnusedImports:IncrementalSyncRepositoryTest.kt$com.wire.kalium.logic.data.sync.IncrementalSyncRepositoryTest.kt</ID>
-    <ID>NoUnusedImports:IsE2EIEnabledUseCaseArrangement.kt$com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement.kt</ID>
-    <ID>NoUnusedImports:LeaveSubconversationUseCaseTest.kt$com.wire.kalium.logic.feature.conversation.LeaveSubconversationUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:LoginApiV0Test.kt$com.wire.kalium.api.v0.user.login.LoginApiV0Test.kt</ID>
-    <ID>NoUnusedImports:MLSClientProviderTest.kt$com.wire.kalium.logic.data.client.MLSClientProviderTest.kt</ID>
-    <ID>NoUnusedImports:MLSMessageApiV5Test.kt$com.wire.kalium.api.v5.MLSMessageApiV5Test.kt</ID>
-    <ID>NoUnusedImports:MLSMessageUnpackerTest.kt$com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageUnpackerTest.kt</ID>
-    <ID>NoUnusedImports:MemberDAOArrangement.kt$com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement.kt</ID>
-    <ID>NoUnusedImports:MembersToMentionUseCaseTest.kt$com.wire.kalium.logic.feature.conversation.MembersToMentionUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:MessageExtensionsTest.kt$com.wire.kalium.persistence.message.MessageExtensionsTest.kt</ID>
-    <ID>NoUnusedImports:MessageMetadataDAOArrangement.kt$com.wire.kalium.logic.util.arrangement.dao.MessageMetadataDAOArrangement.kt</ID>
-    <ID>NoUnusedImports:MessageTextEditTest.kt$com.wire.kalium.persistence.dao.message.MessageTextEditTest.kt</ID>
-    <ID>NoUnusedImports:NewClientDAOTest.kt$com.wire.kalium.persistence.dao.newclient.NewClientDAOTest.kt</ID>
-    <ID>NoUnusedImports:ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement.kt$com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement.kt</ID>
-    <ID>NoUnusedImports:OnMuteStateForSelfUserChangedTest.kt$com.wire.kalium.logic.feature.call.scenario.OnMuteStateForSelfUserChangedTest.kt</ID>
-    <ID>NoUnusedImports:ReactionsMapperTest.kt$com.wire.kalium.logic.data.message.ReactionsMapperTest.kt</ID>
-    <ID>NoUnusedImports:ReceiptMessageHandlerTest.kt$com.wire.kalium.logic.sync.receiver.conversation.message.ReceiptMessageHandlerTest.kt</ID>
-    <ID>NoUnusedImports:RegisterMLSClientUseCaseTest.kt$com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:RenameNodeUseCaseTest.kt$com.wire.kalium.cells.domain.usecase.RenameNodeUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:ResetMLSConversationUseCaseTest.kt$com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:ResetSessionUseCaseTest.kt$com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:RetryFailedMessageUseCaseTest.kt$com.wire.kalium.logic.feature.message.RetryFailedMessageUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:SQLiteHistoryClientDAOTest.kt$com.wire.kalium.conversation.history.data.SQLiteHistoryClientDAOTest.kt</ID>
-    <ID>NoUnusedImports:SearchDAOArrangement.kt$com.wire.kalium.logic.util.arrangement.dao.SearchDAOArrangement.kt</ID>
-    <ID>NoUnusedImports:SearchUseCaseTest.kt$com.wire.kalium.logic.feature.search.SearchUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:ServerConfigurationDAOTest.kt$com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOTest.kt</ID>
-    <ID>NoUnusedImports:SlowSyncManagerTest.kt$com.wire.kalium.logic.sync.slow.SlowSyncManagerTest.kt</ID>
-    <ID>NoUnusedImports:SlowSyncRepositoryTest.kt$com.wire.kalium.logic.data.sync.SlowSyncRepositoryTest.kt</ID>
-    <ID>NoUnusedImports:SyncExceptionHandlerTest.kt$com.wire.kalium.logic.sync.SyncExceptionHandlerTest.kt</ID>
-    <ID>NoUnusedImports:SyncMigrationStepsProviderArrangement.kt$com.wire.kalium.logic.util.arrangement.provider.SyncMigrationStepsProviderArrangement.kt</ID>
-    <ID>NoUnusedImports:TestNetworkStateObserver.kt$.TestNetworkStateObserver.kt</ID>
-    <ID>NoUnusedImports:UserConfigStorageTest.kt$com.wire.kalium.persistence.config.UserConfigStorageTest.kt</ID>
-    <ID>NoUnusedImports:UserEntityTypeMapperTest.kt$com.wire.kalium.logic.data.user.UserEntityTypeMapperTest.kt</ID>
-    <ID>NoUnusedImports:ValidateSSOCodeUseCaseTest.kt$com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCaseTest.kt</ID>
     <ID>ObjectPropertyNaming:Decoder.module_@wireapp_cbor.kt$Decoder.Companion$var _check_overflow: Any</ID>
-    <ID>PackageName:TestKaliumDispatcher.kt$package com.wire.kalium.logic.test_util</ID>
-    <ID>PackageName:TestNetworkException.kt$package com.wire.kalium.logic.test_util</ID>
-    <ID>PackageName:TimeUtils.kt$package com.wire.kalium.logic.test_util</ID>
-    <ID>ParameterListWrapping:BaseDatabaseTest.kt$BaseDatabaseTest$( userId: UserIDEntity, passphrase: UserDBSecret?, enableWAL: Boolean)</ID>
-    <ID>ParameterListWrapping:ConversationExtensionsTest.kt$ConversationExtensionsTest$(searchQuery: String = "", fromArchive: Boolean = false, filter: ConversationFilterEntity = ConversationFilterEntity.ALL)</ID>
-    <ID>ParameterListWrapping:E2EIClientTest.kt$E2EIClientTest.SampleUser$( val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String, val handle: String, val teamId: String? = "" )</ID>
-    <ID>ParameterListWrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement$( exception: Exception, times: Int = Int.MAX_VALUE, crlNewDistributionPoints: List&lt;String>? = null )</ID>
-    <ID>ParameterListWrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement$( exception: Exception, times: Int = Int.MAX_VALUE, welcomeBundle: WelcomeBundle = WELCOME_BUNDLE, )</ID>
-    <ID>ParameterListWrapping:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest.Arrangement$(expected: Map&lt;CryptoSessionId, ByteArray>, message: Matcher&lt;ByteArray> = AnyMatcher(valueOf()) )</ID>
-    <ID>PropertyWrapping:GroupConversationCreatorTest.kt$GroupConversationCreatorTest$val conversationOptions = CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS, creatorClientId = creatorClientId)</ID>
     <ID>ReturnCount:NetworkUtils.kt$internal fun String.splitSetCookieHeader(): List&lt;String></ID>
-    <ID>SpacingAroundColon:BlockUserUseCaseTest.kt$BlockUserUseCaseTest.Arrangement$:</ID>
-    <ID>SpacingAroundColon:CheckCrlRevocationListUseCaseTest.kt$CheckCrlRevocationListUseCaseTest.Arrangement$:</ID>
-    <ID>SpacingAroundColon:ClientApiStub.kt$ClientApiStub$:</ID>
-    <ID>SpacingAroundColon:FederatedSearchParserTest.kt$FederatedSearchParserTest.Arrangement$:</ID>
-    <ID>SpacingAroundColon:GetE2eiCertificateUseCaseTest.kt$GetE2eiCertificateUseCaseTest.Arrangement$:</ID>
-    <ID>SpacingAroundColon:IncrementalSyncRepositoryArrangement.kt$IncrementalSyncRepositoryArrangementImpl$:</ID>
-    <ID>SpacingAroundColon:KeyingMaterialsManagerTests.kt$KeyingMaterialsManagerTests.Arrangement$:</ID>
-    <ID>SpacingAroundColon:LastMessageListTest.kt$LastMessageListTest$:</ID>
-    <ID>SpacingAroundColon:LeaveSubconversationUseCaseTest.kt$LeaveSubconversationUseCaseTest.Arrangement$:</ID>
-    <ID>SpacingAroundColon:MLSClientManagerTest.kt$MLSClientManagerTest.Arrangement$:</ID>
-    <ID>SpacingAroundColon:MLSConversationsRecoveryManagerTests.kt$MLSConversationsRecoveryManagerTests.Arrangement$:</ID>
-    <ID>SpacingAroundColon:MessageMapperTest.kt$MessageMapperTest.Arrangement$:</ID>
-    <ID>SpacingAroundColon:NeedsToRegisterClientUseCaseTest.kt$NeedsToRegisterClientUseCaseTest.Arrangement$:</ID>
-    <ID>SpacingAroundColon:NewMessageEventHandlerTest.kt$NewMessageEventHandlerTest.Arrangement$:</ID>
-    <ID>SpacingAroundColon:PendingProposalSchedulerTest.kt$PendingProposalSchedulerTest.Arrangement$:</ID>
-    <ID>SpacingAroundColon:RecoverMLSConversationsUseCaseTests.kt$RecoverMLSConversationsUseCaseTests.Arrangement$:</ID>
-    <ID>SpacingAroundColon:SyncConversationsUseCaseTest.kt$SyncConversationsUseCaseTest.Arrangement$:</ID>
-    <ID>SpacingAroundColon:SyncMigrationStub.kt$FailureSyncMigration$:</ID>
-    <ID>SpacingAroundColon:SyncMigrationStub.kt$MigrationCrashStep$:</ID>
-    <ID>SpacingAroundColon:SyncMigrationStub.kt$SuccessSyncMigration$:</ID>
-    <ID>SpacingAroundColon:SystemMessageInserterArrangement.kt$SystemMessageInserterArrangementImpl$:</ID>
-    <ID>SpacingAroundColon:UpdateKeyingMaterialsUseCaseTests.kt$UpdateKeyingMaterialsUseCaseTests.Arrangement$:</ID>
-    <ID>SpacingAroundColon:UpdateSupportedProtocolsAndResolveOneOnOnesArrangement.kt$UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl$:</ID>
-    <ID>SpacingAroundColon:UserPropertiesEventReceiverTest.kt$UserPropertiesEventReceiverTest.Arrangement$:</ID>
-    <ID>SpacingAroundComma:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$,</ID>
-    <ID>SpacingAroundCurly:DeleteNodeAssetUseCaseTest.kt$DeleteNodeAssetUseCaseTest.Arrangement$}</ID>
-    <ID>SpacingAroundCurly:FederationEventReceiverTest.kt$FederationEventReceiverTest.Arrangement${</ID>
-    <ID>SpacingAroundCurly:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest.Arrangement${</ID>
-    <ID>SpacingAroundCurly:GetOrCreateOneToOneConversationUseCaseTest.kt$GetOrCreateOneToOneConversationUseCaseTest.Arrangement${</ID>
-    <ID>SpacingAroundCurly:IntExtTests.kt$IntExtTests${</ID>
-    <ID>SpacingAroundCurly:MLSOneOnOneConversationResolverTest.kt$MLSOneOnOneConversationResolverTest.Arrangement${</ID>
-    <ID>SpacingAroundCurly:MessageDraftDAOTest.kt$MessageDraftDAOTest${</ID>
-    <ID>SpacingAroundCurly:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest.Arrangement$}</ID>
-    <ID>SpacingAroundCurly:NeedsToRegisterClientUseCaseTest.kt$NeedsToRegisterClientUseCaseTest${</ID>
-    <ID>SpacingAroundCurly:RefreshNodeAssetStateUseCaseTest.kt$RefreshNodeAssetStateUseCaseTest.Arrangement$}</ID>
-    <ID>SpacingAroundCurly:ServerConfigMapperTest.kt$ServerConfigMapperTest${</ID>
-    <ID>SpacingAroundKeyword:ObserveSyncStateUseCaseTest.kt$ObserveSyncStateUseCaseTest$while</ID>
-    <ID>SpacingAroundKeyword:UploadAssetUseCaseTest.kt$UploadAssetUseCaseTest$if</ID>
-    <ID>SpacingAroundOperators:IntExtTests.kt$IntExtTests$=</ID>
-    <ID>SpacingAroundOperators:ObserveChannelsCreationPermissionUseCaseTest.kt$ObserveChannelsCreationPermissionUseCaseTest$=</ID>
-    <ID>SpacingAroundParens:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$(</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:CommonUtilsTest.kt$CommonUtilsTest$@Test fun givenAFileNameWithMultipleDotsAndStartingWithADot_whenGettingItsFileExtension_itReturnsItCorrectly()</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:MessageMapperTest.kt$MessageMapperTest$@Test fun givenLegalHoldContentWithTypeDisabledForConversation_whenMappingToMessageContent_thenResultShouldHaveExpectedData()</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:MessageMapperTest.kt$MessageMapperTest$@Test fun givenLegalHoldContentWithTypeDisabledForMembers_whenMappingToMessageContent_thenResultShouldHaveExpectedData()</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:MessageMapperTest.kt$MessageMapperTest$@Test fun givenLegalHoldContentWithTypeEnabledForConversation_whenMappingToMessageContent_thenResultShouldHaveExpectedData()</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:MessageMapperTest.kt$MessageMapperTest$@Test fun givenLegalHoldContentWithTypeEnabledForMembers_whenMappingToMessageContent_thenResultShouldHaveExpectedData()</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:MessageMapperTest.kt$MessageMapperTest$@Test fun givenLegalHoldForConversationDisabled_whenMappingToMessageEntityContent_thenResultShouldHaveExpectedData()</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:MessageMapperTest.kt$MessageMapperTest$@Test fun givenLegalHoldForConversationEnabled_whenMappingToMessageEntityContent_thenResultShouldHaveExpectedData()</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:MessageMapperTest.kt$MessageMapperTest$@Test fun givenLegalHoldForMembersDisabled_whenMappingToMessageEntityContent_thenResultShouldHaveExpectedData()</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:ReceiptMessageHandlerTest.kt$ReceiptMessageHandlerTest$@Test fun givenAReceiptIsHandled_whenFetchingReceiptsOfThatType_thenTheResultShouldContainTheNewReceipt()</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:SimpleClientResponseTest.kt$SimpleClientResponseTest$@Test fun givenAJsonWithGibberishClass_whenDeserializingIt_thenHandleItByPuttingUnknownClass()</ID>
     <ID>TooManyFunctions:Calling.kt$Calling : Library</ID>
     <ID>TooManyFunctions:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox</ID>
     <ID>TooManyFunctions:Decoder.module_@wireapp_cbor.kt$Decoder</ID>
     <ID>TooManyFunctions:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
     <ID>TopLevelPropertyNaming:Uint32_t.kt$private const val integerSize = 4</ID>
-    <ID>UnnecessaryParenthesesBeforeTrailingLambda:BackupConstantsTest.kt$BackupConstantsTest$()</ID>
-    <ID>UnnecessaryParenthesesBeforeTrailingLambda:CreatePublicLinkPasswordUseCaseTest.kt$CreatePublicLinkPasswordUseCaseTest$()</ID>
-    <ID>UnnecessaryParenthesesBeforeTrailingLambda:EncryptedSettingsBuilderTest.kt$EncryptedSettingsBuilderTest$()</ID>
-    <ID>UnnecessaryParenthesesBeforeTrailingLambda:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest$()</ID>
-    <ID>UnnecessaryParenthesesBeforeTrailingLambda:MessageSenderTest.kt$MessageSenderTest$()</ID>
-    <ID>UnnecessaryParenthesesBeforeTrailingLambda:OnClientsRequestTest.kt$OnClientsRequestTest$()</ID>
-    <ID>UnnecessaryParenthesesBeforeTrailingLambda:OnIncomingCallTest.kt$OnIncomingCallTest$()</ID>
-    <ID>UnnecessaryParenthesesBeforeTrailingLambda:OneOnOneProtocolSelectorTest.kt$OneOnOneProtocolSelectorTest$()</ID>
-    <ID>UnnecessaryParenthesesBeforeTrailingLambda:ServerConfigRepositoryTest.kt$ServerConfigRepositoryTest$()</ID>
     <ID>UnusedParameter:ClientResources.kt$ClientResources$@Valid request: SendSessionResetRequest</ID>
     <ID>UnusedParameter:ConsoleCommand.kt$ConsoleCommand$context: ConsoleContext</ID>
     <ID>UnusedParameter:ConsoleCommand.kt$ConsoleCommand$userSession: UserSessionScope</ID>
     <ID>UnusedParameter:ConversationResources.kt$ConversationResources$@PathParam("id") id: String</ID>
-    <ID>UnusedParameter:GetOrRegisterClientUseCaseTest.kt$GetOrRegisterClientUseCaseTest.Arrangement$result: Either&lt;CoreFailure, Unit> = Either.Right(Unit)</ID>
-    <ID>UnusedParameter:MessageExtensionsTest.kt$MessageExtensionsTest$prefix: String = ""</ID>
     <ID>UnusedParameter:MessageMapper.kt$MessageMapper$assetMimeType: String?</ID>
     <ID>UnusedParameter:MessageMapper.kt$MessageMapper$contentType: MessageEntity.ContentType</ID>
     <ID>UnusedParameter:MessageMapper.kt$MessageMapper$isEphemeral: Boolean</ID>
     <ID>UnusedParameter:MessageMapper.kt$MessageMapper$selfUserId: QualifiedIDEntity?</ID>
     <ID>UnusedParameter:MessageMapper.kt$MessageMapper$senderUserId: QualifiedIDEntity</ID>
     <ID>UnusedParameter:MessageMapper.kt$MessageMapper$visibility: MessageEntity.Visibility</ID>
-    <ID>UnusedParameter:RestoreBackupUseCaseTest.kt$RestoreBackupUseCaseTest.Arrangement$userDBSecret: UserDBSecret? = null</ID>
-    <ID>UnusedParameter:SelfServerConfigUseCaseTest.kt$SelfServerConfigUseCaseTest.Arrangement$serverConfig: ServerConfig</ID>
-    <ID>UnusedParameter:TestMessage.kt$TestMessage$assetId: String = TEST_MESSAGE_ID</ID>
     <ID>UnusedParameter:UserDAOImpl.kt$UserMapper$id: String?</ID>
-    <ID>UnusedPrivateProperty:BaseProteusClientTest.kt$BaseProteusClientTest$private val testCoroutineScheduler = TestCoroutineScheduler()</ID>
-    <ID>UnusedPrivateProperty:CallingParticipantsOrderTest.kt$CallingParticipantsOrderTest.Companion$private val selfUser = SelfUser( id = selfUserId, name = null, handle = null, email = null, phone = null, accentId = 0, teamId = null, connectionStatus = ConnectionState.NOT_CONNECTED, previewPicture = null, completePicture = null, availabilityStatus = UserAvailabilityStatus.AVAILABLE, expiresAt = null, supportedProtocols = null, userType = UserTypeInfo.Regular(UserType.INTERNAL), )</ID>
-    <ID>UnusedPrivateProperty:CellsApiTest.kt$CellsApiTest$val result = cellApi.moveNode("uuid", "path", "targetPath")</ID>
-    <ID>UnusedPrivateProperty:CellsApiTest.kt$CellsApiTest$val result = cellApi.preCheck("path")</ID>
     <ID>UnusedPrivateProperty:ClientResources.kt$ClientResources$private val log = LoggerFactory.getLogger(ClientResources::class.java.name)</ID>
-    <ID>UnusedPrivateProperty:ConversationRepositoryTest.kt$ConversationRepositoryTest.Companion$private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")</ID>
     <ID>UnusedPrivateProperty:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$engine: CRUDEngineBaseCollection</ID>
     <ID>UnusedPrivateProperty:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$minimumAmountOfPreKeys: Number = definedExternally</ID>
     <ID>UnusedPrivateProperty:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore$engine: CRUDEngineBaseCollection</ID>
     <ID>UnusedPrivateProperty:Decoder.module_@wireapp_cbor.kt$Decoder$buffer: ArrayBuffer</ID>
     <ID>UnusedPrivateProperty:Decoder.module_@wireapp_cbor.kt$Decoder$config: DecoderConfig = definedExternally</ID>
     <ID>UnusedPrivateProperty:FlowManagerServiceImpl.kt$FlowManagerServiceImpl$appContext: PlatformContext</ID>
-    <ID>UnusedPrivateProperty:GetNotificationsUseCaseTest.kt$GetNotificationsUseCaseTest.Companion$private val MY_ID = TestUser.USER_ID</ID>
-    <ID>UnusedPrivateProperty:GetNotificationsUseCaseTest.kt$GetNotificationsUseCaseTest.Companion$private val TIME_EARLIER = TIME - 10.days</ID>
     <ID>UnusedPrivateProperty:IdentityKey.module_@wireapp_proteus.kt$IdentityKey$publicKey: PublicKey</ID>
     <ID>UnusedPrivateProperty:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$publicKey: IdentityKey = definedExternally</ID>
     <ID>UnusedPrivateProperty:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$secretKey: SecretKey = definedExternally</ID>
     <ID>UnusedPrivateProperty:IdentityKeyPair.module_@wireapp_proteus.kt$IdentityKeyPair$version: Number = definedExternally</ID>
     <ID>UnusedPrivateProperty:KeyPair.module_@wireapp_proteus.kt$KeyPair$publicKey: PublicKey</ID>
     <ID>UnusedPrivateProperty:KeyPair.module_@wireapp_proteus.kt$KeyPair$secretKey: SecretKey</ID>
-    <ID>UnusedPrivateProperty:ListUsersRequestJson.kt$ListUsersRequestJson$private val qualifiedHandlesProvider = { serializable: QualifiedHandleListRequest -> val handlesArrayContent = serializable.qualifiedHandles.joinToString(",") { """{"domain": "${it.domain}", "handle":"${it.handle}"""" } """{"qualified_ids": [$handlesArrayContent]}""" }</ID>
     <ID>UnusedPrivateProperty:LogResources.kt$LogResources$private val configuration: TestserviceConfiguration</ID>
     <ID>UnusedPrivateProperty:MarkAsReadCommand.kt$MarkAsReadCommand$val result = userSession.conversations.updateConversationReadDateUseCase( selectedConversation.id, DateTimeUtil.currentInstant() )</ID>
     <ID>UnusedPrivateProperty:MediaManagerServiceImpl.kt$MediaManagerServiceImpl$platformContext: PlatformContext</ID>
-    <ID>UnusedPrivateProperty:NukeDBTest.kt$NukeDBTest$private val backupUserId = UserIDEntity("backup-selfValue", "selfDomain")</ID>
     <ID>UnusedPrivateProperty:PreKey.module_@wireapp_proteus.kt$PreKey$keyId: Number = definedExternally</ID>
     <ID>UnusedPrivateProperty:PreKey.module_@wireapp_proteus.kt$PreKey$keyPair: KeyPair = definedExternally</ID>
     <ID>UnusedPrivateProperty:PreKey.module_@wireapp_proteus.kt$PreKey$version: Number = definedExternally</ID>
@@ -766,18 +171,9 @@
     <ID>UnusedPrivateProperty:PreKeyBundle.module_@wireapp_proteus.kt$PreKeyBundle$version: Number = definedExternally</ID>
     <ID>UnusedPrivateProperty:PublicKey.module_@wireapp_proteus.kt$PublicKey$pubCurve: Uint8Array</ID>
     <ID>UnusedPrivateProperty:PublicKey.module_@wireapp_proteus.kt$PublicKey$pubEdward: Uint8Array</ID>
-    <ID>UnusedPrivateProperty:RegisterApiV0Test.kt$RegisterApiV0Test$val networkClient = mockUnauthenticatedNetworkClient( "", statusCode = HttpStatusCode.OK, assertion = { assertPost() assertJson() assertNoQueryParams() assertPathEqual("/activate") assertHttps() assertHostEqual(TEST_HOST) assertJsonBodyContent(VALID_ACTIVATE_EMAIL.rawJson) } )</ID>
-    <ID>UnusedPrivateProperty:RegisterApiV0Test.kt$RegisterApiV0Test$val networkClient = mockUnauthenticatedNetworkClient( "", statusCode = HttpStatusCode.OK, assertion = { assertPost() assertJson() assertNoQueryParams() assertPathEqual("/activate/send") assertHttps() assertHostEqual(TEST_HOST) assertJsonBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson) } )</ID>
-    <ID>UnusedPrivateProperty:RegisterApiV0Test.kt$RegisterApiV0Test$val networkClient = mockUnauthenticatedNetworkClient( ERROR_RESPONSE.rawJson, statusCode = HttpStatusCode.BadRequest, assertion = { assertPost() assertJson() assertNoQueryParams() assertPathEqual("/activate") assertHttps() assertHostEqual(TEST_HOST) assertJsonBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson) } )</ID>
-    <ID>UnusedPrivateProperty:RegisterApiV0Test.kt$RegisterApiV0Test$val networkClient = mockUnauthenticatedNetworkClient( ERROR_RESPONSE.rawJson, statusCode = HttpStatusCode.BadRequest, assertion = { assertPost() assertJson() assertNoQueryParams() assertPathEqual("/activate/send") assertHttps() assertHostEqual(TEST_HOST) assertJsonBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson) } )</ID>
-    <ID>UnusedPrivateProperty:RegisterApiV0Test.kt$RegisterApiV0Test$val networkClient = mockUnauthenticatedNetworkClient( ERROR_RESPONSE.rawJson, statusCode = HttpStatusCode.BadRequest, assertion = { assertPost() assertJson() assertNoQueryParams() assertPathEqual("/register") assertHttps() assertHostEqual(TEST_HOST) assertJsonBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson) } )</ID>
-    <ID>UnusedPrivateProperty:RegisterApiV0Test.kt$RegisterApiV0Test$val networkClient = mockUnauthenticatedNetworkClient( VALID_REGISTER_RESPONSE.toJsonString(), statusCode = HttpStatusCode.OK, assertion = { assertPost() assertJson() assertNoQueryParams() assertPathEqual("/register") assertHttps() assertHostEqual(TEST_HOST) assertJsonBodyContent(VALID_PERSONAL_ACCOUNT_REQUEST.rawJson) } )</ID>
-    <ID>UnusedPrivateProperty:RegisterMLSClientUseCaseTest.kt$RegisterMLSClientUseCaseTest$val e2eiIsEnrolled = false</ID>
     <ID>UnusedPrivateProperty:SecretKey.module_@wireapp_proteus.kt$SecretKey$secCurve: Uint8Array</ID>
     <ID>UnusedPrivateProperty:SecretKey.module_@wireapp_proteus.kt$SecretKey$secEdward: Uint8Array</ID>
-    <ID>UnusedPrivateProperty:SessionEstablisherTest.kt$SessionEstablisherTest$val userPreKeysResult = mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to preKey)))</ID>
     <ID>UnusedPrivateProperty:TestGlobalDatabase.kt$TestGlobalDatabase$private val dispatcher: TestDispatcher = StandardTestDispatcher()</ID>
-    <ID>UnusedPrivateProperty:UpdateClientVerificationStatusUseCaseTest.kt$UpdateClientVerificationStatusUseCaseTest.Companion$private val OTHER_USER_CLIENT = OtherUserClient( deviceType = DeviceType.Phone, id = "some_id", isValid = true, isProteusVerified = true )</ID>
     <ID>UnusedPrivateProperty:UserConfigStorage.kt$UserConfigStorageImpl$private val legalHoldRequestFlow = MutableSharedFlow&lt;Unit>( extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST )</ID>
     <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var create_last_resort_prekey: Any</ID>
     <ID>VariableNaming:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$open var create_new_identity: Any</ID>
@@ -1039,144 +435,5 @@
     <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.performance.*</ID>
     <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.workers.*</ID>
     <ID>WildcardImport:SecretKey.module_@wireapp_proteus.kt$import org.w3c.xhr.*</ID>
-    <ID>Wrapping:AnalyticsIdentifierManagerTest.kt$AnalyticsIdentifierManagerTest$(</ID>
-    <ID>Wrapping:AnalyticsIdentifierManagerTest.kt$AnalyticsIdentifierManagerTest$(matches { it is Message.Signaling &amp;&amp; it.content is MessageContent.DataTransfer }, any())</ID>
-    <ID>Wrapping:AnalyticsIdentifierManagerTest.kt$AnalyticsIdentifierManagerTest.Arrangement$UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(), MessageSenderArrangement by MessageSenderArrangementImpl(), CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl(), SelfConversationIdProviderArrangement by SelfConversationIdProviderArrangementImpl()</ID>
-    <ID>Wrapping:ApiTest.kt$ApiTest$(</ID>
-    <ID>Wrapping:ApproveLegalHoldRequestUseCaseTest.kt$ApproveLegalHoldRequestUseCaseTest.Arrangement$ApproveLegalHoldRequestUseCaseImpl(teamRepository, selfTeamIdProvider)</ID>
-    <ID>Wrapping:AssetMessageHandlerTest.kt$AssetMessageHandlerTest$(</ID>
-    <ID>Wrapping:AssetMessageHandlerTest.kt$AssetMessageHandlerTest$arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))</ID>
-    <ID>Wrapping:AssetMessageHandlerTest.kt$AssetMessageHandlerTest.Arrangement$(</ID>
-    <ID>Wrapping:BaseDatabaseTest.kt$BaseDatabaseTest$(</ID>
-    <ID>Wrapping:CellsApiTest.kt$(</ID>
-    <ID>Wrapping:ConfirmationDeliveryHandlerTest.kt$ConfirmationDeliveryHandlerTest$it == TestMessage.TEST_MESSAGE_ID</ID>
-    <ID>Wrapping:ConversationDAOTest.kt$ConversationDAOTest$it.conversationViewEntity.id == conversation.id</ID>
-    <ID>Wrapping:ConversationFolderRepositoryTest.kt$ConversationFolderRepositoryTest$arrangement.conversationFolderDAO.addConversationToFolder(eq(conversationId.toDao()), eq(folderId))</ID>
-    <ID>Wrapping:ConversationFolderRepositoryTest.kt$ConversationFolderRepositoryTest$arrangement.conversationFolderDAO.removeConversationFromFolder(eq(conversationId.toDao()), eq(folderId))</ID>
-    <ID>Wrapping:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest$(</ID>
-    <ID>Wrapping:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest$( matches { it.users.size == expectedValidUsersCount &amp;&amp; it.users.first().domain != failedDomain }, any() )</ID>
-    <ID>Wrapping:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest$(matches { it.users.size == expectedFullUserIdsForRequestCount }, any())</ID>
-    <ID>Wrapping:ConversationMessageTimerEventHandlerTest.kt$ConversationMessageTimerEventHandlerTest$(</ID>
-    <ID>Wrapping:ConversationRepositoryTest.kt$ConversationRepositoryTest$( value = UpdateChannelAddPermissionResponse.PermissionUpdated( EventContentDTO.Conversation.ChannelAddPermissionUpdate( "conversationId", com.wire.kalium.network.api.model.ConversationId("conversationId", "domain"), ChannelAddPermissionDTO(ChannelAddPermissionTypeDTO.ADMINS), from = "userId", qualifiedFrom = com.wire.kalium.network.api.model.UserId("from_id", "from_domain"), time = Clock.System.now() ) ), mapOf(), HttpStatusCode.OK.value )</ID>
-    <ID>Wrapping:ConversationRepositoryTest.kt$ConversationRepositoryTest.Companion$( UpdateConversationProtocolResponse.ProtocolUpdated( EventContentDTO.Conversation.ProtocolUpdate( TestConversation.NETWORK_ID, ConversationProtocolDTO(ConvProtocol.MIXED), TestUser.NETWORK_ID ) ), emptyMap(), 200 )</ID>
-    <ID>Wrapping:CreateChannelUseCaseTest.kt$CreateChannelUseCaseTest.Arrangement$groupConversationCreator(any(), any(), any())</ID>
-    <ID>Wrapping:CreateRegularGroupUseCaseTest.kt$CreateRegularGroupUseCaseTest.Arrangement$groupConversationCreator(any(), any(), any())</ID>
-    <ID>Wrapping:DeleteConversationLocallyUseCaseTest.kt$DeleteConversationLocallyUseCaseTest.Arrangement$DeleteConversationArrangement by DeleteConversationArrangementImpl(), CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()</ID>
-    <ID>Wrapping:DeleteTeamConversationUseCaseTest.kt$DeleteTeamConversationUseCaseTest.Arrangement$DeleteConversationArrangement by DeleteConversationArrangementImpl(), CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()</ID>
-    <ID>Wrapping:EndCallUseCaseTest.kt$EndCallUseCaseTest.Arrangement$CallRepositoryArrangement by CallRepositoryArrangementImpl(), CallManagerArrangement by CallManagerArrangementImpl()</ID>
-    <ID>Wrapping:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest.Arrangement$UserRepositoryArrangement by UserRepositoryArrangementImpl(), CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()</ID>
-    <ID>Wrapping:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest.Companion$( "keyauth" to JsonObject( mapOf("essential" to JsonPrimitive(true), "value" to JsonPrimitive(OIDC_AUTHZ.keyAuth)) ), "acme_aud" to JsonObject( mapOf("essential" to JsonPrimitive(true), "value" to JsonPrimitive(OIDC_AUTHZ.challenge.url)) ) )</ID>
-    <ID>Wrapping:EnvelopeProtoMapperTest.kt$EnvelopeProtoMapperTest$( user, mapOf( Pair("241b5be49179d81b", ByteArray(0)), Pair("8bdacec7398a982e", ByteArray(0)), Pair("e47d908549239b72", ByteArray(0)), Pair("4c8346ce67fa0d7", ByteArray(0)) ) )</ID>
-    <ID>Wrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$(</ID>
-    <ID>Wrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$( SelfDeletingMessagesConfigModel( enforcedTimeoutSeconds = null ), Status.DISABLED )</ID>
-    <ID>Wrapping:FeatureConfigMapperTest.kt$FeatureConfigMapperTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.MLS, listOf(SupportedProtocolDTO.MLS), listOf(1), 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
-    <ID>Wrapping:FeatureConfigRepositoryTest.kt$FeatureConfigRepositoryTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), allowedCipherSuites = listOf(1), defaultCipherSuite = 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
-    <ID>Wrapping:FederationEventReceiverTest.kt$FederationEventReceiverTest$UserId(value = "defIdTwo$it", domain = defederatedDomainTwo)</ID>
-    <ID>Wrapping:FederationEventReceiverTest.kt$FederationEventReceiverTest$it.toDao()</ID>
-    <ID>Wrapping:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$arrangement.persistConversations(any(), eq(batch2.response.conversationsFound), eq(true), eq(ConversationSyncReason.Other))</ID>
-    <ID>Wrapping:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$arrangement.persistConversations(any(), eq(emptyList()), eq(true), eq(ConversationSyncReason.Other))</ID>
-    <ID>Wrapping:FetchConversationsUseCaseTest.kt$FetchConversationsUseCaseTest$arrangement.persistConversations(any(), eq(emptyList()),eq( true), eq(ConversationSyncReason.Other))</ID>
-    <ID>Wrapping:GetAnalyticsContactsDataUseCaseTest.kt$GetAnalyticsContactsDataUseCaseTest.Arrangement$UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(), AnalyticsRepositoryArrangement by AnalyticsRepositoryArrangementImpl()</ID>
-    <ID>Wrapping:GetCallConversationTypeProviderTest.kt$GetCallConversationTypeProviderTest$arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any())</ID>
-    <ID>Wrapping:GetMessageDraftUseCaseTest.kt$GetMessageDraftUseCaseTest$(</ID>
-    <ID>Wrapping:GetNotificationsUseCaseTest.kt$GetNotificationsUseCaseTest$(</ID>
-    <ID>Wrapping:GetUserMlsClientIdentitiesUseCaseTest.kt$GetUserMlsClientIdentitiesUseCaseTest.Arrangement$withMLSTransactionReturning(Either.Right(Unit)) block()</ID>
-    <ID>Wrapping:IncrementalSyncManagerTest.kt$IncrementalSyncManagerTest$;</ID>
-    <ID>Wrapping:IncrementalSyncManagerTest.kt$IncrementalSyncManagerTest.Arrangement$it.retry()</ID>
-    <ID>Wrapping:InstanceServiceTest.kt$InstanceServiceTest$(</ID>
-    <ID>Wrapping:JoinConversationViaCodeUseCaseTest.kt$JoinConversationViaCodeUseCaseTest$( code, key, null, password, Either.Left( NetworkFailure.ServerMiscommunication( KaliumException.InvalidRequestError( ErrorResponse(403, "wrong password", "invalid-conversation-password") ) ) ) )</ID>
-    <ID>Wrapping:JoinExistingMLSConversationUseCaseTest.kt$JoinExistingMLSConversationUseCaseTest.Arrangement$( any(), matches { invocationCounter += 1 invocationCounter &lt;= times }, any() )</ID>
-    <ID>Wrapping:JoinSubconversationUseCaseTest.kt$JoinSubconversationUseCaseTest.Arrangement$;</ID>
-    <ID>Wrapping:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$(</ID>
-    <ID>Wrapping:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$it.content is MessageContent.LegalHold.ForConversation.Disabled &amp;&amp; it.date == Instant.UNIX_FIRST_DATE</ID>
-    <ID>Wrapping:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$it.content is MessageContent.LegalHold.ForConversation.Enabled &amp;&amp; it.date == Instant.UNIX_FIRST_DATE</ID>
-    <ID>Wrapping:MLSClientTest.kt$MLSClientTest$it.encryptMessage(welcomeBundle.groupId, PLAIN_TEXT.encodeToByteArray())</ID>
-    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.DISABLED ), duringSlowSync = false )</ID>
-    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.DISABLED, defaultProtocol = SupportedProtocol.MLS ), duringSlowSync = false )</ID>
-    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, defaultProtocol = SupportedProtocol.MLS ), duringSlowSync = false )</ID>
-    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, defaultProtocol = SupportedProtocol.PROTEUS ), duringSlowSync = false )</ID>
-    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS) ), duringSlowSync = false )</ID>
-    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS) ), duringSlowSync = true )</ID>
-    <ID>Wrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest$(</ID>
-    <ID>Wrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest$( MLSFailure.MessageRejected( NetworkFailure.MlsMessageRejectedFailure.GroupOutOfSync(missingUsers) ), TEST_CAUSE )</ID>
-    <ID>Wrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest$( arrangement.mlsContext, Arrangement.GROUP_ID, listOf( QualifiedClientID(ClientId(CRYPTO_CLIENT_ID.value), UserId(CRYPTO_CLIENT_ID.userId.value, CRYPTO_CLIENT_ID.userId.domain)) ) )</ID>
-    <ID>Wrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement$;</ID>
-    <ID>Wrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement.Companion$( MLSFailure.MessageRejected( NetworkFailure.MlsMessageRejectedFailure.ClientMismatch ), TEST_CAUSE )</ID>
-    <ID>Wrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement.Companion$( MLSFailure.MessageRejected( NetworkFailure.MlsMessageRejectedFailure.CommitMissingReferences ), TEST_CAUSE )</ID>
-    <ID>Wrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement.Companion$( MLSFailure.MessageRejected( NetworkFailure.MlsMessageRejectedFailure.StaleMessage ), TEST_CAUSE )</ID>
-    <ID>Wrapping:MLSErrorResponseHandlerTest.kt$MLSErrorResponseHandlerTest$"""</ID>
-    <ID>Wrapping:MLSKeyPackageCountUseCaseTest.kt$MLSKeyPackageCountUseCaseTest.Arrangement$UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(), CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()</ID>
-    <ID>Wrapping:MLSMigrationConfigHandlerTest.kt$MLSMigrationConfigHandlerTest$( MIGRATION_CONFIG.copy( startTime = Instant.DISTANT_PAST, endTime = Instant.DISTANT_PAST ), duringSlowSync = false )</ID>
-    <ID>Wrapping:MLSMigrationConfigHandlerTest.kt$MLSMigrationConfigHandlerTest$( MIGRATION_CONFIG.copy( startTime = Instant.DISTANT_PAST, endTime = Instant.DISTANT_PAST ), duringSlowSync = true )</ID>
-    <ID>Wrapping:MarkConversationAsDeletedLocallyUseCaseTest.kt$MarkConversationAsDeletedLocallyUseCaseTest$arrangement.conversationRepository.markConversationAsDeletedLocally(eq(CONVERSATION_ID))</ID>
-    <ID>Wrapping:MessageContentEncoderTest.kt$MessageContentEncoderTest.TestData$(</ID>
-    <ID>Wrapping:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest.Arrangement$(</ID>
-    <ID>Wrapping:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest.Arrangement$conversationRepository.observeLegalHoldStatus(any())</ID>
-    <ID>Wrapping:MessageEnvelopeCreatorTest.kt$MessageEnvelopeCreatorTest.Arrangement$legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())</ID>
-    <ID>Wrapping:MessageRepositoryExtensionsTest.kt$MessageRepositoryExtensionsTest$( eq(CONVERSATION_ID_ENTITY), matches { val list = it.toList() list.size == 1 &amp;&amp; list[0] == MessageEntity.Visibility.VISIBLE }, eq(pagingConfig), any() )</ID>
-    <ID>Wrapping:MessageRepositoryTest.kt$MessageRepositoryTest$( matches { it.recipients.isEmpty() &amp;&amp; it.messageOption == QualifiedMessageOption.IgnoreAll }, any() )</ID>
-    <ID>Wrapping:MessageRepositoryTest.kt$MessageRepositoryTest$( matches { it.recipients.isEmpty() &amp;&amp; it.messageOption == QualifiedMessageOption.ReportAll }, any() )</ID>
-    <ID>Wrapping:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest.Arrangement$ClientRepositoryArrangement by ClientRepositoryArrangementImpl(), FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(), CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()</ID>
-    <ID>Wrapping:MessageSenderTest.kt$MessageSenderTest$(</ID>
-    <ID>Wrapping:MessageSenderTest.kt$MessageSenderTest.Arrangement$;</ID>
-    <ID>Wrapping:MigrateFromPersonalToTeamUseCaseTest.kt$MigrateFromPersonalToTeamUseCaseTest$arrangement.syncContacts()</ID>
-    <ID>Wrapping:MigrateFromPersonalToTeamUseCaseTest.kt$MigrateFromPersonalToTeamUseCaseTest.Arrangement$(</ID>
-    <ID>Wrapping:NewConversationEventHandlerTest.kt$NewConversationEventHandlerTest$it.wasInTheLastSecond</ID>
-    <ID>Wrapping:NewConversationMembersRepositoryTest.kt$NewConversationMembersRepositoryTest.Arrangement$(</ID>
-    <ID>Wrapping:NewGroupConversationSystemMessagesCreatorTest.kt$NewGroupConversationSystemMessagesCreatorTest$(</ID>
-    <ID>Wrapping:NewGroupConversationSystemMessagesCreatorTest.kt$NewGroupConversationSystemMessagesCreatorTest$( ConversationMemberDTO.Self( TestUser.SELF.id.toApi(), "wire_admin" ), emptyList() )</ID>
-    <ID>Wrapping:NewMessageEventHandlerTest.kt$NewMessageEventHandlerTest$arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())</ID>
-    <ID>Wrapping:NewMessageEventHandlerTest.kt$NewMessageEventHandlerTest$arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any())</ID>
-    <ID>Wrapping:NewMessageEventHandlerTest.kt$NewMessageEventHandlerTest$arrangement.proteusMessageUnpacker.unpackProteusMessage&lt;Any>(any(), eq(newMessageEvent), any())</ID>
-    <ID>Wrapping:ObserveAttachmentDraftsUseCaseTest.kt$ObserveAttachmentDraftsUseCaseTest.Arrangement$(</ID>
-    <ID>Wrapping:ObserveChannelsCreationPermissionUseCaseTest.kt$ObserveChannelsCreationPermissionUseCaseTest$( UserTypeInfo.Regular(UserType.EXTERNAL), ChannelFeatureConfiguration.Enabled( createChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_AND_REGULAR_MEMBERS, createPublicChannelsRequirement = ChannelFeatureConfiguration.TeamUserType.ADMINS_ONLY, ) )</ID>
-    <ID>Wrapping:PocIntegrationTest.kt$PocIntegrationTest$throw IllegalStateException("No self client is registered")</ID>
-    <ID>Wrapping:ProteusClientTest.kt$ProteusClientTest$it.encryptWithPreKey(message.encodeToByteArray(), aliceKey, aliceSessionId)</ID>
-    <ID>Wrapping:ProteusClientTest.kt$ProteusClientTest$it.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)</ID>
-    <ID>Wrapping:ProteusMessageUnpackerTest.kt$ProteusMessageUnpackerTest$it.contentEquals(decodedByteArray)</ID>
-    <ID>Wrapping:ProteusMessageUnpackerTest.kt$ProteusMessageUnpackerTest$it.data.contentEquals(protobufExternalContent.encodeToByteArray())</ID>
-    <ID>Wrapping:RefreshNodeAssetStateUseCaseTest.kt$RefreshNodeAssetStateUseCaseTest$(</ID>
-    <ID>Wrapping:RegisterClientUseCaseTest.kt$RegisterClientUseCaseTest$(</ID>
-    <ID>Wrapping:RetryFailedMessageUseCaseTest.kt$RetryFailedMessageUseCaseTest$(</ID>
-    <ID>Wrapping:RetryFailedMessageUseCaseTest.kt$RetryFailedMessageUseCaseTest$( matches { it is Message.Signaling // message edits are sent as signaling messages &amp;&amp; it.id != message.id // when editing we need to generate and set a new id &amp;&amp; it.content is MessageContent.TextEdited &amp;&amp; (it.content as MessageContent.TextEdited).editMessageId == message.id // original id in edited content }, any() )</ID>
-    <ID>Wrapping:RetryFailedMessageUseCaseTest.kt$RetryFailedMessageUseCaseTest$(matches { it.id == message.id &amp;&amp; it.content is MessageContent.Asset &amp;&amp; (it.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key &amp;&amp; (it.content as MessageContent.Asset).value.remoteData.assetDomain == uploadedAssetId.domain &amp;&amp; (it.content as MessageContent.Asset).value.remoteData.assetToken == uploadedAssetId.assetToken }, any())</ID>
-    <ID>Wrapping:SearchDAOTest.kt$SearchDAOTest$( MemberEntity( connectedPartOfConversation1.id, MemberEntity.Role.Member ), conversationToExclude.id )</ID>
-    <ID>Wrapping:SearchDAOTest.kt$SearchDAOTest$( MemberEntity( connectedPartOfConversation2.id, MemberEntity.Role.Member ), conversationToExclude.id )</ID>
-    <ID>Wrapping:SearchDAOTest.kt$SearchDAOTest$( MemberEntity( connectedUser1.id, MemberEntity.Role.Member ), conversation.id )</ID>
-    <ID>Wrapping:SearchUserRepositoryTest.kt$SearchUserRepositoryTest.Arrangement$SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(), SearchDAOArrangement by SearchDAOArrangementImpl()</ID>
-    <ID>Wrapping:SendButtonActionConfirmationMessageTest.kt$SendButtonActionConfirmationMessageTest$(</ID>
-    <ID>Wrapping:SendButtonActionConfirmationMessageTest.kt$SendButtonActionConfirmationMessageTest$(any(), matches { it is MessageTarget.Users &amp;&amp; it.userId == listOf(buttonActionSender) })</ID>
-    <ID>Wrapping:SendMessagePartialFailureMapperTest.kt$SendMessagePartialFailureMapperTest$(</ID>
-    <ID>Wrapping:SendTextMessageCaseTest.kt$SendTextMessageCaseTest$(</ID>
-    <ID>Wrapping:SlowSyncWorkerTest.kt$SlowSyncWorkerTest.Arrangement$EventRepositoryArrangement by EventRepositoryArrangementImpl(), CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()</ID>
-    <ID>Wrapping:SyncConversationsUseCaseTest.kt$SyncConversationsUseCaseTest.Arrangement$eq(it)</ID>
-    <ID>Wrapping:SyncMigrationStep_6_7_Test.kt$SyncMigrationStep_6_7_Test.Arrangement$AccountRepositoryArrangement by AccountRepositoryArrangementImpl(), SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl()</ID>
-    <ID>Wrapping:SyncMigrationStepsProviderTest.kt$SyncMigrationStepsProviderTest.Arrangement$AccountRepositoryArrangement by AccountRepositoryArrangementImpl(), SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl()</ID>
-    <ID>Wrapping:TeamEventReceiverTest.kt$TeamEventReceiverTest.Arrangement$UserRepositoryArrangement by UserRepositoryArrangementImpl(), CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()</ID>
-    <ID>Wrapping:TestAsset.kt$TestAsset$(</ID>
-    <ID>Wrapping:ToggleReactionUseCaseTest.kt$ToggleReactionUseCaseTest$(</ID>
-    <ID>Wrapping:ToggleReactionUseCaseTest.kt$ToggleReactionUseCaseTest$(matches { val content = it.content as MessageContent.Reaction content.emojiSet.size == 1 &amp;&amp; content.emojiSet.first() == emojiReaction &amp;&amp; content.messageId == TEST_MESSAGE_ID }, any())</ID>
-    <ID>Wrapping:UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest.kt$UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest.Arrangement$(</ID>
-    <ID>Wrapping:UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest.kt$UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest.Arrangement$(matches { it.capabilities.contains(ClientCapability.ConsumableNotifications) &amp;&amp; it.capabilities.contains(ClientCapability.LegalHoldImplicitConsent) }, eq(CLIENT.id.value))</ID>
-    <ID>Wrapping:UpdateSupportedProtocolsUseCaseTest.kt$UpdateSupportedProtocolsUseCaseTest$it.contains(SupportedProtocol.MLS) &amp;&amp; it.contains(SupportedProtocol.PROTEUS)</ID>
-    <ID>Wrapping:UserConversationDAOIntegrationTest.kt$UserConversationDAOIntegrationTest$( conversationId, listOf( MemberEntity( user = QualifiedIDEntity( "3", "someDomain" ), role = MemberEntity.Role.Admin ) ) )</ID>
-    <ID>Wrapping:UserConversationDAOIntegrationTest.kt$UserConversationDAOIntegrationTest$( conversationId, listOf( MemberEntity( user = user1.id, role = MemberEntity.Role.Admin ), MemberEntity( user = user2.id, role = MemberEntity.Role.Member ), ) )</ID>
-    <ID>Wrapping:UserConversationDAOIntegrationTest.kt$UserConversationDAOIntegrationTest$( user = QualifiedIDEntity( "3", "someDomain" ), role = MemberEntity.Role.Admin )</ID>
-    <ID>Wrapping:UserRepositoryArrangement.kt$UserRepositoryArrangementImpl$(</ID>
-    <ID>Wrapping:UserRepositoryTest.kt$UserRepositoryTest$(</ID>
-    <ID>Wrapping:UserRepositoryTest.kt$UserRepositoryTest$it.toApi()</ID>
-    <ID>Wrapping:UserSearchApiWrapperTest.kt$UserSearchApiWrapperTest$( ConversationMemberExcludedOptions.ConversationExcluded( ConversationId( "someValue", "someDomain" ) ), selfUserIncluded = false )</ID>
-    <ID>Wrapping:UserSearchApiWrapperTest.kt$UserSearchApiWrapperTest$( ConversationMemberExcludedOptions.ConversationExcluded( ConversationId( "someValue", "someDomain" ) ), selfUserIncluded = true )</ID>
-    <ID>Wrapping:UserSearchApiWrapperTest.kt$UserSearchApiWrapperTest$( user = QualifiedIDEntity( "value3", "someDomain" ), role = MemberEntity.Role.Member )</ID>
-    <ID>Wrapping:UserSearchApiWrapperTest.kt$UserSearchApiWrapperTest$( user = QualifiedIDEntity( selfUser.id.value, selfUser.id.domain ), role = MemberEntity.Role.Member )</ID>
-    <ID>Wrapping:ValidatePasswordUseCaseTest.kt$ValidatePasswordUseCaseTest$it is ValidatePasswordResult.Invalid &amp;&amp; it.missingLowercaseCharacter</ID>
-    <ID>Wrapping:ValidatePasswordUseCaseTest.kt$ValidatePasswordUseCaseTest$it is ValidatePasswordResult.Invalid &amp;&amp; it.missingSpecialCharacter</ID>
-    <ID>Wrapping:ValidatePasswordUseCaseTest.kt$ValidatePasswordUseCaseTest$it is ValidatePasswordResult.Invalid &amp;&amp; it.missingUppercaseCharacter</ID>
-    <ID>Wrapping:ValidatePasswordUseCaseTest.kt$ValidatePasswordUseCaseTest$validatePasswordUseCase("A1@3.").let { it is ValidatePasswordResult.Invalid &amp;&amp; it.missingLowercaseCharacter }</ID>
-    <ID>Wrapping:ValidatePasswordUseCaseTest.kt$ValidatePasswordUseCaseTest$validatePasswordUseCase("a1@3.").let { it is ValidatePasswordResult.Invalid &amp;&amp; it.missingUppercaseCharacter }</ID>
-    <ID>Wrapping:ValidatePasswordUseCaseTest.kt$ValidatePasswordUseCaseTest$validatePasswordUseCase("aA13").let { it is ValidatePasswordResult.Invalid &amp;&amp; it.missingSpecialCharacter }</ID>
-    <ID>Wrapping:ValidateUserHandleUseCaseTest.kt$ValidateUserHandleUseCaseTest$validateUserHandleUseCase( "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" + "1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890" + "123456789012345678901234567890123456789012345678901234567890" ) is ValidateUserHandleResult.Invalid.TooLong</ID>
-    <ID>Wrapping:VerifyBackupUseCaseTest.kt$VerifyBackupUseCaseTest.Arrangement$(</ID>
-    <ID>Wrapping:VerifyBackupUseCaseTest.kt$VerifyBackupUseCaseTest.Arrangement$(data.map { source(it.second) to it.second.name }, outputSink)</ID>
   </CurrentIssues>
 </SmellBaseline>

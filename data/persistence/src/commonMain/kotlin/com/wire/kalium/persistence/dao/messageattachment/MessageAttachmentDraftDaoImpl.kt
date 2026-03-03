@@ -66,7 +66,7 @@ internal class MessageAttachmentDraftDaoImpl internal constructor(
         }
     }
 
-    override suspend fun observeAttachments(): Flow<List<MessageAttachmentDraftEntity>> {
+    override fun observeAttachments(): Flow<List<MessageAttachmentDraftEntity>> {
         return queries.getAllDrafts(mapper = ::toDao)
             .asFlow()
             .mapToList()
@@ -84,7 +84,7 @@ internal class MessageAttachmentDraftDaoImpl internal constructor(
             queries.getDrafts(conversationId, ::toDao).executeAsList()
         }
 
-    override suspend fun observeAttachments(conversationId: QualifiedIDEntity): Flow<List<MessageAttachmentDraftEntity>> =
+    override fun observeAttachments(conversationId: QualifiedIDEntity): Flow<List<MessageAttachmentDraftEntity>> =
         queries.getDrafts(conversationId, ::toDao).asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)

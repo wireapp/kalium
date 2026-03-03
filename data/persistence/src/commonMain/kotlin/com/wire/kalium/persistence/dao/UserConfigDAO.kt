@@ -40,7 +40,7 @@ interface UserConfigDAO {
     )
 
     suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified()
-    suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?>
+    fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?>
 
     suspend fun getMigrationConfiguration(): MLSMigrationEntity?
     suspend fun setMigrationConfiguration(configuration: MLSMigrationEntity)
@@ -124,7 +124,7 @@ internal class UserConfigDAOImpl internal constructor(
             }
     }
 
-    override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?> =
+    override fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?> =
         metadataDAO.observeSerializable(
             SELF_DELETING_MESSAGES_KEY,
             TeamSettingsSelfDeletionStatusEntity.serializer()

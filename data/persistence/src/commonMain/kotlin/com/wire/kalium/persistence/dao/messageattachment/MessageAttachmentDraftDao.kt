@@ -26,7 +26,7 @@ interface MessageAttachmentDraftDao {
     suspend fun getAttachments(conversationId: QualifiedIDEntity): List<MessageAttachmentDraftEntity>
     suspend fun deleteAttachment(uuid: String)
     suspend fun deleteAttachments(conversationId: QualifiedIDEntity)
-    suspend fun observeAttachments(conversationId: QualifiedIDEntity): Flow<List<MessageAttachmentDraftEntity>>
+    fun observeAttachments(conversationId: QualifiedIDEntity): Flow<List<MessageAttachmentDraftEntity>>
     suspend fun addAttachment(
         uuid: String,
         versionId: String,
@@ -42,5 +42,5 @@ interface MessageAttachmentDraftDao {
         status: String,
     )
     suspend fun updateUploadStatus(uuid: String, status: String)
-    suspend fun observeAttachments(): Flow<List<MessageAttachmentDraftEntity>>
+    fun observeAttachments(): Flow<List<MessageAttachmentDraftEntity>>
 }
