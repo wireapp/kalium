@@ -66,6 +66,13 @@ public data class KaliumConfigs(
      * Should NOT be set in production mobile/web clients.
      */
     val callConfigTransformer: ((String) -> String)? = null,
+
+    /**
+     * Whether the Nomad Profiles feature is available (not necessarily enabled). If
+     * set to false, the feature will not be available irrespective of other configurations that
+     * are trying to turn it on.
+     */
+    val nomadProfilesAvailable: Boolean = false
 )
 
 public sealed interface BuildFileRestrictionState {
