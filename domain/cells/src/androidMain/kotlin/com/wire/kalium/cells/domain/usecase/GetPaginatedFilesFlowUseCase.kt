@@ -36,7 +36,7 @@ public interface GetPaginatedFilesFlowUseCase {
      */
     public suspend operator fun invoke(
         conversationId: String?,
-        query: String,
+        query: String = "",
         fileFilters: FileFilters = FileFilters(),
         sortingSpec: SortingSpec = SortingSpec(
             criteria = SortingCriteria.FOLDERS_FIRST_THEN_ALPHABETICAL,

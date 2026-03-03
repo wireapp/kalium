@@ -18,12 +18,14 @@
 package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellUsersRepository
+import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
@@ -48,6 +50,9 @@ class GetOwnersUseCaseTest {
         private const val USER_NAME_2 = "Jane Smith"
         private const val USER_HANDLE_1 = "@johndoe"
         private const val USER_HANDLE_2 = "@janesmith"
+        private const val NODE_ID_1 = "node1"
+        private const val NODE_ID_2 = "node2"
+        private const val NODE_ID_3 = "node3"
     }
 
     @Test
@@ -112,6 +117,27 @@ class GetOwnersUseCaseTest {
 
         assertIs<GetOwnersUseCaseResult.Failure>(result)
         assertIs<StorageFailure>(result.failure)
+    }
+
+    @Test
+    fun given_NullConversationId_whenInvoked_thenUseEmptyString() = runTest {
+        val (_, useCase) = Arrangement()
+            .withNodes(
+                listOf(
+                    createCellNode(NODE_ID_1, UserId(USER_ID_1, USER_DOMAIN_1).toString())
+                )
+            )
+            .withUsers(
+                listOf(
+                    createUserDetails(USER_ID_1, USER_DOMAIN_1, USER_NAME_1, USER_HANDLE_1)
+                )
+            )
+            .arrange()
+
+        val result = useCase(null, SEARCH_QUERY)
+
+        assertIs<GetOwnersUseCaseResult.Success>(result)
+        assertEquals(1, result.owners.size)
     }
 
     @Test
@@ -181,6 +207,16 @@ class GetOwnersUseCaseTest {
 
         assertIs<GetOwnersUseCaseResult.Success>(result)
         assertEquals(0, result.owners.size)
+    }
+
+    private fun createCellNode(nodeId: String, ownerUserId: String?): CellNode {
+        return CellNode(
+            uuid = nodeId,
+            versionId = "v1",
+            path = "/path/to/$nodeId",
+            ownerUserId = ownerUserId,
+            mimeType = "text/plain"
+        )
     }
 
     private fun createUserDetails(

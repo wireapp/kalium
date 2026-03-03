@@ -757,7 +757,8 @@ public class UserSessionScope internal constructor(
             rootProteusPath = rootPathsProvider.rootProteusPath(userId),
             userId = userId,
             passphraseStorage = globalPreferences.passphraseStorage,
-            proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler
+            proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler,
+            currentClientIdProvider = clientIdProvider
         )
     }
 
