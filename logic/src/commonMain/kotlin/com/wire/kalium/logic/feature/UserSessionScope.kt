@@ -105,6 +105,7 @@ import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepositoryImpl
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
+import com.wire.kalium.logic.data.conversation.ObservableMLSConversationRepository
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
@@ -526,6 +527,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
@@ -571,6 +573,7 @@ public class UserSessionScope internal constructor(
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
+    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     userStorageProvider: UserStorageProvider,
     userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
@@ -796,17 +799,21 @@ public class UserSessionScope internal constructor(
     private val mlsMutex: Mutex = Mutex()
 
     private val mlsConversationRepository: MLSConversationRepository
-        get() = MLSConversationDataSource(
-            userId,
-            keyPackageRepository,
-            userStorage.database.conversationDAO,
-            authenticatedNetworkContainer.clientApi,
-            mlsPublicKeysRepository,
-            proposalTimersFlow,
-            keyPackageLimitsProvider,
-            checkRevocationList,
-            certificateRevocationListRepository,
-            mutex = mlsMutex
+        get() = ObservableMLSConversationRepository(
+            delegate = MLSConversationDataSource(
+                userId,
+                keyPackageRepository,
+                userStorage.database.conversationDAO,
+                authenticatedNetworkContainer.clientApi,
+                mlsPublicKeysRepository,
+                proposalTimersFlow,
+                keyPackageLimitsProvider,
+                checkRevocationList,
+                certificateRevocationListRepository,
+                mutex = mlsMutex
+            ),
+            userId = userId,
+            hookNotifier = cryptoStateChangeHookNotifier
         )
 
     private val mlsMissingUsersRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler = {
