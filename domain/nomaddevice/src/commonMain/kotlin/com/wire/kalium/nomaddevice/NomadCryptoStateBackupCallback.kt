@@ -32,7 +32,7 @@ import kotlinx.coroutines.CoroutineScope
 public fun createNomadCryptoStateChangeHookNotifier(
     scope: CoroutineScope,
     backupForUser: suspend (UserId) -> Unit,
-    debounceMs: Long = 500L,
+    debounceMs: Long = 1500L,
 ): CryptoStateChangeHookNotifier =
     createNomadCryptoStateChangeHookNotifierInternal(
         scope = scope,
@@ -43,7 +43,7 @@ public fun createNomadCryptoStateChangeHookNotifier(
 internal fun createNomadCryptoStateChangeHookNotifierInternal(
     scope: CoroutineScope,
     backupForUser: suspend (UserId) -> Unit,
-    debounceMs: Long = 500L,
+    debounceMs: Long = 1500L,
 ): CryptoStateChangeHookNotifier {
     val repository = NomadCryptoStateBackupDataSource(backupForUser)
     return NomadCryptoStateChangeHookNotifier(
@@ -51,16 +51,4 @@ internal fun createNomadCryptoStateChangeHookNotifierInternal(
         repository = repository,
         debounceMs = debounceMs,
     )
-}
-
-internal interface NomadCryptoStateBackupRepository {
-    suspend fun backupAndUpload(userId: UserId)
-}
-
-internal class NomadCryptoStateBackupDataSource(
-    private val backupForUser: suspend (UserId) -> Unit,
-) : NomadCryptoStateBackupRepository {
-    override suspend fun backupAndUpload(userId: UserId) {
-        backupForUser(userId)
-    }
 }
