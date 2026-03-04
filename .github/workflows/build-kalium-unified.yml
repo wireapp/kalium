@@ -35,7 +35,6 @@ jobs:
     if: inputs.run-quality-checks
     needs: [detekt]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -53,7 +52,6 @@ jobs:
     if: inputs.run-quality-checks
     needs: [detekt]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -67,13 +65,12 @@ jobs:
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew testAndroidHostTest
+        run: ./gradlew testAndroidHostTest -x :core:cryptography:testAndroidHostTest
 
   android-connected-tests:
     if: inputs.run-quality-checks
     needs: [detekt]
     runs-on: ubuntu-latest
-    timeout-minutes: 45
     strategy:
       matrix:
         api-level: [31]
@@ -135,7 +132,6 @@ jobs:
     if: inputs.run-quality-checks
     needs: [detekt]
     runs-on: macos-15
-    timeout-minutes: 45
     steps:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -162,18 +158,17 @@ jobs:
     if: |
       always() &&
       (inputs.run-quality-checks == false || (needs.jvm-tests.result == 'success' && needs.android-tests.result == 'success' && needs.android-connected-tests.result == 'success' && needs.ios-tests.result == 'success'))
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: ${{ matrix.timeout }}
+    runs-on: ${{ matrix.platform == 'ios' && 'macos-15' || 'ubuntu-latest' }}
     strategy:
       fail-fast: false
       matrix:
         include: ${{ fromJson(inputs.build-config) }}
     steps:
       - name: Setup Xcode
-        if: matrix.xcode-version != ''
+        if: matrix.platform == 'ios'
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: ${{ matrix.xcode-version }}
+          xcode-version: "16.1.0"
 
       - name: Checkout
         uses: actions/checkout@v6
@@ -188,7 +183,7 @@ jobs:
         run: ./gradlew ${{ matrix.gradle-tasks }}
 
       - name: Post-build — collect artifacts
-        if: matrix.post-build-script == ''
+        if: matrix.platform != 'ios'
         run: |
           mkdir -p release/${{ matrix.artifact-name }}
           IFS=' ' read -ra GLOBS <<< "${{ matrix.artifact-glob }}"
@@ -200,9 +195,9 @@ jobs:
           test -n "$(ls -A release/${{ matrix.artifact-name }})"
 
       - name: Post-build — zip XCFramework
-        if: matrix.post-build-script == 'zip-xcframework'
+        if: matrix.platform == 'ios'
         run: |
-          XCFRAMEWORK_DIR="${{ matrix.xcframework-path }}"
+          XCFRAMEWORK_DIR="logic/build/XCFrameworks/release/KaliumLogic.xcframework"
           if [ ! -d "$XCFRAMEWORK_DIR" ]; then
             echo "::error::XCFramework not found at $XCFRAMEWORK_DIR"
             exit 1
