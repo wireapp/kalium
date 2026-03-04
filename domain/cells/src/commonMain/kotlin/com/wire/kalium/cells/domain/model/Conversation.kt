@@ -18,9 +18,10 @@
 package com.wire.kalium.cells.domain.model
 
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.id.ConversationId
 
 public data class Conversation(
-    val id: String,
+    val id: ConversationId,
     val name: String,
     val isChannel: Boolean = false,
     val channelAccess: ConversationDetails.Group.Channel.ChannelAccess? = null

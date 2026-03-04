@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -66,7 +67,7 @@ internal class CellConversationDataSource(
             wrapStorageRequest {
                 conversationDao.getCellGroupConversations().map { conversation ->
                     Conversation(
-                        id = conversation.id.toString(),
+                        id = ConversationId(conversation.id.value, conversation.id.domain),
                         name = conversation.name!!,
                         isChannel = conversation.isChannel,
                         channelAccess = conversation.channelAccess?.let { access ->
