@@ -25,24 +25,24 @@ import com.wire.kalium.common.functional.Either
 /**
  * Use case to get the list of conversations that have cells enabled.
  */
-public interface GetGroupConversationsWithCellEnabledUseCase {
+public interface GetCellGroupConversationsUseCase {
     public suspend operator fun invoke(): GetConversationsUseCaseResult
 }
 
 /**
- * Implementation of [GetGroupConversationsWithCellEnabledUseCase] that retrieves the list of conversations
+ * Implementation of [GetCellGroupConversationsUseCase] that retrieves the list of conversations
  * including their channel status and access level from the repository and maps them
  * to [Conversation] objects. The use case returns a [GetConversationsUseCaseResult]
  * containing a list of [Conversation] objects on success, or a [CoreFailure] on failure.
  *
  * @param conversationRepository The repository to fetch the conversation data.
  */
-internal class GetGroupConversationsWithCellEnabledUseCaseImpl(
+internal class GetCellGroupConversationsUseCaseImpl(
     private val conversationRepository: CellConversationRepository,
-) : GetGroupConversationsWithCellEnabledUseCase {
+) : GetCellGroupConversationsUseCase {
 
     override suspend operator fun invoke(): GetConversationsUseCaseResult {
-        return when (val result = conversationRepository.getGroupConversationDetailsWithCellEnabled()) {
+        return when (val result = conversationRepository.getCellGroupConversations()) {
             is Either.Right -> GetConversationsUseCaseResult.Success(result.value)
             is Either.Left -> GetConversationsUseCaseResult.Failure(result.value)
         }

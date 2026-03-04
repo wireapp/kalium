@@ -31,7 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-class GetGroupConversationsWithCellEnabledUseCaseTest {
+class GetCellGroupConversationsUseCaseTest {
 
     private companion object {
         private const val CONVERSATION_ID_1 = "conv1@wire.com"
@@ -155,12 +155,12 @@ class GetGroupConversationsWithCellEnabledUseCaseTest {
             conversationDetailsResult = failure.left()
         }
 
-        suspend fun arrange(): Pair<Arrangement, GetGroupConversationsWithCellEnabledUseCase> {
+        suspend fun arrange(): Pair<Arrangement, GetCellGroupConversationsUseCase> {
             coEvery {
-                conversationRepository.getGroupConversationDetailsWithCellEnabled()
+                conversationRepository.getCellGroupConversations()
             }.returns(conversationDetailsResult)
 
-            return this to GetGroupConversationsWithCellEnabledUseCaseImpl(conversationRepository)
+            return this to GetCellGroupConversationsUseCaseImpl(conversationRepository)
         }
     }
 }

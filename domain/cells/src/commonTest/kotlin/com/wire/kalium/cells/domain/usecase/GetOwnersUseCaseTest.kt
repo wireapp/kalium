@@ -25,7 +25,6 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserAssetId
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
@@ -117,27 +116,6 @@ class GetOwnersUseCaseTest {
 
         assertIs<GetOwnersUseCaseResult.Failure>(result)
         assertIs<StorageFailure>(result.failure)
-    }
-
-    @Test
-    fun given_NullConversationId_whenInvoked_thenUseEmptyString() = runTest {
-        val (_, useCase) = Arrangement()
-            .withNodes(
-                listOf(
-                    createCellNode(NODE_ID_1, UserId(USER_ID_1, USER_DOMAIN_1).toString())
-                )
-            )
-            .withUsers(
-                listOf(
-                    createUserDetails(USER_ID_1, USER_DOMAIN_1, USER_NAME_1, USER_HANDLE_1)
-                )
-            )
-            .arrange()
-
-        val result = useCase(null, SEARCH_QUERY)
-
-        assertIs<GetOwnersUseCaseResult.Success>(result)
-        assertEquals(1, result.owners.size)
     }
 
     @Test

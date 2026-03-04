@@ -37,12 +37,11 @@ class CellConversationRepositoryTest {
             ConversationEntity.ChannelAccess.PUBLIC,
             "conversationId"
         )
-
         val (_, repository) = Arrangement()
             .withConversations(listOf(groupConv1, groupConv2))
             .arrange()
 
-        val result = repository.getGroupConversationDetailsWithCellEnabled()
+        val result = repository.getCellGroupConversations()
 
         assertIs<Either.Right<List<Conversation>>>(result)
         val conversations = result.value
@@ -59,18 +58,22 @@ class CellConversationRepositoryTest {
 
     @Test
     fun given_EmptyConversations_whenInvoked_thenReturnEmptyList() = runTest {
+        // Given
         val (_, repository) = Arrangement()
             .withConversations(emptyList())
             .arrange()
 
-        val result = repository.getGroupConversationDetailsWithCellEnabled()
+        // When
+        val result = repository.getCellGroupConversations()
 
+        // Then
         assertIs<Either.Right<List<Conversation>>>(result)
         assertEquals(0, result.value.size)
     }
 
     @Test
     fun given_PrivateChannelWithWireCell_whenInvoked_thenReturnConversationDetail() = runTest {
+        // Given
         val privateChannel = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_DOMAIN_1,
@@ -79,13 +82,14 @@ class CellConversationRepositoryTest {
             ConversationEntity.ChannelAccess.PRIVATE,
             "conversationId"
         )
-
         val (_, repository) = Arrangement()
             .withConversations(listOf(privateChannel))
             .arrange()
 
-        val result = repository.getGroupConversationDetailsWithCellEnabled()
+        // When
+        val result = repository.getCellGroupConversations()
 
+        // Then
         assertIs<Either.Right<List<Conversation>>>(result)
         val conversations = result.value
         assertEquals(1, conversations.size)
@@ -95,15 +99,17 @@ class CellConversationRepositoryTest {
 
     @Test
     fun given_RegularGroupConversation_whenInvoked_thenReturnConversationWithoutChannelAccess() = runTest {
+        // Given
         val regularGroup =
             createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_DOMAIN_1, CONVERSATION_NAME_1, false, null, "cell1")
-
         val (_, repository) = Arrangement()
             .withConversations(listOf(regularGroup))
             .arrange()
 
-        val result = repository.getGroupConversationDetailsWithCellEnabled()
+        // When
+        val result = repository.getCellGroupConversations()
 
+        // Then
         assertIs<Either.Right<List<Conversation>>>(result)
         val conversations = result.value
         assertEquals(1, conversations.size)
@@ -113,15 +119,17 @@ class CellConversationRepositoryTest {
 
     @Test
     fun given_ConversationWithNullWireCell_whenInvoked_thenFilterItOut() = runTest {
+        // Given
         val groupConvWithoutCell =
             createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_DOMAIN_1, CONVERSATION_NAME_1, false, null, null)
-
         val (_, repository) = Arrangement()
             .withConversations(listOf(groupConvWithoutCell))
             .arrange()
 
-        val result = repository.getGroupConversationDetailsWithCellEnabled()
+        // When
+        val result = repository.getCellGroupConversations()
 
+        // Then
         assertIs<Either.Right<List<Conversation>>>(result)
         assertEquals(0, result.value.size)
     }

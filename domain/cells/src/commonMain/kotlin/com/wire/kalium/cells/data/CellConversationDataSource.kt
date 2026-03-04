@@ -32,21 +32,21 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
 internal class CellConversationDataSource(
-    private val conversation: ConversationDAO,
+    private val conversationDao: ConversationDAO,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : CellConversationRepository {
 
     override suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?> =
         withContext(dispatchers.io) {
             wrapStorageRequest {
-                conversation.getCellName(conversationId)
+                conversationDao.getCellName(conversationId)
             }
         }
 
     override suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>> =
         withContext(dispatchers.io) {
             wrapStorageRequest {
-                conversation.getAllConversations().firstOrNull()?.mapNotNull { conv ->
+                conversationDao.getAllConversations().firstOrNull()?.mapNotNull { conv ->
                     conv.name?.let { name ->
                         conv.id.toString() to name
                     }
@@ -57,36 +57,29 @@ internal class CellConversationDataSource(
     override suspend fun hasConversationWithCell(): Either<StorageFailure, Boolean> =
         withContext(dispatchers.io) {
             wrapStorageRequest {
-                conversation.hasConversationWithCell()
+                conversationDao.hasConversationWithCell()
             }
         }
 
-    override suspend fun getGroupConversationDetailsWithCellEnabled(): Either<StorageFailure, List<Conversation>> =
+    override suspend fun getCellGroupConversations(): Either<StorageFailure, List<Conversation>> =
         withContext(dispatchers.io) {
             wrapStorageRequest {
-                conversation.getAllConversations().firstOrNull()?.mapNotNull { conv ->
-                    if (conv.type == ConversationEntity.Type.GROUP &&
-                        conv.wireCell != null &&
-                        conv.name != null
-                    ) {
-                        Conversation(
-                            id = conv.id.toString(),
-                            name = conv.name!!,
-                            isChannel = conv.isChannel,
-                            channelAccess = conv.channelAccess?.let { access ->
-                                when (access) {
-                                    ConversationEntity.ChannelAccess.PRIVATE ->
-                                        ConversationDetails.Group.Channel.ChannelAccess.PRIVATE
+                conversationDao.getCellGroupConversations().map { conversation ->
+                    Conversation(
+                        id = conversation.id.toString(),
+                        name = conversation.name!!,
+                        isChannel = conversation.isChannel,
+                        channelAccess = conversation.channelAccess?.let { access ->
+                            when (access) {
+                                ConversationEntity.ChannelAccess.PRIVATE ->
+                                    ConversationDetails.Group.Channel.ChannelAccess.PRIVATE
 
-                                    ConversationEntity.ChannelAccess.PUBLIC ->
-                                        ConversationDetails.Group.Channel.ChannelAccess.PUBLIC
-                                }
+                                ConversationEntity.ChannelAccess.PUBLIC ->
+                                    ConversationDetails.Group.Channel.ChannelAccess.PUBLIC
                             }
-                        )
-                    } else {
-                        null
-                    }
-                } ?: emptyList()
+                        }
+                    )
+                }
             }
         }
 }
