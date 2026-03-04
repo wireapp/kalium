@@ -102,6 +102,7 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         NetworkResponse.Error(KaliumException.GenericError(unhandledException))
     }
 
+    @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
     private suspend fun handleCryptoStateDownload(
         httpResponse: io.ktor.client.statement.HttpResponse,
         tempFileSink: Sink
