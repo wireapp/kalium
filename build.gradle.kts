@@ -190,16 +190,25 @@ moduleGraphConfig {
     showFullPath.set(true)
 }
 
-tasks.register("runAllUnitTests") {
-    description = "Runs all Unit Tests."
+val runAndroidUnitTests = tasks.register("runAndroidUnitTests") {
+    description = "Runs Android Unit Tests for all subprojects, excluding :core:cryptography."
+}
 
-    rootProject.subprojects {
-        tasks.findByName("testDebugUnitTest")?.let {
-            dependsOn(it)
+val runAllUnitTests = tasks.register("runAllUnitTests") {
+    description = "Runs all Unit Tests."
+}
+
+gradle.projectsEvaluated {
+    rootProject.subprojects.forEach { sub ->
+        sub.tasks.findByName("testAndroidHostTest")?.let { testTask ->
+            if (sub.name != "cryptography") {
+                runAndroidUnitTests.configure { dependsOn(testTask) }
+            }
+            runAllUnitTests.configure { dependsOn(testTask) }
         }
-        if (name != "cryptography") {
-            tasks.findByName("jvmTest")?.let {
-                dependsOn(it)
+        if (sub.name != "cryptography") {
+            sub.tasks.findByName("jvmTest")?.let { jvmTestTask ->
+                runAllUnitTests.configure { dependsOn(jvmTestTask) }
             }
         }
     }

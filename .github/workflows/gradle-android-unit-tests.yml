@@ -52,7 +52,7 @@ jobs:
         with:
           name: test-results
           path: |
-            ./**/build/test-results/testDebugUnitTest/**/*.xml
+            ./**/build/test-results/testAndroidHostTest/**/*.xml
             ./**/build/test-results/**/*.xml
 
       - name: Publish Unit Test Results
@@ -60,7 +60,7 @@ jobs:
         if: ${{ always() }}
         with:
           files: |
-            **/build/test-results/testDebugUnitTest/**/*.xml
+            **/build/test-results/testAndroidHostTest/**/*.xml
             **/build/test-results/**/*.xml
 
       - name: Cleanup Gradle Cache
