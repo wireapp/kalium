@@ -18,4 +18,6 @@
 
 package com.wire.kalium.persistence.utils
 
-actual annotation class IgnoreJvm
+import org.junit.Ignore
+
+actual typealias IgnoreJvm = Ignore

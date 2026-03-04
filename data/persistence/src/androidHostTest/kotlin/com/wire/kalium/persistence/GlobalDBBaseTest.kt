@@ -18,15 +18,30 @@
 
 package com.wire.kalium.persistence
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
-import kotlinx.coroutines.test.TestDispatcher
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.globalDatabaseProvider
+import com.wire.kalium.persistence.util.FileNameUtil
+import com.wire.kalium.util.KaliumDispatcherImpl
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 actual abstract class GlobalDBBaseTest {
+
     actual fun deleteDatabase() {
-        TODO("Not yet implemented")
+        val context: Context = ApplicationProvider.getApplicationContext()
+        context.deleteDatabase(FileNameUtil.globalDBName())
     }
 
-    actual fun createDatabase(): GlobalDatabaseBuilder {
-        TODO("Not yet implemented")
-    }
+    // passphrase is forced to null on host tests because SQLCipher
+    // native libraries are not available in the Robolectric environment.
+    actual fun createDatabase(): GlobalDatabaseBuilder = globalDatabaseProvider(
+        platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
+        queriesContext = KaliumDispatcherImpl.unconfined,
+        passphrase = null,
+        enableWAL = true
+    )
 }

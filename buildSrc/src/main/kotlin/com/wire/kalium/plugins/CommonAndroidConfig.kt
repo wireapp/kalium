@@ -54,6 +54,8 @@ fun KotlinMultiplatformAndroidLibraryExtension.commonAndroidLibConfig(
     }
     withHostTestBuilder {
         sourceSetTreeName = "test"
+    }.configure {
+        isIncludeAndroidResources = true
     }
 
     if (project.file("consumer-proguard-rules.pro").exists()) {

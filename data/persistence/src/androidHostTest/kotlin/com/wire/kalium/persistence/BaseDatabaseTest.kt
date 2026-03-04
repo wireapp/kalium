@@ -18,19 +18,33 @@
 
 package com.wire.kalium.persistence
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.userDatabaseBuilder
+import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
+@RunWith(RobolectricTestRunner::class)
 actual open class BaseDatabaseTest actual constructor() {
-
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
 
+    actual val encryptedDBSecret = UserDBSecret("db_secret".toByteArray())
+
     actual fun deleteDatabase(userId: UserIDEntity) {
-        TODO("Not yet implemented")
+        val context: Context = ApplicationProvider.getApplicationContext()
+        context.deleteDatabase(FileNameUtil.userDBName(userId))
+    }
+
+    actual fun doesDatabaseExist(userId: UserIDEntity): Boolean {
+        val context: Context = ApplicationProvider.getApplicationContext()
+        return context.getDatabasePath(FileNameUtil.userDBName(userId)).exists()
     }
 
     actual fun createDatabase(
@@ -39,19 +53,23 @@ actual open class BaseDatabaseTest actual constructor() {
         enableWAL: Boolean,
         dbInvalidationControlEnabled: Boolean
     ): UserDatabaseBuilder {
-        TODO("Not yet implemented")
+        // passphrase is forced to null on host tests because SQLCipher
+        // native libraries are not available in the Robolectric environment.
+        return userDatabaseBuilder(
+            platformDatabaseData = platformDBData(userId),
+            userId = userId,
+            passphrase = null,
+            dispatcher = dispatcher,
+            enableWAL = enableWAL,
+            dbInvalidationControlEnabled = dbInvalidationControlEnabled
+        )
     }
 
     actual fun databasePath(userId: UserIDEntity): String {
-        TODO("Not yet implemented")
+        val context: Context = ApplicationProvider.getApplicationContext()
+        return context.getDatabasePath(FileNameUtil.userDBName(userId)).absolutePath
     }
 
-    actual fun doesDatabaseExist(userId: UserIDEntity): Boolean = TODO("Not yet implemented")
-
-    actual val encryptedDBSecret: UserDBSecret
-        get() = TODO("Not yet implemented")
-
-    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData {
-        TODO("Not yet implemented")
-    }
+    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData =
+        PlatformDatabaseData(ApplicationProvider.getApplicationContext())
 }

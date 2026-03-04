@@ -108,10 +108,21 @@ kotlin {
                 implementation(libs.sql.android.cipher)
             }
         }
+        val androidHostTest by getting {
+            dependencies {
+                implementation(libs.robolectric)
+                implementation(libs.core.ktx)
+            }
+        }
         val appleMain by getting {
             dependencies {
                 implementation(libs.sqldelight.nativeDriver)
             }
         }
     }
+}
+
+tasks.withType<Test>().matching { it.name == "testAndroidHostTest" }.configureEach {
+    exclude("**/BaseDatabaseTest.class")
+    exclude("**/BaseMessageTest.class")
 }
