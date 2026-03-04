@@ -53,7 +53,7 @@ class TimestampKeyRepositoryTest {
     @Test
     fun givenPreviousTimestamp_whenCallHasPassedWithDistantFuture_thenReturnsFalse() = runTest {
         val key = TimestampKeys.LAST_KEY_PACKAGE_COUNT_CHECK
-        val expectedTimestamp = Instant.DISTANT_FUTURE
+        val expectedTimestamp = Instant.parse("2199-01-01T00:00:00Z")
         val (_, timestampKeyRepository) = Arrangement()
             .withMetaDataDaoValueReturns(expectedTimestamp)
             .arrange()
@@ -86,7 +86,7 @@ class TimestampKeyRepositoryTest {
     @Test
     fun givenATimeStampKeyAndTimeStamp_whenCallUpdate_thenDAOFunctionCalledByCorrectValue() = runTest {
         val key = TimestampKeys.LAST_KEY_PACKAGE_COUNT_CHECK
-        val timestamp = Instant.DISTANT_FUTURE
+        val timestamp = Instant.parse("2199-01-01T00:00:00Z")
         val (arrangement, timestampKeyRepository) = Arrangement()
             .withMetaDataDaoInsertValue()
             .arrange()

@@ -25,6 +25,7 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.persistence.RobolectricTest
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.coroutines.Dispatchers
@@ -41,7 +42,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class ReactionRepositoryTest {
+class ReactionRepositoryTest : RobolectricTest() {
 
     private val testDispatcher = StandardTestDispatcher()
     private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, testDispatcher)

@@ -22,20 +22,24 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
-import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.globalDatabaseProvider
-import com.wire.kalium.persistence.db.inMemoryDatabase
+import com.wire.kalium.persistence.db.userDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 
 internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseBuilder {
-    return inMemoryDatabase(
-        ApplicationProvider.getApplicationContext(),
-        userId,
-        dispatcher = dispatcher
+    // passphrase is forced to null on host tests because SQLCipher
+    // native libraries are not available in the Robolectric environment.
+    return userDatabaseBuilder(
+        platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
+        userId = userId,
+        passphrase = null,
+        dispatcher = dispatcher,
+        enableWAL = true,
+        dbInvalidationControlEnabled = false
     )
 }
 
@@ -45,9 +49,11 @@ internal actual fun deleteTestDatabase(userId: UserIDEntity) {
 }
 
 internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {
+    // passphrase is forced to null on host tests because SQLCipher
+    // native libraries are not available in the Robolectric environment.
     return globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
-        passphrase = GlobalDatabaseSecret("test_db_secret".toByteArray()),
+        passphrase = null,
         enableWAL = true,
         queriesContext = StandardTestDispatcher()
     )

@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.sync
 import app.cash.turbine.test
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.IgnoreIOS
+import com.wire.kalium.persistence.RobolectricTest
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.util.DateTimeUtil
@@ -33,7 +34,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
-class SlowSyncRepositoryTest {
+class SlowSyncRepositoryTest : RobolectricTest() {
 
     private lateinit var slowSyncRepository: SlowSyncRepository
     private val testDispatcher = TestKaliumDispatcher.default

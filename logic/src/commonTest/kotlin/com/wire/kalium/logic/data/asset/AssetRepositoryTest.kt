@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.persistence.RobolectricTest
 import com.wire.kalium.network.api.authenticated.asset.AssetResponse
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.model.ConversationId
@@ -69,7 +70,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class AssetRepositoryTest {
+internal class AssetRepositoryTest : RobolectricTest() {
 
     private lateinit var testScope: TestDispatcher
     private lateinit var fakeKaliumFileSystem: FakeKaliumFileSystem

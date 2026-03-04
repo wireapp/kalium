@@ -22,6 +22,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.persistence.RobolectricTest
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.util.DateTimeUtil
@@ -37,7 +38,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class ReceiptRepositoryTest {
+class ReceiptRepositoryTest : RobolectricTest() {
     private val testDispatcher = StandardTestDispatcher()
 
     private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, testDispatcher)

@@ -32,6 +32,7 @@ import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.persistence.RobolectricTest
 import com.wire.kalium.persistence.TestUserDatabase
 import io.mockative.any
 import io.mockative.coEvery
@@ -50,7 +51,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 
-class IncrementalSyncWorkerTest {
+class IncrementalSyncWorkerTest : RobolectricTest() {
 
     @Test
     fun givenGathererEmitsEvent_whenPerformingIncrementalSync_thenProcessorShouldReceiveTheEvent() = runTest(TestKaliumDispatcher.default) {

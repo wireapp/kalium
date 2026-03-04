@@ -44,6 +44,7 @@ kotlin {
                 implementation(libs.androidtest.runner)
                 implementation(libs.androidtest.rules)
                 implementation(libs.androidtest.core)
+                implementation(libs.robolectric)
             }
         }
     }

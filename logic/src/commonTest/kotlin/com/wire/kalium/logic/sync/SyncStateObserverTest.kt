@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.persistence.RobolectricTest
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.mock
@@ -55,7 +56,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class SyncStateObserverTest {
+class SyncStateObserverTest : RobolectricTest() {
 
     private val testDispatcher = StandardTestDispatcher()
     

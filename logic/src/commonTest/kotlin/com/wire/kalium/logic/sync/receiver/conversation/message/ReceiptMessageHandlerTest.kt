@@ -37,6 +37,7 @@ import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReadReceiptEventData
+import com.wire.kalium.persistence.RobolectricTest
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -63,7 +64,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class ReceiptMessageHandlerTest {
+class ReceiptMessageHandlerTest : RobolectricTest() {
 
     private val testDispatcher = StandardTestDispatcher()
     private val userDatabase = TestUserDatabase(SELF_USER_ID_ENTITY, testDispatcher)

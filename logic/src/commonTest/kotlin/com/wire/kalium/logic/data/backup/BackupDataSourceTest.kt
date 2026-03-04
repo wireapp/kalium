@@ -6,6 +6,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.persistence.RobolectricTest
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
@@ -27,7 +28,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 
-class BackupDataSourceTest {
+class BackupDataSourceTest : RobolectricTest() {
 
     private val testDispatcher = StandardTestDispatcher()
     private val userId = UserId("userId", "domain")

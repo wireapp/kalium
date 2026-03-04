@@ -27,6 +27,7 @@ import com.wire.kalium.logic.util.stubs.ClientApiStub
 import com.wire.kalium.logic.util.stubs.ConversationApiStub
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.persistence.RobolectricTest
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -39,7 +40,7 @@ import kotlin.test.assertIs
 
 // Uses concrete DAOs backed by in-memory Database, and fake APIs, instead of mocks for 100% of the dependencies
 @OptIn(ConversationPersistenceApi::class)
-class ConversationRepositoryIntegrationTest {
+class ConversationRepositoryIntegrationTest : RobolectricTest() {
 
     private val userId = TestUser.USER_ID
     private val userIdEntity = TestUser.ENTITY_ID

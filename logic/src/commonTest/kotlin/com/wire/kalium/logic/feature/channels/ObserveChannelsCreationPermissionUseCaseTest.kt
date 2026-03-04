@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.persistence.RobolectricTest
 import com.wire.kalium.persistence.TestUserDatabase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,7 +40,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-class ObserveChannelsCreationPermissionUseCaseTest {
+class ObserveChannelsCreationPermissionUseCaseTest : RobolectricTest() {
 
     private val dispatcher = StandardTestDispatcher()
     private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, dispatcher)
