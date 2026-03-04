@@ -33,7 +33,9 @@ import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.close
+import io.ktor.utils.io.core.toByteArray
 import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.writeStringUtf8
 import okio.Buffer
@@ -91,6 +93,12 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         private val fileContentStream: () -> Source,
         private val fileSize: Long
     ) : OutgoingContent.WriteChannelContent() {
+
+        override val contentLength: Long
+            get() = openingData.toByteArray(Charsets.UTF_8).size +
+                    fileSize +
+                    closingData.toByteArray(Charsets.UTF_8).size
+
         override val contentType: ContentType =
             ContentType.MultiPart.FormData.withParameter("boundary", BOUNDARY)
         private val openingData: String by lazy {
