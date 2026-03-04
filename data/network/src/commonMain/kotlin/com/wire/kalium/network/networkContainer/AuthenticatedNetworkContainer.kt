@@ -38,6 +38,7 @@ import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
+import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
@@ -85,6 +86,8 @@ interface AuthenticatedNetworkContainer {
     val clientApi: ClientApi
 
     val messageApi: MessageApi
+
+    val nomadDeviceSyncApi: NomadDeviceSyncApi
 
     val mlsMessageApi: MLSMessageApi
 

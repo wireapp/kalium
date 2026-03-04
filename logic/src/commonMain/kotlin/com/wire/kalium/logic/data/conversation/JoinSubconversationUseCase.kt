@@ -61,19 +61,12 @@ internal class JoinSubconversationUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: ConversationId,
         subconversationId: SubconversationId
-    ): Either<CoreFailure, Unit> = transactionProvider.mlsTransaction("JoinSubconversation") { mlsContext ->
-        joinOrEstablishSubconversationAndRetry(
-            mlsContext,
-            conversationId,
-            subconversationId
-        )
-    }
+    ): Either<CoreFailure, Unit> = joinOrEstablishSubconversationAndRetry(conversationId, subconversationId)
 
     private suspend fun joinOrEstablishSubconversation(
-        mlsContext: MlsCoreCryptoContext,
         conversationId: ConversationId,
         subconversationId: SubconversationId
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, Unit> = transactionProvider.mlsTransaction("JoinSubconversation") { mlsContext ->
         wrapApiRequest {
             conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())
         }.flatMap { subconversationDetails ->
@@ -85,6 +78,7 @@ internal class JoinSubconversationUseCaseImpl(
                 )
             }
         }
+    }
 
     private suspend fun joinOrEstablishWithSubconversationDetails(
         mlsContext: MlsCoreCryptoContext,
@@ -138,15 +132,14 @@ internal class JoinSubconversationUseCaseImpl(
         }
 
     private suspend fun joinOrEstablishSubconversationAndRetry(
-        mlsContext: MlsCoreCryptoContext,
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): Either<CoreFailure, Unit> =
-        joinOrEstablishSubconversation(mlsContext, conversationId, subconversationId)
+        joinOrEstablishSubconversation(conversationId, subconversationId)
             .flatMapLeft { failure ->
                 if (failure is MLSFailure.MessageRejected && failure.cause is NetworkFailure.MlsMessageRejectedFailure.StaleMessage) {
                     kaliumLogger.w("Epoch out of date for conversation $conversationId, re-fetching and re-trying")
-                    joinOrEstablishSubconversation(mlsContext, conversationId, subconversationId)
+                    joinOrEstablishSubconversation(conversationId, subconversationId)
                 } else {
                     Either.Left(failure)
                 }

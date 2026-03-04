@@ -1040,7 +1040,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         // when
-        messageDAO.markMessagesAsDecryptionResolved(conversationId, userEntity1.id, "someClient")
+        messageDAO.markProteusMessagesAsDecryptionResolved(userEntity1.id, "someClient")
 
         // then
         val updatedMessage = messageDAO.getMessageById(messageId, conversationId)

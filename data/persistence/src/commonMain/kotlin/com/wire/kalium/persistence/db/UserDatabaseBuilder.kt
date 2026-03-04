@@ -52,6 +52,8 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserPrefsDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
+import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
+import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAOImpl
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -136,6 +138,12 @@ expect fun userDatabaseBuilder(
     dbInvalidationControlEnabled: Boolean = false
 ): UserDatabaseBuilder
 
+/**
+ * Opens a database driver for an arbitrary path.
+ *
+ * This is a low-level/raw driver entrypoint. Callers should not assume automatic schema
+ * initialization/migration and must run migration explicitly when needed.
+ */
 internal expect fun userDatabaseDriverByPath(
     platformDatabaseData: PlatformDatabaseData,
     path: String,
@@ -187,7 +195,8 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentDraftAdapter = TableMapper.messageAttachmentDraftAdapter,
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
-        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter
+        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
+        RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter
     )
 
     init {
@@ -380,6 +389,9 @@ class UserDatabaseBuilder internal constructor(
 
     val publicLinks: PublicLinkDao
         get() = PublicLinkDaoImpl(database.publicLinksQueries, readDispatcher, writeDispatcher)
+
+    val remoteBackupChangeLogDAO: RemoteBackupChangeLogDAO
+        get() = RemoteBackupChangeLogDAOImpl(database.remotebackupChangeLogQueries, readDispatcher, writeDispatcher)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(

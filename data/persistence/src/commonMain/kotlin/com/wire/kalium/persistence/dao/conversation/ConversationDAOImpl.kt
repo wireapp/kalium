@@ -274,6 +274,15 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updateConversationModifiedDateToMaxOfSources(
+        targetId: QualifiedIDEntity,
+        sourceIds: Collection<QualifiedIDEntity>
+    ) {
+        withContext(writeDispatcher.value) {
+            conversationQueries.updateConversationModifiedDateToMaxOfSources(sourceIds, targetId)
+        }
+    }
+
     override suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant?) {
         withContext(writeDispatcher.value) {
             if (date != null) {
@@ -686,6 +695,23 @@ internal class ConversationDAOImpl internal constructor(
             unreadEventsQueries.deleteUnreadEvents(date, conversationID)
             conversationQueries.updateConversationReadDate(date, conversationID)
             unreadEventsQueries.getHasUnreadEventsForConversation(conversationID).executeAsOneOrNull() ?: false
+        }
+    }
+
+    override suspend fun updateReadDatesAndGetHasUnreadEvents(
+        conversationDates: Map<QualifiedIDEntity, Instant>
+    ): Map<QualifiedIDEntity, Boolean> = withContext(writeDispatcher.value) {
+        if (conversationDates.isEmpty()) {
+            return@withContext emptyMap()
+        }
+        conversationQueries.transactionWithResult {
+            buildMap(conversationDates.size) {
+                conversationDates.forEach { (conversationId, date) ->
+                    unreadEventsQueries.deleteUnreadEvents(date, conversationId)
+                    conversationQueries.updateConversationReadDate(date, conversationId)
+                    put(conversationId, unreadEventsQueries.getHasUnreadEventsForConversation(conversationId).executeAsOneOrNull() ?: false)
+                }
+            }
         }
     }
 

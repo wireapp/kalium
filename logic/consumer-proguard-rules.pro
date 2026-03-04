@@ -25,5 +25,13 @@
    <init>(...);
 }
 
+# WrapperWorkerFactory also reads worker class names from persisted WorkManager input data.
+# Keep worker names stable across minified upgrades.
+# See docs/minification-workmanager-compat.md in wire-android repository.
+-keepnames class com.wire.kalium.logic.sync.PendingMessagesSenderWorker
+-keepnames class com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
+-keepnames class com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
+-keepnames class com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker
+
 # protobuf
 -keep class * extends com.google.protobuf.GeneratedMessageLite { *; }

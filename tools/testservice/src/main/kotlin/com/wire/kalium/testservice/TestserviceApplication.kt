@@ -22,6 +22,7 @@ import com.codahale.metrics.MetricRegistry
 import com.codahale.metrics.jmx.JmxReporter
 import com.wire.kalium.testservice.api.v1.ClientResources
 import com.wire.kalium.testservice.api.v1.ConversationResources
+import com.wire.kalium.testservice.api.v1.E2EIResources
 import com.wire.kalium.testservice.api.v1.InstanceLifecycle
 import com.wire.kalium.testservice.api.v1.LogResources
 import com.wire.kalium.testservice.health.TestserviceHealthCheck
@@ -87,6 +88,7 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
         // resources
         val clientResources = ClientResources(instanceService)
         val conversationResources = ConversationResources(instanceService)
+        val e2eiResources = E2EIResources(instanceService)
         val instanceLifecycle = InstanceLifecycle(instanceService, configuration)
         val logResources = LogResources(configuration)
         environment.healthChecks().register("template", TestserviceHealthCheck(configuration))
@@ -94,6 +96,7 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
         environment.jersey().register(JsonProcessingExceptionMapper(true))
         environment.jersey().register(clientResources)
         environment.jersey().register(conversationResources)
+        environment.jersey().register(e2eiResources)
         environment.jersey().register(instanceLifecycle)
         environment.jersey().register(logResources)
 

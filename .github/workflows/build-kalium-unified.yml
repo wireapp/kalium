@@ -1,0 +1,226 @@
+name: "Build Kalium"
+
+on:
+  workflow_call:
+    inputs:
+      build-config:
+        description: "JSON build configuration matrix"
+        required: true
+        type: string
+      run-quality-checks:
+        description: "Run quality gates (detekt, tests) before building"
+        required: false
+        type: boolean
+        default: true
+      concurrency-group-suffix:
+        description: "Suffix for the concurrency group"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: build-kalium-unified-${{ github.ref }}-${{ inputs.concurrency-group-suffix }}
+  cancel-in-progress: true
+
+jobs:
+  # ── Quality Gates ──────────────────────────────────────────────
+  detekt:
+    if: inputs.run-quality-checks
+    uses: ./.github/workflows/codestyle.yml
+
+  jvm-tests:
+    if: inputs.run-quality-checks
+    needs: [detekt]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Run JVM tests
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew jvmTest -Djava.library.path=./native/libs
+
+  android-tests:
+    if: inputs.run-quality-checks
+    needs: [detekt]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+        with:
+          enable-kvm: true
+
+      - name: Run Android unit tests
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew testAndroidHostTest -x :core:cryptography:testAndroidHostTest
+
+  android-connected-tests:
+    if: inputs.run-quality-checks
+    needs: [detekt]
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api-level: [31]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Free Disk Space Before Build
+        run: |
+          echo "Disk space before cleanup:"
+          df -h
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/local/lib/android/sdk/ndk
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          sudo apt-get clean
+          echo "Disk space after cleanup:"
+          df -h
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Build the samples
+        run: |
+          ./gradlew :sample:samples:compileAndroidDeviceTestSources
+
+      - name: Get AVD info
+        uses: ./.github/actions/get-avd-info
+        id: avd-info
+        with:
+          api-level: ${{ matrix.api-level }}
+
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Android Instrumentation Tests
+        uses: reactivecircus/android-emulator-runner@v2.35.0
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: ${{ steps.avd-info.outputs.arch }}
+          target: ${{ steps.avd-info.outputs.target }}
+          cores: 4
+          ram-size: 4096M
+          heap-size: 2048M
+          disable-animations: true
+          script: ./gradlew connectedAndroidTest
+
+  ios-tests:
+    if: inputs.run-quality-checks
+    needs: [detekt]
+    runs-on: macos-15
+    steps:
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.1.0"
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Run logic iOS simulator tests
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew iosSimulatorArm64Test -PUSE_UNIFIED_CORE_CRYPTO=true
+
+  # ── Build Matrix ───────────────────────────────────────────────
+  build:
+    name: "Build ${{ matrix.platform }}"
+    needs: [jvm-tests, android-tests, android-connected-tests, ios-tests]
+    # When quality checks are skipped, run immediately
+    if: |
+      always() &&
+      (inputs.run-quality-checks == false || (needs.jvm-tests.result == 'success' && needs.android-tests.result == 'success' && needs.android-connected-tests.result == 'success' && needs.ios-tests.result == 'success'))
+    runs-on: ${{ matrix.platform == 'ios' && 'macos-15' || 'ubuntu-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(inputs.build-config) }}
+    steps:
+      - name: Setup Xcode
+        if: matrix.platform == 'ios'
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.1.0"
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Build artifacts
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./gradlew ${{ matrix.gradle-tasks }}
+
+      - name: Post-build — collect artifacts
+        if: matrix.platform != 'ios'
+        run: |
+          mkdir -p release/${{ matrix.artifact-name }}
+          IFS=' ' read -ra GLOBS <<< "${{ matrix.artifact-glob }}"
+          for glob in "${GLOBS[@]}"; do
+            dir=$(dirname "$glob")
+            pattern=$(basename "$glob")
+            find "$dir" -maxdepth 1 -name "$pattern" -exec cp {} release/${{ matrix.artifact-name }}/ \;
+          done
+          test -n "$(ls -A release/${{ matrix.artifact-name }})"
+
+      - name: Post-build — zip XCFramework
+        if: matrix.platform == 'ios'
+        run: |
+          XCFRAMEWORK_DIR="logic/build/XCFrameworks/release/KaliumLogic.xcframework"
+          if [ ! -d "$XCFRAMEWORK_DIR" ]; then
+            echo "::error::XCFramework not found at $XCFRAMEWORK_DIR"
+            exit 1
+          fi
+          mkdir -p release/${{ matrix.artifact-name }}
+          PARENT_DIR=$(dirname "$XCFRAMEWORK_DIR")
+          FRAMEWORK_NAME=$(basename "$XCFRAMEWORK_DIR")
+          (cd "$PARENT_DIR" && zip -rXq "${FRAMEWORK_NAME}.zip" "$FRAMEWORK_NAME")
+          mv "${PARENT_DIR}/${FRAMEWORK_NAME}.zip" release/${{ matrix.artifact-name }}/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: release/${{ matrix.artifact-name }}/*
+          retention-days: 3
+
+      - name: Build summary
+        run: |
+          echo "## Build Summary — ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifact**: ${{ matrix.artifact-name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Gradle tasks**: \`${{ matrix.gradle-tasks }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Generated files**:" >> $GITHUB_STEP_SUMMARY
+          ls release/${{ matrix.artifact-name }}/ | while read file; do
+            echo "- \`$file\`" >> $GITHUB_STEP_SUMMARY
+          done

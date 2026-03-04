@@ -57,6 +57,10 @@ interface ConversationDAO {
     )
 
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant)
+    suspend fun updateConversationModifiedDateToMaxOfSources(
+        targetId: QualifiedIDEntity,
+        sourceIds: Collection<QualifiedIDEntity>
+    )
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant? = null)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
     suspend fun updateAllConversationsNotificationDate()
@@ -171,6 +175,7 @@ interface ConversationDAO {
     suspend fun getCellName(conversationId: QualifiedIDEntity): String?
     suspend fun hasConversationWithCell(): Boolean
     suspend fun updateReadDateAndGetHasUnreadEvents(conversationID: QualifiedIDEntity, date: Instant): Boolean
+    suspend fun updateReadDatesAndGetHasUnreadEvents(conversationDates: Map<QualifiedIDEntity, Instant>): Map<QualifiedIDEntity, Boolean>
     suspend fun getMLSConversationsByDomain(domain: String): List<ConversationEntity>
 }
 

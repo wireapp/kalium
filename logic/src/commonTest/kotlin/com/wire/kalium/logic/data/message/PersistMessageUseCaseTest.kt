@@ -18,25 +18,31 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
 
 class PersistMessageUseCaseTest {
-
     @Test
     fun givenMessageRepositoryFailure_whenPersistingMessage_thenReturnFailure() = runTest {
         val (arrangement, persistMessage) = Arrangement()
@@ -49,13 +55,13 @@ class PersistMessageUseCaseTest {
 
         result.shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.persistMessage(any(), any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getReceiptModeFromGroupConversationByQualifiedID(any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -73,17 +79,17 @@ class PersistMessageUseCaseTest {
 
             result.shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageRepository.persistMessage(any(), any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageRepository.getReceiptModeFromGroupConversationByQualifiedID(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.notificationEventsManager.scheduleRegularNotificationChecking()
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -99,45 +105,95 @@ class PersistMessageUseCaseTest {
 
             result.shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageRepository.persistMessage(any(), any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageRepository.getReceiptModeFromGroupConversationByQualifiedID(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.notificationEventsManager.scheduleRegularNotificationChecking()
-            }.wasNotInvoked()
+            }
         }
 
+    @Test
+    fun givenMessageRepositorySuccess_whenPersistingMessage_thenNotifyHookWithPersistedMessageAndSelfUserId() =
+        runTest {
+            val (arrangement, persistMessage) = Arrangement()
+                .withPersistMessageSuccess()
+                .withReceiptMode()
+                .arrange()
+            val expireAfter = 42.seconds
+            val message = TestMessage.TEXT_MESSAGE.copy(
+                expectsReadConfirmation = false,
+                expirationData = Message.ExpirationData(expireAfter)
+            )
+
+            val result = persistMessage.invoke(message)
+
+            result.shouldSucceed()
+            assertEquals(1, arrangement.persistMessageHookNotifier.calls.size)
+            val (persistedMessage, selfUserId) = arrangement.persistMessageHookNotifier.calls.single()
+            assertEquals(TestUser.USER_ID, selfUserId)
+            assertEquals(message.conversationId, persistedMessage.conversationId)
+            assertEquals(message.id, persistedMessage.messageId)
+            assertEquals(message.content, persistedMessage.content)
+            assertEquals(message.date, persistedMessage.date)
+            assertEquals(expireAfter, persistedMessage.expireAfter)
+        }
+
+    @Test
+    fun givenMessageRepositoryFailure_whenPersistingMessage_thenDoNotNotifyHook() = runTest {
+        val (arrangement, persistMessage) = Arrangement()
+            .withPersistMessageFailure()
+            .withReceiptMode()
+            .arrange()
+        val message = TestMessage.TEXT_MESSAGE
+
+        val result = persistMessage.invoke(message)
+
+        result.shouldFail()
+        assertTrue(arrangement.persistMessageHookNotifier.calls.isEmpty())
+    }
+
     private class Arrangement {
-                val messageRepository = mock(MessageRepository::class)
-        val notificationEventsManager = mock(NotificationEventsManager::class)
+        val messageRepository = mock<MessageRepository>()
+        val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
+        val persistMessageHookNotifier = RecordingPersistMessageHookNotifier()
 
         fun arrange() = this to PersistMessageUseCaseImpl(
             messageRepository = messageRepository,
             selfUserId = TestUser.USER_ID,
-            notificationEventsManager = notificationEventsManager
+            notificationEventsManager = notificationEventsManager,
+            persistMessageHookNotifier = persistMessageHookNotifier
         )
 
-        suspend fun withPersistMessageSuccess() = apply {
-            coEvery {
+        fun withPersistMessageSuccess() = apply {
+            everySuspend {
                 messageRepository.persistMessage(any(), any())
-            }.returns(Either.Right(InsertMessageResult.INSERTED_NEED_TO_NOTIFY_USER))
+            } returns Either.Right(InsertMessageResult.INSERTED_NEED_TO_NOTIFY_USER)
         }
 
-        suspend fun withPersistMessageFailure() = apply {
-            coEvery {
+        fun withPersistMessageFailure() = apply {
+            everySuspend {
                 messageRepository.persistMessage(any(), any())
-            }.returns(Either.Left(CoreFailure.InvalidEventSenderID))
+            } returns Either.Left(CoreFailure.InvalidEventSenderID)
         }
 
-        suspend fun withReceiptMode() = apply {
-            coEvery {
+        fun withReceiptMode() = apply {
+            everySuspend {
                 messageRepository.getReceiptModeFromGroupConversationByQualifiedID(any())
-            }.returns(Either.Right(Conversation.ReceiptMode.ENABLED))
+            } returns Either.Right(Conversation.ReceiptMode.ENABLED)
+        }
+    }
+
+    private class RecordingPersistMessageHookNotifier : PersistenceEventHookNotifier {
+        val calls = mutableListOf<Pair<PersistedMessageData, UserId>>()
+
+        override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+            calls += message to selfUserId
         }
     }
 }
