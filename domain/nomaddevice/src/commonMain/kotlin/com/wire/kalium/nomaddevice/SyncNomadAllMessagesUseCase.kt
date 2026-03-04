@@ -161,6 +161,3 @@ public class SyncNomadAllMessagesUseCase internal constructor(
         const val DEFAULT_BATCH_SIZE = 200
     }
 }
-
-private fun UserId.toNetworkUserId(): com.wire.kalium.network.api.model.UserId =
-    com.wire.kalium.network.api.model.QualifiedID(value = value, domain = domain)
