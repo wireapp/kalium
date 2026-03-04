@@ -358,7 +358,7 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
             backupSource: () -> Source,
             backupSize: Long
         ): NetworkResponse<Unit> {
-            TODO("Not yet implemented")
+            error("Not needed for test")
         }
     }
 
