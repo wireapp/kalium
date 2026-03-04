@@ -48,6 +48,8 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.KaliumFileSystemImpl
 import com.wire.kalium.logic.data.backup.BackupDataSource
 import com.wire.kalium.logic.data.backup.BackupRepository
+import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteDataSource
+import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
 import com.wire.kalium.logic.data.call.CallDataSource
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.InCallReactionsDataSource
@@ -1065,7 +1067,11 @@ public class UserSessionScope internal constructor(
             userStorage = userStorage,
             cryptoTransactionProvider = cryptoTransactionProvider,
             globalPreferences = globalPreferences,
+            cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository,
         )
+
+    private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository
+        get() = CryptoStateBackupRemoteDataSource(authenticatedNetworkContainer.nomadDeviceSyncApi)
 
     public val multiPlatformBackup: MultiPlatformBackupScope
         get() = MultiPlatformBackupScope(

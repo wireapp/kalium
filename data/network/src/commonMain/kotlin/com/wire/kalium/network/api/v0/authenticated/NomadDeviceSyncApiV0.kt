@@ -26,10 +26,22 @@ import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyn
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
+import io.ktor.utils.io.ByteWriteChannel
+import io.ktor.utils.io.charsets.Charsets
+import io.ktor.utils.io.close
+import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.writeFully
+import io.ktor.utils.io.writeStringUtf8
+import okio.Buffer
+import okio.Source
+import okio.buffer
+import okio.use
 
 internal open class NomadDeviceSyncApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
@@ -39,7 +51,7 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
 
     override suspend fun postMessageEvents(request: NomadMessageEventsRequest): NetworkResponse<Unit> =
         wrapKaliumResponse {
-            httpClient.post(PATH_MESSAGE_EVENTS) {
+            httpClient.post("$PATH_EVENT/$PATH_MESSAGES") {
                 setBody(request)
                 contentType(ContentType.Application.Json)
             }
@@ -47,17 +59,81 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
 
     override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> =
         wrapKaliumResponse {
-            httpClient.get(PATH_ALL_MESSAGES)
+            httpClient.get("$PATH_EVENT/$PATH_ALL_MESSAGES")
         }
 
     override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> =
         wrapKaliumResponse {
-            httpClient.get(PATH_CONVERSATION_METADATA)
+            httpClient.get("$PATH_EVENT/$PATH_CONVERSATION_METADATA")
         }
 
+    override suspend fun uploadCryptoState(
+        clientId: String,
+        backupSource: () -> Source,
+        backupSize: Long
+    ): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.post("$PATH_EVENT/$PATH_CRYPTO_STATE") {
+                parameter(QUERY_DEVICE_ID, clientId)
+                setBody(StreamCryptoStateBodyContent(backupSource, backupSize))
+            }
+        }
+
+    /**
+     * Custom [OutgoingContent] implementation to stream the crypto state backup as multipart/form-data without loading it all into memory.
+     * The content is structured as follows:
+     * --boundary
+     * Content-Disposition: form-data; name="file"; filename="CHANGELOG.zip"
+     * Content-Type: application/octet-stream
+     * Content-Length: <fileSize>
+     * <file content streamed from backupSource>
+     * --boundary--
+     */
+    internal class StreamCryptoStateBodyContent(
+        private val fileContentStream: () -> Source,
+        private val fileSize: Long
+    ) : OutgoingContent.WriteChannelContent() {
+
+        override val contentLength: Long
+            get() = openingData.toByteArray(Charsets.UTF_8).size +
+                    fileSize +
+                    closingData.toByteArray(Charsets.UTF_8).size
+
+        override val contentType: ContentType =
+            ContentType.MultiPart.FormData.withParameter("boundary", BOUNDARY)
+        private val openingData: String by lazy {
+            buildString {
+                append("--$BOUNDARY\r\n")
+                append("Content-Disposition: form-data; name=\"file\"; filename=\"$CRYPTO_ZIP_FILENAME\"\r\n")
+                append("Content-Type: application/octet-stream\r\n")
+                append("Content-Length: $fileSize\r\n\r\n")
+            }
+        }
+        private val closingData = "\r\n--$BOUNDARY--\r\n"
+        override suspend fun writeTo(channel: ByteWriteChannel) {
+            channel.writeStringUtf8(openingData)
+            fileContentStream().buffer().use { source ->
+                val buffer = Buffer()
+                while (source.read(buffer, BUFFER_SIZE) != -1L) {
+                    val byteArray = buffer.readByteArray()
+                    channel.writeFully(byteArray)
+                }
+            }
+            channel.writeStringUtf8(closingData)
+            channel.flush()
+            channel.close()
+        }
+    }
+
     private companion object {
-        const val PATH_MESSAGE_EVENTS = "message/events"
+        const val PATH_EVENT = "event"
+        const val PATH_MESSAGES = "messages"
         const val PATH_ALL_MESSAGES = "all-messages"
         const val PATH_CONVERSATION_METADATA = "conversation/metadata"
+        const val PATH_CRYPTO_STATE = "crypto/state"
+        const val QUERY_DEVICE_ID = "device_id"
+        const val BUFFER_SIZE = 8L * 1024
+        const val BOUNDARY = "frontier"
+        const val CRYPTO_ZIP_FILENAME = "CHANGELOG.zip"
     }
 }

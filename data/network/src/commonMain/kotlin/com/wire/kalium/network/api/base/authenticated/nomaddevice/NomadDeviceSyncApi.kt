@@ -22,9 +22,16 @@ import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesRes
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.utils.NetworkResponse
+import okio.Source
 
 interface NomadDeviceSyncApi {
     suspend fun postMessageEvents(request: NomadMessageEventsRequest): NetworkResponse<Unit>
     suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse>
     suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse>
+    suspend fun uploadCryptoState(
+        clientId: String,
+        backupSource: () -> Source,
+        backupSize: Long
+    ): NetworkResponse<Unit>
+
 }
