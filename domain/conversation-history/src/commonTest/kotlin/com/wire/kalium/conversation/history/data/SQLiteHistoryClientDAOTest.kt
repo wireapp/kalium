@@ -19,6 +19,7 @@ package com.wire.kalium.conversation.history.data
 
 import app.cash.turbine.test
 import com.wire.kalium.conversation.history.data.dao.SQLiteHistoryClientDAO
+import com.wire.kalium.persistence.RobolectricTest
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -40,7 +41,7 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalTime::class, ExperimentalCoroutinesApi::class)
-class SQLiteHistoryClientDAOTest {
+class SQLiteHistoryClientDAOTest : RobolectricTest() {
 
     private lateinit var testDatabase: TestUserDatabase
     private val testDispatcher: TestDispatcher = StandardTestDispatcher()

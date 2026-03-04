@@ -115,6 +115,14 @@ kotlin {
     }
 }
 
+tasks.withType<Test>().matching { it.name == "testAndroidHostTest" }.configureEach {
+    // These tests require CoreCrypto native libraries (loaded via JNA) that are not
+    // available in the Android host test environment. They run in jvmTest instead.
+    exclude("**/E2EIClientTest.class")
+    exclude("**/MLSClientTest.class")
+    exclude("**/ProteusClientTest.class")
+}
+
 project.appleTargets().forEach {
     registerCopyTestResourcesTask(it)
 }

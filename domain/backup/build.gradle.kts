@@ -132,3 +132,12 @@ kotlin {
         }
     }
 }
+
+tasks.withType<Test>().matching { it.name == "testAndroidHostTest" }.configureEach {
+    // These tests require native libraries (libsodium via lazysodium-java) that are not
+    // available in the Android host test environment. They run in jvmTest instead.
+    exclude("**/BackupEndToEndTest.class")
+    exclude("**/XChaChaPoly1305EncryptedStreamTest.class")
+    exclude("**/BackupPeekResultTest.class")
+    exclude("**/MPBackupImporterTest.class")
+}
