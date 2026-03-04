@@ -19,6 +19,8 @@ package com.wire.kalium.cells.domain
 
 import app.cash.turbine.test
 import com.wire.kalium.cells.data.CellUploadManagerImpl
+import com.wire.kalium.cells.data.FileFilters
+import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.cells.domain.model.NodeIdAndVersion
 import com.wire.kalium.cells.domain.model.NodePreview
@@ -300,14 +302,19 @@ private class TestRepository : CellsRepository {
         query: String,
         limit: Int,
         offset: Int,
-        onlyDeleted: Boolean,
-        tags: List<String>
-    ) = PaginatedList<CellNode>(
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec
+    ): Either<NetworkFailure, PaginatedList<CellNode>> = PaginatedList<CellNode>(
         data = emptyList(),
         pagination = null
     ).right()
 
-    override suspend fun getNodesByPath(query: String, path: String, onlyFolders: Boolean): Either<NetworkFailure, List<CellNode>> {
+    override suspend fun getNodesByPath(
+        query: String,
+        path: String,
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec
+    ): Either<NetworkFailure, List<CellNode>> {
         TODO("Not yet implemented")
     }
 
