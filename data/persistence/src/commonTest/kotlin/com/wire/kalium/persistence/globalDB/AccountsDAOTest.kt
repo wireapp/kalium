@@ -274,6 +274,129 @@ class AccountsDAOTest : GlobalDBBaseTest() {
         }
     }
 
+    @Test
+    fun givenAccountWithNomadServiceUrl_whenInserted_thenNomadServiceUrlIsStored() = runTest {
+        val account = VALID_ACCOUNT
+        val nomadUrl = "https://nomad.example.com/service"
+
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            account.info.userIDEntity,
+            account.ssoId,
+            account.managedBy,
+            account.serverConfigId,
+            false,
+            nomadServiceUrl = nomadUrl
+        )
+
+        val insertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
+        assertEquals(nomadUrl, insertedAccount?.nomadServiceUrl)
+    }
+
+    @Test
+    fun givenAccountWithNomadServiceUrl_whenReInsertedWithoutUrl_thenNomadServiceUrlIsPreserved() = runTest {
+        val account = VALID_ACCOUNT
+        val nomadUrl = "https://nomad.example.com/service"
+
+        // First insert with nomad URL
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            account.info.userIDEntity,
+            account.ssoId,
+            account.managedBy,
+            account.serverConfigId,
+            false,
+            nomadServiceUrl = nomadUrl
+        )
+
+        // Re-insert same account without nomad URL (default null)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            account.info.userIDEntity,
+            account.ssoId,
+            account.managedBy,
+            account.serverConfigId,
+            false
+        )
+
+        val reInsertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
+        assertEquals(nomadUrl, reInsertedAccount?.nomadServiceUrl)
+    }
+
+    @Test
+    fun givenAccountWithNomadServiceUrl_whenReInsertedWithDifferentUrl_thenNomadServiceUrlIsPreserved() = runTest {
+        val account = VALID_ACCOUNT
+        val originalUrl = "https://nomad.example.com/original"
+        val newUrl = "https://nomad.example.com/new"
+
+        // First insert with original nomad URL
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            account.info.userIDEntity,
+            account.ssoId,
+            account.managedBy,
+            account.serverConfigId,
+            false,
+            nomadServiceUrl = originalUrl
+        )
+
+        // Re-insert same account with a different nomad URL
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            account.info.userIDEntity,
+            account.ssoId,
+            account.managedBy,
+            account.serverConfigId,
+            false,
+            nomadServiceUrl = newUrl
+        )
+
+        // The ON CONFLICT UPDATE does not include nomad_service_url,
+        // so the original value should be preserved
+        val reInsertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
+        assertEquals(originalUrl, reInsertedAccount?.nomadServiceUrl)
+    }
+
+    @Test
+    fun givenAccountWithoutNomadServiceUrl_whenInserted_thenNomadServiceUrlIsNull() = runTest {
+        val account = VALID_ACCOUNT
+
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            account.info.userIDEntity,
+            account.ssoId,
+            account.managedBy,
+            account.serverConfigId,
+            false
+        )
+
+        val insertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
+        assertNull(insertedAccount?.nomadServiceUrl)
+    }
+
+    @Test
+    fun givenAccountWithNullNomadServiceUrl_whenReInsertedWithUrl_thenNomadServiceUrlRemainsNull() = runTest {
+        val account = VALID_ACCOUNT
+
+        // First insert without nomad URL (null)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            account.info.userIDEntity,
+            account.ssoId,
+            account.managedBy,
+            account.serverConfigId,
+            false
+        )
+
+        // Re-insert same account with a nomad URL
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            account.info.userIDEntity,
+            account.ssoId,
+            account.managedBy,
+            account.serverConfigId,
+            false,
+            nomadServiceUrl = "https://nomad.example.com/service"
+        )
+
+        // The ON CONFLICT UPDATE does not include nomad_service_url,
+        // so the original null value should be preserved
+        val reInsertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
+        assertNull(reInsertedAccount?.nomadServiceUrl)
+    }
+
     private companion object {
 
         val VALID_ACCOUNT = FullAccountEntity(

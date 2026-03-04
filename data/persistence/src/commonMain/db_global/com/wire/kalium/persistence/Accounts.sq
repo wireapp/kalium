@@ -11,12 +11,21 @@ CREATE TABLE Accounts (
     server_config_id TEXT NOT NULL,
     logout_reason TEXT AS LogoutReason,
     isPersistentWebSocketEnabled INTEGER AS Boolean NOT NULL DEFAULT 0,
-    managed_by TEXT AS ManagedByEntity
+    managed_by TEXT AS ManagedByEntity,
+    nomad_service_url TEXT DEFAULT NULL
 );
 
 insertOrReplace:
-INSERT OR REPLACE INTO Accounts (id, scim_external_id, subject, tenant, server_config_id, logout_reason, isPersistentWebSocketEnabled, managed_by)
-VALUES (:id, :scimExternalId, :subject, :tenant, :serverConfigId, :logoutReason,:isPersistentWebSocketEnabled, :managedBy);
+INSERT INTO Accounts (id, scim_external_id, subject, tenant, server_config_id, logout_reason, isPersistentWebSocketEnabled, managed_by, nomad_service_url)
+VALUES (:id, :scimExternalId, :subject, :tenant, :serverConfigId, :logoutReason, :isPersistentWebSocketEnabled, :managedBy, :nomadServiceUrl)
+ON CONFLICT(id) DO UPDATE SET
+    scim_external_id = excluded.scim_external_id,
+    subject = excluded.subject,
+    tenant = excluded.tenant,
+    server_config_id = excluded.server_config_id,
+    logout_reason = excluded.logout_reason,
+    isPersistentWebSocketEnabled = excluded.isPersistentWebSocketEnabled,
+    managed_by = excluded.managed_by;
 
 delete:
 DELETE FROM Accounts WHERE id = :id;
