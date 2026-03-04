@@ -25,10 +25,12 @@ import com.wire.kalium.cells.data.model.editorUrl
 import com.wire.kalium.cells.data.model.toDto
 import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.model.PublicLink
+import com.wire.kalium.cells.domain.model.toTreeNodeType
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.cells.sdk.kmp.infrastructure.HttpResponse
 import com.wire.kalium.cells.sdk.kmp.model.JobsTaskStatus
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterMetaFilter
+import com.wire.kalium.cells.sdk.kmp.model.LookupFilterMetaFilterOp
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterStatusFilter
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearch
 import com.wire.kalium.cells.sdk.kmp.model.LookupFilterTextSearchIn
@@ -70,7 +72,6 @@ internal class CellsApiImpl(
     @Suppress("MagicNumber")
     private companion object {
         private const val AWAIT_TIMEOUT = "5s"
-        const val TAGS_METADATA = "usermeta-tags"
 
         private fun Long.toClientTime() = this * 1000
         private fun Long.toServerTime() = this / 1000
@@ -86,14 +87,18 @@ internal class CellsApiImpl(
             getNodeServiceApi().getByUuid(uuid, listOf(NodeServiceApi.FlagsGetByUuid.WithEditorURLs))
         }.mapSuccess { response -> response.editorUrl(urlKey) ?: "" }
 
-    override suspend fun getNodes(query: String, limit: Int, offset: Int, tags: List<String>): NetworkResponse<GetNodesResponseDTO> =
+    override suspend fun getNodes(
+        query: String,
+        limit: Int,
+        offset: Int,
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
+    ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
-            val lookupTags = tags.map {
-                LookupFilterMetaFilter(
-                    namespace = TAGS_METADATA,
-                    term = "\"$it\"",
-                )
-            }
+            val metadataFilters = fileFilters.tags.toMetaDataFilters(MetadataKeys.TAGS) +
+                    fileFilters.owners.toMetaDataFilters(MetadataKeys.OWNER_UUID) +
+                    fileFilters.mimeTypes.toMimeMetaDataFilters()
+
             getNodeServiceApi().lookup(
                 RestLookupRequest(
                     limit = limit.toString(),
@@ -105,10 +110,11 @@ internal class CellsApiImpl(
                             searchIn = LookupFilterTextSearchIn.BaseName,
                             term = query
                         ),
-                        metadata = lookupTags
+                        metadata = metadataFilters,
+                        status = fileFilters.hasPublicLink?.let { LookupFilterStatusFilter(hasPublicLink = it) }
                     ),
-                    sortField = "mtime",
-                    sortDirDesc = true,
+                    sortField = sortingSpec.criteria.apiValue,
+                    sortDirDesc = sortingSpec.descending,
                     flags = listOf(RestFlag.WithPreSignedURLs)
                 )
             )
@@ -119,40 +125,35 @@ internal class CellsApiImpl(
         path: String,
         limit: Int?,
         offset: Int?,
-        onlyDeleted: Boolean,
-        onlyFolders: Boolean,
-        tags: List<String>
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
-            val lookupTags = tags.map {
-                LookupFilterMetaFilter(
-                    namespace = TAGS_METADATA,
-                    term = "\"$it\"",
-                )
-            }
+            val metadataFilters =
+                fileFilters.tags.toMetaDataFilters(MetadataKeys.TAGS) +
+                        fileFilters.owners.toMetaDataFilters(MetadataKeys.OWNER_UUID) +
+                        fileFilters.mimeTypes.toMimeMetaDataFilters()
+
             getNodeServiceApi().lookup(
                 RestLookupRequest(
                     limit = limit?.toString(),
                     offset = offset?.toString(),
                     scope = RestLookupScope(root = RestNodeLocator(path = path)),
                     filters = RestLookupFilter(
-                        status = if (onlyDeleted) {
-                            LookupFilterStatusFilter(deleted = StatusFilterDeletedStatus.Only)
-                        } else {
-                            null
-                        },
-                        type = if (onlyFolders) {
-                            TreeNodeType.COLLECTION
-                        } else {
-                            TreeNodeType.UNKNOWN
-                        },
-                        metadata = lookupTags,
+                        status = LookupFilterStatusFilter(
+                            deleted = if (fileFilters.onlyDeleted) StatusFilterDeletedStatus.Only else null,
+                            hasPublicLink = fileFilters.hasPublicLink
+                        ),
+                        type = fileFilters.nodeType.toTreeNodeType(),
+                        metadata = metadataFilters,
                         text = LookupFilterTextSearch(
                             searchIn = LookupFilterTextSearchIn.BaseName,
                             term = query.ifEmpty { null }
                         ),
                     ),
-                    flags = listOf(RestFlag.WithPreSignedURLs)
+                    flags = listOf(RestFlag.WithPreSignedURLs),
+                    sortField = sortingSpec.criteria.apiValue,
+                    sortDirDesc = sortingSpec.descending,
                 )
             )
         }.mapSuccess { response -> response.toDto() }
@@ -242,7 +243,6 @@ internal class CellsApiImpl(
         }
     }
 
-    // Helper function to fetch public link before updating it
     private suspend fun withPublicLink(uuid: String, block: suspend (RestShareLink) -> Unit) =
         wrapCellsResponse {
             getNodeServiceApi().getPublicLink(uuid)
@@ -404,8 +404,8 @@ internal class CellsApiImpl(
                 metaUpdates = listOf(
                     RestMetaUpdate(
                         userMeta = RestUserMeta(
-                            namespace = TAGS_METADATA,
-                            jsonValue = "\"${tags.joinToString(",")} \""
+                            namespace = MetadataKeys.TAGS,
+                            jsonValue = tags.joinToString(",").quoted()
                         ),
                         operation = RestMetaUpdateOp.PUT
                     )
@@ -421,7 +421,7 @@ internal class CellsApiImpl(
                 metaUpdates = listOf(
                     RestMetaUpdate(
                         userMeta = RestUserMeta(
-                            namespace = TAGS_METADATA,
+                            namespace = MetadataKeys.TAGS,
                             jsonValue = "\"\""
                         ),
                         operation = RestMetaUpdateOp.DELETE
@@ -432,7 +432,7 @@ internal class CellsApiImpl(
     }.mapSuccess { }
 
     override suspend fun getAllTags(): NetworkResponse<List<String>> = wrapCellsResponse {
-        getNodeServiceApi().listNamespaceValues(namespace = TAGS_METADATA)
+        getNodeServiceApi().listNamespaceValues(namespace = MetadataKeys.TAGS)
     }.mapSuccess { it.propertyValues ?: emptyList() }
 
     override suspend fun getNodeVersions(
@@ -461,6 +461,51 @@ internal class CellsApiImpl(
 
     private fun networkError(message: String) =
         NetworkResponse.Error(KaliumException.GenericError(IllegalStateException(message)))
+}
+
+private object MetadataKeys {
+    const val TAGS = "usermeta-tags"
+    const val OWNER_UUID = "usermeta-owner-uuid"
+    const val TYPE = "mime"
+}
+
+private fun String.quoted(): String = "\"$this\""
+
+private fun LookupFilterMetaFilter.Companion.termFilter(
+    namespace: String,
+    term: String,
+    operation: LookupFilterMetaFilterOp? = null,
+) = LookupFilterMetaFilter(
+    namespace = namespace,
+    term = term,
+    operation = operation,
+)
+
+private fun List<String>.toMetaDataFilters(
+    namespace: String,
+): List<LookupFilterMetaFilter> {
+    val operation = if (size == 1) LookupFilterMetaFilterOp.Must else LookupFilterMetaFilterOp.Should
+    return map { value ->
+        LookupFilterMetaFilter.termFilter(
+            namespace = namespace,
+            term = value.quoted(),
+            operation = operation
+        )
+    }
+}
+
+private fun List<MIMEType>.toMimeMetaDataFilters(): List<LookupFilterMetaFilter> {
+    val expanded = flatMap { mime -> mime.expandTerms() }
+
+    val operation = if (expanded.size == 1) LookupFilterMetaFilterOp.Must else LookupFilterMetaFilterOp.Should
+
+    return expanded.map { term ->
+        LookupFilterMetaFilter.termFilter(
+            namespace = MetadataKeys.TYPE,
+            term = term,
+            operation = operation
+        )
+    }
 }
 
 @Suppress("TooGenericExceptionCaught")

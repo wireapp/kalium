@@ -86,25 +86,14 @@ jobs:
         [
           {
             "platform": "android-kmp",
-            "runner": "ubuntu-latest",
-            "timeout": 30,
             "gradle-tasks": ":logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar",
             "artifact-glob": "logic/build/outputs/aar/*.aar logic/build/libs/*.jar",
-            "artifact-name": "logic-android-kmp",
-            "post-build-script": "",
-            "xcode-version": "",
-            "xcframework-path": ""
+            "artifact-name": "logic-android-kmp"
           },
           {
             "platform": "ios",
-            "runner": "macos-15",
-            "timeout": 45,
-            "xcode-version": "16.1.0",
             "gradle-tasks": ":logic:assembleKaliumLogicReleaseXCFramework",
-            "artifact-glob": "",
-            "artifact-name": "logic-ios",
-            "post-build-script": "zip-xcframework",
-            "xcframework-path": "logic/build/XCFrameworks/release/KaliumLogic.xcframework"
+            "artifact-name": "logic-ios"
           }
         ]
     secrets: inherit
