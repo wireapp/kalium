@@ -32,7 +32,9 @@ internal class CryptoStateChangeHookRegistry : CryptoStateChangeHookNotifier {
     fun register(hookNotifier: CryptoStateChangeHookNotifier) {
         val success = this.hookNotifier.compareAndSet(null, hookNotifier)
         if (!success) {
-            error("Hook notifier already registered")
+            kaliumLogger.w(
+                "Attempted to register a crypto state change hook notifier, but one is already registered. Ignoring new registration."
+            )
         }
     }
 
