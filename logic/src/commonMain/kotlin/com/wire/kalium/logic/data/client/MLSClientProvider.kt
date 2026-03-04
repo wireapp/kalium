@@ -61,7 +61,7 @@ import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
 @Mockable
-internal interface MLSClientProvider {
+internal interface MLSClientProvider : CryptoBackupExporter {
     suspend fun isMLSClientInitialised(): Boolean
 
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
@@ -246,15 +246,13 @@ internal class MLSClientProviderImpl(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun exportCryptoDB(): Either<CoreFailure, CryptoBackupMetadata> =
+    override suspend fun exportCryptoDB(exportPath: String): Either<CoreFailure, CryptoBackupMetadata> =
         withContext(dispatchers.io) {
             currentClientIdProvider().fold(
                 { return@withContext it.left() },
                 { clientId ->
                     val location = "$rootKeyStorePath/${clientId.value}"
                     val rootDir = "$location/$KEYSTORE_NAME"
-                    val exportPath = "$rootDir/keystore_export"
-
                     val cc = coreCryptoCentralMutex.withLock { coreCryptoCentral }
                         ?: return@withContext StorageFailure.DataNotFound.left()
 
