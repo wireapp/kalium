@@ -23,18 +23,25 @@ import app.cash.paging.PagingSourceLoadResult
 import app.cash.paging.PagingSourceLoadResultError
 import app.cash.paging.PagingSourceLoadResultPage
 import app.cash.paging.PagingState
+import com.wire.kalium.cells.data.FileFilters
+import com.wire.kalium.cells.data.SortingCriteria
+import com.wire.kalium.cells.data.SortingSpec
 import com.wire.kalium.cells.domain.model.Node
 import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCase
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.fold
 
+@Suppress("LongParameterList")
 internal class FilePagingSource(
     val query: String,
     val conversationId: String?,
     val pageSize: Int,
     val getPaginatedNodesUseCase: GetPaginatedNodesUseCase,
-    val onlyDeleted: Boolean = false,
-    val tags: List<String> = emptyList(),
+    val fileFilters: FileFilters,
+    val sortingSpec: SortingSpec = SortingSpec(
+        criteria = SortingCriteria.FOLDERS_FIRST_THEN_ALPHABETICAL,
+        descending = true
+    ),
 ) : PagingSource<Int, Node>() {
 
     private val nodeUuids = mutableSetOf<String>()
@@ -45,8 +52,8 @@ internal class FilePagingSource(
             query = query,
             limit = pageSize,
             offset = params.key ?: 0,
-            onlyDeleted = onlyDeleted,
-            tags = tags
+            fileFilters = fileFilters,
+            sortingSpec = sortingSpec,
         ).fold(
             { error ->
                 PagingSourceLoadResultError<Int, Node>(

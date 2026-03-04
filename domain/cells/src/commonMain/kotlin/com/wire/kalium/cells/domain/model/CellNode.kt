@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.model
 
+import com.wire.kalium.cells.sdk.kmp.model.TreeNodeType
+
 // TODO remove this class and use [Node] instead
 public data class CellNode(
     val uuid: String,
@@ -34,6 +36,7 @@ public data class CellNode(
     val mimeType: String? = null,
     val previews: List<NodePreview>? = null,
     val ownerUserId: String? = null,
+    val userHandle: String? = null,
     val conversationId: String? = null,
     val publicLinkId: String? = null,
     val tags: List<String> = emptyList(),
@@ -43,4 +46,12 @@ public data class CellNode(
 public enum class CellNodeType(public val value: String) {
     FOLDER("COLLECTION"),
     FILE("LEAF"),
+    ALL("UNKNOWN")
 }
+
+public fun CellNodeType.toTreeNodeType(): TreeNodeType =
+    when (this) {
+        CellNodeType.FILE -> TreeNodeType.LEAF
+        CellNodeType.FOLDER -> TreeNodeType.COLLECTION
+        CellNodeType.ALL -> TreeNodeType.UNKNOWN
+    }
