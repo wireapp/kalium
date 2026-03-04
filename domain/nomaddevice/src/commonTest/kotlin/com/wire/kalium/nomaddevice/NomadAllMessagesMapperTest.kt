@@ -106,27 +106,6 @@ class NomadAllMessagesMapperTest {
     }
 
     @Test
-    fun givenSecondsBasedTimestamps_whenMapping_thenTimestampsAreInterpretedAsSeconds() {
-        val mapped = mapper.map(
-            responseWith(
-                storedMessage(
-                    messageId = "seconds-message",
-                    timestamp = 1_707_235_200L,
-                    creationDate = 1_707_235_201L,
-                    lastEditTime = 1_707_235_202L,
-                    content = textContent("seconds")
-                )
-            )
-        )
-
-        val message = mapped.messages.single()
-        val payload = assertIs<SyncableMessagePayloadEntity.Text>(message.payload)
-        assertEquals(Instant.fromEpochSeconds(1_707_235_200L), message.date)
-        assertEquals(Instant.fromEpochSeconds(1_707_235_201L), payload.creationDate)
-        assertEquals(Instant.fromEpochSeconds(1_707_235_202L), payload.lastEditDate)
-    }
-
-    @Test
     fun givenMillisecondsBasedTimestamps_whenMapping_thenTimestampsAreInterpretedAsMilliseconds() {
         val mapped = mapper.map(
             responseWith(

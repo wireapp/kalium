@@ -37,8 +37,6 @@ import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.Base64
 
-private const val EPOCH_MILLIS_THRESHOLD = 10_000_000_000L
-
 internal data class NomadMappedMessages(
     val totalMessages: Int,
     val messages: List<NomadMessageToInsert>,
@@ -82,8 +80,8 @@ internal class NomadAllMessagesMapper {
         }
 
         val senderUserId = payload.senderUserId.toDaoQualifiedId()
-        val creationDate = payload.creationDate.toInstantGuessingUnit()
-        val lastEditDate = payload.lastEditTime?.toInstantGuessingUnit()
+        val creationDate = payload.creationDate.let { Instant.fromEpochMilliseconds(it) }
+        val lastEditDate = payload.lastEditTime?.let { Instant.fromEpochMilliseconds(it) }
         val content = payload.content.toSyncableMessageContent(
             senderUserId = senderUserId,
             senderClientId = payload.senderClientId,
@@ -95,7 +93,7 @@ internal class NomadAllMessagesMapper {
         return NomadMessageToInsert(
             id = storedMessage.messageId,
             conversationId = conversationId,
-            date = storedMessage.timestamp.toInstantGuessingUnit(),
+            date = Instant.fromEpochMilliseconds(storedMessage.timestamp),
             payload = content,
         )
     }
@@ -260,10 +258,3 @@ private fun Conversation.toDaoConversationId(): QualifiedIDEntity =
 
 private fun NomadDeviceQualifiedId.toDaoQualifiedId(): QualifiedIDEntity =
     QualifiedIDEntity(value = value, domain = domain)
-
-private fun Long.toInstantGuessingUnit(): Instant =
-    if (this < EPOCH_MILLIS_THRESHOLD) {
-        Instant.fromEpochSeconds(this)
-    } else {
-        Instant.fromEpochMilliseconds(this)
-    }
