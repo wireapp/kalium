@@ -24,6 +24,7 @@ public data class FileFilters(
     val nodeType: CellNodeType = CellNodeType.ALL,
     val tags: List<String> = emptyList(),
     val owners: List<String> = emptyList(),
+    val conversations: List<String> = emptyList(),
     val mimeTypes: List<MIMEType> = emptyList(),
     val hasPublicLink: Boolean? = null,
 )
