@@ -8,7 +8,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.coEvery
 import io.mockative.mock
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -117,23 +116,6 @@ class CellConversationRepositoryTest {
         assertEquals(null, conversations[0].channelAccess)
     }
 
-    @Test
-    fun given_ConversationWithNullWireCell_whenInvoked_thenFilterItOut() = runTest {
-        // Given
-        val groupConvWithoutCell =
-            createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_DOMAIN_1, CONVERSATION_NAME_1, false, null, null)
-        val (_, repository) = Arrangement()
-            .withConversations(listOf(groupConvWithoutCell))
-            .arrange()
-
-        // When
-        val result = repository.getCellGroupConversations()
-
-        // Then
-        assertIs<Either.Right<List<Conversation>>>(result)
-        assertEquals(0, result.value.size)
-    }
-
     private fun createGroupConversationEntity(
         id: String,
         domain: String,
@@ -179,8 +161,8 @@ class CellConversationRepositoryTest {
 
         suspend fun arrange(): Pair<Arrangement, CellConversationDataSource> {
             coEvery {
-                conversationDAO.getAllConversations()
-            }.returns(flowOf(conversations))
+                conversationDAO.getCellGroupConversations()
+            }.returns(conversations)
 
             return this to CellConversationDataSource(conversationDAO)
         }
