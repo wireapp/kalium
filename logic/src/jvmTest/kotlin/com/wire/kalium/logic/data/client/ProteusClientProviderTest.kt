@@ -53,7 +53,7 @@ class ProteusClientProviderTest {
             .withCurrentClientIdFailure(StorageFailure.DataNotFound)
             .arrange()
 
-        proteusClientProvider.exportCryptoDB().shouldFail {
+        proteusClientProvider.exportCryptoDB("/tmp/keystore").shouldFail {
             assertIs<StorageFailure.DataNotFound>(it)
         }
     }
@@ -65,7 +65,7 @@ class ProteusClientProviderTest {
             .arrange()
 
         // Proteus client is not initialized, so should return DataNotFound
-        proteusClientProvider.exportCryptoDB().shouldFail {
+        proteusClientProvider.exportCryptoDB("/tmp/keystore").shouldFail {
             assertIs<StorageFailure.DataNotFound>(it)
         }
     }
@@ -77,7 +77,7 @@ class ProteusClientProviderTest {
             .arrange()
 
         // Proteus client was never initialized, so it should fail
-        proteusClientProvider.exportCryptoDB().shouldFail {
+        proteusClientProvider.exportCryptoDB("/tmp/keystore").shouldFail {
             assertIs<StorageFailure.DataNotFound>(it)
         }
     }

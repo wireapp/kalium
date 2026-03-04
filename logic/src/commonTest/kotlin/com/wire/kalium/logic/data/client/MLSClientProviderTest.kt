@@ -165,7 +165,7 @@ class MLSClientProviderTest {
             withCurrentClientIdFailure(StorageFailure.DataNotFound)
         }
 
-        mlsClientProvider.exportCryptoDB().shouldFail {
+        mlsClientProvider.exportCryptoDB("/tmp/keystore").shouldFail {
             assertIs<StorageFailure.DataNotFound>(it)
         }
     }
@@ -177,7 +177,7 @@ class MLSClientProviderTest {
             withPassphraseStorage()
         }
 
-        mlsClientProvider.exportCryptoDB().shouldFail {
+        mlsClientProvider.exportCryptoDB("/tmp/keystore").shouldFail {
             // CoreCryptoCentral was never initialized, so should return DataNotFound
             assertIs<StorageFailure.DataNotFound>(it)
         }
