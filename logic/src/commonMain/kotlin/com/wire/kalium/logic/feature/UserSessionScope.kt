@@ -832,14 +832,18 @@ public class UserSessionScope internal constructor(
             mlsClientProvider,
             clientIdProvider,
             mlsConversationRepository,
-            userConfigRepository
+            userConfigRepository,
+            userId,
+            cryptoStateChangeHookNotifier
         )
 
     private val e2EIClientProvider: E2EIClientProvider by lazy {
         EI2EIClientProviderImpl(
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            userRepository = userRepository
+            userRepository = userRepository,
+            selfUserId = userId,
+            cryptoStateChangeHookNotifier = cryptoStateChangeHookNotifier
         )
     }
 
@@ -1245,7 +1249,9 @@ public class UserSessionScope internal constructor(
             clientRepository,
             keyPackageRepository,
             keyPackageLimitsProvider,
-            userConfigRepository
+            userConfigRepository,
+            userId,
+            cryptoStateChangeHookNotifier
         )
 
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
@@ -1511,7 +1517,9 @@ public class UserSessionScope internal constructor(
                     clientRepository,
                     keyPackageRepository,
                     keyPackageLimitsProvider,
-                    userConfigRepository
+                    userConfigRepository,
+                    userId,
+                    cryptoStateChangeHookNotifier
                 )
             },
             this,
@@ -2205,7 +2213,8 @@ public class UserSessionScope internal constructor(
             syncFeatureConfigsUseCase,
             userConfigRepository,
             cryptoTransactionProvider,
-            isAllowedToUseAsyncNotifications
+            isAllowedToUseAsyncNotifications,
+            cryptoStateChangeHookNotifier
         )
     }
     public val conversations: ConversationScope by lazy {

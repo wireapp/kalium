@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 @file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
@@ -50,6 +51,7 @@ internal class ObservableMLSConversationRepository(
         groupID: GroupID
     ): Either<CoreFailure, List<DecryptedMessageBundle>> =
         delegate.decryptMessage(mlsContext, message, groupID)
+            .onSuccess { hookNotifier.onCryptoStateChanged(userId) }
 
     override suspend fun establishMLSGroup(
         mlsContext: MlsCoreCryptoContext,
