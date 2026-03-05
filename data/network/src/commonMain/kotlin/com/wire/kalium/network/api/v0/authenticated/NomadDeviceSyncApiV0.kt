@@ -23,25 +23,33 @@ import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesRes
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteWriteChannel
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.close
 import io.ktor.utils.io.core.toByteArray
+import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.writeFully
 import io.ktor.utils.io.writeStringUtf8
 import okio.Buffer
+import okio.Sink
 import okio.Source
 import okio.buffer
 import okio.use
+import kotlin.coroutines.cancellation.CancellationException
 
 internal open class NomadDeviceSyncApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
@@ -78,6 +86,42 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
                 setBody(StreamCryptoStateBodyContent(backupSource, backupSize))
             }
         }
+
+    override suspend fun downloadCryptoState(tempBackupFileSink: Sink): NetworkResponse<Unit> = runCatching {
+        httpClient.prepareGet("$PATH_EVENT/$PATH_CRYPTO_STATE").execute { httpResponse ->
+            if (httpResponse.status.isSuccess()) {
+                handleCryptoStateDownload(httpResponse, tempBackupFileSink)
+            } else {
+                handleUnsuccessfulResponse(httpResponse)
+            }
+        }
+    }.getOrElse { unhandledException ->
+        if (unhandledException is CancellationException) {
+            throw unhandledException
+        }
+        NetworkResponse.Error(KaliumException.GenericError(unhandledException))
+    }
+
+    @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
+    private suspend fun handleCryptoStateDownload(
+        httpResponse: io.ktor.client.statement.HttpResponse,
+        tempFileSink: Sink
+    ): NetworkResponse<Unit> = try {
+        val channel = httpResponse.body<io.ktor.utils.io.ByteReadChannel>()
+        tempFileSink.buffer().use { bufferedSink ->
+            val array = ByteArray(BUFFER_SIZE.toInt())
+            while (!channel.isClosedForRead) {
+                val read = channel.readAvailable(array, 0, array.size)
+                if (read <= 0) break
+                bufferedSink.write(array, 0, read)
+            }
+        }
+        NetworkResponse.Success(Unit, httpResponse)
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        NetworkResponse.Error(KaliumException.GenericError(e))
+    }
 
     /**
      * Custom [OutgoingContent] implementation to stream the crypto state backup as multipart/form-data without loading it all into memory.

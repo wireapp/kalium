@@ -23,11 +23,13 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import io.mockative.Mockable
+import okio.Sink
 import okio.Source
 
 @Mockable
 internal interface CryptoStateBackupRemoteRepository {
     suspend fun uploadCryptoState(clientId: String, sourceProvider: () -> Source, size: Long): Either<NetworkFailure, Unit>
+    suspend fun downloadCryptoState(tempBackupFileSink: Sink): Either<NetworkFailure, Unit>
 }
 
 internal class CryptoStateBackupRemoteDataSource(
@@ -39,4 +41,7 @@ internal class CryptoStateBackupRemoteDataSource(
         size: Long
     ): Either<NetworkFailure, Unit> =
         wrapApiRequest { nomadDeviceSyncApi.uploadCryptoState(clientId, sourceProvider, size) }
+
+    override suspend fun downloadCryptoState(tempBackupFileSink: Sink): Either<NetworkFailure, Unit> =
+        wrapApiRequest { nomadDeviceSyncApi.downloadCryptoState(tempBackupFileSink) }
 }
