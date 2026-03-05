@@ -50,10 +50,7 @@ internal class CellUsersDataSource(
 
     override suspend fun getConversationMemberDetails(conversationId: QualifiedIDEntity) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            val memberUserIds = memberDAO.observeConversationMembers(conversationId)
-                .firstOrNull()
-                ?.map { it.user }
-                ?: emptyList()
+            val memberUserIds = memberDAO.getConversationMembers(conversationId)
 
             if (memberUserIds.isEmpty()) {
                 emptyList()

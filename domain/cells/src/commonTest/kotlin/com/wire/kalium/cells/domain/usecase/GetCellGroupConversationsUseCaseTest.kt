@@ -18,7 +18,7 @@
 package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellConversationRepository
-import com.wire.kalium.cells.domain.model.Conversation
+import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
@@ -46,8 +46,8 @@ class GetCellGroupConversationsUseCaseTest {
         val (_, useCase) = Arrangement()
             .withConversationDetails(
                 listOf(
-                    Conversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null),
-                    Conversation(
+                    CellConversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null),
+                    CellConversation(
                         CONVERSATION_ID_2,
                         CONVERSATION_NAME_2,
                         isChannel = true,
@@ -59,7 +59,7 @@ class GetCellGroupConversationsUseCaseTest {
 
         val result = useCase()
 
-        assertIs<GetConversationsUseCaseResult.Success>(result)
+        assertIs<GetCellGroupConversationsUseCaseResult.Success>(result)
         assertEquals(2, result.conversations.size)
         assertEquals(CONVERSATION_NAME_1, result.conversations[0].name)
         assertEquals(CONVERSATION_NAME_2, result.conversations[1].name)
@@ -72,22 +72,6 @@ class GetCellGroupConversationsUseCaseTest {
     }
 
     @Test
-    fun given_NonGroupConversations_whenInvoked_thenFilterThemOut() = runTest {
-        val (_, useCase) = Arrangement()
-            .withConversationDetails(
-                listOf(
-                    Conversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null)
-                )
-            )
-            .arrange()
-
-        val result = useCase()
-
-        assertIs<GetConversationsUseCaseResult.Success>(result)
-        assertEquals(1, result.conversations.size)
-    }
-
-    @Test
     fun given_EmptyConversations_whenInvoked_thenReturnEmptyList() = runTest {
         val (_, useCase) = Arrangement()
             .withConversationDetails(emptyList())
@@ -95,7 +79,7 @@ class GetCellGroupConversationsUseCaseTest {
 
         val result = useCase()
 
-        assertIs<GetConversationsUseCaseResult.Success>(result)
+        assertIs<GetCellGroupConversationsUseCaseResult.Success>(result)
         assertEquals(0, result.conversations.size)
     }
 
@@ -108,7 +92,7 @@ class GetCellGroupConversationsUseCaseTest {
 
         val result = useCase()
 
-        assertIs<GetConversationsUseCaseResult.Failure>(result)
+        assertIs<GetCellGroupConversationsUseCaseResult.Failure>(result)
         assertEquals(storageFailure, result.failure)
     }
 
@@ -117,7 +101,7 @@ class GetCellGroupConversationsUseCaseTest {
         val (_, useCase) = Arrangement()
             .withConversationDetails(
                 listOf(
-                    Conversation(
+                    CellConversation(
                         CONVERSATION_ID_1,
                         CONVERSATION_NAME_1,
                         isChannel = true,
@@ -129,7 +113,7 @@ class GetCellGroupConversationsUseCaseTest {
 
         val result = useCase()
 
-        assertIs<GetConversationsUseCaseResult.Success>(result)
+        assertIs<GetCellGroupConversationsUseCaseResult.Success>(result)
         assertEquals(1, result.conversations.size)
         assertEquals(true, result.conversations[0].isChannel)
         assertEquals(ConversationDetails.Group.Channel.ChannelAccess.PRIVATE, result.conversations[0].channelAccess)
@@ -140,14 +124,14 @@ class GetCellGroupConversationsUseCaseTest {
         val (_, useCase) = Arrangement()
             .withConversationDetails(
                 listOf(
-                    Conversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null)
+                    CellConversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null)
                 )
             )
             .arrange()
 
         val result = useCase()
 
-        assertIs<GetConversationsUseCaseResult.Success>(result)
+        assertIs<GetCellGroupConversationsUseCaseResult.Success>(result)
         assertEquals(1, result.conversations.size)
         assertEquals(false, result.conversations[0].isChannel)
         assertEquals(null, result.conversations[0].channelAccess)
@@ -156,9 +140,9 @@ class GetCellGroupConversationsUseCaseTest {
     private class Arrangement {
         private val conversationRepository = mock(CellConversationRepository::class)
 
-        private var conversationDetailsResult: Either<StorageFailure, List<Conversation>> = listOf<Conversation>().right()
+        private var conversationDetailsResult: Either<StorageFailure, List<CellConversation>> = listOf<CellConversation>().right()
 
-        fun withConversationDetails(details: List<Conversation>) = apply {
+        fun withConversationDetails(details: List<CellConversation>) = apply {
             conversationDetailsResult = details.right()
         }
 
@@ -175,4 +159,3 @@ class GetCellGroupConversationsUseCaseTest {
         }
     }
 }
-

@@ -18,7 +18,7 @@
 package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.domain.CellConversationRepository
-import com.wire.kalium.cells.domain.model.Conversation
+import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
@@ -62,24 +62,26 @@ internal class CellConversationDataSource(
             }
         }
 
-    override suspend fun getCellGroupConversations(): Either<StorageFailure, List<Conversation>> =
+    override suspend fun getCellGroupConversations(): Either<StorageFailure, List<CellConversation>> =
         withContext(dispatchers.io) {
             wrapStorageRequest {
-                conversationDao.getCellGroupConversations().map { conversation ->
-                    Conversation(
-                        id = ConversationId(conversation.id.value, conversation.id.domain),
-                        name = conversation.name!!,
-                        isChannel = conversation.isChannel,
-                        channelAccess = conversation.channelAccess?.let { access ->
-                            when (access) {
-                                ConversationEntity.ChannelAccess.PRIVATE ->
-                                    ConversationDetails.Group.Channel.ChannelAccess.PRIVATE
+                conversationDao.getCellGroupConversations().mapNotNull { conversation ->
+                    conversation.name?.takeIf { it.isNotEmpty() }?.let { name ->
+                        CellConversation(
+                            id = ConversationId(conversation.id.value, conversation.id.domain),
+                            name = name,
+                            isChannel = conversation.isChannel,
+                            channelAccess = conversation.channelAccess?.let { access ->
+                                when (access) {
+                                    ConversationEntity.ChannelAccess.PRIVATE ->
+                                        ConversationDetails.Group.Channel.ChannelAccess.PRIVATE
 
-                                ConversationEntity.ChannelAccess.PUBLIC ->
-                                    ConversationDetails.Group.Channel.ChannelAccess.PUBLIC
+                                    ConversationEntity.ChannelAccess.PUBLIC ->
+                                        ConversationDetails.Group.Channel.ChannelAccess.PUBLIC
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }

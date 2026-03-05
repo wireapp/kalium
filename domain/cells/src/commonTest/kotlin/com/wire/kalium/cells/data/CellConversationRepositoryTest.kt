@@ -1,6 +1,6 @@
 package com.wire.kalium.cells.data
 
-import com.wire.kalium.cells.domain.model.Conversation
+import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.id.ConversationId
@@ -40,7 +40,7 @@ class CellConversationRepositoryTest {
 
         val result = repository.getCellGroupConversations()
 
-        assertIs<Either.Right<List<Conversation>>>(result)
+        assertIs<Either.Right<List<CellConversation>>>(result)
         val conversations = result.value
         assertEquals(2, conversations.size)
         assertEquals(CONVERSATION_NAME_1, conversations[0].name)
@@ -64,7 +64,7 @@ class CellConversationRepositoryTest {
         val result = repository.getCellGroupConversations()
 
         // Then
-        assertIs<Either.Right<List<Conversation>>>(result)
+        assertIs<Either.Right<List<CellConversation>>>(result)
         assertEquals(0, result.value.size)
     }
 
@@ -86,7 +86,7 @@ class CellConversationRepositoryTest {
         val result = repository.getCellGroupConversations()
 
         // Then
-        assertIs<Either.Right<List<Conversation>>>(result)
+        assertIs<Either.Right<List<CellConversation>>>(result)
         val conversations = result.value
         assertEquals(1, conversations.size)
         assertEquals(true, conversations[0].isChannel)
@@ -94,23 +94,23 @@ class CellConversationRepositoryTest {
     }
 
     @Test
-    fun given_RegularGroupConversation_whenInvoked_thenReturnConversationWithoutChannelAccess() = runTest {
+    fun given_ConversationsWithNullAndEmptyNames_whenInvoked_thenFilterThemOut() = runTest {
         // Given
-        val regularGroup =
-            createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_NAME_1, false, null, "cell1")
+        val validConv = createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_NAME_1, false, null, "cell1")
+        val nullNameConv = createGroupConversationEntity(CONVERSATION_ID_2, "", false, null, "cell2")
         val (_, repository) = Arrangement()
-            .withConversations(listOf(regularGroup))
+            .withConversations(listOf(validConv, nullNameConv))
             .arrange()
 
         // When
         val result = repository.getCellGroupConversations()
 
         // Then
-        assertIs<Either.Right<List<Conversation>>>(result)
+        assertIs<Either.Right<List<CellConversation>>>(result)
         val conversations = result.value
         assertEquals(1, conversations.size)
-        assertEquals(false, conversations[0].isChannel)
-        assertEquals(null, conversations[0].channelAccess)
+        assertEquals(CONVERSATION_NAME_1, conversations[0].name)
+        assertEquals(CONVERSATION_ID_1, conversations[0].id)
     }
 
     private fun createGroupConversationEntity(

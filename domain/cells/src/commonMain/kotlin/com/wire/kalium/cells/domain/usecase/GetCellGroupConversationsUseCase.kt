@@ -18,7 +18,7 @@
 package com.wire.kalium.cells.domain.usecase
 
 import com.wire.kalium.cells.domain.CellConversationRepository
-import com.wire.kalium.cells.domain.model.Conversation
+import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 
@@ -26,14 +26,14 @@ import com.wire.kalium.common.functional.Either
  * Use case to get the list of conversations that have cells enabled.
  */
 public interface GetCellGroupConversationsUseCase {
-    public suspend operator fun invoke(): GetConversationsUseCaseResult
+    public suspend operator fun invoke(): GetCellGroupConversationsUseCaseResult
 }
 
 /**
  * Implementation of [GetCellGroupConversationsUseCase] that retrieves the list of conversations
  * including their channel status and access level from the repository and maps them
- * to [Conversation] objects. The use case returns a [GetConversationsUseCaseResult]
- * containing a list of [Conversation] objects on success, or a [CoreFailure] on failure.
+ * to [CellConversation] objects. The use case returns a [GetCellGroupConversationsUseCaseResult]
+ * containing a list of [CellConversation] objects on success, or a [CoreFailure] on failure.
  *
  * @param conversationRepository The repository to fetch the conversation data.
  */
@@ -41,15 +41,15 @@ internal class GetCellGroupConversationsUseCaseImpl(
     private val conversationRepository: CellConversationRepository,
 ) : GetCellGroupConversationsUseCase {
 
-    override suspend operator fun invoke(): GetConversationsUseCaseResult {
+    override suspend operator fun invoke(): GetCellGroupConversationsUseCaseResult {
         return when (val result = conversationRepository.getCellGroupConversations()) {
-            is Either.Right -> GetConversationsUseCaseResult.Success(result.value)
-            is Either.Left -> GetConversationsUseCaseResult.Failure(result.value)
+            is Either.Right -> GetCellGroupConversationsUseCaseResult.Success(result.value)
+            is Either.Left -> GetCellGroupConversationsUseCaseResult.Failure(result.value)
         }
     }
 }
 
-public sealed class GetConversationsUseCaseResult {
-    public data class Success(val conversations: List<Conversation>) : GetConversationsUseCaseResult()
-    public data class Failure(val failure: CoreFailure) : GetConversationsUseCaseResult()
+public sealed class GetCellGroupConversationsUseCaseResult {
+    public data class Success(val conversations: List<CellConversation>) : GetCellGroupConversationsUseCaseResult()
+    public data class Failure(val failure: CoreFailure) : GetCellGroupConversationsUseCaseResult()
 }

@@ -20,7 +20,7 @@ package com.wire.kalium.cells.domain.model
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.id.ConversationId
 
-public data class Conversation(
+public data class CellConversation(
     val id: ConversationId,
     val name: String,
     val isChannel: Boolean = false,
