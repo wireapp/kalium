@@ -29,14 +29,16 @@ import javax.ws.rs.core.MediaType
 @Path("/")
 @Produces(MediaType.APPLICATION_JSON)
 class VersionResources {
-    private val commit: String = run {
-        val stream = VersionResources::class.java.classLoader
-            .getResourceAsStream("META-INF/MANIFEST.MF")
-        stream?.use { Manifest(it).mainAttributes.getValue("Git-Commit") } ?: "unknown"
-    }
-
     @GET
     @Path("/version")
     @Operation(summary = "Get build commit hash")
-    fun getVersion(): VersionResponse = VersionResponse(commit = commit)
+    fun getVersion(): VersionResponse = VersionResponse(commit = readCommit())
+
+    companion object {
+        fun readCommit(): String {
+            val stream = VersionResources::class.java.classLoader
+                .getResourceAsStream("META-INF/MANIFEST.MF")
+            return stream?.use { Manifest(it).mainAttributes.getValue("Git-Commit") } ?: "unknown"
+        }
+    }
 }

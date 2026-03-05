@@ -39,6 +39,7 @@ import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.exporter.MetricsServlet
 import org.eclipse.jetty.servlet.ServletHolder
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 
 class TestserviceApplication : Application<TestserviceConfiguration>() {
 
@@ -66,6 +67,7 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
 
     override fun run(configuration: TestserviceConfiguration, environment: Environment) {
 
+        MDC.put("version", VersionResources.readCommit())
         log.info("Creating cleanup worker pool...")
         val cleanupPool = environment.lifecycle().scheduledExecutorService(name, true)
             .threads(2)
