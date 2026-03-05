@@ -67,7 +67,7 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
 
     override fun run(configuration: TestserviceConfiguration, environment: Environment) {
 
-        MDC.put("version", VersionResources.readCommit())
+        MDC.put("version", VersionResources.commit)
         log.info("Creating cleanup worker pool...")
         val cleanupPool = environment.lifecycle().scheduledExecutorService(name, true)
             .threads(2)

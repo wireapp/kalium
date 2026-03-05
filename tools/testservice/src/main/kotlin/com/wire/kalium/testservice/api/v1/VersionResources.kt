@@ -32,13 +32,13 @@ class VersionResources {
     @GET
     @Path("/version")
     @Operation(summary = "Get build commit hash")
-    fun getVersion(): VersionResponse = VersionResponse(commit = readCommit())
+    fun getVersion(): VersionResponse = VersionResponse(commit = commit)
 
     companion object {
-        fun readCommit(): String {
+        val commit: String = run {
             val stream = VersionResources::class.java.classLoader
                 .getResourceAsStream("META-INF/MANIFEST.MF")
-            return stream?.use { Manifest(it).mainAttributes.getValue("Git-Commit") } ?: "unknown"
+            stream?.use { Manifest(it).mainAttributes.getValue("Git-Commit") } ?: "unknown"
         }
     }
 }
