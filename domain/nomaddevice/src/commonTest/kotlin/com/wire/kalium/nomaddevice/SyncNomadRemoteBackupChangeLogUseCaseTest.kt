@@ -43,6 +43,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import okio.Sink
+import okio.Source
 import pbandk.decodeFromByteArray
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
@@ -349,6 +351,18 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         }
 
         override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> {
+            error("Not needed for test")
+        }
+
+        override suspend fun uploadCryptoState(
+            clientId: String,
+            backupSource: () -> Source,
+            backupSize: Long
+        ): NetworkResponse<Unit> {
+            error("Not needed for test")
+        }
+
+        override suspend fun downloadCryptoState(tempBackupFileSink: Sink): NetworkResponse<Unit> {
             error("Not needed for test")
         }
     }

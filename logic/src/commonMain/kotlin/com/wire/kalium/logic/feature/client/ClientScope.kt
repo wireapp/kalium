@@ -48,6 +48,7 @@ import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCaseImpl
+import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.util.DelicateKaliumApi
 
 @Suppress("LongParameterList")
@@ -77,6 +78,7 @@ public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val userConfigRepository: UserConfigRepository,
     private val transactionProvider: CryptoTransactionProvider,
     private val isAllowedToUseAsyncNotifications: IsAllowedToUseAsyncNotificationsUseCase,
+    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
 ) {
 
     @OptIn(DelicateKaliumApi::class)
@@ -125,6 +127,8 @@ public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             keyPackageRepository = keyPackageRepository,
             keyPackageLimitsProvider = keyPackageLimitsProvider,
             currentClientIdProvider = clientIdProvider,
+            selfUserId = selfUserId,
+            cryptoStateChangeHookNotifier = cryptoStateChangeHookNotifier,
         )
 
     public val observeCurrentClientId: ObserveCurrentClientIdUseCase
