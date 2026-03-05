@@ -21,6 +21,7 @@ package com.wire.kalium.plugins
 import com.android.build.api.dsl.KotlinMultiplatformAndroidLibraryTarget
 import org.gradle.api.JavaVersion
 import org.gradle.api.Project
+import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 
@@ -65,6 +66,35 @@ internal fun Project.configureDefaultMultiplatform(
             commonAndroidLibConfig(this@configureDefaultMultiplatform, includeNativeInterop, androidNamespaceSuffix)
             // ⇣ DO NOT open a `dependencies {}` block here; add to the project instead:
             project.dependencies.add("coreLibraryDesugaring", library("desugarJdkLibs"))
+        }
+
+        // Only run tests that live in androidHostTest; commonTest is already covered by jvmTest.
+        tasks.withType(Test::class.java).configureEach {
+            if (name == "testAndroidHostTest") {
+                val hostTestDir = project.file("src/androidHostTest/kotlin")
+                val testIncludes = hostTestDir
+                    .takeIf { it.isDirectory }
+                    ?.walk()
+                    ?.filter { it.isFile && it.extension == "kt" }
+                    ?.mapNotNull { ktFile ->
+                        ktFile.relativeToOrNull(hostTestDir)
+                            ?.path
+                            ?.removeSuffix(".kt")
+                            ?.plus("*")
+                    }
+                    ?.toList()
+                    .orEmpty()
+
+                if (testIncludes.isNotEmpty()) {
+                    testIncludes.forEach { include(it) }
+                } else {
+                    exclude("**/*")
+                }
+                // Some modules only have helper/annotation actuals in androidHostTest
+                // (no @Test methods), so discovery finding zero tests is expected.
+                filter.isFailOnNoMatchingTests = false
+                failOnNoDiscoveredTests.set(false)
+            }
         }
 
         if (enableJs) {

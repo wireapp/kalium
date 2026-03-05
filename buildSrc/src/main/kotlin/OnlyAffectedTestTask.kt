@@ -133,8 +133,8 @@ open class OnlyAffectedTestTask : DefaultTask() {
      * @param testTarget the target test task that would be wrapped in this "smart" execution
      */
     enum class TestTaskConfiguration(val taskName: String, val testTarget: String, val ignoredModules: List<String> = emptyList()) {
-        ANDROID_INSTRUMENTED_TEST_TASK("connectedAndroidOnlyAffectedTest", "connectedAndroidTest", IGNORED_MODULES),
-        ANDROID_UNIT_TEST_TASK("androidUnitOnlyAffectedTest", "testDebugUnitTest", IGNORED_MODULES),
+        ANDROID_INSTRUMENTED_TEST_TASK("connectedAndroidOnlyAffectedTest", "connectedAndroidDeviceTest", IGNORED_MODULES),
+        ANDROID_UNIT_TEST_TASK("androidUnitOnlyAffectedTest", "testAndroidHostTest", IGNORED_MODULES),
         IOS_TEST_TASK("iOSOnlyAffectedTest", "iosSimulatorArm64Test", IGNORED_MODULES);
     }
 
