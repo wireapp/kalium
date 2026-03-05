@@ -104,6 +104,13 @@ jobs:
     with:
       tag-name: ${{ github.ref_name }}
       prerelease: true
+      release-name: "Release Candidate ${{ github.ref_name }}"
+      release-body: |
+        ## Release Candidate for ${{ github.ref_name }}
+
+        This is a **pre-release** for testing purposes.
+
+        **Note**: This is not a final release. Use for testing only.
       deployment-targets: |
         [
           {
