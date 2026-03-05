@@ -3,6 +3,7 @@ package com.wire.kalium.cells.data
 import com.wire.kalium.cells.domain.model.Conversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -17,20 +18,17 @@ import kotlin.test.assertIs
 class CellConversationRepositoryTest {
 
     private companion object {
-        private const val CONVERSATION_ID_1 = "conv1"
-        private const val CONVERSATION_DOMAIN_1 = "wire.com"
+        private val CONVERSATION_ID_1 = ConversationId("conv1", "wire.com")
         private const val CONVERSATION_NAME_1 = "Engineering"
-        private const val CONVERSATION_ID_2 = "conv2"
-        private const val CONVERSATION_DOMAIN_2 = "wire.com"
+        private val CONVERSATION_ID_2 = ConversationId("conv2", "wire.com")
         private const val CONVERSATION_NAME_2 = "Design"
     }
 
     @Test
     fun given_GroupConversationsWithWireCell_whenInvoked_thenReturnConversationDetails() = runTest {
-        val groupConv1 = createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_DOMAIN_1, CONVERSATION_NAME_1, false, null, "cell1")
+        val groupConv1 = createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_NAME_1, false, null, "cell1")
         val groupConv2 = createGroupConversationEntity(
             CONVERSATION_ID_2,
-            CONVERSATION_DOMAIN_2,
             CONVERSATION_NAME_2,
             true,
             ConversationEntity.ChannelAccess.PUBLIC,
@@ -47,8 +45,8 @@ class CellConversationRepositoryTest {
         assertEquals(2, conversations.size)
         assertEquals(CONVERSATION_NAME_1, conversations[0].name)
         assertEquals(CONVERSATION_NAME_2, conversations[1].name)
-        assertEquals("$CONVERSATION_ID_1@$CONVERSATION_DOMAIN_1", conversations[0].id)
-        assertEquals("$CONVERSATION_ID_2@$CONVERSATION_DOMAIN_2", conversations[1].id)
+        assertEquals(CONVERSATION_ID_1, conversations[0].id)
+        assertEquals(CONVERSATION_ID_2, conversations[1].id)
         assertEquals(false, conversations[0].isChannel)
         assertEquals(true, conversations[1].isChannel)
         assertEquals(null, conversations[0].channelAccess)
@@ -75,7 +73,6 @@ class CellConversationRepositoryTest {
         // Given
         val privateChannel = createGroupConversationEntity(
             CONVERSATION_ID_1,
-            CONVERSATION_DOMAIN_1,
             CONVERSATION_NAME_1,
             true,
             ConversationEntity.ChannelAccess.PRIVATE,
@@ -100,7 +97,7 @@ class CellConversationRepositoryTest {
     fun given_RegularGroupConversation_whenInvoked_thenReturnConversationWithoutChannelAccess() = runTest {
         // Given
         val regularGroup =
-            createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_DOMAIN_1, CONVERSATION_NAME_1, false, null, "cell1")
+            createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_NAME_1, false, null, "cell1")
         val (_, repository) = Arrangement()
             .withConversations(listOf(regularGroup))
             .arrange()
@@ -117,14 +114,13 @@ class CellConversationRepositoryTest {
     }
 
     private fun createGroupConversationEntity(
-        id: String,
-        domain: String,
+        conversationId: ConversationId,
         name: String,
         isChannel: Boolean,
         channelAccess: ConversationEntity.ChannelAccess?,
         wireCell: String?
     ): ConversationEntity = ConversationEntity(
-        id = QualifiedIDEntity(id, domain),
+        id = QualifiedIDEntity(conversationId.value, conversationId.domain),
         name = name,
         type = ConversationEntity.Type.GROUP,
         teamId = "team123",

@@ -24,6 +24,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.id.ConversationId
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
@@ -34,8 +35,8 @@ import kotlin.test.assertIs
 class GetCellGroupConversationsUseCaseTest {
 
     private companion object {
-        private const val CONVERSATION_ID_1 = "conv1@wire.com"
-        private const val CONVERSATION_ID_2 = "conv2@wire.com"
+        private val CONVERSATION_ID_1 = ConversationId("conv1", "wire.com")
+        private val CONVERSATION_ID_2 = ConversationId("conv2", "wire.com")
         private const val CONVERSATION_NAME_1 = "Engineering"
         private const val CONVERSATION_NAME_2 = "Design"
     }
@@ -46,7 +47,12 @@ class GetCellGroupConversationsUseCaseTest {
             .withConversationDetails(
                 listOf(
                     Conversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = false, channelAccess = null),
-                    Conversation(CONVERSATION_ID_2, CONVERSATION_NAME_2, isChannel = true, channelAccess = ConversationDetails.Group.Channel.ChannelAccess.PUBLIC)
+                    Conversation(
+                        CONVERSATION_ID_2,
+                        CONVERSATION_NAME_2,
+                        isChannel = true,
+                        channelAccess = ConversationDetails.Group.Channel.ChannelAccess.PUBLIC
+                    )
                 )
             )
             .arrange()
@@ -111,7 +117,12 @@ class GetCellGroupConversationsUseCaseTest {
         val (_, useCase) = Arrangement()
             .withConversationDetails(
                 listOf(
-                    Conversation(CONVERSATION_ID_1, CONVERSATION_NAME_1, isChannel = true, channelAccess = ConversationDetails.Group.Channel.ChannelAccess.PRIVATE)
+                    Conversation(
+                        CONVERSATION_ID_1,
+                        CONVERSATION_NAME_1,
+                        isChannel = true,
+                        channelAccess = ConversationDetails.Group.Channel.ChannelAccess.PRIVATE
+                    )
                 )
             )
             .arrange()
