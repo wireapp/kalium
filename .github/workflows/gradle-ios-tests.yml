@@ -25,10 +25,13 @@ jobs:
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v6
+      - name: Cache Kotlin/Native tooling (.konan)
+        uses: actions/cache@v4
         with:
-          python-version: '3.11'
+          path: ~/.konan
+          key: ${{ runner.os }}-konan-${{ hashFiles('gradle.properties', 'settings.gradle.kts', 'build.gradle.kts', 'gradle/libs.versions.toml', '**/*.gradle.kts') }}
+          restore-keys: |
+            ${{ runner.os }}-konan-
 
       - name: Build the samples
         env:
