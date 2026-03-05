@@ -22,8 +22,11 @@ import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesRes
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.utils.NetworkResponse
+import io.mockative.Mockable
+import okio.Sink
 import okio.Source
 
+@Mockable
 interface NomadDeviceSyncApi {
     suspend fun postMessageEvents(request: NomadMessageEventsRequest): NetworkResponse<Unit>
     suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse>
@@ -34,4 +37,5 @@ interface NomadDeviceSyncApi {
         backupSize: Long
     ): NetworkResponse<Unit>
 
+    suspend fun downloadCryptoState(tempBackupFileSink: Sink): NetworkResponse<Unit>
 }
