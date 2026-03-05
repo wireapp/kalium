@@ -22,4 +22,3 @@ data class VersionResponse(val commit: String) {
     val url: String
         get() = "https://github.com/wireapp/kalium/tree/$commit"
 }
-
