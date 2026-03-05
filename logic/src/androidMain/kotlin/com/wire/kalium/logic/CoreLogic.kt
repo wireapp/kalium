@@ -102,6 +102,7 @@ public actual class CoreLogic(
             globalDatabaseBuilder,
             kaliumConfigs,
             persistenceEventHookNotifier,
+            cryptoStateChangeHookNotifier,
             globalPreferences,
             globalCallManager,
             userStorageProvider,

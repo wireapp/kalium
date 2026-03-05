@@ -32,9 +32,11 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallbackManagerImpl
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
+import com.wire.kalium.logic.feature.message.CryptoStateChangeHookRegistry
 import com.wire.kalium.logic.feature.message.PersistenceEventHookRegistry
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
+import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
@@ -43,6 +45,7 @@ import com.wire.kalium.persistence.util.configurePersistenceDebug
 import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
 import com.wire.kalium.userstorage.di.UserStorageProvider
 
+@Suppress("TooManyFunctions")
 public abstract class CoreLogicCommon internal constructor(
     protected val rootPath: String,
     protected val userAgent: String,
@@ -56,6 +59,10 @@ public abstract class CoreLogicCommon internal constructor(
     private val persistenceEventHookRegistry = PersistenceEventHookRegistry()
     internal val persistenceEventHookNotifier: PersistenceEventHookNotifier
         get() = persistenceEventHookRegistry
+
+    private val cryptoStateChangeHookRegistry = CryptoStateChangeHookRegistry()
+    internal val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier
+        get() = cryptoStateChangeHookRegistry
 
     protected abstract val globalPreferences: GlobalPrefProvider
     protected abstract val globalDatabaseBuilder: GlobalDatabaseBuilder
@@ -128,6 +135,22 @@ public abstract class CoreLogicCommon internal constructor(
 
     public fun clearHook() {
         persistenceEventHookRegistry.clear()
+    }
+
+    /**
+     * Registers a crypto state change hook notifier.
+     * Hook invocation is synchronous from Logic's perspective.
+     */
+    public fun registerCryptoStateChangeHook(hookNotifier: CryptoStateChangeHookNotifier) {
+        cryptoStateChangeHookRegistry.register(hookNotifier)
+    }
+
+    public fun unregisterCryptoStateChangeHook(hookNotifier: CryptoStateChangeHookNotifier) {
+        cryptoStateChangeHookRegistry.unregister(hookNotifier)
+    }
+
+    public fun clearCryptoStateChangeHook() {
+        cryptoStateChangeHookRegistry.clear()
     }
 
     internal abstract val globalCallManager: GlobalCallManager
