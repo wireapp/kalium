@@ -24,15 +24,19 @@ import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.api.v0.authenticated.NomadDeviceSyncApiV0
+import com.wire.kalium.network.exceptions.APINotSupported
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
 import kotlinx.coroutines.test.runTest
 import okio.Buffer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 internal class NomadDeviceSyncApiV0Test : ApiTest() {
@@ -50,7 +54,7 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             }
         )
 
-        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient)
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
         val response = api.postMessageEvents(REQUEST)
 
         assertTrue(response.isSuccessful())
@@ -67,7 +71,7 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             }
         )
 
-        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient)
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
         val response = api.getAllMessages()
 
         assertTrue(response.isSuccessful())
@@ -88,12 +92,34 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             }
         )
 
-        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient)
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
         val response = api.getConversationMetadata()
 
         assertTrue(response.isSuccessful())
         assertEquals(1, response.value.conversations.size)
         assertEquals(1707235100L, response.value.conversations.first().metadata.lastRead)
+    }
+
+    @Test
+    fun givenCustomNomadServiceUrl_whenGettingAllMessages_thenNomadBaseUrlShouldOverrideDefaultBackendUrl() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = ALL_MESSAGES_RESPONSE_JSON,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertEquals("nomad.example.com", url.host)
+                assertEquals(URLProtocol.HTTPS, url.protocol)
+                assertPathEqual("/service/event/all-messages")
+            }
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(
+            networkClient,
+            nomadServiceUrl = "https://nomad.example.com/service"
+        )
+        val response = api.getAllMessages()
+
+        assertTrue(response.isSuccessful())
     }
 
     @Test
@@ -121,7 +147,7 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             }
         )
 
-        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient)
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
         val response = api.uploadCryptoState(
             clientId = "clientId",
             backupSource = { Buffer().write(cryptoStateBytes) },
@@ -129,6 +155,70 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
         )
 
         assertTrue(response.isSuccessful())
+    }
+
+    @Test
+    fun givenMissingNomadServiceUrl_whenPostingEvents_thenItShouldShortCircuitWithoutNetworkCall() = runTest {
+        assertShortCircuitedWithoutNetworkCall(expectedApiName = "postMessageEvents") { api ->
+            api.postMessageEvents(REQUEST)
+        }
+    }
+
+    @Test
+    fun givenMissingNomadServiceUrl_whenGettingAllMessages_thenItShouldShortCircuitWithoutNetworkCall() = runTest {
+        assertShortCircuitedWithoutNetworkCall(expectedApiName = "getAllMessages") { api ->
+            api.getAllMessages()
+        }
+    }
+
+    @Test
+    fun givenMissingNomadServiceUrl_whenGettingConversationMetadata_thenItShouldShortCircuitWithoutNetworkCall() = runTest {
+        assertShortCircuitedWithoutNetworkCall(expectedApiName = "getConversationMetadata") { api ->
+            api.getConversationMetadata()
+        }
+    }
+
+    @Test
+    fun givenMissingNomadServiceUrl_whenUploadingCryptoState_thenItShouldShortCircuitWithoutNetworkCall() = runTest {
+        assertShortCircuitedWithoutNetworkCall(expectedApiName = "uploadCryptoState") { api ->
+            api.uploadCryptoState(
+                clientId = "clientId",
+                backupSource = { Buffer().write(byteArrayOf(1, 2, 3, 4)) },
+                backupSize = 4
+            )
+        }
+    }
+
+    @Test
+    fun givenMissingNomadServiceUrl_whenDownloadingCryptoState_thenItShouldShortCircuitWithoutNetworkCall() = runTest {
+        assertShortCircuitedWithoutNetworkCall(expectedApiName = "downloadCryptoState") { api ->
+            api.downloadCryptoState(Buffer())
+        }
+    }
+
+    private suspend fun assertShortCircuitedWithoutNetworkCall(
+        expectedApiName: String,
+        call: suspend (NomadDeviceSyncApi) -> NetworkResponse<*>
+    ) {
+        var networkCalled = false
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                networkCalled = true
+            }
+        )
+
+        val response = call(NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = null))
+
+        assertFalse(networkCalled)
+        val error = assertIs<NetworkResponse.Error>(response)
+        val exception = assertIs<APINotSupported>(error.kException)
+        assertEquals(
+            "NomadDeviceSyncApiV0.$expectedApiName requires a configured Nomad service URL. " +
+                "Request was short-circuited and no API call was made.",
+            exception.errorBody
+        )
     }
 
     private companion object {

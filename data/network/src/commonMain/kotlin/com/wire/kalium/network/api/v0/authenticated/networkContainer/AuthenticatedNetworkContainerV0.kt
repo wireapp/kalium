@@ -81,6 +81,7 @@ import io.ktor.websocket.WebSocketSession
 
 internal class AuthenticatedNetworkContainerV0 internal constructor(
     private val sessionManager: SessionManager,
+    nomadServiceUrl: String? = null,
     certificatePinning: CertificatePinning,
     mockEngine: HttpClientEngine?,
     mockWebSocketSession: WebSocketSession?,
@@ -93,6 +94,7 @@ internal class AuthenticatedNetworkContainerV0 internal constructor(
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager = sessionManager,
+        nomadServiceUrl = nomadServiceUrl,
         accessTokenApi = { httpClient -> AccessTokenApiV0(httpClient) },
         engine = engine,
         kaliumLogger = kaliumLogger,
@@ -110,7 +112,7 @@ internal class AuthenticatedNetworkContainerV0 internal constructor(
     override val clientApi: ClientApi get() = ClientApiV0(networkClient)
 
     override val messageApi: MessageApi get() = MessageApiV0(networkClient, EnvelopeProtoMapperImpl())
-    override val nomadDeviceSyncApi: NomadDeviceSyncApi get() = NomadDeviceSyncApiV0(networkClient)
+    override val nomadDeviceSyncApi: NomadDeviceSyncApi get() = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl)
 
     override val mlsMessageApi: MLSMessageApi get() = MLSMessageApiV0()
 
