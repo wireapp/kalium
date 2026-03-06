@@ -39,11 +39,13 @@ kotlin {
                 implementation(projects.data.persistence)
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxSerialization)
+                implementation(libs.coroutines.core)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(libs.coroutines.test)
+                implementation(libs.okio.core)
             }
         }
     }

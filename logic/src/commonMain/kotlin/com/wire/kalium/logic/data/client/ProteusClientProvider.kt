@@ -47,7 +47,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 @Mockable
-internal interface ProteusClientProvider {
+internal interface ProteusClientProvider : CryptoBackupExporter {
     suspend fun clearLocalFiles()
 
     /**
@@ -159,15 +159,13 @@ internal class ProteusClientProviderImpl(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun exportCryptoDB(): Either<CoreFailure, CryptoBackupMetadata> {
+    override suspend fun exportCryptoDB(exportPath: String): Either<CoreFailure, CryptoBackupMetadata> {
         return withContext(dispatcher.io) {
             currentClientIdProvider().fold(
                 { return@withContext it.left() },
                 { clientId ->
                     val central = mutex.withLock { _coreCryptoCentral }
                         ?: return@withContext StorageFailure.DataNotFound.left()
-
-                    val exportPath = "$rootProteusPath/${KEYSTORE_NAME}_export"
 
                     try {
                         central.exportDatabaseCopy(exportPath)
