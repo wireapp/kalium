@@ -77,7 +77,12 @@ open class OnlyAffectedTestTask : DefaultTask() {
         if (missingAffectedModulesData) {
             println("\uD83D\uDD27 Running all tests because affected-modules data is unavailable.")
         }
-        tasksName.forEach(::runTargetTask)
+        if (tasksName.isEmpty()) {
+            println("\uD83E\uDD8B No matching test tasks found for the selected modules.")
+            return
+        }
+
+        runTargetTasks(tasksName)
     }
 
     private fun readAffectedModules(): Set<String>? {
@@ -96,11 +101,11 @@ open class OnlyAffectedTestTask : DefaultTask() {
             .toSet()
     }
 
-    private fun runTargetTask(targetTask: String) {
-        println("\uD83D\uDD27 Running tests on '$targetTask'.")
+    private fun runTargetTasks(targetTasks: List<String>) {
+        println("\uD83D\uDD27 Running ${targetTasks.size} test tasks in a single Gradle invocation.")
         val execOperations = services.get<ExecOperations>()
         execOperations.exec {
-            args(targetTask)
+            args(targetTasks)
             executable(if (System.getProperty("os.name").lowercase().contains("windows")) "gradlew.bat" else "./gradlew")
         }
     }
