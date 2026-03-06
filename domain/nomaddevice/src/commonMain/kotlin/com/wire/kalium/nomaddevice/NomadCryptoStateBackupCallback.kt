@@ -21,6 +21,9 @@ package com.wire.kalium.nomaddevice
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Factory used with [NomadCryptoStateChangeHookNotifier]:
@@ -40,6 +43,25 @@ public fun createNomadCryptoStateChangeHookNotifier(
         debounceMs = debounceMs,
     )
 
+/**
+ * Creates a crypto-state hook that is permanently bound to a single user session.
+ *
+ * This is the variant Logic should use when wiring Nomad from [com.wire.kalium.logic.feature.UserSessionScope]:
+ * the hook ignores signals for other users and only debounces work for [selfUserId].
+ */
+public fun createUserScopedNomadCryptoStateChangeHookNotifier(
+    selfUserId: UserId,
+    scope: CoroutineScope,
+    backup: suspend () -> Unit,
+    debounceMs: Long = 1000L,
+): CryptoStateChangeHookNotifier =
+    UserScopedNomadCryptoStateChangeHookNotifier(
+        selfUserId = selfUserId,
+        scope = scope,
+        backup = backup,
+        debounceMs = debounceMs,
+    )
+
 internal fun createNomadCryptoStateChangeHookNotifierInternal(
     scope: CoroutineScope,
     backupForUser: suspend (UserId) -> Unit,
@@ -51,4 +73,26 @@ internal fun createNomadCryptoStateChangeHookNotifierInternal(
         repository = repository,
         debounceMs = debounceMs,
     )
+}
+
+internal class UserScopedNomadCryptoStateChangeHookNotifier(
+    private val selfUserId: UserId,
+    private val scope: CoroutineScope,
+    private val backup: suspend () -> Unit,
+    private val debounceMs: Long,
+) : CryptoStateChangeHookNotifier {
+
+    private var debounceJob: Job? = null
+
+    override suspend fun onCryptoStateChanged(userId: UserId) {
+        if (userId != selfUserId) {
+            return
+        }
+
+        debounceJob?.cancel()
+        debounceJob = scope.launch {
+            delay(debounceMs)
+            backup()
+        }
+    }
 }

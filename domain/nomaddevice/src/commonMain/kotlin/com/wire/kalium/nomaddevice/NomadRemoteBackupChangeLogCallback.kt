@@ -57,6 +57,25 @@ public fun createNomadRemoteBackupChangeLogHookNotifier(
         eventTimestampMsProvider = eventTimestampMsProvider,
     )
 
+/**
+ * Creates a changelog hook that is permanently bound to a single user session.
+ *
+ * This avoids sharing one generic notifier across multiple accounts in Logic. Any event coming from a
+ * different user session is ignored, while matching events keep using the existing Nomad changelog flow.
+ */
+public fun createUserScopedNomadRemoteBackupChangeLogHookNotifier(
+    selfUserId: UserId,
+    userStorageProvider: UserStorageProvider,
+    eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+): PersistenceEventHookNotifier =
+    UserScopedNomadPersistenceEventHookNotifier(
+        selfUserId = selfUserId,
+        delegate = createNomadRemoteBackupChangeLogHookNotifier(
+            userStorageProvider = userStorageProvider,
+            eventTimestampMsProvider = eventTimestampMsProvider,
+        )
+    )
+
 internal fun createNomadRemoteBackupChangeLogHookNotifierInternal(
     remoteBackupChangeLogDAOProvider: (UserId) -> RemoteBackupChangeLogDAO?,
     eventTimestampMsProvider: () -> Long = { Clock.System.now().toEpochMilliseconds() },
@@ -213,6 +232,48 @@ private fun MessageContent.Multipart.hasSupportedPartForChangelog(): Boolean {
     // Multipart payloads with only CellAssetContent attachments are intentionally skipped.
     val hasSyncableAssetPart = attachments.any { it is AssetContent }
     return hasTextPart || hasSyncableAssetPart
+}
+
+internal class UserScopedNomadPersistenceEventHookNotifier(
+    private val selfUserId: UserId,
+    private val delegate: PersistenceEventHookNotifier,
+) : PersistenceEventHookNotifier {
+
+    override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+        if (selfUserId == this.selfUserId) {
+            delegate.onMessagePersisted(message, this.selfUserId)
+        }
+    }
+
+    override suspend fun onMessageDeleted(data: MessageDeleteEventData, selfUserId: UserId) {
+        if (selfUserId == this.selfUserId) {
+            delegate.onMessageDeleted(data, this.selfUserId)
+        }
+    }
+
+    override suspend fun onReactionPersisted(data: ReactionEventData, selfUserId: UserId) {
+        if (selfUserId == this.selfUserId) {
+            delegate.onReactionPersisted(data, this.selfUserId)
+        }
+    }
+
+    override suspend fun onReadReceiptPersisted(data: ReadReceiptEventData, selfUserId: UserId) {
+        if (selfUserId == this.selfUserId) {
+            delegate.onReadReceiptPersisted(data, this.selfUserId)
+        }
+    }
+
+    override suspend fun onConversationDeleted(data: ConversationDeleteEventData, selfUserId: UserId) {
+        if (selfUserId == this.selfUserId) {
+            delegate.onConversationDeleted(data, this.selfUserId)
+        }
+    }
+
+    override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
+        if (selfUserId == this.selfUserId) {
+            delegate.onConversationCleared(data, this.selfUserId)
+        }
+    }
 }
 
 // TODO: delete this one once the logic mappers are moved to a shared module

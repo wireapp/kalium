@@ -530,6 +530,8 @@ import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
+import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
+import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
@@ -574,11 +576,9 @@ public class UserSessionScope internal constructor(
     private val rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
-    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
     private val userSessionScopeProvider: UserSessionScopeProvider,
-    userStorageProvider: UserStorageProvider,
-    userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
+    private val userStorageProvider: UserStorageProvider,
+    private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
     private val clientConfig: ClientConfig,
     private val platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
@@ -704,12 +704,19 @@ public class UserSessionScope internal constructor(
         tokenStorage = globalPreferences.authTokenStorage,
         logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = true) }
     )
+
+    /**
+     * Keep the session's Nomad URL lookup in one place so both networking and hook setup share the same value.
+     * SessionManager caches the backing account row, which avoids duplicate reads when this value is reused.
+     */
+    private val nomadServiceUrl: String? = sessionManager.nomadServiceUrl()?.takeIf { it.isNotBlank() }
+
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer =
         userAuthenticatedNetworkProvider.getOrCreate(userId.toApi()) {
             UserAuthenticatedNetworkApis(
                 container = AuthenticatedNetworkContainer.create(
                     sessionManager = sessionManager,
-                    nomadServiceUrl = sessionManager.nomadServiceUrl(),
+                    nomadServiceUrl = nomadServiceUrl,
                     selfUserId = UserIdDTO(userId.value, userId.domain),
                     userAgent = userAgent,
                     certificatePinning = kaliumConfigs.certPinningConfig,
@@ -722,6 +729,10 @@ public class UserSessionScope internal constructor(
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
+    private val userScopedNomadHookFactory = UserScopedNomadHookFactory()
+
+    private var persistenceEventHookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier
+    private var cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier = NoOpCryptoStateChangeHookNotifier
 
     internal val cellsClient: HttpClient
         get() = authenticatedNetworkContainer.cellsHttpClient
@@ -2729,11 +2740,30 @@ public class UserSessionScope internal constructor(
         { slowSyncRepository.slowSyncStatus.map { it is SlowSyncStatus.Ongoing } }
     )
 
+    private fun registerNomadHooksIfConfigured() {
+        val hooks = userScopedNomadHookFactory.createIfConfigured(
+            selfUserId = userId,
+            nomadServiceUrl = nomadServiceUrl,
+            userStorageProvider = userStorageProvider,
+            userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
+            scope = this,
+            backup = {
+                backup.backupAndUploadCryptoState()
+            }
+        ) ?: return
+
+        // Both hooks are instantiated inside the session scope so they stay bound to this user only.
+        persistenceEventHookNotifier = hooks.persistence
+        cryptoStateChangeHookNotifier = hooks.crypto
+    }
+
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
      * When the user logs out, this work will be canceled.
      */
     init {
+        registerNomadHooksIfConfigured()
+
         launch {
             @Suppress("TooGenericExceptionCaught")
             try {
