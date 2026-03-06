@@ -38,11 +38,13 @@ kotlin {
                 implementation(projects.domain.userstorage)
                 implementation(projects.data.persistence)
                 implementation(libs.ktxSerialization)
+                implementation(libs.coroutines.core)
             }
         }
         val commonTest by getting {
             dependencies {
                 implementation(libs.coroutines.test)
+                implementation(libs.okio.core)
             }
         }
     }

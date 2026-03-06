@@ -22,7 +22,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 
 internal interface CryptoBackupExporter {
-    suspend fun exportCryptoDB(): Either<CoreFailure, CryptoBackupMetadata>
+    /**
+     * Exports the cryptographic database to the specified path and returns the metadata required for backup restoration.
+     *
+     * @param exportPath The file path where the cryptographic database should be exported.
+     * @return An [Either] containing either a [CoreFailure] in case of an error or [CryptoBackupMetadata] on success.
+     */
+    suspend fun exportCryptoDB(exportPath: String): Either<CoreFailure, CryptoBackupMetadata>
 }
 
 /**
