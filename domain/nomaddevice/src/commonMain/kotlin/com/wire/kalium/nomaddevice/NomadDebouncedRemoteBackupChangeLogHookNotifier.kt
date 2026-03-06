@@ -199,17 +199,18 @@ internal class NomadRemoteBackupChangeLogDebouncedSyncController(
     private suspend fun onScheduledDue(selfUserId: UserId, kind: ScheduledKind) {
         var shouldRun = false
         mutex.withLock {
-            val state = userStates[selfUserId] ?: return
-            if (state.scheduledKind != kind) return
-            state.scheduledJob = null
-            state.scheduledKind = null
-            if (state.inFlight) return
-
-            state.inFlight = true
-            state.firstTriggerMs = null
-            state.lastTriggerMs = null
-            state.attemptCount += 1
-            shouldRun = true
+            val state = userStates[selfUserId]
+            if (state != null && state.scheduledKind == kind) {
+                state.scheduledJob = null
+                state.scheduledKind = null
+                if (!state.inFlight) {
+                    state.inFlight = true
+                    state.firstTriggerMs = null
+                    state.lastTriggerMs = null
+                    state.attemptCount += 1
+                    shouldRun = true
+                }
+            }
         }
 
         if (!shouldRun) return
