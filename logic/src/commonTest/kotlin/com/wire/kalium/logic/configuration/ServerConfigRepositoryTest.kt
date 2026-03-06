@@ -215,7 +215,7 @@ class ServerConfigRepositoryTest {
             return this
         }
 
-        fun withConfigById(serverConfig: ServerConfigEntity): Arrangement {
+        fun withConfigById(serverConfig: ServerConfigEntity?): Arrangement {
             every {
                 serverConfigDAO.configById(any())
             } returns serverConfig
