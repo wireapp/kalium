@@ -30,6 +30,7 @@ import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallbackManagerImpl
+import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AuthenticationScopeForConfigIdUseCase
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.message.CryptoStateChangeHookRegistry
@@ -159,6 +160,9 @@ public abstract class CoreLogicCommon internal constructor(
 
     public fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
+
+    public val authenticationScopeForConfigId: AuthenticationScopeForConfigIdUseCase
+        get() = getGlobalScope().authenticationScopeForConfigId
 
     internal abstract val networkStateObserver: NetworkStateObserver
 
