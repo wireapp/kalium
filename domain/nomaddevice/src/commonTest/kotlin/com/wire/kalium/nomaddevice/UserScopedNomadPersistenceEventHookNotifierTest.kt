@@ -28,10 +28,12 @@ import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.messaging.hooks.ReactionEventData
 import com.wire.kalium.messaging.hooks.ReadReceiptEventData
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class UserScopedNomadPersistenceEventHookNotifierTest {
 
@@ -79,6 +81,36 @@ class UserScopedNomadPersistenceEventHookNotifierTest {
         notifier.onConversationCleared(CONVERSATION_CLEAR, OTHER_USER_ID)
 
         assertEquals(emptyList(), recordingHook.calls)
+    }
+
+    @Test
+    fun givenDelegateThrows_whenMessagePersisted_thenExceptionIsSwallowed() = runTest {
+        val notifier = UserScopedNomadPersistenceEventHookNotifier(
+            selfUserId = USER_ID,
+            delegate = object : PersistenceEventHookNotifier {
+                override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+                    throw IllegalStateException("boom")
+                }
+            }
+        )
+
+        notifier.onMessagePersisted(MESSAGE, USER_ID)
+    }
+
+    @Test
+    fun givenDelegateThrowsCancellation_whenMessagePersisted_thenExceptionPropagates() = runTest {
+        val notifier = UserScopedNomadPersistenceEventHookNotifier(
+            selfUserId = USER_ID,
+            delegate = object : PersistenceEventHookNotifier {
+                override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+                    throw CancellationException("cancel")
+                }
+            }
+        )
+
+        assertFailsWith<CancellationException> {
+            notifier.onMessagePersisted(MESSAGE, USER_ID)
+        }
     }
 
     private class RecordingPersistenceHookNotifier : PersistenceEventHookNotifier {

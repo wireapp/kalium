@@ -124,6 +124,22 @@ class NomadCryptoStateChangeHookNotifierTest {
         assertEquals(emptyList(), calls)
     }
 
+    @Test
+    fun givenUserScopedFactory_whenBackupThrows_thenExceptionIsSwallowed() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val notifier = createUserScopedNomadCryptoStateChangeHookNotifier(
+            selfUserId = USER_ID,
+            scope = scope,
+            backup = { throw IllegalStateException("boom") },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+    }
+
     private class FakeRepository(
         private val calls: MutableList<UserId>
     ) : NomadCryptoStateBackupRepository {

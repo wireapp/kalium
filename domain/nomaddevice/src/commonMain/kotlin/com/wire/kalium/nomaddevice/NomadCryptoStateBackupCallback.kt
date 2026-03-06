@@ -18,12 +18,16 @@
 
 package com.wire.kalium.nomaddevice
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Factory used with [NomadCryptoStateChangeHookNotifier]:
@@ -82,6 +86,7 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
     private val debounceMs: Long,
 ) : CryptoStateChangeHookNotifier {
 
+    private val mutex = Mutex()
     private var debounceJob: Job? = null
 
     override suspend fun onCryptoStateChanged(userId: UserId) {
@@ -89,10 +94,24 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
             return
         }
 
-        debounceJob?.cancel()
-        debounceJob = scope.launch {
-            delay(debounceMs)
-            backup()
+        mutex.withLock {
+            debounceJob?.cancel()
+            debounceJob = scope.launch {
+                delay(debounceMs)
+                try {
+                    backup()
+                } catch (exception: CancellationException) {
+                    throw exception
+                } catch (exception: Exception) {
+                    kaliumLogger.w("User-scoped crypto state change hook execution failed", exception)
+                } finally {
+                    mutex.withLock {
+                        if (debounceJob == this) {
+                            debounceJob = null
+                        }
+                    }
+                }
+            }
         }
     }
 }

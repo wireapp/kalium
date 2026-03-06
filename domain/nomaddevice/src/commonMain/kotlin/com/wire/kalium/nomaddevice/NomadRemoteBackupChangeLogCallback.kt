@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
@@ -38,6 +39,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import kotlinx.datetime.Clock
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Factory used with [NomadRemoteBackupChangeLogHookNotifier]:
@@ -241,37 +243,48 @@ internal class UserScopedNomadPersistenceEventHookNotifier(
 
     override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
         if (selfUserId == this.selfUserId) {
-            delegate.onMessagePersisted(message, this.selfUserId)
+            safeInvoke("PersistMessage") { it.onMessagePersisted(message, this.selfUserId) }
         }
     }
 
     override suspend fun onMessageDeleted(data: MessageDeleteEventData, selfUserId: UserId) {
         if (selfUserId == this.selfUserId) {
-            delegate.onMessageDeleted(data, this.selfUserId)
+            safeInvoke("MessageDelete") { it.onMessageDeleted(data, this.selfUserId) }
         }
     }
 
     override suspend fun onReactionPersisted(data: ReactionEventData, selfUserId: UserId) {
         if (selfUserId == this.selfUserId) {
-            delegate.onReactionPersisted(data, this.selfUserId)
+            safeInvoke("ReactionPersist") { it.onReactionPersisted(data, this.selfUserId) }
         }
     }
 
     override suspend fun onReadReceiptPersisted(data: ReadReceiptEventData, selfUserId: UserId) {
         if (selfUserId == this.selfUserId) {
-            delegate.onReadReceiptPersisted(data, this.selfUserId)
+            safeInvoke("ReadReceipt") { it.onReadReceiptPersisted(data, this.selfUserId) }
         }
     }
 
     override suspend fun onConversationDeleted(data: ConversationDeleteEventData, selfUserId: UserId) {
         if (selfUserId == this.selfUserId) {
-            delegate.onConversationDeleted(data, this.selfUserId)
+            safeInvoke("ConversationDelete") { it.onConversationDeleted(data, this.selfUserId) }
         }
     }
 
     override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
         if (selfUserId == this.selfUserId) {
-            delegate.onConversationCleared(data, this.selfUserId)
+            safeInvoke("ConversationClear") { it.onConversationCleared(data, this.selfUserId) }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend inline fun safeInvoke(tag: String, block: (PersistenceEventHookNotifier) -> Unit) {
+        try {
+            block(delegate)
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (exception: Exception) {
+            kaliumLogger.w("User-scoped $tag hook execution failed", exception)
         }
     }
 }
