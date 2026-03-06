@@ -61,6 +61,7 @@ internal interface SessionRepository {
         proxyCredentials: ProxyCredentials?,
         managedBy: SsoManagedBy?,
         isPersistentWebSocketEnabled: Boolean,
+        nomadServiceUrl: String? = null,
     ): Either<StorageFailure, Unit>
 
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
@@ -106,6 +107,7 @@ internal class SessionDataSource internal constructor(
         proxyCredentials: ProxyCredentials?,
         managedBy: SsoManagedBy?,
         isPersistentWebSocketEnabled: Boolean,
+        nomadServiceUrl: String?,
     ): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.insertOrReplace(
@@ -113,7 +115,8 @@ internal class SessionDataSource internal constructor(
                 ssoIdEntity = sessionMapper.toSsoIdEntity(ssoId),
                 managedByEntity = managedBy?.toDao(),
                 serverConfigId = serverConfigId,
-                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
+                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
+                nomadServiceUrl = nomadServiceUrl
             )
         }.flatMap {
             wrapStorageRequest {

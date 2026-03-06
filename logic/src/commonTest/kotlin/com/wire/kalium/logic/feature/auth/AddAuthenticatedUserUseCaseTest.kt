@@ -73,7 +73,7 @@ class AddAuthenticatedUserUseCaseTest {
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any(), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -106,7 +106,7 @@ class AddAuthenticatedUserUseCaseTest {
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any(), any())
         }.wasNotInvoked()
 
         coVerify {
@@ -153,7 +153,7 @@ class AddAuthenticatedUserUseCaseTest {
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any(), any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -222,7 +222,7 @@ class AddAuthenticatedUserUseCaseTest {
             arrangement.sessionRepository.doesValidSessionExist(any())
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any(), any())
         }.wasNotInvoked()
         coVerify {
             arrangement.sessionRepository.updateCurrentSession(any())
@@ -232,6 +232,49 @@ class AddAuthenticatedUserUseCaseTest {
         }.wasInvoked(exactly = once)
         verify {
             arrangement.serverConfigurationDAO.configById(any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNomadServiceUrl_whenInvoked_thenItIsPassedToSessionStorage() = runTest {
+        val tokens = TEST_AUTH_TOKENS
+        val proxyCredentials = PROXY_CREDENTIALS
+        val nomadServiceUrl = "https://nomad.example.com/service"
+
+        val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
+            .withDoesValidSessionExistResult(tokens.userId, Either.Right(false))
+            .withStoreSessionResult(
+                serverConfigId = TEST_SERVER_CONFIG.id,
+                ssoId = TEST_SSO_ID,
+                accountTokens = tokens,
+                proxyCredentials = proxyCredentials,
+                result = Either.Right(Unit),
+                nomadServiceUrl = nomadServiceUrl
+            )
+            .withUpdateCurrentSessionResult(tokens.userId, Either.Right(Unit))
+            .arrange()
+
+        val actual = addAuthenticatedUserUseCase(
+            serverConfigId = TEST_SERVER_CONFIG.id,
+            ssoId = TEST_SSO_ID,
+            authTokens = tokens,
+            proxyCredentials = proxyCredentials,
+            isPersistentWebSocketEnabled = false,
+            nomadServiceUrl = nomadServiceUrl
+        )
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
+
+        coVerify {
+            arrangement.sessionRepository.storeSession(
+                TEST_SERVER_CONFIG.id,
+                TEST_SSO_ID,
+                tokens,
+                proxyCredentials,
+                null,
+                false,
+                nomadServiceUrl
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -298,7 +341,8 @@ class AddAuthenticatedUserUseCaseTest {
             proxyCredentials: ProxyCredentials?,
             managedBy: SsoManagedBy? = null,
             result: Either<StorageFailure, Unit>,
-            isPersistentWebSocketEnabled: Boolean = false
+            isPersistentWebSocketEnabled: Boolean = false,
+            nomadServiceUrl: String? = null
         ) = apply {
             coEvery {
                 sessionRepository.storeSession(
@@ -307,7 +351,8 @@ class AddAuthenticatedUserUseCaseTest {
                     accountTokens,
                     proxyCredentials,
                     managedBy,
-                    isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
+                    isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
+                    nomadServiceUrl = nomadServiceUrl
                 )
             }.returns(result)
         }

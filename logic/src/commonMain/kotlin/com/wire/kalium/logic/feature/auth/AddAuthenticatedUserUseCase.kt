@@ -61,7 +61,8 @@ public class AddAuthenticatedUserUseCase internal constructor(
         proxyCredentials: ProxyCredentials?,
         isPersistentWebSocketEnabled: Boolean,
         managedBy: SsoManagedBy? = null,
-        replace: Boolean = false
+        replace: Boolean = false,
+        nomadServiceUrl: String? = null
     ): Result = sessionRepository.doesValidSessionExist(authTokens.userId).fold(
         {
             Result.Failure.Generic(it)
@@ -76,6 +77,7 @@ public class AddAuthenticatedUserUseCase internal constructor(
                     managedBy,
                     replace,
                     isPersistentWebSocketEnabled,
+                    nomadServiceUrl,
                 )
 
                 false -> storeUser(
@@ -84,7 +86,8 @@ public class AddAuthenticatedUserUseCase internal constructor(
                     authTokens,
                     proxyCredentials,
                     managedBy,
-                    isPersistentWebSocketEnabled
+                    isPersistentWebSocketEnabled,
+                    nomadServiceUrl
                 )
             }
         }
@@ -97,6 +100,7 @@ public class AddAuthenticatedUserUseCase internal constructor(
         proxyCredentials: ProxyCredentials?,
         managedBy: SsoManagedBy?,
         isPersistentWebSocketEnabled: Boolean,
+        nomadServiceUrl: String?,
     ): Result =
         sessionRepository.storeSession(
             serverConfigId,
@@ -104,7 +108,8 @@ public class AddAuthenticatedUserUseCase internal constructor(
             accountTokens,
             proxyCredentials,
             managedBy,
-            isPersistentWebSocketEnabled
+            isPersistentWebSocketEnabled,
+            nomadServiceUrl
         ).onSuccess {
             sessionRepository.updateCurrentSession(accountTokens.userId)
         }.fold(
@@ -122,6 +127,7 @@ public class AddAuthenticatedUserUseCase internal constructor(
         managedBy: SsoManagedBy?,
         replace: Boolean,
         isPersistentWebSocketEnabled: Boolean,
+        nomadServiceUrl: String?,
     ): Result =
         when (replace) {
             true -> {
@@ -143,6 +149,7 @@ public class AddAuthenticatedUserUseCase internal constructor(
                                 proxyCredentials = proxyCredentials,
                                 managedBy = managedBy,
                                 isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
+                                nomadServiceUrl = nomadServiceUrl,
                             )
                         } else Result.Failure.UserAlreadyExists
                     }
