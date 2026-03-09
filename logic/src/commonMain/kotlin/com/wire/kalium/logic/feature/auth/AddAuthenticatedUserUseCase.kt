@@ -15,10 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
 
 package com.wire.kalium.logic.feature.auth
-
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.fold
@@ -26,8 +24,8 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -49,22 +47,6 @@ public class AddAuthenticatedUserUseCase internal constructor(
             public data object UserAlreadyExists : Failure()
             public data class Generic(public val genericFailure: CoreFailure) : Failure()
         }
-    }
-
-    public suspend operator fun invoke(
-        session: StoreSessionParam,
-        replace: Boolean = false,
-        nomadServiceUrl: String? = null
-    ): Result = StoreSessionParam(
-        serverConfigId = serverConfigId,
-        ssoId = ssoId,
-        accountTokens = authTokens,
-        proxyCredentials = proxyCredentials,
-        managedBy = managedBy,
-        isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
-        nomadServiceUrl = nomadServiceUrl,
-    ).let {
-        invoke(it, authTokens, replace)
     }
 
     public suspend operator fun invoke(
