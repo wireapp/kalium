@@ -542,6 +542,8 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
+import com.wire.kalium.nomaddevice.NomadAuthenticatedNetworkAccess
+import com.wire.kalium.nomaddevice.SyncNomadAllMessagesUseCase
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
@@ -1396,7 +1398,21 @@ public class UserSessionScope internal constructor(
             joinExistingMLSConversations,
             fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            shouldSyncNomadMessages = nomadServiceUrl != null,
+            syncNomadAllMessages = {
+                SyncNomadAllMessagesUseCase(
+                    userStorageProvider = userStorageProvider,
+                    nomadAuthenticatedNetworkAccess = NomadAuthenticatedNetworkAccess(userAuthenticatedNetworkProvider)
+                )(userId).map { result ->
+                    userScopedLogger.i(
+                        "Nomad all-messages slow sync finished for ${userId.toLogString()}: " +
+                            "downloaded=${result.downloadedMessages}, stored=${result.storedMessages}, " +
+                            "skipped=${result.skippedMessages}, batches=${result.batches}"
+                    )
+                    Unit
+                }
+            }
         )
     }
 

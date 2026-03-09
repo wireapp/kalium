@@ -85,6 +85,8 @@ internal class SlowSyncWorkerImpl(
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val transactionProvider: CryptoTransactionProvider,
+    private val shouldSyncNomadMessages: Boolean = false,
+    private val syncNomadAllMessages: suspend () -> Either<CoreFailure, Unit> = { Unit.right() },
     logger: KaliumLogger = kaliumLogger
 ) : SlowSyncWorker {
 
@@ -97,6 +99,16 @@ internal class SlowSyncWorkerImpl(
             slowSyncStep: SlowSyncStep,
             step: suspend () -> Either<CoreFailure, Unit>
         ) = flatMap { performStep(slowSyncStep, step) }
+
+        suspend fun Either<CoreFailure, Unit>.continueWithOptionalStep(
+            shouldRun: Boolean,
+            slowSyncStep: SlowSyncStep,
+            step: suspend () -> Either<CoreFailure, Unit>
+        ) = if (shouldRun) {
+            continueWithStep(slowSyncStep, step)
+        } else {
+            this
+        }
 
         logger.d("Starting SlowSync")
         val lastSavedEventIdToSaveOnSuccess = when (isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()) {
@@ -125,6 +137,7 @@ internal class SlowSyncWorkerImpl(
                 .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
                 .continueWithStep(SlowSyncStep.LEGAL_HOLD) { fetchLegalHoldForSelfUserFromRemoteUseCase().map { } }
                 .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
+                .continueWithOptionalStep(shouldSyncNomadMessages, SlowSyncStep.NOMAD_MESSAGES, syncNomadAllMessages)
                 .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
                 .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS) {
                     transactionProvider.transaction(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS.name) {
