@@ -29,6 +29,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.logic.data.user.UserId
@@ -53,7 +54,6 @@ public class AddAuthenticatedUserUseCase internal constructor(
         }
     }
 
-    @Suppress("LongParameterList")
     public suspend operator fun invoke(
         serverConfigId: String,
         ssoId: SsoId?,
@@ -68,89 +68,53 @@ public class AddAuthenticatedUserUseCase internal constructor(
             Result.Failure.Generic(it)
         },
         { doesValidSessionExist ->
+            val session = StoreSessionParam(
+                serverConfigId = serverConfigId,
+                ssoId = ssoId,
+                accountTokens = authTokens,
+                proxyCredentials = proxyCredentials,
+                managedBy = managedBy,
+                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
+                nomadServiceUrl = nomadServiceUrl,
+            )
             when (doesValidSessionExist) {
                 true -> onUserExist(
-                    serverConfigId,
-                    ssoId,
-                    authTokens,
-                    proxyCredentials,
-                    managedBy,
+                    session,
                     replace,
-                    isPersistentWebSocketEnabled,
-                    nomadServiceUrl,
                 )
 
-                false -> storeUser(
-                    serverConfigId,
-                    ssoId,
-                    authTokens,
-                    proxyCredentials,
-                    managedBy,
-                    isPersistentWebSocketEnabled,
-                    nomadServiceUrl
-                )
+                false -> storeUser(session)
             }
         }
     )
 
-    private suspend fun storeUser(
-        serverConfigId: String,
-        ssoId: SsoId?,
-        accountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?,
-        managedBy: SsoManagedBy?,
-        isPersistentWebSocketEnabled: Boolean,
-        nomadServiceUrl: String?,
-    ): Result =
-        sessionRepository.storeSession(
-            serverConfigId,
-            ssoId,
-            accountTokens,
-            proxyCredentials,
-            managedBy,
-            isPersistentWebSocketEnabled,
-            nomadServiceUrl
-        ).onSuccess {
-            sessionRepository.updateCurrentSession(accountTokens.userId)
+    private suspend fun storeUser(session: StoreSessionParam): Result =
+        sessionRepository.storeSession(session).onSuccess {
+            sessionRepository.updateCurrentSession(session.accountTokens.userId)
         }.fold(
             { Result.Failure.Generic(it) },
-            { Result.Success(accountTokens.userId) }
+            { Result.Success(session.accountTokens.userId) }
         )
 
     // In case of the new session have a different server configurations the new session should not be added
-    @Suppress("LongParameterList")
     private suspend fun onUserExist(
-        newServerConfigId: String,
-        ssoId: SsoId?,
-        newAccountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?,
-        managedBy: SsoManagedBy?,
+        session: StoreSessionParam,
         replace: Boolean,
-        isPersistentWebSocketEnabled: Boolean,
-        nomadServiceUrl: String?,
     ): Result =
         when (replace) {
             true -> {
-                sessionRepository.fullAccountInfo(newAccountTokens.userId).fold(
+                sessionRepository.fullAccountInfo(session.accountTokens.userId).fold(
                     { Result.Failure.Generic(it) },
                     { oldSession ->
                         val newServerConfig =
                             wrapStorageRequest {
-                                serverConfigurationDAO.configById(newServerConfigId)
+                                serverConfigurationDAO.configById(session.serverConfigId)
                             }.map {
                                 serverConfigMapper.fromEntity(it)
                             }.getOrElse { return Result.Failure.Generic(it) }
 
                         if (oldSession.serverConfig.links == newServerConfig.links) {
-                            storeUser(
-                                serverConfigId = newServerConfigId,
-                                ssoId = ssoId,
-                                accountTokens = newAccountTokens,
-                                proxyCredentials = proxyCredentials,
-                                managedBy = managedBy,
-                                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
-                                nomadServiceUrl = nomadServiceUrl,
-                            )
+                            storeUser(session)
                         } else Result.Failure.UserAlreadyExists
                     }
                 )

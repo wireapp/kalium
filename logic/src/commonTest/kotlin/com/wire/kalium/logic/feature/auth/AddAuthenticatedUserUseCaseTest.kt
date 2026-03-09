@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.session.token.AccessToken
 import com.wire.kalium.logic.data.session.token.RefreshToken
 import com.wire.kalium.logic.data.user.SsoId
@@ -73,7 +74,7 @@ class AddAuthenticatedUserUseCaseTest {
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -106,7 +107,7 @@ class AddAuthenticatedUserUseCaseTest {
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any())
         }.wasNotInvoked()
 
         coVerify {
@@ -153,7 +154,7 @@ class AddAuthenticatedUserUseCaseTest {
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -222,7 +223,7 @@ class AddAuthenticatedUserUseCaseTest {
             arrangement.sessionRepository.doesValidSessionExist(any())
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any())
         }.wasNotInvoked()
         coVerify {
             arrangement.sessionRepository.updateCurrentSession(any())
@@ -267,13 +268,15 @@ class AddAuthenticatedUserUseCaseTest {
 
         coVerify {
             arrangement.sessionRepository.storeSession(
-                TEST_SERVER_CONFIG.id,
-                TEST_SSO_ID,
-                tokens,
-                proxyCredentials,
-                null,
-                false,
-                nomadServiceUrl
+                StoreSessionParam(
+                    serverConfigId = TEST_SERVER_CONFIG.id,
+                    ssoId = TEST_SSO_ID,
+                    accountTokens = tokens,
+                    proxyCredentials = proxyCredentials,
+                    managedBy = null,
+                    isPersistentWebSocketEnabled = false,
+                    nomadServiceUrl = nomadServiceUrl,
+                )
             )
         }.wasInvoked(exactly = once)
     }
@@ -346,13 +349,15 @@ class AddAuthenticatedUserUseCaseTest {
         ) = apply {
             coEvery {
                 sessionRepository.storeSession(
-                    serverConfigId,
-                    ssoId,
-                    accountTokens,
-                    proxyCredentials,
-                    managedBy,
-                    isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
-                    nomadServiceUrl = nomadServiceUrl
+                    StoreSessionParam(
+                        serverConfigId = serverConfigId,
+                        ssoId = ssoId,
+                        accountTokens = accountTokens,
+                        proxyCredentials = proxyCredentials,
+                        managedBy = managedBy,
+                        isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
+                        nomadServiceUrl = nomadServiceUrl,
+                    )
                 )
             }.returns(result)
         }

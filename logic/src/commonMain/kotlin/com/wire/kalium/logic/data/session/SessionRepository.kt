@@ -54,15 +54,7 @@ import kotlinx.coroutines.flow.map
 @Suppress("TooManyFunctions")
 @Mockable
 internal interface SessionRepository {
-    suspend fun storeSession(
-        serverConfigId: String,
-        ssoId: SsoId?,
-        accountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?,
-        managedBy: SsoManagedBy?,
-        isPersistentWebSocketEnabled: Boolean,
-        nomadServiceUrl: String? = null,
-    ): Either<StorageFailure, Unit>
+    suspend fun storeSession(session: StoreSessionParam): Either<StorageFailure, Unit>
 
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
     suspend fun allSessionsFlow(): Flow<List<AccountInfo>>
@@ -90,6 +82,16 @@ internal interface SessionRepository {
     suspend fun validSessionsWithServerConfig(): Either<StorageFailure, Map<UserId, ServerConfig>>
 }
 
+internal data class StoreSessionParam(
+    val serverConfigId: String,
+    val ssoId: SsoId?,
+    val accountTokens: AccountTokens,
+    val proxyCredentials: ProxyCredentials?,
+    val managedBy: SsoManagedBy?,
+    val isPersistentWebSocketEnabled: Boolean,
+    val nomadServiceUrl: String? = null,
+)
+
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class SessionDataSource internal constructor(
     private val accountsDAO: AccountsDAO,
@@ -100,29 +102,21 @@ internal class SessionDataSource internal constructor(
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionRepository {
 
-    override suspend fun storeSession(
-        serverConfigId: String,
-        ssoId: SsoId?,
-        accountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?,
-        managedBy: SsoManagedBy?,
-        isPersistentWebSocketEnabled: Boolean,
-        nomadServiceUrl: String?,
-    ): Either<StorageFailure, Unit> =
+    override suspend fun storeSession(session: StoreSessionParam): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.insertOrReplace(
-                userIDEntity = accountTokens.userId.toDao(),
-                ssoIdEntity = sessionMapper.toSsoIdEntity(ssoId),
-                managedByEntity = managedBy?.toDao(),
-                serverConfigId = serverConfigId,
-                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
-                nomadServiceUrl = nomadServiceUrl
+                userIDEntity = session.accountTokens.userId.toDao(),
+                ssoIdEntity = sessionMapper.toSsoIdEntity(session.ssoId),
+                managedByEntity = session.managedBy?.toDao(),
+                serverConfigId = session.serverConfigId,
+                isPersistentWebSocketEnabled = session.isPersistentWebSocketEnabled,
+                nomadServiceUrl = session.nomadServiceUrl
             )
         }.flatMap {
             wrapStorageRequest {
                 authTokenStorage.addOrReplace(
-                    sessionMapper.toAuthTokensEntity(accountTokens),
-                    proxyCredentials?.let { sessionMapper.fromModelToProxyCredentialsEntity(it) }
+                    sessionMapper.toAuthTokensEntity(session.accountTokens),
+                    session.proxyCredentials?.let { sessionMapper.fromModelToProxyCredentialsEntity(it) }
                 )
             }
         }
