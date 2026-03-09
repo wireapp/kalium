@@ -89,6 +89,7 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
     private val mutex = Mutex()
     private var debounceJob: Job? = null
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun onCryptoStateChanged(userId: UserId) {
         if (userId != selfUserId) {
             return
