@@ -79,6 +79,7 @@ import com.wire.kalium.network.session.SessionManager
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.websocket.WebSocketSession
 
+@Suppress("LongParameterList")
 internal class AuthenticatedNetworkContainerV0 @Suppress("LongParameterList")
 internal constructor(
     private val sessionManager: SessionManager,

@@ -19,6 +19,7 @@ package action
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -38,10 +39,14 @@ object LoginActions {
 
         coreLogic.globalScope {
             val storeResult = addAuthenticatedAccount(
-                serverConfigId = loginResult.serverConfigId,
-                ssoId = loginResult.ssoID,
-                authTokens = loginResult.authData,
-                proxyCredentials = loginResult.proxyCredentials,
+                session = StoreSessionParam(
+                    serverConfigId = loginResult.serverConfigId,
+                    ssoId = loginResult.ssoID,
+                    accountTokens = loginResult.authData,
+                    proxyCredentials = loginResult.proxyCredentials,
+                    managedBy = null,
+                    isPersistentWebSocketEnabled = false,
+                ),
                 replace = true
             )
             if (storeResult !is AddAuthenticatedUserUseCase.Result.Success) {

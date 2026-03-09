@@ -26,12 +26,9 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
-import com.wire.kalium.logic.data.auth.AccountTokens
-import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.session.StoreSessionParam
-import com.wire.kalium.logic.data.user.SsoId
-import com.wire.kalium.logic.data.user.SsoManagedBy
+import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
@@ -54,15 +51,8 @@ public class AddAuthenticatedUserUseCase internal constructor(
         }
     }
 
-    @Suppress("LongParameterList")
-    @Deprecated("Use invoke(StoreSessionParam, AccountTokens, Boolean)")
     public suspend operator fun invoke(
-        serverConfigId: String,
-        ssoId: SsoId?,
-        authTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?,
-        isPersistentWebSocketEnabled: Boolean,
-        managedBy: SsoManagedBy? = null,
+        session: StoreSessionParam,
         replace: Boolean = false,
         nomadServiceUrl: String? = null
     ): Result = StoreSessionParam(
@@ -81,7 +71,7 @@ public class AddAuthenticatedUserUseCase internal constructor(
         session: StoreSessionParam,
         authTokens: AccountTokens,
         replace: Boolean = false,
-    ): Result = sessionRepository.doesValidSessionExist(authTokens.userId).fold(
+    ): Result = sessionRepository.doesValidSessionExist(session.accountTokens.userId).fold(
         {
             Result.Failure.Generic(it)
         },
