@@ -82,7 +82,7 @@ internal interface SessionRepository {
     suspend fun validSessionsWithServerConfig(): Either<StorageFailure, Map<UserId, ServerConfig>>
 }
 
-internal data class StoreSessionParam(
+data class StoreSessionParam(
     val serverConfigId: String,
     val ssoId: SsoId?,
     val accountTokens: AccountTokens,
