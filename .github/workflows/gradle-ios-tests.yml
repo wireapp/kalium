@@ -1,6 +1,7 @@
 name: "iOS Tests"
 
 on:
+  workflow_dispatch:
   merge_group:
   pull_request:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
@@ -25,13 +26,14 @@ jobs:
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
-      - name: Cache Kotlin/Native tooling (.konan)
-        uses: actions/cache@v4
+      - name: Restore Kotlin/Native tooling cache (.konan)
+        id: konan-cache
+        uses: actions/cache/restore@v4
         with:
           path: ~/.konan
-          key: ${{ runner.os }}-konan-${{ hashFiles('gradle.properties', 'settings.gradle.kts', 'build.gradle.kts', 'gradle/libs.versions.toml', '**/*.gradle.kts') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-konan-${{ hashFiles('gradle.properties', 'gradle/libs.versions.toml') }}
           restore-keys: |
-            ${{ runner.os }}-konan-
+            ${{ runner.os }}-${{ runner.arch }}-konan-
 
       - name: iOS Tests
         run: ./gradlew iOSOnlyAffectedTest
@@ -69,6 +71,13 @@ jobs:
         run: |
           rm -f ~/.gradle/caches/modules-2/modules-2.lock
           rm -f ~/.gradle/caches/modules-2/gc.properties
+
+      - name: Save Kotlin/Native tooling cache (.konan)
+        if: always() && steps.konan-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.konan
+          key: ${{ steps.konan-cache.outputs.cache-primary-key }}
 
   upload-test-results-datadadog:
     runs-on: ubuntu-latest
