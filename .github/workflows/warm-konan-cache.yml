@@ -1,0 +1,39 @@
+name: "Warm Konan Cache"
+
+on:
+  push:
+    branches: [ develop, main ]
+    paths:
+      - gradle.properties
+      - gradle/libs.versions.toml
+
+jobs:
+  warm-konan-cache:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Restore Konan cache
+        id: konan-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.konan
+          key: ${{ runner.os }}-${{ runner.arch }}-konan-${{ hashFiles('gradle.properties', 'gradle/libs.versions.toml') }}
+
+      - name: Download Kotlin/Native toolchain
+        if: steps.konan-cache.outputs.cache-hit != 'true'
+        run: ./gradlew :logic:compileKotlinIosSimulatorArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Save Konan cache
+        if: always() && steps.konan-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.konan
+          key: ${{ steps.konan-cache.outputs.cache-primary-key }}
