@@ -240,7 +240,8 @@ class InstanceService(
                             password = instanceRequest.password,
                             capabilities = emptyList(),
                             clientType = ClientType.Permanent,
-                            model = instanceRequest.deviceName
+                            model = instanceRequest.deviceName,
+                            secondFactorVerificationCode = instanceRequest.verificationCode
                         )
                     )
                     ) {
