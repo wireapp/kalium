@@ -469,6 +469,17 @@ VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ON CONFLICT(qualified_id) DO UPDATE SET
     last_modified_date = MAX(last_modified_date, excluded.last_modified_date);
 
+insertIncompleteConversationOrBumpLastModifiedDate:
+INSERT INTO Conversation(
+    qualified_id, type, mls_group_state, protocol, creator_id,
+    last_modified_date, access_list, access_role_list, mls_cipher_suite,
+    incomplete_metadata
+)
+VALUES(:qualified_id, 'GROUP', 'ESTABLISHED', 'PROTEUS', '',
+       :last_modified_date, '', '', 'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519', 1)
+ON CONFLICT(qualified_id) DO UPDATE SET
+    last_modified_date = MAX(last_modified_date, excluded.last_modified_date);
+
 hasConversationWithCell:
 SELECT EXISTS (
     SELECT 1 FROM Conversation WHERE wire_cell IS NOT NULL
