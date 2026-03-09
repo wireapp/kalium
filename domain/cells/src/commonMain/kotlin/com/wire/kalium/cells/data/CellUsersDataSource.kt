@@ -19,7 +19,9 @@ package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
+import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.firstOrNull
@@ -27,6 +29,7 @@ import kotlinx.coroutines.withContext
 
 internal class CellUsersDataSource(
     private val userDAO: UserDAO,
+    private val memberDAO: MemberDAO,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : CellUsersRepository {
     override suspend fun getUserNames() = withContext(dispatchers.io) {
@@ -42,6 +45,18 @@ internal class CellUsersDataSource(
     override suspend fun getUsers() = withContext(dispatchers.io) {
         wrapStorageRequest {
             userDAO.getAllUsersDetails().firstOrNull()
+        }
+    }
+
+    override suspend fun getConversationMemberDetails(conversationId: QualifiedIDEntity) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            val memberUserIds = memberDAO.getConversationMembers(conversationId)
+
+            if (memberUserIds.isEmpty()) {
+                emptyList()
+            } else {
+                userDAO.getUsersDetailsByQualifiedIDList(memberUserIds)
+            }
         }
     }
 }

@@ -719,4 +719,8 @@ internal class ConversationDAOImpl internal constructor(
         withContext(readDispatcher.value) {
             conversationQueries.selectAllMLSConversationsByDomain(domain, conversationMapper::toConversationEntity).executeAsList()
         }
+
+    override suspend fun getCellGroupConversations(): List<ConversationEntity> = withContext(readDispatcher.value) {
+        conversationQueries.selectCellGroupConversations(conversationMapper::toConversationEntity).executeAsList()
+    }
 }

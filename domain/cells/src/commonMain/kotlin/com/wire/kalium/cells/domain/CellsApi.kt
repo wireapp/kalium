@@ -38,6 +38,7 @@ internal interface CellsApi {
         offset: Int,
         fileFilters: FileFilters,
         sortingSpec: SortingSpec,
+        isRecursive: Boolean = true,
     ): NetworkResponse<GetNodesResponseDTO>
 
     suspend fun getNodesForPath(
