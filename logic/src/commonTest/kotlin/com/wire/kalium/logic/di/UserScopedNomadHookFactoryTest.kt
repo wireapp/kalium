@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature
+package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier

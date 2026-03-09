@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
+
 package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageRequest
@@ -24,7 +26,6 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
-import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.user.UserId
