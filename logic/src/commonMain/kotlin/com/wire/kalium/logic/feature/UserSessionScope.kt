@@ -709,6 +709,7 @@ public class UserSessionScope internal constructor(
             UserAuthenticatedNetworkApis(
                 container = AuthenticatedNetworkContainer.create(
                     sessionManager = sessionManager,
+                    nomadServiceUrl = sessionManager.nomadServiceUrl(),
                     selfUserId = UserIdDTO(userId.value, userId.domain),
                     userAgent = userAgent,
                     certificatePinning = kaliumConfigs.certPinningConfig,

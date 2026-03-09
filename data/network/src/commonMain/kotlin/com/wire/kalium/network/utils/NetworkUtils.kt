@@ -50,6 +50,11 @@ internal fun HttpRequestBuilder.setUrl(baseUrl: String, vararg path: String) {
     setHttpsUrl(parsedUrl, path.toList())
 }
 
+internal fun HttpRequestBuilder.setUrl(baseUrl: String, path: List<String>) {
+    val parsedUrl = Url(baseUrl)
+    setHttpsUrl(parsedUrl, path)
+}
+
 private fun HttpRequestBuilder.setHttpsUrl(baseUrl: Url, path: List<String>) {
     url {
         host = baseUrl.host
