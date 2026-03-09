@@ -39,6 +39,8 @@ import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceText
 import kotlinx.coroutines.test.runTest
+import okio.Sink
+import okio.Source
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -182,6 +184,18 @@ class SyncNomadAllMessagesUseCaseTest {
         override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> = allMessagesResponse
 
         override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> {
+            error("Not needed in this test")
+        }
+
+        override suspend fun uploadCryptoState(
+            clientId: String,
+            backupSource: () -> Source,
+            backupSize: Long
+        ): NetworkResponse<Unit> {
+            error("Not needed in this test")
+        }
+
+        override suspend fun downloadCryptoState(tempBackupFileSink: Sink): NetworkResponse<Unit> {
             error("Not needed in this test")
         }
     }
