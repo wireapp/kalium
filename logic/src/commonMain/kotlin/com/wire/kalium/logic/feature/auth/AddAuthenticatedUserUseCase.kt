@@ -54,6 +54,8 @@ public class AddAuthenticatedUserUseCase internal constructor(
         }
     }
 
+    @Suppress("LongParameterList")
+    @Deprecated("Use invoke(StoreSessionParam, AccountTokens, Boolean)")
     public suspend operator fun invoke(
         serverConfigId: String,
         ssoId: SsoId?,
@@ -63,20 +65,27 @@ public class AddAuthenticatedUserUseCase internal constructor(
         managedBy: SsoManagedBy? = null,
         replace: Boolean = false,
         nomadServiceUrl: String? = null
+    ): Result = StoreSessionParam(
+        serverConfigId = serverConfigId,
+        ssoId = ssoId,
+        accountTokens = authTokens,
+        proxyCredentials = proxyCredentials,
+        managedBy = managedBy,
+        isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
+        nomadServiceUrl = nomadServiceUrl,
+    ).let {
+        invoke(it, authTokens, replace)
+    }
+
+    public suspend operator fun invoke(
+        session: StoreSessionParam,
+        authTokens: AccountTokens,
+        replace: Boolean = false,
     ): Result = sessionRepository.doesValidSessionExist(authTokens.userId).fold(
         {
             Result.Failure.Generic(it)
         },
         { doesValidSessionExist ->
-            val session = StoreSessionParam(
-                serverConfigId = serverConfigId,
-                ssoId = ssoId,
-                accountTokens = authTokens,
-                proxyCredentials = proxyCredentials,
-                managedBy = managedBy,
-                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
-                nomadServiceUrl = nomadServiceUrl,
-            )
             when (doesValidSessionExist) {
                 true -> onUserExist(
                     session,
