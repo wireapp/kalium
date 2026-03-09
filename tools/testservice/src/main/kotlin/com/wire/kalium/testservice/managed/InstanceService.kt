@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
@@ -228,14 +229,15 @@ class InstanceService(
         log.info("Instance $instanceId: Save Session")
         val userId = coreLogic.globalScope {
             val addAccountResult = addAuthenticatedAccount(
-                loginResult.serverConfigId,
-                loginResult.ssoID,
-                loginResult.authData,
-                null,
-                false,
-                null,
-                true,
-
+                session = StoreSessionParam(
+                    serverConfigId = loginResult.serverConfigId,
+                    ssoId = loginResult.ssoID,
+                    accountTokens = loginResult.authData,
+                    proxyCredentials = null,
+                    managedBy = null,
+                    isPersistentWebSocketEnabled = false,
+                ),
+                replace = true,
             )
             if (addAccountResult !is AddAuthenticatedUserUseCase.Result.Success) {
                 throw WebApplicationException("Instance $instanceId: Failed to save session")
