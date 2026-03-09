@@ -51,7 +51,6 @@ public class AddAuthenticatedUserUseCase internal constructor(
 
     public suspend operator fun invoke(
         session: StoreSessionParam,
-        authTokens: AccountTokens,
         replace: Boolean = false,
     ): Result = sessionRepository.doesValidSessionExist(session.accountTokens.userId).fold(
         {
