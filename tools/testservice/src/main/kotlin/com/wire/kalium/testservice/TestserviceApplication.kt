@@ -25,6 +25,7 @@ import com.wire.kalium.testservice.api.v1.ConversationResources
 import com.wire.kalium.testservice.api.v1.E2EIResources
 import com.wire.kalium.testservice.api.v1.InstanceLifecycle
 import com.wire.kalium.testservice.api.v1.LogResources
+import com.wire.kalium.testservice.api.v1.VersionResources
 import com.wire.kalium.testservice.health.TestserviceHealthCheck
 import com.wire.kalium.testservice.managed.InstanceService
 import io.dropwizard.Application
@@ -38,6 +39,7 @@ import io.prometheus.client.dropwizard.DropwizardExports
 import io.prometheus.client.exporter.MetricsServlet
 import org.eclipse.jetty.servlet.ServletHolder
 import org.slf4j.LoggerFactory
+import org.slf4j.MDC
 
 class TestserviceApplication : Application<TestserviceConfiguration>() {
 
@@ -65,6 +67,7 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
 
     override fun run(configuration: TestserviceConfiguration, environment: Environment) {
 
+        MDC.put("version", VersionResources.commit)
         log.info("Creating cleanup worker pool...")
         val cleanupPool = environment.lifecycle().scheduledExecutorService(name, true)
             .threads(2)
@@ -91,6 +94,7 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
         val e2eiResources = E2EIResources(instanceService)
         val instanceLifecycle = InstanceLifecycle(instanceService, configuration)
         val logResources = LogResources(configuration)
+        val versionResources = VersionResources()
         environment.healthChecks().register("template", TestserviceHealthCheck(configuration))
         // returns better error messages on JSON issues
         environment.jersey().register(JsonProcessingExceptionMapper(true))
@@ -99,6 +103,7 @@ class TestserviceApplication : Application<TestserviceConfiguration>() {
         environment.jersey().register(e2eiResources)
         environment.jersey().register(instanceLifecycle)
         environment.jersey().register(logResources)
+        environment.jersey().register(versionResources)
 
         // metrics
         val jmxReporter = JmxReporter.forRegistry(environment.metrics()).build()
