@@ -54,6 +54,7 @@ public class AddAuthenticatedUserUseCase internal constructor(
         }
     }
 
+    @Suppress("LongParameterList")
     @Deprecated("Use invoke(StoreSessionParam, AccountTokens, Boolean)")
     public suspend operator fun invoke(
         serverConfigId: String,
@@ -72,7 +73,9 @@ public class AddAuthenticatedUserUseCase internal constructor(
         managedBy = managedBy,
         isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
         nomadServiceUrl = nomadServiceUrl,
-    ).let { invoke(it, authTokens, replace)}
+    ).let {
+        invoke(it, authTokens, replace)
+    }
 
     public suspend operator fun invoke(
         session: StoreSessionParam,
