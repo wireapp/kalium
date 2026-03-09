@@ -63,6 +63,7 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
     /**
      * Logs user in and register client (if not registered)
      */
+    @Suppress("LongMethod")
     override suspend fun login(coreLogic: CoreLogic, callback: (Monkey) -> Unit) {
         val userData = this.monkeyType.userData()
         val secondFactor = userData.request2FA()
