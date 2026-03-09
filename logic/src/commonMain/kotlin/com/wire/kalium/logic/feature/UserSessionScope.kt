@@ -2694,6 +2694,7 @@ public class UserSessionScope internal constructor(
                     attachmentsDao = messageAttachments,
                     assetsDao = assetDAO,
                     userDao = userDAO,
+                    memberDao = memberDAO,
                     publicLinkDao = publicLinks,
                     userConfigDAO = userConfigDAO,
                 )

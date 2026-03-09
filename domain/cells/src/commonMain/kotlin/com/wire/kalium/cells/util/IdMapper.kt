@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2025 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,18 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain
+package com.wire.kalium.cells.util
 
-import com.wire.kalium.cells.domain.model.CellConversation
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import io.mockative.Mockable
 
-@Mockable
-internal interface CellConversationRepository {
-    suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
-    suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>>
-    suspend fun hasConversationWithCell(): Either<StorageFailure, Boolean>
-    suspend fun getCellGroupConversations(): Either<StorageFailure, List<CellConversation>>
+public fun String?.toQualifiedIdOrNull(): QualifiedIDEntity? {
+    val sanitized = this?.trim().orEmpty()
+    if (sanitized.isEmpty()) return null
+    val value = sanitized.substringBefore('@')
+    val domain = sanitized.substringAfter('@', missingDelimiterValue = "")
+    return QualifiedIDEntity(value = value, domain = domain)
 }
