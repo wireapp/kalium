@@ -93,6 +93,7 @@ internal class CellsApiImpl(
         offset: Int,
         fileFilters: FileFilters,
         sortingSpec: SortingSpec,
+        isRecursive: Boolean,
     ): NetworkResponse<GetNodesResponseDTO> =
         wrapCellsResponse {
             val metadataFilters = fileFilters.tags.toMetaDataFilters(MetadataKeys.TAGS) +
@@ -103,7 +104,7 @@ internal class CellsApiImpl(
                 RestLookupRequest(
                     limit = limit.toString(),
                     offset = offset.toString(),
-                    scope = RestLookupScope(recursive = true),
+                    scope = RestLookupScope(recursive = isRecursive),
                     filters = RestLookupFilter(
                         type = TreeNodeType.LEAF,
                         text = LookupFilterTextSearch(

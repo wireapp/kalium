@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2025 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,17 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cells.domain
 
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserDetailsEntity
-import io.mockative.Mockable
+package com.wire.kalium.testservice.models
 
-@Mockable
-internal interface CellUsersRepository {
-    suspend fun getUserNames(): Either<StorageFailure, List<Pair<String, String>>>
-    suspend fun getUsers(): Either<StorageFailure, List<UserDetailsEntity>>
-    suspend fun getConversationMemberDetails(conversationId: QualifiedIDEntity): Either<StorageFailure, List<UserDetailsEntity>>
+data class VersionResponse(val commit: String) {
+    val url: String
+        get() = "https://github.com/wireapp/kalium/tree/$commit"
 }
