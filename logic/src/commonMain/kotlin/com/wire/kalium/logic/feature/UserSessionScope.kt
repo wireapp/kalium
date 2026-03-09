@@ -203,6 +203,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserConfigStorageFactory
+import com.wire.kalium.logic.di.UserScopedNomadHookFactory
 import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
 import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
@@ -529,8 +530,14 @@ import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.messaging.hooks.ConversationClearEventData
+import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
+import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.PersistedMessageData
+import com.wire.kalium.messaging.hooks.ReactionEventData
+import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
@@ -574,11 +581,9 @@ public class UserSessionScope internal constructor(
     private val rootPathsProvider: RootPathsProvider,
     dataStoragePaths: DataStoragePaths,
     private val kaliumConfigs: KaliumConfigs,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
-    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
     private val userSessionScopeProvider: UserSessionScopeProvider,
-    userStorageProvider: UserStorageProvider,
-    userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
+    private val userStorageProvider: UserStorageProvider,
+    private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
     private val clientConfig: ClientConfig,
     private val platformUserStorageProperties: PlatformUserStorageProperties,
     networkStateObserver: NetworkStateObserver,
@@ -630,6 +635,39 @@ public class UserSessionScope internal constructor(
             globalScope.sessionRepository
         )
 
+    private var persistenceEventHookNotifier: PersistenceEventHookNotifier? = null
+    private var cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier? = null
+
+    // Consumers keep a stable reference to these forwarding hooks. The actual Nomad hooks stay unset
+    // until the session URL has been checked and a user-scoped hook pair has been created.
+    private val currentPersistenceEventHookNotifier = object : PersistenceEventHookNotifier {
+        override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
+            persistenceEventHookNotifier?.onMessagePersisted(message, selfUserId)
+        }
+
+        override suspend fun onMessageDeleted(data: MessageDeleteEventData, selfUserId: UserId) {
+            persistenceEventHookNotifier?.onMessageDeleted(data, selfUserId)
+        }
+
+        override suspend fun onReactionPersisted(data: ReactionEventData, selfUserId: UserId) {
+            persistenceEventHookNotifier?.onReactionPersisted(data, selfUserId)
+        }
+
+        override suspend fun onReadReceiptPersisted(data: ReadReceiptEventData, selfUserId: UserId) {
+            persistenceEventHookNotifier?.onReadReceiptPersisted(data, selfUserId)
+        }
+
+        override suspend fun onConversationDeleted(data: ConversationDeleteEventData, selfUserId: UserId) {
+            persistenceEventHookNotifier?.onConversationDeleted(data, selfUserId)
+        }
+
+        override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
+            persistenceEventHookNotifier?.onConversationCleared(data, selfUserId)
+        }
+    }
+    private val currentCryptoStateChangeHookNotifier = CryptoStateChangeHookNotifier { changedUserId ->
+        cryptoStateChangeHookNotifier?.onCryptoStateChanged(changedUserId)
+    }
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider
         get() = IsClientAsyncNotificationsCapableProviderImpl(clientRegistrationStorage, this)
 
@@ -704,12 +742,19 @@ public class UserSessionScope internal constructor(
         tokenStorage = globalPreferences.authTokenStorage,
         logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = true) }
     )
+
+    /**
+     * Keep the session's Nomad URL lookup in one place so both networking and hook setup share the same value.
+     * SessionManager caches the backing account row, which avoids duplicate reads when this value is reused.
+     */
+    private val nomadServiceUrl: String? = sessionManager.nomadServiceUrl()?.takeIf { it.isNotBlank() }
+
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer =
         userAuthenticatedNetworkProvider.getOrCreate(userId.toApi()) {
             UserAuthenticatedNetworkApis(
                 container = AuthenticatedNetworkContainer.create(
                     sessionManager = sessionManager,
-                    nomadServiceUrl = sessionManager.nomadServiceUrl(),
+                    nomadServiceUrl = nomadServiceUrl,
                     selfUserId = UserIdDTO(userId.value, userId.domain),
                     userAgent = userAgent,
                     certificatePinning = kaliumConfigs.certPinningConfig,
@@ -722,6 +767,7 @@ public class UserSessionScope internal constructor(
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
+    private val userScopedNomadHookFactory = UserScopedNomadHookFactory()
 
     internal val cellsClient: HttpClient
         get() = authenticatedNetworkContainer.cellsHttpClient
@@ -816,7 +862,7 @@ public class UserSessionScope internal constructor(
                 mutex = mlsMutex
             ),
             userId = userId,
-            hookNotifier = cryptoStateChangeHookNotifier
+            hookNotifier = currentCryptoStateChangeHookNotifier
         )
 
     private val mlsMissingUsersRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler = {
@@ -837,7 +883,7 @@ public class UserSessionScope internal constructor(
             mlsConversationRepository,
             userConfigRepository,
             userId,
-            cryptoStateChangeHookNotifier
+            currentCryptoStateChangeHookNotifier
         )
 
     private val e2EIClientProvider: E2EIClientProvider by lazy {
@@ -846,7 +892,7 @@ public class UserSessionScope internal constructor(
             mlsClientProvider = mlsClientProvider,
             userRepository = userRepository,
             selfUserId = userId,
-            cryptoStateChangeHookNotifier = cryptoStateChangeHookNotifier
+            cryptoStateChangeHookNotifier = currentCryptoStateChangeHookNotifier
         )
     }
 
@@ -1087,7 +1133,7 @@ public class UserSessionScope internal constructor(
             messageRepository = messageRepository,
             selfUserId = userId,
             notificationEventsManager = NotificationEventsManagerImpl,
-            persistMessageHookNotifier = persistenceEventHookNotifier
+            persistMessageHookNotifier = currentPersistenceEventHookNotifier
         )
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
@@ -1258,7 +1304,7 @@ public class UserSessionScope internal constructor(
             keyPackageLimitsProvider,
             userConfigRepository,
             userId,
-            cryptoStateChangeHookNotifier
+            currentCryptoStateChangeHookNotifier
         )
 
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
@@ -1526,7 +1572,7 @@ public class UserSessionScope internal constructor(
                     keyPackageLimitsProvider,
                     userConfigRepository,
                     userId,
-                    cryptoStateChangeHookNotifier
+                    currentCryptoStateChangeHookNotifier
                 )
             },
             this,
@@ -1635,7 +1681,7 @@ public class UserSessionScope internal constructor(
         get() = PersistReactionUseCaseImpl(
             reactionRepository = reactionRepository,
             selfUserId = userId,
-            persistenceEventHookNotifier = persistenceEventHookNotifier,
+            persistenceEventHookNotifier = currentPersistenceEventHookNotifier,
         )
 
     private val mlsUnpacker: MLSMessageUnpacker
@@ -1661,7 +1707,7 @@ public class UserSessionScope internal constructor(
             selfUserId = this.userId,
             receiptRepository = receiptRepository,
             messageRepository = messageRepository,
-            persistenceEventHookNotifier = persistenceEventHookNotifier,
+            persistenceEventHookNotifier = currentPersistenceEventHookNotifier,
         )
 
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
@@ -1715,7 +1761,7 @@ public class UserSessionScope internal constructor(
                 isMessageSentInSelfConversation,
                 conversations.clearConversationAssetsLocally,
                 deleteConversationUseCase,
-                persistenceEventHookNotifier,
+                currentPersistenceEventHookNotifier,
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
             DeleteMessageHandlerImpl(
@@ -1723,7 +1769,7 @@ public class UserSessionScope internal constructor(
                 assetRepository,
                 NotificationEventsManagerImpl,
                 userId,
-                persistenceEventHookNotifier
+                currentPersistenceEventHookNotifier
             ),
             messageEncoder,
             receiptMessageHandler,
@@ -1785,7 +1831,7 @@ public class UserSessionScope internal constructor(
             conversationRepository,
             NotificationEventsManagerImpl,
             deleteConversationUseCase,
-            persistenceEventHookNotifier,
+            currentPersistenceEventHookNotifier,
             userId,
         )
     private val memberJoinHandler: MemberJoinEventHandler
@@ -2221,7 +2267,7 @@ public class UserSessionScope internal constructor(
             userConfigRepository,
             cryptoTransactionProvider,
             isAllowedToUseAsyncNotifications,
-            cryptoStateChangeHookNotifier
+            currentCryptoStateChangeHookNotifier
         )
     }
     public val conversations: ConversationScope by lazy {
@@ -2348,7 +2394,7 @@ public class UserSessionScope internal constructor(
             { joinExistingMLSConversationUseCase },
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
-            persistenceEventHookNotifier,
+            currentPersistenceEventHookNotifier,
             this,
             userScopedLogger
         )
@@ -2729,11 +2775,30 @@ public class UserSessionScope internal constructor(
         { slowSyncRepository.slowSyncStatus.map { it is SlowSyncStatus.Ongoing } }
     )
 
+    private fun registerNomadHooksIfConfigured() {
+        val hooks = userScopedNomadHookFactory.createIfConfigured(
+            selfUserId = userId,
+            nomadServiceUrl = nomadServiceUrl,
+            userStorageProvider = userStorageProvider,
+            userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
+            scope = this,
+            backup = {
+                backup.backupAndUploadCryptoState()
+            }
+        ) ?: return
+
+        // Both hooks are instantiated inside the session scope so they stay bound to this user only.
+        persistenceEventHookNotifier = hooks.persistence
+        cryptoStateChangeHookNotifier = hooks.crypto
+    }
+
     /**
      * This will start subscribers of observable work per user session, as long as the user is logged in.
      * When the user logs out, this work will be canceled.
      */
     init {
+        registerNomadHooksIfConfigured()
+
         launch {
             @Suppress("TooGenericExceptionCaught")
             try {

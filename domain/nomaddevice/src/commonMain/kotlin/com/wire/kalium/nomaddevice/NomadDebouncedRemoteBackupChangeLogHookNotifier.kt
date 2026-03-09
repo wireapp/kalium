@@ -93,6 +93,31 @@ public fun createDebouncedNomadRemoteBackupChangeLogHookNotifier(
     )
 }
 
+/**
+ * User-scoped variant of [createDebouncedNomadRemoteBackupChangeLogHookNotifier].
+ *
+ * Logic uses this when a concrete session has a Nomad service URL configured, so the hook is registered
+ * only for that account and cannot accidentally process another user's events.
+ */
+public fun createUserScopedDebouncedNomadRemoteBackupChangeLogHookNotifier(
+    selfUserId: UserId,
+    userStorageProvider: UserStorageProvider,
+    nomadAuthenticatedNetworkAccess: NomadAuthenticatedNetworkAccess,
+    scope: CoroutineScope,
+    config: NomadRemoteBackupDebouncedSyncConfig = NomadRemoteBackupDebouncedSyncConfig(),
+    pageSize: Long = DEFAULT_SYNC_PAGE_SIZE,
+): PersistenceEventHookNotifier =
+    UserScopedNomadPersistenceEventHookNotifier(
+        selfUserId = selfUserId,
+        delegate = createDebouncedNomadRemoteBackupChangeLogHookNotifier(
+            userStorageProvider = userStorageProvider,
+            nomadAuthenticatedNetworkAccess = nomadAuthenticatedNetworkAccess,
+            scope = scope,
+            config = config,
+            pageSize = pageSize,
+        )
+    )
+
 internal class DebouncedNomadRemoteBackupChangeLogHookNotifier(
     private val delegate: PersistenceEventHookNotifier,
     private val onHookTriggered: suspend (UserId) -> Unit,

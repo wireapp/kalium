@@ -15,10 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
 @file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
 
 package com.wire.kalium.logic.feature.auth
-
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.fold
