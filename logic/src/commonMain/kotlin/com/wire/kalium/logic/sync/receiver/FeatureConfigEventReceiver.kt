@@ -70,17 +70,30 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
         deliveryInfo: EventDeliveryInfo
     ): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
-        return handleFeatureConfigEvent(event)
+        return handleFeatureConfigEvent(event, transactionContext)
             .onSuccess { logger.logSuccess() }
             .onFailure { logger.logFailure(it) }
     }
 
     @Suppress("LongMethod", "ComplexMethod")
-    private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
+    private suspend fun handleFeatureConfigEvent(
+        event: Event.FeatureConfig,
+        transactionContext: CryptoTransactionContext
+    ): Either<CoreFailure, Unit> =
         when (event) {
             is Event.FeatureConfig.FileSharingUpdated -> fileSharingConfigHandler.handle(event.model)
-            is Event.FeatureConfig.MLSUpdated -> mlsConfigHandler.handle(event.model, duringSlowSync = false)
-            is Event.FeatureConfig.MLSMigrationUpdated -> mlsMigrationConfigHandler.handle(event.model, duringSlowSync = false)
+            is Event.FeatureConfig.MLSUpdated ->
+                mlsConfigHandler.handle(
+                    mlsConfig = event.model,
+                    duringSlowSync = false,
+                    transactionContext = transactionContext
+                )
+            is Event.FeatureConfig.MLSMigrationUpdated ->
+                mlsMigrationConfigHandler.handle(
+                    mlsMigrationConfig = event.model,
+                    duringSlowSync = false,
+                    transactionContext = transactionContext
+                )
             is Event.FeatureConfig.ClassifiedDomainsUpdated -> classifiedDomainsConfigHandler.handle(event.model)
             is Event.FeatureConfig.ConferenceCallingUpdated -> conferenceCallingConfigHandler.handle(event.model)
             is Event.FeatureConfig.GuestRoomLinkUpdated -> guestRoomConfigHandler.handle(event.model)
