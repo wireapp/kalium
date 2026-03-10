@@ -25,9 +25,13 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
+import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
+import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesConfigModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.user.SupportedProtocol
+import kotlinx.datetime.Instant
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
@@ -320,6 +324,61 @@ class FeatureConfigEventReceiverTest {
     }
 
     @Test
+    fun givenMLSUpdatedEvent_whenProcessingEvent_thenTransactionContextIsPassedDirectlyToHandler() = runTest {
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withMLSConfigSetup()
+            .arrange()
+
+        featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            event = Event.FeatureConfig.MLSUpdated(
+                "eventId",
+                MLSModel(
+                    defaultProtocol = SupportedProtocol.PROTEUS,
+                    supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
+                    status = Status.ENABLED,
+                    supportedCipherSuite = null
+                )
+            ),
+            deliveryInfo = TestEvent.liveDeliveryInfo
+        )
+
+        coVerify {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenMLSMigrationUpdatedEventWithMigrationEnded_whenProcessingEvent_thenTransactionContextIsPassedDirectlyToHandler() = runTest {
+        val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withMLSMigrationConfigSetup()
+            .arrange()
+
+        featureConfigEventReceiver.onEvent(
+            arrangement.transactionContext,
+            event = Event.FeatureConfig.MLSMigrationUpdated(
+                "eventId",
+                MLSMigrationModel(
+                    startTime = Instant.DISTANT_PAST,
+                    endTime = Instant.DISTANT_PAST,
+                    status = Status.ENABLED
+                )
+            ),
+            deliveryInfo = TestEvent.liveDeliveryInfo
+        )
+
+        coVerify {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
     fun givenUnknownFeatureConfig_whenPrecessing_thenReturnSuccess() = runTest {
         val newUnknownFeatureUpdate = TestEvent.newUnknownFeatureUpdate()
         val (arrangement, handler) = Arrangement()
@@ -396,6 +455,33 @@ class FeatureConfigEventReceiverTest {
             }.returns(Either.Left(StorageFailure.DataNotFound))
             coEvery {
                 userConfigRepository.setTeamSettingsSelfDeletionStatus(any())
+            }.returns(Either.Right(Unit))
+        }
+
+        suspend fun withMLSConfigSetup() = apply {
+            coEvery {
+                userConfigRepository.getSupportedProtocols()
+            }.returns(Either.Right(setOf(SupportedProtocol.PROTEUS)))
+            coEvery {
+                userConfigRepository.setMLSEnabled(any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                userConfigRepository.setDefaultProtocol(any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                userConfigRepository.setSupportedProtocols(any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), any())
+            }.returns(Either.Right(Unit))
+        }
+
+        suspend fun withMLSMigrationConfigSetup() = apply {
+            coEvery {
+                userConfigRepository.setMigrationConfiguration(any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), any())
             }.returns(Either.Right(Unit))
         }
 

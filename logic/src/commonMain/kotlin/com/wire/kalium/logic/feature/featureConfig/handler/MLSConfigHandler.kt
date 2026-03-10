@@ -26,6 +26,7 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneO
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 
 internal class MLSConfigHandler(
@@ -33,7 +34,11 @@ internal class MLSConfigHandler(
     private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
     private val transactionProvider: CryptoTransactionProvider
 ) {
-    internal suspend fun handle(mlsConfig: MLSModel, duringSlowSync: Boolean): Either<CoreFailure, Unit> {
+    internal suspend fun handle(
+        mlsConfig: MLSModel,
+        duringSlowSync: Boolean,
+        transactionContext: CryptoTransactionContext? = null
+    ): Either<CoreFailure, Unit> {
         val mlsEnabled = mlsConfig.status == Status.ENABLED
         val isMLSSupported = mlsConfig.supportedProtocols.contains(SupportedProtocol.MLS)
         val previousSupportedProtocols = userConfigRepository.getSupportedProtocols().getOrElse(setOf(SupportedProtocol.PROTEUS))
@@ -47,11 +52,12 @@ internal class MLSConfigHandler(
                 userConfigRepository.setSupportedProtocols(mlsConfig.supportedProtocols)
             }.flatMap {
                 if (supportedProtocolsHasChanged) {
-                    transactionProvider.transaction("MLSConfigHandler") { transactionContext ->
-                        updateSupportedProtocolsAndResolveOneOnOnes(
-                            transactionContext = transactionContext,
-                            synchroniseUsers = !duringSlowSync
-                        )
+                    if (transactionContext != null) {
+                        updateSupportedProtocolsAndResolveOneOnOnes(transactionContext, !duringSlowSync)
+                    } else {
+                        transactionProvider.transaction("MLSConfigHandler") { ctx ->
+                            updateSupportedProtocolsAndResolveOneOnOnes(ctx, !duringSlowSync)
+                        }
                     }
                 } else {
                     Either.Right(Unit)
