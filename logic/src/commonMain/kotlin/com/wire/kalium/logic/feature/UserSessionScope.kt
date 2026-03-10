@@ -527,6 +527,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandler
 import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
+import com.wire.kalium.logic.sync.slow.SyncNomadMessagesDuringSlowSyncUseCaseImpl
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -542,8 +543,6 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
-import com.wire.kalium.nomaddevice.NomadAuthenticatedNetworkAccess
-import com.wire.kalium.nomaddevice.SyncNomadAllMessagesUseCase
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
@@ -1399,20 +1398,13 @@ public class UserSessionScope internal constructor(
             fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver,
             cryptoTransactionProvider,
-            shouldSyncNomadMessages = nomadServiceUrl != null,
-            syncNomadAllMessages = {
-                SyncNomadAllMessagesUseCase(
-                    userStorageProvider = userStorageProvider,
-                    nomadAuthenticatedNetworkAccess = NomadAuthenticatedNetworkAccess(userAuthenticatedNetworkProvider)
-                )(userId).map { result ->
-                    userScopedLogger.i(
-                        "Nomad all-messages slow sync finished for ${userId.toLogString()}: " +
-                            "downloaded=${result.downloadedMessages}, stored=${result.storedMessages}, " +
-                            "skipped=${result.skippedMessages}, batches=${result.batches}"
-                    )
-                    Unit
-                }
-            }
+            syncNomadMessagesDuringSlowSync = SyncNomadMessagesDuringSlowSyncUseCaseImpl(
+                selfUserId = userId,
+                nomadServiceUrl = nomadServiceUrl,
+                userStorageProvider = userStorageProvider,
+                userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
+                logger = userScopedLogger
+            )
         )
     }
 

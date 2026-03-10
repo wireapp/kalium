@@ -621,7 +621,7 @@ class SlowSyncWorkerTest {
 
         assertEquals(
             if (steps.contains(SlowSyncStep.NOMAD_MESSAGES)) 1 else 0,
-            arrangement.syncNomadAllMessagesInvocations
+            arrangement.syncNomadMessagesDuringSlowSync.invocations
         )
 
         coVerify {
@@ -647,9 +647,7 @@ class SlowSyncWorkerTest {
         val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
         val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
-        var shouldSyncNomadMessages: Boolean = false
-        var syncNomadAllMessagesInvocations: Int = 0
-        var syncNomadAllMessagesResult: Either<CoreFailure, Unit> = success
+        val syncNomadMessagesDuringSlowSync = FakeSyncNomadMessagesDuringSlowSyncUseCase()
 
         init {
             runBlocking {
@@ -675,11 +673,7 @@ class SlowSyncWorkerTest {
             oneOnOneResolver = oneOnOneResolver,
             isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             transactionProvider = cryptoTransactionProvider,
-            shouldSyncNomadMessages = shouldSyncNomadMessages,
-            syncNomadAllMessages = {
-                syncNomadAllMessagesInvocations += 1
-                syncNomadAllMessagesResult
-            }
+            syncNomadMessagesDuringSlowSync = syncNomadMessagesDuringSlowSync
         )
 
         suspend fun withSyncSelfUserFailure() = apply {
@@ -815,15 +809,28 @@ class SlowSyncWorkerTest {
         }
 
         fun withNomadEnabled() = apply {
-            shouldSyncNomadMessages = true
+            syncNomadMessagesDuringSlowSync.enabled = true
         }
 
         fun withSyncNomadAllMessagesSuccess() = apply {
-            syncNomadAllMessagesResult = success
+            syncNomadMessagesDuringSlowSync.result = success
         }
 
         fun withSyncNomadAllMessagesFailure() = apply {
-            syncNomadAllMessagesResult = failure
+            syncNomadMessagesDuringSlowSync.result = failure
+        }
+
+        class FakeSyncNomadMessagesDuringSlowSyncUseCase : SyncNomadMessagesDuringSlowSyncUseCase {
+            var enabled: Boolean = false
+            var invocations: Int = 0
+            var result: Either<CoreFailure, Unit> = Either.Right(Unit)
+
+            override fun isEnabled(): Boolean = enabled
+
+            override suspend fun invoke(): Either<CoreFailure, Unit> {
+                invocations += 1
+                return result
+            }
         }
     }
 
