@@ -98,7 +98,9 @@ public actual class CoreLogic(
         userSessionScopeProvider.value.delete(userId)
     }
 
-    actual override val globalCallManager: GlobalCallManager = GlobalCallManager(getGlobalScope(), networkStateObserver)
+    actual override val globalCallManager: GlobalCallManager by lazy {
+        GlobalCallManager(getGlobalScope(), networkStateObserver)
+    }
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
     public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
 
