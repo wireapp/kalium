@@ -28,8 +28,6 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 import okio.Path
 import okio.buffer
@@ -55,6 +53,7 @@ internal class DownloadCryptoStateUseCaseImpl(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : DownloadCryptoStateUseCase {
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun invoke(): DownloadCryptoStateResult = withContext(dispatchers.io) {
         val backupFileName = createBackupFileName()
         val backupFilePath = kaliumFileSystem.tempFilePath(backupFileName)
