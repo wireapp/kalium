@@ -255,11 +255,14 @@ class MLSClientImpl(
         }
 
         override suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>? {
+            kaliumLogger.i("e2eiMlsInitOnly: starting")
             return context.e2eiMlsInitOnly(
                 (enrollment as E2EIClientImpl).wireE2eIdentity,
                 certificateChain,
                 null
-            )
+            ).also {
+                kaliumLogger.i("e2eiMlsInitOnly: completed (crlDistributionPoints=${it?.size ?: 0})")
+            }
         }
 
         override suspend fun isE2EIEnabled(): Boolean {
@@ -294,11 +297,15 @@ class MLSClientImpl(
         }
 
         override suspend fun removeStaleKeyPackages() {
+            kaliumLogger.w("removeStaleKeyPackages: deleting stale key packages for defaultCipherSuite=$defaultCipherSuite")
             return context.deleteStaleKeyPackages(defaultCipherSuite)
         }
 
         override suspend fun saveX509Credential(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>? {
-            return context.saveX509Credential((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain)
+            kaliumLogger.i("saveX509Credential: starting")
+            return context.saveX509Credential((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain).also {
+                kaliumLogger.i("saveX509Credential: completed (crlDistributionPoints=${it?.size ?: 0})")
+            }
 
         }
 

@@ -137,13 +137,15 @@ class CoreCryptoCentralImpl(
             }
         })
 
-        cc.transaction("e2eiMlsInitOnly") {
+        kaliumLogger.i("CoreCryptoCentral: e2eiMlsInitOnly start (newMLSKeyPackageCount=$newMLSKeyPackageCount)")
+        val crlDistributionPoints = cc.transaction("e2eiMlsInitOnly") {
             it.e2eiMlsInitOnly(
                 (enrollment as E2EIClientImpl).wireE2eIdentity,
                 certificateChain,
                 newMLSKeyPackageCount
             )
         }
+        kaliumLogger.i("CoreCryptoCentral: e2eiMlsInitOnly completed (crlDistributionPoints=${crlDistributionPoints?.size ?: 0})")
 
         cc.registerEpochObserver(
             coroutineScope,

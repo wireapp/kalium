@@ -292,6 +292,89 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     @Test
+    fun givenProcessedWelcome_whenProcessingSameWelcomeAgain_thenItFails() = runTest {
+        val aliceArrangement = create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+
+        val aliceKeyPackage = aliceClient.transaction { it.generateKeyPackages(1).first() }
+        bobClient.transaction {
+            it.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
+            it.addMember(MLS_CONVERSATION_ID, listOf(aliceKeyPackage))
+        }
+        val welcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+
+        aliceClient.transaction { it.processWelcomeMessage(welcome) }
+
+        val secondProcessingException = assertFailsWith<Throwable> {
+            aliceClient.transaction { it.processWelcomeMessage(welcome) }
+        }
+
+        assertTrue(
+            secondProcessingException.toString().contains("OrphanWelcome") ||
+                secondProcessingException.toString().contains("ConversationAlreadyExists"),
+            "Expected OrphanWelcome/ConversationAlreadyExists on second processing of the same welcome. Got: $secondProcessingException"
+        )
+    }
+
+    @Test
+    fun givenSingleKeyPackageUsedInTwoWelcomes_whenProcessingSecondWelcome_thenItFails() = runTest {
+        val aliceArrangement = create(
+            ALICE1,
+            ::createMLSClient,
+        )
+
+        val bobArrangement = create(
+            BOB1,
+            ::createMLSClient,
+        )
+
+        val carolArrangement = create(
+            CAROL1,
+            ::createMLSClient,
+        )
+
+        val aliceClient = aliceArrangement.mlsClient
+        val bobClient = bobArrangement.mlsClient
+        val carolClient = carolArrangement.mlsClient
+
+        val aliceSingleKeyPackage = aliceClient.transaction { it.generateKeyPackages(1).first() }
+
+        bobClient.transaction {
+            it.createConversation(MLS_CONVERSATION_ID, externalSenderKey)
+            it.addMember(MLS_CONVERSATION_ID, listOf(aliceSingleKeyPackage))
+        }
+        val bobWelcome = bobArrangement.sendCommitBundleFlow.first().first.welcome!!
+
+        carolClient.transaction {
+            it.createConversation(MLS_CONVERSATION_ID_2, externalSenderKey)
+            it.addMember(MLS_CONVERSATION_ID_2, listOf(aliceSingleKeyPackage))
+        }
+        val carolWelcome = carolArrangement.sendCommitBundleFlow.first().first.welcome!!
+
+        aliceClient.transaction { it.processWelcomeMessage(bobWelcome) }
+
+        val secondWelcomeException = assertFailsWith<Throwable> {
+            aliceClient.transaction { it.processWelcomeMessage(carolWelcome) }
+        }
+        assertTrue(
+            secondWelcomeException.toString().contains("KeyPackage") ||
+                secondWelcomeException.toString().contains("OrphanWelcome") ||
+                secondWelcomeException.toString().contains("deleted locally"),
+            "Expected second welcome to fail due to key package reuse/consumption. Got: $secondWelcomeException"
+        )
+    }
+
+    @Test
     fun givenThreeClients_whenCallingAddMember_weCanProcessTheHandshakeMessage() = runTest {
         val aliceArrangement = create(
             ALICE1,
@@ -548,6 +631,7 @@ class MLSClientTest : BaseMLSClientTest() {
         val DEFAULT_CIPHER_SUITES = MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         val ALLOWED_CIPHER_SUITES = listOf(MLSCiphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
         const val MLS_CONVERSATION_ID = "JfflcPtUivbg+1U3Iyrzsh5D2ui/OGS5Rvf52ipH5KY="
+        const val MLS_CONVERSATION_ID_2 = "RcxM1TU5nG4jpi2W3vG16v5f6c8f8ynJv0jW2bN9H7A="
         const val PLAIN_TEXT = "Hello World"
         val ALICE1 = SampleUser(
             CryptoQualifiedID("837655f7-b448-465a-b4b2-93f0919b38f0", "wire.com"),

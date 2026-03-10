@@ -682,13 +682,24 @@ internal class MLSConversationDataSource(
         certificateChain: String,
         groupIdList: List<GroupID>,
         isNewClient: Boolean
-    ): Either<E2EIFailure, Unit> = wrapMLSRequest { mlsContext.saveX509Credential(e2eiClient, certificateChain) }
+    ): Either<E2EIFailure, Unit> {
+        logger.i(
+            "rotateKeysAndMigrateConversations: starting " +
+                "(isNewClient=$isNewClient, totalGroups=${groupIdList.size})"
+        )
+        return wrapMLSRequest { mlsContext.saveX509Credential(e2eiClient, certificateChain) }
         .flatMap { crlNewDistributionPoints ->
+            logger.i(
+                "rotateKeysAndMigrateConversations: saveX509Credential succeeded " +
+                    "(crlDistributionPoints=${crlNewDistributionPoints?.size ?: 0})"
+            )
             val existingGroupList =
                 groupIdList.filter { hasEstablishedMLSGroup(mlsContext, it).fold({ false }, { hasEstablished -> hasEstablished }) }
+            logger.i("rotateKeysAndMigrateConversations: establishedGroups=${existingGroupList.size}")
             wrapMLSRequest { mlsContext.e2eiRotateGroups(existingGroupList.map { it.toCrypto() }) }
                 .flatMap { wrapMLSRequest { mlsContext.generateKeyPackages(keyPackageLimitsProvider.refillAmount()) } }
                 .flatMap { newKeyPackages ->
+                    logger.i("rotateKeysAndMigrateConversations: generatedNewKeyPackages=${newKeyPackages.size}")
                     crlNewDistributionPoints?.let { checkRevocationList(mlsContext, it) }
                     if (!isNewClient) {
                         logger.w("enrollment for existing client: upload new keypackages and drop old ones")
@@ -718,6 +729,7 @@ internal class MLSConversationDataSource(
         }, {
             Either.Right(Unit)
         })
+    }
 
     override suspend fun getClientIdentity(mlsContext: MlsCoreCryptoContext, clientId: ClientId) =
         wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }

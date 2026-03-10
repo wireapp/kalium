@@ -1111,6 +1111,42 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenNewClientRegistration_whenRotatingKeys_thenDoNotReplaceOrRemoveStaleKeyPackages() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetDefaultCipherSuiteSuccessful()
+            .withRotateGroupsSuccessful()
+            .withSaveX509CredentialsSuccessful(listOf())
+            .withKeyPackageLimits(10)
+            .withGenerateKeyPackageSuccessful(listOf())
+            .withReplaceKeyPackagesReturning(Either.Right(Unit))
+            .withRemoveStaleKeyPackages()
+            .arrange()
+
+        val result = mlsConversationRepository.rotateKeysAndMigrateConversations(
+            mlsContext = arrangement.mlsContext,
+            clientId = TestClient.CLIENT_ID,
+            e2eiClient = arrangement.e2eiClient,
+            certificateChain = "",
+            groupIdList = listOf(Arrangement.GROUP_ID),
+            isNewClient = true
+        )
+
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.mlsContext.e2eiRotateGroups(any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.mlsContext.removeStaleKeyPackages()
+        }.wasNotInvoked()
+    }
+
+    @Test
     fun givenReplacingKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetDefaultCipherSuiteSuccessful()
