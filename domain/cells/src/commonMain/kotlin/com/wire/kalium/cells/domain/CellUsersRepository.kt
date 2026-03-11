@@ -19,9 +19,13 @@ package com.wire.kalium.cells.domain
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import io.mockative.Mockable
 
 @Mockable
 internal interface CellUsersRepository {
     suspend fun getUserNames(): Either<StorageFailure, List<Pair<String, String>>>
+    suspend fun getUsers(): Either<StorageFailure, List<UserDetailsEntity>>
+    suspend fun getConversationMemberDetails(conversationId: QualifiedIDEntity): Either<StorageFailure, List<UserDetailsEntity>>
 }

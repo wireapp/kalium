@@ -32,6 +32,7 @@ import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemo
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
+import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsResult
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -44,6 +45,11 @@ import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangem
 import com.wire.kalium.logic.util.stubs.FailureSyncMigration
 import com.wire.kalium.logic.util.stubs.MigrationCrashStep
 import com.wire.kalium.logic.util.stubs.SuccessSyncMigration
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock as mokkeryMock
+import dev.mokkery.verify.VerifyMode as MokkeryVerifyMode
+import dev.mokkery.verifySuspend
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -56,6 +62,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -79,7 +86,7 @@ class SlowSyncWorkerTest {
 
         worker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        assertUseCases(arrangement, SlowSyncStep.values().toHashSet())
+        assertUseCases(arrangement, stepsWithNomadDisabled())
     }
 
     @Test
@@ -101,10 +108,77 @@ class SlowSyncWorkerTest {
     }
 
     @Test
+    fun givenSyncUserPropertiesFails_whenPerformingSlowSync_thenContinueWithNextSteps() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withSyncUserPropertiesFailure()
+            .withSyncFeatureConfigsSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withJoinMLSConversationsSuccess()
+            .withResolveOneOnOneConversationsSuccess()
+            .arrange()
+
+        worker.slowSyncStepsFlow(successfullyMigration).collect()
+
+        assertUseCases(arrangement, stepsWithNomadDisabled())
+    }
+
+    @Test
+    fun givenNomadIsEnabled_whenPerformingSlowSync_thenSyncNomadMessagesAfterContacts() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withSyncNomadAllMessagesSuccess()
+            .withJoinMLSConversationsSuccess()
+            .withResolveOneOnOneConversationsSuccess()
+            .withNomadEnabled()
+            .arrange()
+
+        val emittedSteps = mutableListOf<SlowSyncStep>()
+
+        worker.slowSyncStepsFlow(successfullyMigration).collect {
+            emittedSteps += it
+        }
+
+        assertEquals(
+            listOf(
+                SlowSyncStep.MIGRATION,
+                SlowSyncStep.SELF_USER,
+                SlowSyncStep.USER_PROPERTIES,
+                SlowSyncStep.FEATURE_FLAGS,
+                SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
+                SlowSyncStep.CONVERSATIONS,
+                SlowSyncStep.CONNECTIONS,
+                SlowSyncStep.SELF_TEAM,
+                SlowSyncStep.LEGAL_HOLD,
+                SlowSyncStep.CONTACTS,
+                SlowSyncStep.NOMAD_MESSAGES,
+                SlowSyncStep.JOINING_MLS_CONVERSATIONS,
+                SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS
+            ),
+            emittedSteps
+        )
+
+        assertUseCases(arrangement, SlowSyncStep.entries.toHashSet())
+    }
+
+    @Test
     fun givenSyncFeatureConfigsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.FEATURE_FLAGS
         )
         val (arrangement, worker) = Arrangement()
@@ -128,6 +202,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS
         )
@@ -153,6 +228,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS
@@ -180,6 +256,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
@@ -209,6 +286,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
@@ -240,6 +318,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
@@ -273,6 +352,7 @@ class SlowSyncWorkerTest {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
@@ -304,10 +384,50 @@ class SlowSyncWorkerTest {
     }
 
     @Test
+    fun givenNomadMessagesSyncFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
+        val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
+            SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
+            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
+            SlowSyncStep.FEATURE_FLAGS,
+            SlowSyncStep.CONVERSATIONS,
+            SlowSyncStep.CONNECTIONS,
+            SlowSyncStep.SELF_TEAM,
+            SlowSyncStep.LEGAL_HOLD,
+            SlowSyncStep.CONTACTS,
+            SlowSyncStep.NOMAD_MESSAGES,
+        )
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withSyncNomadAllMessagesFailure()
+            .withNomadEnabled()
+            .arrange()
+
+        assertFailsWith<KaliumSyncException> {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
+                assertTrue {
+                    it in steps
+                }
+            }
+        }
+
+        assertUseCases(arrangement, steps)
+    }
+
+    @Test
     fun givenJoinMLSConversationsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
             SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
@@ -457,6 +577,10 @@ class SlowSyncWorkerTest {
             arrangement.syncSelfUser.invoke()
         }.wasNotInvoked()
 
+        verifySuspend(MokkeryVerifyMode.not) {
+            arrangement.syncUserProperties.invoke()
+        }
+
         coVerify {
             arrangement.syncFeatureConfigs.invoke()
         }.wasNotInvoked()
@@ -466,6 +590,10 @@ class SlowSyncWorkerTest {
         coVerify {
             arrangement.syncSelfUser.invoke()
         }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_USER)) once else 0.times)
+
+        verifySuspend(MokkeryVerifyMode.exactly(if (steps.contains(SlowSyncStep.USER_PROPERTIES)) 1 else 0)) {
+            arrangement.syncUserProperties.invoke()
+        }
 
         coVerify {
             arrangement.syncFeatureConfigs.invoke()
@@ -491,6 +619,11 @@ class SlowSyncWorkerTest {
             arrangement.syncContacts.invoke()
         }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONTACTS)) once else 0.times)
 
+        assertEquals(
+            if (steps.contains(SlowSyncStep.NOMAD_MESSAGES)) 1 else 0,
+            arrangement.syncNomadMessagesDuringSlowSync.invocations
+        )
+
         coVerify {
             arrangement.joinMLSConversations.invoke(any())
         }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.JOINING_MLS_CONVERSATIONS)) once else 0.times)
@@ -503,6 +636,7 @@ class SlowSyncWorkerTest {
     private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val syncSelfUser: SyncSelfUserUseCase = mock(SyncSelfUserUseCase::class)
+        val syncUserProperties: SyncUserPropertiesUseCase = mokkeryMock<SyncUserPropertiesUseCase>()
         val syncFeatureConfigs: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
         val syncConversations: SyncConversationsUseCase = mock(SyncConversationsUseCase::class)
         val syncConnections: SyncConnectionsUseCase = mock(SyncConnectionsUseCase::class)
@@ -513,18 +647,21 @@ class SlowSyncWorkerTest {
         val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
         val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
+        val syncNomadMessagesDuringSlowSync = FakeSyncNomadMessagesDuringSlowSyncUseCase()
 
         init {
             runBlocking {
                 withLastSavedEventIdReturning(Either.Right("LastSavedEventId"))
                 withIsClientAsyncNotificationsCapableReturning(false)
                 withTransactionReturning(Either.Right(Unit))
+                withSyncUserPropertiesSuccess()
             }
         }
 
         fun arrange() = this to SlowSyncWorkerImpl(
             eventRepository = eventRepository,
             syncSelfUser = syncSelfUser,
+            syncUserProperties = syncUserProperties,
             syncFeatureConfigs = syncFeatureConfigs,
             syncConversations = syncConversations,
             syncConnections = syncConnections,
@@ -535,7 +672,8 @@ class SlowSyncWorkerTest {
             fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver = oneOnOneResolver,
             isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
-            transactionProvider = cryptoTransactionProvider
+            transactionProvider = cryptoTransactionProvider,
+            syncNomadMessagesDuringSlowSync = syncNomadMessagesDuringSlowSync
         )
 
         suspend fun withSyncSelfUserFailure() = apply {
@@ -548,6 +686,18 @@ class SlowSyncWorkerTest {
             coEvery {
                 syncSelfUser.invoke()
             }.returns(success)
+        }
+
+        suspend fun withSyncUserPropertiesFailure() = apply {
+            everySuspend {
+                syncUserProperties.invoke()
+            } returns failure
+        }
+
+        suspend fun withSyncUserPropertiesSuccess() = apply {
+            everySuspend {
+                syncUserProperties.invoke()
+            } returns success
         }
 
         suspend fun withSyncFeatureConfigsFailure() = apply {
@@ -657,6 +807,31 @@ class SlowSyncWorkerTest {
                 isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
             }.returns(value)
         }
+
+        fun withNomadEnabled() = apply {
+            syncNomadMessagesDuringSlowSync.enabled = true
+        }
+
+        fun withSyncNomadAllMessagesSuccess() = apply {
+            syncNomadMessagesDuringSlowSync.result = success
+        }
+
+        fun withSyncNomadAllMessagesFailure() = apply {
+            syncNomadMessagesDuringSlowSync.result = failure
+        }
+
+        class FakeSyncNomadMessagesDuringSlowSyncUseCase : SyncNomadMessagesDuringSlowSyncUseCase {
+            var enabled: Boolean = false
+            var invocations: Int = 0
+            var result: Either<CoreFailure, Unit> = Either.Right(Unit)
+
+            override fun isEnabled(): Boolean = enabled
+
+            override suspend fun invoke(): Either<CoreFailure, Unit> {
+                invocations += 1
+                return result
+            }
+        }
     }
 
     private companion object {
@@ -674,5 +849,8 @@ class SlowSyncWorkerTest {
             FailureSyncMigration(2),
             MigrationCrashStep(3, "this step should never be executed"),
         )
+
+        fun stepsWithNomadDisabled(): HashSet<SlowSyncStep> =
+            SlowSyncStep.entries.filterNot { it == SlowSyncStep.NOMAD_MESSAGES }.toHashSet()
     }
 }

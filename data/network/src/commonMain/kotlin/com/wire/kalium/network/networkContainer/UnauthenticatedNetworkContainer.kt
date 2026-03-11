@@ -25,6 +25,7 @@ import com.wire.kalium.network.api.base.unauthenticated.domainregistration.GetDo
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.systemsettings.UnauthorizedSettingsApi
 import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
@@ -52,6 +53,7 @@ interface UnauthenticatedNetworkContainer {
     val registerApi: RegisterApi
     val sso: SSOLoginApi
     val appVersioningApi: AppVersioningApi
+    val unauthorizedSettingsApi: UnauthorizedSettingsApi
     val verificationCodeApi: VerificationCodeApi
     val domainLookupApi: DomainLookupApi
     val remoteVersion: VersionApi

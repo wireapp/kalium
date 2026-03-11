@@ -61,9 +61,24 @@ tasks.named("run", JavaExec::class) {
 
 tasks.shadowJar {
     archiveBaseName.set("testservice")
+
+    // fix: Allow duplicates by default so mergeServiceFiles() can combine entries
+    // from multiple dependencies (fixes Dropwizard service discovery in shadow 9.3.1)
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
     mergeServiceFiles()
+
+    exclude("META-INF/*.RSA")
+    exclude("META-INF/*.SF")
+    exclude("META-INF/MANIFEST.MF")
+
     manifest {
-        attributes(mapOf("Main-Class" to mainFunctionClassName))
+        attributes(
+            mapOf(
+                "Main-Class" to mainFunctionClassName,
+                "Git-Commit" to rootProject.version
+            )
+        )
     }
 }
 
@@ -88,6 +103,7 @@ dependencies {
 
     // Okio
     implementation(libs.okio.core)
+    implementation(libs.ktxSerialization)
 
     // Test
     testImplementation(libs.kotlin.test)

@@ -113,7 +113,19 @@ internal class ProteusMessageUnpackerImpl(
                       "cryptoUserId": "${cryptoSessionId.userId.value.obfuscateId()}"
                     }
                     """.trimIndent()
-                logger.e("ProteusFailure when processing message detail: $loggableException")
+                when (ProteusMessageFailureHandler.handleFailure(it)) {
+                    ProteusMessageFailureResolution.Ignore -> {
+                        logger.i("Ignoring duplicate ProteusFailure when processing message: $loggableException")
+                    }
+
+                    ProteusMessageFailureResolution.RecoverSession -> {
+                        logger.w("ProteusFailure requires session recovery: $loggableException")
+                    }
+
+                    ProteusMessageFailureResolution.InformUser -> {
+                        logger.e("ProteusFailure when processing message: $loggableException")
+                    }
+                }
             }
 
             else -> logger.e("Failure when processing message: $it")

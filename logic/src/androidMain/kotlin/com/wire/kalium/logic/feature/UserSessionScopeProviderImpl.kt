@@ -25,10 +25,10 @@ import com.wire.kalium.logic.data.asset.AssetsStorageFolder
 import com.wire.kalium.logic.data.asset.CacheFolder
 import com.wire.kalium.logic.data.asset.DBFolder
 import com.wire.kalium.logic.data.asset.DataStoragePaths
+import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
@@ -37,6 +37,8 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.util.FileNameUtil
+import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
+import com.wire.kalium.userstorage.di.UserStorageProvider
 
 @Suppress("LongParameterList")
 internal actual open class UserSessionScopeProviderImpl(
@@ -49,10 +51,17 @@ internal actual open class UserSessionScopeProviderImpl(
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
+    private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
     private val networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
     userAgent: String
-) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent), UserSessionScopeProvider {
+) : UserSessionScopeProviderCommon(
+    globalCallManager,
+    userStorageProvider,
+    { userId -> userAuthenticatedNetworkProvider.remove(userId.toApi()) },
+    userAgent
+),
+    UserSessionScopeProvider {
 
     override fun create(userId: UserId): UserSessionScope {
         val userIdEntity = userId.toDao()
@@ -73,6 +82,7 @@ internal actual open class UserSessionScopeProviderImpl(
             dataStoragePaths = dataStoragePaths,
             kaliumConfigs = kaliumConfigs,
             userStorageProvider = userStorageProvider,
+            userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
             userSessionScopeProvider = this,
             networkStateObserver = networkStateObserver,
             logoutCallback = logoutCallback,

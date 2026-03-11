@@ -23,11 +23,11 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.IgnoreIOS
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -48,13 +48,13 @@ class SelfConversationIdProviderTest {
             assertEquals(listOf(Arrangement.PROTEUS_SELF_CONVERSATION_ID, Arrangement.MLS_SELF_CONVERSATION_ID), it.value)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusSelfConversationIdProvider()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsSelfConversationIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -69,9 +69,9 @@ class SelfConversationIdProviderTest {
             assertEquals(listOf(Arrangement.PROTEUS_SELF_CONVERSATION_ID), it.value)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusSelfConversationIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -87,16 +87,16 @@ class SelfConversationIdProviderTest {
             assertEquals(expected.value, it.value)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusSelfConversationIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val clientRepository = mock(ClientRepository::class)
-        val proteusSelfConversationIdProvider = mock(ProteusSelfConversationIdProvider::class)
-        val mlsSelfConversationIdProvider = mock(MLSSelfConversationIdProvider::class)
+        val clientRepository = mock<ClientRepository>()
+        val proteusSelfConversationIdProvider = mock<ProteusSelfConversationIdProvider>()
+        val mlsSelfConversationIdProvider = mock<MLSSelfConversationIdProvider>()
 
         val selfConversationIdProvider: SelfConversationIdProvider = SelfConversationIdProviderImpl(
             clientRepository,
@@ -105,21 +105,21 @@ class SelfConversationIdProviderTest {
         )
 
         suspend fun withHasRegisteredMLSClient(result: Either<CoreFailure, Boolean>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.hasRegisteredMLSClient()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withProteusSelfConversationId(result: Either<StorageFailure, ConversationId>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 proteusSelfConversationIdProvider.invoke()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withMLSSelfConversationId(result: Either<StorageFailure, ConversationId>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 mlsSelfConversationIdProvider.invoke()
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to selfConversationIdProvider

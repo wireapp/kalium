@@ -192,6 +192,33 @@ class MLSConfigHandlerTest {
 
 
     @Test
+    fun givenSupportedProtocolsChangedWithTransactionContext_whenSyncing_thenUpdateProtocolsDirectlyWithoutNewTransaction() = runTest {
+        val (arrangement, handler) = arrange {
+            withGetSupportedProtocolsReturning(Either.Right(setOf(SupportedProtocol.PROTEUS)))
+            withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful()
+            withSetSupportedProtocolsSuccessful()
+            withSetDefaultProtocolSuccessful()
+            withSetMLSEnabledSuccessful()
+        }
+
+        handler.handle(
+            MLS_CONFIG.copy(
+                status = Status.ENABLED,
+                supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+            ),
+            duringSlowSync = false,
+            transactionContext = arrangement.transactionContext
+        )
+
+        coVerify {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), eq(true))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
     fun givenSupportedCipherSuiteIsNotNull_whenHandlling_thenStoreTheSupportedCipherSuite() = runTest {
         val (arrangement, handler) = arrange {
             withGetSupportedProtocolsReturning(setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS).right())

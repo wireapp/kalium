@@ -31,6 +31,7 @@ import io.mockative.Mockable
 interface SessionManager {
     suspend fun session(): SessionDTO?
     fun serverConfig(): ServerConfigDTO
+    fun nomadServiceUrl(): String?
 
     /**
      * Updates the access token and (possibly) the refresh token for the session.

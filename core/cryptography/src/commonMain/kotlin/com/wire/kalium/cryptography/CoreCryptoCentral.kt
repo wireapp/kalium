@@ -83,6 +83,15 @@ interface CoreCryptoCentral {
      * @param pem fetched certificate chain in pem format from the CA
      */
     suspend fun registerIntermediateCa(pem: CertificateChain)
+
+    /**
+     * Export a compacted copy of the CoreCrypto database to the specified destination path.
+     * Uses SQLite's VACUUM INTO to create an encrypted copy of the database.
+     *
+     * @param destinationPath the path where the database copy should be created
+     * @throws Exception if the export operation fails
+     */
+    suspend fun exportDatabaseCopy(destinationPath: String)
 }
 
 suspend fun coreCryptoCentral(
@@ -103,6 +112,7 @@ suspend fun coreCryptoCentral(
 
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
-        rootDir = rootDir
+        rootDir = rootDir,
+        databaseKey = databaseKey
     )
 }

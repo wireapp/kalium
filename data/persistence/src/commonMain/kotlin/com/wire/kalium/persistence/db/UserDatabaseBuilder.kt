@@ -52,6 +52,8 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserPrefsDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAOImpl
+import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
+import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAOImpl
 import com.wire.kalium.persistence.dao.call.CallDAO
 import com.wire.kalium.persistence.dao.call.CallDAOImpl
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -84,6 +86,8 @@ import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftD
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDaoImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
+import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
+import com.wire.kalium.persistence.dao.backup.NomadMessagesDAOImpl
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDaoImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -138,6 +142,12 @@ expect fun userDatabaseBuilder(
     dbInvalidationControlEnabled: Boolean = false
 ): UserDatabaseBuilder
 
+/**
+ * Opens a database driver for an arbitrary path.
+ *
+ * This is a low-level/raw driver entrypoint. Callers should not assume automatic schema
+ * initialization/migration and must run migration explicitly when needed.
+ */
 internal expect fun userDatabaseDriverByPath(
     platformDatabaseData: PlatformDatabaseData,
     path: String,
@@ -190,9 +200,11 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
         MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
+        RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter,
+        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
         MessageThreadRootAdapter = TableMapper.messageThreadRootAdapter,
         MessageThreadItemAdapter = TableMapper.messageThreadItemAdapter,
-        MessageMainListAdapter = TableMapper.messageMainListAdapter
+        MessageMainListAdapter = TableMapper.messageMainListAdapter,
     )
 
     init {
@@ -384,11 +396,23 @@ class UserDatabaseBuilder internal constructor(
     val historyClientQueries: HistoryClientQueries
         get() = database.historyClientQueries
 
+    val nomadMessagesDAO: NomadMessagesDAO
+        get() = NomadMessagesDAOImpl(
+            usersQueries = database.usersQueries,
+            conversationsQueries = database.conversationsQueries,
+            messagesQueries = database.messagesQueries,
+            messageAttachmentsQueries = database.messageAttachmentsQueries,
+            writeDispatcher = writeDispatcher,
+        )
+
     val messageAttachments: MessageAttachmentsDao
         get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, readDispatcher, writeDispatcher)
 
     val publicLinks: PublicLinkDao
         get() = PublicLinkDaoImpl(database.publicLinksQueries, readDispatcher, writeDispatcher)
+
+    val remoteBackupChangeLogDAO: RemoteBackupChangeLogDAO
+        get() = RemoteBackupChangeLogDAOImpl(database.remotebackupChangeLogQueries, readDispatcher, writeDispatcher)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(

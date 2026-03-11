@@ -21,11 +21,13 @@ package com.wire.kalium.logic.sync.slow
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
@@ -42,6 +44,7 @@ import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemo
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
+import com.wire.kalium.logic.feature.user.SyncUserPropertiesUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.feature.user.toEither
 import com.wire.kalium.logic.sync.KaliumSyncException
@@ -71,6 +74,7 @@ internal class SlowSyncWorkerImpl(
     private val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider,
     private val eventRepository: EventRepository,
     private val syncSelfUser: SyncSelfUserUseCase,
+    private val syncUserProperties: SyncUserPropertiesUseCase,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase,
     private val syncConversations: SyncConversationsUseCase,
@@ -81,6 +85,7 @@ internal class SlowSyncWorkerImpl(
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val transactionProvider: CryptoTransactionProvider,
+    private val syncNomadMessagesDuringSlowSync: SyncNomadMessagesDuringSlowSyncUseCase = NoOpSyncNomadMessagesDuringSlowSyncUseCase,
     logger: KaliumLogger = kaliumLogger
 ) : SlowSyncWorker {
 
@@ -93,6 +98,16 @@ internal class SlowSyncWorkerImpl(
             slowSyncStep: SlowSyncStep,
             step: suspend () -> Either<CoreFailure, Unit>
         ) = flatMap { performStep(slowSyncStep, step) }
+
+        suspend fun Either<CoreFailure, Unit>.continueWithOptionalStep(
+            shouldRun: Boolean,
+            slowSyncStep: SlowSyncStep,
+            step: suspend () -> Either<CoreFailure, Unit>
+        ) = if (shouldRun) {
+            continueWithStep(slowSyncStep, step)
+        } else {
+            this
+        }
 
         logger.d("Starting SlowSync")
         val lastSavedEventIdToSaveOnSuccess = when (isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()) {
@@ -107,6 +122,13 @@ internal class SlowSyncWorkerImpl(
                 }
             }
                 .continueWithStep(SlowSyncStep.SELF_USER, syncSelfUser::invoke)
+                .continueWithStep(SlowSyncStep.USER_PROPERTIES) {
+                    // result of this step is intentionally ignored
+                    syncUserProperties.invoke()
+                        .onFailure {
+                            kaliumLogger.e("Failure during User Properties Sync $it")
+                        }.flatMapLeft { Unit.right() }
+                }
                 .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
                 .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().toEither().map { } }
                 .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
@@ -114,6 +136,11 @@ internal class SlowSyncWorkerImpl(
                 .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
                 .continueWithStep(SlowSyncStep.LEGAL_HOLD) { fetchLegalHoldForSelfUserFromRemoteUseCase().map { } }
                 .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
+                .continueWithOptionalStep(
+                    syncNomadMessagesDuringSlowSync.isEnabled(),
+                    SlowSyncStep.NOMAD_MESSAGES,
+                    syncNomadMessagesDuringSlowSync::invoke
+                )
                 .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
                 .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS) {
                     transactionProvider.transaction(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS.name) {

@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.incremental
 
 import com.wire.kalium.common.functional.foldToEitherWhileRight
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -30,6 +31,8 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import io.mockative.Mockable
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -84,6 +87,9 @@ internal class IncrementalSyncWorkerImpl(
                                     acc
                                 }
                             }
+                            .flatMap { eventIds ->
+                                eventProcessor.flushPendingSideEffects().map { eventIds }
+                            }
                     }
                 }
                     .onSuccess { eventIds ->
@@ -92,7 +98,9 @@ internal class IncrementalSyncWorkerImpl(
                             return@onSuccess
                         }
 
-                        eventRepository.setEventsAsProcessed(eventIds)
+                        withContext(NonCancellable) {
+                            eventRepository.setEventsAsProcessed(eventIds)
+                        }
                             .onSuccess {
                                 logger.i("${eventIds.size} events set as processed")
                             }

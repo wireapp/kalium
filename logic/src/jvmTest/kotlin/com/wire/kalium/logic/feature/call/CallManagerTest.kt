@@ -43,31 +43,57 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
+import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
-import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.network.NetworkStateObserver
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import com.wire.kalium.util.KaliumDispatcher
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
 import kotlinx.datetime.Instant
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 internal class CallManagerTest {
-    private val dispatcher = TestKaliumDispatcher
+    private lateinit var testDispatcher: TestDispatcher
+
+    @BeforeTest
+    fun setup() {
+        testDispatcher = StandardTestDispatcher()
+        Dispatchers.setMain(testDispatcher)
+    }
+
+    @AfterTest
+    fun breakDown() {
+        Dispatchers.resetMain()
+    }
+
 
     @Test
     @Suppress("FunctionNaming") // native function has that name
-    fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled() = runTest(dispatcher.main) {
-        val (arrangement, callManager) = Arrangement()
+    fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled() = runTest {
+        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
             .onCurrentClientIdReturning(CLIENT_ID.right())
             .onParseToFederatedIdReturning(USER_ID, USER_ID.toString())
             .onParseToFederatedIdReturning(CALL_CONV_ID, CALL_CONV_ID.toString())
@@ -83,7 +109,7 @@ internal class CallManagerTest {
             message = CALL_MESSAGE,
         )
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_recv_msg(
                 eq(BASE_HANDLE),
                 matches { it.contentEquals(CALL_CONTENT.value.toByteArray()) },
@@ -95,63 +121,64 @@ internal class CallManagerTest {
                 eq(CLIENT_ID.value),
                 any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    inner class Arrangement {
-        internal val calling = mock(Calling::class)
-        internal val callRepository = mock(CallRepository::class)
-        internal val messageSender = mock(MessageSender::class)
-        internal val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        internal val mediaManagerService = mock(MediaManagerService::class)
-        internal val flowManagerService = mock(FlowManagerService::class)
-        internal val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
-        internal val userConfigRepository = mock(UserConfigRepository::class)
-        internal val conversationRepository = mock(ConversationRepository::class)
-        internal val federatedIdMapper = mock(FederatedIdMapper::class)
-        internal val qualifiedIdMapper = mock(QualifiedIdMapper::class)
-        internal val conversationClientsInCallUpdater = mock(ConversationClientsInCallUpdater::class)
-        internal val videoStateChecker = mock(VideoStateChecker::class)
-        internal val networkStateObserver = mock(NetworkStateObserver::class)
-        internal val getCallConversationType = mock(GetCallConversationTypeProvider::class)
-        internal val createAndPersistRecentlyEndedCallMetadata = mock(CreateAndPersistRecentlyEndedCallMetadataUseCase::class)
+    inner class Arrangement(private val kaliumTestDispatcher: KaliumDispatcher) {
+        internal val calling = mock<Calling>(MockMode.autoUnit)
+        internal val callRepository = mock<CallRepository>()
+        internal val messageSender = mock<MessageSender>()
+        internal val currentClientIdProvider = mock<CurrentClientIdProvider>()
+        internal val mediaManagerService = mock<MediaManagerService>(MockMode.autoUnit)
+        internal val flowManagerService = mock<FlowManagerService>(MockMode.autoUnit)
+        internal val selfConversationIdProvider = mock<SelfConversationIdProvider>()
+        internal val userConfigRepository = mock<UserConfigRepository>()
+        internal val conversationRepository = mock<ConversationRepository>()
+        internal val federatedIdMapper = mock<FederatedIdMapper>()
+        internal val qualifiedIdMapper = mock<QualifiedIdMapper>()
+        internal val conversationClientsInCallUpdater = mock<ConversationClientsInCallUpdater>()
+        internal val epochInfoUpdater = mock<EpochInfoUpdater>()
+        internal val videoStateChecker = mock<VideoStateChecker>()
+        internal val networkStateObserver = mock<NetworkStateObserver>()
+        internal val getCallConversationType = mock<GetCallConversationTypeProvider>()
+        internal val createAndPersistRecentlyEndedCallMetadata = mock<CreateAndPersistRecentlyEndedCallMetadataUseCase>()
         internal val selfUserId = UserId(value = "selfUserId", domain = "selfDomain")
         internal val kaliumConfigs = KaliumConfigs()
         internal val callMapper = CallMapperImpl(qualifiedIdMapper)
 
-        suspend fun onCurrentClientIdReturning(result: Either<CoreFailure, ClientId>) = apply {
-            coEvery { currentClientIdProvider() }.returns(result)
+        fun onCurrentClientIdReturning(result: Either<CoreFailure, ClientId>) = apply {
+            everySuspend { currentClientIdProvider() } returns result
         }
 
-        suspend fun onParseToFederatedIdReturning(id: QualifiedID, result: String) = apply {
-            coEvery { federatedIdMapper.parseToFederatedId(id) }.returns(result)
+        fun onParseToFederatedIdReturning(id: QualifiedID, result: String) = apply {
+            everySuspend { federatedIdMapper.parseToFederatedId(id) } returns result
         }
 
         fun onWcallCreateReturning(handle: Handle) = apply {
             every {
                 calling
                     .wcall_create(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any())
-            }.invokes {
-                val readyHandler = it[2] as ReadyHandler
+            } calls { callArgs ->
+                val readyHandler = callArgs.args[2] as ReadyHandler
                 readyHandler.onReady(0, null)
                 handle
             }
         }
 
         fun onWcallRecvMsgReturning(result: Int) = apply {
-            every { calling.wcall_recv_msg(any(), any(), any(), any(), any(), any(), any(), any(), any()) }.returns(result)
+            every { calling.wcall_recv_msg(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns result
         }
 
-        suspend fun onObserveConversationMembersReturning(result: List<Conversation.Member>) = apply {
-            coEvery { conversationRepository.observeConversationMembers(any()) }.returns(flowOf(result))
+        fun onObserveConversationMembersReturning(result: List<Conversation.Member>) = apply {
+            everySuspend { conversationRepository.observeConversationMembers(any()) } returns flowOf(result)
         }
 
-        suspend fun onGetCallConversationTypeReturning(result: ConversationTypeCalling) = apply {
-            coEvery { getCallConversationType(any()) }.returns(result)
+        fun onGetCallConversationTypeReturning(result: ConversationTypeCalling) = apply {
+            everySuspend { getCallConversationType(any()) } returns result
         }
 
-        suspend fun withFetchServerTimeReturning() = apply {
-            coEvery { callRepository.fetchServerTime() }.returns("2022-03-30T16:36:00.000Z")
+        fun withFetchServerTimeReturning() = apply {
+            everySuspend { callRepository.fetchServerTime() } returns "2022-03-30T16:36:00.000Z"
         }
 
         suspend fun arrange() = this to CallManagerImpl(
@@ -162,13 +189,14 @@ internal class CallManagerTest {
             conversationRepository = conversationRepository,
             userConfigRepository = userConfigRepository,
             messageSender = messageSender,
-            kaliumDispatchers = dispatcher,
+            kaliumDispatchers = kaliumTestDispatcher,
             federatedIdMapper = federatedIdMapper,
             qualifiedIdMapper = qualifiedIdMapper,
             videoStateChecker = videoStateChecker,
             callMapper = callMapper,
             getCallConversationType = getCallConversationType,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+            epochInfoUpdater = epochInfoUpdater,
             networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs,
             mediaManagerService = mediaManagerService,

@@ -1,43 +1,17 @@
-CREATE TABLE MessageMainList (
-    conversation_id TEXT NOT NULL,
-    message_id TEXT NOT NULL,
-    creation_date INTEGER NOT NULL,
-    visibility TEXT NOT NULL,
-    PRIMARY KEY (conversation_id, message_id),
-    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.backup.ChangeLogEventType;
+
+CREATE TABLE RemotebackupChangeLog (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    message_id TEXT,
+    event_type INTEGER AS ChangeLogEventType NOT NULL,
+    timestamp_ms INTEGER NOT NULL,
+    CHECK (
+        (event_type >= 500 AND message_id IS NULL )
+        OR
+        (event_type < 500 AND message_id IS NOT NULL)
+    ),
+    PRIMARY KEY (conversation_id, message_id, event_type)
 );
 
-CREATE INDEX message_main_list_conv_vis_date_desc
-ON MessageMainList(conversation_id, visibility, creation_date DESC, message_id);
-
-INSERT INTO MessageMainList (conversation_id, message_id, creation_date, visibility)
-SELECT conversation_id, id, creation_date, visibility FROM Message;
-
-CREATE TABLE MessageThreadRoot (
-    conversation_id TEXT NOT NULL,
-    root_message_id TEXT NOT NULL,
-    thread_id TEXT NOT NULL,
-    created_at INTEGER NOT NULL,
-    visible_reply_count INTEGER NOT NULL DEFAULT 0,
-    last_reply_date INTEGER,
-    PRIMARY KEY (conversation_id, root_message_id),
-    UNIQUE (conversation_id, thread_id),
-    FOREIGN KEY (root_message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-CREATE TABLE MessageThreadItem (
-    conversation_id TEXT NOT NULL,
-    thread_id TEXT NOT NULL,
-    message_id TEXT NOT NULL,
-    creation_date INTEGER NOT NULL,
-    is_root INTEGER NOT NULL,
-    visibility TEXT NOT NULL DEFAULT 'VISIBLE',
-    PRIMARY KEY (conversation_id, message_id),
-    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE
-);
-
-CREATE INDEX message_thread_item_conv_thread_vis_date_desc
-ON MessageThreadItem(conversation_id, thread_id, visibility, creation_date DESC, message_id);
-
-CREATE INDEX message_thread_item_conv_thread_message
-ON MessageThreadItem(conversation_id, thread_id, message_id);
+CREATE INDEX RemotebackupChangeLog_timestamp_idx ON RemotebackupChangeLog(timestamp_ms);

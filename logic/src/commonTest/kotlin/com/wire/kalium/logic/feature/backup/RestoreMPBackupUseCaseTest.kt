@@ -25,9 +25,10 @@ import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
-import com.wire.kalium.logic.data.backup.BackupThreadData
 import com.wire.kalium.logic.data.backup.BackupRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
@@ -60,6 +61,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -89,7 +91,6 @@ class RestoreMPBackupUseCaseTest {
         coVerify { arrangement.backupRepository.insertUsers(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertConversations(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertMessages(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.backupRepository.insertThreadData(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertReactions(any()) }.wasInvoked(exactly = 1)
     }
 
@@ -105,62 +106,7 @@ class RestoreMPBackupUseCaseTest {
         coVerify { arrangement.backupRepository.insertUsers(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertConversations(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertMessages(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.backupRepository.insertThreadData(any()) }.wasInvoked(exactly = 1)
         coVerify { arrangement.backupRepository.insertReactions(any()) }.wasInvoked(exactly = 1)
-    }
-
-    @Test
-    fun givenThreadedMessageInBackup_whenRestoring_thenThreadDataIsPersisted() = runTest {
-        val threadId = "thread-1"
-        val threadedBackupMessage = TestMessage.TEXT_MESSAGE.toBackupMessage(threadId = threadId)!!
-
-        val (arrangement, useCase) = Arrangement()
-            .withSuccessImport()
-            .withMessages(listOf(threadedBackupMessage))
-            .arrange()
-
-        useCase(arrangement.storedPath, null) {}
-
-        coVerify {
-            arrangement.backupRepository.insertThreadData(
-                listOf(
-                    BackupThreadData(
-                        conversationId = TestMessage.TEXT_MESSAGE.conversationId,
-                        messageId = TestMessage.TEXT_MESSAGE.id,
-                        threadId = threadId,
-                        isRoot = false,
-                        creationDate = TestMessage.TEXT_MESSAGE.date,
-                    )
-                )
-            )
-        }.wasInvoked(exactly = 1)
-    }
-
-    @Test
-    fun givenThreadRootMessageInBackup_whenRestoring_thenRootThreadDataIsPersisted() = runTest {
-        val threadId = TestMessage.TEXT_MESSAGE.id
-        val threadedBackupMessage = TestMessage.TEXT_MESSAGE.toBackupMessage(threadId = threadId)!!
-
-        val (arrangement, useCase) = Arrangement()
-            .withSuccessImport()
-            .withMessages(listOf(threadedBackupMessage))
-            .arrange()
-
-        useCase(arrangement.storedPath, null) {}
-
-        coVerify {
-            arrangement.backupRepository.insertThreadData(
-                listOf(
-                    BackupThreadData(
-                        conversationId = TestMessage.TEXT_MESSAGE.conversationId,
-                        messageId = TestMessage.TEXT_MESSAGE.id,
-                        threadId = threadId,
-                        isRoot = true,
-                        creationDate = TestMessage.TEXT_MESSAGE.date,
-                    )
-                )
-            )
-        }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -215,6 +161,54 @@ class RestoreMPBackupUseCaseTest {
         assertEquals(RestoreBackupResult.BackupRestoreFailure.BackupIOFailure("Unknown error"), result.failure)
     }
 
+    @Test
+    fun givenBackupContainsUsersWithEmptyDomain_whenRestoring_thenMalformedUserIsSkipped() = runTest {
+        val malformedBackupUser = testUser.toBackupUser().copy(
+            id = BackupQualifiedId("participant-malformed", "")
+        )
+        val capturedInsertedUsers = mutableListOf<List<OtherUser>>()
+        val capturedInsertedConversations = mutableListOf<List<Conversation>>()
+        val capturedInsertedMessages = mutableListOf<List<Message.Standalone>>()
+
+        val (arrangement, useCase) = Arrangement()
+            .withSuccessImport()
+            .withUsersPages(arrayOf(malformedBackupUser, testUser.toBackupUser()))
+            .captureInsertedUsers(capturedInsertedUsers)
+            .captureInsertedConversations(capturedInsertedConversations)
+            .captureInsertedMessages(capturedInsertedMessages)
+            .arrange()
+
+        val result = useCase(arrangement.storedPath, null) {}
+
+        // Restore should complete even if one backup user has malformed qualified ID (empty domain).
+        assertTrue(result is RestoreBackupResult.Success)
+
+        // Only the valid user should be inserted; malformed one must be skipped.
+        assertEquals(1, capturedInsertedUsers.size)
+        val insertedUsers = capturedInsertedUsers.first()
+        assertEquals(1, insertedUsers.size)
+        val insertedUser = insertedUsers.firstOrNull()
+        assertNotNull(insertedUser)
+        assertEquals("domain", insertedUser.id.domain)
+
+        // Conversations should still be restored correctly.
+        assertEquals(1, capturedInsertedConversations.size)
+        val insertedConversations = capturedInsertedConversations.first()
+        assertEquals(1, insertedConversations.size)
+        val insertedConversation = insertedConversations.firstOrNull()
+        assertNotNull(insertedConversation)
+        assertTrue(insertedConversation.id.domain.isNotBlank())
+
+        // Messages should still be restored correctly and keep non-empty qualified ID domains.
+        assertEquals(1, capturedInsertedMessages.size)
+        val insertedMessages = capturedInsertedMessages.first()
+        assertEquals(1, insertedMessages.size)
+        val insertedMessage = insertedMessages.firstOrNull()
+        assertNotNull(insertedMessage)
+        assertTrue(insertedMessage.senderUserId.domain.isNotBlank())
+        assertTrue(insertedMessage.conversationId.domain.isNotBlank())
+    }
+
     private inner class Arrangement {
 
         val backupRepository = mock(BackupRepository::class)
@@ -225,7 +219,10 @@ class RestoreMPBackupUseCaseTest {
         val messagesPager = mock(of<ImportDataPagerMockable<BackupMessage>>())
         val reactionsPager = mock(of<ImportDataPagerMockable<BackupReaction>>())
         val importer = mock(BackupImporter::class)
-        var backupMessages: List<BackupMessage> = listOf(TestMessage.TEXT_MESSAGE.toBackupMessage()!!)
+        var usersPages: List<Array<BackupUser>> = listOf(arrayOf(testUser.toBackupUser()))
+        var usersInsertStubConfigured = false
+        var conversationsInsertStubConfigured = false
+        var messagesInsertStubConfigured = false
 
         val storedPath = "testPath/backupFile.zip".toPath()
 
@@ -260,8 +257,38 @@ class RestoreMPBackupUseCaseTest {
             )
         }
 
-        fun withMessages(messages: List<BackupMessage>) = apply {
-            backupMessages = messages
+        fun withUsersPages(vararg pages: Array<BackupUser>) = apply {
+            usersPages = pages.toList()
+        }
+
+        suspend fun captureInsertedUsers(captured: MutableList<List<OtherUser>>) = apply {
+            usersInsertStubConfigured = true
+            coEvery { backupRepository.insertUsers(any()) }.invokes { args ->
+                @Suppress("UNCHECKED_CAST")
+                val insertedUsers = args[0] as List<OtherUser>
+                captured.add(insertedUsers)
+                Unit.right()
+            }
+        }
+
+        suspend fun captureInsertedConversations(captured: MutableList<List<Conversation>>) = apply {
+            conversationsInsertStubConfigured = true
+            coEvery { backupRepository.insertConversations(any()) }.invokes { args ->
+                @Suppress("UNCHECKED_CAST")
+                val insertedConversations = args[0] as List<Conversation>
+                captured.add(insertedConversations)
+                Unit.right()
+            }
+        }
+
+        suspend fun captureInsertedMessages(captured: MutableList<List<Message.Standalone>>) = apply {
+            messagesInsertStubConfigured = true
+            coEvery { backupRepository.insertMessages(any()) }.invokes { args ->
+                @Suppress("UNCHECKED_CAST")
+                val insertedMessages = args[0] as List<Message.Standalone>
+                captured.add(insertedMessages)
+                Unit.right()
+            }
         }
 
         suspend fun arrange(): Pair<Arrangement, RestoreMPBackupUseCase> {
@@ -269,20 +296,26 @@ class RestoreMPBackupUseCaseTest {
             every { importerProvider.providePeekImporter() }.returns(importer)
             every { importerProvider.provideImporter(any(), any()) }.returns(importer)
 
-            coEvery { backupRepository.insertUsers(any()) }.returns(Unit.right())
-            coEvery { backupRepository.insertConversations(any()) }.returns(Unit.right())
-            coEvery { backupRepository.insertMessages(any()) }.returns(Unit.right())
-            coEvery { backupRepository.insertThreadData(any()) }.returns(Unit.right())
+            if (!usersInsertStubConfigured) {
+                coEvery { backupRepository.insertUsers(any()) }.returns(Unit.right())
+            }
+            if (!conversationsInsertStubConfigured) {
+                coEvery { backupRepository.insertConversations(any()) }.returns(Unit.right())
+            }
+            if (!messagesInsertStubConfigured) {
+                coEvery { backupRepository.insertMessages(any()) }.returns(Unit.right())
+            }
             coEvery { backupRepository.insertReactions(any()) }.returns(Unit.right())
 
-            every { usersPager.hasMorePages() }.returnsMany(true, false)
-            every { usersPager.nextPage() }.returnsMany(arrayOf(testUser.toBackupUser()))
+            val usersHasMorePagesValues = MutableList(usersPages.size) { true } + false
+            every { usersPager.hasMorePages() }.returnsMany(*usersHasMorePagesValues.toTypedArray())
+            every { usersPager.nextPage() }.returnsMany(*usersPages.toTypedArray())
 
             every { conversationsPager.hasMorePages() }.returnsMany(true, false)
             every { conversationsPager.nextPage() }.returnsMany(arrayOf(TestConversation.CONVERSATION.toBackupConversation()))
 
             every { messagesPager.hasMorePages() }.returnsMany(true, false)
-            every { messagesPager.nextPage() }.returnsMany(arrayOf(*backupMessages.toTypedArray()))
+            every { messagesPager.nextPage() }.returnsMany(arrayOf(TestMessage.TEXT_MESSAGE.toBackupMessage()!!))
 
             every { reactionsPager.hasMorePages() }.returnsMany(true, false)
             every { reactionsPager.nextPage() }.returnsMany(arrayOf(testReaction))

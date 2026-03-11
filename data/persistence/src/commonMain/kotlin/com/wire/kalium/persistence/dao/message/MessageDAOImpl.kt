@@ -513,8 +513,7 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
-    override suspend fun markMessagesAsDecryptionResolved(
-        conversationId: QualifiedIDEntity,
+    override suspend fun markProteusMessagesAsDecryptionResolved(
         userId: QualifiedIDEntity,
         clientId: String,
     ) {

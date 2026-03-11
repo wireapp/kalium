@@ -21,20 +21,24 @@ import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.RequestNewEpochHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.common.logger.callingLogger
-import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 internal class OnRequestNewEpoch(
-    private val scope: CoroutineScope,
-    private val callRepository: CallRepository,
+    private val epochInfoUpdater: EpochInfoUpdater,
     private val qualifiedIdMapper: QualifiedIdMapper,
+    private val callingScope: CoroutineScope,
 ) : RequestNewEpochHandler {
     override fun onRequestNewEpoch(inst: Handle, conversationId: String, arg: Pointer?) {
-        callingLogger.i("[OnRequestNewEpoch] - STARTED")
-        scope.launch {
-            callRepository.advanceEpoch(qualifiedIdMapper.fromStringToQualifiedID(conversationId))
+        callingScope.launch {
+            callingLogger.i("[OnRequestNewEpoch] - ConversationId: ${conversationId.obfuscateId()}")
+            val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+
+            // Update AVS with current EpochInfo for MLS calls when new epoch is requested
+            epochInfoUpdater(conversationIdWithDomain)
         }
     }
 }

@@ -87,6 +87,8 @@ internal interface EventProcessor {
         transactionContext: CryptoTransactionContext,
         eventEnvelope: EventEnvelope
     ): Either<CoreFailure, String?>
+
+    suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -143,5 +145,9 @@ internal class EventProcessorImpl(
             is Event.Federation -> federationEventReceiver.onEvent(transactionContext, event, deliveryInfo)
             is Event.Team.MemberLeave -> teamEventReceiver.onEvent(transactionContext, event, deliveryInfo)
         }.map { event.id }
+    }
+
+    override suspend fun flushPendingSideEffects(): Either<CoreFailure, Unit> {
+        return conversationEventReceiver.flushPendingSideEffects()
     }
 }

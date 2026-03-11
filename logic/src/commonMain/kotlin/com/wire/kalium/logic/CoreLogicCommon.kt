@@ -23,15 +23,14 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.PlatformRootPathsProvider
-import com.wire.kalium.logic.di.PlatformUserStorageProvider
 import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallbackManagerImpl
+import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AuthenticationScopeForConfigIdUseCase
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -40,7 +39,10 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.util.configurePersistenceDebug
+import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
+import com.wire.kalium.userstorage.di.UserStorageProvider
 
+@Suppress("TooManyFunctions")
 public abstract class CoreLogicCommon internal constructor(
     protected val rootPath: String,
     protected val userAgent: String,
@@ -114,6 +116,9 @@ public abstract class CoreLogicCommon internal constructor(
 
     public fun versionedAuthenticationScope(serverLinks: ServerConfig.Links): AutoVersionAuthScopeUseCase =
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
+
+    public val authenticationScopeForConfigId: AuthenticationScopeForConfigIdUseCase
+        get() = getGlobalScope().authenticationScopeForConfigId
 
     internal abstract val networkStateObserver: NetworkStateObserver
 

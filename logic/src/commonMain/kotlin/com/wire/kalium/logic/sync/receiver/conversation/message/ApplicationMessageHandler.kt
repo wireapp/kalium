@@ -86,6 +86,8 @@ internal interface ApplicationMessageHandler {
         senderClientId: ClientId,
         content: MessageContent.FailedDecryption
     )
+
+    suspend fun flushPendingSideEffects()
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -441,6 +443,10 @@ internal class ApplicationMessageHandlerImpl(
             isSelfMessage = senderUserId == selfUserId
         )
         processMessage(message, threadId = null)
+    }
+
+    override suspend fun flushPendingSideEffects() {
+        lastReadContentHandler.flushPendingLastReads()
     }
 }
 

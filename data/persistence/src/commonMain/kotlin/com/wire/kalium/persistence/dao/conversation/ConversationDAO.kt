@@ -57,11 +57,19 @@ interface ConversationDAO {
     )
 
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant)
+    suspend fun updateConversationModifiedDateToMaxOfSources(
+        targetId: QualifiedIDEntity,
+        sourceIds: Collection<QualifiedIDEntity>
+    )
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant? = null)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
-    suspend fun getAllConversationDetails(fromArchive: Boolean, filter: ConversationFilterEntity): Flow<List<ConversationViewEntity>>
+    suspend fun getAllConversationDetails(
+        fromArchive: Boolean,
+        filter: ConversationFilterEntity,
+        strictMLSFilter: Boolean = true,
+    ): Flow<List<ConversationViewEntity>>
     suspend fun getAllConversationDetailsWithEvents(
         fromArchive: Boolean = false,
         onlyInteractionEnabled: Boolean = false,
@@ -167,7 +175,9 @@ interface ConversationDAO {
     suspend fun getCellName(conversationId: QualifiedIDEntity): String?
     suspend fun hasConversationWithCell(): Boolean
     suspend fun updateReadDateAndGetHasUnreadEvents(conversationID: QualifiedIDEntity, date: Instant): Boolean
+    suspend fun updateReadDatesAndGetHasUnreadEvents(conversationDates: Map<QualifiedIDEntity, Instant>): Map<QualifiedIDEntity, Boolean>
     suspend fun getMLSConversationsByDomain(domain: String): List<ConversationEntity>
+    suspend fun getCellGroupConversations(): List<ConversationEntity>
 }
 
 data class NameAndHandleEntity(

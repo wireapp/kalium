@@ -28,6 +28,7 @@ import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import kotlinx.serialization.json.JsonObject
 
 internal open class PropertiesApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -37,7 +38,12 @@ internal open class PropertiesApiV0 internal constructor(
 
     private companion object {
         const val PATH_PROPERTIES = "properties"
+        const val PATH_PROPERTIES_VALUES = "properties-values"
         const val PATH_LABELS = "labels"
+    }
+
+    override suspend fun getPropertiesValues(): NetworkResponse<JsonObject> = wrapKaliumResponse {
+        httpClient.get(PATH_PROPERTIES_VALUES)
     }
 
     override suspend fun setProperty(propertyKey: PropertyKey, propertyValue: Any): NetworkResponse<Unit> =
