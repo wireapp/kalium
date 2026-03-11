@@ -205,11 +205,10 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
         MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
+        RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter,
         MessageThreadRootAdapter = TableMapper.messageThreadRootAdapter,
         MessageThreadItemAdapter = TableMapper.messageThreadItemAdapter,
         MessageMainListAdapter = TableMapper.messageMainListAdapter,
-        MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
-        RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter,
         AppAdapter = TableMapper.appAdapter,
         PendingActionsAdapter = TableMapper.pendingActionsAdapter
     )
