@@ -108,6 +108,8 @@ internal object TestEvent {
         eventId, TestClient.CLIENT.copy(id = clientId)
     )
 
+    fun sessionRefreshSuggested(eventId: String = "eventId") = Event.User.SessionRefreshSuggested(eventId)
+
     fun newConnection(eventId: String = "eventId", status: ConnectionState = ConnectionState.PENDING) = Event.User.NewConnection(
         eventId,
         Connection(

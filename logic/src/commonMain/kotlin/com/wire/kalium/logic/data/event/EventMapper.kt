@@ -121,6 +121,7 @@ internal class EventMapper(
             is EventContentDTO.User.NewLegalHoldRequestDTO -> legalHoldRequest(id, eventContentDTO)
             is EventContentDTO.User.LegalHoldEnabledDTO -> legalHoldEnabled(id, eventContentDTO)
             is EventContentDTO.User.LegalHoldDisabledDTO -> legalHoldDisabled(id, eventContentDTO)
+            is EventContentDTO.User.SessionRefreshSuggestedDTO -> sessionRefreshSuggested(id)
             is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
             is EventContentDTO.Unknown -> unknown(id, eventContentDTO)
             is EventContentDTO.Conversation.AccessUpdate -> conversationAccessUpdate(id, eventContentDTO)
@@ -388,6 +389,9 @@ internal class EventMapper(
             qualifiedIdMapper.fromStringToQualifiedID(eventContentDTO.id)
         )
     }
+
+    private fun sessionRefreshSuggested(id: String): Event.User.SessionRefreshSuggested =
+        Event.User.SessionRefreshSuggested(id = id)
 
     private fun userDelete(
         id: String,
