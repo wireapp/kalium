@@ -29,5 +29,5 @@ internal open class UpgradePersonalToTeamApiV0 internal constructor(
 
     internal val httpClient get() = authenticatedNetworkClient.httpClient
     override suspend fun migrateToTeam(teamName: String): NetworkResponse<CreateUserTeamDTO> =
-        getApiNotSupportedError(::migrateToTeam.name, UpgradePersonalToTeamApi.MIN_API_VERSION)
+        getApiNotSupportedError("migrateToTeam", UpgradePersonalToTeamApi.MIN_API_VERSION)
 }

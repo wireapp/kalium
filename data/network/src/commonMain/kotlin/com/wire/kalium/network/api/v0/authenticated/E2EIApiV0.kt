@@ -22,8 +22,8 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.utils.NetworkResponse
 
 internal open class E2EIApiV0 internal constructor() : E2EIApi {
-    override suspend fun getWireNonce(clientId: String): NetworkResponse<String> = E2EIApi.getApiNotSupportError(::getWireNonce.name)
+    override suspend fun getWireNonce(clientId: String): NetworkResponse<String> = E2EIApi.getApiNotSupportError("getWireNonce")
 
     override suspend fun getAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse> =
-        E2EIApi.getApiNotSupportError(::getAccessToken.name)
+        E2EIApi.getApiNotSupportError("getAccessToken")
 }

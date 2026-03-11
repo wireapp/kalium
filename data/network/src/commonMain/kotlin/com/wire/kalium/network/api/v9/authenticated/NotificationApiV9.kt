@@ -77,7 +77,7 @@ internal open class NotificationApiV9 internal constructor(
     }
 
     override suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
-        val session = getOrCreateAsyncEventsWebSocketSession(clientId, markerId, ::acknowledgeEvents.name)
+        val session = getOrCreateAsyncEventsWebSocketSession(clientId, markerId, "acknowledgeEvents")
 
         KtxSerializer.json.encodeToJsonElement(eventAcknowledgeRequest).let { json ->
             val result = session.outgoing.trySend(Frame.Text(json.toString()))
@@ -100,7 +100,7 @@ internal open class NotificationApiV9 internal constructor(
                 //       exceptions when the backend returns 401 instead of triggering a token refresh.
                 //       This call to lastNotification will make sure that if the token is expired, it will be refreshed
                 //       before attempting to open the websocket
-                val session = getOrCreateAsyncEventsWebSocketSession(clientId, markerId, ::consumeLiveEvents.name)
+                val session = getOrCreateAsyncEventsWebSocketSession(clientId, markerId, "consumeLiveEvents")
                 emitWebSocketEvents(session)
             }
         }

@@ -263,32 +263,32 @@ internal open class ConversationApiV0 internal constructor(
         }
 
     override suspend fun fetchMlsOneToOneConversation(userId: UserId): NetworkResponse<ConversationResponse> =
-        getApiNotSupportedError(::fetchMlsOneToOneConversation.name, MIN_API_VERSION_MLS)
+        getApiNotSupportedError("fetchMlsOneToOneConversation", MIN_API_VERSION_MLS)
 
     override suspend fun fetchSubconversationDetails(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<SubconversationResponse> =
-        getApiNotSupportedError(::fetchSubconversationDetails.name, MIN_API_VERSION_MLS)
+        getApiNotSupportedError("fetchSubconversationDetails", MIN_API_VERSION_MLS)
 
     override suspend fun fetchSubconversationGroupInfo(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<ByteArray> =
-        getApiNotSupportedError(::fetchSubconversationGroupInfo.name, MIN_API_VERSION_MLS)
+        getApiNotSupportedError("fetchSubconversationGroupInfo", MIN_API_VERSION_MLS)
 
     override suspend fun deleteSubconversation(
         conversationId: ConversationId,
         subconversationId: SubconversationId,
         deleteRequest: SubconversationDeleteRequest
     ): NetworkResponse<Unit> =
-        getApiNotSupportedError(::deleteSubconversation.name, MIN_API_VERSION_MLS)
+        getApiNotSupportedError("deleteSubconversation", MIN_API_VERSION_MLS)
 
     override suspend fun leaveSubconversation(
         conversationId: ConversationId,
         subconversationId: SubconversationId
     ): NetworkResponse<Unit> =
-        getApiNotSupportedError(::leaveSubconversation.name, MIN_API_VERSION_MLS)
+        getApiNotSupportedError("leaveSubconversation", MIN_API_VERSION_MLS)
 
     protected val conversationMemberAddedHandler: suspend (HttpResponse) -> NetworkResponse<ConversationMemberAddedResponse> = { response ->
         val result = if (response.status == HttpStatusCode.NoContent) {

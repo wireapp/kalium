@@ -34,7 +34,7 @@ internal open class GetDomainRegistrationApiV0 internal constructor(
     override suspend fun getDomainRegistration(email: String): NetworkResponse<DomainRegistrationDTO> {
         return NetworkResponse.Error(
             APINotSupported(
-                errorBody = "${this::class.simpleName}: ${::getDomainRegistration.name} api is only available on API V${MIN_API_VERSION}"
+                errorBody = "GetDomainRegistrationApi: getDomainRegistration api is only available on API V${MIN_API_VERSION}"
             )
         )
     }
@@ -42,7 +42,7 @@ internal open class GetDomainRegistrationApiV0 internal constructor(
     override suspend fun customBackendConfig(backendUrl: String): NetworkResponse<DomainLookupResponse> {
         return NetworkResponse.Error(
             APINotSupported(
-                errorBody = "${this::class.simpleName}: ${::customBackendConfig.name} api is only available on API V${MIN_API_VERSION}"
+                errorBody = "GetDomainRegistrationApi: customBackendConfig api is only available on API V${MIN_API_VERSION}"
             )
         )
     }
