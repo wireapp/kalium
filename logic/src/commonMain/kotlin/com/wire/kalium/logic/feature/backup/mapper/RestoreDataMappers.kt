@@ -130,7 +130,7 @@ internal fun BackupMessage.toMessage(selfUserId: UserId): Message.Standalone? =
 internal fun BackupMessage.toThreadDataOrNull(): BackupThreadData? {
     val messageThreadId = threadId ?: return null
     return BackupThreadData(
-        conversationId = conversationId.toQualifiedId(),
+        conversationId = conversationId.toQualifiedIdOrNull("toThreadDataOrNull") ?: error(""),
         messageId = id,
         threadId = messageThreadId,
         isRoot = id == messageThreadId,
