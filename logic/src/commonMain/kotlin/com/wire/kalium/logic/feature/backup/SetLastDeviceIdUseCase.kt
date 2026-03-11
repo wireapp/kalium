@@ -78,4 +78,3 @@ public sealed class SetLastDeviceIdResult {
     public data object Success : SetLastDeviceIdResult()
     public data class Failure(val error: CoreFailure) : SetLastDeviceIdResult()
 }
-
