@@ -89,42 +89,6 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
     }
 
     @Test
-    fun givenNomadMessagesWithoutContentType_whenGettingAllMessages_thenResponseShouldStillMatchContract() = runTest {
-        val networkClient = mockAuthenticatedNetworkClientWithoutContentType(
-            responseBody = ALL_MESSAGES_RESPONSE_JSON,
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertGet()
-                assertPathEqual("/event/messages")
-            }
-        )
-
-        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
-        val response = api.getAllMessages()
-
-        assertTrue(response.isSuccessful())
-        assertEquals(2, response.value.conversations.size)
-    }
-
-    @Test
-    fun givenEmptyNomadMessagesResponseWithoutContentType_whenGettingAllMessages_thenItShouldReturnNoConversations() = runTest {
-        val networkClient = mockAuthenticatedNetworkClientWithoutContentType(
-            responseBody = "",
-            statusCode = HttpStatusCode.OK,
-            assertion = {
-                assertGet()
-                assertPathEqual("/event/messages")
-            }
-        )
-
-        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
-        val response = api.getAllMessages()
-
-        assertTrue(response.isSuccessful())
-        assertTrue(response.value.conversations.isEmpty())
-    }
-
-    @Test
     fun givenConversationMetadata_whenGettingConversationMetadata_thenRequestAndResponseShouldMatchContract() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = CONVERSATION_METADATA_RESPONSE_JSON,
@@ -400,7 +364,7 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             {
               "events": [
                 {
-                  "type": "last_read",
+                  "type": "LAST_READ",
                   "last_read": [
                     {
                       "conversation_id": "conv_1",

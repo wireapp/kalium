@@ -87,8 +87,8 @@ public data class StoreSessionParam(
     val ssoId: SsoId?,
     val accountTokens: AccountTokens,
     val proxyCredentials: ProxyCredentials?,
-    val managedBy: SsoManagedBy?,
     val isPersistentWebSocketEnabled: Boolean,
+    val managedBy: SsoManagedBy? = null,
     val nomadServiceUrl: String? = null,
 )
 
