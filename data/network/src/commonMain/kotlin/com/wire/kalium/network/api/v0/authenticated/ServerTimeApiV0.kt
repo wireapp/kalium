@@ -27,6 +27,6 @@ internal open class ServerTimeApiV0(private val authenticatedNetworkClient: Auth
     protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun getServerTime(): NetworkResponse<ServerTimeDTO> =
-        getApiNotSupportedError(::getServerTime.name, ServerTimeApi.MIN_API_VERSION)
+        getApiNotSupportedError("getServerTime", ServerTimeApi.MIN_API_VERSION)
 
 }

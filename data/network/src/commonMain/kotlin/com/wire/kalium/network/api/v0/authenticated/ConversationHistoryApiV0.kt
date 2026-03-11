@@ -30,7 +30,7 @@ internal open class ConversationHistoryApiV0 internal constructor() : Conversati
     override suspend fun updateHistorySettingsForConversation(
         conversationId: ConversationId,
         settings: ConversationHistorySettingsDTO
-    ): NetworkResponse<Unit> = getApiNotSupportedError(::updateHistorySettingsForConversation.name, 11)
+    ): NetworkResponse<Unit> = getApiNotSupportedError("updateHistorySettingsForConversation", 11)
 
     @Suppress("MagicNumber")
     override suspend fun getPageOfMessagesForHistoryClient(
@@ -38,5 +38,5 @@ internal open class ConversationHistoryApiV0 internal constructor() : Conversati
         historyClientId: HistoryClientId,
         offset: ULong,
         size: UInt
-    ): NetworkResponse<ConversationHistoryResponse> = getApiNotSupportedError(::getPageOfMessagesForHistoryClient.name, 11)
+    ): NetworkResponse<ConversationHistoryResponse> = getApiNotSupportedError("getPageOfMessagesForHistoryClient", 11)
 }
