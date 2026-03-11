@@ -139,6 +139,7 @@ internal class ExtractCryptoStateUseCaseImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun cleanup(extractedDir: Path) {
         try {
             kaliumFileSystem.deleteContents(extractedDir)
