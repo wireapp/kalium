@@ -121,6 +121,7 @@ internal class ExtractCryptoStateUseCaseImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun parseMetadata(extractedDir: Path): CryptoStateBackupMetadata? {
         val metadataPath = extractedDir.resolve(BackupConstants.BACKUP_METADATA_FILE_NAME)
         return if (kaliumFileSystem.exists(metadataPath)) {
