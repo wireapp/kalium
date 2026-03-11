@@ -292,7 +292,8 @@ internal class CallManagerImpl internal constructor(
                 convId = federatedIdMapper.parseToFederatedId(targetConversationId),
                 userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
                 clientId = message.senderClientId.value,
-                convType = callMapper.toConversationTypeCalling(type).avsValue
+                convType = callMapper.toConversationTypeCalling(type).avsValue,
+                meeting = false.toInt()
             )
             callingLogger.i("$tagWithUserId: wcall_recv_msg() called")
         }
@@ -330,11 +331,12 @@ internal class CallManagerImpl internal constructor(
                     conversationId = conversationId,
                     onJoined = {
                         wcall_start(
-                            deferredHandle.await(),
-                            federatedIdMapper.parseToFederatedId(conversationId),
-                            avsCallType.avsValue,
-                            conversationTypeCalling.avsValue,
-                            isAudioCbr.toInt()
+                            inst = deferredHandle.await(),
+                            conversationId = federatedIdMapper.parseToFederatedId(conversationId),
+                            callType = avsCallType.avsValue,
+                            convType = conversationTypeCalling.avsValue,
+                            audioCbr = isAudioCbr.toInt(),
+                            meeting = false.toInt()
                         )
                         callingLogger.d(
                             "$tagWithUserId: wcall_start() called -> Call for conversationId: " +
@@ -348,11 +350,12 @@ internal class CallManagerImpl internal constructor(
             } else {
                 // TODO: Handle response. Possible failure?
                 wcall_start(
-                    deferredHandle.await(),
-                    federatedIdMapper.parseToFederatedId(conversationId),
-                    avsCallType.avsValue,
-                    conversationTypeCalling.avsValue,
-                    isAudioCbr.toInt()
+                    inst = deferredHandle.await(),
+                    conversationId = federatedIdMapper.parseToFederatedId(conversationId),
+                    callType = avsCallType.avsValue,
+                    convType = conversationTypeCalling.avsValue,
+                    audioCbr = isAudioCbr.toInt(),
+                    meeting = false.toInt()
                 )
                 callingLogger.d(
                     "$tagWithUserId: wcall_start() called -> Call for conversationId: " +

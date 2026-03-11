@@ -20,12 +20,12 @@ package com.wire.kalium.logic.feature.call.scenario
 
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.NetworkQualityChangedHandler
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.logger.callingLogger
-import com.wire.kalium.logic.data.call.CallQuality
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.call.CallQualityData
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import kotlinx.serialization.json.Json
 
 internal class OnNetworkQualityChanged(
     private val callRepository: CallRepository,
@@ -36,23 +36,17 @@ internal class OnNetworkQualityChanged(
         conversationId: String,
         userId: String?,
         clientId: String?,
-        quality: Int,
-        roundTripTimeInMilliseconds: Int,
-        upstreamPacketLossPercentage: Int,
-        downstreamPacketLossPercentage: Int,
+        qualityInfoJson: String?,
         arg: Pointer?
     ) {
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
-        val callQualityData = CallQualityData(
-            quality = CallQuality.fromInt(quality),
-            roundTripTimeInMilliseconds = roundTripTimeInMilliseconds,
-            upstreamPacketLossPercentage = upstreamPacketLossPercentage,
-            downstreamPacketLossPercentage = downstreamPacketLossPercentage
-        )
-        callRepository.updateCallQualityData(conversationId = conversationIdWithDomain, callQualityData = callQualityData)
-        callingLogger.i(
-            "[OnNetworkQualityChanged] - ConversationId: ${conversationId.obfuscateId()}" +
-                    " | UserId: ${userId?.obfuscateId()} | Quality: $callQualityData"
-        )
+        qualityInfoJson?.let { qualityInfoJson ->
+            val callQualityData = Json.decodeFromString<CallQualityData>(qualityInfoJson)
+            callRepository.updateCallQualityData(conversationId = conversationIdWithDomain, callQualityData = callQualityData)
+            callingLogger.i(
+                "[OnNetworkQualityChanged] - ConversationId: ${conversationId.obfuscateId()}" +
+                        " | UserId: ${userId?.obfuscateId()} | QualityInfo: $qualityInfoJson"
+            )
+        }
     }
 }
