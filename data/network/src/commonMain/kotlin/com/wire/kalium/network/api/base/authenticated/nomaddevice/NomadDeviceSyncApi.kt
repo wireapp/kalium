@@ -38,4 +38,5 @@ interface NomadDeviceSyncApi {
     ): NetworkResponse<Unit>
 
     suspend fun downloadCryptoState(tempBackupFileSink: Sink): NetworkResponse<Unit>
+    suspend fun setLastDeviceId(userId: String, deviceId: String): NetworkResponse<Unit>
 }

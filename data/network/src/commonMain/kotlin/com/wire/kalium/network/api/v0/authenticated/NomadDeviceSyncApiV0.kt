@@ -22,6 +22,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
+import com.wire.kalium.network.api.authenticated.nomaddevice.SetLastDeviceIdRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
@@ -35,6 +36,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
@@ -113,6 +115,16 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
                 throw unhandledException
             }
             NetworkResponse.Error(KaliumException.GenericError(unhandledException))
+        }
+
+    override suspend fun setLastDeviceId(userId: String, deviceId: String): NetworkResponse<Unit> =
+        requireNomadServiceUrl(apiName = "setLastDeviceId") ?: wrapKaliumResponse {
+            httpClient.put("$PATH_EVENT/$PATH_CRYPTO_DEVICE") {
+                setNomadUrlIfAvailable(PATH_EVENT, PATH_CRYPTO_DEVICE)
+                headers.append(HEADER_Z_USER, userId)
+                contentType(ContentType.Application.Json)
+                setBody(SetLastDeviceIdRequest(deviceId = deviceId))
+            }
         }
 
     @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
@@ -207,7 +219,9 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         const val PATH_ALL_MESSAGES = "all-messages"
         const val PATH_CONVERSATION_METADATA = "conversation/metadata"
         const val PATH_CRYPTO_STATE = "crypto/state"
+        const val PATH_CRYPTO_DEVICE = "crypto/device"
         const val QUERY_DEVICE_ID = "device_id"
+        const val HEADER_Z_USER = "Z-User"
         const val BUFFER_SIZE = 8L * 1024
         const val BOUNDARY = "frontier"
         const val CRYPTO_ZIP_FILENAME = "CHANGELOG.zip"

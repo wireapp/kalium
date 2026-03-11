@@ -30,6 +30,7 @@ import okio.Source
 internal interface CryptoStateBackupRemoteRepository {
     suspend fun uploadCryptoState(clientId: String, sourceProvider: () -> Source, size: Long): Either<NetworkFailure, Unit>
     suspend fun downloadCryptoState(tempBackupFileSink: Sink): Either<NetworkFailure, Unit>
+    suspend fun setLastDeviceId(userId: String, deviceId: String): Either<NetworkFailure, Unit>
 }
 
 internal class CryptoStateBackupRemoteDataSource(
@@ -44,4 +45,7 @@ internal class CryptoStateBackupRemoteDataSource(
 
     override suspend fun downloadCryptoState(tempBackupFileSink: Sink): Either<NetworkFailure, Unit> =
         wrapApiRequest { nomadDeviceSyncApi.downloadCryptoState(tempBackupFileSink) }
+
+    override suspend fun setLastDeviceId(userId: String, deviceId: String): Either<NetworkFailure, Unit> =
+        wrapApiRequest { nomadDeviceSyncApi.setLastDeviceId(userId, deviceId) }
 }
