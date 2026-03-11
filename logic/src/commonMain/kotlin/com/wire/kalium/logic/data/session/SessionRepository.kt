@@ -19,6 +19,13 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapStorageNullableRequest
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.auth.Account
@@ -31,16 +38,9 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.SsoId
+import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.getOrElse
-import com.wire.kalium.common.functional.map
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.error.wrapStorageNullableRequest
-import com.wire.kalium.common.error.wrapStorageRequest
-import com.wire.kalium.logic.data.user.SsoManagedBy
 import com.wire.kalium.network.api.model.ManagedByDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.ManagedByEntity
@@ -54,14 +54,7 @@ import kotlinx.coroutines.flow.map
 @Suppress("TooManyFunctions")
 @Mockable
 internal interface SessionRepository {
-    suspend fun storeSession(
-        serverConfigId: String,
-        ssoId: SsoId?,
-        accountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?,
-        managedBy: SsoManagedBy?,
-        isPersistentWebSocketEnabled: Boolean,
-    ): Either<StorageFailure, Unit>
+    suspend fun storeSession(session: StoreSessionParam): Either<StorageFailure, Unit>
 
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
     suspend fun allSessionsFlow(): Flow<List<AccountInfo>>
@@ -78,6 +71,8 @@ internal interface SessionRepository {
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
     suspend fun updatePersistentWebSocketStatus(userId: UserId, isPersistentWebSocketEnabled: Boolean): Either<StorageFailure, Unit>
     suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun setNativePushSupportedByServer(userId: UserId, supported: Boolean): Either<StorageFailure, Unit>
+    suspend fun isNativePushSupportedByServer(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun updateSsoIdAndScimInfo(userId: UserId, ssoId: SsoId?, managedBy: ManagedByDTO?): Either<StorageFailure, Unit>
     suspend fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
@@ -86,6 +81,16 @@ internal interface SessionRepository {
     suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun validSessionsWithServerConfig(): Either<StorageFailure, Map<UserId, ServerConfig>>
 }
+
+public data class StoreSessionParam(
+    val serverConfigId: String,
+    val ssoId: SsoId?,
+    val accountTokens: AccountTokens,
+    val proxyCredentials: ProxyCredentials?,
+    val isPersistentWebSocketEnabled: Boolean,
+    val managedBy: SsoManagedBy? = null,
+    val nomadServiceUrl: String? = null,
+)
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class SessionDataSource internal constructor(
@@ -97,27 +102,21 @@ internal class SessionDataSource internal constructor(
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionRepository {
 
-    override suspend fun storeSession(
-        serverConfigId: String,
-        ssoId: SsoId?,
-        accountTokens: AccountTokens,
-        proxyCredentials: ProxyCredentials?,
-        managedBy: SsoManagedBy?,
-        isPersistentWebSocketEnabled: Boolean,
-    ): Either<StorageFailure, Unit> =
+    override suspend fun storeSession(session: StoreSessionParam): Either<StorageFailure, Unit> =
         wrapStorageRequest {
             accountsDAO.insertOrReplace(
-                userIDEntity = accountTokens.userId.toDao(),
-                ssoIdEntity = sessionMapper.toSsoIdEntity(ssoId),
-                managedByEntity = managedBy?.toDao(),
-                serverConfigId = serverConfigId,
-                isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
+                userIDEntity = session.accountTokens.userId.toDao(),
+                ssoIdEntity = sessionMapper.toSsoIdEntity(session.ssoId),
+                managedByEntity = session.managedBy?.toDao(),
+                serverConfigId = session.serverConfigId,
+                isPersistentWebSocketEnabled = session.isPersistentWebSocketEnabled,
+                nomadServiceUrl = session.nomadServiceUrl
             )
         }.flatMap {
             wrapStorageRequest {
                 authTokenStorage.addOrReplace(
-                    sessionMapper.toAuthTokensEntity(accountTokens),
-                    proxyCredentials?.let { sessionMapper.fromModelToProxyCredentialsEntity(it) }
+                    sessionMapper.toAuthTokensEntity(session.accountTokens),
+                    session.proxyCredentials?.let { sessionMapper.fromModelToProxyCredentialsEntity(it) }
                 )
             }
         }
@@ -151,7 +150,7 @@ internal class SessionDataSource internal constructor(
                     .getOrElse { return Either.Left(it) }
 
                 val ssoId: SsoId? = sessionMapper.fromSsoIdEntity(it.ssoId)
-                Either.Right(Account(accountInfo, serverConfig, ssoId))
+                Either.Right(Account(accountInfo, serverConfig, ssoId, it.nomadServiceUrl))
             }
 
     override suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo> =
@@ -201,6 +200,16 @@ internal class SessionDataSource internal constructor(
 
     override suspend fun setAllPersistentWebSocketEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { accountsDAO.setAllAccountsPersistentWebSocketEnabled(enabled) }
+
+    override suspend fun setNativePushSupportedByServer(userId: UserId, supported: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            serverConfigDAO.setNativePushSupportedByServer(userId.toDao(), supported)
+        }
+
+    override suspend fun isNativePushSupportedByServer(userId: UserId): Either<StorageFailure, Boolean> =
+        wrapStorageNullableRequest {
+            serverConfigDAO.isNativePushSupportedByServer(userId.toDao())
+        }.map { it ?: true }
 
     override suspend fun updateSsoIdAndScimInfo(
         userId: UserId,

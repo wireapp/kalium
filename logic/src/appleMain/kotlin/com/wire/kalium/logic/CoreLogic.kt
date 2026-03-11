@@ -77,7 +77,6 @@ public actual class CoreLogic(
             rootPathsProvider,
             getGlobalScope(),
             kaliumConfigs,
-            persistMessageHookNotifier,
             globalPreferences,
             globalCallManager,
             globalDatabaseBuilder,

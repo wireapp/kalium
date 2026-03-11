@@ -247,6 +247,7 @@ class SessionManagerIntegrationTest {
     private fun createFakeSessionManager() = object : SessionManager {
         override suspend fun session(): SessionDTO = testCredentials
         override fun serverConfig(): ServerConfigDTO = TEST_BACKEND_CONFIG
+        override fun nomadServiceUrl(): String? = null
         override suspend fun updateToken(
             accessTokenApi: AccessTokenApi,
             oldRefreshToken: String?

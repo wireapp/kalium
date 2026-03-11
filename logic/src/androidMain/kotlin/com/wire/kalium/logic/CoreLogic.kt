@@ -101,7 +101,6 @@ public actual class CoreLogic(
             getGlobalScope(),
             globalDatabaseBuilder,
             kaliumConfigs,
-            persistMessageHookNotifier,
             globalPreferences,
             globalCallManager,
             userStorageProvider,

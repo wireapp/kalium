@@ -1,0 +1,113 @@
+name: Release Logic Artifacts
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  validate-tag:
+    if: github.repository == 'wireapp/kalium' && !contains(github.ref_name, '-')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest release tag
+        id: get_latest_release
+        run: |
+          response=$(curl -s -w "\n%{http_code}" https://api.github.com/repos/${{ github.repository }}/releases/latest)
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          if [[ "$http_code" != "200" ]]; then
+            echo "Failed to fetch latest release (HTTP $http_code)"
+            if [[ "$http_code" == "404" ]]; then
+              echo "No releases found — this appears to be the first release"
+              echo "latest_tag=none" >> $GITHUB_OUTPUT
+              exit 0
+            else
+              echo "API error occurred"
+              exit 1
+            fi
+          fi
+
+          latest_tag=$(echo "$body" | jq -r '.tag_name')
+
+          if [[ -z "$latest_tag" || "$latest_tag" == "null" ]]; then
+            echo "Could not extract tag from API response"
+            echo "latest_tag=none" >> $GITHUB_OUTPUT
+          else
+            echo "Latest release tag: $latest_tag"
+            echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Compare versions
+        run: |
+          current_tag="${{ github.ref_name }}"
+          latest_tag="${{ steps.get_latest_release.outputs.latest_tag }}"
+
+          if [[ "$latest_tag" == "none" ]]; then
+            echo "No previous releases found. Proceeding with release for $current_tag"
+            exit 0
+          fi
+
+          if [[ ! "$latest_tag" =~ ^v[0-9] ]]; then
+            echo "Latest release tag ($latest_tag) is not a standard version tag. Skipping comparison."
+            exit 0
+          fi
+
+          cur_ver="${current_tag#v}"
+          cur_ver="${cur_ver%%-*}"
+
+          lat_ver="${latest_tag#v}"
+          lat_ver="${lat_ver%%-*}"
+
+          echo "Current base version: $cur_ver"
+          echo "Latest release base version: $lat_ver"
+
+          highest="$(printf '%s\n%s' "$cur_ver" "$lat_ver" | sort -V | tail -n1)"
+
+          if [[ "$cur_ver" != "$lat_ver" && "$highest" != "$cur_ver" ]]; then
+            echo "::error::Tag ($current_tag) base version ($cur_ver) is lower than latest release ($latest_tag) base version ($lat_ver)"
+            exit 1
+          else
+            echo "Tag ($current_tag) base version is equal or higher than latest release ($latest_tag)"
+          fi
+
+  build:
+    needs: validate-tag
+    uses: ./.github/workflows/build-kalium-unified.yml
+    with:
+      concurrency-group-suffix: release
+      run-quality-checks: true
+      build-config: |
+        [
+          {
+            "platform": "android-kmp",
+            "gradle-tasks": ":logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar",
+            "artifact-glob": "logic/build/outputs/aar/*.aar logic/build/libs/*.jar",
+            "artifact-name": "logic-android-kmp"
+          },
+          {
+            "platform": "ios",
+            "gradle-tasks": ":logic:assembleKaliumLogicReleaseXCFramework",
+            "artifact-name": "logic-ios"
+          }
+        ]
+    secrets: inherit
+
+  deploy:
+    needs: build
+    uses: ./.github/workflows/deploy-kalium.yml
+    with:
+      tag-name: ${{ github.ref_name }}
+      deployment-targets: |
+        [
+          {
+            "type": "github-release",
+            "artifacts": "logic-*",
+            "fail-on-unmatched": true
+          }
+        ]

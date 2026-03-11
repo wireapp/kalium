@@ -18,28 +18,35 @@
 
 package com.wire.kalium.persistence.dao.backup
 
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.RemotebackupChangeLogQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 internal class RemoteBackupChangeLogDAOImpl(
     private val queries: RemotebackupChangeLogQueries,
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
+    private val mapper: RemoteBackupChangeLogMapper = RemoteBackupChangeLogMapper,
 ) : RemoteBackupChangeLogDAO {
 
     override suspend fun logMessageUpsert(
         conversationId: QualifiedIDEntity,
         messageId: String,
-        timestampMs: Long
+        timestampMs: Long,
+        messageTimestampMs: Long
     ): Unit = withContext(writeDispatcher.value) {
         queries.insertMessageUpsert(
             conversationId = conversationId,
             messageId = messageId,
             eventType = ChangeLogEventType.MESSAGE_UPSERT,
-            timestampMs = timestampMs
+            timestampMs = timestampMs,
+            messageTimestampMs = messageTimestampMs
         )
     }
 
@@ -106,20 +113,42 @@ internal class RemoteBackupChangeLogDAOImpl(
 
     override suspend fun getPendingChanges(): List<ChangeLogEntry> =
         withContext(readDispatcher.value) {
-            queries.getPendingChanges(mapper = ::toChangeLogEntry).executeAsList()
+            queries.getPendingChanges(mapper = mapper::toChangeLogEntry).executeAsList()
         }
 
-    @Suppress("FunctionParameterNaming")
-    private fun toChangeLogEntry(
-        conversation_id: QualifiedIDEntity,
-        message_id: String?,
-        event_type: ChangeLogEventType,
-        timestamp_ms: Long,
-    ): ChangeLogEntry =
-        ChangeLogEntry(
-            conversationId = conversation_id,
-            messageId = message_id,
-            eventType = event_type,
-            timestampMs = timestamp_ms
-        )
+    override suspend fun getLastPendingChangesBatch(limit: Long): ChangeLogSyncBatch =
+        withContext(readDispatcher.value) {
+            queries.transactionWithResult {
+                val events = queries.getLastPendingChangesWithPayload(
+                    limit = limit,
+                    mapper = mapper::toChangeLogSyncEvent
+                ).executeAsList()
+                val conversationLastReads = queries.getConversationLastReadForLastPendingChanges(
+                    limit = limit,
+                    mapper = mapper::toConversationLastReadSyncEntity
+                ).executeAsList()
+                ChangeLogSyncBatch(
+                    events = events,
+                    conversationLastReads = conversationLastReads
+                )
+            }
+        }
+
+    override fun observeLastPendingChangesBatch(limit: Long): Flow<ChangeLogSyncBatch> =
+        queries.getLastPendingChangesWithPayload(limit = limit, mapper = mapper::toChangeLogSyncEvent)
+            .asFlow()
+            .map { getLastPendingChangesBatch(limit) }
+            .flowOn(readDispatcher.value)
+
+    override suspend fun deleteChanges(changes: List<ChangeLogEntry>): Unit = withContext(writeDispatcher.value) {
+        queries.transaction {
+            changes.forEach { change ->
+                queries.deleteChange(
+                    conversationId = change.conversationId,
+                    messageId = change.messageId,
+                    eventType = change.eventType
+                )
+            }
+        }
+    }
 }

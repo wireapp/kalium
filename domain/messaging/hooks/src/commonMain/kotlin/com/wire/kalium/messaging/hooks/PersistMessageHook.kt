@@ -24,15 +24,6 @@ import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
-/**
- * Callback manager for clients that need to react to persisted messages without blocking
- * the message persistence flow.
- */
-public interface PersistMessageCallbackManager {
-    public fun register(callback: PersistMessageCallback)
-    public fun unregister(callback: PersistMessageCallback)
-}
-
 public data class PersistedMessageData(
     val conversationId: ConversationId,
     val messageId: String,
@@ -41,14 +32,38 @@ public data class PersistedMessageData(
     val expireAfter: Duration?
 )
 
-public interface PersistMessageCallback {
-    public suspend operator fun invoke(message: PersistedMessageData, selfUserId: UserId)
+public data class MessageDeleteEventData(
+    val conversationId: ConversationId,
+    val messageId: String
+)
+
+public data class ReactionEventData(
+    val conversationId: ConversationId,
+    val messageId: String,
+    val date: Instant
+)
+
+public data class ReadReceiptEventData(
+    val conversationId: ConversationId,
+    val messageIds: List<String>,
+    val date: Instant
+)
+
+public data class ConversationDeleteEventData(
+    val conversationId: ConversationId
+)
+
+public data class ConversationClearEventData(
+    val conversationId: ConversationId
+)
+
+public interface PersistenceEventHookNotifier {
+    public suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {}
+    public suspend fun onMessageDeleted(data: MessageDeleteEventData, selfUserId: UserId) {}
+    public suspend fun onReactionPersisted(data: ReactionEventData, selfUserId: UserId) {}
+    public suspend fun onReadReceiptPersisted(data: ReadReceiptEventData, selfUserId: UserId) {}
+    public suspend fun onConversationDeleted(data: ConversationDeleteEventData, selfUserId: UserId) {}
+    public suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {}
 }
 
-public fun interface PersistMessageHookNotifier {
-    public fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId)
-}
-
-public object NoOpPersistMessageHookNotifier : PersistMessageHookNotifier {
-    override fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) = Unit
-}
+public object NoOpPersistenceEventHookNotifier : PersistenceEventHookNotifier

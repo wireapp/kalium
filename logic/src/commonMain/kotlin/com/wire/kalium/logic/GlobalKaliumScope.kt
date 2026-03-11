@@ -50,12 +50,15 @@ import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppLockEditableUseCa
 import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppLockEditableUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCaseImpl
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AuthenticationScopeForConfigIdUseCase
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
 import com.wire.kalium.logic.feature.server.ServerConfigForAccountUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeleteSessionUseCase
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistUseCase
+import com.wire.kalium.logic.feature.session.GetAllSessionsUseCase
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
 import com.wire.kalium.logic.feature.session.ObserveSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
@@ -146,6 +149,7 @@ public class GlobalKaliumScope internal constructor(
         get() =
             AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO)
     public val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+    public val getAllSessions: GetAllSessionsUseCase get() = GetAllSessionsUseCase(sessionRepository)
     public val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
     public val observeValidAccounts: ObserveValidAccountsUseCase by lazy {
         ObserveValidAccountsUseCaseImpl(
@@ -184,6 +188,20 @@ public class GlobalKaliumScope internal constructor(
 
     public val serverConfigForAccounts: ServerConfigForAccountUseCase
         get() = ServerConfigForAccountUseCase(globalDatabase.serverConfigurationDAO)
+
+    public val authenticationScopeForConfigId: AuthenticationScopeForConfigIdUseCase
+        get() = AuthenticationScopeForConfigIdUseCase(
+            serverConfigurationDAO = globalDatabase.serverConfigurationDAO,
+            serverConfigMapper = MapperProvider.serverConfigMapper(),
+            authenticationScopeFactory = { serverConfig ->
+                authenticationScopeProvider.provide(
+                    serverConfig = serverConfig,
+                    proxyCredentials = null,
+                    globalDatabase = globalDatabase,
+                    kaliumConfigs = kaliumConfigs,
+                )
+            }
+        )
 
     public val observeIfAppUpdateRequired: ObserveIfAppUpdateRequiredUseCase
         get() = ObserveIfAppUpdateRequiredUseCaseImpl(

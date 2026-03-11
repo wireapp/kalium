@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao.backup
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import kotlinx.coroutines.flow.Flow
 
 /**
  * Data Access Object for tracking changes that need to be synced to remote backup.
@@ -33,7 +34,8 @@ interface RemoteBackupChangeLogDAO {
     suspend fun logMessageUpsert(
         conversationId: QualifiedIDEntity,
         messageId: String,
-        timestampMs: Long
+        timestampMs: Long,
+        messageTimestampMs: Long = timestampMs
     )
 
     /**
@@ -84,8 +86,23 @@ interface RemoteBackupChangeLogDAO {
     )
 
     /**
-     * Get all pending changes ordered by timestamp.
+     * Get all pending changes ordered deterministically for replay.
      */
     suspend fun getPendingChanges(): List<ChangeLogEntry>
+
+    /**
+     * Get a transactional snapshot of the latest [limit] pending changes and their conversations' last-read timestamps.
+     */
+    suspend fun getLastPendingChangesBatch(limit: Long): ChangeLogSyncBatch
+
+    /**
+     * Observe transactional snapshots of the latest [limit] pending changes and their conversations' last-read timestamps.
+     */
+    fun observeLastPendingChangesBatch(limit: Long): Flow<ChangeLogSyncBatch>
+
+    /**
+     * Delete the given changelog [changes] after they were successfully synced.
+     */
+    suspend fun deleteChanges(changes: List<ChangeLogEntry>)
 
 }

@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.auth.Account
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -62,6 +63,7 @@ internal class SessionManagerImpl internal constructor(
     private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) : SessionManager {
 
+    private var account: Account? = null
     private var serverConfig: ServerConfigDTO? = null
 
     override suspend fun session(): SessionDTO? = withContext(coroutineContext) {
@@ -78,13 +80,10 @@ internal class SessionManagerImpl internal constructor(
             )
     }
 
-    override fun serverConfig(): ServerConfigDTO = serverConfig ?: run {
-        sessionRepository.fullAccountInfo(userId)
-            .map { serverConfigMapper.toDTO(it.serverConfig) }
-            .onSuccess { serverConfig = it }
-            .fold({ error("use serverConfig is missing or an error while reading local storage") }, { it })
-        serverConfig!!
-    }
+    override fun serverConfig(): ServerConfigDTO =
+        serverConfig ?: serverConfigMapper.toDTO(account().serverConfig).also { serverConfig = it }
+
+    override fun nomadServiceUrl(): String? = account().nomadServiceUrl
 
     override suspend fun updateToken(
         accessTokenApi: AccessTokenApi,
@@ -146,4 +145,10 @@ internal class SessionManagerImpl internal constructor(
         }, {
             sessionMapper.fromEntityToProxyCredentialsDTO(it)
         })
+
+    private fun account(): Account = account ?: run {
+        sessionRepository.fullAccountInfo(userId)
+            .onSuccess { account = it }
+            .fold({ error("user account is missing or an error occurred while reading local storage") }, { it })
+    }
 }

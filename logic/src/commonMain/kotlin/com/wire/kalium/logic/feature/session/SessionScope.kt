@@ -24,6 +24,7 @@ public class SessionScope internal constructor(
     private val sessionRepository: SessionRepository
 ) {
     public val allSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
+    public val allSessionsIncludingInvalid: GetAllSessionsUseCase get() = GetAllSessionsUseCase(sessionRepository)
     public val allSessionsFlow: ObserveSessionsUseCase get() = ObserveSessionsUseCase(sessionRepository)
     public val currentSession: CurrentSessionUseCase get() = CurrentSessionUseCase(sessionRepository)
     public val currentSessionFlow: CurrentSessionFlowUseCase get() = CurrentSessionFlowUseCase(sessionRepository)
