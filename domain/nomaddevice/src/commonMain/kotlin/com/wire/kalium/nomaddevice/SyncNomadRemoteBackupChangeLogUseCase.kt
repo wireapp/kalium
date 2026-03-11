@@ -145,5 +145,5 @@ public class SyncNomadRemoteBackupChangeLogUseCase internal constructor(
 )
 public typealias NomadRemoteBackupChangeLogSyncer = SyncNomadRemoteBackupChangeLogUseCase
 
-private fun UserId.toNetworkUserId(): com.wire.kalium.network.api.model.UserId =
+internal fun UserId.toNetworkUserId(): com.wire.kalium.network.api.model.UserId =
     com.wire.kalium.network.api.model.QualifiedID(value = value, domain = domain)

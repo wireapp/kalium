@@ -153,7 +153,7 @@ internal class SessionDataSource internal constructor(
                     .getOrElse { return Either.Left(it) }
 
                 val ssoId: SsoId? = sessionMapper.fromSsoIdEntity(it.ssoId)
-                Either.Right(Account(accountInfo, serverConfig, ssoId))
+                Either.Right(Account(accountInfo, serverConfig, ssoId, it.nomadServiceUrl))
             }
 
     override suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo> =

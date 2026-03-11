@@ -1,0 +1,2 @@
+ALTER TABLE Accounts
+ADD COLUMN nomad_service_url TEXT DEFAULT NULL;
