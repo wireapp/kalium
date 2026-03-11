@@ -87,7 +87,7 @@ internal open class SelfApiV0 internal constructor(
     }
 
     override suspend fun updateSupportedProtocols(protocols: List<SupportedProtocolDTO>): NetworkResponse<Unit> =
-        getApiNotSupportedError(::updateSupportedProtocols.name, MIN_API_VERSION_SUPPORTED_PROTOCOLS)
+        getApiNotSupportedError("updateSupportedProtocols", MIN_API_VERSION_SUPPORTED_PROTOCOLS)
 
     companion object {
         const val PATH_SELF = "self"
