@@ -254,6 +254,52 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
         assertEquals(1L, summary.visibleReplyCount)
     }
 
+    @Test
+    fun givenThreadsAcrossConversations_whenObservingGlobalThreads_thenThreadsAreSortedByLatestActivity() = runTest {
+        insertInitialData()
+        val secondConversation = newConversationEntity("Second Thread Test")
+        conversationDAO.insertConversation(secondConversation)
+
+        val firstRoot = createMessage(
+            id = "global-root-1",
+            date = Instant.parse("2026-01-01T00:00:00Z"),
+            content = MessageEntityContent.Text("First thread topic")
+        )
+        val firstReply = createMessage(
+            id = "global-reply-1",
+            date = Instant.parse("2026-01-01T00:00:01Z"),
+        )
+        val secondRoot = createMessage(
+            id = "global-root-2",
+            date = Instant.parse("2026-01-01T00:00:02Z"),
+            content = MessageEntityContent.Text("Second thread topic"),
+            conversationId = secondConversation.id
+        )
+        val secondReply = createMessage(
+            id = "global-reply-2",
+            date = Instant.parse("2026-01-01T00:00:04Z"),
+            conversationId = secondConversation.id
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(firstRoot, firstReply, secondRoot, secondReply))
+
+        messageThreadDAO.upsertThreadRoot(conversation.id, firstRoot.id, THREAD_ID_1, firstRoot.date)
+        messageThreadDAO.upsertThreadItem(conversation.id, firstRoot.id, THREAD_ID_1, true, firstRoot.date, firstRoot.visibility)
+        messageThreadDAO.upsertThreadItem(conversation.id, firstReply.id, THREAD_ID_1, false, firstReply.date, firstReply.visibility)
+
+        messageThreadDAO.upsertThreadRoot(secondConversation.id, secondRoot.id, THREAD_ID_2, secondRoot.date)
+        messageThreadDAO.upsertThreadItem(secondConversation.id, secondRoot.id, THREAD_ID_2, true, secondRoot.date, secondRoot.visibility)
+        messageThreadDAO.upsertThreadItem(secondConversation.id, secondReply.id, THREAD_ID_2, false, secondReply.date, secondReply.visibility)
+
+        val globalThreads = messageThreadDAO.observeGlobalThreads().first()
+
+        assertEquals(2, globalThreads.size)
+        assertEquals(THREAD_ID_2, globalThreads.first().threadId)
+        assertEquals(secondConversation.name, globalThreads.first().conversationName)
+        assertEquals(1L, globalThreads.first().visibleReplyCount)
+        assertIs<MessagePreviewEntityContent.Text>(globalThreads.first().rootMessage.content)
+        assertEquals(THREAD_ID_1, globalThreads.last().threadId)
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(senderUser))
         conversationDAO.insertConversation(conversation)

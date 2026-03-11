@@ -875,7 +875,10 @@ public class UserSessionScope internal constructor(
         )
 
     private val messageThreadRepository: MessageThreadRepository
-        get() = MessageThreadRepositoryImpl(userStorage.database.messageThreadDAO)
+        get() = MessageThreadRepositoryImpl(
+            dao = userStorage.database.messageThreadDAO,
+            selfUserId = userId
+        )
 
     private val messageMetadataRepository: MessageMetadataRepository
         get() = MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)

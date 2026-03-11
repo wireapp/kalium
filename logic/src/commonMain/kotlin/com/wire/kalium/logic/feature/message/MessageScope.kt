@@ -532,6 +532,11 @@ public class MessageScope internal constructor(
             messageThreadRepository = messageThreadRepository,
         )
 
+    public val observeGlobalThreads: ObserveGlobalThreadsUseCase
+        get() = ObserveGlobalThreadsUseCase(
+            messageThreadRepository = messageThreadRepository,
+        )
+
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
         get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(
             messageRepository = messageRepository,
