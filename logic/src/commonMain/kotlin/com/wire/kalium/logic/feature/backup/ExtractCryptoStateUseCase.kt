@@ -57,10 +57,10 @@ internal class ExtractCryptoStateUseCaseImpl(
 
         try {
             val backupFileExists = kaliumFileSystem.exists(backupFilePath)
-            kaliumLogger.i("Backup file path: $backupFilePath, exists: $backupFileExists")
+            kaliumLogger.i("$TAG Backup file path: $backupFilePath, exists: $backupFileExists")
 
             if (!backupFileExists) {
-                kaliumLogger.e("Backup file does not exist at: $backupFilePath")
+                kaliumLogger.e("$TAG Backup file does not exist at: $backupFilePath")
                 return@withContext ExtractCryptoStateResult.Failure(
                     CoreFailure.Unknown(IllegalStateException("Backup file does not exist"))
                 )
@@ -77,22 +77,17 @@ internal class ExtractCryptoStateUseCaseImpl(
 
             extractResult.fold(
                 { error ->
-                    kaliumLogger.e("Failed to extract crypto state backup: $error")
+                    kaliumLogger.e("$TAG Failed to extract crypto state backup: $error")
                     cleanup(extractedDir)
                     ExtractCryptoStateResult.Failure(error)
                 },
                 { extractedSize ->
-                    kaliumLogger.i("Successfully extracted crypto state backup ($extractedSize bytes)")
-
-                    // Log extracted files for debugging
-                    val extractedFiles = kaliumFileSystem.listDirectories(extractedDir)
-                    kaliumLogger.i("Extracted directory: $extractedDir")
-                    kaliumLogger.i("Extracted files: ${extractedFiles.map { it.name }}")
+                    kaliumLogger.i("$TAG Successfully extracted crypto state backup ($extractedSize bytes)")
 
                     // Parse metadata
                     val metadata = parseMetadata(extractedDir)
                     if (metadata == null) {
-                        kaliumLogger.e("Failed to parse crypto state backup metadata.")
+                        kaliumLogger.e("$TAG Failed to parse crypto state backup metadata.")
                         cleanup(extractedDir)
                         return@withContext ExtractCryptoStateResult.Failure(
                             CoreFailure.Unknown(IllegalStateException("Missing or invalid metadata file"))
@@ -104,7 +99,7 @@ internal class ExtractCryptoStateUseCaseImpl(
                     val proteusKeystorePath = extractedDir.resolve(PROTEUS_KEYSTORE_NAME)
 
                     if (!kaliumFileSystem.exists(mlsKeystorePath) || !kaliumFileSystem.exists(proteusKeystorePath)) {
-                        kaliumLogger.e("Missing keystore files in crypto state backup")
+                        kaliumLogger.e("$TAG Missing keystore files in crypto state backup")
                         cleanup(extractedDir)
                         return@withContext ExtractCryptoStateResult.Failure(
                             CoreFailure.Unknown(IllegalStateException("Missing keystore files"))
@@ -120,7 +115,7 @@ internal class ExtractCryptoStateUseCaseImpl(
                 }
             )
         } catch (e: Exception) {
-            kaliumLogger.e("Exception while extracting crypto state backup", e)
+            kaliumLogger.e("$TAG Exception while extracting crypto state backup", e)
             cleanup(extractedDir)
             ExtractCryptoStateResult.Failure(CoreFailure.Unknown(e))
         }
@@ -135,11 +130,11 @@ internal class ExtractCryptoStateUseCaseImpl(
                     Json.decodeFromString<CryptoStateBackupMetadata>(metadataJson)
                 }
             } catch (e: Exception) {
-                kaliumLogger.e("Failed to parse metadata file: ${e.message}", e)
+                kaliumLogger.e("$TAG Failed to parse metadata file: ${e.message}", e)
                 null
             }
         } else {
-            kaliumLogger.e("Metadata file not found at expected path: $metadataPath")
+            kaliumLogger.e("$TAG Metadata file not found at expected path: $metadataPath")
             null
         }
     }
@@ -149,7 +144,7 @@ internal class ExtractCryptoStateUseCaseImpl(
             kaliumFileSystem.deleteContents(extractedDir)
             kaliumFileSystem.delete(extractedDir)
         } catch (e: Exception) {
-            kaliumLogger.w("Failed to cleanup extracted directory", e)
+            kaliumLogger.w("$TAG Failed to cleanup extracted directory", e)
         }
     }
 
@@ -157,6 +152,7 @@ internal class ExtractCryptoStateUseCaseImpl(
         const val EXTRACTED_CRYPTO_BACKUP_DIR = "extracted_crypto_backup"
         const val MLS_KEYSTORE_NAME = "keystore-mls"
         const val PROTEUS_KEYSTORE_NAME = "keystore-proteus"
+        const val TAG = "[ExtractCryptoStateUseCase]"
     }
 }
 
