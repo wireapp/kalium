@@ -62,7 +62,7 @@ internal class DownloadCryptoStateUseCaseImpl(
             kaliumFileSystem.sink(backupFilePath).use { sink ->
                 cryptoStateBackupRemoteRepository.downloadCryptoState(sink).fold(
                     { error ->
-                        kaliumLogger.e("Failed to download crypto state backup: $error")
+                        kaliumLogger.e("$TAG Failed to download crypto state backup: $error")
                         kaliumFileSystem.delete(backupFilePath)
                         DownloadCryptoStateResult.Failure(error)
                     },
@@ -72,7 +72,7 @@ internal class DownloadCryptoStateUseCaseImpl(
                 )
             }
         } catch (e: Exception) {
-            kaliumLogger.e("Exception during crypto state download", e)
+            kaliumLogger.e("$TAG Exception during crypto state download", e)
             kaliumFileSystem.delete(backupFilePath)
             DownloadCryptoStateResult.Failure(CoreFailure.Unknown(e))
         }
@@ -80,7 +80,7 @@ internal class DownloadCryptoStateUseCaseImpl(
 
     private fun validateDownloadedFile(backupFilePath: Path, backupFileName: String): DownloadCryptoStateResult {
         if (!kaliumFileSystem.exists(backupFilePath)) {
-            kaliumLogger.e("Downloaded file does not exist at $backupFilePath")
+            kaliumLogger.e("$TAG Downloaded file does not exist at $backupFilePath")
             return DownloadCryptoStateResult.Failure(StorageFailure.DataNotFound)
         }
 
@@ -88,10 +88,10 @@ internal class DownloadCryptoStateUseCaseImpl(
             it.readAll(okio.blackholeSink())
         }
 
-        kaliumLogger.i("Downloaded crypto state backup to $backupFilePath (size: $fileSize bytes)")
+        kaliumLogger.i("$TAG Downloaded crypto state backup to $backupFilePath (size: $fileSize bytes)")
 
         return if (fileSize == 0L) {
-            kaliumLogger.i("No crypto state backup available on server (empty response)")
+            kaliumLogger.i("$TAG No crypto state backup available on server (empty response)")
             kaliumFileSystem.delete(backupFilePath)
             DownloadCryptoStateResult.NoBackupAvailable
         } else {
@@ -105,6 +105,7 @@ internal class DownloadCryptoStateUseCaseImpl(
     }
 
     companion object {
+        const val TAG = "[DownloadCryptoStateUseCase]"
         const val CRYPTO_BACKUP_DOWNLOAD_PREFIX = "crypto_backup_download"
     }
 }
