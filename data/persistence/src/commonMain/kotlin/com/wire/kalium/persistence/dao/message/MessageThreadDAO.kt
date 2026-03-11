@@ -20,7 +20,11 @@ package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MessageThreadsQueries
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
@@ -45,6 +49,26 @@ data class MessageThreadSummaryEntity(
     val rootMessageId: String,
     val threadId: String,
     val visibleReplyCount: Long,
+)
+
+data class GlobalThreadSummaryEntity(
+    val conversationId: QualifiedIDEntity,
+    val conversationName: String?,
+    val conversationType: ConversationEntity.Type,
+    val otherUserPreviewAssetId: QualifiedIDEntity?,
+    val otherUserAvailabilityStatus: UserAvailabilityStatusEntity?,
+    val otherUserConnectionStatus: ConnectionEntity.State?,
+    val otherUserId: QualifiedIDEntity?,
+    val otherUserAccentId: Int?,
+    val otherUserDeleted: Boolean?,
+    val isChannel: Boolean,
+    val rootMessageId: String,
+    val threadId: String,
+    val visibleReplyCount: Long,
+    val createdAt: Instant,
+    val lastReplyDate: Instant?,
+    val rootMessage: MessagePreviewEntity,
+    val rootMessageExpireAfterMillis: Long?,
 )
 
 private data class MessageThreadItemStateEntity(
@@ -91,6 +115,8 @@ interface MessageThreadDAO {
         conversationId: QualifiedIDEntity,
         rootMessageIds: List<String>,
     ): Flow<List<MessageThreadSummaryEntity>>
+
+    fun observeGlobalThreads(): Flow<List<GlobalThreadSummaryEntity>>
 }
 
 internal class MessageThreadDAOImpl internal constructor(
@@ -290,4 +316,99 @@ internal class MessageThreadDAOImpl internal constructor(
             .mapToList()
             .flowOn(readDispatcher.value)
     }
+
+    override fun observeGlobalThreads(): Flow<List<GlobalThreadSummaryEntity>> =
+        queries.selectGlobalThreads(
+            mapper = ::toGlobalThreadSummaryEntity
+        )
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
+
+    @Suppress("LongParameterList", "UnusedParameter")
+    private fun toGlobalThreadSummaryEntity(
+        conversationId: QualifiedIDEntity,
+        conversationName: String?,
+        conversationType: ConversationEntity.Type,
+        otherUserPreviewAssetId: QualifiedIDEntity?,
+        otherUserAvailabilityStatus: UserAvailabilityStatusEntity?,
+        otherUserConnectionStatus: ConnectionEntity.State?,
+        otherUserId: QualifiedIDEntity?,
+        otherUserAccentId: Int?,
+        otherUserDeleted: Boolean?,
+        isChannel: Boolean,
+        rootMessageId: String,
+        threadId: String,
+        visibleReplyCount: Long,
+        createdAt: Instant,
+        lastReplyDate: Instant?,
+        rootMessageExpireAfterMillis: Long?,
+        previewId: String,
+        previewConversationId: QualifiedIDEntity,
+        previewContentType: MessageEntity.ContentType,
+        previewDate: Instant,
+        previewVisibility: MessageEntity.Visibility,
+        previewSenderUserId: UserIDEntity,
+        previewIsEphemeral: Boolean,
+        previewSenderName: String?,
+        previewSenderConnectionStatus: ConnectionEntity.State?,
+        previewSenderIsDeleted: Boolean?,
+        previewSelfUserId: QualifiedIDEntity?,
+        previewIsSelfMessage: Boolean,
+        previewMemberChangeList: String?,
+        previewMemberChangeType: String?,
+        previewUpdateConversationName: String?,
+        previewConversationName: String?,
+        previewIsMentioningSelfUser: Boolean,
+        previewIsQuotingSelfUser: Boolean?,
+        previewText: String?,
+        previewAssetMimeType: String?,
+        previewIsUnread: Boolean,
+        previewShouldNotify: Long,
+        previewMutedStatus: ConversationEntity.MutedStatus?,
+        previewConversationType: ConversationEntity.Type?,
+    ): GlobalThreadSummaryEntity = GlobalThreadSummaryEntity(
+        conversationId = conversationId,
+        conversationName = conversationName,
+        conversationType = conversationType,
+        otherUserPreviewAssetId = otherUserPreviewAssetId,
+        otherUserAvailabilityStatus = otherUserAvailabilityStatus,
+        otherUserConnectionStatus = otherUserConnectionStatus,
+        otherUserId = otherUserId,
+        otherUserAccentId = otherUserAccentId,
+        otherUserDeleted = otherUserDeleted,
+        isChannel = isChannel,
+        rootMessageId = rootMessageId,
+        threadId = threadId,
+        visibleReplyCount = visibleReplyCount,
+        createdAt = createdAt,
+        lastReplyDate = lastReplyDate,
+        rootMessage = MessageMapper.toPreviewEntity(
+            id = previewId,
+            conversationId = previewConversationId,
+            contentType = previewContentType,
+            date = previewDate,
+            visibility = previewVisibility,
+            senderUserId = previewSenderUserId,
+            isEphemeral = previewIsEphemeral,
+            senderName = previewSenderName,
+            senderConnectionStatus = previewSenderConnectionStatus,
+            senderIsDeleted = previewSenderIsDeleted,
+            selfUserId = previewSelfUserId,
+            isSelfMessage = previewIsSelfMessage,
+            memberChangeList = previewMemberChangeList,
+            memberChangeType = previewMemberChangeType,
+            updateConversationName = previewUpdateConversationName,
+            conversationName = previewConversationName,
+            isMentioningSelfUser = previewIsMentioningSelfUser,
+            isQuotingSelfUser = previewIsQuotingSelfUser,
+            text = previewText,
+            assetMimeType = previewAssetMimeType,
+            isUnread = previewIsUnread,
+            shouldNotify = previewShouldNotify,
+            mutedStatus = previewMutedStatus,
+            conversationType = previewConversationType,
+        ),
+        rootMessageExpireAfterMillis = rootMessageExpireAfterMillis,
+    )
 }

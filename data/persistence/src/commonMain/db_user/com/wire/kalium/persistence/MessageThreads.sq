@@ -180,6 +180,76 @@ FROM MessageThreadRoot AS root
 WHERE root.conversation_id = :conversation_id
 AND root.root_message_id IN :root_message_ids;
 
+selectGlobalThreads:
+SELECT
+    root.conversation_id AS conversationId,
+    ConversationDetails.name AS conversationName,
+    ConversationDetails.type AS conversationType,
+    ConversationDetails.previewAssetId AS otherUserPreviewAssetId,
+    ConversationDetails.userAvailabilityStatus AS otherUserAvailabilityStatus,
+    ConversationDetails.connectionStatus AS otherUserConnectionStatus,
+    ConversationDetails.otherUserId AS otherUserId,
+    ConversationDetails.accentId AS otherUserAccentId,
+    ConversationDetails.userDeleted AS otherUserDeleted,
+    ConversationDetails.is_channel AS isChannel,
+    root.root_message_id AS rootMessageId,
+    root.thread_id AS threadId,
+    root.visible_reply_count AS visibleReplyCount,
+    root.created_at AS createdAt,
+    root.last_reply_date AS lastReplyDate,
+    Message.expire_after_millis AS rootMessageExpireAfterMillis,
+    preview.id AS previewId,
+    preview.conversationId AS previewConversationId,
+    preview.contentType AS previewContentType,
+    preview.date AS previewDate,
+    preview.visibility AS previewVisibility,
+    preview.senderUserId AS previewSenderUserId,
+    preview.isEphemeral AS previewIsEphemeral,
+    preview.senderName AS previewSenderName,
+    preview.senderConnectionStatus AS previewSenderConnectionStatus,
+    preview.senderIsDeleted AS previewSenderIsDeleted,
+    preview.selfUserId AS previewSelfUserId,
+    preview.isSelfMessage AS previewIsSelfMessage,
+    preview.memberChangeList AS previewMemberChangeList,
+    preview.memberChangeType AS previewMemberChangeType,
+    preview.updateConversationName AS previewUpdateConversationName,
+    preview.conversationName AS previewConversationName,
+    preview.isMentioningSelfUser AS previewIsMentioningSelfUser,
+    preview.isQuotingSelfUser AS previewIsQuotingSelfUser,
+    preview.text AS previewText,
+    preview.assetMimeType AS previewAssetMimeType,
+    preview.isUnread AS previewIsUnread,
+    preview.shouldNotify AS previewShouldNotify,
+    preview.mutedStatus AS previewMutedStatus,
+    preview.conversationType AS previewConversationType
+FROM MessageThreadRoot AS root
+JOIN ConversationDetails
+    ON ConversationDetails.qualifiedId = root.conversation_id
+JOIN Message
+    ON Message.id = root.root_message_id
+    AND Message.conversation_id = root.conversation_id
+JOIN MessagePreview AS preview
+    ON preview.id = root.root_message_id
+    AND preview.conversationId = root.conversation_id
+WHERE
+    ConversationDetails.type IS NOT 'SELF'
+    AND (
+        ConversationDetails.type IS 'GROUP'
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL))
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1)
+        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL)
+    )
+    AND (
+        ConversationDetails.protocol IN ('PROTEUS', 'MIXED')
+        OR (
+            ConversationDetails.protocol = 'MLS'
+            AND ConversationDetails.mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET')
+        )
+    )
+    AND ConversationDetails.isActive
+    AND ConversationDetails.deletedLocally = 0
+ORDER BY COALESCE(root.last_reply_date, preview.date, root.created_at) DESC, root.thread_id DESC;
+
 countByConversationAndThreadIdAndVisibility:
 SELECT COUNT(*)
 FROM MessageThreadItem
