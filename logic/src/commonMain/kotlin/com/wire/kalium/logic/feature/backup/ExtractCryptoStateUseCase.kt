@@ -51,6 +51,7 @@ internal class ExtractCryptoStateUseCaseImpl(
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ExtractCryptoStateUseCase {
 
+    @Suppress("TooGenericExceptionCaught", "LongMethod")
     override suspend fun invoke(backupFilePath: Path): ExtractCryptoStateResult = withContext(kaliumDispatcher.io) {
         val extractedDir = kaliumFileSystem.tempFilePath(EXTRACTED_CRYPTO_BACKUP_DIR)
 
@@ -91,7 +92,7 @@ internal class ExtractCryptoStateUseCaseImpl(
                     // Parse metadata
                     val metadata = parseMetadata(extractedDir)
                     if (metadata == null) {
-                        kaliumLogger.e("Failed to parse crypto state backup metadata. Expected file: ${BackupConstants.BACKUP_METADATA_FILE_NAME}")
+                        kaliumLogger.e("Failed to parse crypto state backup metadata.")
                         cleanup(extractedDir)
                         return@withContext ExtractCryptoStateResult.Failure(
                             CoreFailure.Unknown(IllegalStateException("Missing or invalid metadata file"))
@@ -169,4 +170,3 @@ public sealed class ExtractCryptoStateResult {
 
     public data class Failure(val error: CoreFailure) : ExtractCryptoStateResult()
 }
-
