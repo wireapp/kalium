@@ -26,16 +26,26 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.fromDaoModelToType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.persistence.dao.message.MessageThreadDAO
+import com.wire.kalium.persistence.dao.message.GlobalThreadSummaryEntity
 import com.wire.kalium.persistence.dao.message.MessageThreadRootEntity
 import com.wire.kalium.persistence.dao.message.MessageThreadSummaryEntity
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
+import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 
 internal data class MessageThreadRoot(
     val conversationId: ConversationId,
@@ -51,6 +61,25 @@ internal data class MessageThreadSummary(
     val rootMessageId: String,
     val threadId: String,
     val visibleReplyCount: Long,
+)
+
+internal data class GlobalThreadSummary(
+    val conversationId: ConversationId,
+    val conversationName: String?,
+    val conversationType: Conversation.Type,
+    val otherUserPreviewAssetId: UserAssetId?,
+    val otherUserAvailabilityStatus: UserAvailabilityStatus,
+    val otherUserConnectionStatus: ConnectionState?,
+    val otherUserId: UserId?,
+    val otherUserAccentId: Int?,
+    val otherUserDeleted: Boolean,
+    val rootMessageId: String,
+    val threadId: String,
+    val visibleReplyCount: Long,
+    val createdAt: Instant,
+    val lastReplyDate: Instant?,
+    val rootMessage: MessagePreview,
+    val rootMessageSelfDeletionDurationMillis: Long?,
 )
 
 @Mockable
@@ -91,6 +120,8 @@ internal interface MessageThreadRepository {
         rootMessageIds: List<String>,
     ): Flow<Either<StorageFailure, List<MessageThreadSummary>>>
 
+    fun observeGlobalThreads(): Flow<Either<StorageFailure, List<GlobalThreadSummary>>>
+
     /**
      * If [threadId] is non-null, upserts the message as a non-root thread reply.
      * No-op when [threadId] is null.
@@ -106,7 +137,10 @@ internal interface MessageThreadRepository {
 
 internal class MessageThreadRepositoryImpl internal constructor(
     private val dao: MessageThreadDAO,
+    selfUserId: UserId,
 ) : MessageThreadRepository {
+
+    internal val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId)
 
     override suspend fun upsertThreadRoot(
         conversationId: ConversationId,
@@ -165,6 +199,13 @@ internal class MessageThreadRepositoryImpl internal constructor(
                 .map { summaries -> summaries.map(MessageThreadSummaryEntity::toModel) }
         }
 
+    override fun observeGlobalThreads(): Flow<Either<StorageFailure, List<GlobalThreadSummary>>> =
+        wrapFlowStorageRequest {
+            dao.observeGlobalThreads().map { summaries ->
+                summaries.map(::toModel)
+            }
+        }
+
     override suspend fun upsertThreadReplyIfNeeded(
         conversationId: ConversationId,
         messageId: String,
@@ -201,3 +242,40 @@ private fun MessageThreadSummaryEntity.toModel() = MessageThreadSummary(
     threadId = threadId,
     visibleReplyCount = visibleReplyCount,
 )
+
+private fun MessageThreadRepositoryImpl.toModel(summary: GlobalThreadSummaryEntity) = GlobalThreadSummary(
+    conversationId = summary.conversationId.toModel(),
+    conversationName = summary.conversationName,
+    conversationType = summary.conversationType.fromDaoModelToType(summary.isChannel),
+    otherUserPreviewAssetId = summary.otherUserPreviewAssetId?.toModel(),
+    otherUserAvailabilityStatus = summary.otherUserAvailabilityStatus.toModel(),
+    otherUserConnectionStatus = summary.otherUserConnectionStatus.toModel(),
+    otherUserId = summary.otherUserId?.toModel(),
+    otherUserAccentId = summary.otherUserAccentId,
+    otherUserDeleted = summary.otherUserDeleted == true,
+    rootMessageId = summary.rootMessageId,
+    threadId = summary.threadId,
+    visibleReplyCount = summary.visibleReplyCount,
+    createdAt = summary.createdAt,
+    lastReplyDate = summary.lastReplyDate,
+    rootMessage = messageMapper.fromEntityToMessagePreview(summary.rootMessage),
+    rootMessageSelfDeletionDurationMillis = summary.rootMessageExpireAfterMillis,
+)
+
+private fun UserAvailabilityStatusEntity?.toModel(): UserAvailabilityStatus = when (this) {
+    UserAvailabilityStatusEntity.AVAILABLE -> UserAvailabilityStatus.AVAILABLE
+    UserAvailabilityStatusEntity.BUSY -> UserAvailabilityStatus.BUSY
+    UserAvailabilityStatusEntity.AWAY -> UserAvailabilityStatus.AWAY
+    null, UserAvailabilityStatusEntity.NONE -> UserAvailabilityStatus.NONE
+}
+
+private fun ConnectionEntity.State?.toModel(): ConnectionState = when (this) {
+    ConnectionEntity.State.PENDING -> ConnectionState.PENDING
+    ConnectionEntity.State.SENT -> ConnectionState.SENT
+    ConnectionEntity.State.BLOCKED -> ConnectionState.BLOCKED
+    ConnectionEntity.State.IGNORED -> ConnectionState.IGNORED
+    ConnectionEntity.State.CANCELLED -> ConnectionState.CANCELLED
+    ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT -> ConnectionState.MISSING_LEGALHOLD_CONSENT
+    ConnectionEntity.State.ACCEPTED -> ConnectionState.ACCEPTED
+    null, ConnectionEntity.State.NOT_CONNECTED -> ConnectionState.NOT_CONNECTED
+}
