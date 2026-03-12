@@ -158,7 +158,7 @@ internal interface MLSConversationRepository : MLSMemberAdder {
         parentId: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun hasEstablishedMLSGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<CoreFailure, Boolean>
+    suspend fun hasEstablishedMLSGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<MLSFailure, Boolean>
 
     suspend fun removeMembersFromMLSGroup(
         mlsContext: MlsCoreCryptoContext,
@@ -353,7 +353,7 @@ internal class MLSConversationDataSource(
     override suspend fun hasEstablishedMLSGroup(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID
-    ): Either<CoreFailure, Boolean> = wrapMLSRequest {
+    ): Either<MLSFailure, Boolean> = wrapMLSRequest {
         mlsContext.conversationExists(idMapper.toCryptoModel(groupID))
     }
 

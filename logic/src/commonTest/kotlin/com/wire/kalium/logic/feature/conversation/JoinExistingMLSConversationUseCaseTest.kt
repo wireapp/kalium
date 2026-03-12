@@ -186,8 +186,8 @@ class JoinExistingMLSConversationUseCaseTest {
             }.wasNotInvoked()
 
             coVerify {
-                arrangement.conversationRepository.updateConversationGroupState(
-                    eq(Arrangement.GROUP_ID3),
+                arrangement.conversationRepository.updateConversationGroupStateByConversationId(
+                    eq(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION.id),
                     eq(Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
                 )
             }.wasInvoked(once)
@@ -209,7 +209,7 @@ class JoinExistingMLSConversationUseCaseTest {
             ).shouldSucceed()
 
             coVerify {
-                arrangement.conversationRepository.updateConversationGroupState(any(), any())
+                arrangement.conversationRepository.updateConversationGroupStateByConversationId(any(), any())
             }.wasNotInvoked()
         }
 
@@ -342,7 +342,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 Either.Right(localGroupExists)
             }
             coEvery {
-                conversationRepository.updateConversationGroupState(any(), any())
+                conversationRepository.updateConversationGroupStateByConversationId(any(), any())
             }.returns(Either.Right(Unit))
 
             coEvery {

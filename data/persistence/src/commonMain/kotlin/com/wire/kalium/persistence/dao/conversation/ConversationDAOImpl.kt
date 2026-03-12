@@ -247,6 +247,15 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updateConversationGroupStateByConversationId(
+        groupState: ConversationEntity.GroupState,
+        conversationId: QualifiedIDEntity
+    ) {
+        withContext(writeDispatcher.value) {
+            conversationQueries.updateConversationGroupStateByConversationId(groupState, conversationId)
+        }
+    }
+
     override suspend fun updateMlsGroupStateAndCipherSuite(
         groupState: ConversationEntity.GroupState,
         cipherSuite: ConversationEntity.CipherSuite,

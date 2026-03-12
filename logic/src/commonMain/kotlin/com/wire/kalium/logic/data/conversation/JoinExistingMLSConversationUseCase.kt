@@ -163,8 +163,8 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                     logger.d(
                         "Updating local group state to ESTABLISHED for ${conversation.id.toLogString()} to sync DB with local MLS state"
                     )
-                    conversationRepository.updateConversationGroupState(
-                        protocol.groupId,
+                    conversationRepository.updateConversationGroupStateByConversationId(
+                        conversation.id,
                         Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
                     )
                 } else {
