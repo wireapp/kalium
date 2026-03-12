@@ -97,6 +97,10 @@ internal class CallManagerImpl : CallManager {
         kaliumLogger.w("Calls not supported on iOS: setBackground ignored")
     }
 
+    override suspend fun setNetworkQualityInterval(intervalInSeconds: Int) {
+        kaliumLogger.w("Calls not supported on iOS: setNetworkQualityInterval ignored")
+    }
+
     override suspend fun cancelJobs() {
         kaliumLogger.w("Calls not supported on iOS: cancelJobs ignored")
     }
