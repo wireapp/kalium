@@ -35,7 +35,6 @@ import okio.use
 /**
  * Extracts the crypto state backup from a downloaded zip file.
  */
-@Mockable
 public interface ExtractCryptoStateUseCase {
     /**
      * Extracts the crypto state backup from the given zip file.
