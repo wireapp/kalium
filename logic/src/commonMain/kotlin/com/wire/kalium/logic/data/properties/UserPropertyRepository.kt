@@ -164,7 +164,7 @@ internal class UserPropertiesSyncDataSource(
         wrapApiRequest {
             propertiesApi.getPropertiesValues()
         }.flatMap { properties ->
-            val readReceiptsEnabled = properties.findIntValue(PropertyKey.WIRE_RECEIPT_MODE) == 1
+            val readReceiptsEnabled = properties.findIntValue(PropertyKey.WIRE_RECEIPT_MODE)?.let { it == 1 } ?: true
             val typingIndicatorEnabled = properties.findIntValue(PropertyKey.WIRE_TYPING_INDICATOR_MODE)?.let { it != 0 } ?: true
             val screenshotCensoringEnabled = properties.findIntValue(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE) == 1
 
