@@ -721,7 +721,7 @@ internal class CallManagerImpl internal constructor(
     }
 
     // For testing purposes, to ensure that the CallManager is fully initialized before proceeding with tests that depend on it.
-    suspend fun waitUntilInitialized() {
+    internal suspend fun waitUntilInitialized() {
         deferredHandle.await()
     }
 
