@@ -81,10 +81,6 @@ internal class DownloadCryptoStateUseCaseImpl(
             return DownloadCryptoStateResult.Failure(StorageFailure.DataNotFound)
         }
 
-//         val fileSize = kaliumFileSystem.source(backupFilePath).buffer().use {
-//             it.readAll(okio.blackholeSink())
-//         }
-
         val fileSize = kaliumFileSystem.size(backupFilePath)
 
         kaliumLogger.i("$TAG Downloaded crypto state backup (size: $fileSize bytes)")
