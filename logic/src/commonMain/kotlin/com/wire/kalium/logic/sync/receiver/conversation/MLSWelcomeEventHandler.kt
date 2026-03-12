@@ -24,6 +24,7 @@ import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -98,12 +99,20 @@ internal class MLSWelcomeEventHandlerImpl(
             .flatMapLeft {
                 when (it) {
                     is MLSFailure.OrphanWelcome -> {
-                        kaliumLogger.w("$TAG: Discarding welcome and joining existing conversation by external commit")
-                        joinExistingMLSConversation(
-                            transactionContext = transactionContext,
-                            conversationId = event.conversationId,
-                        ).map {
-                            kaliumLogger.d("$TAG: Successfully joined existing MLS conversation")
+                        if (isAlreadyEstablishedLocally(mlsContext, event.conversationId)) {
+                            kaliumLogger.w(
+                                "$TAG: OrphanWelcome for already established local MLS group. " +
+                                    "Treating as duplicate welcome and skipping external commit rejoin."
+                            )
+                            Unit.right()
+                        } else {
+                            kaliumLogger.w("$TAG: Discarding welcome and joining existing conversation by external commit")
+                            joinExistingMLSConversation(
+                                transactionContext = transactionContext,
+                                conversationId = event.conversationId,
+                            ).map {
+                                kaliumLogger.d("$TAG: Successfully joined existing MLS conversation")
+                            }
                         }
                     }
 
@@ -134,6 +143,20 @@ internal class MLSWelcomeEventHandlerImpl(
             }
             .onFailure { eventLogger.logFailure(it) }
     }
+
+    private suspend fun isAlreadyEstablishedLocally(
+        mlsContext: MlsCoreCryptoContext,
+        conversationId: ConversationId
+    ): Boolean = conversationRepository.getConversationProtocolInfo(conversationId)
+        .map { it as? Conversation.ProtocolInfo.MLSCapable }
+        .flatMap { mlsProtocol ->
+            when {
+                mlsProtocol == null -> Either.Right(false)
+                mlsProtocol.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED -> Either.Right(false)
+                else -> wrapMLSRequest { mlsContext.conversationExists(mlsProtocol.groupId.toCrypto()) }
+            }
+        }
+        .fold({ false }, { it })
 
     private suspend fun processWelcomeMessageWithRecovery(
         mlsContext: MlsCoreCryptoContext,
