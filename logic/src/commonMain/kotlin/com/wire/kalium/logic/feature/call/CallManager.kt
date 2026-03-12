@@ -57,5 +57,6 @@ internal interface CallManager {
     suspend fun setTestPreviewActive(shouldEnable: Boolean)
     suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>)
     suspend fun setBackground(background: Boolean)
+    suspend fun setNetworkQualityInterval(intervalInSeconds: Int)
     suspend fun cancelJobs()
 }
