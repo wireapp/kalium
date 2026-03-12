@@ -527,6 +527,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandler
 import com.wire.kalium.logic.sync.slow.SlowSyncRecoveryHandlerImpl
 import com.wire.kalium.logic.sync.slow.SlowSyncWorker
 import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
+import com.wire.kalium.logic.sync.slow.SyncNomadMessagesDuringSlowSyncUseCaseImpl
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -1396,7 +1397,14 @@ public class UserSessionScope internal constructor(
             joinExistingMLSConversations,
             fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver,
-            cryptoTransactionProvider
+            cryptoTransactionProvider,
+            syncNomadMessagesDuringSlowSync = SyncNomadMessagesDuringSlowSyncUseCaseImpl(
+                selfUserId = userId,
+                nomadServiceUrl = nomadServiceUrl,
+                userStorageProvider = userStorageProvider,
+                userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
+                logger = userScopedLogger
+            )
         )
     }
 
