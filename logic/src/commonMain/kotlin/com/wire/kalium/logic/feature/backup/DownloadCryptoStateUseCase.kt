@@ -27,16 +27,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 import okio.Path
-import okio.buffer
 import okio.use
 
 /**
  * Downloads the crypto state backup from the remote endpoint.
  */
-@Mockable
 public interface DownloadCryptoStateUseCase {
     /**
      * Downloads the crypto state backup.
@@ -84,11 +81,13 @@ internal class DownloadCryptoStateUseCaseImpl(
             return DownloadCryptoStateResult.Failure(StorageFailure.DataNotFound)
         }
 
-        val fileSize = kaliumFileSystem.source(backupFilePath).buffer().use {
-            it.readAll(okio.blackholeSink())
-        }
+//         val fileSize = kaliumFileSystem.source(backupFilePath).buffer().use {
+//             it.readAll(okio.blackholeSink())
+//         }
 
-        kaliumLogger.i("$TAG Downloaded crypto state backup to $backupFilePath (size: $fileSize bytes)")
+        val fileSize = kaliumFileSystem.size(backupFilePath)
+
+        kaliumLogger.i("$TAG Downloaded crypto state backup (size: $fileSize bytes)")
 
         return if (fileSize == 0L) {
             kaliumLogger.i("$TAG No crypto state backup available on server (empty response)")

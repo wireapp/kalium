@@ -29,4 +29,8 @@ actual class KaliumFileSystemImpl : KaliumFileSystem {
     override suspend fun writeData(outputSink: Sink, dataSource: Source): Long = TODO("Not yet implemented")
 
     override fun selfUserAvatarPath(): Path = TODO("Not yet implemented")
+
+    override suspend fun listDirectories(dir: Path): List<Path> = TODO("Not yet implemented")
+    
+    override fun size(path: Path): Long = = TODO("Not yet implemented")
 }

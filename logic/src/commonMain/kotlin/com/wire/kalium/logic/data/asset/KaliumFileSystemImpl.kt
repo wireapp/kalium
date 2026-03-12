@@ -45,4 +45,5 @@ internal expect class KaliumFileSystemImpl constructor(
     override suspend fun readByteArray(inputPath: Path): ByteArray
     override suspend fun writeData(outputSink: Sink, dataSource: Source): Long
     override suspend fun listDirectories(dir: Path): List<Path>
+    override fun size(path: Path): Long
 }

@@ -123,4 +123,5 @@ public interface KaliumFileSystem {
      * @return the list of paths found.
      */
     public suspend fun listDirectories(dir: Path): List<Path>
+    public fun size(path: Path): Long
 }

@@ -22,11 +22,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import okio.Sink
 import okio.buffer
@@ -53,8 +55,9 @@ class DownloadCryptoStateUseCaseTest {
         assertTrue(result.backupFilePath.name.startsWith("crypto_backup_download"))
         assertTrue(result.backupFilePath.name.endsWith(".zip"))
 
-        coVerify { arrangement.cryptoStateBackupRemoteRepository.downloadCryptoState(any()) }
-            .wasInvoked(exactly = once)
+        verifySuspend((VerifyMode.atMost(1))) {
+            arrangement.cryptoStateBackupRemoteRepository.downloadCryptoState(any())
+        }
     }
 
     @Test
@@ -70,8 +73,9 @@ class DownloadCryptoStateUseCaseTest {
         // then
         assertIs<DownloadCryptoStateResult.NoBackupAvailable>(result)
 
-        coVerify { arrangement.cryptoStateBackupRemoteRepository.downloadCryptoState(any()) }
-            .wasInvoked(exactly = once)
+        verifySuspend((VerifyMode.atMost(1))) {
+            arrangement.cryptoStateBackupRemoteRepository.downloadCryptoState(any())
+        }
     }
 
     @Test
@@ -89,8 +93,9 @@ class DownloadCryptoStateUseCaseTest {
         assertIs<DownloadCryptoStateResult.Failure>(result)
         assertEquals(error, result.error)
 
-        coVerify { arrangement.cryptoStateBackupRemoteRepository.downloadCryptoState(any()) }
-            .wasInvoked(exactly = once)
+        verifySuspend((VerifyMode.atMost(1))) {
+            arrangement.cryptoStateBackupRemoteRepository.downloadCryptoState(any())
+        }
     }
 
     @Test
@@ -111,7 +116,7 @@ class DownloadCryptoStateUseCaseTest {
     }
 
     private class Arrangement {
-        val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository = mock(CryptoStateBackupRemoteRepository::class)
+        val cryptoStateBackupRemoteRepository = mock<CryptoStateBackupRemoteRepository>()
 
         private val fakeFileSystem = FakeKaliumFileSystem()
         private var userId = UserId("user-id", "domain")
@@ -120,19 +125,20 @@ class DownloadCryptoStateUseCaseTest {
             this.userId = userId
         }
 
-        suspend fun withDownloadSuccess(fileContent: String) = apply {
-            coEvery { cryptoStateBackupRemoteRepository.downloadCryptoState(any()) }
-                .invokes { args ->
-                    val sink = args[0] as Sink
-                    val bufferedSink = sink.buffer()
-                    bufferedSink.writeUtf8(fileContent)
-                    bufferedSink.flush()
-                    Either.Right(Unit)
-                }
+        fun withDownloadSuccess(fileContent: String) = apply {
+            everySuspend {
+                cryptoStateBackupRemoteRepository.downloadCryptoState(any())
+            }.calls { invocation ->
+                val sink = invocation.args[0] as Sink
+                val bufferedSink = sink.buffer()
+                bufferedSink.writeUtf8(fileContent)
+                bufferedSink.flush()
+                Either.Right(Unit)
+            }
         }
 
-        suspend fun withDownloadFailure(error: NetworkFailure) = apply {
-            coEvery { cryptoStateBackupRemoteRepository.downloadCryptoState(any()) }
+        fun withDownloadFailure(error: NetworkFailure) = apply {
+            everySuspend { cryptoStateBackupRemoteRepository.downloadCryptoState(any()) }
                 .returns(Either.Left(error))
         }
 
