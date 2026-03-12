@@ -41,7 +41,6 @@ public interface SetLastDeviceIdUseCase {
 }
 
 internal class SetLastDeviceIdUseCaseImpl(
-    private val userId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository,
 ) : SetLastDeviceIdUseCase {
@@ -52,13 +51,11 @@ internal class SetLastDeviceIdUseCaseImpl(
                 kaliumLogger.e("$TAG Failed to read current client id")
                 return SetLastDeviceIdResult.Failure(clientResult.value)
             }
+
             is Either.Right -> clientResult.value
         }
 
-        return cryptoStateBackupRemoteRepository.setLastDeviceId(
-            userId = userId.toString(),
-            deviceId = clientId.value
-        ).fold(
+        return cryptoStateBackupRemoteRepository.setLastDeviceId(deviceId = clientId.value).fold(
             { error ->
                 kaliumLogger.e("$TAG Failed to set last device id: $error")
                 SetLastDeviceIdResult.Failure(error)
@@ -69,6 +66,7 @@ internal class SetLastDeviceIdUseCaseImpl(
             }
         )
     }
+
     companion object {
         const val TAG = "[SetLastDeviceIdUseCase]"
     }

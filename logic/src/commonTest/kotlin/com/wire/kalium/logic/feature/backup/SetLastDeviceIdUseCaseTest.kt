@@ -23,10 +23,12 @@ import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
 import dev.mokkery.mock
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -60,12 +62,11 @@ class SetLastDeviceIdUseCaseTest {
 
         assertIs<SetLastDeviceIdResult.Failure>(result)
         assertEquals(error, result.error)
-        coVerify {
+        verifySuspend(VerifyMode.atMost(1)) {
             arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(
-                userId = arrangement.userId.toString(),
                 deviceId = clientId
             )
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     @Test
@@ -79,12 +80,11 @@ class SetLastDeviceIdUseCaseTest {
         val result = useCase()
 
         assertIs<SetLastDeviceIdResult.Success>(result)
-        coVerify {
+        verifySuspend(VerifyMode.atMost(1)) {
             arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(
-                userId = arrangement.userId.toString(),
                 deviceId = clientId
             )
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     @Test
@@ -98,12 +98,11 @@ class SetLastDeviceIdUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.atMost(1)) {
             arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(
-                userId = userId.toString(),
                 deviceId = clientId
             )
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     private class Arrangement(
@@ -115,39 +114,32 @@ class SetLastDeviceIdUseCaseTest {
 
         val useCase: SetLastDeviceIdUseCase by lazy {
             SetLastDeviceIdUseCaseImpl(
-                userId = userId,
                 currentClientIdProvider = currentClientIdProvider,
                 cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository
             )
         }
 
-        suspend fun withCurrentClientIdProviderSuccess(clientId: String) = apply {
-            coEvery {
+        fun withCurrentClientIdProviderSuccess(clientId: String) = apply {
+            everySuspend {
                 currentClientIdProvider()
             }.returns(Either.Right(ClientId(clientId)))
         }
 
-        suspend fun withCurrentClientIdProviderFailure(error: CoreFailure) = apply {
-            coEvery {
+        fun withCurrentClientIdProviderFailure(error: CoreFailure) = apply {
+            everySuspend {
                 currentClientIdProvider()
             }.returns(Either.Left(error))
         }
 
-        suspend fun withSetLastDeviceIdSuccess() = apply {
-            coEvery {
-                cryptoStateBackupRemoteRepository.setLastDeviceId(
-                    userId = any(),
-                    deviceId = any()
-                )
+        fun withSetLastDeviceIdSuccess() = apply {
+            everySuspend {
+                cryptoStateBackupRemoteRepository.setLastDeviceId(deviceId = any())
             }.returns(Either.Right(Unit))
         }
 
-        suspend fun withSetLastDeviceIdFailure(error: NetworkFailure) = apply {
-            coEvery {
-                cryptoStateBackupRemoteRepository.setLastDeviceId(
-                    userId = any(),
-                    deviceId = any()
-                )
+        fun withSetLastDeviceIdFailure(error: NetworkFailure) = apply {
+            everySuspend {
+                cryptoStateBackupRemoteRepository.setLastDeviceId(deviceId = any())
             }.returns(Either.Left(error))
         }
     }

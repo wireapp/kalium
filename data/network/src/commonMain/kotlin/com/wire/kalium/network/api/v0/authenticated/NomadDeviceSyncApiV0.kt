@@ -30,6 +30,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
@@ -117,11 +118,10 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
             NetworkResponse.Error(KaliumException.GenericError(unhandledException))
         }
 
-    override suspend fun setLastDeviceId(userId: String, deviceId: String): NetworkResponse<Unit> =
-        requireNomadServiceUrl(apiName = "setLastDeviceId") ?: wrapKaliumResponse {
-            httpClient.put("$PATH_EVENT/$PATH_CRYPTO_DEVICE") {
+    override suspend fun setLastDeviceId(deviceId: String): NetworkResponse<Unit> =
+        requireNomadServiceUrl(apiName = "setLastDeviceId") ?: wrapRequest {
+            httpClient.put {
                 setNomadUrlIfAvailable(PATH_EVENT, PATH_CRYPTO_DEVICE)
-                headers.append(HEADER_Z_USER, userId)
                 contentType(ContentType.Application.Json)
                 setBody(SetLastDeviceIdRequest(deviceId = deviceId))
             }
@@ -221,7 +221,6 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         const val PATH_CRYPTO_STATE = "crypto/state"
         const val PATH_CRYPTO_DEVICE = "crypto/device"
         const val QUERY_DEVICE_ID = "device_id"
-        const val HEADER_Z_USER = "Z-User"
         const val BUFFER_SIZE = 8L * 1024
         const val BOUNDARY = "frontier"
         const val CRYPTO_ZIP_FILENAME = "CHANGELOG.zip"
