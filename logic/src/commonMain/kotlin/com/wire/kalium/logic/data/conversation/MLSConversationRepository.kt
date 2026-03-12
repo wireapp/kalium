@@ -368,12 +368,27 @@ internal class MLSConversationDataSource(
         welcomeBundle.crlNewDistributionPoints?.let {
             checkRevocationList(mlsContext, it)
         }
-    }.onSuccess {
+    }.flatMap {
+        wrapMLSRequest {
+            mlsContext.conversationEpoch(idMapper.toCryptoModel(groupID))
+        }
+    }.flatMap { localEpoch ->
         wrapStorageRequest {
-            conversationDAO.updateConversationGroupState(
-                ConversationEntity.GroupState.ESTABLISHED,
-                idMapper.toCryptoModel(groupID)
-            )
+            val localGroupId = idMapper.toCryptoModel(groupID)
+            val existingConversation = conversationDAO.getConversationByGroupID(localGroupId)
+            if (existingConversation != null) {
+                conversationDAO.updateMLSGroupIdAndState(
+                    existingConversation.id,
+                    localGroupId,
+                    localEpoch.toLong(),
+                    ConversationEntity.GroupState.ESTABLISHED
+                )
+            } else {
+                conversationDAO.updateConversationGroupState(
+                    ConversationEntity.GroupState.ESTABLISHED,
+                    localGroupId
+                )
+            }
         }
     }.map { }
 
