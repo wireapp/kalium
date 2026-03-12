@@ -58,7 +58,7 @@ internal fun HttpRequestBuilder.setUrl(baseUrl: String, path: List<String>) {
 private fun HttpRequestBuilder.setHttpsUrl(baseUrl: Url, path: List<String>) {
     url {
         host = baseUrl.host
-        pathSegments = baseUrl.pathSegments + path
+        pathSegments = baseUrl.segments + path
         protocol = URLProtocol.HTTPS
     }
 }
