@@ -33,50 +33,50 @@ import okio.Path
 import okio.Path.Companion.toPath
 
 /**
- * Restores the crypto state (MLS and Proteus keystores) from extracted backup files.
+ * Applies crypto state (MLS and Proteus keystores) from extracted backup files.
  * This replaces the existing keystores with the ones from the backup and updates
  * the database passphrases in storage.
  */
-public interface RestoreCryptoStateUseCase {
+public interface ApplyCryptoStateUseCase {
     /**
-     * Restores the crypto state from the extracted backup.
+     * Applies the crypto state from the extracted backup.
      * @param extractResult The result from ExtractCryptoStateUseCase containing paths to extracted keystores
-     * @return [RestoreCryptoStateResult.Success] if restore succeeded,
-     * or [RestoreCryptoStateResult.Failure] if it failed.
+     * @return [ApplyCryptoStateResult.Success] if apply succeeded,
+     * or [ApplyCryptoStateResult.Failure] if it failed.
      */
-    public suspend operator fun invoke(extractResult: ExtractCryptoStateResult.Success): RestoreCryptoStateResult
+    public suspend operator fun invoke(extractResult: ExtractCryptoStateResult.Success): ApplyCryptoStateResult
 }
 
-internal class RestoreCryptoStateUseCaseImpl(
+internal class ApplyCryptoStateUseCaseImpl(
     private val userId: UserId,
     private val rootPathsProvider: RootPathsProvider,
     private val kaliumFileSystem: KaliumFileSystem,
     private val passphraseStorage: PassphraseStorage,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-) : RestoreCryptoStateUseCase {
+) : ApplyCryptoStateUseCase {
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun invoke(extractResult: ExtractCryptoStateResult.Success): RestoreCryptoStateResult =
+    override suspend fun invoke(extractResult: ExtractCryptoStateResult.Success): ApplyCryptoStateResult =
         withContext(dispatcher.io) {
-            kaliumLogger.i("$TAG: Starting crypto state restore for userId: ${userId.toLogString()}")
+            kaliumLogger.i("$TAG: Starting crypto state apply for userId: ${userId.toLogString()}")
             val clientId = extractResult.metadata.clientId
 
             try {
-                // Restore MLS keystore
-                val mlsRestoreResult = restoreMLSKeystore(
+                // Apply MLS keystore
+                val mlsApplyResult = applyMLSKeystore(
                     extractedMlsPath = extractResult.mlsKeystorePath,
                     clientId = clientId
                 )
-                if (mlsRestoreResult is RestoreCryptoStateResult.Failure) {
-                    return@withContext mlsRestoreResult
+                if (mlsApplyResult is ApplyCryptoStateResult.Failure) {
+                    return@withContext mlsApplyResult
                 }
 
-                // Restore Proteus keystore
-                val proteusRestoreResult = restoreProteusKeystore(
+                // Apply Proteus keystore
+                val proteusApplyResult = applyProteusKeystore(
                     extractedProteusPath = extractResult.proteusKeystorePath
                 )
-                if (proteusRestoreResult is RestoreCryptoStateResult.Failure) {
-                    return@withContext proteusRestoreResult
+                if (proteusApplyResult is ApplyCryptoStateResult.Failure) {
+                    return@withContext proteusApplyResult
                 }
 
                 // Update database passphrases from backup metadata
@@ -85,11 +85,11 @@ internal class RestoreCryptoStateUseCaseImpl(
                 // Cleanup extracted files
                 deleteExtractedFolder(extractResult.extractedDir)
 
-                kaliumLogger.i("$TAG: Successfully restored crypto state for clientId: ${clientId.obfuscateId()}")
-                RestoreCryptoStateResult.Success
+                kaliumLogger.i("$TAG: Successfully applied crypto state for clientId: ${clientId.obfuscateId()}")
+                ApplyCryptoStateResult.Success
             } catch (e: Exception) {
-                kaliumLogger.e("$TAG: Failed to restore crypto state", e)
-                RestoreCryptoStateResult.Failure(CoreFailure.Unknown(e))
+                kaliumLogger.e("$TAG: Failed to apply crypto state", e)
+                ApplyCryptoStateResult.Failure(CoreFailure.Unknown(e))
             }
         }
 
@@ -109,10 +109,10 @@ internal class RestoreCryptoStateUseCaseImpl(
         kaliumLogger.i("$TAG: Updated Proteus database passphrase")
     }
 
-    private fun restoreMLSKeystore(extractedMlsPath: Path, clientId: String): RestoreCryptoStateResult {
+    private fun applyMLSKeystore(extractedMlsPath: Path, clientId: String): ApplyCryptoStateResult {
         if (!kaliumFileSystem.exists(extractedMlsPath)) {
             kaliumLogger.e("$TAG: Extracted MLS keystore not found")
-            return RestoreCryptoStateResult.Failure(StorageFailure.DataNotFound)
+            return ApplyCryptoStateResult.Failure(StorageFailure.DataNotFound)
         }
 
         // MLS path: $rootPath/${userId.domain}/${userId.value}/mls/${clientId}/keystore
@@ -120,7 +120,7 @@ internal class RestoreCryptoStateUseCaseImpl(
         val mlsKeystoreDir = "$mlsRootPath/$clientId"
         val mlsKeystorePath = "$mlsKeystoreDir/$KEYSTORE_NAME".toPath()
 
-        kaliumLogger.i("$TAG: Restoring MLS keystore..")
+        kaliumLogger.i("$TAG: Applying MLS keystore..")
 
         FileUtil.mkDirs(mlsKeystoreDir)
 
@@ -130,21 +130,21 @@ internal class RestoreCryptoStateUseCaseImpl(
         // Copy the extracted keystore to the target location
         copyFile(extractedMlsPath, mlsKeystorePath)
 
-        kaliumLogger.i("$TAG: MLS keystore restored successfully")
-        return RestoreCryptoStateResult.Success
+        kaliumLogger.i("$TAG: MLS keystore applied successfully")
+        return ApplyCryptoStateResult.Success
     }
 
-    private fun restoreProteusKeystore(extractedProteusPath: Path): RestoreCryptoStateResult {
+    private fun applyProteusKeystore(extractedProteusPath: Path): ApplyCryptoStateResult {
         if (!kaliumFileSystem.exists(extractedProteusPath)) {
             kaliumLogger.e("$TAG: Extracted Proteus keystore not found")
-            return RestoreCryptoStateResult.Failure(StorageFailure.DataNotFound)
+            return ApplyCryptoStateResult.Failure(StorageFailure.DataNotFound)
         }
 
         // Proteus path: $rootPath/${userId.domain}/${userId.value}/proteus/keystore
         val proteusRootPath = rootPathsProvider.rootProteusPath(userId)
         val proteusKeystorePath = "$proteusRootPath/$KEYSTORE_NAME".toPath()
 
-        kaliumLogger.i("$TAG: Restoring Proteus keystore..")
+        kaliumLogger.i("$TAG: Applying Proteus keystore..")
 
         FileUtil.mkDirs(proteusRootPath)
 
@@ -154,14 +154,14 @@ internal class RestoreCryptoStateUseCaseImpl(
         // Copy the extracted keystore to the target location
         copyFile(extractedProteusPath, proteusKeystorePath)
 
-        kaliumLogger.i("$TAG: Proteus keystore restored successfully")
-        return RestoreCryptoStateResult.Success
+        kaliumLogger.i("$TAG: Proteus keystore applied successfully")
+        return ApplyCryptoStateResult.Success
     }
 
     /**
      * Deletes the keystore and its associated WAL files (keystore-shm, keystore-wal).
      * These files are created by SQLite in WAL mode and must be deleted together
-     * to ensure data consistency when restoring.
+     * to ensure data consistency when applying.
      */
     private fun deleteKeystoreFiles(keystorePath: Path) {
         val shmPath = "${keystorePath}$WAL_SHM_SUFFIX".toPath()
@@ -206,7 +206,7 @@ internal class RestoreCryptoStateUseCaseImpl(
     }
 
     companion object {
-        private const val TAG = "RestoreCryptoStateUseCase"
+        private const val TAG = "[ApplyCryptoStateUseCase]"
         private const val KEYSTORE_NAME = "keystore"
         private const val WAL_SUFFIX = "-wal"
         private const val WAL_SHM_SUFFIX = "-shm"
@@ -215,7 +215,7 @@ internal class RestoreCryptoStateUseCaseImpl(
     }
 }
 
-public sealed class RestoreCryptoStateResult {
-    public data object Success : RestoreCryptoStateResult()
-    public data class Failure(val error: CoreFailure) : RestoreCryptoStateResult()
+public sealed class ApplyCryptoStateResult {
+    public data object Success : ApplyCryptoStateResult()
+    public data class Failure(val error: CoreFailure) : ApplyCryptoStateResult()
 }

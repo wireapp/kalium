@@ -36,7 +36,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class RestoreCryptoStateUseCaseImplTest {
+class ApplyCryptoStateUseCaseTest {
 
     @Test
     fun givenValidCompressedBackupWithAllFiles_whenInvoked_thenReturnSuccess() = runTest {
@@ -50,7 +50,7 @@ class RestoreCryptoStateUseCaseImplTest {
 
         val result = useCase.invoke(extractResult)
 
-        assertEquals(RestoreCryptoStateResult.Success, result)
+        assertEquals(ApplyCryptoStateResult.Success, result)
         verifySuspend(VerifyMode.exactly(2)) {
             arrangement.passphraseStorage.setPassphrase(
                 any(),
@@ -68,7 +68,7 @@ class RestoreCryptoStateUseCaseImplTest {
 
         val result = useCase.invoke(extractResult)
 
-        assertTrue(result is RestoreCryptoStateResult.Failure)
+        assertTrue(result is ApplyCryptoStateResult.Failure)
         assertEquals(StorageFailure.DataNotFound, result.error)
     }
 
@@ -84,23 +84,23 @@ class RestoreCryptoStateUseCaseImplTest {
 
         val result = useCase.invoke(extractResult)
 
-        assertTrue(result is RestoreCryptoStateResult.Failure)
+        assertTrue(result is ApplyCryptoStateResult.Failure)
         assertEquals(StorageFailure.DataNotFound, result.error)
     }
 
     @Test
-    fun givenExceptionDuringRestore_whenInvoked_thenReturnUnknownFailure() = runTest {
+    fun givenExceptionDuringApplyingCryptoState_whenInvoked_thenReturnUnknownFailure() = runTest {
         val exception = RuntimeException("boom")
         val (_, useCase) = Arrangement()
-            .withRestoreException(exception)
+            .withApplyingException(exception)
             .arrange()
 
         val result = useCase.invoke(extractResult)
 
-        assertTrue(result is RestoreCryptoStateResult.Failure)
+        assertTrue(result is ApplyCryptoStateResult.Failure)
 
         assertTrue(result.error is CoreFailure.Unknown)
-        assertEquals(exception, (result.error as CoreFailure.Unknown).rootCause)
+        assertEquals(exception, result.error.rootCause)
     }
 
     private inner class Arrangement {
@@ -136,12 +136,12 @@ class RestoreCryptoStateUseCaseImplTest {
             everySuspend { kaliumFileSystem.exists(any()) } returns result
         }
 
-        fun withRestoreException(exception: Exception) = apply {
+        fun withApplyingException(exception: Exception) = apply {
             everySuspend { kaliumFileSystem.exists(any()) } throws exception
         }
 
-        fun arrange(): Pair<Arrangement, RestoreCryptoStateUseCase> {
-            return this to RestoreCryptoStateUseCaseImpl(
+        fun arrange(): Pair<Arrangement, ApplyCryptoStateUseCase> {
+            return this to ApplyCryptoStateUseCaseImpl(
                 userId = selfUserId,
                 rootPathsProvider = FakeRootPathsProvider(),
                 kaliumFileSystem = kaliumFileSystem,
