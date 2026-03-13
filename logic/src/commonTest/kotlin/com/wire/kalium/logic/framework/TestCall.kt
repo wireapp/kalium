@@ -20,6 +20,7 @@ package com.wire.kalium.logic.framework
 
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallMetadata
+import com.wire.kalium.logic.data.call.CallQualityData
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.ParticipantMinimized
@@ -161,4 +162,19 @@ object TestCall {
             null,
             null
         )
+
+    val CALL_QUALITY_DATA = CallQualityData(
+        quality = CallQualityData.Quality.POOR,
+        peer = CallQualityData.Peer.USER,
+        connection = CallQualityData.Connection(
+            protocol = CallQualityData.Connection.Protocol.UDP,
+            candidate = CallQualityData.Connection.Candidate.RELAY
+        ),
+        packetLoss = CallQualityData.PacketLoss(up = 5, down = 10),
+        ping = 51,
+        jitter = CallQualityData.Jitter(
+            audio = CallQualityData.AudioJitter(up = 10, down = 201),
+            video = CallQualityData.VideoJitter(up = 15, down = 25)
+        )
+    )
 }
