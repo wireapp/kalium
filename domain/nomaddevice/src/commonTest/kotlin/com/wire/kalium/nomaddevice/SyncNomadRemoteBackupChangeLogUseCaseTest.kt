@@ -365,6 +365,10 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         override suspend fun downloadCryptoState(tempBackupFileSink: Sink): NetworkResponse<Unit> {
             error("Not needed for test")
         }
+
+        override suspend fun setLastDeviceId(deviceId: String): NetworkResponse<Unit> {
+            error("Not needed for test")
+        }
     }
 
     private class FakeRemoteBackupChangeLogDAO(
