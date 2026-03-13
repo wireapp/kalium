@@ -303,6 +303,31 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingConversation_ThenConversationGroupStateCanBeUpdatedByConversationId() = runTest(dispatcher) {
+        conversationDAO.insertConversation(
+            conversationEntity3.copy(
+                protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                    groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                    groupState = ConversationEntity.GroupState.ESTABLISHED,
+                    epoch = 123UL,
+                    cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+                    keyingMaterialLastUpdate = Instant.DISTANT_PAST
+                )
+            )
+        )
+
+        conversationDAO.updateConversationGroupStateByConversationId(
+            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+            conversationEntity3.id
+        )
+        val result = conversationDAO.getConversationDetailsById(conversationEntity3.id)
+        assertEquals(
+            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState
+        )
+    }
+
+    @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdatedToEstablished() = runTest(dispatcher) {
         conversationDAO.insertConversation(
             conversationEntity3.copy(
