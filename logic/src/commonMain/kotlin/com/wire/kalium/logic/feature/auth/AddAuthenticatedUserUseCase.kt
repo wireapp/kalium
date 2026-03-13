@@ -20,7 +20,9 @@
 
 package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.map
@@ -54,33 +56,33 @@ public class AddAuthenticatedUserUseCase internal constructor(
     public suspend operator fun invoke(
         session: StoreSessionParam,
         replace: Boolean = false,
-    ): Result {
-        val isNomadLogin = !session.nomadServiceUrl.isNullOrBlank()
-        if (isNomadLogin) {
-            val validSessions = sessionRepository.allValidSessions()
-                .getOrElse { return Result.Failure.Generic(it) }
-            if (validSessions.isNotEmpty()) return Result.Failure.NomadSingleUserViolation
-        } else {
-            val nomadExists = sessionRepository.doesValidNomadAccountExist()
-                .getOrElse { return Result.Failure.Generic(it) }
-            if (nomadExists) return Result.Failure.NomadSingleUserViolation
+    ): Result = checkNomadViolation(session).fold(
+        { Result.Failure.Generic(it) },
+        { isViolation ->
+            if (isViolation) Result.Failure.NomadSingleUserViolation
+            else addSession(session, replace)
         }
-        return sessionRepository.doesValidSessionExist(session.accountTokens.userId).fold(
-            {
-                Result.Failure.Generic(it)
-            },
+    )
+
+    private suspend fun checkNomadViolation(session: StoreSessionParam): Either<StorageFailure, Boolean> {
+        val isNomadLogin = !session.nomadServiceUrl.isNullOrBlank()
+        return if (isNomadLogin) {
+            sessionRepository.allValidSessions().map { it.isNotEmpty() }
+        } else {
+            sessionRepository.doesValidNomadAccountExist()
+        }
+    }
+
+    private suspend fun addSession(session: StoreSessionParam, replace: Boolean): Result =
+        sessionRepository.doesValidSessionExist(session.accountTokens.userId).fold(
+            { Result.Failure.Generic(it) },
             { doesValidSessionExist ->
                 when (doesValidSessionExist) {
-                    true -> onUserExist(
-                        session,
-                        replace,
-                    )
-
+                    true -> onUserExist(session, replace)
                     false -> storeUser(session)
                 }
             }
         )
-    }
 
     private suspend fun storeUser(session: StoreSessionParam): Result =
         sessionRepository.storeSession(session).onSuccess {
