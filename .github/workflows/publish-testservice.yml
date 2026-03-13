@@ -3,6 +3,7 @@ name: Build and publish image of Testservice to quay.io
 on:
   push:
     branches: ["develop"]
+    tags: ["android-v*", "test-service-v*"]
 
 jobs:
   quay_publish:
@@ -24,11 +25,20 @@ jobs:
           username: wire+testservice_kalium_bot
           password: ${{ secrets.QUAY_TESTSERVICE_PASSWORD }}
 
+      - name: Resolve image tags
+        id: image_tags
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "tags=quay.io/wire/testservice:${GITHUB_REF_NAME},quay.io/wire/testservice:${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "tags=quay.io/wire/testservice:latest,quay.io/wire/testservice:${GITHUB_SHA}" >> "${GITHUB_OUTPUT}"
+          fi
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./tools/testservice/Dockerfile
           platforms: linux/amd64
+          tags: ${{ steps.image_tags.outputs.tags }}
           push: true
-          tags: quay.io/wire/testservice:latest,quay.io/wire/testservice:${{ github.sha }}
