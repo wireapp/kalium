@@ -9,14 +9,25 @@ jobs:
     if: github.repository == 'wireapp/kalium'
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       id-token: write
     steps:
       - uses: actions/checkout@v6
-      - name: Force fetch the tag to work around actions/checkout#290
-        run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
+      - name: Fetch release tags
+        run: git fetch --force --tags origin
       - name: Ensure the tag is signed
         run: git cat-file commit HEAD | grep -q -- '-----BEGIN PGP SIGNATURE-----'
+      - name: Resolve logic release tag
+        id: logic-release
+        run: |
+          logic_tag=$(git for-each-ref --sort=-v:refname --format='%(refname:strip=2)' --points-at HEAD 'refs/tags/v*' | head -n 1)
+          if [ -z "$logic_tag" ]; then
+            echo "::error::No logic release tag matching v* points at commit $(git rev-parse HEAD)."
+            exit 1
+          fi
+
+          echo "logic_tag=$logic_tag" >> "$GITHUB_OUTPUT"
+          echo "Using logic release tag: $logic_tag"
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
@@ -29,6 +40,21 @@ jobs:
         with:
           scope: "@wireapp"
 
+      - name: Pack JS/TS artifact
+        id: pack
+        working-directory: domain/backup/build/dist/js/productionLibrary
+        run: |
+          package_tgz=$(npm pack | tail -n 1)
+          echo "package_tgz=$package_tgz" >> "$GITHUB_OUTPUT"
+
+      - name: Upload JS/TS package (GH Releases)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.logic-release.outputs.logic_tag }}
+          fail_on_unmatched_files: true
+          files: |
+            domain/backup/build/dist/js/productionLibrary/${{ steps.pack.outputs.package_tgz }}
+
       - name: Publish package to npm (OIDC Trusted Publisher)
         working-directory: domain/backup/build/dist/js/productionLibrary
-        run: npm publish
+        run: npm publish "${{ steps.pack.outputs.package_tgz }}"

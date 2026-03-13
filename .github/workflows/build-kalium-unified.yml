@@ -4,7 +4,7 @@ on:
   workflow_call:
     inputs:
       build-config:
-        description: "JSON build configuration matrix"
+        description: "JSON array of build targets to execute"
         required: true
         type: string
       run-quality-checks:
@@ -20,12 +20,51 @@ on:
 permissions:
   contents: read
   actions: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
 
 concurrency:
   group: build-kalium-unified-${{ github.ref }}-${{ inputs.concurrency-group-suffix }}
   cancel-in-progress: true
 
 jobs:
+  resolve-build-config:
+    runs-on: ubuntu-latest
+    outputs:
+      build-config: ${{ steps.resolve.outputs.build-config }}
+    steps:
+      - name: Resolve build config
+        id: resolve
+        shell: bash
+        run: |
+          INPUT_CONFIG='${{ inputs.build-config }}'
+
+          if ! echo "$INPUT_CONFIG" | jq -e 'type == "array" and all(.[]; type == "string")' > /dev/null; then
+            echo "::error::build-config must be a JSON array of string build targets"
+            exit 1
+          fi
+
+          RESOLVED_CONFIG='[]'
+          while IFS= read -r build_target; do
+            case "$build_target" in
+              logic-android-aar)
+                BUILD_MATRIX_ENTRY='{"build-target":"logic-android-aar","platform":"android-aar","runner":"ubuntu-latest","gradle-tasks":":logic:bundleAndroidMainAar -PUSE_UNIFIED_CORE_CRYPTO=false","artifact-glob":"logic/build/outputs/aar/*.aar","xcframework-dir":"","artifact-name":"logic-android-aar"}'
+                ;;
+              logic-kmp)
+                BUILD_MATRIX_ENTRY='{"build-target":"logic-kmp","platform":"kmp","runner":"macos-15","gradle-tasks":":logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar :logic:assembleKaliumLogicReleaseXCFramework -PUSE_UNIFIED_CORE_CRYPTO=true","artifact-glob":"logic/build/outputs/aar/*.aar logic/build/libs/*.jar","xcframework-dir":"logic/build/XCFrameworks/release/KaliumLogic.xcframework","artifact-name":"logic-kmp"}'
+                ;;
+              *)
+                echo "::error::Unsupported build target: $build_target"
+                exit 1
+                ;;
+            esac
+
+            RESOLVED_CONFIG=$(jq -c --argjson entry "$BUILD_MATRIX_ENTRY" '. + [$entry]' <<< "$RESOLVED_CONFIG")
+          done < <(echo "$INPUT_CONFIG" | jq -r '.[]')
+
+          echo "build-config=$RESOLVED_CONFIG" >> "$GITHUB_OUTPUT"
+
   # ── Quality Gates ──────────────────────────────────────────────
   detekt:
     if: inputs.run-quality-checks
@@ -153,19 +192,20 @@ jobs:
   # ── Build Matrix ───────────────────────────────────────────────
   build:
     name: "Build ${{ matrix.platform }}"
-    needs: [jvm-tests, android-tests, android-connected-tests, ios-tests]
+    needs: [resolve-build-config, jvm-tests, android-tests, android-connected-tests, ios-tests]
     # When quality checks are skipped, run immediately
     if: |
       always() &&
+      needs.resolve-build-config.result == 'success' &&
       (inputs.run-quality-checks == false || (needs.jvm-tests.result == 'success' && needs.android-tests.result == 'success' && needs.android-connected-tests.result == 'success' && needs.ios-tests.result == 'success'))
-    runs-on: ${{ matrix.platform == 'ios' && 'macos-15' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.runner || (matrix.platform == 'ios' && 'macos-15' || 'ubuntu-latest') }}
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(inputs.build-config) }}
+        include: ${{ fromJson(needs.resolve-build-config.outputs.build-config) }}
     steps:
       - name: Setup Xcode
-        if: matrix.platform == 'ios'
+        if: runner.os == 'macOS'
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: "16.1.0"
@@ -182,8 +222,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew ${{ matrix.gradle-tasks }}
 
-      - name: Post-build — collect artifacts
-        if: matrix.platform != 'ios'
+      - name: Post-build — collect file artifacts
+        if: matrix.artifact-glob != ''
         run: |
           mkdir -p release/${{ matrix.artifact-name }}
           IFS=' ' read -ra GLOBS <<< "${{ matrix.artifact-glob }}"
@@ -195,9 +235,9 @@ jobs:
           test -n "$(ls -A release/${{ matrix.artifact-name }})"
 
       - name: Post-build — zip XCFramework
-        if: matrix.platform == 'ios'
+        if: matrix.xcframework-dir != ''
         run: |
-          XCFRAMEWORK_DIR="logic/build/XCFrameworks/release/KaliumLogic.xcframework"
+          XCFRAMEWORK_DIR="${{ matrix.xcframework-dir }}"
           if [ ! -d "$XCFRAMEWORK_DIR" ]; then
             echo "::error::XCFramework not found at $XCFRAMEWORK_DIR"
             exit 1
@@ -207,6 +247,47 @@ jobs:
           FRAMEWORK_NAME=$(basename "$XCFRAMEWORK_DIR")
           (cd "$PARENT_DIR" && zip -rXq "${FRAMEWORK_NAME}.zip" "$FRAMEWORK_NAME")
           mv "${PARENT_DIR}/${FRAMEWORK_NAME}.zip" release/${{ matrix.artifact-name }}/
+
+      - name: Post-build — generate checksums
+        if: matrix.artifact-name != ''
+        run: |
+          ARTIFACT_DIR="release/${{ matrix.artifact-name }}"
+          CHECKSUM_FILE="${{ matrix.artifact-name }}-SHA256SUMS.txt"
+
+          (
+            cd "$ARTIFACT_DIR"
+            shopt -s nullglob
+            files=(./*)
+            filtered=()
+
+            for file in "${files[@]}"; do
+              base_name=$(basename "$file")
+              if [ -f "$file" ] && [ "$base_name" != "$CHECKSUM_FILE" ]; then
+                filtered+=("$file")
+              fi
+            done
+
+            if [ "${#filtered[@]}" -eq 0 ]; then
+              echo "::error::No artifacts found to checksum in $ARTIFACT_DIR"
+              exit 1
+            fi
+
+            shasum -a 256 "${filtered[@]}" | sed 's#  \./#  #' > "$CHECKSUM_FILE"
+          )
+
+          test -s "$ARTIFACT_DIR/$CHECKSUM_FILE"
+
+      - name: Post-build — attest release artifacts
+        id: attest
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-checksums: release/${{ matrix.artifact-name }}/${{ matrix.artifact-name }}-SHA256SUMS.txt
+
+      - name: Post-build — persist attestation bundle
+        if: steps.attest.outputs.bundle-path != ''
+        run: |
+          cp "${{ steps.attest.outputs.bundle-path }}" \
+            "release/${{ matrix.artifact-name }}/${{ matrix.artifact-name }}-provenance-bundle.json"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v6
@@ -220,6 +301,8 @@ jobs:
           echo "## Build Summary — ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
           echo "**Artifact**: ${{ matrix.artifact-name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Gradle tasks**: \`${{ matrix.gradle-tasks }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Checksums**: \`${{ matrix.artifact-name }}-SHA256SUMS.txt\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Attestation**: ${{ steps.attest.outputs.attestation-url }}" >> $GITHUB_STEP_SUMMARY
           echo "**Generated files**:" >> $GITHUB_STEP_SUMMARY
           ls release/${{ matrix.artifact-name }}/ | while read file; do
             echo "- \`$file\`" >> $GITHUB_STEP_SUMMARY
