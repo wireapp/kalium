@@ -198,6 +198,10 @@ class SyncNomadAllMessagesUseCaseTest {
         override suspend fun downloadCryptoState(tempBackupFileSink: Sink): NetworkResponse<Unit> {
             error("Not needed in this test")
         }
+
+        override suspend fun setLastDeviceId(deviceId: String): NetworkResponse<Unit> {
+            error("Not needed in this test")
+        }
     }
 
     private fun nomadStoredMessage(
