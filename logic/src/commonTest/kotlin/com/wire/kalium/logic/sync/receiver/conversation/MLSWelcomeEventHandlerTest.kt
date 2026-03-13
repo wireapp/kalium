@@ -281,6 +281,64 @@ class MLSWelcomeEventHandlerTest {
         }.wasInvoked(exactly = twice)
     }
 
+    @Test
+    fun givenOrphanWelcomeAndLocalGroupAlreadyEstablished_whenHandlingWelcome_thenShouldSkipExternalCommitRejoin() = runTest {
+        val orphanWelcomeException = CommonizedMLSException(
+            MLSFailure.OrphanWelcome,
+            IllegalStateException("key package already deleted locally")
+        )
+        val (arrangement, mlsWelcomeEventHandler) = arrange {
+            withFetchConversationIfUnknownSucceeding()
+            withMLSClientProcessingOfWelcomeMessageFailsWith(orphanWelcomeException)
+            withConversationProtocolInfo(
+                Either.Right(
+                    TestConversation.MLS_PROTOCOL_INFO.copy(
+                        groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+                    )
+                )
+            )
+            withMLSConversationExists(true)
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
+        }
+
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
+
+        coVerify {
+            arrangement.joinExistingMLSConversation.invoke(any(), any(), any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.conversationRepository.updateConversationGroupState(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenOrphanWelcomeAndLocalGroupNotEstablished_whenHandlingWelcome_thenShouldRejoinByExternalCommit() = runTest {
+        val orphanWelcomeException = CommonizedMLSException(
+            MLSFailure.OrphanWelcome,
+            IllegalStateException("key package already deleted locally")
+        )
+        val (arrangement, mlsWelcomeEventHandler) = arrange {
+            withFetchConversationIfUnknownSucceeding()
+            withMLSClientProcessingOfWelcomeMessageFailsWith(orphanWelcomeException)
+            withConversationProtocolInfo(
+                Either.Right(
+                    TestConversation.MLS_PROTOCOL_INFO.copy(
+                        groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN
+                    )
+                )
+            )
+            withJoinExistingMLSConversationReturning(Either.Right(Unit))
+            withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
+        }
+
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
+
+        coVerify {
+            arrangement.joinExistingMLSConversation.invoke(any(), eq(CONVERSATION_ID), any())
+        }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         FetchConversationIfUnknownUseCaseArrangement by FetchConversationIfUnknownUseCaseArrangementImpl(),
@@ -326,6 +384,18 @@ class MLSWelcomeEventHandlerTest {
             coEvery {
                 mlsContext.wipeConversation(any())
             }.returns(Unit)
+        }
+
+        suspend fun withMLSConversationExists(exists: Boolean) = apply {
+            coEvery {
+                mlsContext.conversationExists(any())
+            }.returns(exists)
+        }
+
+        suspend fun withJoinExistingMLSConversationReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                joinExistingMLSConversation.invoke(any(), any(), any())
+            }.returns(result)
         }
 
         suspend fun withCheckRevocationListResult() {

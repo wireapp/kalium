@@ -76,38 +76,38 @@ internal class IncrementalSyncWorkerImpl(
             }
             .filterIsInstance<EventStreamData.NewEvents>()
             .collect { streamData ->
-                val envelopes = streamData.eventList
-                kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
-                transactionProvider.transaction("processEvents") { context ->
-                    databaseBuilder.dbInvalidationController.runMuted {
-                        envelopes.map { envelope -> eventProcessor.processEvent(context, envelope) }
-                            .foldToEitherWhileRight(mutableListOf<String>()) { eventEither, acc ->
-                                eventEither.map { eventId ->
-                                    eventId?.let(acc::add)
-                                    acc
+                withContext(NonCancellable) {
+                    val envelopes = streamData.eventList
+                    kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
+                    transactionProvider.transaction("processEvents") { context ->
+                        databaseBuilder.dbInvalidationController.runMuted {
+                            envelopes.map { envelope -> eventProcessor.processEvent(context, envelope) }
+                                .foldToEitherWhileRight(mutableListOf<String>()) { eventEither, acc ->
+                                    eventEither.map { eventId ->
+                                        eventId?.let(acc::add)
+                                        acc
+                                    }
                                 }
-                            }
-                            .flatMap { eventIds ->
-                                eventProcessor.flushPendingSideEffects().map { eventIds }
-                            }
-                    }
-                }
-                    .onSuccess { eventIds ->
-                        if (eventIds.isEmpty()) {
-                            logger.i("No events to mark as processed")
-                            return@onSuccess
+                                .flatMap { eventIds ->
+                                    eventProcessor.flushPendingSideEffects().map { eventIds }
+                                }
                         }
+                    }
+                        .onSuccess { eventIds ->
+                            if (eventIds.isEmpty()) {
+                                logger.i("No events to mark as processed")
+                                return@onSuccess
+                            }
 
-                        withContext(NonCancellable) {
                             eventRepository.setEventsAsProcessed(eventIds)
+                                .onSuccess {
+                                    logger.i("${eventIds.size} events set as processed")
+                                }
                         }
-                            .onSuccess {
-                                logger.i("${eventIds.size} events set as processed")
-                            }
-                    }
-                    .onFailure {
-                        throw KaliumSyncException("Processing failed", it)
-                    }
+                        .onFailure {
+                            throw KaliumSyncException("Processing failed", it)
+                        }
+                }
             }
         logger.withFeatureId(SYNC).i("SYNC Finished gathering and processing events")
     }.distinctUntilChanged()

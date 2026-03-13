@@ -53,6 +53,8 @@ import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_REC
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
+import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
@@ -317,9 +319,9 @@ internal class EventMapper(
     ) = Event.Conversation.MLSWelcome(
         id,
         eventContentDTO.qualifiedConversation.toModel(),
-
         eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.message,
+        timestampIso = eventContentDTO.time?.toIsoDateTimeString() ?: DateTimeUtil.currentIsoDateTimeString()
     )
 
     private fun newMessage(
