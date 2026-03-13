@@ -28,6 +28,7 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
+import okio.IOException
 import okio.Path
 import okio.use
 
@@ -85,12 +86,22 @@ internal class DownloadCryptoStateUseCaseImpl(
 
         kaliumLogger.i("$TAG Downloaded crypto state backup (size: $fileSize bytes)")
 
-        return if (fileSize == 0L) {
-            kaliumLogger.i("$TAG No crypto state backup available on server (empty response)")
-            kaliumFileSystem.delete(backupFilePath)
-            DownloadCryptoStateResult.NoBackupAvailable
-        } else {
-            DownloadCryptoStateResult.Success(backupFilePath, backupFileName)
+        return when (fileSize) {
+            null -> {
+                DownloadCryptoStateResult.Failure(
+                    CoreFailure.Unknown(IOException("file size is null"))
+                )
+            }
+
+            0L -> {
+                kaliumLogger.i("$TAG No crypto state backup available on server (empty response)")
+                kaliumFileSystem.delete(backupFilePath)
+                DownloadCryptoStateResult.NoBackupAvailable
+            }
+
+            else -> {
+                DownloadCryptoStateResult.Success(backupFilePath, backupFileName)
+            }
         }
     }
 

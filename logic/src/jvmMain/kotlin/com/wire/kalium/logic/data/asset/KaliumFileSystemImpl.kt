@@ -154,6 +154,6 @@ internal actual class KaliumFileSystemImpl actual constructor(
      */
     actual override suspend fun listDirectories(dir: Path): List<Path> = SYSTEM.list(dir)
 
-    actual override fun size(path: Path): Long = SYSTEM.metadata(path).size ?: 0L
+    actual override fun size(path: Path): Long? = SYSTEM.metadata(path).size
 
 }
