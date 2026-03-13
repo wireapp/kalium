@@ -31,6 +31,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 import okio.Path
 import okio.Path.Companion.toPath
+import kotlin.coroutines.cancellation.CancellationException
 
 /**
  * Applies crypto state (MLS and Proteus keystores) from extracted backup files.
@@ -87,6 +88,8 @@ internal class ApplyCryptoStateUseCaseImpl(
 
                 kaliumLogger.i("$TAG: Successfully applied crypto state for clientId: ${clientId.obfuscateId()}")
                 ApplyCryptoStateResult.Success
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 kaliumLogger.e("$TAG: Failed to apply crypto state", e)
                 ApplyCryptoStateResult.Failure(CoreFailure.Unknown(e))
@@ -128,7 +131,7 @@ internal class ApplyCryptoStateUseCaseImpl(
         deleteKeystoreFiles(mlsKeystorePath)
 
         // Copy the extracted keystore to the target location
-        copyFile(extractedMlsPath, mlsKeystorePath)
+        kaliumFileSystem.copy(extractedMlsPath, mlsKeystorePath)
 
         kaliumLogger.i("$TAG: MLS keystore applied successfully")
         return ApplyCryptoStateResult.Success
@@ -152,7 +155,7 @@ internal class ApplyCryptoStateUseCaseImpl(
         deleteKeystoreFiles(proteusKeystorePath)
 
         // Copy the extracted keystore to the target location
-        copyFile(extractedProteusPath, proteusKeystorePath)
+        kaliumFileSystem.copy(extractedProteusPath, proteusKeystorePath)
 
         kaliumLogger.i("$TAG: Proteus keystore applied successfully")
         return ApplyCryptoStateResult.Success
@@ -187,7 +190,7 @@ internal class ApplyCryptoStateUseCaseImpl(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    fun deleteExtractedFolder(directory: Path) {
+    private fun deleteExtractedFolder(directory: Path) {
         if (kaliumFileSystem.exists(directory)) {
             try {
                 // Delete all contents first
@@ -199,10 +202,6 @@ internal class ApplyCryptoStateUseCaseImpl(
                 e.printStackTrace()
             }
         }
-    }
-
-    private fun copyFile(source: Path, destination: Path) {
-        kaliumFileSystem.copy(source, destination)
     }
 
     companion object {
