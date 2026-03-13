@@ -46,6 +46,7 @@ public class AddAuthenticatedUserUseCase internal constructor(
         public data class Success(val userId: UserId) : Result()
         public sealed class Failure : Result() {
             public data object UserAlreadyExists : Failure()
+            public data object NomadSingleUserViolation : Failure()
             public data class Generic(public val genericFailure: CoreFailure) : Failure()
         }
     }
@@ -53,21 +54,33 @@ public class AddAuthenticatedUserUseCase internal constructor(
     public suspend operator fun invoke(
         session: StoreSessionParam,
         replace: Boolean = false,
-    ): Result = sessionRepository.doesValidSessionExist(session.accountTokens.userId).fold(
-        {
-            Result.Failure.Generic(it)
-        },
-        { doesValidSessionExist ->
-            when (doesValidSessionExist) {
-                true -> onUserExist(
-                    session,
-                    replace,
-                )
-
-                false -> storeUser(session)
-            }
+    ): Result {
+        val isNomadLogin = !session.nomadServiceUrl.isNullOrBlank()
+        if (isNomadLogin) {
+            val validSessions = sessionRepository.allValidSessions()
+                .getOrElse { return Result.Failure.Generic(it) }
+            if (validSessions.isNotEmpty()) return Result.Failure.NomadSingleUserViolation
+        } else {
+            val nomadExists = sessionRepository.doesValidNomadAccountExist()
+                .getOrElse { return Result.Failure.Generic(it) }
+            if (nomadExists) return Result.Failure.NomadSingleUserViolation
         }
-    )
+        return sessionRepository.doesValidSessionExist(session.accountTokens.userId).fold(
+            {
+                Result.Failure.Generic(it)
+            },
+            { doesValidSessionExist ->
+                when (doesValidSessionExist) {
+                    true -> onUserExist(
+                        session,
+                        replace,
+                    )
+
+                    false -> storeUser(session)
+                }
+            }
+        )
+    }
 
     private suspend fun storeUser(session: StoreSessionParam): Result =
         sessionRepository.storeSession(session).onSuccess {
