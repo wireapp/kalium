@@ -418,6 +418,10 @@ sealed class EventContentDTO {
             @SerialName("id") val id: String,
             @SerialName("qualified_id") val userId: UserId
         ) : User()
+
+        @Serializable
+        @SerialName("user.session-refresh-suggested")
+        data object SessionRefreshSuggestedDTO : User()
     }
 
     @Serializable
