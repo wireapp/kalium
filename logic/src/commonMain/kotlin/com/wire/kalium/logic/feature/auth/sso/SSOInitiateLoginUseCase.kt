@@ -51,9 +51,10 @@ internal data class SSORedirects(val success: String, val error: String) {
 public interface SSOInitiateLoginUseCase {
     public sealed class Param {
         public abstract val ssoCode: String
+        public open val cookieLabel: String? = null
 
-        public data class WithoutRedirect(override val ssoCode: String) : Param()
-        public data class WithRedirect(override val ssoCode: String) : Param()
+        public data class WithoutRedirect(override val ssoCode: String, override val cookieLabel: String? = null) : Param()
+        public data class WithRedirect(override val ssoCode: String, override val cookieLabel: String? = null) : Param()
     }
 
     /**
@@ -77,13 +78,14 @@ internal class SSOInitiateLoginUseCaseImpl(
             }
         }
         when (this) {
-            is SSOInitiateLoginUseCase.Param.WithoutRedirect -> ssoLoginRepository.initiate(validUuid)
+            is SSOInitiateLoginUseCase.Param.WithoutRedirect -> ssoLoginRepository.initiate(validUuid, cookieLabel)
             is SSOInitiateLoginUseCase.Param.WithRedirect -> {
                 val redirects = SSORedirects(serverConfig.id)
                 ssoLoginRepository.initiate(
                     validUuid,
                     redirects.success,
-                    redirects.error
+                    redirects.error,
+                    cookieLabel,
                 )
             }
         }.fold({
