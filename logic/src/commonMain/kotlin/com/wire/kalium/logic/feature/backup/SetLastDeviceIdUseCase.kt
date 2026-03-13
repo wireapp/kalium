@@ -23,20 +23,18 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import io.mockative.Mockable
 
 /**
  * Sets the last device ID used for crypto state backup on the remote server.
  * This is used to track which device last uploaded the crypto state.
  */
-@Mockable
-public interface SetLastDeviceIdUseCase {
+internal interface SetLastDeviceIdUseCase {
     /**
      * Sets the last device ID.
      * @return [SetLastDeviceIdResult.Success] if the operation succeeded,
      * or [SetLastDeviceIdResult.Failure] if it failed.
      */
-    public suspend operator fun invoke(): SetLastDeviceIdResult
+    suspend operator fun invoke(): SetLastDeviceIdResult
 }
 
 internal class SetLastDeviceIdUseCaseImpl(

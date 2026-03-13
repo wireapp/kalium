@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.userstorage.di.UserStorage
@@ -40,6 +41,7 @@ public class BackupScope internal constructor(
     private val cryptoTransactionProvider: CryptoTransactionProvider,
     internal val globalPreferences: GlobalPrefProvider,
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository,
+    private val rootPathsProvider: RootPathsProvider,
 ) {
     public val create: CreateBackupUseCase
         get() = CreateBackupUseCaseImpl(
@@ -89,4 +91,37 @@ public class BackupScope internal constructor(
             currentClientIdProvider = clientIdProvider,
         )
 
+    private val downloadCryptoState: DownloadCryptoStateUseCase
+        get() = DownloadCryptoStateUseCaseImpl(
+            userId,
+            cryptoStateBackupRemoteRepository,
+            kaliumFileSystem,
+        )
+
+    private val extractCryptoState: ExtractCryptoStateUseCase
+        get() = ExtractCryptoStateUseCaseImpl(
+            kaliumFileSystem = kaliumFileSystem,
+        )
+
+    private val setLastDeviceId: SetLastDeviceIdUseCase
+        get() = SetLastDeviceIdUseCaseImpl(
+            currentClientIdProvider = clientIdProvider,
+            cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository,
+        )
+
+    private val applyCryptoState: ApplyCryptoStateUseCase
+        get() = ApplyCryptoStateUseCaseImpl(
+            userId = userId,
+            rootPathsProvider = rootPathsProvider,
+            kaliumFileSystem = kaliumFileSystem,
+            passphraseStorage = globalPreferences.passphraseStorage,
+        )
+
+    public val restoreCryptoFlow: RestoreCryptoStateUseCase
+        get() = RestoreCryptoStateUseCaseImpl(
+            downloadCryptoState = downloadCryptoState,
+            extractCryptoState = extractCryptoState,
+            setLastDeviceId = setLastDeviceId,
+            applyCryptoState = applyCryptoState,
+        )
 }
