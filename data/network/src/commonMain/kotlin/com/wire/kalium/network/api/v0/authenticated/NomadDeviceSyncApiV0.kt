@@ -23,16 +23,20 @@ import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesRes
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
+import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.setUrl
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.call.body
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
@@ -52,27 +56,33 @@ import okio.use
 import kotlin.coroutines.cancellation.CancellationException
 
 internal open class NomadDeviceSyncApiV0 internal constructor(
-    private val authenticatedNetworkClient: AuthenticatedNetworkClient
+    private val authenticatedNetworkClient: AuthenticatedNetworkClient,
+    private val nomadServiceUrl: String? = null
 ) : NomadDeviceSyncApi {
 
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun postMessageEvents(request: NomadMessageEventsRequest): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.post("$PATH_EVENT/$PATH_MESSAGES") {
+        requireNomadServiceUrl(apiName = "postMessageEvents") ?: wrapRequest {
+            httpClient.post {
+                setNomadUrlIfAvailable(PATH_EVENT, PATH_MESSAGES)
                 setBody(request)
                 contentType(ContentType.Application.Json)
             }
         }
 
     override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> =
-        wrapKaliumResponse {
-            httpClient.get("$PATH_EVENT/$PATH_ALL_MESSAGES")
+        requireNomadServiceUrl(apiName = "getAllMessages") ?: wrapRequest {
+            httpClient.get {
+                setNomadUrlIfAvailable(PATH_EVENT, PATH_MESSAGES)
+            }
         }
 
     override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> =
-        wrapKaliumResponse {
-            httpClient.get("$PATH_EVENT/$PATH_CONVERSATION_METADATA")
+        requireNomadServiceUrl(apiName = "getConversationMetadata") ?: wrapRequest {
+            httpClient.get {
+                setNomadUrlIfAvailable(PATH_EVENT, PATH_CONVERSATION_METADATA)
+            }
         }
 
     override suspend fun uploadCryptoState(
@@ -80,31 +90,35 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         backupSource: () -> Source,
         backupSize: Long
     ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
-            httpClient.post("$PATH_EVENT/$PATH_CRYPTO_STATE") {
+        requireNomadServiceUrl(apiName = "uploadCryptoState") ?: wrapRequest {
+            httpClient.post {
+                setNomadUrlIfAvailable(PATH_EVENT, PATH_CRYPTO_STATE)
                 parameter(QUERY_DEVICE_ID, clientId)
                 setBody(StreamCryptoStateBodyContent(backupSource, backupSize))
             }
         }
 
-    override suspend fun downloadCryptoState(tempBackupFileSink: Sink): NetworkResponse<Unit> = runCatching {
-        httpClient.prepareGet("$PATH_EVENT/$PATH_CRYPTO_STATE").execute { httpResponse ->
-            if (httpResponse.status.isSuccess()) {
-                handleCryptoStateDownload(httpResponse, tempBackupFileSink)
-            } else {
-                handleUnsuccessfulResponse(httpResponse)
+    override suspend fun downloadCryptoState(tempBackupFileSink: Sink): NetworkResponse<Unit> =
+        requireNomadServiceUrl(apiName = "downloadCryptoState") ?: runCatching {
+            httpClient.prepareGet {
+                setNomadUrlIfAvailable(PATH_EVENT, PATH_CRYPTO_STATE)
+            }.execute { httpResponse ->
+                if (httpResponse.status.isSuccess()) {
+                    handleCryptoStateDownload(httpResponse, tempBackupFileSink)
+                } else {
+                    handleUnsuccessfulResponse(httpResponse)
+                }
             }
+        }.getOrElse { unhandledException ->
+            if (unhandledException is CancellationException) {
+                throw unhandledException
+            }
+            NetworkResponse.Error(KaliumException.GenericError(unhandledException))
         }
-    }.getOrElse { unhandledException ->
-        if (unhandledException is CancellationException) {
-            throw unhandledException
-        }
-        NetworkResponse.Error(KaliumException.GenericError(unhandledException))
-    }
 
     @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
     private suspend fun handleCryptoStateDownload(
-        httpResponse: io.ktor.client.statement.HttpResponse,
+        httpResponse: HttpResponse,
         tempFileSink: Sink
     ): NetworkResponse<Unit> = try {
         val channel = httpResponse.body<io.ktor.utils.io.ByteReadChannel>()
@@ -169,15 +183,35 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         }
     }
 
+    private fun HttpRequestBuilder.setNomadUrlIfAvailable(vararg path: String) {
+        nomadServiceUrl?.let {
+            val normalizedPath = path.flatMap { value -> value.split(PATH_SEPARATOR).filter(String::isNotEmpty) }
+            setUrl(it, normalizedPath)
+        }
+    }
+
+    private fun <T : Any> requireNomadServiceUrl(apiName: String): NetworkResponse<T>? =
+        if (nomadServiceUrl == null) {
+            NetworkResponse.Error(
+                APINotSupported(
+                    "$API_NAME.$apiName requires a configured Nomad service URL. " +
+                            "Request was short-circuited and no API call was made."
+                )
+            )
+        } else {
+            null
+        }
+
     private companion object {
         const val PATH_EVENT = "event"
         const val PATH_MESSAGES = "messages"
-        const val PATH_ALL_MESSAGES = "all-messages"
         const val PATH_CONVERSATION_METADATA = "conversation/metadata"
         const val PATH_CRYPTO_STATE = "crypto/state"
         const val QUERY_DEVICE_ID = "device_id"
         const val BUFFER_SIZE = 8L * 1024
         const val BOUNDARY = "frontier"
         const val CRYPTO_ZIP_FILENAME = "CHANGELOG.zip"
+        const val PATH_SEPARATOR = "/"
+        const val API_NAME = "NomadDeviceSyncApiV0"
     }
 }

@@ -87,6 +87,30 @@ class MLSMigrationConfigHandlerTest {
         }.wasNotInvoked()
     }
 
+    @Test
+    fun givenMigrationHasEndedWithTransactionContext_whenHandling_thenUpdateProtocolsDirectlyWithoutNewTransaction() = runTest {
+        val (arrangement, handler) = arrange {
+            withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful()
+            withSetMigrationConfigurationSuccessful()
+        }
+
+        handler.handle(
+            MIGRATION_CONFIG.copy(
+                startTime = Instant.DISTANT_PAST,
+                endTime = Instant.DISTANT_PAST
+            ),
+            duringSlowSync = false,
+            transactionContext = arrangement.transactionContext
+        )
+
+        coVerify {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), eq(true))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())
+        }.wasNotInvoked()
+    }
+
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),

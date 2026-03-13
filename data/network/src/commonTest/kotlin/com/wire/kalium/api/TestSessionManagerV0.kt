@@ -31,6 +31,7 @@ class TestSessionManagerV0 : SessionManager {
 
     override suspend fun session(): SessionDTO = session
     override fun serverConfig(): ServerConfigDTO = serverConfig
+    override fun nomadServiceUrl(): String? = null
     override suspend fun updateToken(
         accessTokenApi: AccessTokenApi,
         oldRefreshToken: String?

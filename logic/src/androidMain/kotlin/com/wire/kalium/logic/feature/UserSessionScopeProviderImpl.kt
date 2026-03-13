@@ -33,8 +33,6 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
@@ -50,8 +48,6 @@ internal actual open class UserSessionScopeProviderImpl(
     private val globalScope: GlobalKaliumScope,
     private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val kaliumConfigs: KaliumConfigs,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
-    private val cryptoStateChangeHookNotifier: CryptoStateChangeHookNotifier,
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
@@ -85,8 +81,6 @@ internal actual open class UserSessionScopeProviderImpl(
             rootPathsProvider = rootPathsProvider,
             dataStoragePaths = dataStoragePaths,
             kaliumConfigs = kaliumConfigs,
-            persistenceEventHookNotifier = persistenceEventHookNotifier,
-            cryptoStateChangeHookNotifier = cryptoStateChangeHookNotifier,
             userStorageProvider = userStorageProvider,
             userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
             userSessionScopeProvider = this,

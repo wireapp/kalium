@@ -99,8 +99,6 @@ public actual class CoreLogic(
             rootPathsProvider,
             getGlobalScope(),
             kaliumConfigs,
-            persistenceEventHookNotifier,
-            cryptoStateChangeHookNotifier,
             globalPreferences,
             globalCallManager,
             globalDatabaseBuilder,
