@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -33,6 +34,7 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -181,6 +183,34 @@ class UserEventReceiverTest {
         coVerify {
             arrangement.clientRepository.saveNewClientEvent(any())
         }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenSessionRefreshSuggestedEvent_thenCurrentSessionIsRefreshed() = runTest {
+        val event = TestEvent.sessionRefreshSuggested(EVENT_ID)
+        val (arrangement, eventReceiver) = arrange {
+            withSessionRefreshSuggestedHandlerResult(Either.Right(Unit))
+        }
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        assertIs<Either.Right<Unit>>(result)
+        coVerify {
+            arrangement.sessionRefreshSuggestedEventHandler.handle(eq(event))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSessionRefreshSuggestedEvent_whenRefreshFails_thenFailureIsPropagated() = runTest {
+        val event = TestEvent.sessionRefreshSuggested(EVENT_ID)
+        val failure = StorageFailure.Generic(Throwable("refresh failed"))
+        val (arrangement, eventReceiver) = arrange {
+            withSessionRefreshSuggestedHandlerResult(Either.Left(failure))
+        }
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
+
+        assertIs<Either.Left<StorageFailure.Generic>>(result)
     }
 
     @Test
@@ -378,6 +408,7 @@ class UserEventReceiverTest {
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
         val legalHoldRequestHandler = mock(LegalHoldRequestHandler::class)
         val legalHoldHandler = mock(LegalHoldHandler::class)
+        val sessionRefreshSuggestedEventHandler = mock(SessionRefreshSuggestedEventHandler::class)
 
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
             clientRepository,
@@ -389,7 +420,8 @@ class UserEventReceiverTest {
             currentClientIdProvider,
             lazy { newGroupConversationSystemMessagesCreator },
             legalHoldRequestHandler,
-            legalHoldHandler
+            legalHoldHandler,
+            sessionRefreshSuggestedEventHandler
         )
 
         suspend fun withInsertConnectionFromEventSucceeding() = apply {
@@ -428,6 +460,12 @@ class UserEventReceiverTest {
             }.returns(Either.Right(Unit))
         }
 
+        suspend fun withSessionRefreshSuggestedHandlerResult(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                sessionRefreshSuggestedEventHandler.handle(any())
+            }.returns(result)
+        }
+
         suspend fun withGetConnectionResult(result: Either<StorageFailure, ConversationDetails.Connection>) = apply {
             coEvery {
                 connectionRepository.getConnection(any())
@@ -437,6 +475,7 @@ class UserEventReceiverTest {
         suspend fun arrange() = run {
             withSaveNewClientSucceeding()
             withHandleLegalHoldNewConnectionSucceeding()
+            withSessionRefreshSuggestedHandlerResult(Either.Right(Unit))
             withGetConnectionResult(Either.Left(StorageFailure.DataNotFound))
             block()
             this@Arrangement to userEventReceiver
