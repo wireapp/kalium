@@ -22,7 +22,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.user.UserId
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -46,7 +45,7 @@ class SetLastDeviceIdUseCaseTest {
         val result = useCase()
 
         assertIs<SetLastDeviceIdResult.Failure>(result)
-        assertEquals(error, (result as SetLastDeviceIdResult.Failure).error)
+        assertEquals(error, result.error)
     }
 
     @Test
@@ -62,7 +61,7 @@ class SetLastDeviceIdUseCaseTest {
 
         assertIs<SetLastDeviceIdResult.Failure>(result)
         assertEquals(error, result.error)
-        verifySuspend(VerifyMode.atMost(1)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(
                 deviceId = clientId
             )
@@ -80,7 +79,7 @@ class SetLastDeviceIdUseCaseTest {
         val result = useCase()
 
         assertIs<SetLastDeviceIdResult.Success>(result)
-        verifySuspend(VerifyMode.atMost(1)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(
                 deviceId = clientId
             )
@@ -90,24 +89,21 @@ class SetLastDeviceIdUseCaseTest {
     @Test
     fun givenValidClientId_whenInvoked_thenRepositoryCalledWithCorrectParameters() = runTest {
         val clientId = "device-xyz"
-        val userId = UserId("user-id-456", "domain.com")
-        val arrangement = Arrangement(userId = userId)
+        val arrangement = Arrangement()
             .withCurrentClientIdProviderSuccess(clientId)
             .withSetLastDeviceIdSuccess()
         val useCase = arrangement.useCase
 
         useCase()
 
-        verifySuspend(VerifyMode.atMost(1)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(
                 deviceId = clientId
             )
         }
     }
 
-    private class Arrangement(
-        val userId: UserId = UserId("test-user-id", "test-domain.com")
-    ) {
+    private class Arrangement {
         val currentClientIdProvider = mock<CurrentClientIdProvider>()
 
         val cryptoStateBackupRemoteRepository = mock<CryptoStateBackupRemoteRepository>()

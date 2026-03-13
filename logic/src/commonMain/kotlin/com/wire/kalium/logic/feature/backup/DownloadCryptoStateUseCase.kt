@@ -35,13 +35,13 @@ import okio.use
 /**
  * Downloads the crypto state backup from the remote endpoint.
  */
-public interface DownloadCryptoStateUseCase {
+internal interface DownloadCryptoStateUseCase {
     /**
      * Downloads the crypto state backup.
      * @return [DownloadCryptoStateResult.Success] with the path to the downloaded backup file,
      * or [DownloadCryptoStateResult.Failure] if the download failed.
      */
-    public suspend operator fun invoke(): DownloadCryptoStateResult
+    suspend operator fun invoke(): DownloadCryptoStateResult
 }
 
 internal class DownloadCryptoStateUseCaseImpl(

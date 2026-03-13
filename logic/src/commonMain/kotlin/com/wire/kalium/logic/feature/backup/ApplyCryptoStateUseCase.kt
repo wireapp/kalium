@@ -38,14 +38,14 @@ import kotlin.coroutines.cancellation.CancellationException
  * This replaces the existing keystores with the ones from the backup and updates
  * the database passphrases in storage.
  */
-public interface ApplyCryptoStateUseCase {
+internal interface ApplyCryptoStateUseCase {
     /**
      * Applies the crypto state from the extracted backup.
      * @param extractResult The result from ExtractCryptoStateUseCase containing paths to extracted keystores
      * @return [ApplyCryptoStateResult.Success] if apply succeeded,
      * or [ApplyCryptoStateResult.Failure] if it failed.
      */
-    public suspend operator fun invoke(extractResult: ExtractCryptoStateResult.Success): ApplyCryptoStateResult
+    suspend operator fun invoke(extractResult: ExtractCryptoStateResult.Success): ApplyCryptoStateResult
 }
 
 internal class ApplyCryptoStateUseCaseImpl(

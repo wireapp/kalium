@@ -1116,6 +1116,7 @@ public class UserSessionScope internal constructor(
             cryptoTransactionProvider = cryptoTransactionProvider,
             globalPreferences = globalPreferences,
             cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository,
+            rootPathsProvider = rootPathsProvider,
         )
 
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository
