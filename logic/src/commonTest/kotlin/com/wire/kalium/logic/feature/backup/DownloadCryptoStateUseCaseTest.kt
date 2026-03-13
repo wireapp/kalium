@@ -55,7 +55,7 @@ class DownloadCryptoStateUseCaseTest {
         assertTrue(result.backupFilePath.name.startsWith("crypto_backup_download"))
         assertTrue(result.backupFilePath.name.endsWith(".zip"))
 
-        verifySuspend((VerifyMode.atMost(1))) {
+        verifySuspend((VerifyMode.exactly(1))) {
             arrangement.cryptoStateBackupRemoteRepository.downloadCryptoState(any())
         }
     }
@@ -73,7 +73,7 @@ class DownloadCryptoStateUseCaseTest {
         // then
         assertIs<DownloadCryptoStateResult.NoBackupAvailable>(result)
 
-        verifySuspend((VerifyMode.atMost(1))) {
+        verifySuspend((VerifyMode.exactly(1))) {
             arrangement.cryptoStateBackupRemoteRepository.downloadCryptoState(any())
         }
     }
@@ -93,7 +93,7 @@ class DownloadCryptoStateUseCaseTest {
         assertIs<DownloadCryptoStateResult.Failure>(result)
         assertEquals(error, result.error)
 
-        verifySuspend((VerifyMode.atMost(1))) {
+        verifySuspend((VerifyMode.exactly(1))) {
             arrangement.cryptoStateBackupRemoteRepository.downloadCryptoState(any())
         }
     }
