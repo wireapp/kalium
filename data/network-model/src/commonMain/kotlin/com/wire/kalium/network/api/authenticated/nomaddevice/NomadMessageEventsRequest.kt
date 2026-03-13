@@ -32,7 +32,7 @@ data class NomadMessageEventsRequest(
 sealed interface NomadMessageEvent {
 
     @Serializable
-    @SerialName("upsert_message")
+    @SerialName("UPSERT_MESSAGE")
     data class UpsertMessageEvent(
         @SerialName("message_id")
         val messageId: String,
@@ -45,7 +45,7 @@ sealed interface NomadMessageEvent {
     ) : NomadMessageEvent
 
     @Serializable
-    @SerialName("upsert_message_status")
+    @SerialName("UPSERT_MESSAGE_STATUS")
     data class UpsertMessageStatusEvent(
         @SerialName("message_id")
         val messageId: String,
@@ -64,7 +64,7 @@ sealed interface NomadMessageEvent {
     }
 
     @Serializable
-    @SerialName("delete_message")
+    @SerialName("DELETE_MESSAGE")
     data class DeleteMessageEvent(
         @SerialName("conversation")
         val conversation: Conversation,
@@ -73,7 +73,7 @@ sealed interface NomadMessageEvent {
     ) : NomadMessageEvent
 
     @Serializable
-    @SerialName("wipe_conversation")
+    @SerialName("WIPE_CONVERSATION")
     data class WipeConversationEvent(
         @SerialName("conversation")
         val conversation: Conversation,
@@ -82,7 +82,7 @@ sealed interface NomadMessageEvent {
     ) : NomadMessageEvent
 
     @Serializable
-    @SerialName("last_read")
+    @SerialName("LAST_READ")
     data class LastReadEvent(
         @SerialName("last_read")
         val lastRead: List<LastRead>
