@@ -342,6 +342,32 @@ class LogoutUseCaseTest {
     }
 
     @Test
+    fun givenHardLogout_whenScopeExists_thenScopeGetIsCalledToAllowCancellationBeforeWipe() = runTest {
+        // Verify that on the wipe path, get() is called (to cancel+join the scope) before
+        // clearUserDataUseCase is invoked. With the scope returning null the cancel/join is
+        // a no-op, but the call sequence (get -> clear) is what we assert here.
+        val reason = LogoutReason.SELF_HARD_LOGOUT
+        val (arrangement, logoutUseCase) = Arrangement()
+            .withLogoutResult(Either.Right(Unit))
+            .withSessionLogoutResult(Either.Right(Unit))
+            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
+            .withNoOngoingCalls()
+            .arrange()
+
+        logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
+
+        // get() must be invoked on the wipe path (for cancel+join) and again for delete
+        coVerify { arrangement.userSessionScopeProvider.get(any()) }.wasInvoked(atLeast = once)
+        coVerify { arrangement.clearUserDataUseCase.invoke() }.wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenAMigrationFailedLogout_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
         val reason = LogoutReason.MIGRATION_TO_CC_FAILED
         val (arrangement, logoutUseCase) = Arrangement()
@@ -477,6 +503,8 @@ class LogoutUseCaseTest {
             return this
         }
 
+
+
         suspend fun withFirebaseTokenUpdate() = apply {
             coEvery {
                 pushTokenRepository.setUpdateFirebaseTokenFlag(any())
@@ -506,6 +534,22 @@ class LogoutUseCaseTest {
 
             coEvery {
                 userConfigRepository.clearE2EISettings()
+            }.returns(Unit)
+
+            coEvery {
+                userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()
+            }.returns(Unit)
+
+            coEvery {
+                logoutRepository.onLogout(any())
+            }.returns(Unit)
+
+            coEvery {
+                logoutCallback(any(), any())
+            }.returns(Unit)
+
+            coEvery {
+                userSessionScopeProvider.delete(any())
             }.returns(Unit)
         }
 
