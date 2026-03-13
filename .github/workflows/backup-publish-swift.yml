@@ -8,16 +8,29 @@ jobs:
   publish-swift:
     if: github.repository == 'wireapp/kalium'
     runs-on: macos-latest
+    permissions:
+      contents: write
     steps:
       - uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '16.1.0'
 
       - uses: actions/checkout@v6
-      - name: Force fetch the tag to work around actions/checkout#290
-        run: git fetch -f origin ${{ github.ref }}:${{ github.ref }}
+      - name: Fetch release tags
+        run: git fetch --force --tags origin
       - name: Ensure the tag is signed
         run: git cat-file commit HEAD | grep -q -- '-----BEGIN PGP SIGNATURE-----'
+      - name: Resolve logic release tag
+        id: logic-release
+        run: |
+          logic_tag=$(git for-each-ref --sort=-v:refname --format='%(refname:strip=2)' --points-at HEAD 'refs/tags/v*' | head -n 1)
+          if [ -z "$logic_tag" ]; then
+            echo "::error::No logic release tag matching v* points at commit $(git rev-parse HEAD)."
+            exit 1
+          fi
+
+          echo "logic_tag=$logic_tag" >> "$GITHUB_OUTPUT"
+          echo "Using logic release tag: $logic_tag"
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
@@ -32,5 +45,7 @@ jobs:
       - name: Upload XCFramework (GH Releases)
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.logic-release.outputs.logic_tag }}
+          fail_on_unmatched_files: true
           files: |
             domain/backup/build/XCFrameworks/release/KaliumBackup.xcframework.zip
