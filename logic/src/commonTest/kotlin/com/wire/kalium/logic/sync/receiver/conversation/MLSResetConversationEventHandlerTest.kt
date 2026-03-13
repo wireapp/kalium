@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -160,7 +161,7 @@ class MLSResetConversationEventHandlerTest {
     @Test
     fun givenHasEstablishedGroupFails_whenHandlingEvent_thenShouldUpdateGroupIdWithNotEstablished() =
         runTest {
-            val failure = CoreFailure.Unknown(RuntimeException("Has established failed"))
+            val failure = MLSFailure.Generic(RuntimeException("Has established failed"))
             val event = MLS_RESET_EVENT
             val (arrangement, handler) = arrange {
                 withLeaveGroupSucceeding()
@@ -264,7 +265,7 @@ class MLSResetConversationEventHandlerTest {
             }.returns(newGroupEpoch.toULong())
         }
 
-        suspend fun withHasEstablishedMLSGroupFailing(failure: CoreFailure) = apply {
+        suspend fun withHasEstablishedMLSGroupFailing(failure: MLSFailure) = apply {
             coEvery {
                 mlsConversationRepository.hasEstablishedMLSGroup(any(), any())
             }.returns(Either.Left(failure))

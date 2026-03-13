@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.cryptography.E2EIClient
@@ -75,7 +76,7 @@ internal class ObservableMLSConversationRepository(
     override suspend fun hasEstablishedMLSGroup(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID
-    ): Either<CoreFailure, Boolean> = delegate.hasEstablishedMLSGroup(mlsContext, groupID)
+    ): Either<MLSFailure, Boolean> = delegate.hasEstablishedMLSGroup(mlsContext, groupID)
 
     override suspend fun removeMembersFromMLSGroup(
         mlsContext: MlsCoreCryptoContext,
