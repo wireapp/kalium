@@ -4,6 +4,7 @@ import okio.Path
 import okio.Sink
 import okio.Source
 
+@Suppress("TooManyFunctions")
 actual class KaliumFileSystemImpl : KaliumFileSystem {
 
     override fun sink(outputPath: Path, mustCreate: Boolean): Sink = TODO("Not yet implemented")
@@ -29,8 +30,4 @@ actual class KaliumFileSystemImpl : KaliumFileSystem {
     override suspend fun writeData(outputSink: Sink, dataSource: Source): Long = TODO("Not yet implemented")
 
     override fun selfUserAvatarPath(): Path = TODO("Not yet implemented")
-
-    override suspend fun listDirectories(dir: Path): List<Path> = TODO("Not yet implemented")
-    
-    override fun size(path: Path): Long = = TODO("Not yet implemented")
 }
