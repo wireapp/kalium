@@ -46,6 +46,28 @@ Kalium currently uses the following compile-time Gradle properties:
     ./gradlew <task> -Pkalium.providerCacheScope=GLOBAL
     ```
 
+### Release artifacts
+
+Kalium release automation now publishes two separate build outputs:
+
+- Android-only AAR
+  - Artifact: `logic-android-aar`
+  - Build command:
+    ```bash
+    ./gradlew :logic:bundleAndroidMainAar -PUSE_UNIFIED_CORE_CRYPTO=false
+    ```
+- KMP bundle for Android, JVM, and iOS
+  - Artifact: `logic-kmp`
+  - Uses the unified `core-crypto-kmp` dependency, so `USE_UNIFIED_CORE_CRYPTO` must be `true`.
+  - Build command:
+    ```bash
+    ./gradlew :logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar :logic:assembleKaliumLogicReleaseXCFramework -PUSE_UNIFIED_CORE_CRYPTO=true
+    ```
+
+Each GitHub release upload also includes a per-bundle SHA-256 manifest
+(`logic-android-aar-SHA256SUMS.txt` / `logic-kmp-SHA256SUMS.txt`) and a matching
+GitHub build provenance bundle (`*-provenance-bundle.json`).
+
 The `cli` can be executed on the terminal of any machine that 
 satisfies the dependencies mentioned above, and is capable of actions like:
 - Logging in
