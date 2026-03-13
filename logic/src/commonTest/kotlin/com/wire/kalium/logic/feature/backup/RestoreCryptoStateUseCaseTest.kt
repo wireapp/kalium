@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.feature.message.RetryFailedMessageUseCaseTest.Companion.fakeKaliumFileSystem
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -25,7 +26,6 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
-import okio.Path
 import kotlin.test.Test
 import kotlin.test.assertIs
 
@@ -143,11 +143,18 @@ internal class RestoreCryptoStateUseCaseTest {
             )
         }
 
-        private val fakePath = mock<Path>()
+        val fakePath = fakeKaliumFileSystem.tempFilePath("path")
+
+        val metadata = CryptoStateBackupMetadata(
+            version = CryptoStateBackupMetadata.CURRENT_VERSION,
+            clientId = "test-client-id",
+            mlsDbPassphrase = "mls-passphrase",
+            proteusDbPassphrase = "proteus-passphrase"
+        )
 
         private val extractSuccess = ExtractCryptoStateResult.Success(
             extractedDir = fakePath,
-            metadata = mock(),
+            metadata = metadata,
             mlsKeystorePath = fakePath,
             proteusKeystorePath = fakePath
         )

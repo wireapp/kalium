@@ -62,6 +62,7 @@ internal class DownloadCryptoStateUseCaseImpl(
                     { error ->
                         kaliumLogger.e("$TAG Failed to download crypto state backup: $error")
                         kaliumFileSystem.delete(backupFilePath)
+                        // TODO handle no nomad device case and return NoBackupAvailable instead of Failure
                         DownloadCryptoStateResult.Failure(error)
                     },
                     {
