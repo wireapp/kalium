@@ -55,6 +55,7 @@ internal class RestoreCryptoStateUseCaseImpl(
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : RestoreCryptoStateUseCase {
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun invoke(extractResult: ExtractCryptoStateResult.Success): RestoreCryptoStateResult =
         withContext(dispatcher.io) {
             kaliumLogger.i("$TAG: Starting crypto state restore for userId: ${userId.toLogString()}")
@@ -185,6 +186,7 @@ internal class RestoreCryptoStateUseCaseImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     fun deleteExtractedFolder(directory: Path) {
         if (kaliumFileSystem.exists(directory)) {
             try {
