@@ -4,7 +4,6 @@ import okio.Path
 import okio.Sink
 import okio.Source
 
-@Suppress("TooManyFunctions")
 actual class KaliumFileSystemImpl : KaliumFileSystem {
 
     override fun sink(outputPath: Path, mustCreate: Boolean): Sink = TODO("Not yet implemented")
