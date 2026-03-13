@@ -54,6 +54,7 @@ internal open class SSOLoginApiV0 internal constructor(
 
     override suspend fun initiate(param: InitiateParam): NetworkResponse<String> = HttpRequestBuilder().apply {
         url.appendPathSegments(PATH_SSO, PATH_INITIATE, param.uuid)
+        param.label?.let { parameter(QUERY_LABEL, it) }
         if (param is InitiateParam.WithRedirect) {
             parameter(QUERY_SUCCESS_REDIRECT, param.success)
             parameter(QUERY_ERROR_REDIRECT, param.error)
@@ -118,5 +119,6 @@ internal open class SSOLoginApiV0 internal constructor(
         const val PATH_SELF = "self"
         const val QUERY_SUCCESS_REDIRECT = "success_redirect"
         const val QUERY_ERROR_REDIRECT = "error_redirect"
+        const val QUERY_LABEL = "label"
     }
 }
