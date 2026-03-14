@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.logger.kaliumLogger
@@ -110,7 +109,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                     val delayMs = throttleRetryDelayMs * nextAttempt
                     kaliumLogger.w(
                         "Failed to establish mls group for ${conversation.id.toLogString()} due to throttling; " +
-                            "retrying (${nextAttempt}/${maxThrottleRetries}) in ${delayMs}ms."
+                            "retrying ($nextAttempt/$maxThrottleRetries) in ${delayMs}ms."
                     )
                     delay(delayMs)
                     joinRetrying(transactionContext, conversation, keepRetryingOnFailure, nextAttempt)
