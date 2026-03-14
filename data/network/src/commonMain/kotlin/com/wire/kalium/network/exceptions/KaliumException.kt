@@ -152,7 +152,7 @@ fun KaliumException.InvalidRequestError.isInvalidHandle(): Boolean {
 }
 
 fun KaliumException.InvalidRequestError.isTooManyRequests(): Boolean {
-    return errorResponse.code == HttpStatusCode.TooManyRequests.value
+    return errorResponse.code == HttpStatusCode.TooManyRequests.value || errorResponse.code == HTTP_STATUS_NGINZ_TOO_MANY_REQUESTS
 }
 
 fun KaliumException.InvalidRequestError.isHandleExists(): Boolean {
@@ -219,3 +219,5 @@ fun KaliumException.InvalidRequestError.isAccountPendingActivation(): Boolean = 
 
 fun KaliumException.ServerError.isEnterpriseServiceNotEnabled(): Boolean =
     errorResponse.code == HttpStatusCode.ServiceUnavailable.value && errorResponse.label == ENTERPRISE_SERVICE_NOT_ENABLED
+
+private const val HTTP_STATUS_NGINZ_TOO_MANY_REQUESTS = 420
