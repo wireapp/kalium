@@ -397,6 +397,42 @@ class AccountsDAOTest : GlobalDBBaseTest() {
         assertNull(reInsertedAccount?.nomadServiceUrl)
     }
 
+    @Test
+    fun givenNoAccounts_whenCallingDoesValidNomadAccountExist_thenFalseIsReturned() = runTest {
+        val result = globalDatabaseBuilder.accountsDAO.doesValidNomadAccountExist()
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun givenOnlyNormalAccounts_whenCallingDoesValidNomadAccountExist_thenFalseIsReturned() = runTest {
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            VALID_ACCOUNT.info.userIDEntity, VALID_ACCOUNT.ssoId, VALID_ACCOUNT.managedBy, VALID_ACCOUNT.serverConfigId, false
+        )
+        val result = globalDatabaseBuilder.accountsDAO.doesValidNomadAccountExist()
+        assertEquals(false, result)
+    }
+
+    @Test
+    fun givenValidNomadAccount_whenCallingDoesValidNomadAccountExist_thenTrueIsReturned() = runTest {
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            VALID_ACCOUNT.info.userIDEntity, VALID_ACCOUNT.ssoId, VALID_ACCOUNT.managedBy, VALID_ACCOUNT.serverConfigId, false,
+            nomadServiceUrl = "https://nomad.example.com/service"
+        )
+        val result = globalDatabaseBuilder.accountsDAO.doesValidNomadAccountExist()
+        assertEquals(true, result)
+    }
+
+    @Test
+    fun givenLoggedOutNomadAccount_whenCallingDoesValidNomadAccountExist_thenFalseIsReturned() = runTest {
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
+            VALID_ACCOUNT.info.userIDEntity, VALID_ACCOUNT.ssoId, VALID_ACCOUNT.managedBy, VALID_ACCOUNT.serverConfigId, false,
+            nomadServiceUrl = "https://nomad.example.com/service"
+        )
+        globalDatabaseBuilder.accountsDAO.markAccountAsInvalid(VALID_ACCOUNT.info.userIDEntity, LogoutReason.SELF_SOFT_LOGOUT)
+        val result = globalDatabaseBuilder.accountsDAO.doesValidNomadAccountExist()
+        assertEquals(false, result)
+    }
+
     private companion object {
 
         val VALID_ACCOUNT = FullAccountEntity(
