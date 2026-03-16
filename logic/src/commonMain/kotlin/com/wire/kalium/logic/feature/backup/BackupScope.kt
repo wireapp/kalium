@@ -89,4 +89,11 @@ public class BackupScope internal constructor(
             currentClientIdProvider = clientIdProvider,
         )
 
+    public val downloadCryptoState: DownloadCryptoStateUseCase
+        get() = DownloadCryptoStateUseCaseImpl(
+            userId,
+            cryptoStateBackupRemoteRepository,
+            kaliumFileSystem,
+        )
+
 }

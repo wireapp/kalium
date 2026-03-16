@@ -67,5 +67,7 @@ internal class DummyCallManager : CallManager {
 
     override suspend fun setBackground(background: Boolean) {}
 
+    override suspend fun setNetworkQualityInterval(intervalInSeconds: Int) {}
+
     override suspend fun cancelJobs() {}
 }
