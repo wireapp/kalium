@@ -51,6 +51,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
+import com.wire.kalium.logic.framework.TestCall.CALL_QUALITY_DATA
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -1885,7 +1886,7 @@ class CallRepositoryTest {
     fun givenACall_whenUpdatingCallQualityData_thenCallQualityDataIsUpdatedCorrectlyAndCallQualityDataObserverEmitsData() = runTest {
         // given
         val conversationId = Arrangement.randomConversationId
-        val callQualityData = CallQualityData(CallQuality.POOR, 1,2,3)
+        val callQualityData = CALL_QUALITY_DATA
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
 
         callRepository.observeCallQualityData(conversationId).test {

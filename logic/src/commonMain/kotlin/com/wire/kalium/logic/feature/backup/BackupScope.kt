@@ -122,6 +122,8 @@ public class BackupScope internal constructor(
             downloadCryptoState = downloadCryptoState,
             extractCryptoState = extractCryptoState,
             setLastDeviceId = setLastDeviceId,
+            clientRepository = clientRepository,
+            upgradeCurrentSession = upgradeCurrentSession,
             applyCryptoState = applyCryptoState,
         )
 }
