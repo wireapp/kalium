@@ -39,10 +39,12 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -174,6 +176,40 @@ class IncrementalSyncWorkerTest {
         coVerify {
             arrangement.eventRepository.setEventsAsProcessed(any())
         }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenCancellationDuringEventProcessing_whenPerformingIncrementalSync_thenWorkerMarksEventAsProcessed() = runTest {
+        val envelope = TestEvent.memberJoin().wrapInEnvelope()
+        val eventId = envelope.event.id
+        val processingStarted = CompletableDeferred<Unit>()
+        val allowProcessingToFinish = CompletableDeferred<Unit>()
+
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
+            .withSetEventsAsProcessedReturning(Either.Right(Unit))
+            .arrange()
+
+        coEvery {
+            arrangement.eventProcessor.processEvent(any(), eq(envelope))
+        }.invokes {
+            processingStarted.complete(Unit)
+            allowProcessingToFinish.await()
+            Either.Right(eventId)
+        }
+
+        val job = launch {
+            worker.processEventsFlow().collect()
+        }
+
+        processingStarted.await()
+        job.cancel()
+        allowProcessingToFinish.complete(Unit)
+        job.join()
+
+        coVerify {
+            arrangement.eventRepository.setEventsAsProcessed(eq(listOf(eventId)))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
