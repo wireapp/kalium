@@ -292,7 +292,8 @@ internal class CallManagerImpl internal constructor(
                 convId = federatedIdMapper.parseToFederatedId(targetConversationId),
                 userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
                 clientId = message.senderClientId.value,
-                convType = callMapper.toConversationTypeCalling(type).avsValue
+                convType = callMapper.toConversationTypeCalling(type).avsValue,
+                meeting = false.toInt()
             )
             callingLogger.i("$tagWithUserId: wcall_recv_msg() called")
         }
@@ -330,11 +331,12 @@ internal class CallManagerImpl internal constructor(
                     conversationId = conversationId,
                     onJoined = {
                         wcall_start(
-                            deferredHandle.await(),
-                            federatedIdMapper.parseToFederatedId(conversationId),
-                            avsCallType.avsValue,
-                            conversationTypeCalling.avsValue,
-                            isAudioCbr.toInt()
+                            inst = deferredHandle.await(),
+                            conversationId = federatedIdMapper.parseToFederatedId(conversationId),
+                            callType = avsCallType.avsValue,
+                            convType = conversationTypeCalling.avsValue,
+                            audioCbr = isAudioCbr.toInt(),
+                            meeting = false.toInt()
                         )
                         callingLogger.d(
                             "$tagWithUserId: wcall_start() called -> Call for conversationId: " +
@@ -348,11 +350,12 @@ internal class CallManagerImpl internal constructor(
             } else {
                 // TODO: Handle response. Possible failure?
                 wcall_start(
-                    deferredHandle.await(),
-                    federatedIdMapper.parseToFederatedId(conversationId),
-                    avsCallType.avsValue,
-                    conversationTypeCalling.avsValue,
-                    isAudioCbr.toInt()
+                    inst = deferredHandle.await(),
+                    conversationId = federatedIdMapper.parseToFederatedId(conversationId),
+                    callType = avsCallType.avsValue,
+                    convType = conversationTypeCalling.avsValue,
+                    audioCbr = isAudioCbr.toInt(),
+                    meeting = false.toInt()
                 )
                 callingLogger.d(
                     "$tagWithUserId: wcall_start() called -> Call for conversationId: " +
@@ -567,7 +570,7 @@ internal class CallManagerImpl internal constructor(
      */
     private fun onCallingReady() {
         initParticipantsHandler()
-        initNetworkHandler()
+        initNetworkQualityHandler()
         initClientsHandler()
         initActiveSpeakersHandler()
         initRequestNewEpochHandler()
@@ -603,22 +606,25 @@ internal class CallManagerImpl internal constructor(
         }
     }
 
-    private fun initNetworkHandler() {
-        scope.launch {
-            withCalling {
-                val onNetworkQualityChanged = OnNetworkQualityChanged(
-                    callRepository = callRepository,
-                    qualifiedIdMapper = qualifiedIdMapper
-                ).keepingStrongReference()
+    override suspend fun setNetworkQualityInterval(intervalInSeconds: Int) {
+        withCalling {
+            val onNetworkQualityChanged = OnNetworkQualityChanged(
+                callRepository = callRepository,
+                qualifiedIdMapper = qualifiedIdMapper
+            ).keepingStrongReference()
+            wcall_set_network_quality_handler(
+                inst = deferredHandle.await(),
+                wcall_network_quality_h = onNetworkQualityChanged,
+                intervalInSeconds = intervalInSeconds,
+                arg = null
+            )
+            callingLogger.d("$tagWithUserId: wcall_set_network_quality_handler() called with interval: $intervalInSeconds seconds")
+        }
+    }
 
-                wcall_set_network_quality_handler(
-                    inst = deferredHandle.await(),
-                    wcall_network_quality_h = onNetworkQualityChanged,
-                    intervalInSeconds = NETWORK_QUALITY_INTERVAL_SECONDS,
-                    arg = null
-                )
-                callingLogger.d("$tagWithUserId: wcall_set_network_quality_handler() called")
-            }
+    private fun initNetworkQualityHandler() {
+        scope.launch {
+            setNetworkQualityInterval(DEFAULT_NETWORK_QUALITY_INTERVAL_SECONDS)
         }
     }
 
@@ -717,10 +723,15 @@ internal class CallManagerImpl internal constructor(
         job.cancel()
     }
 
+    // For testing purposes, to ensure that the CallManager is fully initialized before proceeding with tests that depend on it.
+    internal suspend fun waitUntilInitialized() {
+        deferredHandle.await()
+    }
+
     internal companion object {
         private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
         internal const val TAG = "CallManager"
-        internal const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
+        internal const val DEFAULT_NETWORK_QUALITY_INTERVAL_SECONDS = 5
         internal const val UTF8_ENCODING = "UTF-8"
         internal const val REMOTE_MUTE_TYPE = "REMOTEMUTE"
     }

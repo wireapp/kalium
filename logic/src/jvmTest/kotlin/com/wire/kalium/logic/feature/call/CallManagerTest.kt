@@ -41,6 +41,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.call.CallManagerImpl.Companion.DEFAULT_NETWORK_QUALITY_INTERVAL_SECONDS
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
@@ -89,20 +90,11 @@ internal class CallManagerTest {
         Dispatchers.resetMain()
     }
 
-
     @Test
     @Suppress("FunctionNaming") // native function has that name
     fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled() = runTest {
-        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .onCurrentClientIdReturning(CLIENT_ID.right())
-            .onParseToFederatedIdReturning(USER_ID, USER_ID.toString())
-            .onParseToFederatedIdReturning(CALL_CONV_ID, CALL_CONV_ID.toString())
-            .onWcallCreateReturning(BASE_HANDLE)
-            .onWcallRecvMsgReturning(0)
-            .onObserveConversationMembersReturning(emptyList())
-            .onGetCallConversationTypeReturning(ConversationTypeCalling.Conference)
-            .withFetchServerTimeReturning()
-            .arrange()
+        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
+        callManager.waitUntilInitialized()
 
         callManager.onCallingMessageReceived(
             content = CALL_CONTENT,
@@ -119,7 +111,44 @@ internal class CallManagerTest {
                 eq(CALL_CONV_ID.toString()),
                 eq(USER_ID.toString()),
                 eq(CLIENT_ID.value),
+                any(),
                 any()
+            )
+        }
+    }
+
+    @Test
+    @Suppress("FunctionNaming") // native function has that name
+    fun givenCallManager_whenSettingCallQualityInterval_then_wcall_set_network_quality_handler_IsCalled() = runTest {
+        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .onCurrentClientIdReturning(CLIENT_ID.right())
+            .onParseToFederatedIdReturning(USER_ID, USER_ID.toString())
+            .onParseToFederatedIdReturning(CALL_CONV_ID, CALL_CONV_ID.toString())
+            .onWcallCreateReturning(BASE_HANDLE)
+            .onWcallRecvMsgReturning(0)
+            .onObserveConversationMembersReturning(emptyList())
+            .onGetCallConversationTypeReturning(ConversationTypeCalling.Conference)
+            .withFetchServerTimeReturning()
+            .arrange()
+        callManager.waitUntilInitialized()
+
+        // initially the default interval should be set when the call manager is created, so we verify that first
+        verify(VerifyMode.exactly(1)) {
+            arrangement.calling.wcall_set_network_quality_handler(
+                inst = BASE_HANDLE,
+                wcall_network_quality_h = any(),
+                intervalInSeconds = DEFAULT_NETWORK_QUALITY_INTERVAL_SECONDS,
+                arg = any()
+            )
+        }
+
+        callManager.setNetworkQualityInterval(1)
+        verify(VerifyMode.exactly(1)) {
+            arrangement.calling.wcall_set_network_quality_handler(
+                inst = BASE_HANDLE,
+                wcall_network_quality_h = any(),
+                intervalInSeconds = 1,
+                arg = any()
             )
         }
     }
@@ -166,7 +195,7 @@ internal class CallManagerTest {
         }
 
         fun onWcallRecvMsgReturning(result: Int) = apply {
-            every { calling.wcall_recv_msg(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns result
+            every { calling.wcall_recv_msg(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns result
         }
 
         fun onObserveConversationMembersReturning(result: List<Conversation.Member>) = apply {
@@ -204,7 +233,15 @@ internal class CallManagerTest {
             createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata,
             selfUserId = selfUserId
         ).also {
+            onCurrentClientIdReturning(CLIENT_ID.right())
             onParseToFederatedIdReturning(selfUserId, selfUserId.toString())
+            onParseToFederatedIdReturning(USER_ID, USER_ID.toString())
+            onParseToFederatedIdReturning(CALL_CONV_ID, CALL_CONV_ID.toString())
+            onWcallCreateReturning(BASE_HANDLE)
+            onWcallRecvMsgReturning(0)
+            onObserveConversationMembersReturning(emptyList())
+            onGetCallConversationTypeReturning(ConversationTypeCalling.Conference)
+            withFetchServerTimeReturning()
         }
     }
 
