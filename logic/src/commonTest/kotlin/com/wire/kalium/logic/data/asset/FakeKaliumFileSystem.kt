@@ -78,20 +78,21 @@ class FakeKaliumFileSystem(
     override fun providePersistentAssetPath(assetName: String): Path = "${dataStoragePaths.assetStoragePath.value}/$assetName".toPath()
 
     override suspend fun readByteArray(inputPath: Path): ByteArray = source(inputPath).use {
-            it.buffer().use { bufferedFileSource ->
-                bufferedFileSource.readByteArray()
+        it.buffer().use { bufferedFileSource ->
+            bufferedFileSource.readByteArray()
         }
     }
 
     override suspend fun writeData(outputSink: Sink, dataSource: Source): Long {
         var byteCount = 0L
-            outputSink.buffer().use { bufferedFileSink ->
-                byteCount = bufferedFileSink.writeAll(dataSource)
-            }
+        outputSink.buffer().use { bufferedFileSink ->
+            byteCount = bufferedFileSink.writeAll(dataSource)
+        }
         return byteCount
     }
 
     override fun selfUserAvatarPath(): Path = providePersistentAssetPath("self_user_avatar.jpg")
 
     override suspend fun listDirectories(dir: Path): List<Path> = fakeFileSystem.list(dir)
+    override fun size(path: Path): Long? = fakeFileSystem.metadata(path).size
 }
