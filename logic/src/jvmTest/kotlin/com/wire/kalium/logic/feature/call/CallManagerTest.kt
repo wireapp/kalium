@@ -111,6 +111,7 @@ internal class CallManagerTest {
                 eq(CALL_CONV_ID.toString()),
                 eq(USER_ID.toString()),
                 eq(CLIENT_ID.value),
+                any(),
                 any()
             )
         }
@@ -194,7 +195,7 @@ internal class CallManagerTest {
         }
 
         fun onWcallRecvMsgReturning(result: Int) = apply {
-            every { calling.wcall_recv_msg(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns result
+            every { calling.wcall_recv_msg(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns result
         }
 
         fun onObserveConversationMembersReturning(result: List<Conversation.Member>) = apply {
