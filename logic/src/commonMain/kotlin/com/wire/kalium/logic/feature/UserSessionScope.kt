@@ -513,6 +513,8 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerIm
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
+import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandlerImpl
@@ -1510,6 +1512,12 @@ public class UserSessionScope internal constructor(
             sessionManager
         )
 
+    private val sessionRefreshSuggestedEventHandler: SessionRefreshSuggestedEventHandler
+        get() = SessionRefreshSuggestedEventHandlerImpl(
+            authenticatedNetworkContainer,
+            sessionManager
+        )
+
     @Suppress("MagicNumber")
     private val apiMigrations = listOf(
         Pair(3, ApiMigrationV3(clientIdProvider, upgradeCurrentSessionUseCase))
@@ -2054,7 +2062,8 @@ public class UserSessionScope internal constructor(
             clientIdProvider,
             lazy { newGroupConversationSystemMessagesCreator },
             legalHoldRequestHandler,
-            legalHoldHandler
+            legalHoldHandler,
+            sessionRefreshSuggestedEventHandler
         )
 
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver

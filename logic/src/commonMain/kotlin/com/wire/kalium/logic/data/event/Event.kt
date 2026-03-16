@@ -776,6 +776,15 @@ internal sealed class Event(open val id: String) {
                 "userId" to userId.toLogString()
             )
         }
+
+        internal data class SessionRefreshSuggested(
+            override val id: String,
+        ) : User(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "User.SessionRefreshSuggested",
+                idKey to id,
+            )
+        }
     }
 
     internal sealed class UserProperty(
