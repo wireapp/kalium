@@ -86,6 +86,29 @@ internal class SSOLoginApiV0Test : ApiTest() {
     }
 
     @Test
+    fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithRedirectAndLabel_thenRequestConfiguredCorrectly() = runTest {
+        val uuid = "uuid"
+        val param =
+            InitiateParam.WithRedirect(uuid = uuid, success = "wire://success", error = "wire://error", label = "shared-device")
+        val expectedPathAndQuery =
+            "$PATH_SSO_INITIATE/$uuid?label=shared-device&success_redirect=wire%3A%2F%2Fsuccess&error_redirect=wire%3A%2F%2Ferror"
+        val networkClient = mockUnauthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertHead()
+                assertPathAndQueryEqual(expectedPathAndQuery)
+            }
+        )
+        val ssoApi: SSOLoginApi = SSOLoginApiV0(networkClient)
+        val actual = ssoApi.initiate(param)
+
+        assertIs<NetworkResponse.Success<String>>(actual)
+        assertEquals(expectedPathAndQuery, Url(actual.value).encodedPathAndQuery)
+        assertEquals("${Url(TEST_BACKEND.links.api).protocolWithAuthority}$expectedPathAndQuery", actual.value)
+    }
+
+    @Test
     fun givenBEResponseSuccess_whenCallingFinalizeSSOEndpointWithRedirect_thenRequestConfiguredCorrectly() = runTest {
         val cookie = "cookie"
         val networkClient = mockUnauthenticatedNetworkClient(

@@ -21,7 +21,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class CryptoStateBackupMetadata(
+public data class CryptoStateBackupMetadata(
     @SerialName("version")
     val version: String,
     @SerialName("client_id")

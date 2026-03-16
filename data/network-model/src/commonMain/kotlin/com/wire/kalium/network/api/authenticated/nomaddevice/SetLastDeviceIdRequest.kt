@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,14 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.network.api.unauthenticated.sso
 
-sealed class InitiateParam(open val uuid: String, open val label: String? = null) {
-    data class WithoutRedirect(override val uuid: String, override val label: String? = null) : InitiateParam(uuid, label)
-    data class WithRedirect(
-        val success: String,
-        val error: String,
-        override val uuid: String,
-        override val label: String? = null,
-    ) : InitiateParam(uuid, label)
-}
+package com.wire.kalium.network.api.authenticated.nomaddevice
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class SetLastDeviceIdRequest(
+    @SerialName("device_id")
+    val deviceId: String
+)
