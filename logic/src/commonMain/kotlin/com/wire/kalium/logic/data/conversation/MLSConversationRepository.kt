@@ -158,7 +158,7 @@ internal interface MLSConversationRepository : MLSMemberAdder {
         parentId: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun hasEstablishedMLSGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<CoreFailure, Boolean>
+    suspend fun hasEstablishedMLSGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<MLSFailure, Boolean>
 
     suspend fun removeMembersFromMLSGroup(
         mlsContext: MlsCoreCryptoContext,
@@ -353,7 +353,7 @@ internal class MLSConversationDataSource(
     override suspend fun hasEstablishedMLSGroup(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID
-    ): Either<CoreFailure, Boolean> = wrapMLSRequest {
+    ): Either<MLSFailure, Boolean> = wrapMLSRequest {
         mlsContext.conversationExists(idMapper.toCryptoModel(groupID))
     }
 
@@ -368,12 +368,27 @@ internal class MLSConversationDataSource(
         welcomeBundle.crlNewDistributionPoints?.let {
             checkRevocationList(mlsContext, it)
         }
-    }.onSuccess {
+    }.flatMap {
+        wrapMLSRequest {
+            mlsContext.conversationEpoch(idMapper.toCryptoModel(groupID))
+        }
+    }.flatMap { localEpoch ->
         wrapStorageRequest {
-            conversationDAO.updateConversationGroupState(
-                ConversationEntity.GroupState.ESTABLISHED,
-                idMapper.toCryptoModel(groupID)
-            )
+            val localGroupId = idMapper.toCryptoModel(groupID)
+            val existingConversation = conversationDAO.getConversationByGroupID(localGroupId)
+            if (existingConversation != null) {
+                conversationDAO.updateMLSGroupIdAndState(
+                    existingConversation.id,
+                    localGroupId,
+                    localEpoch.toLong(),
+                    ConversationEntity.GroupState.ESTABLISHED
+                )
+            } else {
+                conversationDAO.updateConversationGroupState(
+                    ConversationEntity.GroupState.ESTABLISHED,
+                    localGroupId
+                )
+            }
         }
     }.map { }
 
