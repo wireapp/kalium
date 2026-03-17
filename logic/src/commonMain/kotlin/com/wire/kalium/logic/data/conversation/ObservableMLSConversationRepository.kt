@@ -78,6 +78,11 @@ internal class ObservableMLSConversationRepository(
         groupID: GroupID
     ): Either<MLSFailure, Boolean> = delegate.hasEstablishedMLSGroup(mlsContext, groupID)
 
+    override suspend fun getLocalGroupEpoch(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID
+    ): Either<CoreFailure, ULong> = delegate.getLocalGroupEpoch(mlsContext, groupID)
+
     override suspend fun removeMembersFromMLSGroup(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID,

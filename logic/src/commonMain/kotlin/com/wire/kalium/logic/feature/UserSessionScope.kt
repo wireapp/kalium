@@ -1803,8 +1803,7 @@ public class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
-            subconversationRepository = subconversationRepository,
-            fetchConversation = fetchConversationUseCase
+            subconversationRepository = subconversationRepository
         )
 
     private val newMessageHandler: NewMessageEventHandler
