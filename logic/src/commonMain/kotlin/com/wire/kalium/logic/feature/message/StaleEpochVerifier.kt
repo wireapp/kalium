@@ -144,14 +144,21 @@ internal class StaleEpochVerifierImpl(
     }
 
     private fun ConversationResponse.toRemoteMLSConversationInfo(): Either<CoreFailure, RemoteMLSConversationInfo> {
-        if (protocol != ConvProtocol.MLS) {
-            return Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
-        }
         val remoteGroupId = groupId?.takeIf { it.isNotBlank() }?.let(::GroupID)
-            ?: return Either.Left(CoreFailure.Unknown(IllegalStateException("Missing MLS group id in conversation response")))
         val remoteEpoch = epoch
-            ?: return Either.Left(CoreFailure.Unknown(IllegalStateException("Missing MLS epoch in conversation response")))
-        return Either.Right(RemoteMLSConversationInfo(remoteGroupId, remoteEpoch))
+        return when {
+            protocol != ConvProtocol.MLS ->
+                Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
+
+            remoteGroupId == null ->
+                Either.Left(CoreFailure.Unknown(IllegalStateException("Missing MLS group id in conversation response")))
+
+            remoteEpoch == null ->
+                Either.Left(CoreFailure.Unknown(IllegalStateException("Missing MLS epoch in conversation response")))
+
+            else ->
+                Either.Right(RemoteMLSConversationInfo(remoteGroupId, remoteEpoch))
+        }
     }
 
     private data class RemoteMLSConversationInfo(
