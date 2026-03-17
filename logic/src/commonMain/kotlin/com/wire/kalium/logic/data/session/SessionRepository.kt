@@ -80,6 +80,7 @@ internal interface SessionRepository {
     suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?>
     suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun validSessionsWithServerConfig(): Either<StorageFailure, Map<UserId, ServerConfig>>
+    suspend fun doesValidNomadAccountExist(): Either<StorageFailure, Boolean>
 }
 
 public data class StoreSessionParam(
@@ -257,6 +258,9 @@ internal class SessionDataSource internal constructor(
             userId.toModel() to serverConfigMapper.fromEntity(serverConfig)
         }.toMap()
     }
+
+    override suspend fun doesValidNomadAccountExist(): Either<StorageFailure, Boolean> =
+        wrapStorageRequest { accountsDAO.doesValidNomadAccountExist() }
 
     internal fun ManagedByDTO.toDao() = when (this) {
         ManagedByDTO.WIRE -> ManagedByEntity.WIRE
