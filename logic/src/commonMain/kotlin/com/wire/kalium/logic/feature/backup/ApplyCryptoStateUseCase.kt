@@ -24,6 +24,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
+import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -52,7 +53,7 @@ internal class ApplyCryptoStateUseCaseImpl(
     private val userId: UserId,
     private val rootPathsProvider: RootPathsProvider,
     private val kaliumFileSystem: KaliumFileSystem,
-    private val passphraseStorage: PassphraseStorage,
+    private val securityHelper: SecurityHelper,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : ApplyCryptoStateUseCase {
 
@@ -103,12 +104,12 @@ internal class ApplyCryptoStateUseCaseImpl(
     private fun updatePassphrases(metadata: CryptoStateBackupMetadata) {
         // Update MLS passphrase
         val mlsPassphraseKey = "${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId"
-        passphraseStorage.setPassphrase(mlsPassphraseKey, metadata.mlsDbPassphrase)
+        securityHelper.setDBPassphrase(mlsPassphraseKey, metadata.mlsDbPassphrase)
         kaliumLogger.i("$TAG: Updated MLS database passphrase")
 
         // Update Proteus passphrase
         val proteusPassphraseKey = "${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId"
-        passphraseStorage.setPassphrase(proteusPassphraseKey, metadata.proteusDbPassphrase)
+        securityHelper.setDBPassphrase(proteusPassphraseKey, metadata.proteusDbPassphrase)
         kaliumLogger.i("$TAG: Updated Proteus database passphrase")
     }
 
