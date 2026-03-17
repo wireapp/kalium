@@ -351,7 +351,7 @@ internal class ConversationGroupRepositoryImpl(
                     userIdList = validUsers,
                     lastUsersAttempt = LastUsersAttempt.Failed(
                         failedUsers = lastUsersAttempt.failedUsers + failedUsers,
-                        failType = FailedToAdd.Type.Federation,
+                        failType = FailedToAdd.Type.MissingKeyPackages,
                     ),
                     remainingAttempts = remainingAttempts - 1,
                     cipherSuite = cipherSuite
@@ -398,6 +398,7 @@ internal class ConversationGroupRepositoryImpl(
                     userIdList = (lastUsersAttempt.failedUsers + userIdList),
                     type = when {
                         this.isMissingLegalHoldConsentError -> FailedToAdd.Type.LegalHold
+                        this is CoreFailure.MissingKeyPackages -> FailedToAdd.Type.MissingKeyPackages
                         else -> FailedToAdd.Type.Federation
                     }
                 ).flatMap {

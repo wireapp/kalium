@@ -187,6 +187,12 @@ sealed interface MessageEntity {
         FAILED_TO_ADD_UNKNOWN,
 
         /**
+         * A member(s) was not added to the conversation due to missing MLS key packages.
+         * Note: This is only valid for the creator of the conversation, local-only.
+         */
+        FAILED_TO_ADD_MISSING_KEY_PACKAGES,
+
+        /**
          * Member(s) removed from the conversation, due to some backend stopped to federate between them, or us.
          */
         FEDERATION_REMOVED,
