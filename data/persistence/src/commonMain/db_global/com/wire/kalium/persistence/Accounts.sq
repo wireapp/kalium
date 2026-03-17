@@ -102,3 +102,6 @@ FROM Accounts
 INNER JOIN ServerConfiguration
     ON Accounts.server_config_id = ServerConfiguration.id
 WHERE Accounts.logout_reason IS NULL;
+
+doesValidNomadAccountExist:
+SELECT EXISTS(SELECT 1 FROM Accounts WHERE logout_reason IS NULL AND nomad_service_url IS NOT NULL);

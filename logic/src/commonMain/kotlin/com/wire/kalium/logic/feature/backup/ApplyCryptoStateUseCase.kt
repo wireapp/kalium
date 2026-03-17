@@ -24,7 +24,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -52,7 +52,7 @@ internal class ApplyCryptoStateUseCaseImpl(
     private val userId: UserId,
     private val rootPathsProvider: RootPathsProvider,
     private val kaliumFileSystem: KaliumFileSystem,
-    private val passphraseStorage: PassphraseStorage,
+    private val securityHelper: SecurityHelper,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : ApplyCryptoStateUseCase {
 
@@ -83,9 +83,6 @@ internal class ApplyCryptoStateUseCaseImpl(
                 // Update database passphrases from backup metadata
                 updatePassphrases(extractResult.metadata)
 
-                // Cleanup extracted files
-                deleteExtractedFolder(extractResult.extractedDir)
-
                 kaliumLogger.i("$TAG: Successfully applied crypto state for clientId: ${clientId.obfuscateId()}")
                 ApplyCryptoStateResult.Success
             } catch (e: CancellationException) {
@@ -93,6 +90,9 @@ internal class ApplyCryptoStateUseCaseImpl(
             } catch (e: Exception) {
                 kaliumLogger.e("$TAG: Failed to apply crypto state", e)
                 ApplyCryptoStateResult.Failure(CoreFailure.Unknown(e))
+            } finally {
+                // Ensure extracted files are cleaned up even if an error occurs
+                deleteExtractedFolder(extractResult.extractedDir)
             }
         }
 
@@ -103,12 +103,12 @@ internal class ApplyCryptoStateUseCaseImpl(
     private fun updatePassphrases(metadata: CryptoStateBackupMetadata) {
         // Update MLS passphrase
         val mlsPassphraseKey = "${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId"
-        passphraseStorage.setPassphrase(mlsPassphraseKey, metadata.mlsDbPassphrase)
+        securityHelper.setDBPassphrase(mlsPassphraseKey, metadata.mlsDbPassphrase)
         kaliumLogger.i("$TAG: Updated MLS database passphrase")
 
         // Update Proteus passphrase
         val proteusPassphraseKey = "${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId"
-        passphraseStorage.setPassphrase(proteusPassphraseKey, metadata.proteusDbPassphrase)
+        securityHelper.setDBPassphrase(proteusPassphraseKey, metadata.proteusDbPassphrase)
         kaliumLogger.i("$TAG: Updated Proteus database passphrase")
     }
 
@@ -199,7 +199,7 @@ internal class ApplyCryptoStateUseCaseImpl(
                 // Then delete the directory itself
                 kaliumFileSystem.delete(directory, mustExist = false)
             } catch (e: Exception) {
-                e.printStackTrace()
+                kaliumLogger.e("$TAG: Failed to delete extracted directory", e)
             }
         }
     }

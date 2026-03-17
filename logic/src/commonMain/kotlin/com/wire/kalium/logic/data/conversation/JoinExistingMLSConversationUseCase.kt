@@ -153,6 +153,25 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         return when {
             protocol !is Conversation.ProtocolInfo.MLSCapable -> Either.Right(Unit)
 
+            transactionContext.wrapInMLSContext { mlsContext ->
+                mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, protocol.groupId)
+            }.fold({ false }, { it }) -> {
+                logger.d(
+                    "Skipping join/establish for ${conversation.id.toLogString()} because MLS group already exists locally"
+                )
+                if (protocol.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED) {
+                    logger.d(
+                        "Updating local group state to ESTABLISHED for ${conversation.id.toLogString()} to sync DB with local MLS state"
+                    )
+                    conversationRepository.updateConversationGroupStateByConversationId(
+                        conversation.id,
+                        Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+                    )
+                } else {
+                    Either.Right(Unit)
+                }
+            }
+
             protocol.epoch != 0UL -> {
                 // TODO(refactor): don't use conversationAPI directly
                 //                 we could use mlsConversationRepository to solve this

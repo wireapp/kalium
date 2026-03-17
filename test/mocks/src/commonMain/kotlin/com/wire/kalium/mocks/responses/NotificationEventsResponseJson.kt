@@ -98,7 +98,8 @@ object NotificationEventsResponseJson {
             |     "domain": "${eventData.qualifiedFrom.domain}"
             |  },
             |  "data": "${eventData.message}",
-            |  "from": "${eventData.from}"
+            |  "from": "${eventData.from}",
+            |  "time": "${eventData.time}"
             |}
         """.trimMargin()
     }
@@ -108,7 +109,8 @@ object NotificationEventsResponseJson {
             ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
             QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
             "AQABAAAAibLvHZAyYCHDxb+y8axOIdEAILa77VeJo1Yd8AfJKE009zwUxXuu7mAamu",
-            "71ff8872e468a970"
+            "71ff8872e468a970",
+            Instant.parse("2022-04-12T13:57:02.414Z")
         ),
         mlsWelcomeSerializer
     )

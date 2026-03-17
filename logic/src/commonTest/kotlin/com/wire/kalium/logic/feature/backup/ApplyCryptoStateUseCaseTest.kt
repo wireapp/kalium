@@ -22,7 +22,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.di.RootPathsProvider
-import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.logic.util.SecurityHelper
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
@@ -45,23 +45,26 @@ class ApplyCryptoStateUseCaseTest {
             .withSuccessfulFileDeletion()
             .withSuccessfulFolderDeletion()
             .withSuccessfulFileCopy()
-            .withSuccessfulPassphraseStorage()
+            .withSuccessfulDBPassphraseUpdate()
             .arrange()
 
         val result = useCase.invoke(extractResult)
 
         assertEquals(ApplyCryptoStateResult.Success, result)
         verifySuspend(VerifyMode.exactly(2)) {
-            arrangement.passphraseStorage.setPassphrase(
-                any(),
-                any()
-            )
+            arrangement.securityHelper.setDBPassphrase(any(), any())
+        }
+        // verify that cleanup is attempted
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.kaliumFileSystem.deleteContents(extractResult.extractedDir, any())
+            arrangement.kaliumFileSystem.delete(extractResult.extractedDir, any())
         }
     }
 
     @Test
     fun givenMissingMLSKeystore_whenInvoked_thenReturnFailure() = runTest {
         val (_, useCase) = Arrangement()
+            .withFileExistingCheckReturning(true)
             .withExistingMLSKeystore(false)
             .withExistingProteusKeystore(true)
             .arrange()
@@ -91,8 +94,11 @@ class ApplyCryptoStateUseCaseTest {
     @Test
     fun givenExceptionDuringApplyingCryptoState_whenInvoked_thenReturnUnknownFailure() = runTest {
         val exception = RuntimeException("boom")
-        val (_, useCase) = Arrangement()
-            .withApplyingException(exception)
+        val (arrangement, useCase) = Arrangement()
+            .withApplyingCryptoStateException(exception)
+            .withFileExistingCheckReturning(true)
+            .withSuccessfulFileDeletion()
+            .withSuccessfulFolderDeletion()
             .arrange()
 
         val result = useCase.invoke(extractResult)
@@ -101,12 +107,17 @@ class ApplyCryptoStateUseCaseTest {
 
         assertTrue(result.error is CoreFailure.Unknown)
         assertEquals(exception, result.error.rootCause)
+        // verify that cleanup is attempted even when an exception occurs
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.kaliumFileSystem.deleteContents(extractResult.extractedDir, any())
+            arrangement.kaliumFileSystem.delete(extractResult.extractedDir, any())
+        }
     }
 
     private inner class Arrangement {
 
-        private val kaliumFileSystem = mock<KaliumFileSystem>()
-        val passphraseStorage = mock<PassphraseStorage>()
+        val kaliumFileSystem = mock<KaliumFileSystem>()
+        val securityHelper = mock<SecurityHelper>()
 
         fun withExistingMLSKeystore(result: Boolean) = apply {
             everySuspend { kaliumFileSystem.exists(mlsKeystorePath) } returns result
@@ -128,16 +139,16 @@ class ApplyCryptoStateUseCaseTest {
             everySuspend { kaliumFileSystem.copy(any(), any()) } returns Unit
         }
 
-        fun withSuccessfulPassphraseStorage() = apply {
-            everySuspend { passphraseStorage.setPassphrase(any(), any()) } returns Unit
+        fun withSuccessfulDBPassphraseUpdate() = apply {
+            everySuspend { securityHelper.setDBPassphrase(any(), any()) } returns Unit
         }
 
         fun withFileExistingCheckReturning(result: Boolean) = apply {
             everySuspend { kaliumFileSystem.exists(any()) } returns result
         }
 
-        fun withApplyingException(exception: Exception) = apply {
-            everySuspend { kaliumFileSystem.exists(any()) } throws exception
+        fun withApplyingCryptoStateException(exception: Exception) = apply {
+            everySuspend { kaliumFileSystem.copy(any(), any()) } throws exception
         }
 
         fun arrange(): Pair<Arrangement, ApplyCryptoStateUseCase> {
@@ -145,7 +156,7 @@ class ApplyCryptoStateUseCaseTest {
                 userId = selfUserId,
                 rootPathsProvider = FakeRootPathsProvider(),
                 kaliumFileSystem = kaliumFileSystem,
-                passphraseStorage = passphraseStorage,
+                securityHelper = securityHelper,
             )
         }
     }
