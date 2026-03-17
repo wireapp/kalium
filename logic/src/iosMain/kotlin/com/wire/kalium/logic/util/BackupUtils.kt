@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.util
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import okio.BufferedSource
 import okio.Path
 import okio.Sink

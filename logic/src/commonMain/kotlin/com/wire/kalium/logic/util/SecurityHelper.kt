@@ -39,6 +39,7 @@ internal interface SecurityHelper {
     fun globalDBSecret(): GlobalDatabaseSecret
     fun userDBSecret(userId: UserId): UserDBSecret
     fun userDBOrSecretNull(userId: UserId): UserDBSecret?
+    fun setDBPassphrase(key: String, passphrase: String)
     suspend fun mlsDBSecret(userId: UserId, rootDir: String): MlsDBSecret
     suspend fun proteusDBSecret(userId: UserId, rootDir: String): ProteusDBSecret
 }
@@ -100,6 +101,10 @@ internal class SecurityHelperImpl(
                 ProteusDBSecret(Base64.decode(it))
             }
         }
+
+    override fun setDBPassphrase(key: String, passphrase: String) {
+        passphraseStorage.setPassphrase(key, passphrase)
+    }
 
     private fun getOrGeneratePassPhrase(alias: String): String =
         getStoredDbPassword(alias) ?: storeDbPassword(alias, generatePassword())
