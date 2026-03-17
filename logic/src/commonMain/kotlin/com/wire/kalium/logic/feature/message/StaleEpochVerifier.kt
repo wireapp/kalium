@@ -26,7 +26,10 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
@@ -34,8 +37,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
-import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
@@ -53,6 +54,7 @@ internal interface StaleEpochVerifier {
 
 internal class StaleEpochVerifierImpl(
     private val systemMessageInserter: SystemMessageInserter,
+    private val fetchConversationUseCase: FetchConversationUseCase,
     private val conversationRepository: ConversationRepository,
     private val subconversationRepository: SubconversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
@@ -78,7 +80,7 @@ internal class StaleEpochVerifierImpl(
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> {
         logger.i("Verifying stale epoch for conversation ${conversationId.toLogString()}")
-        return getUpdatedConversationProtocolInfo(conversationId).flatMap { remoteMlsInfo ->
+        return getUpdatedConversationProtocolInfo(transactionContext, conversationId).flatMap { remoteMlsInfo ->
             transactionContext.wrapInMLSContext {
                 mlsConversationRepository.isLocalGroupEpochStale(it, remoteMlsInfo.groupId, remoteMlsInfo.epoch)
             }
@@ -136,28 +138,27 @@ internal class StaleEpochVerifierImpl(
 
     @OptIn(ConversationPersistenceApi::class)
     private suspend fun getUpdatedConversationProtocolInfo(
+        transactionContext: CryptoTransactionContext,
         conversationId: ConversationId
     ): Either<CoreFailure, RemoteMLSConversationInfo> {
-        return conversationRepository.fetchConversation(conversationId).flatMap { response ->
-            response.toRemoteMLSConversationInfo()
+        return fetchConversationUseCase(
+            transactionContext,
+            conversationId,
+            ConversationSyncReason.Other
+        ).flatMap {
+            conversationRepository.getConversationProtocolInfo(conversationId)
+        }.flatMap { protocolInfo ->
+            protocolInfo.toRemoteMLSConversationInfo()
         }
     }
 
-    private fun ConversationResponse.toRemoteMLSConversationInfo(): Either<CoreFailure, RemoteMLSConversationInfo> {
-        val remoteGroupId = groupId?.takeIf { it.isNotBlank() }?.let(::GroupID)
-        val remoteEpoch = epoch
-        return when {
-            protocol != ConvProtocol.MLS ->
+    private fun Conversation.ProtocolInfo.toRemoteMLSConversationInfo(): Either<CoreFailure, RemoteMLSConversationInfo> {
+        return when (this) {
+            !is Conversation.ProtocolInfo.MLS ->
                 Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
 
-            remoteGroupId == null ->
-                Either.Left(CoreFailure.Unknown(IllegalStateException("Missing MLS group id in conversation response")))
-
-            remoteEpoch == null ->
-                Either.Left(CoreFailure.Unknown(IllegalStateException("Missing MLS epoch in conversation response")))
-
             else ->
-                Either.Right(RemoteMLSConversationInfo(remoteGroupId, remoteEpoch))
+                Either.Right(RemoteMLSConversationInfo(groupId, epoch))
         }
     }
 

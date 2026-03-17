@@ -19,7 +19,11 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.SubConversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -53,6 +57,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -83,7 +88,11 @@ class StaleEpochVerifierTest {
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
         coVerify {
-            arrangement.conversationRepository.fetchConversation(eq(CONVERSATION_ID))
+            arrangement.fetchConversationUseCase.invoke(
+                eq(arrangement.transactionContext),
+                eq(CONVERSATION_ID),
+                eq(ConversationSyncReason.Other)
+            )
         }.wasInvoked(once)
     }
 
@@ -270,7 +279,7 @@ class StaleEpochVerifierTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.conversationRepository.fetchConversation(any())
+            arrangement.fetchConversationUseCase.invoke(any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -282,16 +291,36 @@ class StaleEpochVerifierTest {
         SubconversationRepositoryArrangement by SubconversationRepositoryArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl() {
+        val fetchConversationUseCase = mock(FetchConversationUseCase::class)
+
         suspend fun withFetchConversationResponse(result: Either<CoreFailure, ConversationResponse>) {
             coEvery {
-                conversationRepository.fetchConversation(any())
-            }.returns(result)
+                fetchConversationUseCase.invoke(any(), any(), any())
+            }.returns(
+                when (result) {
+                    is Either.Left -> Either.Left(result.value)
+                    is Either.Right -> Either.Right(Unit)
+                }
+            )
+
+            val localProtocolInfo: Either<StorageFailure, Conversation.ProtocolInfo> = when (result) {
+                is Either.Left -> Either.Left(StorageFailure.Generic(IllegalStateException(result.value.toString())))
+                is Either.Right -> when (result.value.protocol) {
+                    ConvProtocol.MLS -> Either.Right(TestConversation.MLS_PROTOCOL_INFO)
+                    else -> Either.Right(Conversation.ProtocolInfo.Proteus)
+                }
+            }
+
+            coEvery {
+                conversationRepository.getConversationProtocolInfo(any())
+            }.returns(localProtocolInfo)
         }
 
         suspend fun arrange() = run {
             block()
             this@Arrangement to StaleEpochVerifierImpl(
                 systemMessageInserter = systemMessageInserter,
+                fetchConversationUseCase = fetchConversationUseCase,
                 conversationRepository = conversationRepository,
                 subconversationRepository = subconversationRepository,
                 mlsConversationRepository = mlsConversationRepository,
