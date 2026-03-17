@@ -38,6 +38,8 @@ import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isTooManyRequests
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
@@ -93,11 +95,15 @@ internal interface OneOnOneResolver {
     ): Either<CoreFailure, ConversationId>
 }
 
+@Suppress("LongParameterList")
 internal class OneOnOneResolverImpl(
     private val userRepository: UserRepository,
     private val oneOnOneProtocolSelector: OneOnOneProtocolSelector,
     private val oneOnOneMigrator: OneOnOneMigrator,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val maxConcurrentResolutions: Int = DEFAULT_MAX_CONCURRENT_RESOLUTIONS,
+    private val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
+    private val throttleRetryDelayMs: Long = DEFAULT_THROTTLE_RETRY_DELAY_MS,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : OneOnOneResolver {
 
@@ -113,38 +119,72 @@ internal class OneOnOneResolverImpl(
         fetchAllOtherUsersIfNeeded(synchronizeUsers).flatMap {
             val usersWithOneOnOne = userRepository.getUsersWithOneOnOneConversation()
             kaliumLogger.i("Resolving one-on-one protocol for ${usersWithOneOnOne.size} user(s)")
-            usersWithOneOnOne.map { item ->
-                async {
-                    resolveOneOnOneConversationWithUser(
-                        transactionContext = transactionContext,
-                        user = item,
-                        // Either it fetched all users on the previous step, or it's not needed
-                        invalidateCurrentKnownProtocols = false
-                    ).map { }.flatMapLeft {
-                        handleBatchEntryFailure(it)
-                    }
-                }
-            }.foldToEitherWhileRight(Unit) { item, _ ->
-                item.await()
+            usersWithOneOnOne.chunked(maxConcurrentResolutions).foldToEitherWhileRight(Unit) { batch, _ ->
+                resolveBatch(transactionContext, batch)
             }
         }
     }
 
-    private fun handleBatchEntryFailure(it: CoreFailure) = when (it) {
-        is CoreFailure.MissingKeyPackages,
-        is NetworkFailure.ServerMiscommunication,
-        is NetworkFailure.FederatedBackendFailure,
-        is CoreFailure.NoCommonProtocolFound,
-        is MLSFailure.MessageRejected -> {
-            kaliumLogger.e("Resolving one-on-one failed $it, skipping")
+    private suspend fun resolveBatch(
+        transactionContext: CryptoTransactionContext,
+        batch: List<OtherUser>,
+    ): Either<CoreFailure, Unit> = coroutineScope {
+        batch.map { user ->
+            async { resolveWithRetry(transactionContext, user) }
+        }
+    }.foldToEitherWhileRight(Unit) { item, _ ->
+        item.await()
+    }
+
+    private suspend fun resolveWithRetry(
+        transactionContext: CryptoTransactionContext,
+        user: OtherUser,
+        attempt: Int = 0,
+    ): Either<CoreFailure, Unit> {
+        return resolveOneOnOneConversationWithUser(
+            transactionContext = transactionContext,
+            user = user,
+            invalidateCurrentKnownProtocols = false
+        ).map { }.flatMapLeft { failure ->
+            if (failure.isThrottleFailure() && attempt < maxThrottleRetries) {
+                val nextAttempt = attempt + 1
+                val delayMs = throttleRetryDelayMs * nextAttempt
+                kaliumLogger.w(
+                    "Resolving one-on-one throttled for ${user.id.toLogString()}; " +
+                        "retrying ($nextAttempt/$maxThrottleRetries) in ${delayMs}ms."
+                )
+                delay(delayMs)
+                resolveWithRetry(transactionContext, user, nextAttempt)
+            } else {
+                handleBatchEntryFailure(failure)
+            }
+        }
+    }
+
+    private fun handleBatchEntryFailure(failure: CoreFailure) = when {
+        failure.isThrottleFailure() -> {
+            kaliumLogger.w("Resolving one-on-one failed due to throttling, propagating failure.")
+            Either.Left(failure)
+        }
+
+        failure is CoreFailure.MissingKeyPackages ||
+        failure is NetworkFailure.ServerMiscommunication ||
+        failure is NetworkFailure.FederatedBackendFailure ||
+        failure is CoreFailure.NoCommonProtocolFound ||
+        failure is MLSFailure -> {
+            kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
             Either.Right(Unit)
         }
 
         else -> {
-            kaliumLogger.e("Resolving one-on-one failed $it, retrying")
-            Either.Left(it)
+            kaliumLogger.e("Resolving one-on-one failed $failure, retrying")
+            Either.Left(failure)
         }
     }
+
+    private fun CoreFailure.isThrottleFailure(): Boolean =
+        this is NetworkFailure.ServerMiscommunication &&
+            (kaliumException as? KaliumException.InvalidRequestError)?.isTooManyRequests() == true
 
     private suspend fun fetchAllOtherUsersIfNeeded(synchronizeUsers: Boolean) = if (synchronizeUsers) {
         userRepository.fetchAllOtherUsers()
@@ -199,5 +239,11 @@ internal class OneOnOneResolverImpl(
                 SupportedProtocol.MLS -> oneOnOneMigrator.migrateToMLS(transactionContext, user)
             }
         })
+    }
+
+    private companion object {
+        const val DEFAULT_MAX_CONCURRENT_RESOLUTIONS = 4
+        const val DEFAULT_MAX_THROTTLE_RETRIES = 3
+        const val DEFAULT_THROTTLE_RETRY_DELAY_MS = 250L
     }
 }
