@@ -42,8 +42,8 @@ import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -112,10 +112,13 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
                 when {
                     httpResponse.status.isSuccess() ->
                         handleCryptoStateDownload(httpResponse, tempBackupFileSink)
+
                     httpResponse.status == HttpStatusCode.Unauthorized ->
-                        handleLabeledError(httpResponse, NetworkErrorLabel.USER_NOT_FOUND, 401)
+                        handleLabeledError(httpResponse, NetworkErrorLabel.USER_NOT_FOUND, UNAUTHORIZED_CODE)
+
                     httpResponse.status == HttpStatusCode.Forbidden ->
-                        handleLabeledError(httpResponse, NetworkErrorLabel.NO_CRYPTO_STATE, 403)
+                        handleLabeledError(httpResponse, NetworkErrorLabel.NO_CRYPTO_STATE, FORBIDDEN_CODE)
+
                     else -> handleUnsuccessfulResponse(httpResponse)
                 }
             }
@@ -248,5 +251,7 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         const val CRYPTO_ZIP_FILENAME = "CHANGELOG.zip"
         const val PATH_SEPARATOR = "/"
         const val API_NAME = "NomadDeviceSyncApiV0"
+        const val UNAUTHORIZED_CODE = 401
+        const val FORBIDDEN_CODE = 403
     }
 }
