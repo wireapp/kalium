@@ -19,21 +19,30 @@
 package com.wire.kalium.api.v0.nomaddevice
 
 import com.wire.kalium.api.ApiTest
+import com.wire.kalium.api.TEST_BACKEND_CONFIG
+import com.wire.kalium.api.json.model.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.nomaddevice.LastRead
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
+import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
+import com.wire.kalium.network.api.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v0.authenticated.NomadDeviceSyncApiV0
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.exceptions.APINotSupported
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isNoCryptoState
+import com.wire.kalium.network.exceptions.isUserNotFound
 import com.wire.kalium.network.kaliumLogger
+import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.ContentType
-import io.ktor.http.Headers
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.utils.io.ByteReadChannel
@@ -298,6 +307,98 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
         }
     }
 
+    @Test
+    fun givenSuccessfulResponse_whenDownloadingCryptoState_thenRequestIsGetToCorrectPathAndDataIsWrittenToSink() = runTest {
+        val responseContent = "crypto state binary content"
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = responseContent,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertPathEqual("/event/crypto/state")
+            }
+        )
+
+        val sink = Buffer()
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
+        val response = api.downloadCryptoState(sink)
+
+        assertTrue(response.isSuccessful())
+        assertEquals(responseContent, sink.readUtf8())
+    }
+
+    @Test
+    fun givenUnauthorizedWithUserNotFoundLabel_whenDownloadingCryptoState_thenReturnUserNotFoundError() = runTest {
+        val networkClient = mockNetworkClientWithTokenRefresh(
+            responseBody = """{"code":401,"label":"user_not_found","message":"user not found"}""",
+            statusCode = HttpStatusCode.Unauthorized
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
+        val response = api.downloadCryptoState(Buffer())
+
+        val error = assertIs<NetworkResponse.Error>(response)
+        val exception = assertIs<KaliumException.InvalidRequestError>(error.kException)
+        assertTrue(exception.isUserNotFound())
+    }
+
+    @Test
+    fun givenUnauthorizedWithoutMatchingLabel_whenDownloadingCryptoState_thenReturnGenericUnauthorizedError() = runTest {
+        val networkClient = mockNetworkClientWithTokenRefresh(
+            responseBody = """{"code":401,"label":"some-other-label","message":"unauthorized"}""",
+            statusCode = HttpStatusCode.Unauthorized
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
+        val response = api.downloadCryptoState(Buffer())
+
+        val error = assertIs<NetworkResponse.Error>(response)
+        assertIs<KaliumException.Unauthorized>(error.kException)
+    }
+
+    @Test
+    fun givenForbiddenWithNoCryptoStateLabel_whenDownloadingCryptoState_thenReturnNoCryptoStateError() = runTest {
+        val networkClient = mockNetworkClientWithTokenRefresh(
+            responseBody = """{"code":403,"label":"no_crypto_state","message":"no crypto state"}""",
+            statusCode = HttpStatusCode.Forbidden
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
+        val response = api.downloadCryptoState(Buffer())
+
+        val error = assertIs<NetworkResponse.Error>(response)
+        val exception = assertIs<KaliumException.InvalidRequestError>(error.kException)
+        assertTrue(exception.isNoCryptoState())
+    }
+
+    @Test
+    fun givenForbiddenWithoutMatchingLabel_whenDownloadingCryptoState_thenReturnGenericForbiddenError() = runTest {
+        val networkClient = mockNetworkClientWithTokenRefresh(
+            responseBody = """{"code":403,"label":"some-other-label","message":"forbidden"}""",
+            statusCode = HttpStatusCode.Forbidden
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
+        val response = api.downloadCryptoState(Buffer())
+
+        val error = assertIs<NetworkResponse.Error>(response)
+        val exception = assertIs<KaliumException.InvalidRequestError>(error.kException)
+        assertFalse(exception.isNoCryptoState())
+    }
+
+    @Test
+    fun givenServerError_whenDownloadingCryptoState_thenReturnError() = runTest {
+        val networkClient = mockNetworkClientWithTokenRefresh(
+            responseBody = """{"code":500,"label":"internal-server-error","message":"server error"}""",
+            statusCode = HttpStatusCode.InternalServerError
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
+        val response = api.downloadCryptoState(Buffer())
+
+        assertIs<NetworkResponse.Error>(response)
+    }
+
     private suspend fun assertShortCircuitedWithoutNetworkCall(
         expectedApiName: String,
         call: suspend (NomadDeviceSyncApi) -> NetworkResponse<*>
@@ -318,28 +419,43 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
         val exception = assertIs<APINotSupported>(error.kException)
         assertEquals(
             "NomadDeviceSyncApiV0.$expectedApiName requires a configured Nomad service URL. " +
-                "Request was short-circuited and no API call was made.",
+                    "Request was short-circuited and no API call was made.",
             exception.errorBody
         )
     }
 
-    private fun mockAuthenticatedNetworkClientWithoutContentType(
+    /**
+     * Creates a mock client where [TestSessionManagerV0.updateToken] returns a dummy session
+     * instead of throwing. This allows Ktor's bearer auth plugin to complete its token-refresh
+     * cycle when it intercepts a 4xx response, so the retry reaches our response-handling logic.
+     */
+    private fun mockNetworkClientWithTokenRefresh(
         responseBody: String,
         statusCode: HttpStatusCode,
-        assertion: suspend (io.ktor.client.request.HttpRequestData.() -> Unit) = {}
     ): AuthenticatedNetworkClient {
-        val mockEngine = MockEngine { request ->
-            request.assertion()
+        val mockEngine = MockEngine { _ ->
             respond(
                 content = ByteReadChannel(responseBody),
                 status = statusCode,
-                headers = Headers.Empty
+                headers = io.ktor.http.HeadersImpl(
+                    mapOf(io.ktor.http.HttpHeaders.ContentType to listOf("application/json"))
+                )
             )
         }
+        val sessionManager = object : SessionManager {
+            override suspend fun session(): SessionDTO = testCredentials
+            override fun serverConfig(): ServerConfigDTO = TEST_BACKEND_CONFIG
+            override fun nomadServiceUrl(): String? = null
+            override suspend fun updateToken(
+                accessTokenApi: AccessTokenApi,
+                oldRefreshToken: String?
+            ): SessionDTO = testCredentials
 
+            override fun proxyCredentials(): ProxyCredentialsDTO? = null
+        }
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
-            sessionManager = TEST_SESSION_MANAGER,
+            sessionManager = sessionManager,
             certificatePinning = emptyMap(),
             mockEngine = null,
             kaliumLogger = kaliumLogger,

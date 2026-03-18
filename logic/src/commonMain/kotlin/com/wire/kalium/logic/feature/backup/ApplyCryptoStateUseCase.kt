@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.util.SecurityHelper
@@ -38,14 +39,14 @@ import kotlin.coroutines.cancellation.CancellationException
  * This replaces the existing keystores with the ones from the backup and updates
  * the database passphrases in storage.
  */
-public interface ApplyCryptoStateUseCase {
+internal interface ApplyCryptoStateUseCase {
     /**
      * Applies the crypto state from the extracted backup.
      * @param extractResult The result from ExtractCryptoStateUseCase containing paths to extracted keystores
      * @return [ApplyCryptoStateResult.Success] if apply succeeded,
      * or [ApplyCryptoStateResult.Failure] if it failed.
      */
-    public suspend operator fun invoke(extractResult: ExtractCryptoStateResult.Success): ApplyCryptoStateResult
+    suspend operator fun invoke(extractResult: ExtractCryptoStateResult.Success): ApplyCryptoStateResult
 }
 
 internal class ApplyCryptoStateUseCaseImpl(
@@ -53,6 +54,7 @@ internal class ApplyCryptoStateUseCaseImpl(
     private val rootPathsProvider: RootPathsProvider,
     private val kaliumFileSystem: KaliumFileSystem,
     private val securityHelper: SecurityHelper,
+    private val clientRepository: ClientRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : ApplyCryptoStateUseCase {
 
@@ -82,6 +84,9 @@ internal class ApplyCryptoStateUseCaseImpl(
 
                 // Update database passphrases from backup metadata
                 updatePassphrases(extractResult.metadata)
+
+                // Mark the client as having registered for MLS
+                clientRepository.setHasRegisteredMLSClient()
 
                 kaliumLogger.i("$TAG: Successfully applied crypto state for clientId: ${clientId.obfuscateId()}")
                 ApplyCryptoStateResult.Success
@@ -118,14 +123,14 @@ internal class ApplyCryptoStateUseCaseImpl(
             return ApplyCryptoStateResult.Failure(StorageFailure.DataNotFound)
         }
 
-        // MLS path: $rootPath/${userId.domain}/${userId.value}/mls/${clientId}/keystore
+        // MLS path: $rootPath/${userId.domain}/${userId.value}/mls/${clientId}/keystore/keystore
         val mlsRootPath = rootPathsProvider.rootMLSPath(userId)
-        val mlsKeystoreDir = "$mlsRootPath/$clientId"
-        val mlsKeystorePath = "$mlsKeystoreDir/$KEYSTORE_NAME".toPath()
+        val mlsCoreCryptoRootDir = "$mlsRootPath/$clientId/$KEYSTORE_NAME"
+        val mlsKeystorePath = "$mlsCoreCryptoRootDir/$KEYSTORE_NAME".toPath()
 
         kaliumLogger.i("$TAG: Applying MLS keystore..")
 
-        FileUtil.mkDirs(mlsKeystoreDir)
+        FileUtil.mkDirs(mlsCoreCryptoRootDir)
 
         // Delete existing keystore files (main db + WAL files)
         deleteKeystoreFiles(mlsKeystorePath)

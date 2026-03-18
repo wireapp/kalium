@@ -34,14 +34,14 @@ import okio.use
 /**
  * Extracts the crypto state backup from a downloaded zip file.
  */
-public interface ExtractCryptoStateUseCase {
+internal interface ExtractCryptoStateUseCase {
     /**
      * Extracts the crypto state backup from the given zip file.
      * @param backupFilePath The path to the downloaded crypto state backup zip file.
      * @return [ExtractCryptoStateResult.Success] with the extracted data,
      * or [ExtractCryptoStateResult.Failure] if the extraction failed.
      */
-    public suspend operator fun invoke(backupFilePath: Path): ExtractCryptoStateResult
+    suspend operator fun invoke(backupFilePath: Path): ExtractCryptoStateResult
 }
 
 internal class ExtractCryptoStateUseCaseImpl(

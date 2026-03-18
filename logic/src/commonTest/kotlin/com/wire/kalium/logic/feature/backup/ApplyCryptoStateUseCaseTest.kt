@@ -19,7 +19,9 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.util.SecurityHelper
@@ -46,6 +48,7 @@ class ApplyCryptoStateUseCaseTest {
             .withSuccessfulFolderDeletion()
             .withSuccessfulFileCopy()
             .withSuccessfulDBPassphraseUpdate()
+            .withSuccessfulMLSClientRegistration()
             .arrange()
 
         val result = useCase.invoke(extractResult)
@@ -53,6 +56,9 @@ class ApplyCryptoStateUseCaseTest {
         assertEquals(ApplyCryptoStateResult.Success, result)
         verifySuspend(VerifyMode.exactly(2)) {
             arrangement.securityHelper.setDBPassphrase(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clientRepository.setHasRegisteredMLSClient()
         }
         // verify that cleanup is attempted
         verifySuspend(VerifyMode.exactly(1)) {
@@ -118,6 +124,7 @@ class ApplyCryptoStateUseCaseTest {
 
         val kaliumFileSystem = mock<KaliumFileSystem>()
         val securityHelper = mock<SecurityHelper>()
+        val clientRepository = mock<ClientRepository>()
 
         fun withExistingMLSKeystore(result: Boolean) = apply {
             everySuspend { kaliumFileSystem.exists(mlsKeystorePath) } returns result
@@ -143,6 +150,10 @@ class ApplyCryptoStateUseCaseTest {
             everySuspend { securityHelper.setDBPassphrase(any(), any()) } returns Unit
         }
 
+        fun withSuccessfulMLSClientRegistration() = apply {
+            everySuspend { clientRepository.setHasRegisteredMLSClient() } returns Either.Right(Unit)
+        }
+
         fun withFileExistingCheckReturning(result: Boolean) = apply {
             everySuspend { kaliumFileSystem.exists(any()) } returns result
         }
@@ -157,6 +168,7 @@ class ApplyCryptoStateUseCaseTest {
                 rootPathsProvider = FakeRootPathsProvider(),
                 kaliumFileSystem = kaliumFileSystem,
                 securityHelper = securityHelper,
+                clientRepository = clientRepository
             )
         }
     }
