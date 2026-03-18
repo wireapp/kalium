@@ -17,11 +17,14 @@
  */
 package com.wire.kalium.logic.data.backup
 
+import com.wire.kalium.common.error.BackupFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.any
 import io.mockative.coEvery
@@ -60,6 +63,40 @@ class CryptoStateBackupRemoteRepositoryTest {
 
         result.shouldFail { failure ->
             assertIs<NetworkFailure.ServerMiscommunication>(failure)
+        }
+        coVerify { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenApiReturnsUserNotFound_whenDownloadingCryptoState_thenReturnNoCryptoStateAvailable() = runTest {
+        val userNotFoundError = KaliumException.InvalidRequestError(
+            ErrorResponse(401, "user not found", "user_not_found")
+        )
+        val (arrangement, repository) = Arrangement()
+            .withDownloadCryptoState(NetworkResponse.Error(userNotFoundError))
+            .arrange()
+
+        val result = repository.downloadCryptoState(Buffer())
+
+        result.shouldFail { failure ->
+            assertIs<BackupFailure.NoCryptoStateAvailable>(failure)
+        }
+        coVerify { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenApiReturnsNoCryptoState_whenDownloadingCryptoState_thenReturnNoCryptoStateAvailable() = runTest {
+        val noCryptoStateError = KaliumException.InvalidRequestError(
+            ErrorResponse(403, "no crypto state", "no_crypto_state")
+        )
+        val (arrangement, repository) = Arrangement()
+            .withDownloadCryptoState(NetworkResponse.Error(noCryptoStateError))
+            .arrange()
+
+        val result = repository.downloadCryptoState(Buffer())
+
+        result.shouldFail { failure ->
+            assertIs<BackupFailure.NoCryptoStateAvailable>(failure)
         }
         coVerify { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }.wasInvoked(exactly = once)
     }

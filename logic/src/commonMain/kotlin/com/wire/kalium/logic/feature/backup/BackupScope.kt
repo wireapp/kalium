@@ -21,11 +21,13 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.RootPathsProvider
+import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.userstorage.di.UserStorage
@@ -36,6 +38,8 @@ public class BackupScope internal constructor(
     private val userId: UserId,
     private val clientIdProvider: CurrentClientIdProvider,
     private val userRepository: UserRepository,
+    private val clientRepository: ClientRepository,
+    private val upgradeCurrentSession: UpgradeCurrentSessionUseCase,
     private val kaliumFileSystem: KaliumFileSystem,
     private val userStorage: UserStorage,
     private val cryptoTransactionProvider: CryptoTransactionProvider,
@@ -43,6 +47,8 @@ public class BackupScope internal constructor(
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository,
     private val rootPathsProvider: RootPathsProvider,
 ) {
+    private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+
     public val create: CreateBackupUseCase
         get() = CreateBackupUseCaseImpl(
             userId,
@@ -50,7 +56,7 @@ public class BackupScope internal constructor(
             userRepository,
             kaliumFileSystem,
             userStorage.database.databaseExporter,
-            securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+            securityHelper = securityHelper
         )
 
     public val verify: VerifyBackupUseCase
@@ -103,9 +109,8 @@ public class BackupScope internal constructor(
             kaliumFileSystem = kaliumFileSystem,
         )
 
-    private val setLastDeviceId: SetLastDeviceIdUseCase
+    public val setLastDeviceId: SetLastDeviceIdUseCase
         get() = SetLastDeviceIdUseCaseImpl(
-            currentClientIdProvider = clientIdProvider,
             cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository,
         )
 
@@ -114,10 +119,11 @@ public class BackupScope internal constructor(
             userId = userId,
             rootPathsProvider = rootPathsProvider,
             kaliumFileSystem = kaliumFileSystem,
-            passphraseStorage = globalPreferences.passphraseStorage,
+            securityHelper = securityHelper,
+            clientRepository = clientRepository
         )
 
-    public val restoreCryptoFlow: RestoreCryptoStateUseCase
+    public val restoreCryptoState: RestoreCryptoStateUseCase
         get() = RestoreCryptoStateUseCaseImpl(
             downloadCryptoState = downloadCryptoState,
             extractCryptoState = extractCryptoState,

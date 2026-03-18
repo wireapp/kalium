@@ -16,12 +16,9 @@
  */
 package com.wire.kalium.logic.feature.backup
 
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -36,53 +33,34 @@ import kotlin.test.assertIs
 class SetLastDeviceIdUseCaseTest {
 
     @Test
-    fun givenClientIdFetchFails_whenInvoked_thenReturnFailure() = runTest {
-        val error = CoreFailure.Unknown(Exception("Client fetch failed"))
-        val arrangement = Arrangement()
-            .withCurrentClientIdProviderFailure(error)
-        val useCase = arrangement.useCase
-
-        val result = useCase()
-
-        assertIs<SetLastDeviceIdResult.Failure>(result)
-        assertEquals(error, result.error)
-    }
-
-    @Test
     fun givenRemoteRepositoryFails_whenInvoked_thenReturnFailure() = runTest {
         val clientId = "client-id-123"
         val error = NetworkFailure.NoNetworkConnection(Exception("Remote operation failed"))
         val arrangement = Arrangement()
-            .withCurrentClientIdProviderSuccess(clientId)
             .withSetLastDeviceIdFailure(error)
         val useCase = arrangement.useCase
 
-        val result = useCase()
+        val result = useCase(clientId)
 
         assertIs<SetLastDeviceIdResult.Failure>(result)
         assertEquals(error, result.error)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(
-                deviceId = clientId
-            )
+            arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(deviceId = clientId)
         }
     }
 
     @Test
-    fun givenValidClientIdAndRemoteRepositorySucceeds_whenInvoked_thenReturnSuccess() = runTest {
+    fun givenRemoteRepositorySucceeds_whenInvoked_thenReturnSuccess() = runTest {
         val clientId = "client-id-123"
         val arrangement = Arrangement()
-            .withCurrentClientIdProviderSuccess(clientId)
             .withSetLastDeviceIdSuccess()
         val useCase = arrangement.useCase
 
-        val result = useCase()
+        val result = useCase(clientId)
 
         assertIs<SetLastDeviceIdResult.Success>(result)
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(
-                deviceId = clientId
-            )
+            arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(deviceId = clientId)
         }
     }
 
@@ -90,41 +68,23 @@ class SetLastDeviceIdUseCaseTest {
     fun givenValidClientId_whenInvoked_thenRepositoryCalledWithCorrectParameters() = runTest {
         val clientId = "device-xyz"
         val arrangement = Arrangement()
-            .withCurrentClientIdProviderSuccess(clientId)
             .withSetLastDeviceIdSuccess()
         val useCase = arrangement.useCase
 
-        useCase()
+        useCase(clientId)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(
-                deviceId = clientId
-            )
+            arrangement.cryptoStateBackupRemoteRepository.setLastDeviceId(deviceId = clientId)
         }
     }
 
     private class Arrangement {
-        val currentClientIdProvider = mock<CurrentClientIdProvider>()
-
         val cryptoStateBackupRemoteRepository = mock<CryptoStateBackupRemoteRepository>()
 
         val useCase: SetLastDeviceIdUseCase by lazy {
             SetLastDeviceIdUseCaseImpl(
-                currentClientIdProvider = currentClientIdProvider,
                 cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository
             )
-        }
-
-        fun withCurrentClientIdProviderSuccess(clientId: String) = apply {
-            everySuspend {
-                currentClientIdProvider()
-            }.returns(Either.Right(ClientId(clientId)))
-        }
-
-        fun withCurrentClientIdProviderFailure(error: CoreFailure) = apply {
-            everySuspend {
-                currentClientIdProvider()
-            }.returns(Either.Left(error))
         }
 
         fun withSetLastDeviceIdSuccess() = apply {

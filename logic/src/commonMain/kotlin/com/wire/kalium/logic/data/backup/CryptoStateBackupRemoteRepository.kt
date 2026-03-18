@@ -18,10 +18,16 @@
 
 package com.wire.kalium.logic.data.backup
 
+import com.wire.kalium.common.error.BackupFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isNoCryptoState
+import com.wire.kalium.network.exceptions.isUserNotFound
 import io.mockative.Mockable
 import okio.Sink
 import okio.Source
@@ -29,7 +35,7 @@ import okio.Source
 @Mockable
 internal interface CryptoStateBackupRemoteRepository {
     suspend fun uploadCryptoState(clientId: String, sourceProvider: () -> Source, size: Long): Either<NetworkFailure, Unit>
-    suspend fun downloadCryptoState(tempBackupFileSink: Sink): Either<NetworkFailure, Unit>
+    suspend fun downloadCryptoState(tempBackupFileSink: Sink): Either<CoreFailure, Unit>
     suspend fun setLastDeviceId(deviceId: String): Either<NetworkFailure, Unit>
 }
 
@@ -43,8 +49,20 @@ internal class CryptoStateBackupRemoteDataSource(
     ): Either<NetworkFailure, Unit> =
         wrapApiRequest { nomadDeviceSyncApi.uploadCryptoState(clientId, sourceProvider, size) }
 
-    override suspend fun downloadCryptoState(tempBackupFileSink: Sink): Either<NetworkFailure, Unit> =
-        wrapApiRequest { nomadDeviceSyncApi.downloadCryptoState(tempBackupFileSink) }
+    override suspend fun downloadCryptoState(tempBackupFileSink: Sink): Either<CoreFailure, Unit> =
+        wrapApiRequest { nomadDeviceSyncApi.downloadCryptoState(tempBackupFileSink) }.fold(
+            { failure ->
+                val kaliumException = (failure as? NetworkFailure.ServerMiscommunication)?.kaliumException
+                if (kaliumException is KaliumException.InvalidRequestError &&
+                    (kaliumException.isUserNotFound() || kaliumException.isNoCryptoState())
+                ) {
+                    Either.Left(BackupFailure.NoCryptoStateAvailable)
+                } else {
+                    Either.Left(failure)
+                }
+            },
+            { Either.Right(it) }
+        )
 
     override suspend fun setLastDeviceId(deviceId: String): Either<NetworkFailure, Unit> =
         wrapApiRequest { nomadDeviceSyncApi.setLastDeviceId(deviceId) }

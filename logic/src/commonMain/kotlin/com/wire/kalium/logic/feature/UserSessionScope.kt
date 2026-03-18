@@ -1113,12 +1113,14 @@ public class UserSessionScope internal constructor(
             userId = userId,
             clientIdProvider = clientIdProvider,
             userRepository = userRepository,
+            clientRepository = clientRepository,
             kaliumFileSystem = kaliumFileSystem,
             userStorage = userStorage,
             cryptoTransactionProvider = cryptoTransactionProvider,
             globalPreferences = globalPreferences,
             cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository,
             rootPathsProvider = rootPathsProvider,
+            upgradeCurrentSession = upgradeCurrentSessionUseCase,
         )
 
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository

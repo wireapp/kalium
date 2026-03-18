@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.kalium.common.error.BackupFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.fold
@@ -62,8 +63,13 @@ internal class DownloadCryptoStateUseCaseImpl(
                     { error ->
                         kaliumLogger.e("$TAG Failed to download crypto state backup: $error")
                         kaliumFileSystem.delete(backupFilePath)
-                        // TODO handle no nomad device case and return NoBackupAvailable instead of Failure
-                        DownloadCryptoStateResult.Failure(error)
+                        when (error) {
+                            is BackupFailure.NoCryptoStateAvailable -> {
+                                kaliumLogger.i("$TAG No crypto state backup available on Nomad service")
+                                DownloadCryptoStateResult.NoBackupAvailable
+                            }
+                            else -> DownloadCryptoStateResult.Failure(error)
+                        }
                     },
                     {
                         validateDownloadedFile(backupFilePath, backupFileName)

@@ -17,6 +17,12 @@
  */
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
+
 public interface RestoreCryptoStateUseCase {
 
     /**
@@ -34,33 +40,77 @@ internal class RestoreCryptoStateUseCaseImpl(
     private val extractCryptoState: ExtractCryptoStateUseCase,
     private val setLastDeviceId: SetLastDeviceIdUseCase,
     private val applyCryptoState: ApplyCryptoStateUseCase,
+    private val clientRepository: ClientRepository,
+    private val upgradeCurrentSession: UpgradeCurrentSessionUseCase,
 ) : RestoreCryptoStateUseCase {
+
     override suspend fun invoke(): RestoreCryptoStateResult {
-        when (val downloadResult = downloadCryptoState()) {
-            is DownloadCryptoStateResult.Success -> {
-                val backupFilePath = downloadResult.backupFilePath
-
-                when (val extractResult = extractCryptoState(backupFilePath)) {
-                    is ExtractCryptoStateResult.Success -> {
-                        return when (applyCryptoState(extractResult)) {
-                            is ApplyCryptoStateResult.Success -> {
-                                when (setLastDeviceId()) {
-                                    is SetLastDeviceIdResult.Success -> RestoreCryptoStateResult.Success
-                                    is SetLastDeviceIdResult.Failure -> RestoreCryptoStateResult.Failure
-                                }
-                            }
-
-                            is ApplyCryptoStateResult.Failure -> RestoreCryptoStateResult.Failure
-                        }
-                    }
-
-                    is ExtractCryptoStateResult.Failure -> return RestoreCryptoStateResult.Failure
-                }
-            }
-
-            DownloadCryptoStateResult.NoBackupAvailable -> return RestoreCryptoStateResult.NoBackupAvailable
-            is DownloadCryptoStateResult.Failure -> return RestoreCryptoStateResult.Failure
+        val downloadResult = downloadCryptoState()
+        if (downloadResult is DownloadCryptoStateResult.NoBackupAvailable) {
+            kaliumLogger.i("$TAG No crypto state backup available to restore")
+            return RestoreCryptoStateResult.NoBackupAvailable
         }
+        if (downloadResult is DownloadCryptoStateResult.Failure) {
+            kaliumLogger.e("$TAG Failed to download crypto state backup")
+            return RestoreCryptoStateResult.Failure
+        }
+
+        val backupFilePath = (downloadResult as DownloadCryptoStateResult.Success).backupFilePath
+
+        val extractResult = extractCryptoState(backupFilePath)
+        if (extractResult is ExtractCryptoStateResult.Failure) {
+            kaliumLogger.e("$TAG Failed to extract crypto state backup")
+            return RestoreCryptoStateResult.Failure
+        }
+
+        val extractSuccess = extractResult as ExtractCryptoStateResult.Success
+
+        if (applyCryptoState(extractSuccess) is ApplyCryptoStateResult.Failure) {
+            kaliumLogger.e("$TAG Failed to apply crypto state backup")
+            return RestoreCryptoStateResult.Failure
+        }
+
+        if (setLastDeviceId(extractSuccess.metadata.clientId) is SetLastDeviceIdResult.Failure) {
+            kaliumLogger.e("$TAG Failed to set last device ID after restoring crypto state")
+            return RestoreCryptoStateResult.Failure
+        }
+
+        kaliumLogger.i("$TAG Last device ID set successfully after restoring crypto state")
+        return upgradeSession(extractSuccess.metadata.clientId)
+    }
+
+    private suspend fun upgradeSession(clientId: String): RestoreCryptoStateResult {
+        val clientsResult = clientRepository.selfListOfClients()
+        if (clientsResult is Either.Left) {
+            kaliumLogger.e("$TAG Failed to fetch client list from backend")
+            return RestoreCryptoStateResult.Failure
+        }
+
+        val clients = (clientsResult as Either.Right).value
+        val restoredClient = clients.find { it.id.value == clientId }
+        if (restoredClient == null) {
+            kaliumLogger.e("$TAG Restored client ID not found in backend client list")
+            return RestoreCryptoStateResult.Failure
+        }
+
+        val upgradeResult = upgradeCurrentSession(restoredClient.id)
+            .flatMap { clientRepository.persistClientId(restoredClient.id) }
+            .flatMap { clientRepository.persistClientHasConsumableNotifications(restoredClient.isAsyncNotificationsCapable) }
+
+        return when (upgradeResult) {
+            is Either.Right -> {
+                kaliumLogger.i("$TAG Current session upgraded successfully")
+                RestoreCryptoStateResult.Success
+            }
+            is Either.Left -> {
+                kaliumLogger.e("$TAG Failed to upgrade current session after restoring crypto state")
+                RestoreCryptoStateResult.Failure
+            }
+        }
+    }
+
+    companion object {
+        const val TAG = "[RestoreCryptoStateUseCase]"
     }
 }
 
