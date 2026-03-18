@@ -160,6 +160,11 @@ internal interface MLSConversationRepository : MLSMemberAdder {
 
     suspend fun hasEstablishedMLSGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<MLSFailure, Boolean>
 
+    suspend fun getLocalGroupEpoch(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID
+    ): Either<CoreFailure, ULong>
+
     suspend fun removeMembersFromMLSGroup(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID,
@@ -355,6 +360,13 @@ internal class MLSConversationDataSource(
         groupID: GroupID
     ): Either<MLSFailure, Boolean> = wrapMLSRequest {
         mlsContext.conversationExists(idMapper.toCryptoModel(groupID))
+    }
+
+    override suspend fun getLocalGroupEpoch(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID
+    ): Either<CoreFailure, ULong> = wrapMLSRequest {
+        mlsContext.conversationEpoch(idMapper.toCryptoModel(groupID))
     }
 
     override suspend fun joinGroupByExternalCommit(
