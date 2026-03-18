@@ -20,11 +20,13 @@ package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.nomaddevice.NomadAuthenticatedNetworkAccess
 import com.wire.kalium.nomaddevice.SyncNomadAllMessagesUseCase
+import com.wire.kalium.nomaddevice.SyncNomadConversationMetadataUseCase
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.userstorage.di.UserStorageProvider
 
@@ -49,16 +51,31 @@ internal class SyncNomadMessagesDuringSlowSyncUseCaseImpl(
 
     override fun isEnabled(): Boolean = !nomadServiceUrl.isNullOrBlank()
 
-    override suspend fun invoke(): Either<CoreFailure, Unit> =
-        SyncNomadAllMessagesUseCase(
+    override suspend fun invoke(): Either<CoreFailure, Unit> {
+        val nomadAuthenticatedNetworkAccess = NomadAuthenticatedNetworkAccess(userAuthenticatedNetworkProvider)
+
+        return SyncNomadConversationMetadataUseCase(
             userStorageProvider = userStorageProvider,
-            nomadAuthenticatedNetworkAccess = NomadAuthenticatedNetworkAccess(userAuthenticatedNetworkProvider)
-        )(selfUserId).map { result ->
+            nomadAuthenticatedNetworkAccess = nomadAuthenticatedNetworkAccess
+        )(selfUserId).flatMap { metadataResult ->
             logger.i(
-                "Nomad all-messages slow sync finished for ${selfUserId.toLogString()}: " +
-                    "downloaded=${result.downloadedMessages}, stored=${result.storedMessages}, " +
-                    "skipped=${result.skippedMessages}, batches=${result.batches}"
+                "Nomad conversation-metadata slow sync finished for ${selfUserId.toLogString()}: " +
+                    "downloaded=${metadataResult.downloadedConversations}, " +
+                    "updated=${metadataResult.updatedConversations}, " +
+                    "skipped=${metadataResult.skippedConversations}"
             )
-            Unit
+
+            SyncNomadAllMessagesUseCase(
+                userStorageProvider = userStorageProvider,
+                nomadAuthenticatedNetworkAccess = nomadAuthenticatedNetworkAccess
+            )(selfUserId).map { result ->
+                logger.i(
+                    "Nomad all-messages slow sync finished for ${selfUserId.toLogString()}: " +
+                        "downloaded=${result.downloadedMessages}, stored=${result.storedMessages}, " +
+                        "skipped=${result.skippedMessages}, batches=${result.batches}"
+                )
+                Unit
+            }
         }
+    }
 }
