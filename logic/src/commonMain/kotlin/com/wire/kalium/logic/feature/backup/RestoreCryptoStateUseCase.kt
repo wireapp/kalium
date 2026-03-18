@@ -44,6 +44,7 @@ internal class RestoreCryptoStateUseCaseImpl(
     private val upgradeCurrentSession: UpgradeCurrentSessionUseCase,
 ) : RestoreCryptoStateUseCase {
 
+    @Suppress("ReturnCount")
     override suspend fun invoke(): RestoreCryptoStateResult {
         val downloadResult = downloadCryptoState()
         if (downloadResult is DownloadCryptoStateResult.NoBackupAvailable) {
@@ -79,6 +80,7 @@ internal class RestoreCryptoStateUseCaseImpl(
         return upgradeSession(extractSuccess.metadata.clientId)
     }
 
+    @Suppress("ReturnCount")
     private suspend fun upgradeSession(clientId: String): RestoreCryptoStateResult {
         val clientsResult = clientRepository.selfListOfClients()
         if (clientsResult is Either.Left) {
@@ -102,6 +104,7 @@ internal class RestoreCryptoStateUseCaseImpl(
                 kaliumLogger.i("$TAG Current session upgraded successfully")
                 RestoreCryptoStateResult.Success
             }
+
             is Either.Left -> {
                 kaliumLogger.e("$TAG Failed to upgrade current session after restoring crypto state")
                 RestoreCryptoStateResult.Failure
