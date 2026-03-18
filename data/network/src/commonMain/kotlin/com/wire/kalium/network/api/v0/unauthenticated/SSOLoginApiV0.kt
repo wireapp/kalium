@@ -50,7 +50,7 @@ internal open class SSOLoginApiV0 internal constructor(
     private val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
 ) : SSOLoginApi {
 
-    private val httpClient get() = unauthenticatedNetworkClient.httpClient
+    protected val httpClient get() = unauthenticatedNetworkClient.httpClient
 
     override suspend fun initiate(param: InitiateParam): NetworkResponse<String> = HttpRequestBuilder().apply {
         url.appendPathSegments(PATH_SSO, PATH_INITIATE, param.uuid)
@@ -109,7 +109,7 @@ internal open class SSOLoginApiV0 internal constructor(
         httpClient.get("$PATH_SSO/$PATH_SETTINGS")
     }
 
-    private companion object {
+    protected companion object {
         const val PATH_SSO = "sso"
         const val PATH_INITIATE = "initiate-login"
         const val PATH_FINALIZE = "finalize-login"

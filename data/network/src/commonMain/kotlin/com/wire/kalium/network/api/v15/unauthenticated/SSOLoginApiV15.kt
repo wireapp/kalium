@@ -23,7 +23,7 @@ import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.v14.unauthenticated.SSOLoginApiV14
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.head
@@ -45,7 +45,7 @@ internal open class SSOLoginApiV15 internal constructor(
     }.let { httpRequestBuilder ->
         val httpRequest = httpClient.head(httpRequestBuilder)
         val url = httpRequest.call.request.url.toString()
-        wrapKaliumResponse<Any> { httpRequest }.mapSuccess {
+        wrapRequest<String> { httpRequest }.mapSuccess {
             url
         }
     }
