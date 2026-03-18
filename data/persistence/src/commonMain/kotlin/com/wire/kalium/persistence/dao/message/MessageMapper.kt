@@ -175,7 +175,8 @@ object MessageMapper {
 
                     MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION,
                     MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD,
-                    MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN -> {
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN,
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD_MISSING_KEY_PACKAGES -> {
                         MessagePreviewEntityContent.MembersFailedToAdded(
                             senderName = senderName,
                             isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
