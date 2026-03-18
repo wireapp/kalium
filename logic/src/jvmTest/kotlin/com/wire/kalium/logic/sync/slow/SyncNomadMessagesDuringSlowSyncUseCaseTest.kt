@@ -139,6 +139,51 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
         }
     }
 
+    @Test
+    fun givenMetadataFailure_whenInvoking_thenStillAttemptMessageSync() = runTest {
+        val arrangement = Arrangement(
+            nomadServiceUrl = "https://nomad.example.com",
+            metadataResponse = NetworkResponse.Error(TestNetworkException.generic),
+            apiResponse = NetworkResponse.Success(
+                NomadAllMessagesResponse(
+                    conversations = listOf(
+                        NomadConversationWithMessages(
+                            conversation = Conversation(id = CONVERSATION_ID, domain = CONVERSATION_DOMAIN),
+                            messages = listOf(
+                                nomadStoredMessage(
+                                    messageId = "msg-1",
+                                    sender = SENDER_USER_ID,
+                                    text = "hello from nomad"
+                                )
+                            )
+                        )
+                    )
+                ),
+                emptyMap(),
+                200
+            )
+        )
+
+        try {
+            val result = arrangement.useCase()
+
+            assertIs<Either.Right<Unit>>(result)
+            assertEquals(
+                listOf("getConversationMetadata", "getAllMessages"),
+                arrangement.nomadApi.calls
+            )
+
+            val storedMessage = arrangement.database().messageDAO.getMessageById(
+                id = "msg-1",
+                conversationId = qid(CONVERSATION_ID)
+            )
+            val content = assertIs<MessageEntityContent.Text>(assertNotNull(storedMessage).content)
+            assertEquals("hello from nomad", content.messageBody)
+        } finally {
+            arrangement.cleanup()
+        }
+    }
+
     private fun newUseCase(
         nomadServiceUrl: String?,
     ): SyncNomadMessagesDuringSlowSyncUseCaseImpl = SyncNomadMessagesDuringSlowSyncUseCaseImpl(

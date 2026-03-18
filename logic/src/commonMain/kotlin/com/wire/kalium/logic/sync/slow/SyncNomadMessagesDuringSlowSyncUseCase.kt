@@ -20,8 +20,6 @@ package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.nomaddevice.NomadAuthenticatedNetworkAccess
@@ -53,28 +51,40 @@ internal class SyncNomadMessagesDuringSlowSyncUseCaseImpl(
 
     override suspend fun invoke(): Either<CoreFailure, Unit> {
         val nomadAuthenticatedNetworkAccess = NomadAuthenticatedNetworkAccess(userAuthenticatedNetworkProvider)
-
-        return SyncNomadConversationMetadataUseCase(
+        val metadataResult = SyncNomadConversationMetadataUseCase(
             userStorageProvider = userStorageProvider,
             nomadAuthenticatedNetworkAccess = nomadAuthenticatedNetworkAccess
-        )(selfUserId).flatMap { metadataResult ->
-            logger.i(
-                "Nomad conversation-metadata slow sync finished for ${selfUserId.toLogString()}: " +
-                    "downloaded=${metadataResult.downloadedConversations}, " +
-                    "updated=${metadataResult.updatedConversations}, " +
-                    "skipped=${metadataResult.skippedConversations}"
-            )
+        )(selfUserId)
 
-            SyncNomadAllMessagesUseCase(
-                userStorageProvider = userStorageProvider,
-                nomadAuthenticatedNetworkAccess = nomadAuthenticatedNetworkAccess
-            )(selfUserId).map { result ->
+        when (metadataResult) {
+            is Either.Left -> logger.w(
+                "Nomad conversation-metadata slow sync failed for ${selfUserId.toLogString()}: ${metadataResult.value}"
+            )
+            is Either.Right ->
+                logger.i(
+                    "Nomad conversation-metadata slow sync finished for ${selfUserId.toLogString()}: " +
+                        "downloaded=${metadataResult.value.downloadedConversations}, " +
+                        "updated=${metadataResult.value.updatedConversations}, " +
+                        "skipped=${metadataResult.value.skippedConversations}"
+                )
+        }
+
+        val messagesResult = SyncNomadAllMessagesUseCase(
+            userStorageProvider = userStorageProvider,
+            nomadAuthenticatedNetworkAccess = nomadAuthenticatedNetworkAccess
+        )(selfUserId)
+
+        return when (messagesResult) {
+            is Either.Left -> messagesResult
+            is Either.Right -> {
                 logger.i(
                     "Nomad all-messages slow sync finished for ${selfUserId.toLogString()}: " +
-                        "downloaded=${result.downloadedMessages}, stored=${result.storedMessages}, " +
-                        "skipped=${result.skippedMessages}, batches=${result.batches}"
+                        "downloaded=${messagesResult.value.downloadedMessages}, " +
+                        "stored=${messagesResult.value.storedMessages}, " +
+                        "skipped=${messagesResult.value.skippedMessages}, " +
+                        "batches=${messagesResult.value.batches}"
                 )
-                Unit
+                Either.Right(Unit)
             }
         }
     }
