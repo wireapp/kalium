@@ -17,6 +17,9 @@
  */
 package com.wire.kalium.persistence.dao.message.draft
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageDraftsQueries
@@ -42,7 +45,7 @@ class MessageDraftDAOImpl internal constructor(
     override suspend fun upsertMessageDraft(messageDraft: MessageDraftEntity) =
         withContext(writeDispatcher.value) {
             val conversationExists = conversationsQueries.selectConversationByQualifiedId(messageDraft.conversationId)
-                .executeAsOneOrNull() != null
+                .awaitAsOneOrNull() != null
 
             if (!conversationExists) {
                 return@withContext
@@ -50,7 +53,7 @@ class MessageDraftDAOImpl internal constructor(
 
             if (messageDraft.editMessageId != null) {
                 val messageExists = messagesQueries.getMessage(messageDraft.editMessageId, messageDraft.conversationId)
-                    .executeAsOneOrNull() != null
+                    .awaitAsOneOrNull() != null
                 if (!messageExists) {
                     return@withContext
                 }
@@ -58,7 +61,7 @@ class MessageDraftDAOImpl internal constructor(
 
             if (messageDraft.quotedMessageId != null) {
                 val quotedMessageExists = messagesQueries.getMessage(messageDraft.quotedMessageId, messageDraft.conversationId)
-                    .executeAsOneOrNull() != null
+                    .awaitAsOneOrNull() != null
                 if (!quotedMessageExists) {
                     return@withContext
                 }
@@ -72,7 +75,7 @@ class MessageDraftDAOImpl internal constructor(
                     quoted_message_id = messageDraft.quotedMessageId,
                     mention_list = messageDraft.selectedMentionList
                 )
-                val changes = queries.selectChanges().executeAsOne()
+                val changes = queries.selectChanges().awaitAsOne()
                 if (changes == 0L) {
                     // rollback the transaction if no changes were made so that it doesn't notify other queries about changes if not needed
                     this.rollback()
@@ -82,7 +85,7 @@ class MessageDraftDAOImpl internal constructor(
 
     override suspend fun getMessageDraft(conversationIDEntity: ConversationIDEntity): MessageDraftEntity? =
         withContext(coroutineContext) {
-            queries.getDraft(conversationIDEntity, ::toDao).executeAsOneOrNull()
+            queries.getDraft(conversationIDEntity, ::toDao).awaitAsOneOrNull()
         }
 
     override suspend fun removeMessageDraft(conversationIDEntity: ConversationIDEntity) {

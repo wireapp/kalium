@@ -18,6 +18,10 @@
 
 package com.wire.kalium.persistence.dao.client
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ClientsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -81,7 +85,7 @@ internal class ClientDAOImpl internal constructor(
     override suspend fun insertClient(client: InsertClientParam): Unit = withContext(writeDispatcher.value) {
         clientsQueries.transaction {
             insert(client)
-            val changes = clientsQueries.selectChanges().executeAsOne()
+            val changes = clientsQueries.selectChanges().awaitAsOne()
             if (changes == 0L) {
                 // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
                 this.rollback()
@@ -90,7 +94,7 @@ internal class ClientDAOImpl internal constructor(
     }
 
     // returns true if any row has been inserted or modified, false if exactly the same data already exists
-    private fun insert(client: InsertClientParam): Boolean = with(client) {
+    private suspend fun insert(client: InsertClientParam): Boolean = with(client) {
         clientsQueries.insertClient(
             user_id = userId,
             id = id,
@@ -105,7 +109,7 @@ internal class ClientDAOImpl internal constructor(
             mls_public_keys = mlsPublicKeys,
             is_async_notifications_capable = isAsyncNotificationsCapable
         )
-        clientsQueries.selectChanges().executeAsOne() > 0
+        clientsQueries.selectChanges().awaitAsOne() > 0
     }
 
     override suspend fun insertClients(clients: List<InsertClientParam>) = withContext(writeDispatcher.value) {
@@ -127,7 +131,7 @@ internal class ClientDAOImpl internal constructor(
                 val clients = it.value
                 clientsQueries.deeteCliuentsOfUser(userId, clients)
             }
-            clientsQueries.usersWithNotClients(redundantClientsOfUsers.keys).executeAsList()
+            clientsQueries.usersWithNotClients(redundantClientsOfUsers.keys).awaitAsList()
         }
     }
 
@@ -136,7 +140,7 @@ internal class ClientDAOImpl internal constructor(
             clients.groupBy { it.userId }.forEach { (userId, clientsList) ->
                 val anyInsertedOrModified = clientsList.map { client -> insert(client) }.any { it }
                 clientsQueries.deleteClientsOfUserExcept(userId, clientsList.map { it.id })
-                val anyDeleted = clientsQueries.selectChanges().executeAsOne() > 0
+                val anyDeleted = clientsQueries.selectChanges().awaitAsOne() > 0
                 if (!anyInsertedOrModified && !anyDeleted) {
                     // rollback the transaction if no changes were made so that it doesn't notify other queries if not needed
                     this.rollback()
@@ -172,20 +176,20 @@ internal class ClientDAOImpl internal constructor(
         userIds: Set<QualifiedIDEntity>
     ): Map<QualifiedIDEntity, List<Client>> = withContext(readDispatcher.value) {
         clientsQueries.selectRecipientsByConversationAndUserId(conversationId, userIds, mapper::fromClient)
-            .executeAsList()
+            .awaitAsList()
             .groupBy { it.userId }
     }
 
     // TODO(MO): instead of selecting as list and then grouping, do the grouping in SQL directly
     override suspend fun selectAllClients(): Map<QualifiedIDEntity, List<Client>> = withContext(readDispatcher.value) {
         clientsQueries.selectAllClients(mapper::fromClient)
-            .executeAsList()
+            .awaitAsList()
             .groupBy { it.userId }
     }
 
     override suspend fun isMLSCapable(userId: QualifiedIDEntity, clientId: String): Boolean? = withContext(readDispatcher.value) {
         clientsQueries.isClientMLSCapable(userId, clientId)
-            .executeAsOneOrNull()
+            .awaitAsOneOrNull()
     }
 
     override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
@@ -196,7 +200,7 @@ internal class ClientDAOImpl internal constructor(
 
     override suspend fun getClientsOfUserByQualifiedID(qualifiedID: QualifiedIDEntity): List<Client> = withContext(readDispatcher.value) {
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper = mapper::fromClient)
-            .executeAsList()
+            .awaitAsList()
     }
 
     override suspend fun observeClientsByUserId(qualifiedID: QualifiedIDEntity): Flow<List<Client>> = withContext(readDispatcher.value) {
@@ -210,7 +214,7 @@ internal class ClientDAOImpl internal constructor(
         ids: List<QualifiedIDEntity>
     ): Map<QualifiedIDEntity, List<Client>> = withContext(readDispatcher.value) {
         clientsQueries.selectAllClientsByUserIdList(ids, mapper = mapper::fromClient)
-            .executeAsList()
+            .awaitAsList()
             .groupBy { it.userId }
     }
 
@@ -230,14 +234,14 @@ internal class ClientDAOImpl internal constructor(
     override suspend fun getClientsOfConversation(id: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =
         withContext(readDispatcher.value) {
             clientsQueries.selectAllClientsByConversation(id, mapper = mapper::fromClient)
-                .executeAsList()
+                .awaitAsList()
                 .groupBy { it.userId }
         }
 
     override suspend fun conversationRecipient(ids: QualifiedIDEntity): Map<QualifiedIDEntity, List<Client>> =
         withContext(readDispatcher.value) {
             clientsQueries.conversationRecipets(ids, mapper = mapper::fromClient)
-                .executeAsList()
+                .awaitAsList()
                 .groupBy { it.userId }
         }
 }

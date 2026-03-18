@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.async.coroutines.synchronous
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
@@ -28,7 +29,7 @@ actual fun globalDatabaseProvider(
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean
 ): GlobalDatabaseBuilder {
-    val schema = GlobalDatabase.Schema
+    val schema = GlobalDatabase.Schema.synchronous()
     val dbName = FileNameUtil.globalDBName()
     val driver = databaseDriver(
         platformDatabaseData.context,

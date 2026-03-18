@@ -18,6 +18,10 @@
 
 package com.wire.kalium.persistence.daokaliumdb
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ServerConfigurationQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -128,7 +132,7 @@ interface ServerConfigurationDAO {
     suspend fun insert(insertData: InsertData)
     suspend fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     suspend fun allConfig(): List<ServerConfigEntity>
-    fun configById(id: String): ServerConfigEntity?
+    suspend fun configById(id: String): ServerConfigEntity?
     suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
     suspend fun getCommonApiVersion(domain: String): Int
     suspend fun updateServerMetaData(id: String, federation: Boolean, commonApiVersion: Int)
@@ -208,11 +212,12 @@ internal class ServerConfigurationDAOImpl internal constructor(
             .flowOn(queriesContext)
 
     override suspend fun allConfig(): List<ServerConfigEntity> = withContext(queriesContext) {
-        queries.storedConfig(mapper = mapper::fromServerConfiguration).executeAsList()
+        queries.storedConfig(mapper = mapper::fromServerConfiguration).awaitAsList()
     }
 
-    override fun configById(id: String): ServerConfigEntity? =
-        queries.getById(id, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
+    override suspend fun configById(id: String): ServerConfigEntity? = withContext(queriesContext) {
+        queries.getById(id, mapper = mapper::fromServerConfiguration).awaitAsOneOrNull()
+    }
 
     override suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity? = withContext(queriesContext) {
         with(links) {
@@ -224,7 +229,7 @@ internal class ServerConfigurationDAOImpl internal constructor(
                 api_proxy_port = apiProxy?.port,
                 mapper = mapper::fromServerConfiguration
             )
-        }.executeAsOneOrNull()
+        }.awaitAsOneOrNull()
     }
 
     override suspend fun updateServerMetaData(id: String, federation: Boolean, commonApiVersion: Int) {
@@ -234,7 +239,7 @@ internal class ServerConfigurationDAOImpl internal constructor(
     }
 
     override suspend fun getCommonApiVersion(domain: String): Int = withContext(queriesContext) {
-        queries.getCommonApiVersionByDomain(domain).executeAsOne()
+        queries.getCommonApiVersionByDomain(domain).awaitAsOne()
     }
 
     override suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int) {
@@ -244,7 +249,7 @@ internal class ServerConfigurationDAOImpl internal constructor(
     }
 
     override suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity? = withContext(queriesContext) {
-        queries.getByUser(userId, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
+        queries.getByUser(userId, mapper = mapper::fromServerConfiguration).awaitAsOneOrNull()
     }
 
     override suspend fun setNativePushSupportedByServer(userId: UserIDEntity, supported: Boolean) {
@@ -254,7 +259,7 @@ internal class ServerConfigurationDAOImpl internal constructor(
     }
 
     override suspend fun isNativePushSupportedByServer(userId: UserIDEntity): Boolean? = withContext(queriesContext) {
-        queries.isNativePushSupportedByServer(userId).executeAsOneOrNull()
+        queries.isNativePushSupportedByServer(userId).awaitAsOneOrNull()
     }
 
     override suspend fun setFederationToTrue(id: String) {
@@ -276,7 +281,7 @@ internal class ServerConfigurationDAOImpl internal constructor(
     }
 
     override suspend fun teamUrlForUser(userId: UserIDEntity): String? = withContext(queriesContext) {
-        queries.getTeamUrlByUser(userId).executeAsOneOrNull()
+        queries.getTeamUrlByUser(userId).awaitAsOneOrNull()
     }
 
     override suspend fun getServerConfigByLinksFlow(links: ServerConfigEntity.Links): Flow<ServerConfigEntity?> =

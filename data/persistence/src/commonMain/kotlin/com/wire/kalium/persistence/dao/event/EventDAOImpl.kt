@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.dao.event
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.EventsQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -83,7 +85,7 @@ class EventDAOImpl(
     override suspend fun getEventById(id: String): EventEntity? {
         return withContext(readDispatcher.value) {
             eventsQueries.getById(id, ::mapEvent)
-                .executeAsOneOrNull()
+                .awaitAsOneOrNull()
         }
     }
 

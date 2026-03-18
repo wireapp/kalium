@@ -34,26 +34,56 @@ actual fun userDatabaseBuilder(
     dispatcher: CoroutineDispatcher,
     enableWAL: Boolean,
     dbInvalidationControlEnabled: Boolean
-): UserDatabaseBuilder = TODO("Not yet implemented")
+): UserDatabaseBuilder {
+    val rawDriver = createKaliumWebWorkerDriver()
+    val invalidationController = DbInvalidationController(
+        enabled = dbInvalidationControlEnabled,
+        notifyKey = { key -> rawDriver.notifyListeners(key) }
+    )
+    val driver: SqlDriver = MutedSqlDriver(
+        delegate = rawDriver,
+        invalidationController = invalidationController
+    )
+    return UserDatabaseBuilder(
+        userId = userId,
+        sqlDriver = driver,
+        dispatcher = dispatcher,
+        platformDatabaseData = platformDatabaseData,
+        isEncrypted = false,
+        dbInvalidationController = invalidationController
+    )
+}
 
 actual fun userDatabaseDriverByPath(
     platformDatabaseData: PlatformDatabaseData,
     path: String,
     passphrase: UserDBSecret?,
     enableWAL: Boolean
-): SqlDriver = TODO()
+): SqlDriver {
+    // TODO: Honor the requested JS database identity instead of ignoring path; the current worker driver setup always opens an anonymous DB.
+    return createKaliumWebWorkerDriver()
+}
 
 internal actual fun nuke(
     userId: UserIDEntity,
     platformDatabaseData: PlatformDatabaseData
-): Boolean = TODO()
+): Boolean {
+    // TODO: Implement real JS database deletion once the worker driver uses a stable persisted storage key.
+    return true
+}
 
 internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity
-): String? = TODO()
+): String? {
+    // TODO: Replace this file-path contract for JS with a storage-capability API; browser-backed DBs do not expose absolute paths.
+    return null
+}
 
 internal actual fun createEmptyDatabaseFile(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
-): String? = TODO()
+): String? {
+    // TODO: Implement a JS-compatible export target flow instead of relying on native temporary database file creation.
+    return null
+}

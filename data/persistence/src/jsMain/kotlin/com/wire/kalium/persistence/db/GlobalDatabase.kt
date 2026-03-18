@@ -25,10 +25,14 @@ actual fun globalDatabaseProvider(
     queriesContext: CoroutineDispatcher,
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean
-): GlobalDatabaseBuilder {
-    TODO("Not yet implemented")
-}
+): GlobalDatabaseBuilder =
+    GlobalDatabaseBuilder(
+        sqlDriver = createKaliumWebWorkerDriver(),
+        platformDatabaseData = platformDatabaseData,
+        queriesContext = queriesContext
+    )
 
 actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
-    TODO("Not yet implemented")
+    // TODO: Implement real JS global database deletion once the worker driver uses a stable persisted storage key.
+    return true
 }

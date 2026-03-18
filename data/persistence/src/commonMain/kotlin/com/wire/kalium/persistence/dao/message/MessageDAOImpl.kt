@@ -18,6 +18,10 @@
 
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAssetTransferStatus
@@ -132,8 +136,8 @@ internal class MessageDAOImpl internal constructor(
         nonSuspendNeedsToBeNotified(id, conversationId)
     }
 
-    private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
-        queries.needsToBeNotified(id, conversationId).executeAsList().firstOrNull() == 1L
+    private suspend fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
+        queries.needsToBeNotified(id, conversationId).awaitAsList().firstOrNull() == 1L
 
     override suspend fun insertOrIgnoreMessages(
         messages: List<MessageEntity>,
@@ -166,7 +170,7 @@ internal class MessageDAOImpl internal constructor(
     /**
      * Be careful and run this operation in ONE wrapping transaction.
      */
-    private fun insertInDB(message: MessageEntity, withUnreadEvents: Boolean = true, checkAssetUpdate: Boolean = true) {
+    private suspend fun insertInDB(message: MessageEntity, withUnreadEvents: Boolean = true, checkAssetUpdate: Boolean = true) {
         // do not add withContext
         if (!updateIdIfAlreadyExists(message)) {
             if (checkAssetUpdate && isValidAssetMessageUpdate(message)) {
@@ -190,7 +194,7 @@ internal class MessageDAOImpl internal constructor(
     - [MessageEntityContent.ConversationStartedUnverifiedWarning]
      */
     @Suppress("ComplexMethod")
-    private fun updateIdIfAlreadyExists(message: MessageEntity): Boolean =
+    private suspend fun updateIdIfAlreadyExists(message: MessageEntity): Boolean =
         when (message.content) {
             is MessageEntityContent.MemberChange, is MessageEntityContent.ConversationRenamed,
             is MessageEntityContent.ConversationStartedUnverifiedWarning,
@@ -219,7 +223,7 @@ internal class MessageDAOImpl internal constructor(
             }
 
             messagesQuery
-                .executeAsList()
+                .awaitAsList()
                 .firstOrNull {
                     LocalId.check(it.id) && when (messageContent) {
                         is MessageEntityContent.MemberChange ->
@@ -279,7 +283,7 @@ internal class MessageDAOImpl internal constructor(
     }
 
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(readDispatcher.value) {
-        queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
+        queries.selectById(id, conversationId, mapper::toEntityMessageFromView).awaitAsOneOrNull()
     }
 
     override suspend fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
@@ -312,7 +316,7 @@ internal class MessageDAOImpl internal constructor(
                 limit.toLong(),
                 offset.toLong(),
                 mapper::toEntityAssetMessageFromView
-            ).executeAsList()
+            ).awaitAsList()
         }
 
     override suspend fun updateMessagesStatusIfNotRead(
@@ -345,14 +349,14 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity> =
         withContext(readDispatcher.value) {
             queries.selectLastMessagesByConversationIds(conversationIds, mapper::toEntityMessageFromView)
-                .executeAsList()
+                .awaitAsList()
                 .associateBy { it.conversationId }
         }
 
     override suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int): List<NotificationMessageEntity> =
         withContext(readDispatcher.value) {
             notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
-                .executeAsList()
+                .awaitAsList()
         }
 
     override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
@@ -377,7 +381,7 @@ internal class MessageDAOImpl internal constructor(
                 MessageEntity.Status.PENDING,
                 mapper::toEntityMessageFromView
             )
-                .executeAsList()
+                .awaitAsList()
         }
 
     override suspend fun updateTextMessageContent(
@@ -401,7 +405,7 @@ internal class MessageDAOImpl internal constructor(
     /**
      * Be careful and run this operation in ONE wrapping transaction.
      */
-    private fun updateTextMessageContentInDB(
+    private suspend fun updateTextMessageContentInDB(
         editInstant: Instant,
         conversationId: QualifiedIDEntity,
         currentMessageId: String,
@@ -511,13 +515,13 @@ internal class MessageDAOImpl internal constructor(
             visibility = visibility,
             creation_date = afterDate,
             creation_date_ = untilDate
-        ).executeAsList()
+        ).awaitAsList()
     }
 
     override suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode? =
         withContext(readDispatcher.value) {
             conversationsQueries.selectReceiptModeFromGroupConversationByQualifiedId(qualifiedID)
-                .executeAsOneOrNull()
+                .awaitAsOneOrNull()
         }
 
     override suspend fun promoteMessageToSentUpdatingServerTime(
@@ -538,13 +542,13 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun getAllPendingEphemeralMessages(): List<MessageEntity> {
         return withContext(readDispatcher.value) {
-            queries.selectPendingEphemeralMessages(mapper::toEntityMessageFromView).executeAsList()
+            queries.selectPendingEphemeralMessages(mapper::toEntityMessageFromView).awaitAsList()
         }
     }
 
     override suspend fun getAllAlreadyEndedEphemeralMessages(): List<MessageEntity> {
         return withContext(readDispatcher.value) {
-            queries.selectAlreadyEndedEphemeralMessages(mapper::toEntityMessageFromView).executeAsList()
+            queries.selectAlreadyEndedEphemeralMessages(mapper::toEntityMessageFromView).awaitAsList()
         }
     }
 
@@ -576,7 +580,7 @@ internal class MessageDAOImpl internal constructor(
     }
 
     override suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long = withContext(readDispatcher.value) {
-        unreadEventsQueries.getConversationUnreadEventsCount(conversationId).executeAsOne()
+        unreadEventsQueries.getConversationUnreadEventsCount(conversationId).awaitAsOne()
     }
 
     override suspend fun observeMessageVisibility(
@@ -596,7 +600,7 @@ internal class MessageDAOImpl internal constructor(
     ): Int = withContext(readDispatcher.value) {
         queries
             .selectSearchedConversationMessagePosition(conversationId, messageId)
-            .executeAsOne()
+            .awaitAsOne()
             .toInt()
     }
 
@@ -614,7 +618,7 @@ internal class MessageDAOImpl internal constructor(
                 offset = offset.toLong(),
                 mapper = mapper::toEntityMessageFromView
             )
-            .executeAsList()
+            .awaitAsList()
     }
 
     override suspend fun searchMessagesByTextGlobally(
@@ -629,7 +633,7 @@ internal class MessageDAOImpl internal constructor(
                 offset = offset.toLong(),
                 mapper = mapper::toEntityMessageFromView
             )
-            .executeAsList()
+            .awaitAsList()
     }
 
     override suspend fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>> =
@@ -641,7 +645,7 @@ internal class MessageDAOImpl internal constructor(
     override suspend fun getMessageAssetTransferStatus(messageId: String, conversationId: QualifiedIDEntity): AssetTransferStatusEntity =
         withContext(readDispatcher.value) {
             assetStatusQueries.selectMessageAssetStatus(conversationId, messageId)
-                .executeAsOne()
+                .awaitAsOne()
         }
 
     override suspend fun observeAssetStatuses(): Flow<List<MessageAssetTransferStatus>> =
@@ -657,22 +661,22 @@ internal class MessageDAOImpl internal constructor(
             assetViewQueries.getAllAssetMessagesByConversationId(
                 conversationId,
                 listOf(MessageEntity.ContentType.ASSET)
-            ).executeAsList().mapNotNull { it.assetId }
+            ).awaitAsList().mapNotNull { it.assetId }
         }
     }
 
     override suspend fun getSenderNameById(id: String, conversationId: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
-        userQueries.selectNameByMessageId(id, conversationId).executeAsOneOrNull()?.name
+        userQueries.selectNameByMessageId(id, conversationId).awaitAsOneOrNull()?.name
     }
 
     override suspend fun getNextAudioMessageInConversation(prevMessageId: String, conversationId: QualifiedIDEntity): String? =
         withContext(readDispatcher.value) {
-            queries.selectNextAudioMessage(conversationId, prevMessageId).executeAsOneOrNull()
+            queries.selectNextAudioMessage(conversationId, prevMessageId).awaitAsOneOrNull()
         }
 
     override suspend fun countMessagesForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long =
         withContext(readDispatcher.value) {
-            queries.countBackupMessages(contentTypes).executeAsOne()
+            queries.countBackupMessages(contentTypes).awaitAsOne()
         }
 
     override suspend fun getPagedMessagesFlow(
@@ -691,7 +695,7 @@ internal class MessageDAOImpl internal constructor(
     }.buffer()
         .flowOn(readDispatcher.value)
 
-    private fun getMessagesPage(
+    private suspend fun getMessagesPage(
         contentTypes: Collection<MessageEntity.ContentType>,
         afterId: String,
         pageSize: Long,
@@ -700,7 +704,7 @@ internal class MessageDAOImpl internal constructor(
         afterId = afterId,
         limit = pageSize,
         mapper::toEntityMessageFromView
-    ).executeAsList()
+    ).awaitAsList()
 
     override suspend fun updateCompositeMessageContent(
         conversationId: QualifiedIDEntity,

@@ -18,22 +18,32 @@
 
 package com.wire.kalium.persistence
 
-import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
-import com.wire.kalium.persistence.db.globalDatabaseProvider
-import com.wire.kalium.util.KaliumDispatcherImpl
+import com.wire.kalium.persistence.db.userDatabaseBuilder
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
 
-actual abstract class GlobalDBBaseTest {
-    actual fun deleteDatabase() {
-        createDatabase().nuke()
-    }
-
-    actual fun createDatabase(): GlobalDatabaseBuilder {
-        return globalDatabaseProvider(
+class SqlDelightAsyncSmokeTest {
+    @Test
+    fun canWriteAndReadUsingWebWorkerDriver() = runTest {
+        val database = userDatabaseBuilder(
             platformDatabaseData = PlatformDatabaseData(),
-            queriesContext = KaliumDispatcherImpl.io,
+            userId = UserIDEntity("js-smoke", "wire.test"),
             passphrase = null,
-            enableWAL = false
+            dispatcher = StandardTestDispatcher(testScheduler),
+            enableWAL = false,
         )
+
+        try {
+            database.metadataDAO.insertValue("value", "async-smoke")
+            val stored = database.metadataDAO.valueByKey("async-smoke")
+
+            assertEquals("value", stored)
+        } finally {
+            database.nuke()
+        }
     }
 }

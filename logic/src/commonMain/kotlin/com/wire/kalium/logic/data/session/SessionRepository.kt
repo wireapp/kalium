@@ -59,7 +59,7 @@ internal interface SessionRepository {
     suspend fun allValidSessions(): Either<StorageFailure, List<AccountInfo.Valid>>
     suspend fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>>
     suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean>
-    fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
+    suspend fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
     suspend fun updateCurrentSession(userId: UserId?): Either<StorageFailure, Unit>
     suspend fun logout(userId: UserId, reason: LogoutReason): Either<StorageFailure, Unit>
@@ -139,7 +139,7 @@ internal class SessionDataSource internal constructor(
     override suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean> =
         wrapStorageRequest { accountsDAO.doesValidAccountExists(userId.toDao()) }
 
-    override fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account> =
+    override suspend fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account> =
         wrapStorageRequest { accountsDAO.fullAccountInfo(userId.toDao()) }
             .flatMap {
                 val accountInfo = sessionMapper.fromAccountInfoEntity(it.info)

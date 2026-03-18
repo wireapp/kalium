@@ -18,6 +18,9 @@
 
 package com.wire.kalium.persistence.dao.call
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.CallsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -110,7 +113,7 @@ internal class CallDAOImpl(
             .flowOn(readDispatcher.value)
 
     override suspend fun getEstablishedCall(): CallEntity = withContext(readDispatcher.value) {
-        callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls).executeAsOne()
+        callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls).awaitAsOne()
     }
 
     override suspend fun observeOngoingCalls(): Flow<List<CallEntity>> =
@@ -129,12 +132,12 @@ internal class CallDAOImpl(
     }
 
     override suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
-        callsQueries.lastCallCallerIdByConversationId(conversationId).executeAsOneOrNull()
+        callsQueries.lastCallCallerIdByConversationId(conversationId).awaitAsOneOrNull()
     }
 
     override suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status? =
         withContext(readDispatcher.value) {
-            callsQueries.lastCallStatusByConversationId(conversationId).executeAsOneOrNull()
+            callsQueries.lastCallStatusByConversationId(conversationId).awaitAsOneOrNull()
         }
 
     override suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
@@ -147,7 +150,7 @@ internal class CallDAOImpl(
         conversationId: QualifiedIDEntity
     ): ConversationEntity.Type? = withContext(readDispatcher.value) {
         callsQueries.selectLastCallConversionTypeByConversationId(conversationId)
-            .executeAsOneOrNull()
+            .awaitAsOneOrNull()
     }
 
     override suspend fun updateOpenCallsToClosedStatus() {

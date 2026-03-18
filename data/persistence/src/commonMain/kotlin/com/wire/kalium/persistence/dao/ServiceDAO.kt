@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ServiceQueries
@@ -80,7 +82,7 @@ internal class ServiceDAOImpl(
     private val writeDispatcher: WriteDispatcher,
 ) : ServiceDAO {
     override suspend fun byId(id: BotIdEntity): ServiceEntity? = withContext(readDispatcher.value) {
-        serviceQueries.byId(id, mapper = ::mapToServiceEntity).executeAsOneOrNull()
+        serviceQueries.byId(id, mapper = ::mapToServiceEntity).awaitAsOneOrNull()
     }
 
     override suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?> =

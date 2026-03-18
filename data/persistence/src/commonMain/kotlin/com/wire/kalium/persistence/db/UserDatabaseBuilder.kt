@@ -18,6 +18,9 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.async.coroutines.awaitMigrate
+import app.cash.sqldelight.async.coroutines.awaitQuery
+import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
@@ -208,8 +211,18 @@ class UserDatabaseBuilder internal constructor(
     )
 
     init {
-        database.databasePropertiesQueries.insertSelfUserId(userId)
-        database.databasePropertiesQueries.enableForeignKeyContraints()
+        sqlDriver.execute(
+            identifier = null,
+            sql = "INSERT OR IGNORE INTO SelfUser(id) VALUES(?);",
+            parameters = 1
+        ) {
+            bindString(0, userId.toString())
+        }
+        sqlDriver.execute(
+            identifier = null,
+            sql = "PRAGMA foreign_keys = 1;",
+            parameters = 0,
+        )
     }
 
     val readDispatcher: ReadDispatcher = ReadDispatcher(dispatcher.limitedParallelism(MAX_READ_PARALLELISM))
@@ -464,16 +477,16 @@ internal expect fun createEmptyDatabaseFile(
 ): String?
 
 @Suppress("TooGenericExceptionCaught")
-fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
-    val oldVersion = this.executeQuery(null, "PRAGMA user_version;", {
-        it.next()
-        it.getLong(0).let { QueryResult.Value<Long?>(it) }
-    }, 0).value ?: return false
+suspend fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.AsyncValue<Unit>>): Boolean {
+    val oldVersion = awaitQuery(null, "PRAGMA user_version;", {
+        it.next().await()
+        it.getLong(0)
+    }, 0) ?: return false
 
     val newVersion = sqlSchema.version
     return try {
         if (oldVersion != newVersion) {
-            sqlSchema.migrate(this, oldVersion, newVersion)
+            sqlSchema.awaitMigrate(this, oldVersion, newVersion)
         }
         true
     } catch (e: CancellationException) {
@@ -486,16 +499,16 @@ fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
 /**
  * @return true if the database have fk violations, false otherwise
  */
-fun SqlDriver.checkFKViolations(): Boolean {
+suspend fun SqlDriver.checkFKViolations(): Boolean {
     var result = false
-    executeQuery(null, "PRAGMA foreign_key_check;", {
+    awaitQuery(null, "PRAGMA foreign_key_check;", {
         // foreign_key_check returns the rows with the fk violations
         // if the cursor has a next, it means there are violations
         // and the backup is corrupted
-        if (it.next().value) {
+        if (it.next().await()) {
             result = true
         }
-        QueryResult.Unit
+        Unit
     }, 0, null)
 
     return result

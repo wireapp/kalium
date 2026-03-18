@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+
 import com.wire.kalium.persistence.SearchQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
 import kotlinx.coroutines.withContext
@@ -72,11 +74,11 @@ internal class SearchDAOImpl internal constructor(
 ) : SearchDAO {
 
     override suspend fun getKnownContacts(): List<UserSearchEntity> = withContext(readDispatcher.value) {
-        searchQueries.selectAllConnectedUsers(mapper = UserSearchEntityMapper::map).executeAsList()
+        searchQueries.selectAllConnectedUsers(mapper = UserSearchEntityMapper::map).awaitAsList()
     }
 
     override suspend fun searchList(query: String): List<UserSearchEntity> = withContext(readDispatcher.value) {
-        searchQueries.searchByName(query, mapper = UserSearchEntityMapper::map).executeAsList()
+        searchQueries.searchByName(query, mapper = UserSearchEntityMapper::map).awaitAsList()
     }
 
     override suspend fun getKnownContactsExcludingAConversation(conversationId: ConversationIDEntity): List<UserSearchEntity> =
@@ -84,7 +86,7 @@ internal class SearchDAOImpl internal constructor(
             searchQueries.selectAllConnectedUsersNotInConversation(
                 conversationId,
                 mapper = UserSearchEntityMapper::map
-            ).executeAsList()
+            ).awaitAsList()
         }
 
     override suspend fun searchListExcludingAConversation(
@@ -95,14 +97,14 @@ internal class SearchDAOImpl internal constructor(
             query,
             conversationId,
             mapper = UserSearchEntityMapper::map
-        ).executeAsList()
+        ).awaitAsList()
     }
 
     override suspend fun handleSearch(searchQuery: String): List<UserSearchEntity> = withContext(readDispatcher.value) {
         searchQueries.searchByHandle(
             searchQuery,
             mapper = UserSearchEntityMapper::map
-        ).executeAsList()
+        ).awaitAsList()
     }
 
     override suspend fun handleSearchExcludingAConversation(
@@ -113,6 +115,6 @@ internal class SearchDAOImpl internal constructor(
             searchQuery,
             conversationId,
             mapper = UserSearchEntityMapper::map
-        ).executeAsList()
+        ).awaitAsList()
     }
 }

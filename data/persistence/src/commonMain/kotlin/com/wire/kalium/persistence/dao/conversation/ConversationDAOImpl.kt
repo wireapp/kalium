@@ -18,6 +18,10 @@
 
 package com.wire.kalium.persistence.dao.conversation
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationDetailsQueries
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
@@ -107,25 +111,25 @@ internal class ConversationDAOImpl internal constructor(
     // endregion
 
     override suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol) = withContext(readDispatcher.value) {
-        conversationQueries.selfConversationId(protocol).executeAsOneOrNull()
+        conversationQueries.selfConversationId(protocol).awaitAsOneOrNull()
     }
 
     override suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity? =
         withContext(readDispatcher.value) {
             conversationQueries.getMLSGroupIdAndUserIdByClientId(clientId, conversationMapper::toE2EIConversationClient)
-                .executeAsOneOrNull()
+                .awaitAsOneOrNull()
         }
 
     override suspend fun getMLSGroupIdByUserId(userId: UserIDEntity): String? =
         withContext(readDispatcher.value) {
             conversationQueries.getMLSGroupIdByUserId(userId)
-                .executeAsOneOrNull()
+                .awaitAsOneOrNull()
         }
 
     override suspend fun getMLSGroupIdByConversationId(conversationId: QualifiedIDEntity): String? =
         withContext(readDispatcher.value) {
             conversationQueries.getMLSGroupIdByConversationId(conversationId)
-                .executeAsOneOrNull()
+                .awaitAsOneOrNull()
                 ?.mls_group_id
         }
 
@@ -190,7 +194,7 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    private fun nonSuspendingInsertConversation(conversationEntity: ConversationEntity) {
+    private suspend fun nonSuspendingInsertConversation(conversationEntity: ConversationEntity) {
         with(conversationEntity) {
             conversationQueries.insertConversation(
                 qualified_id = id,
@@ -366,7 +370,7 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun getCellName(conversationId: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
-        conversationQueries.getCellName(conversationId).executeAsOneOrNull()?.wire_cell
+        conversationQueries.getCellName(conversationId).awaitAsOneOrNull()?.wire_cell
     }
 
     override suspend fun getConversationIds(
@@ -375,14 +379,14 @@ internal class ConversationDAOImpl internal constructor(
         teamId: String?
     ): List<QualifiedIDEntity> {
         return withContext(readDispatcher.value) {
-            conversationQueries.selectConversationIds(protocol, type, teamId).executeAsList()
+            conversationQueries.selectConversationIds(protocol, type, teamId).awaitAsList()
         }
     }
 
     override suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity> {
         return withContext(readDispatcher.value) {
             conversationQueries.selectAllTeamProteusConversationsReadyForMigration(teamId)
-                .executeAsList()
+                .awaitAsList()
                 .map { it.qualified_id }
         }
     }
@@ -392,7 +396,7 @@ internal class ConversationDAOImpl internal constructor(
         protocol: ConversationEntity.Protocol
     ): List<QualifiedIDEntity> =
         withContext(readDispatcher.value) {
-            conversationQueries.selectOneOnOneConversationIdsByProtocol(protocol, userId).executeAsList()
+            conversationQueries.selectOneOnOneConversationIdsByProtocol(protocol, userId).awaitAsList()
         }
 
     override suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?> {
@@ -411,28 +415,28 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo? =
         withContext(readDispatcher.value) {
-            conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
+            conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).awaitAsOneOrNull()
         }
 
     override suspend fun getConversationByGroupID(groupID: String): ConversationEntity? = withContext(readDispatcher.value) {
         conversationQueries.selectByGroupId(groupID, mapper = conversationMapper::toConversationEntity)
-            .executeAsOneOrNull()
+            .awaitAsOneOrNull()
     }
 
     override suspend fun getConversationIdByGroupID(groupID: String) = withContext(readDispatcher.value) {
-        conversationQueries.getConversationIdByGroupId(groupID).executeAsOneOrNull()
+        conversationQueries.getConversationIdByGroupId(groupID).awaitAsOneOrNull()
     }
 
     override suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity> =
         withContext(readDispatcher.value) {
             conversationQueries.selectByGroupState(groupState, conversationMapper::fromViewToModel)
-                .executeAsList()
+                .awaitAsList()
         }
 
     override suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         conversationQueries.transactionWithResult {
             conversationQueries.deleteConversation(qualifiedID)
-            conversationQueries.selectChanges().executeAsOne() > 0
+            conversationQueries.selectChanges().awaitAsOne() > 0
         }
     }
 
@@ -538,7 +542,7 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.selectByKeyingMaterialUpdate(
             ConversationEntity.GroupState.ESTABLISHED,
             DateTimeUtil.currentInstant().minus(threshold)
-        ).executeAsList()
+        ).awaitAsList()
     }
 
     override suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity) {
@@ -563,7 +567,7 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity? =
         withContext(readDispatcher.value) {
-            conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()
+            conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).awaitAsOneOrNull()
         }
 
     override suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, dateTime: Instant) {
@@ -590,12 +594,12 @@ internal class ConversationDAOImpl internal constructor(
                 protocol,
                 cipherSuite,
                 conversationId
-            ).executeAsOne() > 0
+            ).awaitAsOne() > 0
         }
     }
 
     override suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity> = withContext(readDispatcher.value) {
-        memberQueries.selectConversationsByMember(userId, conversationMapper::fromViewToModel).executeAsList()
+        memberQueries.selectConversationsByMember(userId, conversationMapper::fromViewToModel).awaitAsList()
     }
 
     override suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode) {
@@ -641,7 +645,7 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity> = withContext(readDispatcher.value) {
-        conversationQueries.selectConversationIdsWithoutMetadata().executeAsList()
+        conversationQueries.selectConversationIdsWithoutMetadata().awaitAsList()
     }
 
     override suspend fun updateDegradedConversationNotifiedFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean) {
@@ -683,7 +687,7 @@ internal class ConversationDAOImpl internal constructor(
     ) = withContext(writeDispatcher.value) {
         conversationQueries.transactionWithResult {
             conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId)
-            conversationQueries.selectChanges().executeAsOne() > 0
+            conversationQueries.selectChanges().awaitAsOne() > 0
         }
 
     }
@@ -692,7 +696,7 @@ internal class ConversationDAOImpl internal constructor(
         withContext(writeDispatcher.value) {
             conversationQueries.transactionWithResult {
                 conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified)
-                conversationQueries.selectChanges().executeAsOne() > 0
+                conversationQueries.selectChanges().awaitAsOne() > 0
             }
         }
 
@@ -712,16 +716,16 @@ internal class ConversationDAOImpl internal constructor(
         withContext(readDispatcher.value) {
             conversationQueries
                 .getEstablishedSelfMLSGroupId()
-                .executeAsOneOrNull()
+                .awaitAsOneOrNull()
                 ?.mls_group_id
         }
 
     override suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity? =
         withContext(readDispatcher.value) {
             conversationQueries.transactionWithResult {
-                val (conversationId, mlsVerificationStatus) = conversationQueries.conversationIDByGroupId(groupID).executeAsOneOrNull()
+                val (conversationId, mlsVerificationStatus) = conversationQueries.conversationIDByGroupId(groupID).awaitAsOneOrNull()
                     ?: return@transactionWithResult null
-                memberQueries.selectMembersNamesAndHandle(conversationId).executeAsList()
+                memberQueries.selectMembersNamesAndHandle(conversationId).awaitAsList()
                     .let { members ->
                         val membersMap = members.associate { it.user to NameAndHandleEntity(it.name, it.handle) }
                         EpochChangesDataEntity(
@@ -734,7 +738,7 @@ internal class ConversationDAOImpl internal constructor(
         }
 
     override suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean = withContext(readDispatcher.value) {
-        conversationQueries.selectIsChannel(conversationId).executeAsOneOrNull() ?: false
+        conversationQueries.selectIsChannel(conversationId).awaitAsOneOrNull() ?: false
     }
 
     override suspend fun updateChannelAddPermission(
@@ -747,7 +751,7 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun hasConversationWithCell() = withContext(readDispatcher.value) {
-        conversationQueries.hasConversationWithCell().executeAsOne()
+        conversationQueries.hasConversationWithCell().awaitAsOne()
     }
 
     override suspend fun updateReadDateAndGetHasUnreadEvents(
@@ -757,7 +761,7 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.transactionWithResult {
             unreadEventsQueries.deleteUnreadEvents(date, conversationID)
             conversationQueries.updateConversationReadDate(date, conversationID)
-            unreadEventsQueries.getHasUnreadEventsForConversation(conversationID).executeAsOneOrNull() ?: false
+            unreadEventsQueries.getHasUnreadEventsForConversation(conversationID).awaitAsOneOrNull() ?: false
         }
     }
 
@@ -772,7 +776,7 @@ internal class ConversationDAOImpl internal constructor(
                 conversationDates.forEach { (conversationId, date) ->
                     unreadEventsQueries.deleteUnreadEvents(date, conversationId)
                     conversationQueries.updateConversationReadDate(date, conversationId)
-                    put(conversationId, unreadEventsQueries.getHasUnreadEventsForConversation(conversationId).executeAsOneOrNull() ?: false)
+                    put(conversationId, unreadEventsQueries.getHasUnreadEventsForConversation(conversationId).awaitAsOneOrNull() ?: false)
                 }
             }
         }
@@ -780,11 +784,11 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun getMLSConversationsByDomain(domain: String): List<ConversationEntity> =
         withContext(readDispatcher.value) {
-            conversationQueries.selectAllMLSConversationsByDomain(domain, conversationMapper::toConversationEntity).executeAsList()
+            conversationQueries.selectAllMLSConversationsByDomain(domain, conversationMapper::toConversationEntity).awaitAsList()
         }
 
     override suspend fun getCellGroupConversations(): List<ConversationEntity> = withContext(readDispatcher.value) {
-        conversationQueries.selectCellGroupConversations(conversationMapper::toConversationEntity).executeAsList()
+        conversationQueries.selectCellGroupConversations(conversationMapper::toConversationEntity).awaitAsList()
     }
 
     override suspend fun getCellGroupConversationsPaged(limit: Int, offset: Int, query: String): List<ConversationEntity> =
