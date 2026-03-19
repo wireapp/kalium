@@ -54,6 +54,7 @@ import kotlinx.coroutines.flow.map
 @Suppress("TooManyFunctions")
 @Mockable
 internal interface ClientRepository {
+    suspend fun setHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun registerClient(param: RegisterClientParameters): Either<NetworkFailure, Client>
     suspend fun registerMLSClient(
         clientId: ClientId,
@@ -132,6 +133,11 @@ internal class ClientDataSource(
     private val clientApi: ClientApi,
     private val clientMapper: ClientMapper = MapperProvider.clientMapper()
 ) : ClientRepository {
+    override suspend fun setHasRegisteredMLSClient(): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            clientRegistrationStorage.setHasRegisteredMLSClient()
+        }
+
     override suspend fun registerClient(param: RegisterClientParameters): Either<NetworkFailure, Client> {
         return clientRemoteRepository.registerClient(param)
     }

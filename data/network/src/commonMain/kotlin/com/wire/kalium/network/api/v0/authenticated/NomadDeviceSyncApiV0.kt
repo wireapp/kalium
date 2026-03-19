@@ -24,8 +24,10 @@ import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMe
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.authenticated.nomaddevice.SetLastDeviceIdRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.NetworkErrorLabel
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.setUrl
@@ -39,7 +41,9 @@ import io.ktor.client.request.prepareGet
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -105,18 +109,40 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
             httpClient.prepareGet {
                 setNomadUrlIfAvailable(PATH_EVENT, PATH_CRYPTO_STATE)
             }.execute { httpResponse ->
-                if (httpResponse.status.isSuccess()) {
-                    handleCryptoStateDownload(httpResponse, tempBackupFileSink)
-                } else {
-                    handleUnsuccessfulResponse(httpResponse)
+                when {
+                    httpResponse.status.isSuccess() ->
+                        handleCryptoStateDownload(httpResponse, tempBackupFileSink)
+
+                    httpResponse.status == HttpStatusCode.Unauthorized ->
+                        handleLabeledError(httpResponse, NetworkErrorLabel.USER_NOT_FOUND, UNAUTHORIZED_CODE)
+
+                    httpResponse.status == HttpStatusCode.Forbidden ->
+                        handleLabeledError(httpResponse, NetworkErrorLabel.NO_CRYPTO_STATE, FORBIDDEN_CODE)
+
+                    else -> handleUnsuccessfulResponse(httpResponse)
                 }
             }
         }.getOrElse { unhandledException ->
-            if (unhandledException is CancellationException) {
-                throw unhandledException
-            }
+            if (unhandledException is CancellationException) throw unhandledException
             NetworkResponse.Error(KaliumException.GenericError(unhandledException))
         }
+
+    private suspend fun handleLabeledError(
+        httpResponse: HttpResponse,
+        expectedLabel: String,
+        code: Int
+    ): NetworkResponse<Unit> {
+        val body = runCatching { httpResponse.bodyAsText() }.getOrElse { "" }
+        return if (body.contains(expectedLabel)) {
+            NetworkResponse.Error(
+                KaliumException.InvalidRequestError(
+                    GenericAPIErrorResponse(code = code, label = expectedLabel, message = body)
+                )
+            )
+        } else {
+            handleUnsuccessfulResponse(httpResponse)
+        }
+    }
 
     override suspend fun setLastDeviceId(deviceId: String): NetworkResponse<Unit> =
         requireNomadServiceUrl(apiName = "setLastDeviceId") ?: wrapRequest {
@@ -225,5 +251,7 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         const val CRYPTO_ZIP_FILENAME = "CHANGELOG.zip"
         const val PATH_SEPARATOR = "/"
         const val API_NAME = "NomadDeviceSyncApiV0"
+        const val UNAUTHORIZED_CODE = 401
+        const val FORBIDDEN_CODE = 403
     }
 }

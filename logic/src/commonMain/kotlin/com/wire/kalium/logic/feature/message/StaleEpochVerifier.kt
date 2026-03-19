@@ -28,13 +28,16 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
+import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -51,11 +54,11 @@ internal interface StaleEpochVerifier {
 
 internal class StaleEpochVerifierImpl(
     private val systemMessageInserter: SystemMessageInserter,
+    private val fetchConversationUseCase: FetchConversationUseCase,
     private val conversationRepository: ConversationRepository,
     private val subconversationRepository: SubconversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
-    private val fetchConversation: FetchConversationUseCase
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase
 ) : StaleEpochVerifier {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
@@ -77,15 +80,9 @@ internal class StaleEpochVerifierImpl(
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> {
         logger.i("Verifying stale epoch for conversation ${conversationId.toLogString()}")
-        return getUpdatedConversationProtocolInfo(transactionContext, conversationId).flatMap { protocol ->
-            if (protocol is Conversation.ProtocolInfo.MLS) {
-                Either.Right(protocol)
-            } else {
-                Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
-            }
-        }.flatMap { protocolInfo ->
+        return getUpdatedConversationProtocolInfo(transactionContext, conversationId).flatMap { remoteMlsInfo ->
             transactionContext.wrapInMLSContext {
-                mlsConversationRepository.isLocalGroupEpochStale(it, protocolInfo.groupId, protocolInfo.epoch)
+                mlsConversationRepository.isLocalGroupEpochStale(it, remoteMlsInfo.groupId, remoteMlsInfo.epoch)
             }
                 .map { epochIsStale ->
                     epochIsStale
@@ -139,12 +136,34 @@ internal class StaleEpochVerifierImpl(
             }
     }
 
+    @OptIn(ConversationPersistenceApi::class)
     private suspend fun getUpdatedConversationProtocolInfo(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId
-    ): Either<CoreFailure, Conversation.ProtocolInfo> {
-        return fetchConversation(transactionContext, conversationId).flatMap {
+    ): Either<CoreFailure, RemoteMLSConversationInfo> {
+        return fetchConversationUseCase(
+            transactionContext,
+            conversationId,
+            ConversationSyncReason.Other
+        ).flatMap {
             conversationRepository.getConversationProtocolInfo(conversationId)
+        }.flatMap { protocolInfo ->
+            protocolInfo.toRemoteMLSConversationInfo()
         }
     }
+
+    private fun Conversation.ProtocolInfo.toRemoteMLSConversationInfo(): Either<CoreFailure, RemoteMLSConversationInfo> {
+        return when (this) {
+            !is Conversation.ProtocolInfo.MLS ->
+                Either.Left(MLSFailure.ConversationDoesNotSupportMLS)
+
+            else ->
+                Either.Right(RemoteMLSConversationInfo(groupId, epoch))
+        }
+    }
+
+    private data class RemoteMLSConversationInfo(
+        val groupId: GroupID,
+        val epoch: ULong
+    )
 }

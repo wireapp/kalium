@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.kalium.common.error.BackupFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.fold
@@ -35,13 +36,13 @@ import okio.use
 /**
  * Downloads the crypto state backup from the remote endpoint.
  */
-public interface DownloadCryptoStateUseCase {
+internal interface DownloadCryptoStateUseCase {
     /**
      * Downloads the crypto state backup.
      * @return [DownloadCryptoStateResult.Success] with the path to the downloaded backup file,
      * or [DownloadCryptoStateResult.Failure] if the download failed.
      */
-    public suspend operator fun invoke(): DownloadCryptoStateResult
+    suspend operator fun invoke(): DownloadCryptoStateResult
 }
 
 internal class DownloadCryptoStateUseCaseImpl(
@@ -62,7 +63,13 @@ internal class DownloadCryptoStateUseCaseImpl(
                     { error ->
                         kaliumLogger.e("$TAG Failed to download crypto state backup: $error")
                         kaliumFileSystem.delete(backupFilePath)
-                        DownloadCryptoStateResult.Failure(error)
+                        when (error) {
+                            is BackupFailure.NoCryptoStateAvailable -> {
+                                kaliumLogger.i("$TAG No crypto state backup available on Nomad service")
+                                DownloadCryptoStateResult.NoBackupAvailable
+                            }
+                            else -> DownloadCryptoStateResult.Failure(error)
+                        }
                     },
                     {
                         validateDownloadedFile(backupFilePath, backupFileName)

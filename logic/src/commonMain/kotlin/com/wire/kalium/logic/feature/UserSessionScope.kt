@@ -1113,11 +1113,14 @@ public class UserSessionScope internal constructor(
             userId = userId,
             clientIdProvider = clientIdProvider,
             userRepository = userRepository,
+            clientRepository = clientRepository,
             kaliumFileSystem = kaliumFileSystem,
             userStorage = userStorage,
             cryptoTransactionProvider = cryptoTransactionProvider,
             globalPreferences = globalPreferences,
             cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository,
+            rootPathsProvider = rootPathsProvider,
+            upgradeCurrentSession = upgradeCurrentSessionUseCase,
         )
 
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository
@@ -1800,11 +1803,11 @@ public class UserSessionScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier
         get() = StaleEpochVerifierImpl(
             systemMessageInserter = systemMessageInserter,
+            fetchConversationUseCase = fetchConversationUseCase,
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
-            subconversationRepository = subconversationRepository,
-            fetchConversation = fetchConversationUseCase
+            subconversationRepository = subconversationRepository
         )
 
     private val newMessageHandler: NewMessageEventHandler

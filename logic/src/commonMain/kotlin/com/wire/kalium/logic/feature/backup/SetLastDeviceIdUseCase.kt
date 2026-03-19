@@ -18,43 +18,29 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import io.mockative.Mockable
 
 /**
  * Sets the last device ID used for crypto state backup on the remote server.
  * This is used to track which device last uploaded the crypto state.
  */
-@Mockable
 public interface SetLastDeviceIdUseCase {
     /**
      * Sets the last device ID.
      * @return [SetLastDeviceIdResult.Success] if the operation succeeded,
      * or [SetLastDeviceIdResult.Failure] if it failed.
      */
-    public suspend operator fun invoke(): SetLastDeviceIdResult
+    public suspend operator fun invoke(clientId: String): SetLastDeviceIdResult
 }
 
 internal class SetLastDeviceIdUseCaseImpl(
-    private val currentClientIdProvider: CurrentClientIdProvider,
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository,
 ) : SetLastDeviceIdUseCase {
 
-    override suspend fun invoke(): SetLastDeviceIdResult {
-        val clientId = when (val clientResult = currentClientIdProvider.invoke()) {
-            is Either.Left -> {
-                kaliumLogger.e("$TAG Failed to read current client id")
-                return SetLastDeviceIdResult.Failure(clientResult.value)
-            }
-
-            is Either.Right -> clientResult.value
-        }
-
-        return cryptoStateBackupRemoteRepository.setLastDeviceId(deviceId = clientId.value).fold(
+    override suspend fun invoke(clientId: String): SetLastDeviceIdResult {
+        return cryptoStateBackupRemoteRepository.setLastDeviceId(deviceId = clientId).fold(
             { error ->
                 kaliumLogger.e("$TAG Failed to set last device id: $error")
                 SetLastDeviceIdResult.Failure(error)
