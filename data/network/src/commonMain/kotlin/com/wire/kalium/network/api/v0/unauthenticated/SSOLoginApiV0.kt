@@ -27,6 +27,7 @@ import com.wire.kalium.network.api.model.toSessionDto
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
+import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.CustomErrors.MISSING_REFRESH_TOKEN
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
@@ -52,19 +53,26 @@ internal open class SSOLoginApiV0 internal constructor(
 
     protected val httpClient get() = unauthenticatedNetworkClient.httpClient
 
-    override suspend fun initiate(param: InitiateParam): NetworkResponse<String> = HttpRequestBuilder().apply {
-        url.appendPathSegments(PATH_SSO, PATH_INITIATE, param.uuid)
-        param.label?.let { parameter(QUERY_LABEL, it) }
-        if (param is InitiateParam.WithRedirect) {
-            parameter(QUERY_SUCCESS_REDIRECT, param.success)
-            parameter(QUERY_ERROR_REDIRECT, param.error)
+    override suspend fun initiate(param: InitiateParam): NetworkResponse<String> {
+        if (param.label != null) {
+            return NetworkResponse.Error(
+                APINotSupported("${this::class.simpleName}: ${::initiate.name} with label is only available on API V15")
+            )
         }
-        accept(ContentType.Text.Plain)
-    }.let { httpRequestBuilder ->
-        val httpRequest = httpClient.head(httpRequestBuilder)
-        val url = httpRequest.call.request.url.toString()
-        wrapKaliumResponse<Any> { httpRequest }.mapSuccess {
-            url
+
+        return HttpRequestBuilder().apply {
+            url.appendPathSegments(PATH_SSO, PATH_INITIATE, param.uuid)
+            if (param is InitiateParam.WithRedirect) {
+                parameter(QUERY_SUCCESS_REDIRECT, param.success)
+                parameter(QUERY_ERROR_REDIRECT, param.error)
+            }
+            accept(ContentType.Text.Plain)
+        }.let { httpRequestBuilder ->
+            val httpRequest = httpClient.head(httpRequestBuilder)
+            val url = httpRequest.call.request.url.toString()
+            wrapKaliumResponse<Any> { httpRequest }.mapSuccess {
+                url
+            }
         }
     }
 
