@@ -70,5 +70,11 @@ kotlin {
         val commonTest by getting {
             dependencies { }
         }
+
+        val iosArm64Main by getting {
+            dependencies {
+                implementation(files("$rootDir/vendor/avs-kmp/avs-iosArm64.klib"))
+            }
+        }
     }
 }
