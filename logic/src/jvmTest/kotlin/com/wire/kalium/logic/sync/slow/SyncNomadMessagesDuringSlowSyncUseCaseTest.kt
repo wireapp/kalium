@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadata
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataItem
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationWithMessages
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadStoredMessage
@@ -33,6 +35,7 @@ import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.db.clearInMemoryDatabase
 import com.wire.kalium.protobuf.encodeToByteArray
@@ -46,6 +49,7 @@ import com.wire.kalium.userstorage.di.DatabaseStorageType
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.userstorage.di.PlatformUserStorageProvider
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import okio.Sink
 import okio.Source
 import java.lang.reflect.Proxy
@@ -70,6 +74,76 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
     fun givenNomadMessages_whenInvoking_thenStoreMessagesAndReturnUnit() = runTest {
         val arrangement = Arrangement(
             nomadServiceUrl = "https://nomad.example.com",
+            metadataResponse = metadataResponse(),
+            apiResponse = NetworkResponse.Success(
+                NomadAllMessagesResponse(
+                    conversations = listOf(
+                        NomadConversationWithMessages(
+                            conversation = Conversation(id = CONVERSATION_ID, domain = CONVERSATION_DOMAIN),
+                            messages = listOf(
+                                nomadStoredMessage(
+                                    messageId = "msg-1",
+                                    sender = SENDER_USER_ID,
+                                    text = "hello from nomad"
+                                )
+                            )
+                        )
+                    )
+                ),
+                emptyMap(),
+                200
+            )
+        )
+
+        try {
+            arrangement.database().conversationDAO.insertConversation(testConversationEntity())
+
+            val result = arrangement.useCase()
+
+            assertIs<Either.Right<Unit>>(result)
+            assertEquals(
+                listOf("getConversationMetadata", "getAllMessages"),
+                arrangement.nomadApi.calls
+            )
+
+            val updatedConversation = arrangement.database().conversationDAO.getConversationById(qid(CONVERSATION_ID))
+            assertNotNull(updatedConversation)
+            assertEquals(Instant.fromEpochMilliseconds(LAST_READ_TIMESTAMP), updatedConversation.lastReadDate)
+
+            val storedMessage = arrangement.database().messageDAO.getMessageById(
+                id = "msg-1",
+                conversationId = qid(CONVERSATION_ID)
+            )
+            val content = assertIs<MessageEntityContent.Text>(assertNotNull(storedMessage).content)
+            assertEquals("hello from nomad", content.messageBody)
+        } finally {
+            arrangement.cleanup()
+        }
+    }
+
+    @Test
+    fun givenNomadApiFailure_whenInvoking_thenReturnFailure() = runTest {
+        val arrangement = Arrangement(
+            nomadServiceUrl = "https://nomad.example.com",
+            metadataResponse = metadataResponse(),
+            apiResponse = NetworkResponse.Error(TestNetworkException.generic)
+        )
+
+        try {
+            val result = arrangement.useCase()
+
+            assertIs<Either.Left<*>>(result)
+            assertIs<NetworkFailure.ServerMiscommunication>((result as Either.Left).value)
+        } finally {
+            arrangement.cleanup()
+        }
+    }
+
+    @Test
+    fun givenMetadataFailure_whenInvoking_thenStillAttemptMessageSync() = runTest {
+        val arrangement = Arrangement(
+            nomadServiceUrl = "https://nomad.example.com",
+            metadataResponse = NetworkResponse.Error(TestNetworkException.generic),
             apiResponse = NetworkResponse.Success(
                 NomadAllMessagesResponse(
                     conversations = listOf(
@@ -94,6 +168,10 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
             val result = arrangement.useCase()
 
             assertIs<Either.Right<Unit>>(result)
+            assertEquals(
+                listOf("getConversationMetadata", "getAllMessages"),
+                arrangement.nomadApi.calls
+            )
 
             val storedMessage = arrangement.database().messageDAO.getMessageById(
                 id = "msg-1",
@@ -101,23 +179,6 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
             )
             val content = assertIs<MessageEntityContent.Text>(assertNotNull(storedMessage).content)
             assertEquals("hello from nomad", content.messageBody)
-        } finally {
-            arrangement.cleanup()
-        }
-    }
-
-    @Test
-    fun givenNomadApiFailure_whenInvoking_thenReturnFailure() = runTest {
-        val arrangement = Arrangement(
-            nomadServiceUrl = "https://nomad.example.com",
-            apiResponse = NetworkResponse.Error(TestNetworkException.generic)
-        )
-
-        try {
-            val result = arrangement.useCase()
-
-            assertIs<Either.Left<*>>(result)
-            assertIs<NetworkFailure.ServerMiscommunication>((result as Either.Left).value)
         } finally {
             arrangement.cleanup()
         }
@@ -135,6 +196,7 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
 
     private class Arrangement(
         nomadServiceUrl: String?,
+        metadataResponse: NetworkResponse<NomadConversationMetadataResponse>,
         apiResponse: NetworkResponse<NomadAllMessagesResponse>,
     ) {
         private val selfUserId = UserId("self-user-${nextId()}", "wire.test")
@@ -142,6 +204,10 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
         private val selfUserIdDao = UserIDEntity(selfUserId.value, selfUserId.domain)
         private val userStorageProvider = PlatformUserStorageProvider()
         private val userAuthenticatedNetworkProvider = PlatformUserAuthenticatedNetworkProvider()
+        val nomadApi = FakeNomadDeviceSyncApi(
+            metadataResponse = metadataResponse,
+            allMessagesResponse = apiResponse
+        )
 
         init {
             clearInMemoryDatabase(selfUserIdDao)
@@ -155,7 +221,7 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
                 dbInvalidationControlEnabled = false
             )
             userAuthenticatedNetworkProvider.getOrCreate(selfNetworkUserId) {
-                UserAuthenticatedNetworkApis(authenticatedNetworkContainer(FakeNomadDeviceSyncApi(apiResponse)))
+                UserAuthenticatedNetworkApis(authenticatedNetworkContainer(nomadApi))
             }
         }
 
@@ -177,16 +243,24 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
     }
 
     private class FakeNomadDeviceSyncApi(
+        private val metadataResponse: NetworkResponse<NomadConversationMetadataResponse>,
         private val allMessagesResponse: NetworkResponse<NomadAllMessagesResponse>
     ) : NomadDeviceSyncApi {
+        val calls = mutableListOf<String>()
+
         override suspend fun postMessageEvents(
             request: com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
         ): NetworkResponse<Unit> = error("Not needed in this test")
 
-        override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> = allMessagesResponse
+        override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> {
+            calls += "getAllMessages"
+            return allMessagesResponse
+        }
 
-        override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> =
-            error("Not needed in this test")
+        override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> {
+            calls += "getConversationMetadata"
+            return metadataResponse
+        }
 
         override suspend fun uploadCryptoState(
             clientId: String,
@@ -212,6 +286,7 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
 
         val SENDER_USER_ID = UserId("sender-user", "wire.test")
         const val CONVERSATION_ID = "conversation-id"
+        const val LAST_READ_TIMESTAMP = 1_707_235_200_000L
     }
 }
 
@@ -258,6 +333,49 @@ private fun nomadStoredMessage(
     )
 }
 
+private fun metadataResponse(): NetworkResponse<NomadConversationMetadataResponse> =
+    NetworkResponse.Success(
+        NomadConversationMetadataResponse(
+            conversations = listOf(
+                NomadConversationMetadataItem(
+                    conversation = Conversation(id = TEST_CONVERSATION_ID, domain = CONVERSATION_DOMAIN),
+                    metadata = NomadConversationMetadata(lastRead = TEST_LAST_READ_TIMESTAMP)
+                )
+            )
+        ),
+        emptyMap(),
+        200
+    )
+
+private fun testConversationEntity(): ConversationEntity = ConversationEntity(
+    id = qid(TEST_CONVERSATION_ID),
+    name = "conversation1",
+    type = ConversationEntity.Type.ONE_ON_ONE,
+    teamId = "teamID",
+    protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
+    creatorId = "someValue",
+    lastNotificationDate = null,
+    lastModifiedDate = Instant.parse("2022-03-30T15:36:00.000Z"),
+    lastReadDate = Instant.parse("2000-01-01T12:00:00.000Z"),
+    access = listOf(ConversationEntity.Access.LINK, ConversationEntity.Access.INVITE),
+    accessRole = listOf(ConversationEntity.AccessRole.NON_TEAM_MEMBER, ConversationEntity.AccessRole.TEAM_MEMBER),
+    receiptMode = ConversationEntity.ReceiptMode.DISABLED,
+    messageTimer = null,
+    userMessageTimer = null,
+    archived = false,
+    archivedInstant = null,
+    mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+    proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
+    legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
+    isChannel = false,
+    channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
+    channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
+    wireCell = null,
+    historySharingRetentionSeconds = 0,
+)
+
 private fun qid(value: String): QualifiedIDEntity = QualifiedIDEntity(value = value, domain = CONVERSATION_DOMAIN)
 
+private const val TEST_CONVERSATION_ID = "conversation-id"
+private const val TEST_LAST_READ_TIMESTAMP = 1_707_235_200_000L
 private const val CONVERSATION_DOMAIN = "wire.test"
