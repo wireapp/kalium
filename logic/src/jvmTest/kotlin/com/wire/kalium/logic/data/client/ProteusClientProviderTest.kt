@@ -1,6 +1,5 @@
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right

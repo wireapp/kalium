@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.kalium.common.error.BackupFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
@@ -65,6 +67,24 @@ class DownloadCryptoStateUseCaseTest {
         // given
         val (arrangement, useCase) = Arrangement()
             .withDownloadSuccess("")
+            .arrange()
+
+        // when
+        val result = useCase()
+
+        // then
+        assertIs<DownloadCryptoStateResult.NoBackupAvailable>(result)
+
+        verifySuspend((VerifyMode.exactly(1))) {
+            arrangement.cryptoStateBackupRemoteRepository.downloadCryptoState(any())
+        }
+    }
+
+    @Test
+    fun givenDownloadFailsWithNoCryptoStateAvailable_whenInvoking_thenReturnsNoBackupAvailable() = runTest {
+        // given
+        val (arrangement, useCase) = Arrangement()
+            .withDownloadFailure(BackupFailure.NoCryptoStateAvailable)
             .arrange()
 
         // when
@@ -137,7 +157,7 @@ class DownloadCryptoStateUseCaseTest {
             }
         }
 
-        fun withDownloadFailure(error: NetworkFailure) = apply {
+        fun withDownloadFailure(error: CoreFailure) = apply {
             everySuspend { cryptoStateBackupRemoteRepository.downloadCryptoState(any()) }
                 .returns(Either.Left(error))
         }
