@@ -3051,6 +3051,29 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingAndMissingConversations_whenUpdatingReadDates_thenReturnUpdatedCountForExistingOnes() = runTest(dispatcher) {
+        val firstReadDate = Instant.fromEpochMilliseconds(1_648_654_560_000)
+        val secondReadDate = Instant.fromEpochMilliseconds(1_648_654_561_000)
+        val missingConversationId = QualifiedIDEntity("missing-conversation", "domain")
+
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+
+        val updatedCount = conversationDAO.updateConversationReadDates(
+            mapOf(
+                conversationEntity1.id to firstReadDate,
+                conversationEntity2.id to secondReadDate,
+                missingConversationId to Instant.fromEpochMilliseconds(1_648_654_562_000)
+            )
+        )
+
+        assertEquals(2, updatedCount)
+        assertEquals(firstReadDate, conversationDAO.getConversationDetailsById(conversationEntity1.id)?.lastReadDate)
+        assertEquals(secondReadDate, conversationDAO.getConversationDetailsById(conversationEntity2.id)?.lastReadDate)
+        assertEquals(null, conversationDAO.getConversationDetailsById(missingConversationId))
+    }
+
+    @Test
     fun givenSomePreviousCallIsWronglyStillOngoingButLastOneIsAlreadyClosed_whenFetchingConversationDetails_thenReturnStateOfLastCall() =
         runTest(dispatcher) {
             val conversationEntity1 = conversationEntity1.copy(

@@ -67,6 +67,7 @@ interface ConversationDAO {
     )
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant? = null)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
+    suspend fun updateConversationReadDates(conversationDates: Map<QualifiedIDEntity, Instant>): Int
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun getAllConversationDetails(
