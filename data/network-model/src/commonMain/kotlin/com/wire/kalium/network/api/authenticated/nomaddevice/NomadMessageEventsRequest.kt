@@ -82,23 +82,25 @@ sealed interface NomadMessageEvent {
     ) : NomadMessageEvent
 
     @Serializable
-    @SerialName("LAST_READ")
-    data class LastReadEvent(
-        @SerialName("last_read")
-        val lastRead: List<LastRead>
+    @SerialName("CONVERSATION_METADATA")
+    data class ConversationMetadataEvent(
+        @SerialName("conversation_metadata")
+        val conversationMetadata: List<ConversationMetadataEntry>
     ) : NomadMessageEvent {
         init {
-            require(lastRead.isNotEmpty()) { "last_read must not be empty." }
+            require(conversationMetadata.isNotEmpty()) { "conversation_metadata must not be empty." }
         }
     }
 }
 
 @Serializable
-data class LastRead(
+data class ConversationMetadataEntry(
     @SerialName("conversation_id")
     val conversationId: String,
     @SerialName("last_read")
-    val lastReadTimestamp: Long
+    val lastReadTimestamp: Long,
+    @SerialName("last_modified")
+    val lastModifiedTimestamp: Long,
 )
 
 @Serializable

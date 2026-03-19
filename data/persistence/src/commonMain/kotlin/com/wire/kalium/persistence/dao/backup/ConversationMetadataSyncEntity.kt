@@ -21,7 +21,8 @@ package com.wire.kalium.persistence.dao.backup
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.datetime.Instant
 
-data class ConversationLastReadSyncEntity(
+data class ConversationMetadataSyncEntity(
     val conversationId: QualifiedIDEntity,
     val lastReadDate: Instant,
+    val lastModifiedDate: Instant,
 )
