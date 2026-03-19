@@ -60,7 +60,8 @@ actual fun userDatabaseDriverByPath(
     passphrase: UserDBSecret?,
     enableWAL: Boolean
 ): SqlDriver {
-    // TODO: Honor the requested JS database identity instead of ignoring path; the current worker driver setup always opens an anonymous DB.
+    // TODO: Honor the requested JS database identity instead of ignoring path;
+    //  the current worker driver setup always opens an anonymous DB.
     return createKaliumWebWorkerDriver()
 }
 
