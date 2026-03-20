@@ -49,7 +49,6 @@ import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -93,12 +92,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
-import kotlinx.serialization.json.Json
 import java.util.Collections
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -107,7 +104,6 @@ internal class CallManagerImpl internal constructor(
     private val callRepository: CallRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     selfConversationIdProvider: SelfConversationIdProvider,
-    private val conversationRepository: ConversationRepository,
     messageSender: MessageSender,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
@@ -123,8 +119,6 @@ internal class CallManagerImpl internal constructor(
     private val flowManagerService: FlowManagerService,
     private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase,
     private val selfUserId: UserId,
-    private val json: Json = Json { ignoreUnknownKeys = true },
-    private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     private val serverTimeHandler: ServerTimeHandler = ServerTimeHandlerImpl(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
@@ -263,40 +257,27 @@ internal class CallManagerImpl internal constructor(
         callingLogger.i("$tagWithUserId: onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
         val msg = content.value.toByteArray()
 
-        val callingValue = json.decodeFromString<MessageContent.Calling.CallingValue>(content.value)
-        val conversationMembers = conversationRepository.observeConversationMembers(message.conversationId).first()
-        val shouldRemoteMute = shouldRemoteMuteChecker.check(
-            senderUserId = message.senderUserId,
-            selfUserId = selfUserId,
-            selfClientId = clientId.await().value,
-            targets = callingValue.targets,
-            conversationMembers = conversationMembers
-        )
-
-        if (callingValue.type != REMOTE_MUTE_TYPE || shouldRemoteMute) {
-            val targetConversationId = if (message.isSelfMessage) {
-                content.conversationId ?: message.conversationId
-            } else {
-                message.conversationId
-            }
-
-            val callConversationType = getCallConversationType(targetConversationId)
-            val type = callMapper.toConversationType(callConversationType)
-
-            wcall_recv_msg(
-                inst = deferredHandle.await(),
-                msg = msg,
-                len = msg.size,
-                curr_time = Uint32_t(value = serverTimeHandler.toServerTimestamp()),
-                msg_time = Uint32_t(value = message.date.epochSeconds),
-                convId = federatedIdMapper.parseToFederatedId(targetConversationId),
-                userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
-                clientId = message.senderClientId.value,
-                convType = callMapper.toConversationTypeCalling(type).avsValue,
-                meeting = false.toInt()
-            )
-            callingLogger.i("$tagWithUserId: wcall_recv_msg() called")
+        val targetConversationId = if (message.isSelfMessage) {
+            content.conversationId ?: message.conversationId
+        } else {
+            message.conversationId
         }
+        val callConversationType = getCallConversationType(targetConversationId)
+        val type = callMapper.toConversationType(callConversationType)
+
+        wcall_recv_msg(
+            inst = deferredHandle.await(),
+            msg = msg,
+            len = msg.size,
+            curr_time = Uint32_t(value = serverTimeHandler.toServerTimestamp()),
+            msg_time = Uint32_t(value = message.date.epochSeconds),
+            convId = federatedIdMapper.parseToFederatedId(targetConversationId),
+            userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
+            clientId = message.senderClientId.value,
+            convType = callMapper.toConversationTypeCalling(type).avsValue,
+            meeting = false.toInt()
+        )
+        callingLogger.i("$tagWithUserId: wcall_recv_msg() called")
     }
 
     override suspend fun startCall(
@@ -733,6 +714,5 @@ internal class CallManagerImpl internal constructor(
         internal const val TAG = "CallManager"
         internal const val DEFAULT_NETWORK_QUALITY_INTERVAL_SECONDS = 5
         internal const val UTF8_ENCODING = "UTF-8"
-        internal const val REMOTE_MUTE_TYPE = "REMOTEMUTE"
     }
 }
