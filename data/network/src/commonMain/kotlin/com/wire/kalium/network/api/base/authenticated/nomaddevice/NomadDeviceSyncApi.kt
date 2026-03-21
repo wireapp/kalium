@@ -29,7 +29,11 @@ import okio.Source
 @Mockable
 interface NomadDeviceSyncApi {
     suspend fun postMessageEvents(request: NomadMessageEventsRequest): NetworkResponse<Unit>
+
+    @Deprecated("Replaced with batched version", ReplaceWith("syncAllMessages"))
     suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse>
+
+    suspend fun syncAllMessages(limit: Int = 100): NetworkResponse<NomadAllMessagesResponse>
     suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse>
     suspend fun uploadCryptoState(
         clientId: String,
