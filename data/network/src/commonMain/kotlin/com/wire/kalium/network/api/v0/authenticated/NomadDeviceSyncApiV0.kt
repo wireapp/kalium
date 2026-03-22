@@ -249,7 +249,7 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         }
 
     private companion object {
-        const val PATH_EVENT = "a/event"
+        const val PATH_EVENT = "event"
         const val PATH_MESSAGES = "messages"
         const val PATH_MESSAGES_SYNC = "sync"
         const val PATH_CONVERSATION_METADATA = "conversation/metadata"
