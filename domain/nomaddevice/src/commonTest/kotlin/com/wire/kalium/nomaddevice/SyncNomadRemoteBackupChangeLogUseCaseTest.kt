@@ -350,6 +350,10 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
             error("Not needed for test")
         }
 
+        override suspend fun syncAllMessages(limit: Int): NetworkResponse<NomadAllMessagesResponse> {
+            error("Not needed for test")
+        }
+
         override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> {
             error("Not needed for test")
         }

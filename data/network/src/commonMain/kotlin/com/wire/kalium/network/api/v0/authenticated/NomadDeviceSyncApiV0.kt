@@ -77,10 +77,19 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
             }
         }
 
+    @Deprecated("Replaced with batched version", replaceWith = ReplaceWith("syncAllMessages"))
     override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> =
         requireNomadServiceUrl(apiName = "getAllMessages") ?: wrapRequest {
             httpClient.get {
                 setNomadUrlIfAvailable(PATH_EVENT, PATH_MESSAGES)
+            }
+        }
+
+    override suspend fun syncAllMessages(limit: Int): NetworkResponse<NomadAllMessagesResponse> =
+        requireNomadServiceUrl(apiName = "syncAllMessages") ?: wrapRequest {
+            httpClient.get {
+                setNomadUrlIfAvailable(PATH_EVENT, "$PATH_MESSAGES/$PATH_MESSAGES_SYNC")
+                parameter("limit", limit)
             }
         }
 
@@ -242,6 +251,7 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
     private companion object {
         const val PATH_EVENT = "event"
         const val PATH_MESSAGES = "messages"
+        const val PATH_MESSAGES_SYNC = "sync"
         const val PATH_CONVERSATION_METADATA = "conversation/metadata"
         const val PATH_CRYPTO_STATE = "crypto/state"
         const val PATH_CRYPTO_DEVICE = "crypto/device"

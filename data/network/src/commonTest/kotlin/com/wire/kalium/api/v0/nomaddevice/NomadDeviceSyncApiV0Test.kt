@@ -98,6 +98,25 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
     }
 
     @Test
+    fun givenNomadMessages_whenSyncingAllMessages_thenRequestIncludesSyncPathAndLimit() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = ALL_MESSAGES_RESPONSE_JSON,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertPathEqual("/event/messages/sync")
+                assertQueryParameter("limit", "250")
+            }
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
+        val response = api.syncAllMessages(limit = 250)
+
+        assertTrue(response.isSuccessful())
+        assertEquals(2, response.value.conversations.size)
+    }
+
+    @Test
     fun givenConversationMetadata_whenGettingConversationMetadata_thenRequestAndResponseShouldMatchContract() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             responseBody = CONVERSATION_METADATA_RESPONSE_JSON,
@@ -134,6 +153,29 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             nomadServiceUrl = "https://nomad.example.com/service"
         )
         val response = api.getAllMessages()
+
+        assertTrue(response.isSuccessful())
+    }
+
+    @Test
+    fun givenCustomNomadServiceUrl_whenSyncingAllMessages_thenNomadBaseUrlShouldOverrideDefaultBackendUrl() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = ALL_MESSAGES_RESPONSE_JSON,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertEquals("nomad.example.com", url.host)
+                assertEquals(URLProtocol.HTTPS, url.protocol)
+                assertPathEqual("/service/event/messages/sync")
+                assertQueryParameter("limit", "100")
+            }
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(
+            networkClient,
+            nomadServiceUrl = "https://nomad.example.com/service"
+        )
+        val response = api.syncAllMessages()
 
         assertTrue(response.isSuccessful())
     }
@@ -234,6 +276,29 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
     }
 
     @Test
+    fun givenNomadServiceUrlWithDeepBasePath_whenSyncingAllMessages_thenFullBasePathShouldBePreserved() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = ALL_MESSAGES_RESPONSE_JSON,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertEquals("nomad.example.com", url.host)
+                assertEquals(URLProtocol.HTTPS, url.protocol)
+                assertPathEqual("/api/v1/event/messages/sync")
+                assertQueryParameter("limit", "100")
+            }
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(
+            networkClient,
+            nomadServiceUrl = "https://nomad.example.com/api/v1"
+        )
+        val response = api.syncAllMessages()
+
+        assertTrue(response.isSuccessful())
+    }
+
+    @Test
     fun givenEmptyLastReadEvent_whenConstructingMessageEvent_thenItShouldThrow() {
         val exception = assertFailsWith<IllegalArgumentException> {
             NomadMessageEvent.LastReadEvent(lastRead = emptyList())
@@ -283,10 +348,40 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
     }
 
     @Test
+    fun givenMissingNomadServiceUrl_whenSyncingAllMessages_thenItShouldShortCircuitWithoutNetworkCall() = runTest {
+        assertShortCircuitedWithoutNetworkCall(expectedApiName = "syncAllMessages") { api ->
+            api.syncAllMessages()
+        }
+    }
+
+    @Test
     fun givenMissingNomadServiceUrl_whenGettingConversationMetadata_thenItShouldShortCircuitWithoutNetworkCall() = runTest {
         assertShortCircuitedWithoutNetworkCall(expectedApiName = "getConversationMetadata") { api ->
             api.getConversationMetadata()
         }
+    }
+
+    @Test
+    fun givenNomadServiceUrlWithBasePath_whenSyncingAllMessages_thenBasePathShouldBePreserved() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = ALL_MESSAGES_RESPONSE_JSON,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertEquals("nomad.example.com", url.host)
+                assertEquals(URLProtocol.HTTPS, url.protocol)
+                assertPathEqual("/service/event/messages/sync")
+                assertQueryParameter("limit", "150")
+            }
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(
+            networkClient,
+            nomadServiceUrl = "https://nomad.example.com/service"
+        )
+        val response = api.syncAllMessages(limit = 150)
+
+        assertTrue(response.isSuccessful())
     }
 
     @Test

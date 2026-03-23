@@ -104,6 +104,9 @@ class NomadConversationMetadataSyncRepositoryTest {
         override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> =
             error("Not needed in this test")
 
+        override suspend fun syncAllMessages(limit: Int): NetworkResponse<NomadAllMessagesResponse> =
+            error("Not needed in this test")
+
         override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> = metadataResponse
 
         override suspend fun uploadCryptoState(

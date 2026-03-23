@@ -88,7 +88,9 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
                                 )
                             )
                         )
-                    )
+                    ),
+                    nextCursor = null,
+                    nextTimestamp = null
                 ),
                 emptyMap(),
                 200
@@ -102,7 +104,7 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
 
             assertIs<Either.Right<Unit>>(result)
             assertEquals(
-                listOf("getConversationMetadata", "getAllMessages"),
+                listOf("getConversationMetadata", "syncAllMessages"),
                 arrangement.nomadApi.calls
             )
 
@@ -157,7 +159,9 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
                                 )
                             )
                         )
-                    )
+                    ),
+                    nextCursor = null,
+                    nextTimestamp = null
                 ),
                 emptyMap(),
                 200
@@ -169,7 +173,7 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
 
             assertIs<Either.Right<Unit>>(result)
             assertEquals(
-                listOf("getConversationMetadata", "getAllMessages"),
+                listOf("getConversationMetadata", "syncAllMessages"),
                 arrangement.nomadApi.calls
             )
 
@@ -254,6 +258,11 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
 
         override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> {
             calls += "getAllMessages"
+            return allMessagesResponse
+        }
+
+        override suspend fun syncAllMessages(limit: Int): NetworkResponse<NomadAllMessagesResponse> {
+            calls += "syncAllMessages"
             return allMessagesResponse
         }
 
