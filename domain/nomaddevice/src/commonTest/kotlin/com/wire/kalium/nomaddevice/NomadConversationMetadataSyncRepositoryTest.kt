@@ -22,6 +22,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadata
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataItem
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
@@ -105,6 +107,11 @@ class NomadConversationMetadataSyncRepositoryTest {
             error("Not needed in this test")
 
         override suspend fun syncAllMessages(limit: Int): NetworkResponse<NomadAllMessagesResponse> =
+            error("Not needed in this test")
+
+        override suspend fun restoreMessagesBatch(
+            request: NomadBatchRestoreRequest,
+        ): NetworkResponse<NomadBatchRestoreResponse> =
             error("Not needed in this test")
 
         override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> = metadataResponse

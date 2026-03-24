@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadata
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataItem
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
@@ -265,6 +267,11 @@ class SyncNomadMessagesDuringSlowSyncUseCaseTest {
             calls += "syncAllMessages"
             return allMessagesResponse
         }
+
+        override suspend fun restoreMessagesBatch(
+            request: NomadBatchRestoreRequest,
+        ): NetworkResponse<NomadBatchRestoreResponse> =
+            error("Not needed in this test")
 
         override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> {
             calls += "getConversationMetadata"
