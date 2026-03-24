@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingSource
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -63,6 +65,7 @@ internal interface MessageRepositoryExtensions {
 internal class MessageRepositoryExtensionsImpl internal constructor(
     private val messageDAO: MessageDAO,
     private val messageMapper: MessageMapper,
+    private val nomadMessagePagingCoordinator: NomadMessagePagingCoordinator? = null,
 ) : MessageRepositoryExtensions {
 
     override suspend fun getPaginatedMessagesByConversationIdAndVisibility(
@@ -75,8 +78,21 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             conversationId.toDao(),
             visibility.map { it.toEntityVisibility() },
             pagingConfig,
-            startingOffset
-        )
+            startingOffset,
+        ) { pagingSource ->
+            val coordinator = nomadMessagePagingCoordinator
+            if (coordinator == null) {
+                pagingSource
+            } else {
+                NomadMessagePagingSource(pagingSource) { source ->
+                    coordinator.fetchOlderMessagesIfNeeded(
+                        conversationId = conversationId,
+                        pageSize = pagingConfig.pageSize,
+                        onInvalidate = { source.invalidate() }
+                    )
+                }
+            }
+        }
 
         return pager.pagingDataFlow.map {
             it.map { messageMapper.fromEntityToMessage(it) }

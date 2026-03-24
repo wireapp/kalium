@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensionsImpl
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.persistence.dao.message.KaliumPager
@@ -78,6 +79,7 @@ class MessageRepositoryExtensionsTest {
                     val list = it.toList()
                     list.size == 1 && list[0] == MessageEntity.Visibility.VISIBLE
                 }, eq(pagingConfig),
+                any(),
                 any()
             )
         }.wasInvoked(exactly = once)
@@ -87,6 +89,7 @@ class MessageRepositoryExtensionsTest {
         val messageDaoExtensions: MessageExtensions = mock(MessageExtensions::class)
         private val messageDAO: MessageDAO = mock(MessageDAO::class)
         private val messageMapper: MessageMapper = mock(MessageMapper::class)
+        private val pagingCoordinator: NomadMessagePagingCoordinator = mock(NomadMessagePagingCoordinator::class)
 
         init {
 
@@ -101,14 +104,15 @@ class MessageRepositoryExtensionsTest {
 
         fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<MessageEntity>) = apply {
             every {
-                messageDaoExtensions.getPagerForConversation(any(), any(), any(), any())
+                messageDaoExtensions.getPagerForConversation(any(), any(), any(), any(), any())
             }.returns(kaliumPager)
         }
 
         private val messageRepositoryExtensions: MessageRepositoryExtensions by lazy {
             MessageRepositoryExtensionsImpl(
                 messageDAO,
-                messageMapper
+                messageMapper,
+                pagingCoordinator,
             )
         }
 
