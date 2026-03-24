@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingSource
+import com.wire.kalium.common.logger.kaliumLogger
+import kotlinx.datetime.Clock
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -84,10 +86,15 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             if (coordinator == null) {
                 pagingSource
             } else {
+                kaliumLogger.d("[$TAG] Wrapping paging source for conversation '${conversationId.toLogString()}'")
                 NomadMessagePagingSource(pagingSource) { source ->
+                    val beforeTimestampMs = messageDAO.getOldestVisibleMessageTimestampByConversationId(
+                        conversationId.toDao()
+                    ) ?: Clock.System.now().toEpochMilliseconds()
                     coordinator.fetchOlderMessagesIfNeeded(
                         conversationId = conversationId,
                         pageSize = pagingConfig.pageSize,
+                        beforeTimestampMs = beforeTimestampMs,
                         onInvalidate = { source.invalidate() }
                     )
                 }
@@ -97,6 +104,10 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         return pager.pagingDataFlow.map {
             it.map { messageMapper.fromEntityToMessage(it) }
         }
+    }
+
+    private companion object {
+        const val TAG = "MessageRepositoryExtensions"
     }
 
     override suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(

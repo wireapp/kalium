@@ -21,27 +21,76 @@ package com.wire.kalium.logic.data.message.paging
 import app.cash.paging.PagingSource
 import app.cash.paging.PagingSourceLoadParams
 import app.cash.paging.PagingSourceLoadParamsAppend
+import app.cash.paging.PagingSourceLoadParamsRefresh
 import app.cash.paging.PagingSourceLoadResult
 import app.cash.paging.PagingSourceLoadResultPage
 import app.cash.paging.PagingState
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.common.logger.kaliumLogger
 
 internal class NomadMessagePagingSource(
     private val delegate: PagingSource<Int, MessageEntity>,
     private val onEmptyAppend: suspend (PagingSource<Int, MessageEntity>) -> Unit,
 ) : PagingSource<Int, MessageEntity>() {
 
+    init {
+        delegate.registerInvalidatedCallback { invalidate() }
+    }
+
     override suspend fun load(
         params: PagingSourceLoadParams<Int>
     ): PagingSourceLoadResult<Int, MessageEntity> {
         val result = delegate.load(params)
-        if (params is PagingSourceLoadParamsAppend<*> &&
-            result is PagingSourceLoadResultPage<*, *> &&
-            result.data.isEmpty()
+        logLoad(params, result)
+        if (result is PagingSourceLoadResultPage<Int, MessageEntity> &&
+            shouldTriggerRemoteFetch(params, result)
         ) {
             onEmptyAppend(this)
         }
         return result
+    }
+
+    private fun logLoad(
+        params: PagingSourceLoadParams<Int>,
+        result: PagingSourceLoadResult<Int, MessageEntity>
+    ) {
+        when (result) {
+            is PagingSourceLoadResultPage<Int, MessageEntity> -> {
+                kaliumLogger.d(
+                    "[$TAG] load=${params::class.simpleName} key=${params.key} size=${params.loadSize} " +
+                        "data=${result.data.size} prevKey=${result.prevKey} nextKey=${result.nextKey}"
+                )
+            }
+
+            else -> {
+                kaliumLogger.d(
+                    "[$TAG] load=${params::class.simpleName} key=${params.key} size=${params.loadSize} " +
+                        "result=${result::class.simpleName}"
+                )
+            }
+        }
+    }
+
+    private fun shouldTriggerRemoteFetch(
+        params: PagingSourceLoadParams<Int>,
+        result: PagingSourceLoadResultPage<Int, MessageEntity>
+    ): Boolean {
+        val shouldTrigger = when (params) {
+            is PagingSourceLoadParamsAppend<*> -> result.nextKey == null
+            is PagingSourceLoadParamsRefresh<*> -> result.nextKey == null
+            else -> false
+        }
+        if (shouldTrigger) {
+            kaliumLogger.d(
+                "[$TAG] Paging boundary reached. loadType=${params::class.simpleName} " +
+                    "dataSize=${result.data.size} nextKey=${result.nextKey}"
+            )
+        }
+        return shouldTrigger
+    }
+
+    companion object {
+        const val TAG = "NomadMessagePagingSource"
     }
 
     override fun getRefreshKey(state: PagingState<Int, MessageEntity>): Int? =

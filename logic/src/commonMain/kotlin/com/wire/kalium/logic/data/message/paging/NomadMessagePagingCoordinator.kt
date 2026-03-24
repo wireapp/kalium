@@ -54,6 +54,7 @@ internal interface NomadMessagePagingCoordinator {
     suspend fun fetchOlderMessagesIfNeeded(
         conversationId: ConversationId,
         pageSize: Int,
+        beforeTimestampMs: Long?,
         onInvalidate: () -> Unit
     )
 }
@@ -79,25 +80,34 @@ internal class NomadMessagePagingCoordinatorImpl(
     override suspend fun fetchOlderMessagesIfNeeded(
         conversationId: ConversationId,
         pageSize: Int,
+        beforeTimestampMs: Long?,
         onInvalidate: () -> Unit
     ) {
+        kaliumLogger.d("[$TAG] Nomad paging boundary reached for conversation '${conversationId.toLogString()}'")
+
         val currentState = stateByConversation.block { map ->
-            val existing = map[conversationId] ?: State(nextTimestamp = clock.now().epochSeconds)
+            val existing = map[conversationId] ?: State(
+                nextTimestamp = beforeTimestampMs ?: clock.now().toEpochMilliseconds()
+            )
             if (!existing.hasMore || existing.isFetching) return@block null
             if (!isNomadEnabled()) {
                 map[conversationId] = existing.copy(hasMore = false)
+                kaliumLogger.d("[$TAG] Nomad paging disabled for conversation '${conversationId.toLogString()}'")
                 return@block null
             }
 
             val next = existing.copy(isFetching = true)
             map[conversationId] = next
+            kaliumLogger.d(
+                "[$TAG] Nomad paging fetching conversation '${conversationId.toLogString()}' with cursor=${next.nextCursor} ts=${next.nextTimestamp}"
+            )
             next
         } ?: return
 
         val responseResult = wrapApiRequest {
             nomadDeviceSyncApi.restoreMessagesBatch(
                 NomadBatchRestoreRequest(
-                    conversationIds = listOf(conversationId.toString()),
+                    conversationIds = listOf(conversationId.value),
                     limit = pageSize,
                     beforeTimestamp = currentState.nextTimestamp,
                     nextCursor = currentState.nextCursor,
@@ -112,7 +122,7 @@ internal class NomadMessagePagingCoordinatorImpl(
                     map.put(conversationId, state.copy(isFetching = false))
                 }
                 kaliumLogger.w(
-                    "Nomad batch restore failed for '${selfUserId.toLogString()}': ${responseResult.value}"
+                    "[$TAG] Nomad batch restore failed for '${selfUserId.toLogString()}': ${responseResult.value}"
                 )
             }
 
@@ -134,10 +144,9 @@ internal class NomadMessagePagingCoordinatorImpl(
         onInvalidate: () -> Unit,
     ) {
         val mapped = mapper.map(response)
-        val conversationIdString = conversationId.toString()
         val storeResult = wrapStorageRequest {
             nomadMessagesDAO.storeMessages(
-                messages = mapped.messages.filterByConversationId(conversationIdString),
+                messages = mapped.messages.filterByConversationId(conversationId),
                 batchSize = pageSize,
             )
         }
@@ -149,13 +158,18 @@ internal class NomadMessagePagingCoordinatorImpl(
                 is Either.Left -> {
                     map[conversationId] = state.copy(isFetching = false)
                     kaliumLogger.w(
-                        "Nomad batch restore storage failed for '${selfUserId.toLogString()}': ${storeResult.value}"
+                        "[$TAG] Nomad batch restore storage failed for '${selfUserId.toLogString()}': ${storeResult.value}"
                     )
                 }
 
                 is Either.Right -> {
                     val nextState = response.nextStateFor(conversationId, state)
                     map[conversationId] = nextState
+                    kaliumLogger.d(
+                        "[$TAG] Nomad paging stored ${storeResult.value.storedMessages} messages for conversation " +
+                            "'${conversationId.toLogString()}', hasMore=${nextState.hasMore}, " +
+                            "nextCursor=${nextState.nextCursor}, nextTimestamp=${nextState.nextTimestamp}"
+                    )
                     if (storeResult.value.storedMessages > 0) {
                         shouldInvalidate = true
                     }
@@ -378,7 +392,7 @@ internal class NomadMessagePagingCoordinatorImpl(
             reason: String,
         ) {
             kaliumLogger.w(
-                "Skipping Nomad message '${storedMessage.messageId}' in conversation " +
+                "[$TAG] Skipping Nomad message '${storedMessage.messageId}' in conversation " +
                         "'${conversation.conversation.id}@${conversation.conversation.domain}': $reason."
             )
         }
@@ -412,8 +426,12 @@ internal class NomadMessagePagingCoordinatorImpl(
     }
 
     private fun List<NomadMessageToInsert>.filterByConversationId(
-        conversationId: String
+        conversationId: ConversationId
     ): List<NomadMessageToInsert> = filter { message ->
-        message.conversationId.toString() == conversationId
+        message.conversationId.value == conversationId.value && message.conversationId.domain == conversationId.domain
+    }
+
+    companion object {
+        const val TAG = "NomadMessagePagingCoordinator"
     }
 }

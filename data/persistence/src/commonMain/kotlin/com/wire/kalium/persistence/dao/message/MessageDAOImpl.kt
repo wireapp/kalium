@@ -289,6 +289,14 @@ internal class MessageDAOImpl internal constructor(
             .distinctUntilChanged()
             .flowOn(readDispatcher.value)
 
+    override suspend fun getOldestVisibleMessageTimestampByConversationId(
+        conversationId: ConversationIDEntity
+    ): Long? = withContext(readDispatcher.value) {
+        queries.selectOldestVisibleMessageTimestampByConversationId(conversationId)
+            .executeAsOneOrNull()
+            ?.MIN?.toEpochMilliseconds()
+    }
+
     override suspend fun getImageMessageAssets(
         conversationId: QualifiedIDEntity,
         mimeTypes: Set<String>,
