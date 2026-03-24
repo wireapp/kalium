@@ -51,7 +51,7 @@ internal class BackupAndUploadCryptoStateUseCaseImpl(
             is BackupCryptoDBResult.Success -> {
                 val clientId = when (val clientResult = currentClientIdProvider.invoke()) {
                     is Either.Left -> {
-                        kaliumLogger.e("Failed to read current client id ${clientResult.value}")
+                        kaliumLogger.e("Failed to read current client id")
                         return BackupAndUploadCryptoStateResult.Failure(clientResult.value)
                     }
 

@@ -58,12 +58,24 @@ internal class BackupCryptoDBUseCaseImpl(
 
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
         val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
+        if (kaliumFileSystem.exists(mlsBackupPath)) {
+            kaliumFileSystem.delete(mlsBackupPath)
+        }
         val (mlsExportData, mlsDbBytes) = createMLSBackup(mlsBackupPath).fold(
-            { return@withContext BackupCryptoDBResult.Failure(it) },
+            {
+                kaliumLogger.e("Failed to create MLS backup")
+                return@withContext BackupCryptoDBResult.Failure(it)
+            },
             { it }
         )
+        if (kaliumFileSystem.exists(proteusBackupPath)) {
+            kaliumFileSystem.delete(proteusBackupPath)
+        }
         val (proteusExportData, proteusDbBytes) = createProteusBackup(proteusBackupPath).fold(
-            { return@withContext BackupCryptoDBResult.Failure(it) },
+            {
+                kaliumLogger.e("Failed to create Proteus backup")
+                return@withContext BackupCryptoDBResult.Failure(it)
+            },
             { it }
         )
 
@@ -95,7 +107,10 @@ internal class BackupCryptoDBUseCaseImpl(
             cryptoTransactionProvider.mlsClientProvider
                 .exportCryptoDB(mlsBackupPath.toString())
                 .fold(
-                    { Either.Left(it) },
+                    {
+                        kaliumLogger.e("MLS backup export failed with error: $it")
+                        Either.Left(it)
+                    },
                     { exportData ->
                         try {
                             val bytes = kaliumFileSystem.source(exportData.dbPath.toPath()).use {
