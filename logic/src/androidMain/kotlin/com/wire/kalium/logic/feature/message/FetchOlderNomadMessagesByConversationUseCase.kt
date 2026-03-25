@@ -24,11 +24,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
-public class FetchOlderNomadMessagesByConversationUseCase internal constructor(
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val messageRepository: MessageRepository,
-) {
-
+public interface FetchOlderNomadMessagesByConversationUseCase {
     /**
      * Fetches older messages for a given conversation in a remote data source and stores them in the local database.
      * This is typically used when the user scrolls up in the message list we want to load more messages from the past.
@@ -36,14 +32,29 @@ public class FetchOlderNomadMessagesByConversationUseCase internal constructor(
     public suspend operator fun invoke(
         conversationId: ConversationId,
         pageSize: Int = DEFAULT_PAGE_SIZE,
+    )
+
+    private companion object {
+        const val DEFAULT_PAGE_SIZE = 50
+    }
+}
+
+internal class FetchOlderNomadMessagesByConversationUseCaseImpl(
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val messageRepository: MessageRepository,
+) : FetchOlderNomadMessagesByConversationUseCase {
+
+    /**
+     * Fetches older messages for a given conversation in a remote data source and stores them in the local database.
+     * This is typically used when the user scrolls up in the message list we want to load more messages from the past.
+     */
+    override suspend operator fun invoke(
+        conversationId: ConversationId,
+        pageSize: Int,
     ): Unit = withContext(dispatcher.default) {
         messageRepository.extensions.fetchOlderNomadMessagesByConversationId(
             conversationId = conversationId,
             pageSize = pageSize,
         )
-    }
-
-    private companion object {
-        const val DEFAULT_PAGE_SIZE = 50
     }
 }
