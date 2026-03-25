@@ -132,46 +132,38 @@ class MessageRepositoryExtensionsTest {
             .wasInvoked(exactly = 0)
     }
 
-    private class Arrangement {
-        val messageDaoExtensions: MessageExtensions = mock(MessageExtensions::class)
-        private val messageDAO: MessageDAO = mock(MessageDAO::class)
-        private val messageMapper: MessageMapper = mock(MessageMapper::class)
-        val pagingCoordinator: NomadMessagePagingCoordinator = mock(NomadMessagePagingCoordinator::class)
-        private var usePagingCoordinator: Boolean = false
-
+    private data class Arrangement(
+        val messageDaoExtensions: MessageExtensions = mock(MessageExtensions::class),
+        val messageDAO: MessageDAO = mock(MessageDAO::class),
+        val messageMapper: MessageMapper = mock(MessageMapper::class),
+        val pagingCoordinator: NomadMessagePagingCoordinator = mock(NomadMessagePagingCoordinator::class),
+        val usePagingCoordinator: Boolean = false,
+    ) {
         init {
-
-            every {
-                messageMapper.fromEntityToMessage(any())
-            }.returns(MESSAGE)
-
-            every {
-                messageDAO.platformExtensions
-            }.returns(messageDaoExtensions)
+            every { messageMapper.fromEntityToMessage(any()) }.returns(MESSAGE)
+            every { messageDAO.platformExtensions }.returns(messageDaoExtensions)
         }
 
-        fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<MessageEntity>) = apply {
-            every {
-                messageDaoExtensions.getPagerForConversation(any(), any(), any(), any())
-            }.returns(kaliumPager)
-        }
+        fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<MessageEntity>): Arrangement =
+            copy().also {
+                every {
+                    it.messageDaoExtensions.getPagerForConversation(any(), any(), any(), any())
+                }.returns(kaliumPager)
+            }
 
-        suspend fun withOldestTimestamp(timestamp: Long?) = apply {
+        suspend fun withOldestTimestamp(timestamp: Long?): Arrangement = copy().also {
             coEvery {
-                messageDAO.getOldestVisibleMessageTimestampByConversationId(CONVERSATION_ID_ENTITY)
+                it.messageDAO.getOldestVisibleMessageTimestampByConversationId(CONVERSATION_ID_ENTITY)
             }.returns(timestamp)
         }
 
-        suspend fun withPagingCoordinator() = apply {
-            usePagingCoordinator = true
+        suspend fun withPagingCoordinator(): Arrangement = copy(usePagingCoordinator = true).also {
             coEvery {
-                pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any())
+                it.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any())
             }.returns(Unit)
         }
 
-        fun withoutPagingCoordinator() = apply {
-            usePagingCoordinator = false
-        }
+        fun withoutPagingCoordinator(): Arrangement = copy(usePagingCoordinator = false)
 
         private val messageRepositoryExtensions: MessageRepositoryExtensions by lazy {
             MessageRepositoryExtensionsImpl(
@@ -182,7 +174,6 @@ class MessageRepositoryExtensionsTest {
         }
 
         fun arrange() = this to messageRepositoryExtensions
-
     }
 
     private companion object {

@@ -31,7 +31,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.backup.NomadMessageStoreResult
 import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
-import dev.mokkery.annotations.DelicateMokkeryApi
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -129,8 +128,13 @@ class NomadMessagePagingCoordinatorTest {
         val capturedRequests = mutableListOf<Long?>()
         val (arrangement, coordinator) = Arrangement()
             .withRestoreMessagesBatchSuccess(hasMore = false, nextCursor = 0, nextTimestamp = 50)
-            .captureBeforeTimestamp(capturedRequests)
             .arrange()
+
+        everySuspend { arrangement.nomadDeviceSyncApi.restoreMessagesBatch(any()) } calls { invocation ->
+            val request = invocation.args.first() as NomadBatchRestoreRequest
+            capturedRequests.add(request.beforeTimestamp)
+            arrangement.restoreResponse
+        }
 
         coordinator.fetchOlderMessagesIfNeeded(CONVERSATION_ID, pageSize = 5, beforeTimestampMs = null) {}
 
@@ -138,26 +142,21 @@ class NomadMessagePagingCoordinatorTest {
         assertTrue(capturedRequests.first() != null)
     }
 
-    private class Arrangement {
-        val nomadDeviceSyncApi = mock<NomadDeviceSyncApi>()
-
-        val nomadMessagesDAO = mock<NomadMessagesDAO>()
-
-        private var nomadEnabled = true
-        private var restoreResponse: NetworkResponse<NomadBatchRestoreResponse> = NetworkResponse.Success(
+    private data class Arrangement(
+        val nomadDeviceSyncApi: NomadDeviceSyncApi = mock(),
+        val nomadMessagesDAO: NomadMessagesDAO = mock(),
+        val nomadEnabled: Boolean = true,
+        val restoreResponse: NetworkResponse<NomadBatchRestoreResponse> = NetworkResponse.Success(
             value = NomadBatchRestoreResponse(emptyList()),
             headers = emptyMap(),
-            httpCode = 200
-        )
-        private var storeResult = NomadMessageStoreResult(storedMessages = 0, batches = 0)
-        private var capturedBeforeTimestamps: MutableList<Long?>? = null
+            httpCode = 200,
+        ),
+        val storeResult: NomadMessageStoreResult = NomadMessageStoreResult(storedMessages = 0, batches = 0),
+    ) {
+        fun withNomadEnabled(enabled: Boolean): Arrangement = copy(nomadEnabled = enabled)
 
-        fun withNomadEnabled(enabled: Boolean) = apply {
-            nomadEnabled = enabled
-        }
-
-        fun withRestoreMessagesBatchSuccess(hasMore: Boolean, nextCursor: Long, nextTimestamp: Long) = apply {
-            restoreResponse = NetworkResponse.Success(
+        fun withRestoreMessagesBatchSuccess(hasMore: Boolean, nextCursor: Long, nextTimestamp: Long): Arrangement {
+            val response = NetworkResponse.Success(
                 value = NomadBatchRestoreResponse(
                     conversations = listOf(
                         NomadConversationBatchRestore(
@@ -180,32 +179,17 @@ class NomadMessagePagingCoordinatorTest {
                 headers = emptyMap(),
                 httpCode = 200
             )
+            return copy(restoreResponse = response)
         }
 
-        fun withStoreMessagesResult(result: NomadMessageStoreResult) = apply {
-            storeResult = result
-        }
+        fun withStoreMessagesResult(result: NomadMessageStoreResult): Arrangement = copy(storeResult = result)
 
-        fun captureBeforeTimestamp(captured: MutableList<Long?>) = apply {
-            capturedBeforeTimestamps = captured
-        }
-
-        fun withRestoreMessagesBatchError() = apply {
+        fun withRestoreMessagesBatchError(): Arrangement = copy(
             restoreResponse = NetworkResponse.Error(KaliumException.NoNetwork(NetworkState.NotConnected))
-        }
+        )
 
-        @OptIn(DelicateMokkeryApi::class)
-        suspend fun arrange(): Pair<Arrangement, NomadMessagePagingCoordinator> {
-            val captureTarget = capturedBeforeTimestamps
-            if (captureTarget == null) {
-                everySuspend { nomadDeviceSyncApi.restoreMessagesBatch(any()) } returns restoreResponse
-            } else {
-                everySuspend { nomadDeviceSyncApi.restoreMessagesBatch(any()) } calls { invocation ->
-                    val request = invocation.args.first() as NomadBatchRestoreRequest
-                    captureTarget.add(request.beforeTimestamp)
-                    restoreResponse
-                }
-            }
+        fun arrange(): Pair<Arrangement, NomadMessagePagingCoordinator> {
+            everySuspend { nomadDeviceSyncApi.restoreMessagesBatch(any()) } returns restoreResponse
             everySuspend { nomadMessagesDAO.storeMessages(any(), any()) } returns storeResult
 
             val coordinator = NomadMessagePagingCoordinatorImpl(
