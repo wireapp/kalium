@@ -496,25 +496,21 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun updateConversationReadAndModifiedDates(
         readDates: Map<QualifiedIDEntity, Instant>,
         modifiedDates: Map<QualifiedIDEntity, Instant>,
-    ): Int = withContext(writeDispatcher.value) {
+    ) = withContext(writeDispatcher.value) {
         if (readDates.isEmpty() && modifiedDates.isEmpty()) {
-            return@withContext 0
+            return@withContext
         }
 
-        conversationQueries.transactionWithResult {
-            var updatedConversations = 0
+        conversationQueries.transaction {
 
             readDates.forEach { (conversationId, date) ->
                 unreadEventsQueries.deleteUnreadEvents(date, conversationId)
                 conversationQueries.updateConversationReadDate(date, conversationId)
-                updatedConversations += conversationQueries.selectChanges().executeAsOne().toInt()
             }
 
             modifiedDates.forEach { (conversationId, date) ->
                 conversationQueries.updateConversationModifiedDate(date, conversationId)
             }
-
-            updatedConversations
         }
     }
 

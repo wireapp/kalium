@@ -39,7 +39,6 @@ class SyncNomadConversationMetadataUseCaseTest {
     fun givenMetadataResponse_whenInvoking_thenApplyLastReadDates() = runTest {
         val repository = FakeNomadConversationMetadataSyncRepository(
             metadataResponse = Either.Right(metadataResponse()),
-            updatedConversations = 1
         )
         val useCase = SyncNomadConversationMetadataUseCase(
             repository = repository
@@ -49,8 +48,6 @@ class SyncNomadConversationMetadataUseCaseTest {
 
         val success = assertIs<Either.Right<NomadConversationMetadataSyncResult>>(result).value
         assertEquals(1, success.downloadedConversations)
-        assertEquals(1, success.updatedConversations)
-        assertEquals(0, success.skippedConversations)
         assertEquals(1, repository.appliedMetadata.size)
         assertEquals(qid(CONVERSATION_ID), repository.appliedMetadata.single().conversationId)
         assertEquals(Instant.fromEpochMilliseconds(LAST_READ_TIMESTAMP), repository.appliedMetadata.single().lastReadDate)
@@ -58,10 +55,9 @@ class SyncNomadConversationMetadataUseCaseTest {
     }
 
     @Test
-    fun givenMissingStorage_whenInvoking_thenSkipUpdates() = runTest {
+    fun givenMissingStorage_whenInvoking_thenStillReturnSuccess() = runTest {
         val repository = FakeNomadConversationMetadataSyncRepository(
             metadataResponse = Either.Right(metadataResponse()),
-            updatedConversations = 0
         )
         val useCase = SyncNomadConversationMetadataUseCase(
             repository = repository
@@ -71,15 +67,12 @@ class SyncNomadConversationMetadataUseCaseTest {
 
         val success = assertIs<Either.Right<NomadConversationMetadataSyncResult>>(result).value
         assertEquals(1, success.downloadedConversations)
-        assertEquals(0, success.updatedConversations)
-        assertEquals(1, success.skippedConversations)
     }
 
     @Test
     fun givenApiFailure_whenInvoking_thenDoNotTouchStorage() = runTest {
         val repository = FakeNomadConversationMetadataSyncRepository(
             metadataResponse = Either.Left(NetworkFailure.NoNetworkConnection(null)),
-            updatedConversations = 0
         )
         val useCase = SyncNomadConversationMetadataUseCase(
             repository = repository
@@ -94,7 +87,6 @@ class SyncNomadConversationMetadataUseCaseTest {
 
     private class FakeNomadConversationMetadataSyncRepository(
         private val metadataResponse: Either<CoreFailure, NomadConversationMetadataResponse>,
-        private val updatedConversations: Int,
     ) : NomadConversationMetadataSyncRepository {
         val appliedMetadata = mutableListOf<NomadConversationMetadataToSync>()
 
@@ -104,9 +96,9 @@ class SyncNomadConversationMetadataUseCaseTest {
         override suspend fun applyMetadata(
             selfUserId: UserId,
             metadata: List<NomadConversationMetadataToSync>,
-        ): Either<CoreFailure, Int> {
+        ): Either<CoreFailure, Unit> {
             appliedMetadata += metadata
-            return Either.Right(updatedConversations)
+            return Either.Right(Unit)
         }
     }
 
