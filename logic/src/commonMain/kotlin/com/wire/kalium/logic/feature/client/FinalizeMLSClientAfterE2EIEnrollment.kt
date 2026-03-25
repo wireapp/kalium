@@ -19,7 +19,9 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.logger.kaliumLogger
 
 public interface FinalizeMLSClientAfterE2EIEnrollment {
     public suspend fun invoke()
@@ -27,11 +29,14 @@ public interface FinalizeMLSClientAfterE2EIEnrollment {
 
 internal class FinalizeMLSClientAfterE2EIEnrollmentImpl(
     private val clientRepository: ClientRepository,
-    private val joinExistingMLSConversationsUseCase: JoinExistingMLSConversationsUseCase
+    private val joinExistingMLSConversationsUseCase: JoinExistingMLSConversationsUseCase,
+    private val slowSyncRepository: SlowSyncRepository
 ) : FinalizeMLSClientAfterE2EIEnrollment {
     override suspend fun invoke() {
         joinExistingMLSConversationsUseCase().map {
             clientRepository.clearClientRegistrationBlockedByE2EI()
+            kaliumLogger.i("Clearing last slow sync completion instant after finalizing MLS client enrollment")
+            slowSyncRepository.clearLastSlowSyncCompletionInstant()
         }
     }
 }
