@@ -93,7 +93,8 @@ internal class NomadMessagePagingCoordinatorImpl(
             val next = existing.copy(isFetching = true)
             map[conversationId] = next
             kaliumLogger.d(
-                "[$TAG] Nomad paging fetching conversation '${conversationId.toLogString()}' with cursor=${next.nextCursor} ts=${next.nextTimestamp}"
+                "[$TAG] Nomad paging fetching conversation '${conversationId.toLogString()}' " +
+                        "with cursor=${next.nextCursor} ts=${next.nextTimestamp}"
             )
             next
         } ?: return

@@ -44,10 +44,6 @@ internal class FetchOlderNomadMessagesByConversationUseCaseImpl(
     private val messageRepository: MessageRepository,
 ) : FetchOlderNomadMessagesByConversationUseCase {
 
-    /**
-     * Fetches older messages for a given conversation in a remote data source and stores them in the local database.
-     * This is typically used when the user scrolls up in the message list we want to load more messages from the past.
-     */
     override suspend operator fun invoke(
         conversationId: ConversationId,
         pageSize: Int,

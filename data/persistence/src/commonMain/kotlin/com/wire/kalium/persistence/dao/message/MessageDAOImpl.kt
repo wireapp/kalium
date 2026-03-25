@@ -55,7 +55,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class MessageDAOImpl internal constructor(
     private val queries: MessagesQueries,
     private val attachmentsQueries: MessageAttachmentsQueries,

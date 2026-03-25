@@ -26,13 +26,13 @@ import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
-import kotlinx.datetime.Clock
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 
 internal interface MessageRepositoryExtensions {
     suspend fun getPaginatedMessagesByConversationIdAndVisibility(
@@ -90,7 +90,6 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             it.map { messageMapper.fromEntityToMessage(it) }
         }
     }
-
 
     override suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(
         searchQuery: String,
