@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.message.paging
 
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
@@ -204,8 +206,8 @@ class NomadMessagePagingCoordinatorTest {
     }
 
     private companion object {
-        val SELF_USER_ID: UserId = QualifiedID("user", "domain")
-        val CONVERSATION_ID: QualifiedID = QualifiedID("conversation", "domain")
+        val SELF_USER_ID: UserId = TestUser.SELF.id
+        val CONVERSATION_ID: QualifiedID = TestConversation.ID
         val FIXED_CLOCK: Clock = Clock.System
     }
 }
