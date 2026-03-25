@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
@@ -46,7 +47,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
@@ -121,7 +121,7 @@ internal class OneOnOneResolverImpl(
                         // Either it fetched all users on the previous step, or it's not needed
                         invalidateCurrentKnownProtocols = false
                     ).map { }.flatMapLeft {
-                        handleBatchEntryFailure(it)
+                        handleBatchEntryFailure(transactionContext, item, it)
                     }
                 }
             }.foldToEitherWhileRight(Unit) { item, _ ->
@@ -130,19 +130,70 @@ internal class OneOnOneResolverImpl(
         }
     }
 
-    private fun handleBatchEntryFailure(it: CoreFailure) = when (it) {
+    private suspend fun handleBatchEntryFailure(
+        transactionContext: CryptoTransactionContext,
+        user: OtherUser,
+        failure: CoreFailure
+    ) = when (failure) {
         is CoreFailure.MissingKeyPackages,
-        is NetworkFailure.ServerMiscommunication,
-        is NetworkFailure.FederatedBackendFailure,
-        is CoreFailure.NoCommonProtocolFound,
+        is CoreFailure.NoCommonProtocolFound -> {
+            if (failure is CoreFailure.MissingKeyPackages) {
+                kaliumLogger.w(
+                    "Resolving one-on-one failed $failure for ${user.id.toLogString()}, " +
+                        "scheduling retry after incremental sync is live"
+                )
+                scheduleResolveOneOnOneConversationWithUserId(transactionContext, user.id)
+            } else {
+                kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
+            }
+            Either.Right(Unit)
+        }
+
+        is NetworkFailure.FederatedBackendFailure.RetryableFailure -> {
+            kaliumLogger.w(
+                "Resolving one-on-one failed $failure for ${user.id.toLogString()}, " +
+                    "scheduling retry after incremental sync is live"
+            )
+            scheduleResolveOneOnOneConversationWithUserId(transactionContext, user.id)
+            Either.Right(Unit)
+        }
+
+        is NetworkFailure.FederatedBackendFailure -> {
+            kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
+            Either.Right(Unit)
+        }
+
+        is NetworkFailure.ServerMiscommunication -> {
+            if (failure.kaliumException is KaliumException.InvalidRequestError) {
+                kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
+                Either.Right(Unit)
+            } else {
+                kaliumLogger.w("Resolving one-on-one failed $failure, retrying")
+                Either.Left(failure)
+            }
+        }
+
         is MLSFailure.MessageRejected -> {
-            kaliumLogger.e("Resolving one-on-one failed $it, skipping")
+            if (failure.cause == NetworkFailure.MlsMessageRejectedFailure.StaleMessage) {
+                kaliumLogger.w(
+                    "Resolving one-on-one failed $failure for ${user.id.toLogString()}, " +
+                        "scheduling retry after incremental sync is live"
+                )
+                scheduleResolveOneOnOneConversationWithUserId(transactionContext, user.id)
+            } else {
+                // MessageRejected can still leave the local active 1:1 pointer unresolved until
+                // another explicit resolve trigger happens. We currently prefer to keep the batch
+                // moving instead of retrying the entire one-on-one resolution here.
+                kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
+            }
             Either.Right(Unit)
         }
 
         else -> {
-            kaliumLogger.e("Resolving one-on-one failed $it, retrying")
-            Either.Left(it)
+            kaliumLogger.w(
+                "Resolving one-on-one failed $failure, retrying"
+            )
+            Either.Left(failure)
         }
     }
 
@@ -159,7 +210,11 @@ internal class OneOnOneResolverImpl(
     ) =
         resolveActiveOneOnOneScope.launch {
             kaliumLogger.d("Schedule resolving active one-on-one")
-            incrementalSyncRepository.incrementalSyncState.first { it is IncrementalSyncStatus.Live }
+            val syncReachedLive = incrementalSyncRepository.incrementalSyncState.firstOrNull { it is IncrementalSyncStatus.Live }
+            if (syncReachedLive == null) {
+                kaliumLogger.w("Skipping scheduled active one-on-one resolve for ${userId.toLogString()} because sync state flow completed")
+                return@launch
+            }
             delay(delay)
             resolveOneOnOneConversationWithUserId(
                 transactionContext = transactionContext,

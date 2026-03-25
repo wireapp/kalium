@@ -18,7 +18,10 @@
 package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
@@ -34,8 +37,10 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -209,6 +214,108 @@ class OneOnOneResolverTest {
         coEvery {
             arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.last()))
         }.returns(Either.Left(CoreFailure.Unknown(null)))
+
+        // when then
+        resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldFail()
+    }
+
+    @Test
+    fun givenStaleMessageDuringBatchResolve_whenResolveAllOneOnOneConversations_thenScheduleRetryAndContinue() = runTest {
+        // given
+        val staleFailure = MLSFailure.MessageRejected(NetworkFailure.MlsMessageRejectedFailure.StaleMessage)
+        val oneOnOneUsers = listOf(TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID), TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID_2))
+        val (arrangement, resolver) = arrange {
+            withIncrementalSyncState(flowOf(IncrementalSyncStatus.Pending))
+            withGetUsersWithOneOnOneConversationReturning(oneOnOneUsers)
+            withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
+            withMigrateToMLSReturns(Either.Right(TestConversation.ID))
+        }
+
+        coEvery {
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.last()))
+        }.returns(Either.Left(staleFailure))
+
+        // when
+        resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldSucceed()
+
+        // then
+        coVerify {
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.first()))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.last()))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenRetryableFederatedFailureDuringBatchResolve_whenResolveAllOneOnOneConversations_thenScheduleRetryAndContinue() = runTest {
+        // given
+        val federatedFailure = NetworkFailure.FederatedBackendFailure.FailedDomains(listOf("wire.com"))
+        val oneOnOneUsers = listOf(TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID), TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID_2))
+        val (arrangement, resolver) = arrange {
+            withIncrementalSyncState(flowOf(IncrementalSyncStatus.Pending))
+            withGetUsersWithOneOnOneConversationReturning(oneOnOneUsers)
+            withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
+            withMigrateToMLSReturns(Either.Right(TestConversation.ID))
+        }
+
+        coEvery {
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.last()))
+        }.returns(Either.Left(federatedFailure))
+
+        // when
+        resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldSucceed()
+
+        // then
+        coVerify {
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.first()))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.last()))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenInvalidRequestDuringBatchResolve_whenResolveAllOneOnOneConversations_thenSkipFailureAndContinue() = runTest {
+        // given
+        val invalidRequestFailure = NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)
+        val oneOnOneUsers = listOf(TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID), TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID_2))
+        val (arrangement, resolver) = arrange {
+            withGetUsersWithOneOnOneConversationReturning(oneOnOneUsers)
+            withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
+            withMigrateToMLSReturns(Either.Right(TestConversation.ID))
+        }
+
+        coEvery {
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.last()))
+        }.returns(Either.Left(invalidRequestFailure))
+
+        // when
+        resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldSucceed()
+
+        // then
+        coVerify {
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.first()))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.last()))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenGenericServerMiscommunicationDuringBatchResolve_whenResolveAllOneOnOneConversations_thenFailTheBatch() = runTest {
+        // given
+        val serverFailure = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(RuntimeException("boom")))
+        val oneOnOneUsers = listOf(TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID), TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID_2))
+        val (arrangement, resolver) = arrange {
+            withGetUsersWithOneOnOneConversationReturning(oneOnOneUsers)
+            withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
+            withMigrateToMLSReturns(Either.Right(TestConversation.ID))
+        }
+
+        coEvery {
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.last()))
+        }.returns(Either.Left(serverFailure))
 
         // when then
         resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldFail()
