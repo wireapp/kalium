@@ -91,7 +91,28 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         requireNomadServiceUrl(apiName = "syncAllMessages") ?: wrapRequest {
             httpClient.get {
                 setNomadUrlIfAvailable(PATH_EVENT, "$PATH_MESSAGES/$PATH_MESSAGES_SYNC")
-                parameter("limit", limit)
+                parameter(QUERY_LIMIT, limit)
+            }
+        }
+
+    override suspend fun restoreMessagesBatch(
+        request: NomadBatchRestoreRequest,
+    ): NetworkResponse<NomadBatchRestoreResponse> =
+        requireNomadServiceUrl(apiName = "restoreMessagesBatch") ?: wrapRequest {
+            httpClient.get {
+                setNomadUrlIfAvailable(PATH_EVENT, "$PATH_MESSAGES/$PATH_MESSAGES_BATCH", PATH_MESSAGES_RESTORE)
+                request.conversationIds?.let { conversationIds ->
+                    parameter(QUERY_CONVERSATION_IDS, conversationIds.joinToString(separator = ","))
+                }
+                request.limit?.let { limit ->
+                    parameter(QUERY_LIMIT, limit)
+                }
+                request.beforeTimestamp?.let { beforeTimestamp ->
+                    parameter(QUERY_BEFORE_TIMESTAMP, beforeTimestamp)
+                }
+                request.nextCursor?.let { nextCursor ->
+                    parameter(QUERY_NEXT_CURSOR, nextCursor)
+                }
             }
         }
 
