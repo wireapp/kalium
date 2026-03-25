@@ -19,6 +19,8 @@
 package com.wire.kalium.network.api.base.authenticated.nomaddevice
 
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.utils.NetworkResponse
@@ -34,6 +36,11 @@ interface NomadDeviceSyncApi {
     suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse>
 
     suspend fun syncAllMessages(limit: Int = 100): NetworkResponse<NomadAllMessagesResponse>
+
+    suspend fun restoreMessagesBatch(
+        request: NomadBatchRestoreRequest,
+    ): NetworkResponse<NomadBatchRestoreResponse>
+
     suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse>
     suspend fun uploadCryptoState(
         clientId: String,
