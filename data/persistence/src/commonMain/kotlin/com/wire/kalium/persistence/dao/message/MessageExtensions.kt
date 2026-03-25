@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.dao.message
 
 import app.cash.paging.Pager
 import app.cash.paging.PagingConfig
-import app.cash.paging.PagingSource
 import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessagesQueries
@@ -36,8 +35,7 @@ interface MessageExtensions {
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
         pagingConfig: PagingConfig,
-        startingOffset: Long,
-        pagingSourceDecorator: (PagingSource<Int, MessageEntity>) -> PagingSource<Int, MessageEntity> = { it }
+        startingOffset: Long
     ): KaliumPager<MessageEntity>
 
     fun getPagerForMessagesSearch(
@@ -73,16 +71,12 @@ internal class MessageExtensionsImpl internal constructor(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
         pagingConfig: PagingConfig,
-        startingOffset: Long,
-        pagingSourceDecorator: (PagingSource<Int, MessageEntity>) -> PagingSource<Int, MessageEntity>
+        startingOffset: Long
     ): KaliumPager<MessageEntity> {
         // We could return a Flow directly, but having the PagingSource is the only way to test this
-        val pagingSourceFactory = {
-            pagingSourceDecorator(getPagingSource(conversationId, visibilities, startingOffset))
-        }
         return KaliumPager(
-            Pager(pagingConfig, pagingSourceFactory = pagingSourceFactory),
-            pagingSourceFactory(),
+            Pager(pagingConfig) { getPagingSource(conversationId, visibilities, startingOffset) },
+            getPagingSource(conversationId, visibilities, startingOffset),
             readDispatcher,
         )
     }
