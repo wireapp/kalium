@@ -37,10 +37,12 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -50,6 +52,8 @@ import io.mockative.once
 import io.mockative.twice
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -372,7 +376,10 @@ class OneOnOneResolverTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
+    private class Arrangement(
+        private val dispatcher: KaliumDispatcher,
+        private val block: suspend Arrangement.() -> Unit
+    ) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneProtocolSelectorArrangement by OneOnOneProtocolSelectorArrangementImpl(),
         OneOnOneMigratorArrangement by OneOnOneMigratorArrangementImpl(),
@@ -384,13 +391,15 @@ class OneOnOneResolverTest {
                 userRepository = userRepository,
                 oneOnOneProtocolSelector = oneOnOneProtocolSelector,
                 oneOnOneMigrator = oneOnOneMigrator,
-                incrementalSyncRepository = incrementalSyncRepository
+                incrementalSyncRepository = incrementalSyncRepository,
+                kaliumDispatcher = dispatcher
             )
         }
     }
 
     private companion object {
-        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        fun TestScope.arrange(configuration: suspend Arrangement.() -> Unit) =
+            Arrangement(StandardTestDispatcher(testScheduler).testKaliumDispatcher(), configuration).arrange()
 
         val OTHER_USER = TestUser.OTHER
     }
