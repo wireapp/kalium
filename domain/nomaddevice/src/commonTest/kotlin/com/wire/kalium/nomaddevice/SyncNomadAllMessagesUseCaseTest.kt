@@ -23,6 +23,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationWithMessages
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadStoredMessage
@@ -203,6 +205,12 @@ class SyncNomadAllMessagesUseCaseTest {
         override suspend fun syncAllMessages(limit: Int): NetworkResponse<NomadAllMessagesResponse> {
             lastPageSize = limit
             return allMessagesResponse
+        }
+
+        override suspend fun restoreMessagesBatch(
+            request: NomadBatchRestoreRequest,
+        ): NetworkResponse<NomadBatchRestoreResponse> {
+            error("Not needed in this test")
         }
 
         override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> {
