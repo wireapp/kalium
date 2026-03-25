@@ -43,9 +43,9 @@ public data class NomadMappedMessages(
     val skippedMessages: Int,
 )
 
-internal class NomadAllMessagesMapper {
+public class NomadAllMessagesMapper {
 
-    fun map(
+    public fun map(
         response: NomadAllMessagesResponse,
     ): NomadMappedMessages {
         var skipped = 0

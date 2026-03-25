@@ -25,32 +25,26 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreResponse
-import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationBatchRestore
-import com.wire.kalium.network.api.authenticated.nomaddevice.NomadStoredMessage
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationWithMessages
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
-import com.wire.kalium.nomaddevice.NomadMappedMessages
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.nomaddevice.NomadAllMessagesMapper
 import com.wire.kalium.persistence.dao.backup.NomadMessageToInsert
 import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
-import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
-import com.wire.kalium.protobuf.decodeFromByteArray
-import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAsset
-import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAttachment
-import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessageContent
-import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
-import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlin.io.encoding.Base64
 
 @Mockable
 internal interface NomadMessagePagingCoordinator {
+    /**
+     * Fetches older messages for the given conversation if needed, based on the current paging state.
+     * @param conversationId The ID of the conversation to fetch messages for.
+     * @param pageSize The number of messages to fetch in one batch.
+     * @param beforeTimestampMs Optional timestamp to fetch messages before.
+     * @param onInvalidate Callback to be invoked if the paging state is updated and the UI pager consumer needs to be invalidated.
+     */
     suspend fun fetchOlderMessagesIfNeeded(
         conversationId: ConversationId,
         pageSize: Int,
@@ -64,7 +58,7 @@ internal class NomadMessagePagingCoordinatorImpl(
     private val isNomadEnabled: () -> Boolean,
     private val nomadDeviceSyncApi: NomadDeviceSyncApi,
     private val nomadMessagesDAO: NomadMessagesDAO,
-    private val mapper: NomadBatchRestoreMapper = NomadBatchRestoreMapper(),
+    private val mapper: NomadAllMessagesMapper = NomadAllMessagesMapper(),
     private val clock: Clock = Clock.System,
 ) : NomadMessagePagingCoordinator {
 
@@ -143,7 +137,7 @@ internal class NomadMessagePagingCoordinatorImpl(
         pageSize: Int,
         onInvalidate: () -> Unit,
     ) {
-        val mapped = mapper.map(response)
+        val mapped = mapper.map(response.toAllMessagesResponse())
         val storeResult = wrapStorageRequest {
             nomadMessagesDAO.storeMessages(
                 messages = mapped.messages.filterByConversationId(conversationId),
@@ -167,8 +161,8 @@ internal class NomadMessagePagingCoordinatorImpl(
                     map[conversationId] = nextState
                     kaliumLogger.d(
                         "[$TAG] Nomad paging stored ${storeResult.value.storedMessages} messages for conversation " +
-                            "'${conversationId.toLogString()}', hasMore=${nextState.hasMore}, " +
-                            "nextCursor=${nextState.nextCursor}, nextTimestamp=${nextState.nextTimestamp}"
+                                "'${conversationId.toLogString()}', hasMore=${nextState.hasMore}, " +
+                                "nextCursor=${nextState.nextCursor}, nextTimestamp=${nextState.nextTimestamp}"
                     )
                     if (storeResult.value.storedMessages > 0) {
                         shouldInvalidate = true
@@ -181,230 +175,18 @@ internal class NomadMessagePagingCoordinatorImpl(
         }
     }
 
-    internal class NomadBatchRestoreMapper {
-        fun map(response: NomadBatchRestoreResponse): NomadMappedMessages {
-            var skipped = 0
-            val mappedMessages = response.conversations.flatMap { conversationWithMessages ->
-                conversationWithMessages.messages.mapNotNull { storedMessage ->
-                    mapMessageOrNull(conversationWithMessages, storedMessage).also { mapped ->
-                        if (mapped == null) skipped += 1
-                    }
-                }
-            }
-
-            return NomadMappedMessages(
-                totalMessages = response.conversations.sumOf { it.messages.size },
-                messages = mappedMessages,
-                skippedMessages = skipped,
-            )
-        }
-
-        @Suppress("ReturnCount")
-        private fun mapMessageOrNull(
-            conversationWithMessages: NomadConversationBatchRestore,
-            storedMessage: NomadStoredMessage,
-        ): NomadMessageToInsert? {
-            val payloadBytes = runCatching { Base64.Default.decode(storedMessage.payload) }.getOrElse {
-                logSkip(storedMessage, conversationWithMessages, "invalid base64 payload")
-                return null
-            }
-
-            val payload = runCatching {
-                NomadDeviceMessagePayload.decodeFromByteArray(payloadBytes)
-            }.getOrElse {
-                logSkip(storedMessage, conversationWithMessages, "invalid protobuf payload")
-                return null
-            }
-
-            val senderUserId = payload.senderUserId.toDaoQualifiedId()
-            val creationDate = payload.creationDate.let { Instant.fromEpochMilliseconds(it) }
-            val lastEditDate = payload.lastEditTime?.let { Instant.fromEpochMilliseconds(it) }
-            val content = payload.content.toSyncableMessageContent(
-                senderUserId = senderUserId,
-                senderClientId = payload.senderClientId,
-                creationDate = creationDate,
-                lastEditDate = lastEditDate,
-            )
-            val conversationId = conversationWithMessages.conversation.toDaoConversationId()
-
-            return NomadMessageToInsert(
-                id = storedMessage.messageId,
-                conversationId = conversationId,
-                date = Instant.fromEpochMilliseconds(storedMessage.timestamp),
-                payload = content,
-            )
-        }
-
-        private fun NomadDeviceMessageContent.toSyncableMessageContent(
-            senderUserId: QualifiedIDEntity,
-            senderClientId: String?,
-            creationDate: Instant,
-            lastEditDate: Instant?,
-        ): SyncableMessagePayloadEntity =
-            when (val contentValue = content) {
-                is NomadDeviceMessageContent.Content.Text ->
-                    SyncableMessagePayloadEntity.Text(
-                        creationDate = creationDate,
-                        senderUserId = senderUserId,
-                        senderClientId = senderClientId,
-                        lastEditDate = lastEditDate,
-                        text = contentValue.value.text,
-                        mentions = contentValue.value.mentions.map { mention ->
-                            MessageEntity.Mention(
-                                start = mention.start,
-                                length = mention.length,
-                                userId = mention.userId.toDaoQualifiedId(),
-                            )
-                        },
-                        quotedMessageId = contentValue.value.quotedMessageId,
-                    )
-
-                is NomadDeviceMessageContent.Content.Asset ->
-                    contentValue.value.toSyncableAssetContent(
-                        senderUserId = senderUserId,
-                        senderClientId = senderClientId,
-                        creationDate = creationDate,
-                        lastEditDate = lastEditDate,
-                    )
-
-                is NomadDeviceMessageContent.Content.Location ->
-                    SyncableMessagePayloadEntity.Location(
-                        creationDate = creationDate,
-                        senderUserId = senderUserId,
-                        senderClientId = senderClientId,
-                        lastEditDate = lastEditDate,
-                        latitude = contentValue.value.latitude,
-                        longitude = contentValue.value.longitude,
-                        name = contentValue.value.name,
-                        zoom = contentValue.value.zoom,
-                    )
-
-                is NomadDeviceMessageContent.Content.Multipart ->
-                    SyncableMessagePayloadEntity.Multipart(
-                        creationDate = creationDate,
-                        senderUserId = senderUserId,
-                        senderClientId = senderClientId,
-                        lastEditDate = lastEditDate,
-                        text = contentValue.value.text?.text,
-                        mentions = contentValue.value.text?.mentions.orEmpty().map { mention ->
-                            MessageEntity.Mention(
-                                start = mention.start,
-                                length = mention.length,
-                                userId = mention.userId.toDaoQualifiedId(),
-                            )
-                        },
-                        quotedMessageId = contentValue.value.text?.quotedMessageId,
-                        attachments = contentValue.value.attachments.mapNotNull { attachment ->
-                            attachment.toMessageAttachmentOrNull()
-                        },
-                    )
-
-                null -> SyncableMessagePayloadEntity.Unsupported(
-                    contentType = MessageEntity.ContentType.UNKNOWN,
-                    creationDate = creationDate,
-                    senderUserId = senderUserId,
-                    senderClientId = senderClientId,
-                    lastEditDate = lastEditDate,
+    private fun NomadBatchRestoreResponse.toAllMessagesResponse(): NomadAllMessagesResponse =
+        NomadAllMessagesResponse(
+            conversations = conversations.map { item ->
+                NomadConversationWithMessages(
+                    conversation = item.conversation,
+                    messages = item.messages,
                 )
-            }
-
-        private fun NomadDeviceAsset.toSyncableAssetContent(
-            senderUserId: QualifiedIDEntity,
-            senderClientId: String?,
-            creationDate: Instant,
-            lastEditDate: Instant?,
-        ): SyncableMessagePayloadEntity.Asset {
-            val metadata = metaData
-            return SyncableMessagePayloadEntity.Asset(
-                creationDate = creationDate,
-                senderUserId = senderUserId,
-                senderClientId = senderClientId,
-                lastEditDate = lastEditDate,
-                mimeType = mimeType,
-                size = size,
-                name = name,
-                otrKey = otrKey.array,
-                sha256 = sha256.array,
-                assetId = assetId,
-                assetToken = assetToken,
-                assetDomain = assetDomain,
-                encryptionAlgorithm = encryption,
-                width = metadata.widthOrNull(),
-                height = metadata.heightOrNull(),
-                durationMs = metadata.durationOrNull(),
-                normalizedLoudness = metadata.normalizedLoudnessOrNull(),
-            )
-        }
-
-        private fun NomadDeviceAttachment.toMessageAttachmentOrNull():
-                MessageAttachmentEntity? {
-            val asset = (content as? NomadDeviceAttachment.Content.Asset)?.value ?: return null
-            return MessageAttachmentEntity(
-                assetId = asset.assetId,
-                cellAsset = true,
-                mimeType = asset.mimeType,
-                assetPath = asset.name,
-                assetSize = asset.size,
-                localPath = null,
-                previewUrl = null,
-                assetWidth = asset.metaData.widthOrNull(),
-                assetHeight = asset.metaData.heightOrNull(),
-                assetDuration = asset.metaData.durationOrNull(),
-                assetTransferStatus = com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity.NOT_DOWNLOADED.name,
-                contentUrl = null,
-                contentHash = null,
-                assetIndex = null,
-                contentExpiresAt = null,
-                isEditSupported = false,
-            )
-        }
-
-        private fun NomadDeviceAsset.MetaData<*>?.widthOrNull(): Int? =
-            when (this) {
-                is NomadDeviceAsset.MetaData.Image -> value.width
-                is NomadDeviceAsset.MetaData.Video -> value.width
-                else -> null
-            }
-
-        private fun NomadDeviceAsset.MetaData<*>?.heightOrNull(): Int? =
-            when (this) {
-                is NomadDeviceAsset.MetaData.Image -> value.height
-                is NomadDeviceAsset.MetaData.Video -> value.height
-                else -> null
-            }
-
-        private fun NomadDeviceAsset.MetaData<*>?.durationOrNull(): Long? =
-            when (this) {
-                is NomadDeviceAsset.MetaData.Video -> value.durationInMillis
-                is NomadDeviceAsset.MetaData.Audio -> value.durationInMillis
-                else -> null
-            }
-
-        private fun NomadDeviceAsset.MetaData<*>?.normalizedLoudnessOrNull(): ByteArray? =
-            when (this) {
-                is NomadDeviceAsset.MetaData.Audio -> value.normalization?.array
-                else -> null
-            }
-
-        private fun logSkip(
-            storedMessage: NomadStoredMessage,
-            conversation: NomadConversationBatchRestore,
-            reason: String,
-        ) {
-            kaliumLogger.w(
-                "[$TAG] Skipping Nomad message '${storedMessage.messageId}' in conversation " +
-                        "'${conversation.conversation.id}@${conversation.conversation.domain}': $reason."
-            )
-        }
-
-        private fun Conversation.toDaoConversationId():
-                QualifiedIDEntity =
-            QualifiedIDEntity(value = id, domain = domain)
-
-        private fun NomadDeviceQualifiedId.toDaoQualifiedId():
-                QualifiedIDEntity =
-            QualifiedIDEntity(value = value, domain = domain)
-    }
+            },
+            hasMore = false,
+            nextCursor = null,
+            nextTimestamp = null,
+        )
 
     private fun NomadBatchRestoreResponse.nextStateFor(
         conversationId: ConversationId,

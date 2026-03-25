@@ -26,8 +26,6 @@ import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
-import com.wire.kalium.logic.data.message.paging.NomadMessagePagingSource
-import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.datetime.Clock
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
@@ -62,6 +60,11 @@ internal interface MessageRepositoryExtensions {
         pagingConfig: PagingConfig,
         startingOffset: Long
     ): Flow<PagingData<AssetMessage>>
+
+    suspend fun fetchOlderNomadMessagesByConversationId(
+        conversationId: ConversationId,
+        pageSize: Int,
+    )
 }
 
 internal class MessageRepositoryExtensionsImpl internal constructor(
@@ -81,34 +84,13 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             visibility.map { it.toEntityVisibility() },
             pagingConfig,
             startingOffset,
-        ) { pagingSource ->
-            val coordinator = nomadMessagePagingCoordinator
-            if (coordinator == null) {
-                pagingSource
-            } else {
-                kaliumLogger.d("[$TAG] Wrapping paging source for conversation '${conversationId.toLogString()}'")
-                NomadMessagePagingSource(pagingSource) { source ->
-                    val beforeTimestampMs = messageDAO.getOldestVisibleMessageTimestampByConversationId(
-                        conversationId.toDao()
-                    ) ?: Clock.System.now().toEpochMilliseconds()
-                    coordinator.fetchOlderMessagesIfNeeded(
-                        conversationId = conversationId,
-                        pageSize = pagingConfig.pageSize,
-                        beforeTimestampMs = beforeTimestampMs,
-                        onInvalidate = { source.invalidate() }
-                    )
-                }
-            }
-        }
+        )
 
         return pager.pagingDataFlow.map {
             it.map { messageMapper.fromEntityToMessage(it) }
         }
     }
 
-    private companion object {
-        const val TAG = "MessageRepositoryExtensions"
-    }
 
     override suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(
         searchQuery: String,
@@ -160,5 +142,21 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         return pager.pagingDataFlow.map {
             it.map { messageEntity -> messageMapper.fromAssetEntityToAssetMessage(messageEntity) }
         }
+    }
+
+    override suspend fun fetchOlderNomadMessagesByConversationId(
+        conversationId: ConversationId,
+        pageSize: Int,
+    ) {
+        val coordinator = nomadMessagePagingCoordinator ?: return
+        val beforeTimestampMs = messageDAO.getOldestVisibleMessageTimestampByConversationId(
+            conversationId.toDao()
+        ) ?: Clock.System.now().toEpochMilliseconds()
+        coordinator.fetchOlderMessagesIfNeeded(
+            conversationId = conversationId,
+            pageSize = pageSize,
+            beforeTimestampMs = beforeTimestampMs,
+            onInvalidate = {}
+        )
     }
 }

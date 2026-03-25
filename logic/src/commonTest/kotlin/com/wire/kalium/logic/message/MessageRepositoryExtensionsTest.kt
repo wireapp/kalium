@@ -79,7 +79,6 @@ class MessageRepositoryExtensionsTest {
                     val list = it.toList()
                     list.size == 1 && list[0] == MessageEntity.Visibility.VISIBLE
                 }, eq(pagingConfig),
-                any(),
                 any()
             )
         }.wasInvoked(exactly = once)
@@ -104,7 +103,7 @@ class MessageRepositoryExtensionsTest {
 
         fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<MessageEntity>) = apply {
             every {
-                messageDaoExtensions.getPagerForConversation(any(), any(), any(), any(), any())
+                messageDaoExtensions.getPagerForConversation(any(), any(), any(), any())
             }.returns(kaliumPager)
         }
 
