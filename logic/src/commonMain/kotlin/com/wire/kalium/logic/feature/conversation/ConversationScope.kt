@@ -47,6 +47,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
@@ -143,6 +144,7 @@ public class ConversationScope internal constructor(
     private val transactionProvider: CryptoTransactionProvider,
     private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     private val systemMessageInserter: SystemMessageInserter,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -315,7 +317,8 @@ public class ConversationScope internal constructor(
             selfUserId,
             currentClientIdProvider,
             selfConversationIdProvider,
-            clearConversationAssetsLocally
+            clearConversationAssetsLocally,
+            persistenceEventHookNotifier,
         )
 
     public val markConversationAsDeletedLocallyUseCase: MarkConversationAsDeletedLocallyUseCase

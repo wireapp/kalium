@@ -38,6 +38,8 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.messaging.hooks.MessageDeleteEventData
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -60,6 +62,7 @@ public class DeleteMessageUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val deleteAttachments: DeleteMessageAttachmentsUseCase,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
@@ -87,7 +90,12 @@ public class DeleteMessageUseCase internal constructor(
                     val result = when (message.status) {
                         // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent
                         // better to send the delete message anyway and let it to other clients to ignore it if the message is not sent
-                        Message.Status.Failed -> messageRepository.deleteMessage(messageId, conversationId)
+                        Message.Status.Failed -> messageRepository.deleteMessage(messageId, conversationId).onSuccess {
+                            persistenceEventHookNotifier.onMessageDeleted(
+                                MessageDeleteEventData(conversationId, messageId),
+                                selfUserId
+                            )
+                        }
                         else -> {
                             currentClientIdProvider().flatMap { currentClientId ->
                                 selfConversationIdProvider().flatMap { selfConversationIds ->
@@ -121,6 +129,11 @@ public class DeleteMessageUseCase internal constructor(
                                 } else {
                                     messageRepository.markMessageAsDeleted(messageId, conversationId)
                                 }
+                            }.onSuccess {
+                                persistenceEventHookNotifier.onMessageDeleted(
+                                    MessageDeleteEventData(conversationId, messageId),
+                                    selfUserId
+                                )
                             }.onFailure { failure ->
                                 kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")
                                 if (failure is CoreFailure.Unknown) {

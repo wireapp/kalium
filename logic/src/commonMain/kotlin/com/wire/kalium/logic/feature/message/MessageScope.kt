@@ -412,6 +412,7 @@ public class MessageScope internal constructor(
             currentClientIdProvider,
             selfConversationIdProvider,
             deleteMessageAttachmentsUseCase.value,
+            persistenceEventHookNotifier,
         )
 
     public val toggleReaction: ToggleReactionUseCase
