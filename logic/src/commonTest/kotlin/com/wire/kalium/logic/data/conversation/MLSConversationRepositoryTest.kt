@@ -1048,7 +1048,27 @@ class MLSConversationRepositoryTest {
             .withKeyPackageLimits(10)
             .withGenerateKeyPackageSuccessful(listOf())
             .withReplaceKeyPackagesReturning(Either.Right(Unit))
+            .withRemoveStaleKeyPackages()
             .arrange()
+        val invocationOrder = mutableListOf<String>()
+
+        coEvery { arrangement.mlsContext.removeStaleKeyPackages() }
+            .invokes {
+                invocationOrder += "removeStaleKeyPackages"
+                Unit
+            }
+
+        coEvery { arrangement.mlsContext.generateKeyPackages(any()) }
+            .invokes {
+                invocationOrder += "generateKeyPackages"
+                emptyList()
+            }
+
+        coEvery { arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any()) }
+            .invokes {
+                invocationOrder += "replaceKeyPackages"
+                Either.Right(Unit)
+            }
 
         assertEquals(
             Either.Right(Unit),
@@ -1076,6 +1096,11 @@ class MLSConversationRepositoryTest {
         coVerify {
             arrangement.mlsContext.removeStaleKeyPackages()
         }.wasInvoked(once)
+
+        assertEquals(
+            listOf("removeStaleKeyPackages", "generateKeyPackages", "replaceKeyPackages"),
+            invocationOrder
+        )
     }
 
     @Test
