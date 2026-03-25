@@ -54,6 +54,7 @@ class SyncNomadConversationMetadataUseCaseTest {
         assertEquals(1, repository.appliedMetadata.size)
         assertEquals(qid(CONVERSATION_ID), repository.appliedMetadata.single().conversationId)
         assertEquals(Instant.fromEpochMilliseconds(LAST_READ_TIMESTAMP), repository.appliedMetadata.single().lastReadDate)
+        assertEquals(Instant.fromEpochMilliseconds(LAST_MODIFIED_TIMESTAMP), repository.appliedMetadata.single().lastModifiedDate)
     }
 
     @Test
@@ -100,7 +101,7 @@ class SyncNomadConversationMetadataUseCaseTest {
         override suspend fun getConversationMetadata(selfUserId: UserId): Either<CoreFailure, NomadConversationMetadataResponse> =
             metadataResponse
 
-        override suspend fun applyLastReadMetadata(
+        override suspend fun applyMetadata(
             selfUserId: UserId,
             metadata: List<NomadConversationMetadataToSync>,
         ): Either<CoreFailure, Int> {
@@ -114,7 +115,7 @@ class SyncNomadConversationMetadataUseCaseTest {
             conversations = listOf(
                 NomadConversationMetadataItem(
                     conversation = Conversation(id = CONVERSATION_ID, domain = CONVERSATION_DOMAIN),
-                    metadata = NomadConversationMetadata(lastRead = LAST_READ_TIMESTAMP)
+                    metadata = NomadConversationMetadata(lastRead = LAST_READ_TIMESTAMP, lastModified = LAST_MODIFIED_TIMESTAMP)
                 )
             )
         )
@@ -124,6 +125,7 @@ class SyncNomadConversationMetadataUseCaseTest {
         const val CONVERSATION_ID = "conversation-id"
         const val CONVERSATION_DOMAIN = "wire.test"
         const val LAST_READ_TIMESTAMP = 1_707_235_200_000L
+        const val LAST_MODIFIED_TIMESTAMP = 1_707_235_300_000L
     }
 }
 

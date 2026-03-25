@@ -348,7 +348,7 @@ private fun metadataResponse(): NetworkResponse<NomadConversationMetadataRespons
             conversations = listOf(
                 NomadConversationMetadataItem(
                     conversation = Conversation(id = TEST_CONVERSATION_ID, domain = CONVERSATION_DOMAIN),
-                    metadata = NomadConversationMetadata(lastRead = TEST_LAST_READ_TIMESTAMP)
+                    metadata = NomadConversationMetadata(lastRead = TEST_LAST_READ_TIMESTAMP, lastModified = TEST_LAST_MODIFIED_TIMESTAMP)
                 )
             )
         ),
@@ -387,4 +387,5 @@ private fun qid(value: String): QualifiedIDEntity = QualifiedIDEntity(value = va
 
 private const val TEST_CONVERSATION_ID = "conversation-id"
 private const val TEST_LAST_READ_TIMESTAMP = 1_707_235_200_000L
+private const val TEST_LAST_MODIFIED_TIMESTAMP = 1_707_235_300_000L
 private const val CONVERSATION_DOMAIN = "wire.test"

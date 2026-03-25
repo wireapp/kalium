@@ -20,5 +20,5 @@ package com.wire.kalium.persistence.dao.backup
 
 data class ChangeLogSyncBatch(
     val events: List<ChangeLogSyncEvent>,
-    val conversationLastReads: List<ConversationLastReadSyncEntity>,
+    val conversationMetadata: List<ConversationMetadataSyncEntity>,
 )
