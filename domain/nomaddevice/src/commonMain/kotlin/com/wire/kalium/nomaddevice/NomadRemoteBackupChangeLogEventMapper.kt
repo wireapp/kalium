@@ -63,13 +63,13 @@ internal class NomadRemoteBackupChangeLogEventMapper {
         is ChangeLogSyncEvent.ReactionsSync -> NomadMessageEvent.UpsertMessageStatusEvent(
             messageId = messageId,
             conversation = conversationId.toApiConversation(),
-            reaction = reactions.toReactionPayload()
+            reaction = reactions.toReactionBase64()
         )
 
         is ChangeLogSyncEvent.ReadReceiptSync -> NomadMessageEvent.UpsertMessageStatusEvent(
             messageId = messageId,
             conversation = conversationId.toApiConversation(),
-            readReceipt = readReceipts.toReadReceiptsPayload()
+            readReceipt = readReceipts.toReadReceiptsBase64()
         )
 
         is ChangeLogSyncEvent.ConversationDelete -> NomadMessageEvent.WipeConversationEvent(

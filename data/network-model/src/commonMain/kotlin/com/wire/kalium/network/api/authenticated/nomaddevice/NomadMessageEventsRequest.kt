@@ -18,7 +18,6 @@
 
 package com.wire.kalium.network.api.authenticated.nomaddevice
 
-import com.wire.kalium.network.api.model.QualifiedID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -52,9 +51,9 @@ sealed interface NomadMessageEvent {
         @SerialName("conversation")
         val conversation: Conversation,
         @SerialName("reaction")
-        val reaction: ReactionsPayload? = null,
+        val reaction: String? = null,
         @SerialName("read_receipt")
-        val readReceipt: ReadReceiptsPayload? = null
+        val readReceipt: String? = null
     ) : NomadMessageEvent {
         init {
             require((reaction == null) xor (readReceipt == null)) {
@@ -111,30 +110,3 @@ data class Conversation(
     val domain: String
 )
 
-@Serializable
-data class ReactionsPayload(
-    @SerialName("reactions_by_user")
-    val reactionsByUser: List<ReactionByUser>
-)
-
-@Serializable
-data class ReactionByUser(
-    @SerialName("user_id")
-    val userId: QualifiedID,
-    @SerialName("emojis")
-    val emojis: List<String>
-)
-
-@Serializable
-data class ReadReceiptsPayload(
-    @SerialName("read_receipts")
-    val readReceipts: List<ReadReceiptEntry>
-)
-
-@Serializable
-data class ReadReceiptEntry(
-    @SerialName("user_id")
-    val userId: QualifiedID,
-    @SerialName("date")
-    val date: String
-)

@@ -21,6 +21,8 @@ package com.wire.kalium.persistence.dao.backup
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
+import com.wire.kalium.persistence.ReactionsQueries
+import com.wire.kalium.persistence.ReceiptsQueries
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -33,11 +35,23 @@ data class NomadMessageStoreResult(
     val batches: Int,
 )
 
+data class NomadReactionToInsert(
+    val userId: QualifiedIDEntity,
+    val emojis: List<String>,
+)
+
+data class NomadReadReceiptToInsert(
+    val userId: QualifiedIDEntity,
+    val date: Instant,
+)
+
 data class NomadMessageToInsert(
     val id: String,
     val conversationId: QualifiedIDEntity,
     val date: Instant,
     val payload: SyncableMessagePayloadEntity,
+    val reactions: List<NomadReactionToInsert> = emptyList(),
+    val readReceipts: List<NomadReadReceiptToInsert> = emptyList(),
 )
 
 interface NomadMessagesDAO {
@@ -52,6 +66,8 @@ internal class NomadMessagesDAOImpl internal constructor(
     private val conversationsQueries: ConversationsQueries,
     private val messagesQueries: MessagesQueries,
     private val messageAttachmentsQueries: MessageAttachmentsQueries,
+    private val reactionsQueries: ReactionsQueries,
+    private val receiptsQueries: ReceiptsQueries,
     private val writeDispatcher: WriteDispatcher,
 ) : NomadMessagesDAO {
 
@@ -129,7 +145,35 @@ internal class NomadMessagesDAOImpl internal constructor(
         check(insertedContent) {
             "Nomad import inserted base message '${message.id}' without its content row."
         }
+        insertReactions(message)
+        insertReadReceipts(message)
         return true
+    }
+
+    private fun insertReactions(message: NomadMessageToInsert) {
+        message.reactions.forEach { reaction ->
+            reaction.emojis.forEach { emoji ->
+                reactionsQueries.insertReaction(
+                    message_id = message.id,
+                    conversation_id = message.conversationId,
+                    sender_id = reaction.userId,
+                    emoji = emoji,
+                    date = message.date.toString()
+                )
+            }
+        }
+    }
+
+    private fun insertReadReceipts(message: NomadMessageToInsert) {
+        message.readReceipts.forEach { receipt ->
+            receiptsQueries.insertReceipt(
+                message.id,
+                "${message.conversationId.value}@${message.conversationId.domain}",
+                "${receipt.userId.value}@${receipt.userId.domain}",
+                RECEIPT_TYPE_READ,
+                receipt.date.toString()
+            )
+        }
     }
 
     private fun insertRegularContent(message: NomadMessageToInsert): Boolean {
@@ -289,5 +333,6 @@ internal class NomadMessagesDAOImpl internal constructor(
 
     private companion object {
         const val MIN_BATCH_SIZE = 1
+        const val RECEIPT_TYPE_READ = "READ"
     }
 }
