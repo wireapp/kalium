@@ -420,7 +420,8 @@ public class MessageScope internal constructor(
             selfUserId,
             slowSyncRepository,
             reactionRepository,
-            messageSender
+            messageSender,
+            persistenceEventHookNotifier
         )
 
     public val observeMessageReactions: ObserveMessageReactionsUseCase

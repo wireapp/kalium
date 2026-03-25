@@ -34,6 +34,8 @@ import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.ReactionEventData
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -50,6 +52,7 @@ public class ToggleReactionUseCase internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val reactionRepository: ReactionRepository,
     private val messageSender: MessageSender,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     /**
@@ -113,6 +116,10 @@ public class ToggleReactionUseCase internal constructor(
     ): Either<CoreFailure, Unit> {
         return reactionRepository
             .persistReaction(messageId, conversationId, userId, date, newReaction).flatMap {
+                persistenceEventHookNotifier.onReactionPersisted(
+                    ReactionEventData(conversationId, messageId, date),
+                    userId
+                )
                 val regularMessage = Message.Signaling(
                     id = Uuid.random().toString(),
                     content = MessageContent.Reaction(messageId = messageId, emojiSet = currentReactions + newReaction),
@@ -142,6 +149,10 @@ public class ToggleReactionUseCase internal constructor(
     ): Either<CoreFailure, Unit> {
         return reactionRepository.deleteReaction(messageId, conversationId, userId, removedReaction)
             .flatMap {
+                persistenceEventHookNotifier.onReactionPersisted(
+                    ReactionEventData(conversationId, messageId, date),
+                    userId
+                )
                 val regularMessage = Message.Signaling(
                     id = Uuid.random().toString(),
                     content = MessageContent.Reaction(messageId = messageId, emojiSet = currentReactions - removedReaction),
