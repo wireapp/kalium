@@ -91,7 +91,7 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         requireNomadServiceUrl(apiName = "syncAllMessages") ?: wrapRequest {
             httpClient.get {
                 setNomadUrlIfAvailable(PATH_EVENT, "$PATH_MESSAGES/$PATH_MESSAGES_SYNC")
-                parameter("limit", limit)
+                parameter(QUERY_LIMIT, limit)
             }
         }
 
