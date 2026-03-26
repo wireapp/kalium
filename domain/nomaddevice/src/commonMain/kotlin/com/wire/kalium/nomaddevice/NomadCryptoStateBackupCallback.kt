@@ -21,8 +21,8 @@ package com.wire.kalium.nomaddevice
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
@@ -120,12 +120,12 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun flushIfPending() {
         val shouldBackup = mutex.withLock {
             hasPendingChange.also { hasPendingChange = false }
         }
         if (shouldBackup) {
-            @Suppress("TooGenericExceptionCaught")
             try {
                 backup()
             } catch (exception: Exception) {
