@@ -39,7 +39,6 @@ class SyncNomadConversationMetadataUseCaseTest {
     fun givenMetadataResponse_whenInvoking_thenApplyLastReadDates() = runTest {
         val repository = FakeNomadConversationMetadataSyncRepository(
             metadataResponse = Either.Right(metadataResponse()),
-            updatedConversations = 1
         )
         val useCase = SyncNomadConversationMetadataUseCase(
             repository = repository
@@ -49,18 +48,16 @@ class SyncNomadConversationMetadataUseCaseTest {
 
         val success = assertIs<Either.Right<NomadConversationMetadataSyncResult>>(result).value
         assertEquals(1, success.downloadedConversations)
-        assertEquals(1, success.updatedConversations)
-        assertEquals(0, success.skippedConversations)
         assertEquals(1, repository.appliedMetadata.size)
         assertEquals(qid(CONVERSATION_ID), repository.appliedMetadata.single().conversationId)
         assertEquals(Instant.fromEpochMilliseconds(LAST_READ_TIMESTAMP), repository.appliedMetadata.single().lastReadDate)
+        assertEquals(Instant.fromEpochMilliseconds(LAST_MODIFIED_TIMESTAMP), repository.appliedMetadata.single().lastModifiedDate)
     }
 
     @Test
-    fun givenMissingStorage_whenInvoking_thenSkipUpdates() = runTest {
+    fun givenMissingStorage_whenInvoking_thenStillReturnSuccess() = runTest {
         val repository = FakeNomadConversationMetadataSyncRepository(
             metadataResponse = Either.Right(metadataResponse()),
-            updatedConversations = 0
         )
         val useCase = SyncNomadConversationMetadataUseCase(
             repository = repository
@@ -70,15 +67,12 @@ class SyncNomadConversationMetadataUseCaseTest {
 
         val success = assertIs<Either.Right<NomadConversationMetadataSyncResult>>(result).value
         assertEquals(1, success.downloadedConversations)
-        assertEquals(0, success.updatedConversations)
-        assertEquals(1, success.skippedConversations)
     }
 
     @Test
     fun givenApiFailure_whenInvoking_thenDoNotTouchStorage() = runTest {
         val repository = FakeNomadConversationMetadataSyncRepository(
             metadataResponse = Either.Left(NetworkFailure.NoNetworkConnection(null)),
-            updatedConversations = 0
         )
         val useCase = SyncNomadConversationMetadataUseCase(
             repository = repository
@@ -93,19 +87,18 @@ class SyncNomadConversationMetadataUseCaseTest {
 
     private class FakeNomadConversationMetadataSyncRepository(
         private val metadataResponse: Either<CoreFailure, NomadConversationMetadataResponse>,
-        private val updatedConversations: Int,
     ) : NomadConversationMetadataSyncRepository {
         val appliedMetadata = mutableListOf<NomadConversationMetadataToSync>()
 
         override suspend fun getConversationMetadata(selfUserId: UserId): Either<CoreFailure, NomadConversationMetadataResponse> =
             metadataResponse
 
-        override suspend fun applyLastReadMetadata(
+        override suspend fun applyMetadata(
             selfUserId: UserId,
             metadata: List<NomadConversationMetadataToSync>,
-        ): Either<CoreFailure, Int> {
+        ): Either<CoreFailure, Unit> {
             appliedMetadata += metadata
-            return Either.Right(updatedConversations)
+            return Either.Right(Unit)
         }
     }
 
@@ -114,7 +107,7 @@ class SyncNomadConversationMetadataUseCaseTest {
             conversations = listOf(
                 NomadConversationMetadataItem(
                     conversation = Conversation(id = CONVERSATION_ID, domain = CONVERSATION_DOMAIN),
-                    metadata = NomadConversationMetadata(lastRead = LAST_READ_TIMESTAMP)
+                    metadata = NomadConversationMetadata(lastRead = LAST_READ_TIMESTAMP, lastModified = LAST_MODIFIED_TIMESTAMP)
                 )
             )
         )
@@ -124,6 +117,7 @@ class SyncNomadConversationMetadataUseCaseTest {
         const val CONVERSATION_ID = "conversation-id"
         const val CONVERSATION_DOMAIN = "wire.test"
         const val LAST_READ_TIMESTAMP = 1_707_235_200_000L
+        const val LAST_MODIFIED_TIMESTAMP = 1_707_235_300_000L
     }
 }
 
