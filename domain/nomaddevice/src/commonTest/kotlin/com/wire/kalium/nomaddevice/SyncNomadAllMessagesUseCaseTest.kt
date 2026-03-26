@@ -23,6 +23,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationWithMessages
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadStoredMessage
@@ -61,11 +63,14 @@ class SyncNomadAllMessagesUseCaseTest {
                         nomadStoredMessage(messageId = "msg-3", sender = SELF_USER_ID, text = "self"),
                     )
                 )
-            )
+            ),
+            nextCursor = null,
+            nextTimestamp = null
         )
         val fakeDao = FakeNomadMessagesDAO()
+        val fakeApi = FakeNomadDeviceSyncApi(NetworkResponse.Success(response, emptyMap(), 200))
         val useCase = SyncNomadAllMessagesUseCase(
-            nomadDeviceSyncApiProvider = { FakeNomadDeviceSyncApi(NetworkResponse.Success(response, emptyMap(), 200)) },
+            nomadDeviceSyncApiProvider = { fakeApi },
             nomadMessagesDAOProvider = { fakeDao },
             batchSize = 2
         )
@@ -80,6 +85,7 @@ class SyncNomadAllMessagesUseCaseTest {
         assertEquals(2, fakeDao.batchSize)
         assertEquals(3, fakeDao.messages.size)
         assertEquals("hello", (fakeDao.messages.first().payload as SyncableMessagePayloadEntity.Text).text)
+        assertEquals(100, fakeApi.lastPageSize)
     }
 
     @Test
@@ -97,11 +103,14 @@ class SyncNomadAllMessagesUseCaseTest {
                         )
                     )
                 )
-            )
+            ),
+            nextCursor = null,
+            nextTimestamp = null
         )
         val fakeDao = FakeNomadMessagesDAO()
+        val fakeApi = FakeNomadDeviceSyncApi(NetworkResponse.Success(response, emptyMap(), 200))
         val useCase = SyncNomadAllMessagesUseCase(
-            nomadDeviceSyncApiProvider = { FakeNomadDeviceSyncApi(NetworkResponse.Success(response, emptyMap(), 200)) },
+            nomadDeviceSyncApiProvider = { fakeApi },
             nomadMessagesDAOProvider = { fakeDao },
             batchSize = 50
         )
@@ -114,6 +123,7 @@ class SyncNomadAllMessagesUseCaseTest {
         assertEquals(1, success.skippedMessages)
         assertEquals(1, success.batches)
         assertEquals(1, fakeDao.messages.size)
+        assertEquals(100, fakeApi.lastPageSize)
     }
 
     @Test
@@ -124,10 +134,13 @@ class SyncNomadAllMessagesUseCaseTest {
                     conversation = Conversation(id = CONVERSATION_ID, domain = CONVERSATION_DOMAIN),
                     messages = listOf(nomadStoredMessage(messageId = "msg-1", sender = SENDER_ID, text = "hello"))
                 )
-            )
+            ),
+            nextCursor = null,
+            nextTimestamp = null
         )
+        val fakeApi = FakeNomadDeviceSyncApi(NetworkResponse.Success(response, emptyMap(), 200))
         val useCase = SyncNomadAllMessagesUseCase(
-            nomadDeviceSyncApiProvider = { FakeNomadDeviceSyncApi(NetworkResponse.Success(response, emptyMap(), 200)) },
+            nomadDeviceSyncApiProvider = { fakeApi },
             nomadMessagesDAOProvider = { null },
             batchSize = 10
         )
@@ -139,13 +152,15 @@ class SyncNomadAllMessagesUseCaseTest {
         assertEquals(0, success.storedMessages)
         assertEquals(1, success.skippedMessages)
         assertEquals(0, success.batches)
+        assertEquals(100, fakeApi.lastPageSize)
     }
 
     @Test
     fun givenApiFailure_whenImporting_thenStorageIsNotCalled() = runTest {
         val fakeDao = FakeNomadMessagesDAO()
+        val fakeApi = FakeNomadDeviceSyncApi(NetworkResponse.Error(KaliumException.NoNetwork()))
         val useCase = SyncNomadAllMessagesUseCase(
-            nomadDeviceSyncApiProvider = { FakeNomadDeviceSyncApi(NetworkResponse.Error(KaliumException.NoNetwork())) },
+            nomadDeviceSyncApiProvider = { fakeApi },
             nomadMessagesDAOProvider = { fakeDao },
             batchSize = 10
         )
@@ -155,6 +170,7 @@ class SyncNomadAllMessagesUseCaseTest {
         assertIs<Either.Left<*>>(result)
         assertIs<NetworkFailure.NoNetworkConnection>((result as Either.Left).value)
         assertTrue(fakeDao.messages.isEmpty())
+        assertEquals(100, fakeApi.lastPageSize)
     }
 
     private class FakeNomadMessagesDAO : NomadMessagesDAO {
@@ -175,13 +191,27 @@ class SyncNomadAllMessagesUseCaseTest {
     private class FakeNomadDeviceSyncApi(
         private val allMessagesResponse: NetworkResponse<NomadAllMessagesResponse>
     ) : NomadDeviceSyncApi {
+        var lastPageSize: Int? = null
+
         override suspend fun postMessageEvents(
             request: com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
         ): NetworkResponse<Unit> {
             error("Not needed in this test")
         }
 
-        override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> = allMessagesResponse
+        override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> =
+            error("Not needed in this test")
+
+        override suspend fun syncAllMessages(limit: Int): NetworkResponse<NomadAllMessagesResponse> {
+            lastPageSize = limit
+            return allMessagesResponse
+        }
+
+        override suspend fun restoreMessagesBatch(
+            request: NomadBatchRestoreRequest,
+        ): NetworkResponse<NomadBatchRestoreResponse> {
+            error("Not needed in this test")
+        }
 
         override suspend fun getConversationMetadata(): NetworkResponse<NomadConversationMetadataResponse> {
             error("Not needed in this test")

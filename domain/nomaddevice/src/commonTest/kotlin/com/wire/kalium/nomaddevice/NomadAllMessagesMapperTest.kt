@@ -133,7 +133,9 @@ class NomadAllMessagesMapperTest {
                     conversation = Conversation(id = CONVERSATION_ID, domain = TEST_DOMAIN),
                     messages = messages.toList()
                 )
-            )
+            ),
+            nextCursor = null,
+            nextTimestamp = null
         )
 
     private fun storedMessage(

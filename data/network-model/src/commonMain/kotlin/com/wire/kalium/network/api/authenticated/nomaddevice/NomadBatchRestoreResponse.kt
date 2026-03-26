@@ -22,35 +22,21 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class NomadAllMessagesResponse(
+data class NomadBatchRestoreResponse(
     @SerialName("conversations")
-    val conversations: List<NomadConversationWithMessages>,
-    @SerialName("has_more")
-    val hasMore: Boolean = false,
-    @SerialName("next_cursor")
-    val nextCursor: Int?,
-    @SerialName("next_timestamp")
-    val nextTimestamp: Long?
+    val conversations: List<NomadConversationBatchRestore>
 )
 
 @Serializable
-data class NomadConversationWithMessages(
+data class NomadConversationBatchRestore(
     @SerialName("conversation")
     val conversation: Conversation,
     @SerialName("messages")
-    val messages: List<NomadStoredMessage>
-)
-
-@Serializable
-data class NomadStoredMessage(
-    @SerialName("message_id")
-    val messageId: String,
-    @SerialName("timestamp")
-    val timestamp: Long,
-    @SerialName("payload")
-    val payload: String,
-    @SerialName("reaction")
-    val reaction: String? = null,
-    @SerialName("read_receipt")
-    val readReceipt: String? = null
+    val messages: List<NomadStoredMessage>,
+    @SerialName("has_more")
+    val hasMore: Boolean,
+    @SerialName("next_cursor")
+    val nextCursor: Long,
+    @SerialName("next_timestamp")
+    val nextTimestamp: Long
 )

@@ -28,6 +28,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
+import com.wire.kalium.nomaddevice.SyncNomadAllMessagesUseCase.Companion.DEFAULT_BATCH_SIZE
 import com.wire.kalium.persistence.dao.backup.NomadMessageStoreResult
 import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
 import com.wire.kalium.userstorage.di.UserStorageProvider
@@ -110,7 +111,7 @@ public class SyncNomadAllMessagesUseCase internal constructor(
      */
     public suspend operator fun invoke(selfUserId: UserId): Either<CoreFailure, NomadAllMessagesSyncResult> {
         val responseResult = wrapApiRequest {
-            nomadDeviceSyncApiProvider(selfUserId).getAllMessages()
+            nomadDeviceSyncApiProvider(selfUserId).syncAllMessages()
         }
 
         return when (responseResult) {
