@@ -56,7 +56,7 @@ class NomadConversationMetadataSyncRepositoryTest {
     }
 
     @Test
-    fun givenMissingStore_whenApplyingMetadata_thenReturnZero() = runTest {
+    fun givenMissingStore_whenApplyingMetadata_thenReturnSuccess() = runTest {
         val repository = NomadConversationMetadataSyncDataSource(
             nomadDeviceSyncApiProvider = {
                 FakeNomadDeviceSyncApi(NetworkResponse.Success(metadataResponse(), emptyMap(), 200))
@@ -66,12 +66,12 @@ class NomadConversationMetadataSyncRepositoryTest {
 
         val result = repository.applyMetadata(SELF_USER_ID, metadataToSync())
 
-        assertEquals(0, assertIs<Either.Right<Int>>(result).value)
+        assertIs<Either.Right<Unit>>(result)
     }
 
     @Test
-    fun givenStore_whenApplyingMetadata_thenForwardAndReturnCount() = runTest {
-        val store = FakeNomadConversationMetadataStore(updatedConversations = 2)
+    fun givenStore_whenApplyingMetadata_thenForwardAndReturnSuccess() = runTest {
+        val store = FakeNomadConversationMetadataStore()
         val repository = NomadConversationMetadataSyncDataSource(
             nomadDeviceSyncApiProvider = {
                 FakeNomadDeviceSyncApi(NetworkResponse.Success(metadataResponse(), emptyMap(), 200))
@@ -81,18 +81,15 @@ class NomadConversationMetadataSyncRepositoryTest {
 
         val result = repository.applyMetadata(SELF_USER_ID, metadataToSync())
 
-        assertEquals(2, assertIs<Either.Right<Int>>(result).value)
+        assertIs<Either.Right<Unit>>(result)
         assertEquals(metadataToSync(), store.appliedMetadata)
     }
 
-    private class FakeNomadConversationMetadataStore(
-        private val updatedConversations: Int,
-    ) : NomadConversationMetadataStore {
+    private class FakeNomadConversationMetadataStore : NomadConversationMetadataStore {
         var appliedMetadata: List<NomadConversationMetadataToSync> = emptyList()
 
-        override suspend fun applyMetadata(metadata: List<NomadConversationMetadataToSync>): Int {
+        override suspend fun applyMetadata(metadata: List<NomadConversationMetadataToSync>) {
             appliedMetadata = metadata
-            return updatedConversations
         }
     }
 

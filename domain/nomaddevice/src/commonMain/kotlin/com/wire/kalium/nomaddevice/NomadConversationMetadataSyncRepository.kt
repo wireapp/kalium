@@ -33,7 +33,7 @@ internal interface NomadConversationMetadataSyncRepository {
     suspend fun applyMetadata(
         selfUserId: UserId,
         metadata: List<NomadConversationMetadataToSync>,
-    ): Either<CoreFailure, Int>
+    ): Either<CoreFailure, Unit>
 }
 
 internal class NomadConversationMetadataSyncDataSource(
@@ -49,13 +49,13 @@ internal class NomadConversationMetadataSyncDataSource(
     override suspend fun applyMetadata(
         selfUserId: UserId,
         metadata: List<NomadConversationMetadataToSync>,
-    ): Either<CoreFailure, Int> {
+    ): Either<CoreFailure, Unit> {
         val metadataStore = metadataStoreProvider(selfUserId)
         if (metadataStore == null) {
             nomadLogger.w(
                 "Skipping Nomad conversation-metadata import: missing user storage for '${selfUserId.toLogString()}'."
             )
-            return 0.right()
+            return Unit.right()
         }
 
         return wrapStorageRequest {
@@ -68,7 +68,7 @@ internal class NomadConversationMetadataSyncDataSource(
  * Applies fetched Nomad conversation metadata to local storage.
  */
 internal interface NomadConversationMetadataStore {
-    suspend fun applyMetadata(metadata: List<NomadConversationMetadataToSync>): Int
+    suspend fun applyMetadata(metadata: List<NomadConversationMetadataToSync>)
 }
 
 /**
@@ -78,7 +78,7 @@ internal class ConversationDAONomadConversationMetadataStore(
     private val conversationDAO: ConversationDAO,
 ) : NomadConversationMetadataStore {
 
-    override suspend fun applyMetadata(metadata: List<NomadConversationMetadataToSync>): Int =
+    override suspend fun applyMetadata(metadata: List<NomadConversationMetadataToSync>) =
         conversationDAO.updateConversationReadAndModifiedDates(
             readDates = metadata.associate { it.conversationId to it.lastReadDate },
             modifiedDates = metadata.mapNotNull { entry ->

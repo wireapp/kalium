@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensionsImpl
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.persistence.dao.message.KaliumPager
@@ -87,6 +88,7 @@ class MessageRepositoryExtensionsTest {
         val messageDaoExtensions: MessageExtensions = mock(MessageExtensions::class)
         private val messageDAO: MessageDAO = mock(MessageDAO::class)
         private val messageMapper: MessageMapper = mock(MessageMapper::class)
+        private val pagingCoordinator: NomadMessagePagingCoordinator = mock(NomadMessagePagingCoordinator::class)
 
         init {
 
@@ -108,7 +110,8 @@ class MessageRepositoryExtensionsTest {
         private val messageRepositoryExtensions: MessageRepositoryExtensions by lazy {
             MessageRepositoryExtensionsImpl(
                 messageDAO,
-                messageMapper
+                messageMapper,
+                pagingCoordinator,
             )
         }
 

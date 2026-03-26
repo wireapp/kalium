@@ -30,8 +30,6 @@ import kotlinx.datetime.Instant
 
 public data class NomadConversationMetadataSyncResult(
     val downloadedConversations: Int,
-    val updatedConversations: Int,
-    val skippedConversations: Int,
 )
 
 /**
@@ -82,8 +80,6 @@ public class SyncNomadConversationMetadataUseCase internal constructor(
             is Either.Left -> storeResult.value.left()
             is Either.Right -> NomadConversationMetadataSyncResult(
                 downloadedConversations = metadata.size,
-                updatedConversations = storeResult.value,
-                skippedConversations = metadata.size - storeResult.value
             ).right()
         }
     }
