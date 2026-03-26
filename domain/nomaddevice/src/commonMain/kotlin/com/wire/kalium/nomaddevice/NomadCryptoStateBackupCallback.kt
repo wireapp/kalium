@@ -24,10 +24,13 @@ import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Factory used with [NomadCryptoStateChangeHookNotifier]:
@@ -88,29 +91,60 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
 
     private val mutex = Mutex()
     private var debounceJob: Job? = null
+    private var hasPendingChange = false
 
-    @Suppress("TooGenericExceptionCaught")
     override suspend fun onCryptoStateChanged(userId: UserId) {
         if (userId != selfUserId) {
             return
         }
 
         mutex.withLock {
+            hasPendingChange = true
             debounceJob?.cancel()
             debounceJob = scope.launch {
-                delay(debounceMs)
                 try {
-                    backup()
-                } catch (exception: CancellationException) {
-                    throw exception
-                } catch (exception: Exception) {
-                    kaliumLogger.w("User-scoped crypto state change hook execution failed", exception)
-                } finally {
-                    mutex.withLock {
-                        if (debounceJob == this) {
-                            debounceJob = null
-                        }
+                    delay(debounceMs)
+                } catch (e: CancellationException) {
+                    // Scope is shutting down (e.g. logout): flush any pending change before stopping.
+                    if (!scope.isActive) {
+                        withContext(NonCancellable) { flushIfPending() }
                     }
+                    throw e
+                }
+                // Normal debounce path: protect the upload from late cancellations.
+                withContext(NonCancellable) {
+                    mutex.withLock { hasPendingChange = false }
+                    runBackup(this@launch)
+                }
+            }
+        }
+    }
+
+    private suspend fun flushIfPending() {
+        val shouldBackup = mutex.withLock {
+            hasPendingChange.also { hasPendingChange = false }
+        }
+        if (shouldBackup) {
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                backup()
+            } catch (exception: Exception) {
+                kaliumLogger.w("User-scoped crypto state change hook execution failed", exception)
+            }
+        }
+        mutex.withLock { debounceJob = null }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun runBackup(currentJob: Any) {
+        try {
+            backup()
+        } catch (exception: Exception) {
+            kaliumLogger.w("User-scoped crypto state change hook execution failed", exception)
+        } finally {
+            mutex.withLock {
+                if (debounceJob == currentJob) {
+                    debounceJob = null
                 }
             }
         }
