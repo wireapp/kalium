@@ -294,6 +294,7 @@ com.wire.kalium.logic.data.message.attachment
 com.wire.kalium.logic.data.message.draft
 com.wire.kalium.logic.data.message.linkpreview
 com.wire.kalium.logic.data.message.mention
+com.wire.kalium.logic.data.message.paging
 com.wire.kalium.logic.data.message.reaction
 com.wire.kalium.logic.data.message.receipt
 com.wire.kalium.logic.data.mls
