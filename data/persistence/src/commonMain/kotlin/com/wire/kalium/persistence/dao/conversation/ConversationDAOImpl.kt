@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrDefault
@@ -41,6 +42,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
@@ -65,6 +67,7 @@ internal class ConversationDAOImpl internal constructor(
 ) : ConversationDAO {
     private val conversationMapper = ConversationMapper
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
+    private val logger = kaliumLogger.withTextTag("ConversationDAO")
     override val platformExtensions: ConversationExtensions =
         ConversationExtensionsImpl(conversationDetailsWithEventsQueries, conversationDetailsWithEventsMapper, readDispatcher)
 
@@ -394,8 +397,26 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo? =
-        withContext(readDispatcher.value) {
-            conversationQueries.selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo).executeAsOneOrNull()
+        run {
+            val submittedAt = Clock.System.now()
+            withContext(readDispatcher.value) {
+                val enteredAt = Clock.System.now()
+                val dispatcherWaitMs = (enteredAt - submittedAt).inWholeMilliseconds
+                val queryStart = Clock.System.now()
+                val result = conversationQueries
+                    .selectProtocolInfoByQualifiedId(qualifiedID, conversationMapper::mapProtocolInfo)
+                    .executeAsOneOrNull()
+                val queryMs = (Clock.System.now() - queryStart).inWholeMilliseconds
+                val totalMs = (Clock.System.now() - submittedAt).inWholeMilliseconds
+                if (totalMs >= SLOW_PROTOCOL_DAO_THRESHOLD_MS) {
+                    logger.i(
+                        "[PerfDiag] scope=conversation-protocol-dao " +
+                            "qualifiedId=${qualifiedID.toLogString()} totalMs=$totalMs " +
+                            "dispatcherWaitMs=$dispatcherWaitMs queryMs=$queryMs found=${result != null}"
+                    )
+                }
+                result
+            }
         }
 
     override suspend fun getConversationByGroupID(groupID: String): ConversationEntity? = withContext(readDispatcher.value) {
@@ -733,3 +754,5 @@ internal class ConversationDAOImpl internal constructor(
         conversationQueries.selectCellGroupConversations(conversationMapper::toConversationEntity).executeAsList()
     }
 }
+
+private const val SLOW_PROTOCOL_DAO_THRESHOLD_MS = 50L

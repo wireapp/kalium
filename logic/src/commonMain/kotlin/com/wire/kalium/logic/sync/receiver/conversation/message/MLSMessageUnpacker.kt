@@ -27,6 +27,7 @@ import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
@@ -43,6 +44,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.sync.KaliumSyncException
 import io.mockative.Mockable
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.seconds
@@ -76,13 +78,32 @@ internal class MLSMessageUnpackerImpl(
     override suspend fun unpackMlsMessage(
         mlsContext: MlsCoreCryptoContext,
         event: Event.Conversation.NewMLSMessage
-    ): Either<CoreFailure, List<MessageUnpackResult>> = messageFromMLSMessage(mlsContext, event)
-        .map { bundles ->
-            if (bundles.isEmpty()) return@map listOf(MessageUnpackResult.HandshakeMessage)
-            bundles.map { bundle ->
-                unpackMlsBundle(bundle, event.conversationId, event.messageInstant)
+    ): Either<CoreFailure, List<MessageUnpackResult>> {
+        val lookupAndDecryptStart = Clock.System.now()
+        return messageFromMLSMessage(mlsContext, event).map { decryptOutcome ->
+            val lookupAndDecryptMs = (Clock.System.now() - lookupAndDecryptStart).inWholeMilliseconds
+            val bundleDecodeStart = Clock.System.now()
+            val unpacked = if (decryptOutcome.bundles.isEmpty()) {
+                listOf(MessageUnpackResult.HandshakeMessage)
+            } else {
+                decryptOutcome.bundles.map { bundle ->
+                    unpackMlsBundle(bundle, event.conversationId, event.messageInstant)
+                }
             }
+            val bundleDecodeMs = (Clock.System.now() - bundleDecodeStart).inWholeMilliseconds
+            val totalMs = lookupAndDecryptMs + bundleDecodeMs
+            if (totalMs >= SLOW_UNPACK_BREAKDOWN_THRESHOLD_MS) {
+                logger.i(
+                    "[PerfDiag] runtime=${runtimeLabel()} scope=mls-unpack-breakdown " +
+                        "eventId=${event.id} conversationId=${event.conversationId} totalMs=$totalMs " +
+                        "lookupMs=${decryptOutcome.lookupMs} decryptMs=${decryptOutcome.decryptMs} " +
+                        "lookupAndDecryptMs=$lookupAndDecryptMs bundleDecodeMs=$bundleDecodeMs " +
+                        "bundles=${decryptOutcome.bundles.size} source=${decryptOutcome.source}"
+                )
+            }
+            unpacked
         }
+    }
 
     override suspend fun unpackMlsBundle(
         bundle: DecryptedMessageBundle,
@@ -130,32 +151,69 @@ internal class MLSMessageUnpackerImpl(
     private suspend fun messageFromMLSMessage(
         mlsContext: MlsCoreCryptoContext,
         messageEvent: Event.Conversation.NewMLSMessage
-    ): Either<CoreFailure, List<DecryptedMessageBundle>> =
-        messageEvent.subconversationId?.let { subConversationId ->
+    ): Either<CoreFailure, MlsDecryptOutcome> {
+        val lookupStart = Clock.System.now()
+        val decodedMessage = Base64.decode(messageEvent.content)
+
+        return messageEvent.subconversationId?.let { subConversationId ->
             subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subConversationId)?.let { groupID ->
+                val lookupMs = (Clock.System.now() - lookupStart).inWholeMilliseconds
                 logger.logStructuredJson(
                     KaliumLogLevel.DEBUG, "Decrypting MLS for SubConversation",
-                        mapOf(
+                    mapOf(
                         "conversationId" to messageEvent.conversationId.toLogString(),
                         "subConversationId" to subConversationId.toLogString(),
                         "groupID" to groupID.toLogString()
                     )
                 )
-                mlsConversationRepository.decryptMessage(mlsContext, Base64.decode(messageEvent.content), groupID)
+                val decryptStart = Clock.System.now()
+                mlsConversationRepository.decryptMessage(mlsContext, decodedMessage, groupID)
+                    .map { bundles ->
+                        MlsDecryptOutcome(
+                            bundles = bundles,
+                            source = "subconversation",
+                            lookupMs = lookupMs,
+                            decryptMs = (Clock.System.now() - decryptStart).inWholeMilliseconds,
+                        )
+                    }
             }
         } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
+            val lookupMs = (Clock.System.now() - lookupStart).inWholeMilliseconds
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
                 logger.logStructuredJson(
                     KaliumLogLevel.DEBUG, "Decrypting MLS for Conversation",
-                        mapOf(
+                    mapOf(
                         "conversationId" to messageEvent.conversationId.toLogString(),
                         "groupID" to protocolInfo.groupId.toLogString(),
                         "protocolInfo" to protocolInfo.toLogMap()
                     )
                 )
-                mlsConversationRepository.decryptMessage(mlsContext, Base64.decode(messageEvent.content), protocolInfo.groupId)
+                val decryptStart = Clock.System.now()
+                mlsConversationRepository.decryptMessage(mlsContext, decodedMessage, protocolInfo.groupId)
+                    .map { bundles ->
+                        MlsDecryptOutcome(
+                            bundles = bundles,
+                            source = "conversation",
+                            lookupMs = lookupMs,
+                            decryptMs = (Clock.System.now() - decryptStart).inWholeMilliseconds,
+                        )
+                    }
             } else {
                 Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
+    }
+
+    private fun runtimeLabel(): String = if (clientPlatform == "jvm") "jvm" else "native"
+
+    private companion object {
+        private const val SLOW_UNPACK_BREAKDOWN_THRESHOLD_MS = 250L
+    }
 }
+
+private data class MlsDecryptOutcome(
+    val bundles: List<DecryptedMessageBundle>,
+    val source: String,
+    val lookupMs: Long,
+    val decryptMs: Long,
+)

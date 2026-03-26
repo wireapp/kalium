@@ -31,6 +31,7 @@ import com.wire.kalium.common.functional.mapToRightOr
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
+import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
@@ -80,6 +81,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.builtins.SetSerializer
 
@@ -558,12 +560,26 @@ internal class ConversationDataSource internal constructor(
     }
         .map(conversationMapper::fromDaoModel)
 
-    override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo> =
-        wrapStorageRequest {
+    override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo> {
+        val start = Clock.System.now()
+        return wrapStorageRequest {
+            val daoStart = Clock.System.now()
             conversationDAO.getConversationProtocolInfo(conversationId.toDao())?.let {
-                protocolInfoMapper.fromEntity(it)
+                val daoMs = (Clock.System.now() - daoStart).inWholeMilliseconds
+                val mapStart = Clock.System.now()
+                val mapped = protocolInfoMapper.fromEntity(it)
+                val mapMs = (Clock.System.now() - mapStart).inWholeMilliseconds
+                val totalMs = (Clock.System.now() - start).inWholeMilliseconds
+                if (totalMs >= SLOW_PROTOCOL_LOOKUP_THRESHOLD_MS) {
+                    kaliumLogger.withFeatureId(CONVERSATIONS).i(
+                        "[PerfDiag] runtime=${runtimeLabel()} scope=conversation-protocol-lookup " +
+                            "conversationId=$conversationId totalMs=$totalMs daoMs=$daoMs mapMs=$mapMs"
+                    )
+                }
+                mapped
             }
         }
+    }
 
     override suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>> =
         memberDAO.observeConversationMembers(conversationID.toDao()).map { members ->
@@ -1151,5 +1167,8 @@ internal class ConversationDataSource internal constructor(
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
         private const val CONVERSATIONS_TO_DELETE_KEY = "conversations_to_delete"
+        private const val SLOW_PROTOCOL_LOOKUP_THRESHOLD_MS = 50L
     }
+
+    private fun runtimeLabel(): String = if (clientPlatform == "jvm") "jvm" else "native"
 }

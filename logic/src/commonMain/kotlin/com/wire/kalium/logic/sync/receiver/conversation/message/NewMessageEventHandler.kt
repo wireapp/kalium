@@ -38,9 +38,11 @@ import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
 import io.mockative.Mockable
+import kotlinx.datetime.Clock
 
 @Mockable
 internal interface NewMessageEventHandler {
@@ -152,8 +154,14 @@ internal class NewMessageEventHandlerImpl(
         deliveryInfo: EventDeliveryInfo
     ) {
         var eventLogger = logger.createEventProcessingLogger(event)
+        val unpackStart = Clock.System.now()
         transactionContext.wrapInMLSContext { mlsMessageUnpacker.unpackMlsMessage(it, event) }
             .onFailure {
+                val unpackElapsedMs = (Clock.System.now() - unpackStart).inWholeMilliseconds
+                logger.w(
+                    "[PerfDiag] runtime=${runtimeLabel()} scope=mls-unpack eventId=${event.id} " +
+                        "conversationId=${event.conversationId} status=failure elapsedMs=$unpackElapsedMs"
+                )
                 when (MLSMessageFailureHandler.handleFailure(it)) {
                     is MLSMessageFailureResolution.Ignore -> {
                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
@@ -193,9 +201,13 @@ internal class NewMessageEventHandlerImpl(
                     }
                 }
             }.onSuccess { batchResult ->
+                val unpackElapsedMs = (Clock.System.now() - unpackStart).inWholeMilliseconds
+                var applyElapsedMs = 0L
                 batchResult.forEach { message ->
                     if (message is MessageUnpackResult.ApplicationMessage) {
+                        val applyStart = Clock.System.now()
                         processApplicationMessage(transactionContext, message, deliveryInfo)
+                        applyElapsedMs += (Clock.System.now() - applyStart).inWholeMilliseconds
                     }
                     eventLogger.logSuccess(
                         "protocol" to "MLS",
@@ -204,6 +216,15 @@ internal class NewMessageEventHandlerImpl(
                     )
                     // reset the time for next messages, if this is a batch
                     eventLogger = logger.createEventProcessingLogger(event)
+                }
+                val totalElapsedMs = unpackElapsedMs + applyElapsedMs
+                if (totalElapsedMs >= SLOW_MLS_EVENT_THRESHOLD_MS || batchResult.size > 1) {
+                    logger.i(
+                        "[PerfDiag] runtime=${runtimeLabel()} scope=mls-event eventId=${event.id} " +
+                            "conversationId=${event.conversationId} unpackMs=$unpackElapsedMs " +
+                            "applyMs=$applyElapsedMs totalMs=$totalElapsedMs messages=${batchResult.size} " +
+                            "source=${deliveryInfo.source}"
+                    )
                 }
             }
     }
@@ -257,4 +278,10 @@ internal class NewMessageEventHandlerImpl(
     override suspend fun flushPendingSideEffects() {
         applicationMessageHandler.flushPendingSideEffects()
     }
+
+    private companion object {
+        private const val SLOW_MLS_EVENT_THRESHOLD_MS = 250L
+    }
+
+    private fun runtimeLabel(): String = if (clientPlatform == "jvm") "jvm" else "native"
 }

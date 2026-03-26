@@ -51,9 +51,11 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
+import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
 import io.mockative.Mockable
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -323,6 +325,7 @@ internal class ApplicationMessageHandlerImpl(
         quotedReference: MessageContent.QuoteReference,
         message: Message.Regular
     ): MessageContent.QuoteReference {
+        val verifyStart = Clock.System.now()
         val quotedMessageSha256 = quotedReference.quotedMessageSha256 ?: run {
             logger.i("Quote message received with null hash. Marking as unverified.")
             return quotedReference.copy(isVerified = false)
@@ -333,7 +336,7 @@ internal class ApplicationMessageHandlerImpl(
                 messageEncoder.encodeMessageContent(originalMessage.date, originalMessage.content)
             }.getOrElse(null)
 
-        return if (quotedMessageSha256.contentEquals(originalHash?.sha256Digest)) {
+        val adjustedReference = if (quotedMessageSha256.contentEquals(originalHash?.sha256Digest)) {
             quotedReference.copy(isVerified = true)
         } else {
             logger.d("Expected hash = ${originalHash?.sha256Digest?.toHexString()}")
@@ -341,6 +344,18 @@ internal class ApplicationMessageHandlerImpl(
             logger.i("Quote message received but original doesn't match or wasn't found. Marking as unverified.")
             quotedReference.copy(isVerified = false)
         }
+
+        val elapsedMs = (Clock.System.now() - verifyStart).inWholeMilliseconds
+        if (elapsedMs >= SLOW_QUOTE_VERIFY_THRESHOLD_MS) {
+            logger.w(
+                "[PerfDiag] runtime=${runtimeLabel()} scope=quote-verify " +
+                    "conversationId=${message.conversationId} messageId=${message.id} " +
+                    "quotedMessageId=${quotedReference.quotedMessageId} elapsedMs=$elapsedMs " +
+                    "verified=${adjustedReference.isVerified}"
+            )
+        }
+
+        return adjustedReference
     }
 
     @Suppress("LongParameterList")
@@ -370,6 +385,12 @@ internal class ApplicationMessageHandlerImpl(
     override suspend fun flushPendingSideEffects() {
         lastReadContentHandler.flushPendingLastReads()
     }
+
+    private companion object {
+        private const val SLOW_QUOTE_VERIFY_THRESHOLD_MS = 50L
+    }
+
+    private fun runtimeLabel(): String = if (clientPlatform == "jvm") "jvm" else "native"
 }
 
 @Deprecated(

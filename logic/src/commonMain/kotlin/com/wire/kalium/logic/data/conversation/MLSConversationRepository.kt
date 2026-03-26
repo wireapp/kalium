@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
@@ -43,6 +44,7 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.logic.clientPlatform
 import com.wire.kalium.logic.data.client.toDao
 import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
@@ -112,6 +114,15 @@ internal data class ApplicationMessage(
         return result
     }
 }
+
+private data class GroupDecryptObservation(
+    val startedAt: kotlinx.datetime.Instant,
+    val streak: Int,
+    val gapMs: Long = -1L,
+)
+
+private const val GROUP_DECRYPT_STREAK_WINDOW_MS = 5_000L
+private const val REPEATED_GROUP_STREAK_THRESHOLD = 3
 
 internal data class DecryptedMessageBundle(
     val groupID: GroupID,
@@ -303,6 +314,7 @@ internal class MLSConversationDataSource(
 ) : MLSConversationRepository {
 
     private val logger = kaliumLogger.withTextTag("MLSConversationDataSource")
+    private val groupDecryptObservations = ConcurrentMutableMap<String, GroupDecryptObservation>()
 
     /**
      * Performs a work using the Mutex lock returning its result, exactly like the regular withLock function.
@@ -338,8 +350,11 @@ internal class MLSConversationDataSource(
         message: ByteArray,
         groupID: GroupID
     ): Either<CoreFailure, List<DecryptedMessageBundle>> {
-        logger.d("Decrypting message for group ${groupID.toLogString()}")
-        return wrapMLSRequest {
+        val groupIdLog = groupID.toLogString()
+        logger.d("Decrypting message for group $groupIdLog")
+        val startedAt = Clock.System.now()
+        val observation = trackGroupDecrypt(groupIdLog, startedAt)
+        val result = wrapMLSRequest {
             mlsContext.decryptMessage(
                 idMapper.toCryptoModel(groupID),
                 message
@@ -353,7 +368,48 @@ internal class MLSConversationDataSource(
                     }
                 }
         }
+
+        val elapsedMs = (Clock.System.now() - startedAt).inWholeMilliseconds
+        result.onSuccess { bundles ->
+            logger.i(
+                "[PerfDiag] runtime=${runtimeLabel()} scope=mls-repository-decrypt " +
+                    "groupId=$groupIdLog elapsedMs=$elapsedMs bundles=${bundles.size} messageBytes=${message.size} " +
+                    "streak=${observation.streak} gapMs=${observation.gapMs}"
+            )
+            logRepeatedGroupDecrypt(groupIdLog, observation, elapsedMs)
+        }.onFailure { failure ->
+            logger.w(
+                "[PerfDiag] runtime=${runtimeLabel()} scope=mls-repository-decrypt " +
+                    "groupId=$groupIdLog elapsedMs=$elapsedMs status=failure error=${failure::class.simpleName} " +
+                    "messageBytes=${message.size} streak=${observation.streak} gapMs=${observation.gapMs}"
+            )
+            logRepeatedGroupDecrypt(groupIdLog, observation, elapsedMs)
+        }
+
+        return result
     }
+
+    private fun logRepeatedGroupDecrypt(groupIdLog: String, observation: GroupDecryptObservation, elapsedMs: Long) {
+        if (observation.streak < REPEATED_GROUP_STREAK_THRESHOLD) return
+        logger.w(
+            "[PerfDiag] runtime=${runtimeLabel()} scope=mls-group-streak " +
+                "groupId=$groupIdLog streak=${observation.streak} gapMs=${observation.gapMs} elapsedMs=$elapsedMs"
+        )
+    }
+
+    private fun trackGroupDecrypt(groupIdLog: String, startedAt: kotlinx.datetime.Instant): GroupDecryptObservation {
+        val previous = groupDecryptObservations[groupIdLog]
+        val gapMs = previous?.startedAt?.let { (startedAt - it).inWholeMilliseconds }
+        val streak = if (gapMs != null && gapMs <= GROUP_DECRYPT_STREAK_WINDOW_MS) {
+            previous.streak + 1
+        } else {
+            1
+        }
+        groupDecryptObservations[groupIdLog] = GroupDecryptObservation(startedAt, streak)
+        return GroupDecryptObservation(startedAt, streak, gapMs ?: -1L)
+    }
+
+    private fun runtimeLabel(): String = if (clientPlatform == "jvm") "jvm" else "native"
 
     override suspend fun hasEstablishedMLSGroup(
         mlsContext: MlsCoreCryptoContext,
