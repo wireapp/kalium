@@ -23,7 +23,10 @@ import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.messaging.hooks.MessageDeleteEventData
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.Mockable
 
 @Mockable
@@ -36,7 +39,9 @@ internal interface DeleteForMeHandler {
 
 internal class DeleteForMeHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
-    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase
+    private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
+    private val selfUserId: UserId,
 ) : DeleteForMeHandler {
 
     override suspend fun handle(
@@ -47,6 +52,10 @@ internal class DeleteForMeHandlerImpl internal constructor(
             messageRepository.deleteMessage(
                 messageUuid = messageContent.messageId,
                 conversationId = messageContent.conversationId
+            )
+            persistenceEventHookNotifier.onMessageDeleted(
+                MessageDeleteEventData(messageContent.conversationId, messageContent.messageId),
+                selfUserId
             )
         } else {
             kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)

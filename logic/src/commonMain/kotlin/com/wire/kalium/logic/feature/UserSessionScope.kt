@@ -1797,7 +1797,7 @@ public class UserSessionScope internal constructor(
                 deleteConversationUseCase,
                 currentPersistenceEventHookNotifier,
             ),
-            DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
+            DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation, currentPersistenceEventHookNotifier, userId),
             DeleteMessageHandlerImpl(
                 messageRepository,
                 assetRepository,
@@ -2340,7 +2340,8 @@ public class UserSessionScope internal constructor(
             persistConversationsUseCase,
             cryptoTransactionProvider,
             resetMlsConversation,
-            systemMessageInserter
+            systemMessageInserter,
+            currentPersistenceEventHookNotifier,
         )
     }
 
@@ -2790,6 +2791,8 @@ public class UserSessionScope internal constructor(
         get() = DeleteConversationUseCaseImpl(
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
+            persistenceEventHookNotifier = currentPersistenceEventHookNotifier,
+            selfUserId = userId,
         )
 
     internal val userSessionWorkScheduler: UserSessionWorkScheduler = globalScope.workSchedulerProvider.userSessionWorkScheduler(this)
