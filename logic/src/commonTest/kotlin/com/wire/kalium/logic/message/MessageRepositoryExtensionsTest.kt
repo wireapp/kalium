@@ -101,7 +101,6 @@ class MessageRepositoryExtensionsTest {
             conversationId = TestConversation.ID,
             pageSize = 5,
         )
-        private val pagingCoordinator: NomadMessagePagingCoordinator = mock(NomadMessagePagingCoordinator::class)
 
         coVerify {
             arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(
