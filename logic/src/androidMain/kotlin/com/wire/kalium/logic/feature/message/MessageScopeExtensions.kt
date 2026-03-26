@@ -33,3 +33,6 @@ public val MessageScope.getPaginatedFlowOfAssetMessageByConversationId: GetPagin
 
 public val MessageScope.observePaginatedImageAssetMessageByConversationId: ObservePaginatedAssetImageMessages
     get() = ObservePaginatedAssetImageMessages(dispatcher, messageRepository)
+
+public val MessageScope.fetchOlderMessagesByConversationId: FetchOlderNomadMessagesByConversationUseCase
+    get() = FetchOlderNomadMessagesByConversationUseCaseImpl(dispatcher, messageRepository)

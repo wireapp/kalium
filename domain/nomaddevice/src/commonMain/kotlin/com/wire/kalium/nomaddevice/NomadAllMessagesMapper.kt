@@ -37,15 +37,15 @@ import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.Base64
 
-internal data class NomadMappedMessages(
+public data class NomadMappedMessages(
     val totalMessages: Int,
     val messages: List<NomadMessageToInsert>,
     val skippedMessages: Int,
 )
 
-internal class NomadAllMessagesMapper {
+public class NomadAllMessagesMapper {
 
-    fun map(
+    public fun map(
         response: NomadAllMessagesResponse,
     ): NomadMappedMessages {
         var skipped = 0

@@ -161,6 +161,8 @@ import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SystemMessageInserterImpl
 import com.wire.kalium.logic.data.message.draft.MessageDraftDataSource
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinatorImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mls.ConversationProtocolGetterImpl
@@ -537,8 +539,8 @@ import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReactionEventData
 import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import com.wire.kalium.network.NetworkStateObserver
@@ -958,8 +960,21 @@ public class UserSessionScope internal constructor(
             messageApi = authenticatedNetworkContainer.messageApi,
             mlsMessageApi = authenticatedNetworkContainer.mlsMessageApi,
             messageDAO = userStorage.database.messageDAO,
-            selfUserId = userId
+            selfUserId = userId,
+            nomadMessagePagingCoordinator = nomadMessagePagingCoordinator,
         )
+
+    private val nomadMessagePagingCoordinator: NomadMessagePagingCoordinator?
+        get() = if (nomadServiceUrl.isNullOrBlank()) {
+            null
+        } else {
+            NomadMessagePagingCoordinatorImpl(
+                selfUserId = userId,
+                isNomadEnabled = { nomadServiceUrl.isNotBlank() },
+                nomadDeviceSyncApi = authenticatedNetworkContainer.nomadDeviceSyncApi,
+                nomadMessagesDAO = userStorage.database.nomadMessagesDAO,
+            )
+        }
 
     private val messageMetadataRepository: MessageMetadataRepository
         get() = MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
