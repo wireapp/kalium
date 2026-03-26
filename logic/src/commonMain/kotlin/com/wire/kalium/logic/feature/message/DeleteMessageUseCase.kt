@@ -30,6 +30,7 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
@@ -80,75 +81,137 @@ public class DeleteMessageUseCase internal constructor(
         deleteForEveryone: Boolean,
     ): MessageOperationResult =
         withContext(dispatcher.io) {
-            slowSyncRepository.slowSyncStatus.first {
-                it is SlowSyncStatus.Complete
-            }
+            awaitSlowSyncCompletion()
 
             messageRepository.getMessageById(conversationId, messageId).fold(
                 { failure -> MessageOperationResult.Failure(failure) },
                 { message ->
-                    val result = when (message.status) {
-                        // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent
-                        // better to send the delete message anyway and let it to other clients to ignore it if the message is not sent
-                        Message.Status.Failed -> messageRepository.deleteMessage(messageId, conversationId).onSuccess {
-                            persistenceEventHookNotifier.onMessageDeleted(
-                                MessageDeleteEventData(conversationId, messageId),
-                                selfUserId
-                            )
-                        }
-                        else -> {
-                            currentClientIdProvider().flatMap { currentClientId ->
-                                selfConversationIdProvider().flatMap { selfConversationIds ->
-                                    selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                                        val regularMessage = Message.Signaling(
-                                            id = Uuid.random().toString(),
-                                            content = if (deleteForEveryone) MessageContent.DeleteMessage(messageId) else
-                                                MessageContent.DeleteForMe(
-                                                    messageId,
-                                                    conversationId = conversationId
-                                                ),
-                                            conversationId = if (deleteForEveryone) conversationId else selfConversationId,
-                                            date = Clock.System.now(),
-                                            senderUserId = selfUserId,
-                                            senderClientId = currentClientId,
-                                            status = Message.Status.Pending,
-                                            isSelfMessage = true,
-                                            expirationData = null
-                                        )
-                                        messageSender.sendMessage(regularMessage)
-                                    }
-                                }
-                            }.onSuccess {
-                                deleteMessageAsset(message, deleteForEveryone)
-                            }.flatMap {
-                                // in case of ephemeral message, we want to delete it completely from the device, not just mark it deleted.
-                                // Since can only happen when the user decides to delete the message, before the self-deletion timer expired
-                                val isEphemeralMessage = message is Message.Regular && message.expirationData != null
-                                if (isEphemeralMessage) {
-                                    messageRepository.deleteMessage(messageId, conversationId)
-                                } else {
-                                    messageRepository.markMessageAsDeleted(messageId, conversationId)
-                                }
-                            }.onSuccess {
-                                persistenceEventHookNotifier.onMessageDeleted(
-                                    MessageDeleteEventData(conversationId, messageId),
-                                    selfUserId
-                                )
-                            }.onFailure { failure ->
-                                kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")
-                                if (failure is CoreFailure.Unknown) {
-                                    failure.rootCause?.printStackTrace()
-                                }
-                            }
-                        }
-                    }
-                    result.fold(
+                    deleteMessage(message, conversationId, messageId, deleteForEveryone).fold(
                         { MessageOperationResult.Failure(it) },
                         { MessageOperationResult.Success }
                     )
                 }
             )
         }
+
+    private suspend fun awaitSlowSyncCompletion() {
+        slowSyncRepository.slowSyncStatus.first {
+            it is SlowSyncStatus.Complete
+        }
+    }
+
+    private suspend fun deleteMessage(
+        message: Message,
+        conversationId: ConversationId,
+        messageId: String,
+        deleteForEveryone: Boolean,
+    ) = when (message.status) {
+        // TODO: there is a race condition here where a message can still be marked as Message.Status.FAILED but be sent
+        // better to send the delete message anyway and let it to other clients to ignore it if the message is not sent
+        Message.Status.Failed -> deleteFailedMessage(conversationId, messageId)
+        else -> deletePersistedMessage(message, conversationId, messageId, deleteForEveryone)
+    }
+
+    private suspend fun deleteFailedMessage(
+        conversationId: ConversationId,
+        messageId: String,
+    ) = messageRepository.deleteMessage(messageId, conversationId).onSuccess {
+        notifyMessageDeleted(conversationId, messageId)
+    }
+
+    private suspend fun deletePersistedMessage(
+        message: Message,
+        conversationId: ConversationId,
+        messageId: String,
+        deleteForEveryone: Boolean,
+    ) = sendDeleteSignal(conversationId, messageId, deleteForEveryone)
+        .onSuccess {
+            deleteMessageAsset(message, deleteForEveryone)
+        }
+        .flatMap {
+            persistDeletedMessage(message, conversationId, messageId)
+        }
+        .onSuccess {
+            notifyMessageDeleted(conversationId, messageId)
+        }
+        .onFailure { failure ->
+            logDeleteFailure(message, failure)
+        }
+
+    private suspend fun sendDeleteSignal(
+        conversationId: ConversationId,
+        messageId: String,
+        deleteForEveryone: Boolean,
+    ) = currentClientIdProvider().flatMap { currentClientId ->
+        selfConversationIdProvider().flatMap { selfConversationIds ->
+            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                messageSender.sendMessage(
+                    createDeleteMessage(
+                        messageId = messageId,
+                        conversationId = conversationId,
+                        selfConversationId = selfConversationId,
+                        currentClientId = currentClientId,
+                        deleteForEveryone = deleteForEveryone
+                    )
+                )
+            }
+        }
+    }
+
+    private fun createDeleteMessage(
+        messageId: String,
+        conversationId: ConversationId,
+        selfConversationId: ConversationId,
+        currentClientId: ClientId,
+        deleteForEveryone: Boolean,
+    ) = Message.Signaling(
+        id = Uuid.random().toString(),
+        content = if (deleteForEveryone) {
+            MessageContent.DeleteMessage(messageId)
+        } else {
+            MessageContent.DeleteForMe(
+                messageId,
+                conversationId = conversationId
+            )
+        },
+        conversationId = if (deleteForEveryone) conversationId else selfConversationId,
+        date = Clock.System.now(),
+        senderUserId = selfUserId,
+        senderClientId = currentClientId,
+        status = Message.Status.Pending,
+        isSelfMessage = true,
+        expirationData = null
+    )
+
+    private suspend fun persistDeletedMessage(
+        message: Message,
+        conversationId: ConversationId,
+        messageId: String,
+    ) =
+        // In case of ephemeral message, we want to delete it completely from the device, not just mark it deleted.
+        // This can only happen when the user decides to delete the message before the self-deletion timer expires.
+        if (message is Message.Regular && message.expirationData != null) {
+            messageRepository.deleteMessage(messageId, conversationId)
+        } else {
+            messageRepository.markMessageAsDeleted(messageId, conversationId)
+        }
+
+    private suspend fun notifyMessageDeleted(
+        conversationId: ConversationId,
+        messageId: String,
+    ) {
+        persistenceEventHookNotifier.onMessageDeleted(
+            MessageDeleteEventData(conversationId, messageId),
+            selfUserId
+        )
+    }
+
+    private fun logDeleteFailure(message: Message, failure: CoreFailure) {
+        kaliumLogger.withFeatureId(MESSAGES).w("delete message failure: $message")
+        if (failure is CoreFailure.Unknown) {
+            failure.rootCause?.printStackTrace()
+        }
+    }
 
     private suspend fun deleteMessageAsset(message: Message, deleteForEveryone: Boolean) {
         (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->

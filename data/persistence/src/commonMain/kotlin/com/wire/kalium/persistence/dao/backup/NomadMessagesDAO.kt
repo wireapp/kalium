@@ -61,6 +61,7 @@ interface NomadMessagesDAO {
     ): NomadMessageStoreResult
 }
 
+@Suppress("LongParameterList")
 internal class NomadMessagesDAOImpl internal constructor(
     private val usersQueries: UsersQueries,
     private val conversationsQueries: ConversationsQueries,

@@ -55,6 +55,7 @@ public interface ClearConversationContentUseCase {
     }
 }
 
+@Suppress("LongParameterList")
 internal class ClearConversationContentUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,

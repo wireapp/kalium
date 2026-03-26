@@ -109,4 +109,3 @@ data class Conversation(
     @SerialName("domain")
     val domain: String
 )
-

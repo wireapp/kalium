@@ -111,45 +111,62 @@ public class NomadAllMessagesMapper {
         base64: String?,
         storedMessage: NomadStoredMessage,
         conversation: NomadConversationWithMessages,
-    ): List<NomadReactionToInsert> {
-        if (base64.isNullOrEmpty()) return emptyList()
-        val bytes = runCatching { Base64.Default.decode(base64) }.getOrElse {
-            logSkip(storedMessage, conversation, "invalid base64 reaction")
-            return emptyList()
-        }
-        val proto = runCatching { NomadDeviceReactions.decodeFromByteArray(bytes) }.getOrElse {
-            logSkip(storedMessage, conversation, "invalid protobuf reaction")
-            return emptyList()
-        }
-        return proto.reactionsByUser.map { r ->
+    ): List<NomadReactionToInsert> =
+        decodeProtoOrNull(
+            base64 = base64,
+            storedMessage = storedMessage,
+            conversation = conversation,
+            invalidBase64Reason = "invalid base64 reaction",
+            invalidProtoReason = "invalid protobuf reaction",
+            decoder = NomadDeviceReactions::decodeFromByteArray
+        )?.reactionsByUser?.map { r ->
             NomadReactionToInsert(
                 userId = r.userId.toDaoQualifiedId(),
                 emojis = r.emojis
             )
-        }
-    }
+        }.orEmpty()
 
     private fun decodeReadReceiptsOrEmpty(
         base64: String?,
         storedMessage: NomadStoredMessage,
         conversation: NomadConversationWithMessages,
-    ): List<NomadReadReceiptToInsert> {
-        if (base64.isNullOrEmpty()) return emptyList()
-        val bytes = runCatching { Base64.Default.decode(base64) }.getOrElse {
-            logSkip(storedMessage, conversation, "invalid base64 read receipt")
-            return emptyList()
-        }
-        val proto = runCatching { NomadDeviceReadReceipts.decodeFromByteArray(bytes) }.getOrElse {
-            logSkip(storedMessage, conversation, "invalid protobuf read receipt")
-            return emptyList()
-        }
-        return proto.readReceipts.map { reaction ->
+    ): List<NomadReadReceiptToInsert> =
+        decodeProtoOrNull(
+            base64 = base64,
+            storedMessage = storedMessage,
+            conversation = conversation,
+            invalidBase64Reason = "invalid base64 read receipt",
+            invalidProtoReason = "invalid protobuf read receipt",
+            decoder = NomadDeviceReadReceipts::decodeFromByteArray
+        )?.readReceipts?.map { reaction ->
             NomadReadReceiptToInsert(
                 userId = reaction.userId.toDaoQualifiedId(),
                 date = Instant.parse(reaction.date)
             )
-        }
-    }
+        }.orEmpty()
+
+    private fun <T> decodeProtoOrNull(
+        base64: String?,
+        storedMessage: NomadStoredMessage,
+        conversation: NomadConversationWithMessages,
+        invalidBase64Reason: String,
+        invalidProtoReason: String,
+        decoder: (ByteArray) -> T,
+    ): T? =
+        base64
+            ?.takeUnless { it.isEmpty() }
+            ?.let { encoded ->
+                runCatching { Base64.Default.decode(encoded) }.getOrElse {
+                    logSkip(storedMessage, conversation, invalidBase64Reason)
+                    null
+                }
+            }
+            ?.let { bytes ->
+                runCatching { decoder(bytes) }.getOrElse {
+                    logSkip(storedMessage, conversation, invalidProtoReason)
+                    null
+                }
+            }
 
     private fun NomadDeviceMessageContent.toSyncableMessageContent(
         senderUserId: QualifiedIDEntity,

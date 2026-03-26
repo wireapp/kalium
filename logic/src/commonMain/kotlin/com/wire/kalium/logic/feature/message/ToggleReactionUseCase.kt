@@ -45,7 +45,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.uuid.Uuid
 
-// todo(interface). extract interface for use case
+@Suppress("LongParameterList")
 public class ToggleReactionUseCase internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val userId: UserId,
