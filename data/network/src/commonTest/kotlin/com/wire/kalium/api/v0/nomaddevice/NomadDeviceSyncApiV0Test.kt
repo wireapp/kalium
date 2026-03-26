@@ -22,8 +22,8 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.api.json.model.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.authenticated.nomaddevice.LastRead
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
+import com.wire.kalium.network.api.authenticated.nomaddevice.ConversationMetadataEntry
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
@@ -164,6 +164,7 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
         assertTrue(response.isSuccessful())
         assertEquals(1, response.value.conversations.size)
         assertEquals(1707235100L, response.value.conversations.first().metadata.lastRead)
+        assertEquals(1707235200L, response.value.conversations.first().metadata.lastModified)
     }
 
     @Test
@@ -363,9 +364,9 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
     }
 
     @Test
-    fun givenEmptyLastReadEvent_whenConstructingMessageEvent_thenItShouldThrow() {
+    fun givenEmptyConversationMetadataEvent_whenConstructingMessageEvent_thenItShouldThrow() {
         val exception = assertFailsWith<IllegalArgumentException> {
-            NomadMessageEvent.LastReadEvent(lastRead = emptyList())
+            NomadMessageEvent.ConversationMetadataEvent(conversationMetadata = emptyList())
         }
 
         assertFalse(exception.message.isNullOrBlank())
@@ -639,10 +640,18 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
     private companion object {
         val REQUEST = NomadMessageEventsRequest(
             events = listOf(
-                NomadMessageEvent.LastReadEvent(
-                    lastRead = listOf(
-                        LastRead(conversationId = "conv_1", lastReadTimestamp = 1772014500000),
-                        LastRead(conversationId = "conv_2", lastReadTimestamp = 1772014800000)
+                NomadMessageEvent.ConversationMetadataEvent(
+                    conversationMetadata = listOf(
+                        ConversationMetadataEntry(
+                            conversationId = "conv_1",
+                            lastReadTimestamp = 1772014500000,
+                            lastModifiedTimestamp = 1772014600000
+                        ),
+                        ConversationMetadataEntry(
+                            conversationId = "conv_2",
+                            lastReadTimestamp = 1772014800000,
+                            lastModifiedTimestamp = 1772014900000
+                        )
                     )
                 )
             )
@@ -653,15 +662,17 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             {
               "events": [
                 {
-                  "type": "LAST_READ",
-                  "last_read": [
+                  "type": "CONVERSATION_METADATA",
+                  "conversation_metadata": [
                     {
                       "conversation_id": "conv_1",
-                      "last_read": 1772014500000
+                      "last_read": 1772014500000,
+                      "last_modified": 1772014600000
                     },
                     {
                       "conversation_id": "conv_2",
-                      "last_read": 1772014800000
+                      "last_read": 1772014800000,
+                      "last_modified": 1772014900000
                     }
                   ]
                 }
@@ -740,7 +751,8 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
                     "domain": "example.com"
                   },
                   "metadata": {
-                    "last_read": 1707235100
+                    "last_read": 1707235100,
+                    "last_modified": 1707235200
                   }
                 }
               ]

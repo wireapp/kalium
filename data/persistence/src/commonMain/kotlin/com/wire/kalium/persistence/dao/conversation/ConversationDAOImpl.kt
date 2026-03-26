@@ -493,6 +493,27 @@ internal class ConversationDAOImpl internal constructor(
             }
         }
 
+    override suspend fun updateConversationReadAndModifiedDates(
+        readDates: Map<QualifiedIDEntity, Instant>,
+        modifiedDates: Map<QualifiedIDEntity, Instant>,
+    ) = withContext(writeDispatcher.value) {
+        if (readDates.isEmpty() && modifiedDates.isEmpty()) {
+            return@withContext
+        }
+
+        conversationQueries.transaction {
+
+            readDates.forEach { (conversationId, date) ->
+                unreadEventsQueries.deleteUnreadEvents(date, conversationId)
+                conversationQueries.updateConversationReadDate(date, conversationId)
+            }
+
+            modifiedDates.forEach { (conversationId, date) ->
+                conversationQueries.updateConversationModifiedDate(date, conversationId)
+            }
+        }
+    }
+
     override suspend fun updateKeyingMaterial(groupId: String, timestamp: Instant) {
         withContext(writeDispatcher.value) {
             conversationQueries.updateKeyingMaterialDate(timestamp, groupId)

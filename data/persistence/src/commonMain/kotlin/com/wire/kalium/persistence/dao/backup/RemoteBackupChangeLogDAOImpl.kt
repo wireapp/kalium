@@ -123,13 +123,13 @@ internal class RemoteBackupChangeLogDAOImpl(
                     limit = limit,
                     mapper = mapper::toChangeLogSyncEvent
                 ).executeAsList()
-                val conversationLastReads = queries.getConversationLastReadForLastPendingChanges(
+                val conversationMetadata = queries.getConversationMetadataForLastPendingChanges(
                     limit = limit,
-                    mapper = mapper::toConversationLastReadSyncEntity
+                    mapper = mapper::toConversationMetadataSyncEntity
                 ).executeAsList()
                 ChangeLogSyncBatch(
                     events = events,
-                    conversationLastReads = conversationLastReads
+                    conversationMetadata = conversationMetadata
                 )
             }
         }

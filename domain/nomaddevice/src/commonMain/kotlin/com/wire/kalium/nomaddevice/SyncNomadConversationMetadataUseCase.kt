@@ -30,8 +30,6 @@ import kotlinx.datetime.Instant
 
 public data class NomadConversationMetadataSyncResult(
     val downloadedConversations: Int,
-    val updatedConversations: Int,
-    val skippedConversations: Int,
 )
 
 /**
@@ -74,15 +72,14 @@ public class SyncNomadConversationMetadataUseCase internal constructor(
                     value = it.conversation.id,
                     domain = it.conversation.domain
                 ),
-                lastReadDate = Instant.fromEpochMilliseconds(it.metadata.lastRead)
+                lastReadDate = Instant.fromEpochMilliseconds(it.metadata.lastRead),
+                lastModifiedDate = it.metadata.lastModified?.let(Instant::fromEpochMilliseconds)
             )
         }
-        return when (val storeResult = repository.applyLastReadMetadata(selfUserId, metadata)) {
+        return when (val storeResult = repository.applyMetadata(selfUserId, metadata)) {
             is Either.Left -> storeResult.value.left()
             is Either.Right -> NomadConversationMetadataSyncResult(
                 downloadedConversations = metadata.size,
-                updatedConversations = storeResult.value,
-                skippedConversations = metadata.size - storeResult.value
             ).right()
         }
     }
@@ -94,4 +91,5 @@ public class SyncNomadConversationMetadataUseCase internal constructor(
 internal data class NomadConversationMetadataToSync(
     val conversationId: QualifiedIDEntity,
     val lastReadDate: Instant,
+    val lastModifiedDate: Instant?,
 )

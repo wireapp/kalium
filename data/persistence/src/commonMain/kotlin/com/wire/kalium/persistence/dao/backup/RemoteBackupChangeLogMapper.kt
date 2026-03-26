@@ -52,13 +52,15 @@ internal object RemoteBackupChangeLogMapper {
         )
 
     @Suppress("FunctionParameterNaming")
-    fun toConversationLastReadSyncEntity(
+    fun toConversationMetadataSyncEntity(
         conversation_id: QualifiedIDEntity,
         last_read_date: Instant,
-    ): ConversationLastReadSyncEntity =
-        ConversationLastReadSyncEntity(
+        last_modified_date: Instant,
+    ): ConversationMetadataSyncEntity =
+        ConversationMetadataSyncEntity(
             conversationId = conversation_id,
-            lastReadDate = last_read_date
+            lastReadDate = last_read_date,
+            lastModifiedDate = last_modified_date
         )
 
     @Suppress("LongParameterList", "FunctionParameterNaming")
