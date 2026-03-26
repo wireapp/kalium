@@ -30,10 +30,10 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 
 internal interface NomadConversationMetadataSyncRepository {
     suspend fun getConversationMetadata(selfUserId: UserId): Either<CoreFailure, NomadConversationMetadataResponse>
-    suspend fun applyLastReadMetadata(
+    suspend fun applyMetadata(
         selfUserId: UserId,
         metadata: List<NomadConversationMetadataToSync>,
-    ): Either<CoreFailure, Int>
+    ): Either<CoreFailure, Unit>
 }
 
 internal class NomadConversationMetadataSyncDataSource(
@@ -46,20 +46,20 @@ internal class NomadConversationMetadataSyncDataSource(
             nomadDeviceSyncApiProvider(selfUserId).getConversationMetadata()
         }
 
-    override suspend fun applyLastReadMetadata(
+    override suspend fun applyMetadata(
         selfUserId: UserId,
         metadata: List<NomadConversationMetadataToSync>,
-    ): Either<CoreFailure, Int> {
+    ): Either<CoreFailure, Unit> {
         val metadataStore = metadataStoreProvider(selfUserId)
         if (metadataStore == null) {
             nomadLogger.w(
                 "Skipping Nomad conversation-metadata import: missing user storage for '${selfUserId.toLogString()}'."
             )
-            return 0.right()
+            return Unit.right()
         }
 
         return wrapStorageRequest {
-            metadataStore.applyLastReadMetadata(metadata)
+            metadataStore.applyMetadata(metadata)
         }
     }
 }
@@ -68,7 +68,7 @@ internal class NomadConversationMetadataSyncDataSource(
  * Applies fetched Nomad conversation metadata to local storage.
  */
 internal interface NomadConversationMetadataStore {
-    suspend fun applyLastReadMetadata(metadata: List<NomadConversationMetadataToSync>): Int
+    suspend fun applyMetadata(metadata: List<NomadConversationMetadataToSync>)
 }
 
 /**
@@ -78,8 +78,11 @@ internal class ConversationDAONomadConversationMetadataStore(
     private val conversationDAO: ConversationDAO,
 ) : NomadConversationMetadataStore {
 
-    override suspend fun applyLastReadMetadata(metadata: List<NomadConversationMetadataToSync>): Int =
-        conversationDAO.updateConversationReadDates(
-            metadata.associate { it.conversationId to it.lastReadDate }
+    override suspend fun applyMetadata(metadata: List<NomadConversationMetadataToSync>) =
+        conversationDAO.updateConversationReadAndModifiedDates(
+            readDates = metadata.associate { it.conversationId to it.lastReadDate },
+            modifiedDates = metadata.mapNotNull { entry ->
+                entry.lastModifiedDate?.let { entry.conversationId to it }
+            }.toMap()
         )
 }
