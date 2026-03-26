@@ -35,6 +35,8 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageExtensions
 import com.wire.kalium.persistence.db.ReadDispatcher
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.matches
@@ -79,44 +81,99 @@ class MessageRepositoryExtensionsTest {
                     val list = it.toList()
                     list.size == 1 && list[0] == MessageEntity.Visibility.VISIBLE
                 }, eq(pagingConfig),
-                any()
+                eq(startingOffset)
             )
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
-        val messageDaoExtensions: MessageExtensions = mock(MessageExtensions::class)
-        private val messageDAO: MessageDAO = mock(MessageDAO::class)
-        private val messageMapper: MessageMapper = mock(MessageMapper::class)
-        private val pagingCoordinator: NomadMessagePagingCoordinator = mock(NomadMessagePagingCoordinator::class)
+    @Test
+    fun givenNomadEnabled_whenFetchingOlderMessages_thenUsesDaoTimestamp() = runTest {
+        val pagingConfig = PagingConfig(20)
+        val pager = Pager(pagingConfig) { fakePagingSource }
+        val kaliumPager = KaliumPager(pager, fakePagingSource, ReadDispatcher(StandardTestDispatcher()))
+        val (arrangement, messageRepositoryExtensions) = Arrangement()
+            .withMessageExtensionsReturningPager(kaliumPager)
+            .withOldestTimestamp(1234L)
+            .withPagingCoordinator()
+            .arrange()
 
+        messageRepositoryExtensions.fetchOlderNomadMessagesByConversationId(
+            conversationId = TestConversation.ID,
+            pageSize = 5,
+        )
+
+        coVerify {
+            arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(
+                conversationId = eq(TestConversation.ID),
+                pageSize = eq(5),
+                beforeTimestampMs = eq(1234L),
+                onInvalidate = any()
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNomadDisabled_whenFetchingOlderMessages_thenDoesNotCallCoordinator() = runTest {
+        val pagingConfig = PagingConfig(20)
+        val pager = Pager(pagingConfig) { fakePagingSource }
+        val kaliumPager = KaliumPager(pager, fakePagingSource, ReadDispatcher(StandardTestDispatcher()))
+        val (arrangement, messageRepositoryExtensions) = Arrangement()
+            .withMessageExtensionsReturningPager(kaliumPager)
+            .withOldestTimestamp(1234L)
+            .withoutPagingCoordinator()
+            .arrange()
+
+        messageRepositoryExtensions.fetchOlderNomadMessagesByConversationId(
+            conversationId = TestConversation.ID,
+            pageSize = 5,
+        )
+
+        coVerify { arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) }
+            .wasInvoked(exactly = 0)
+    }
+
+    private data class Arrangement(
+        val messageDaoExtensions: MessageExtensions = mock(MessageExtensions::class),
+        val messageDAO: MessageDAO = mock(MessageDAO::class),
+        val messageMapper: MessageMapper = mock(MessageMapper::class),
+        val pagingCoordinator: NomadMessagePagingCoordinator = mock(NomadMessagePagingCoordinator::class),
+        val usePagingCoordinator: Boolean = false,
+    ) {
         init {
-
-            every {
-                messageMapper.fromEntityToMessage(any())
-            }.returns(MESSAGE)
-
-            every {
-                messageDAO.platformExtensions
-            }.returns(messageDaoExtensions)
+            every { messageMapper.fromEntityToMessage(any()) }.returns(MESSAGE)
+            every { messageDAO.platformExtensions }.returns(messageDaoExtensions)
         }
 
-        fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<MessageEntity>) = apply {
-            every {
-                messageDaoExtensions.getPagerForConversation(any(), any(), any(), any())
-            }.returns(kaliumPager)
+        fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<MessageEntity>): Arrangement =
+            copy().also {
+                every {
+                    it.messageDaoExtensions.getPagerForConversation(any(), any(), any(), any())
+                }.returns(kaliumPager)
+            }
+
+        suspend fun withOldestTimestamp(timestamp: Long?): Arrangement = copy().also {
+            coEvery {
+                it.messageDAO.getOldestVisibleMessageTimestampByConversationId(CONVERSATION_ID_ENTITY)
+            }.returns(timestamp)
         }
+
+        suspend fun withPagingCoordinator(): Arrangement = copy(usePagingCoordinator = true).also {
+            coEvery {
+                it.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any())
+            }.returns(Unit)
+        }
+
+        fun withoutPagingCoordinator(): Arrangement = copy(usePagingCoordinator = false)
 
         private val messageRepositoryExtensions: MessageRepositoryExtensions by lazy {
             MessageRepositoryExtensionsImpl(
                 messageDAO,
                 messageMapper,
-                pagingCoordinator,
+                if (usePagingCoordinator) pagingCoordinator else null,
             )
         }
 
         fun arrange() = this to messageRepositoryExtensions
-
     }
 
     private companion object {
