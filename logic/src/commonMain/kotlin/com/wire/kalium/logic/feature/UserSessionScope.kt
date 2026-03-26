@@ -964,8 +964,8 @@ public class UserSessionScope internal constructor(
             nomadMessagePagingCoordinator = nomadMessagePagingCoordinator,
         )
 
-    private val nomadMessagePagingCoordinator: NomadMessagePagingCoordinator? by lazy {
-        if (nomadServiceUrl.isNullOrBlank()) {
+    private val nomadMessagePagingCoordinator: NomadMessagePagingCoordinator?
+        get() = if (nomadServiceUrl.isNullOrBlank()) {
             null
         } else {
             NomadMessagePagingCoordinatorImpl(
@@ -975,7 +975,6 @@ public class UserSessionScope internal constructor(
                 nomadMessagesDAO = userStorage.database.nomadMessagesDAO,
             )
         }
-    }
 
     private val messageMetadataRepository: MessageMetadataRepository
         get() = MessageMetadataSource(messageMetaDataDAO = userStorage.database.messageMetaDataDAO)
