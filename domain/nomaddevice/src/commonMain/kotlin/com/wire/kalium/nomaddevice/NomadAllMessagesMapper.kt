@@ -143,10 +143,10 @@ public class NomadAllMessagesMapper {
             logSkip(storedMessage, conversation, "invalid protobuf read receipt")
             return emptyList()
         }
-        return proto.readReceipts.map { r ->
+        return proto.readReceipts.map { reaction ->
             NomadReadReceiptToInsert(
-                userId = r.userId.toDaoQualifiedId(),
-                date = Instant.parse(r.date)
+                userId = reaction.userId.toDaoQualifiedId(),
+                date = Instant.parse(reaction.date)
             )
         }
     }
