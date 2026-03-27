@@ -113,8 +113,6 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
                     throw e
                 }
                 // Normal debounce path: protect the upload from late cancellations.
-                // Acquire the lock before NonCancellable to avoid indefinite waits if a
-                // holder of the mutex is cancelled while we are in a non-cancellable context.
                 val currentJob = coroutineContext.job
                 val shouldBackup = mutex.withLock {
                     hasPendingChange.also { hasPendingChange = false }
