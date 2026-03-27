@@ -27,6 +27,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -112,9 +113,16 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
                     throw e
                 }
                 // Normal debounce path: protect the upload from late cancellations.
-                withContext(NonCancellable) {
-                    mutex.withLock { hasPendingChange = false }
-                    runBackup(this@launch)
+                // Acquire the lock before NonCancellable to avoid indefinite waits if a
+                // holder of the mutex is cancelled while we are in a non-cancellable context.
+                val currentJob = coroutineContext.job
+                val shouldBackup = mutex.withLock {
+                    hasPendingChange.also { hasPendingChange = false }
+                }
+                if (shouldBackup) {
+                    withContext(NonCancellable) {
+                        runBackup(currentJob)
+                    }
                 }
             }
         }
@@ -136,7 +144,7 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun runBackup(currentJob: Any) {
+    private suspend fun runBackup(currentJob: Job) {
         try {
             backup()
         } catch (exception: Exception) {
