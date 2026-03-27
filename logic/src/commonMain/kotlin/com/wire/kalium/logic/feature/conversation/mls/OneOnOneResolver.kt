@@ -101,6 +101,7 @@ internal class OneOnOneResolverImpl(
     private val oneOnOneProtocolSelector: OneOnOneProtocolSelector,
     private val oneOnOneMigrator: OneOnOneMigrator,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val pendingOneOnOneResolutionsRepository: PendingOneOnOneResolutionsRepository,
     private val maxConcurrentResolutions: Int = DEFAULT_MAX_CONCURRENT_RESOLUTIONS,
     private val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
     private val throttleRetryDelayMs: Long = DEFAULT_THROTTLE_RETRY_DELAY_MS,
@@ -156,23 +157,68 @@ internal class OneOnOneResolverImpl(
                 delay(delayMs)
                 resolveWithRetry(transactionContext, user, nextAttempt)
             } else {
-                handleBatchEntryFailure(failure)
+                handleBatchEntryFailure(user, failure)
             }
         }
     }
 
-    private fun handleBatchEntryFailure(failure: CoreFailure) = when {
+    private suspend fun handleBatchEntryFailure(
+        user: OtherUser,
+        failure: CoreFailure
+    ) = when {
         failure.isThrottleFailure() -> {
             kaliumLogger.w("Resolving one-on-one failed due to throttling, propagating failure.")
             Either.Left(failure)
         }
 
-        failure is CoreFailure.MissingKeyPackages ||
-        failure is NetworkFailure.ServerMiscommunication ||
-        failure is NetworkFailure.FederatedBackendFailure ||
-        failure is CoreFailure.NoCommonProtocolFound ||
-        failure is MLSFailure -> {
+        failure is CoreFailure.MissingKeyPackages -> {
+            kaliumLogger.w(
+                "Resolving one-on-one failed $failure for ${user.id.toLogString()}, " +
+                    "adding retry for next foreground action"
+            )
+            pendingOneOnOneResolutionsRepository.enqueue(user.id)
+            Either.Right(Unit)
+        }
+
+        failure is CoreFailure.NoCommonProtocolFound -> {
             kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
+            Either.Right(Unit)
+        }
+
+        failure is NetworkFailure.FederatedBackendFailure.RetryableFailure -> {
+            kaliumLogger.w(
+                "Resolving one-on-one failed $failure for ${user.id.toLogString()}, " +
+                    "adding retry for next foreground action"
+            )
+            pendingOneOnOneResolutionsRepository.enqueue(user.id)
+            Either.Right(Unit)
+        }
+
+        failure is NetworkFailure.FederatedBackendFailure -> {
+            kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
+            Either.Right(Unit)
+        }
+
+        failure is NetworkFailure.ServerMiscommunication -> {
+            if (failure.kaliumException is KaliumException.InvalidRequestError) {
+                kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
+                Either.Right(Unit)
+            } else {
+                kaliumLogger.e("Resolving one-on-one failed $failure, retrying")
+                Either.Left(failure)
+            }
+        }
+
+        failure is MLSFailure.MessageRejected -> {
+            if (failure.cause == NetworkFailure.MlsMessageRejectedFailure.StaleMessage) {
+                kaliumLogger.w(
+                    "Resolving one-on-one failed $failure for ${user.id.toLogString()}, " +
+                        "adding retry for next foreground action"
+                )
+                pendingOneOnOneResolutionsRepository.enqueue(user.id)
+            } else {
+                kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
+            }
             Either.Right(Unit)
         }
 
