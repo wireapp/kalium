@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.client.UserClientRepositoryProvider
 import com.wire.kalium.logic.data.client.UserClientRepositoryProviderImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCase
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCaseImpl
@@ -40,6 +41,7 @@ import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
+import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AuthenticationScopeForConfigIdUseCase
 import com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase
 import com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCaseImpl
 import com.wire.kalium.logic.feature.client.ClearNewClientsForUserUseCase
@@ -50,18 +52,16 @@ import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppLockEditableUseCa
 import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppLockEditableUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCaseImpl
-import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AuthenticationScopeForConfigIdUseCase
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
 import com.wire.kalium.logic.feature.server.ServerConfigForAccountUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
 import com.wire.kalium.logic.feature.session.DeleteSessionUseCase
 import com.wire.kalium.logic.feature.session.DoesValidNomadAccountExistUseCase
-import com.wire.kalium.logic.feature.session.IsCurrentSessionNomadAccountUseCase
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistUseCase
 import com.wire.kalium.logic.feature.session.GetAllSessionsUseCase
 import com.wire.kalium.logic.feature.session.GetSessionsUseCase
+import com.wire.kalium.logic.feature.session.IsCurrentSessionNomadAccountUseCase
 import com.wire.kalium.logic.feature.session.ObserveSessionsUseCase
 import com.wire.kalium.logic.feature.session.SessionScope
 import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
@@ -154,7 +154,10 @@ public class GlobalKaliumScope internal constructor(
     public val getAllSessions: GetAllSessionsUseCase get() = GetAllSessionsUseCase(sessionRepository)
     public val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
     public val doesValidNomadAccountExist: DoesValidNomadAccountExistUseCase get() = DoesValidNomadAccountExistUseCase(sessionRepository)
-    public val isCurrentSessionNomadAccount: IsCurrentSessionNomadAccountUseCase get() = IsCurrentSessionNomadAccountUseCase(sessionRepository)
+    public val isCurrentSessionNomadAccount: IsCurrentSessionNomadAccountUseCase
+        get() = IsCurrentSessionNomadAccountUseCase(
+            sessionRepository
+        )
     public val observeValidAccounts: ObserveValidAccountsUseCase by lazy {
         ObserveValidAccountsUseCaseImpl(
             sessionRepository,

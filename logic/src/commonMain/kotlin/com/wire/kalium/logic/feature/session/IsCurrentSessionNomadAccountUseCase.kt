@@ -18,7 +18,10 @@
 
 package com.wire.kalium.logic.feature.session
 
-import com.wire.kalium.common.functional.getOrElse
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.session.SessionRepository
 
 /**
@@ -28,10 +31,11 @@ import com.wire.kalium.logic.data.session.SessionRepository
 public class IsCurrentSessionNomadAccountUseCase internal constructor(
     private val sessionRepository: SessionRepository
 ) {
-    public suspend operator fun invoke(): Boolean {
-        val currentAccountInfo = sessionRepository.currentSession().getOrElse { return false }
-        if (!currentAccountInfo.isValid()) return false
-        val account = sessionRepository.fullAccountInfo(currentAccountInfo.userId).getOrElse { return false }
-        return !account.nomadServiceUrl.isNullOrBlank()
-    }
+    public suspend operator fun invoke(): Boolean =
+        sessionRepository.currentSession()
+            .flatMap { accountInfo ->
+                if (accountInfo.isValid()) sessionRepository.fullAccountInfo(accountInfo.userId)
+                else Either.Left(StorageFailure.DataNotFound)
+            }
+            .fold({ false }, { !it.nomadServiceUrl.isNullOrBlank() })
 }
