@@ -276,10 +276,14 @@ import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterial
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
+import com.wire.kalium.logic.feature.conversation.mls.InMemoryPendingOneOnOneResolutionsRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
+import com.wire.kalium.logic.feature.conversation.mls.PendingOneOnOneResolutionsRepository
+import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCase
+import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCaseImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCaseImpl
@@ -1289,12 +1293,24 @@ public class UserSessionScope internal constructor(
             userRepository,
             systemMessageInserter
         )
+    private val pendingOneOnOneResolutionsRepository: PendingOneOnOneResolutionsRepository by lazy {
+        InMemoryPendingOneOnOneResolutionsRepository()
+    }
     private val oneOnOneResolver: OneOnOneResolver
         get() = OneOnOneResolverImpl(
             userRepository,
             oneOnOneProtocolSelector,
             oneOnOneMigrator,
-            incrementalSyncRepository
+            incrementalSyncRepository,
+            pendingOneOnOneResolutionsRepository
+        )
+
+    private val recoverPendingOneOnOneResolutionsUseCase: RecoverPendingOneOnOneResolutionsUseCase
+        get() = RecoverPendingOneOnOneResolutionsUseCaseImpl(
+            pendingOneOnOneResolutionsRepository = pendingOneOnOneResolutionsRepository,
+            incrementalSyncRepository = incrementalSyncRepository,
+            transactionProvider = cryptoTransactionProvider,
+            oneOnOneResolver = oneOnOneResolver
         )
 
     private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase
@@ -2366,6 +2382,7 @@ public class UserSessionScope internal constructor(
             mlsClientManager,
             mlsMigrationManager,
             keyingMaterialsManager,
+            recoverPendingOneOnOneResolutionsUseCase,
             cryptoTransactionProvider,
             this,
         )

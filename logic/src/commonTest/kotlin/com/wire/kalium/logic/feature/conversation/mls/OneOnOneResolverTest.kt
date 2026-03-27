@@ -48,6 +48,7 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.`in`
+import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import kotlinx.coroutines.flow.flowOf
@@ -385,13 +386,18 @@ class OneOnOneResolverTest {
         OneOnOneMigratorArrangement by OneOnOneMigratorArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
         IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl() {
+        val pendingOneOnOneResolutionsRepository = mock(PendingOneOnOneResolutionsRepository::class)
         fun arrange() = run {
+            runBlocking {
+                coEvery { pendingOneOnOneResolutionsRepository.enqueue(any()) }.returns(Unit)
+            }
             runBlocking { block() }
             this@Arrangement to OneOnOneResolverImpl(
                 userRepository = userRepository,
                 oneOnOneProtocolSelector = oneOnOneProtocolSelector,
                 oneOnOneMigrator = oneOnOneMigrator,
                 incrementalSyncRepository = incrementalSyncRepository,
+                pendingOneOnOneResolutionsRepository = pendingOneOnOneResolutionsRepository,
                 kaliumDispatcher = dispatcher
             )
         }
