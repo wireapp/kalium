@@ -142,7 +142,8 @@ public class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             selfUserId,
             clientRepository,
             isAllowedToRegisterMLSClient,
-            registerMLSClientUseCase
+            registerMLSClientUseCase,
+            slowSyncRepository
         )
     internal val importClient: ImportClientUseCase
         get() = ImportClientUseCaseImpl(
