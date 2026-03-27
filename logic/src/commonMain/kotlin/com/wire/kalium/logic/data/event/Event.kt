@@ -522,7 +522,7 @@ internal sealed class Event(open val id: String) {
             val model: MLSMigrationModel
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
-                typeKey to "FeatureConfig.MLSUpdated",
+                typeKey to "FeatureConfig.MLSMigrationUpdated",
                 idKey to id,
                 featureStatusKey to model.status.name,
                 "startTime" to model.startTime,
