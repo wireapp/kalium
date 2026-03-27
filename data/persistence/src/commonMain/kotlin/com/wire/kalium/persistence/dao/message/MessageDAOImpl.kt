@@ -44,6 +44,7 @@ import com.wire.kalium.persistence.dao.unread.UnreadEventMapper
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
@@ -53,6 +54,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -82,6 +84,11 @@ internal class MessageDAOImpl internal constructor(
     ) {
     private val mapper = MessageMapper
     private val unreadEventMapper = UnreadEventMapper
+    private val logger = kaliumLogger.withTextTag("MessageDAO")
+
+    private companion object {
+        private const val SLOW_TRANSFORM_THRESHOLD_MS = 5L
+    }
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
@@ -464,7 +471,17 @@ internal class MessageDAOImpl internal constructor(
             unreadEventsQueries.getUnreadEvents(unreadEventMapper::toUnreadEntity)
                 .asFlow()
                 .mapToList()
-                .map { it.groupBy { event -> event.conversationId } }
+                .map { unreadEvents ->
+                    val start = Clock.System.now()
+                    val grouped = unreadEvents.groupBy { event -> event.conversationId }
+                    logTransformTiming(
+                        scope = "unread-events-groupBy",
+                        elapsedMs = (Clock.System.now() - start).inWholeMilliseconds,
+                        inputSize = unreadEvents.size,
+                        outputSize = grouped.size,
+                    )
+                    grouped
+                }
                 .flowOn(readDispatcher.value)
         }
 
@@ -474,8 +491,25 @@ internal class MessageDAOImpl internal constructor(
         }
             .asFlow()
             .mapToList()
-            .map { it.toMap() }
+            .map { unreadCounts ->
+                val start = Clock.System.now()
+                val mapped = unreadCounts.toMap()
+                logTransformTiming(
+                    scope = "unread-message-counter-toMap",
+                    elapsedMs = (Clock.System.now() - start).inWholeMilliseconds,
+                    inputSize = unreadCounts.size,
+                    outputSize = mapped.size,
+                )
+                mapped
+            }
             .flowOn(readDispatcher.value)
+
+    private fun logTransformTiming(scope: String, elapsedMs: Long, inputSize: Int, outputSize: Int) {
+        if (elapsedMs < SLOW_TRANSFORM_THRESHOLD_MS) return
+        logger.w(
+            "[PerfDiag] scope=$scope elapsedMs=$elapsedMs inputSize=$inputSize outputSize=$outputSize"
+        )
+    }
 
     override suspend fun resetAssetTransferStatus() {
         withContext(writeDispatcher.value) {

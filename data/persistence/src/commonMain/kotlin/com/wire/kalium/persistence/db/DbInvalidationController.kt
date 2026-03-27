@@ -48,6 +48,7 @@ class DbInvalidationController(
     private val enabled: Boolean,
     private val notifyKey: (String) -> Unit,
 ) {
+    private val logger = kaliumLogger.withTextTag("DbInvalidationController")
     /**
      * Nesting depth of the mute scope.
      *
@@ -96,6 +97,8 @@ class DbInvalidationController(
     fun isEnabled(): Boolean = enabled
     fun isMuted(): Boolean = enabled && muteDepth.load() > 0
 
+    fun currentMuteDepth(): Int = muteDepth.load()
+
     /**
      * Runs [block] while invalidations are muted.
      * Safe for nesting (re-entrant via muteDepth).
@@ -104,6 +107,7 @@ class DbInvalidationController(
         if (!enabled) return block()
 
         enter()
+        logger.w("[SqlMute] action=enter depth=${muteDepth.load()}")
         return try {
             block()
         } finally {
@@ -129,7 +133,15 @@ class DbInvalidationController(
                 for (k in queryKeys) acc = acc + k
                 acc
             }
+            logger.w(
+                "[SqlInvalidate] action=buffer keyCount=${queryKeys.size} muted=true " +
+                    "depth=${muteDepth.load()} queryKeys=${queryKeys.joinToString(",")}" 
+            )
         } else {
+            logger.w(
+                "[SqlInvalidate] action=forward keyCount=${queryKeys.size} muted=false " +
+                    "depth=${muteDepth.load()} queryKeys=${queryKeys.joinToString(",")}" 
+            )
             queryKeys.forEach(notifyKey)
         }
     }
@@ -140,6 +152,7 @@ class DbInvalidationController(
 
     private fun exitAndFlushIfNeeded() {
         val depth = muteDepth.decrementAndFetch()
+        logger.w("[SqlMute] action=exit depth=$depth")
         if (depth != 0) return
 
         val calls = notifyCalls.exchange(0)
@@ -147,12 +160,9 @@ class DbInvalidationController(
         val keysTotal = notifyKeysTotal.exchange(0)
 
         val keysToFlush = pendingKeys.exchange(emptySet())
-        kaliumLogger.d(
-            "[DbInvalidationController][mute] DONE " +
-                    "notifyCalls=$calls " +
-                    "mutedCalls=$mutedCalls " +
-                    "keysTotal=$keysTotal " +
-                    "flushKeys=${keysToFlush.size}"
+        logger.w(
+            "[SqlInvalidate] action=flush notifyCalls=$calls mutedCalls=$mutedCalls " +
+                "keysTotal=$keysTotal flushKeys=${keysToFlush.size} queryKeys=${keysToFlush.joinToString(",")}" 
         )
 
         if (keysToFlush.isNotEmpty()) {

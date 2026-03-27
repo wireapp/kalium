@@ -59,17 +59,22 @@ actual fun userDatabaseBuilder(
             }
     }
 
+    val tracedDriver: SqlDriver = TracingSqlDriver(
+        delegate = rawDriver,
+        label = "user:${userId.value}@${userId.domain}"
+    )
+
     val invalidationController = DbInvalidationController(
         enabled = dbInvalidationControlEnabled,
-        notifyKey = { key -> rawDriver.notifyListeners(key) }
+        notifyKey = { key -> tracedDriver.notifyListeners(key) }
     )
 
     val driver: SqlDriver = MutedSqlDriver(
-        delegate = rawDriver,
+        delegate = tracedDriver,
         invalidationController = invalidationController
     )
 
-    return UserDatabaseBuilder(
+    val builder = UserDatabaseBuilder(
         userId = userId,
         sqlDriver = driver,
         dispatcher = dispatcher,
@@ -77,6 +82,13 @@ actual fun userDatabaseBuilder(
         isEncrypted = passphrase != null,
         dbInvalidationController = invalidationController
     )
+
+    val dbPath = when (val storage = platformDatabaseData.storageData) {
+        is StorageData.FileBacked -> "${storage.storePath}/${FileNameUtil.userDBName(userId)}"
+        StorageData.InMemory -> null
+    }
+    AppleSqliteDiagnostics.start(builder.diagnosticsScope, driver, "user:${userId.value}@${userId.domain}", dbPath)
+    return builder
 }
 
 actual fun userDatabaseDriverByPath(
@@ -107,13 +119,18 @@ fun inMemoryDatabase(
         isWALEnabled = false
     }
 
+    val tracedDriver: SqlDriver = TracingSqlDriver(
+        delegate = rawDriver,
+        label = "user:${userId.value}@${userId.domain}:memory"
+    )
+
     val invalidationController = DbInvalidationController(
         enabled = false,
-        notifyKey = { key -> rawDriver.notifyListeners(key) }
+        notifyKey = { key -> tracedDriver.notifyListeners(key) }
     )
 
     val driver: SqlDriver = MutedSqlDriver(
-        delegate = rawDriver,
+        delegate = tracedDriver,
         invalidationController = invalidationController
     )
 

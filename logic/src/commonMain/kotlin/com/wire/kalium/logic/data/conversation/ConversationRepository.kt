@@ -512,11 +512,46 @@ internal class ConversationDataSource internal constructor(
             messageDAO.observeConversationsUnreadEvents(),
             messageDraftDAO.observeMessageDrafts()
         ) { conversationList, lastMessageList, unreadEvents, drafts ->
+            val combineStart = Clock.System.now()
+            val lastMessageMapStart = Clock.System.now()
             val lastMessageMap = lastMessageList.associateBy { it.conversationId }
-            val messageDraftMap = drafts.filter { it.text.isNotBlank() }.associateBy { it.conversationId }
-            val unreadEventsMap = unreadEvents.associateBy { it.conversationId }
+            logTransformTiming(
+                scope = "conversation-list-lastMessage-associateBy",
+                elapsedMs = (Clock.System.now() - lastMessageMapStart).inWholeMilliseconds,
+                inputSize = lastMessageList.size,
+                outputSize = lastMessageMap.size,
+            )
 
-            conversationList.map { conversation ->
+            val draftFilterStart = Clock.System.now()
+            val nonBlankDrafts = drafts.filter { it.text.isNotBlank() }
+            val draftFilterMs = (Clock.System.now() - draftFilterStart).inWholeMilliseconds
+            logTransformTiming(
+                scope = "conversation-list-draft-filter",
+                elapsedMs = draftFilterMs,
+                inputSize = drafts.size,
+                outputSize = nonBlankDrafts.size,
+            )
+
+            val messageDraftMapStart = Clock.System.now()
+            val messageDraftMap = nonBlankDrafts.associateBy { it.conversationId }
+            logTransformTiming(
+                scope = "conversation-list-draft-associateBy",
+                elapsedMs = (Clock.System.now() - messageDraftMapStart).inWholeMilliseconds,
+                inputSize = nonBlankDrafts.size,
+                outputSize = messageDraftMap.size,
+            )
+
+            val unreadEventsMapStart = Clock.System.now()
+            val unreadEventsMap = unreadEvents.associateBy { it.conversationId }
+            logTransformTiming(
+                scope = "conversation-list-unread-associateBy",
+                elapsedMs = (Clock.System.now() - unreadEventsMapStart).inWholeMilliseconds,
+                inputSize = unreadEvents.size,
+                outputSize = unreadEventsMap.size,
+            )
+
+            val mapDetailsStart = Clock.System.now()
+            val details = conversationList.map { conversation ->
                 conversationMapper.fromDaoModelToDetailsWithEvents(
                     ConversationDetailsWithEventsEntity(
                         conversationViewEntity = conversation,
@@ -526,6 +561,19 @@ internal class ConversationDataSource internal constructor(
                     )
                 )
             }
+            logTransformTiming(
+                scope = "conversation-list-map-details",
+                elapsedMs = (Clock.System.now() - mapDetailsStart).inWholeMilliseconds,
+                inputSize = conversationList.size,
+                outputSize = details.size,
+            )
+            logTransformTiming(
+                scope = "conversation-list-combine-total",
+                elapsedMs = (Clock.System.now() - combineStart).inWholeMilliseconds,
+                inputSize = conversationList.size + lastMessageList.size + unreadEvents.size + drafts.size,
+                outputSize = details.size,
+            )
+            details
         }
 
     override suspend fun fetchMlsOneToOneConversation(userId: UserId): Either<CoreFailure, ConversationResponse> =
@@ -1168,7 +1216,16 @@ internal class ConversationDataSource internal constructor(
         const val DEFAULT_MEMBER_ROLE = "wire_member"
         private const val CONVERSATIONS_TO_DELETE_KEY = "conversations_to_delete"
         private const val SLOW_PROTOCOL_LOOKUP_THRESHOLD_MS = 50L
+        private const val SLOW_COLLECTION_TRANSFORM_THRESHOLD_MS = 5L
     }
 
     private fun runtimeLabel(): String = if (clientPlatform == "jvm") "jvm" else "native"
+
+    private fun logTransformTiming(scope: String, elapsedMs: Long, inputSize: Int, outputSize: Int) {
+        if (elapsedMs < SLOW_COLLECTION_TRANSFORM_THRESHOLD_MS) return
+        kaliumLogger.withFeatureId(CONVERSATIONS).w(
+            "[PerfDiag] runtime=${runtimeLabel()} scope=$scope elapsedMs=$elapsedMs " +
+                "inputSize=$inputSize outputSize=$outputSize"
+        )
+    }
 }

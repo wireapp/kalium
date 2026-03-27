@@ -20,7 +20,9 @@ package com.wire.kalium.persistence.db
 
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.SupervisorJob
 import platform.Foundation.NSFileManager
 
 actual fun globalDatabaseProvider(
@@ -29,7 +31,7 @@ actual fun globalDatabaseProvider(
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean
 ): GlobalDatabaseBuilder {
-    val driver = when (val data = platformDatabaseData.storageData) {
+    val rawDriver = when (val data = platformDatabaseData.storageData) {
         is StorageData.FileBacked -> {
             NSFileManager.defaultManager.createDirectoryAtPath(data.storePath, true, null, null)
             val schema = GlobalDatabase.Schema
@@ -45,6 +47,13 @@ actual fun globalDatabaseProvider(
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
     }
+
+    val driver = TracingSqlDriver(rawDriver, "global")
+    val dbPath = when (val data = platformDatabaseData.storageData) {
+        is StorageData.FileBacked -> "${data.storePath}/${FileNameUtil.globalDBName()}"
+        StorageData.InMemory -> null
+    }
+    AppleSqliteDiagnostics.start(CoroutineScope(SupervisorJob() + queriesContext), driver, "global", dbPath)
 
     return GlobalDatabaseBuilder(driver, platformDatabaseData, queriesContext)
 }

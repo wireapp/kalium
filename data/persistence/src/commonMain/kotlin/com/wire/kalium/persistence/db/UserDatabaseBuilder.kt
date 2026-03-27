@@ -209,6 +209,8 @@ class UserDatabaseBuilder internal constructor(
     val readDispatcher: ReadDispatcher = ReadDispatcher(dispatcher.limitedParallelism(MAX_READ_PARALLELISM))
     val writeDispatcher: WriteDispatcher = WriteDispatcher(dispatcher.limitedParallelism(MAX_WRITE_PARALLELISM))
     private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
+    internal val diagnosticsScope: CoroutineScope
+        get() = databaseScope
 
     private val userCache = FlowCache<UserIDEntity, UserDetailsEntity?>(databaseScope)
     val userDAO: UserDAO

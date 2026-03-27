@@ -85,9 +85,21 @@ internal class IncrementalSyncWorkerImpl(
                     var totalEventMs = 0L
                     var maxEventMs = 0L
                     var maxEventType = "unknown"
+                    logger.w(
+                        "[SqlMute] runtime=${runtimeLabel()} scope=incremental-batch beforeRunMuted " +
+                            "batchSize=${envelopes.size} enabled=${databaseBuilder.dbInvalidationController.isEnabled()} " +
+                            "muted=${databaseBuilder.dbInvalidationController.isMuted()} " +
+                            "depth=${databaseBuilder.dbInvalidationController.currentMuteDepth()}"
+                    )
 
                     transactionProvider.transaction("processEvents") { context ->
                         databaseBuilder.dbInvalidationController.runMuted {
+                            logger.w(
+                                "[SqlMute] runtime=${runtimeLabel()} scope=incremental-batch insideRunMuted " +
+                                    "batchSize=${envelopes.size} enabled=${databaseBuilder.dbInvalidationController.isEnabled()} " +
+                                    "muted=${databaseBuilder.dbInvalidationController.isMuted()} " +
+                                    "depth=${databaseBuilder.dbInvalidationController.currentMuteDepth()}"
+                            )
                             val eventIds = mutableListOf<String>()
                             for (envelope in envelopes) {
                                 val eventStart = Clock.System.now()
@@ -122,6 +134,12 @@ internal class IncrementalSyncWorkerImpl(
                         }
                     }
                         .onSuccess { eventIds ->
+                            logger.w(
+                                "[SqlMute] runtime=${runtimeLabel()} scope=incremental-batch afterRunMuted " +
+                                    "batchSize=${envelopes.size} enabled=${databaseBuilder.dbInvalidationController.isEnabled()} " +
+                                    "muted=${databaseBuilder.dbInvalidationController.isMuted()} " +
+                                    "depth=${databaseBuilder.dbInvalidationController.currentMuteDepth()}"
+                            )
                             val batchElapsedMs = (Clock.System.now() - batchStart).inWholeMilliseconds
                             val avgEventMs = if (processedEvents > 0) totalEventMs / processedEvents else 0L
                             logger.i(
