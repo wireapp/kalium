@@ -11,24 +11,34 @@ This guide covers building Kalium for iOS targets using Kotlin Multiplatform.
 
 ## Build Configuration
 
-iOS builds require the unified CoreCrypto KMP library. You must ensure the `USE_UNIFIED_CORE_CRYPTO` property is set to `true`.
+iOS builds require the unified CoreCrypto KMP library. The default `kalium.yaml` now enables that automatically through the `apple` target override for `use_unified_core_crypto`.
 
-### Setting the Property
+### Setting the Flag
 
-**Option 1: In `gradle.properties`**
+**Option 1: Use the default config**
 
-Ensure your `gradle.properties` file contains:
-
-```properties
-USE_UNIFIED_CORE_CRYPTO=true
-```
-
-**Option 2: Via command line**
-
-Pass the property when running Gradle commands:
+No extra flag is required for standard Apple builds:
 
 ```bash
-./gradlew :logic:linkDebugFrameworkIosArm64 -PUSE_UNIFIED_CORE_CRYPTO=true
+./gradlew :logic:linkDebugFrameworkIosArm64
+```
+
+**Option 2: Create your own override file**
+
+Create a YAML override file such as:
+
+```yaml
+flavors:
+  default:
+    targets:
+      apple:
+        use_unified_core_crypto: true
+```
+
+Then point Gradle at it:
+
+```bash
+./gradlew :logic:linkDebugFrameworkIosArm64 -PkaliumConfigPath=/absolute/path/to/kalium-override.yaml
 ```
 
 ### Why This Is Required

@@ -1,4 +1,5 @@
 [versions]
+kayan = "1.4.0-beta.9"
 kotlin = "2.3.0"
 ksp = "2.3.4"
 activity-compose = "1.9.0"
@@ -72,6 +73,7 @@ difference = "1.1.1"
 [plugins]
 # Home-made convention plugins
 kalium-library = { id = "kalium.library" }
+kayan = { id = "io.github.mohamadjaara.kayan", version.ref = "kayan" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 moduleGraph = { id = "dev.iurysouza.modulegraph", version.ref = "moduleGraph" }

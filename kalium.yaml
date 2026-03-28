@@ -1,0 +1,14 @@
+flavors:
+  default:
+    use_unified_core_crypto: false
+    provider_cache_scope: LOCAL
+    targets:
+      android:
+        provider_cache_scope: GLOBAL
+      apple:
+        use_unified_core_crypto: true
+        provider_cache_scope: GLOBAL
+      js:
+        use_unified_core_crypto: true
+    sqliter_full_traces: false
+    sqliter_trace_file: ""

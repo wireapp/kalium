@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.kayan)
     alias(libs.plugins.ksp)
     alias(libs.plugins.mockative)
     alias(libs.plugins.mokkery)
@@ -33,8 +34,18 @@ kaliumLibrary {
     }
 }
 
-val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
-    ?: error("USE_UNIFIED_CORE_CRYPTO not set")
+kayan {
+    inheritFromRoot()
+    packageName.set("com.wire.kalium.logic.generated")
+    className.set("KaliumLogicBuildConfig")
+    schema {
+        include("use_unified_core_crypto")
+    }
+}
+
+val useUnifiedCoreCryptoAndroid: Boolean = kayan.buildValue("use_unified_core_crypto", "android").asBoolean()
+val useUnifiedCoreCryptoApple: Boolean = kayan.buildValue("use_unified_core_crypto", "apple").asBoolean()
+val useUnifiedCoreCryptoJvm: Boolean = kayan.buildValue("use_unified_core_crypto", "jvm").asBoolean()
 
 kotlin {
     explicitApi()
@@ -94,9 +105,6 @@ kotlin {
                 configurations.all {
                     exclude(group = "co.touchlab", module = "stately-strict-jvm")
                 }
-                if (useUnifiedCoreCrypto) {
-                    implementation(libs.coreCryptoKmp)
-                }
             }
         }
         val commonTest by getting {
@@ -118,13 +126,21 @@ kotlin {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
 
-        val appleMain by getting
+        val appleMain by getting {
+            dependencies {
+                if (useUnifiedCoreCryptoApple) {
+                    implementation(libs.coreCryptoKmp)
+                }
+            }
+        }
 
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.jna)
-                if (!useUnifiedCoreCrypto) {
+                if (useUnifiedCoreCryptoJvm) {
+                    implementation(libs.coreCryptoKmp)
+                } else {
                     implementation(libs.coreCryptoJvm)
                 }
             }
@@ -138,7 +154,9 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.work)
-                if (!useUnifiedCoreCrypto) {
+                if (useUnifiedCoreCryptoAndroid) {
+                    implementation(libs.coreCryptoKmp)
+                } else {
                     implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
                         exclude("androidx.core")
                         exclude("androidx.appcompat")

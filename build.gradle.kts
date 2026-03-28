@@ -1,3 +1,5 @@
+@file:OptIn(io.kayan.gradle.ExperimentalKayanGradleApi::class)
+
 /*
  * Wire
  * Copyright (C) 2024 Wire Swiss GmbH
@@ -16,6 +18,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+import io.kayan.ConfigFormat
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
@@ -47,6 +50,7 @@ repositories {
 
 plugins {
     id("org.jetbrains.dokka")
+    alias(libs.plugins.kayan)
     alias(libs.plugins.kover)
     id("scripts.testing")
     id("scripts.detekt")
@@ -59,6 +63,46 @@ dependencies {
     dokkaHtmlPlugin("org.jetbrains.dokka:kotlin-as-java-plugin:${libs.versions.dokka.get()}")
 }
 
+val kaliumCustomConfigPath = resolveKaliumCustomConfigPath()
+
+kayanRoot {
+    flavor.set(resolveKayanFlavor())
+    baseConfigFile.set(layout.projectDirectory.file("kalium.yaml"))
+    configFormat.set(ConfigFormat.YAML)
+    kaliumCustomConfigPath?.let { customPath ->
+        customConfigFile.set(layout.file(providers.provider { file(customPath) }))
+    }
+    schema {
+        boolean("use_unified_core_crypto", "USE_UNIFIED_CORE_CRYPTO", required = true)
+        enum(
+            "provider_cache_scope",
+            "PROVIDER_CACHE_SCOPE",
+            "com.wire.kalium.buildflags.ProviderCacheScope",
+            required = true
+        )
+        boolean("sqliter_full_traces", "SQLITER_FULL_TRACES", required = true)
+        string("sqliter_trace_file", "SQLITER_TRACE_FILE", required = true)
+    }
+}
+
+kayan {
+    inheritFromRoot()
+    packageName.set("com.wire.kalium.buildflags")
+    className.set("KaliumRootBuildConfig")
+    schema {
+        include("provider_cache_scope")
+        include("sqliter_full_traces")
+        include("sqliter_trace_file")
+    }
+}
+
+val fullSqliterTraces = kayan.buildValue("sqliter_full_traces").asBoolean()
+val sqliterTraceFile = kayan.buildValue("sqliter_trace_file").asString()
+val providerCacheScope = kayan.buildValue("provider_cache_scope").asEnumName()
+
+check(providerCacheScope in setOf("LOCAL", "GLOBAL")) {
+    "Invalid provider_cache_scope='$providerCacheScope'. Expected LOCAL or GLOBAL."
+}
 tasks.withType<Test> {
     useJUnitPlatform {
         reports.junitXml.required.set(true)
@@ -69,14 +113,9 @@ tasks.withType<Test> {
 // For some reason xml and html generation is failing, looks like tests running in parallel
 subprojects {
     tasks.withType<org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeTest>().configureEach {
-        val fullSqliterTraces = providers.gradleProperty("kalium.sqliter.fullTraces")
-            .orNull
-            ?.lowercase()
-            ?.let { it == "true" || it == "1" || it == "yes" }
-            ?: false
         environment("KALIUM_SQLITER_FULL_TRACES", fullSqliterTraces.toString())
 
-        providers.gradleProperty("kalium.sqliter.traceFile").orNull?.takeIf { it.isNotBlank() }?.let {
+        sqliterTraceFile.takeIf { it.isNotBlank() }?.let {
             environment("KALIUM_SQLITER_TRACE_FILE", it)
         }
 

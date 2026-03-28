@@ -16,45 +16,25 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+import io.kayan.gradle.ExperimentalKayanGenerationApi
+
 plugins {
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.kayan)
 }
 
-// Shared compile-time cache policy for provider-level caches across modules.
-val providerCacheScopeFlag = "kalium.providerCacheScope"
-val providerCacheScopeValues = linkedSetOf("LOCAL", "GLOBAL")
-
-val providerCacheScope: String = resolveRequiredEnumGradleProperty(
-    propertyName = providerCacheScopeFlag,
-    allowedValues = providerCacheScopeValues,
-    purpose = "it defines provider cache scope (instance-local vs process-global)"
-)
-
-val generatedCommonMainKotlinDir = layout.buildDirectory.dir("generated/usernetwork/commonMain/kotlin")
-
-val generateUserNetworkApiCacheConfig by tasks.registering {
-    inputs.property("providerCacheScope", providerCacheScope)
-    outputs.dir(generatedCommonMainKotlinDir)
-    doLast {
-        val packagePath = "com/wire/kalium/usernetwork/di"
-        val outDir = generatedCommonMainKotlinDir.get().asFile.resolve(packagePath)
-        outDir.mkdirs()
-
-        val outputFile = outDir.resolve("UserNetworkBuildConfig.kt")
-        outputFile.writeText(
-            """
-            package com.wire.kalium.usernetwork.di
-
-            /**
-             * Controls provider cache scope via shared compile-time policy.
-             *
-             * - [ProviderCacheScope.GLOBAL]: all provider instances share one in-memory cache.
-             * - [ProviderCacheScope.LOCAL]: each provider instance keeps an isolated in-memory cache.
-             */
-            internal enum class ProviderCacheScope { GLOBAL, LOCAL }
-            internal val PROVIDER_CACHE_SCOPE: ProviderCacheScope = ProviderCacheScope.$providerCacheScope
-            """.trimIndent() + "\n"
-        )
+@OptIn(ExperimentalKayanGenerationApi::class)
+kayan {
+    inheritFromRoot()
+    packageName.set("com.wire.kalium.usernetwork.di")
+    className.set("UserNetworkBuildConfig")
+    targets {
+        android()
+        jvm()
+        sourceSet(sourceSetName = "appleMain", targetName = "apple")
+    }
+    schema {
+        include("provider_cache_scope")
     }
 }
 
@@ -68,18 +48,12 @@ kotlin {
     explicitApi()
     sourceSets {
         val commonMain by getting {
-            kotlin.srcDir(generatedCommonMainKotlinDir)
             dependencies {
                 api(projects.data.network)
+                implementation(projects.core.util)
                 implementation(libs.concurrentCollections)
                 implementation(libs.statelyCommons)
             }
         }
     }
-}
-
-tasks.matching { task ->
-    task.name.contains("compile", ignoreCase = true)
-}.configureEach {
-    dependsOn(generateUserNetworkApiCacheConfig)
 }

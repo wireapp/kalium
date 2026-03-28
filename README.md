@@ -21,19 +21,24 @@
 
 ### Compile-time flags
 
-Kalium currently uses the following compile-time Gradle properties:
+Kalium currently resolves compile-time flags from Kayan config files:
 
-- `USE_UNIFIED_CORE_CRYPTO`
-  - Default: `false` (see `gradle.properties`)
+- Base config: `kalium.yaml`
+- Optional local override: `kalium.local.yaml`
+- Optional explicit override path: `-PkaliumConfigPath=/path/to/override.yaml`
+
+Current Kayan-backed compile-time keys:
+
+- `use_unified_core_crypto`
+  - Default: `false` in `kalium.yaml`, with target-specific overrides enabled for `apple` and `js`.
   - Controls whether Kalium uses the unified `core-crypto-kmp` artifact (`true`) or platform-specific crypto artifacts (`false`).
-  - Override example:
-    ```bash
-    ./gradlew <task> -PUSE_UNIFIED_CORE_CRYPTO=true
-    ```
-
-- `kalium.providerCacheScope`
-  - Purpose: shared compile-time policy that defines cache scope for provider-level in-memory caches.
-  - Required: Kalium defines no default; consumer builds must set it explicitly.
+  - Current default target behavior:
+    - `android`: `false`
+    - `apple`: `true`
+    - `js`: `true`
+    - `jvm`: `false`
+- `provider_cache_scope`
+  - Default: `LOCAL` in `kalium.yaml`
   - Allowed values:
     - `GLOBAL`: process-global caches shared across provider instances.
     - `LOCAL`: each provider instance keeps its own cache.
@@ -41,10 +46,26 @@ Kalium currently uses the following compile-time Gradle properties:
     - `UserStorageProvider`
     - `UserAuthenticatedNetworkProvider`
   - Extension rule: any new provider cache should follow this same policy instead of introducing a new compile-time flag.
-  - Override example:
-    ```bash
-    ./gradlew <task> -Pkalium.providerCacheScope=GLOBAL
-    ```
+- `sqliter_full_traces`
+  - Default: `false`
+  - Enables full SQLiter traces for native tests.
+- `sqliter_trace_file`
+  - Default: empty string
+  - When non-empty, writes SQLiter traces to the configured file.
+
+Override example:
+
+```yaml
+flavors:
+  default:
+    use_unified_core_crypto: true
+```
+
+Save that to a file such as `/absolute/path/to/kalium-unified-core-crypto.yaml`, then run:
+
+```bash
+./gradlew <task> -PkaliumConfigPath=/absolute/path/to/kalium-unified-core-crypto.yaml
+```
 
 ### Release artifacts
 
@@ -54,14 +75,14 @@ Kalium release automation now publishes two separate build outputs:
   - Artifact: `logic-android-aar`
   - Build command:
     ```bash
-    ./gradlew :logic:bundleAndroidMainAar -PUSE_UNIFIED_CORE_CRYPTO=false
+    ./gradlew :logic:bundleAndroidMainAar
     ```
 - KMP bundle for Android, JVM, and iOS
   - Artifact: `logic-kmp`
-  - Uses the unified `core-crypto-kmp` dependency, so `USE_UNIFIED_CORE_CRYPTO` must be `true`.
+  - Requires an override file that forces every target to resolve the unified `core-crypto-kmp` dependency.
   - Build command:
     ```bash
-    ./gradlew :logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar :logic:assembleKaliumLogicReleaseXCFramework -PUSE_UNIFIED_CORE_CRYPTO=true
+    ./gradlew :logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar :logic:assembleKaliumLogicReleaseXCFramework -PkaliumConfigPath=/absolute/path/to/kalium-unified-core-crypto.yaml
     ```
 
 Each GitHub release upload also includes a per-bundle SHA-256 manifest

@@ -22,6 +22,7 @@ import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.tasks.Copy
 import org.gradle.kotlin.dsl.ivy
 import org.gradle.kotlin.dsl.register
+import java.io.File
 import java.util.Properties
 import java.util.concurrent.TimeUnit
 
@@ -32,6 +33,29 @@ import java.util.concurrent.TimeUnit
 fun <T> Project.getLocalProperty(propertyName: String, defaultValue: T): T {
     return getLocalProperty(propertyName, defaultValue, this)
 }
+
+fun Project.resolveKaliumCustomConfigPath(
+    propertyName: String = "kaliumConfigPath",
+    localFileName: String = "kalium.local.yaml"
+): String? {
+    gradle.startParameter.projectProperties[propertyName]?.trim()?.takeIf { it.isNotEmpty() }?.let {
+        return rootProject.file(it).absolutePath
+    }
+
+    val localFile = rootProject.file(localFileName)
+    val isCi = providers.environmentVariable("CI").orNull?.trim()?.lowercase() in setOf("true", "1", "yes")
+    if (isCi && localFile.isFile) {
+        error(
+            "Detected local Kalium override '${localFile.absolutePath}' while running on CI. " +
+                "CI builds must not auto-resolve local override files. Remove '$localFileName' " +
+                "or pass -P$propertyName=/path/to/override.yaml explicitly."
+        )
+    }
+    return localFile.absolutePath.takeIf { localFile.isFile }
+}
+
+fun Project.resolveKayanFlavor(defaultFlavor: String = "default") =
+    providers.gradleProperty("kayanFlavor").orElse(defaultFlavor)
 
 /**
  * Util to obtain property declared on `$projectRoot/local.properties` file or default
@@ -89,85 +113,4 @@ fun Project.registerCopyTestResourcesTask(target: String) {
         into("build/bin/$target/debugTest/resources")
     }
     tasks.findByName("${target}Test")?.dependsOn(task)
-}
-
-private fun parseRequiredEnumOrFail(
-    propertyName: String,
-    source: String,
-    rawValue: String?,
-    allowedValues: Set<String>
-): String? {
-    if (rawValue == null) return null
-    val normalizedValue = rawValue.trim().uppercase()
-    return normalizedValue.takeIf { it in allowedValues } ?: error(
-        "Invalid value '$rawValue' for Gradle property '$propertyName' from $source. " +
-            "Expected one of: ${allowedValues.joinToString(", ")}."
-    )
-}
-
-/**
- * Resolves a required enum-like Gradle property with strong validation and consumer-first semantics.
- *
- * Resolution order:
- * 1) CLI project property (`-P<propertyName>=...`)
- * 2) If this is an included build, consumer root project properties
- * 3) If this is a standalone build, local/root `gradle.properties`
- *
- * No default is applied. A descriptive failure is raised when missing or invalid.
- */
-fun Project.resolveRequiredEnumGradleProperty(
-    propertyName: String,
-    allowedValues: Set<String>,
-    purpose: String
-): String {
-    val valuesForExample = allowedValues.joinToString("|")
-    val valuesForDisplay = allowedValues.joinToString(", ")
-    val fromCli = parseRequiredEnumOrFail(
-        propertyName = propertyName,
-        source = "command line (-P$propertyName=...)",
-        rawValue = gradle.startParameter.projectProperties[propertyName],
-        allowedValues = allowedValues
-    )
-    if (fromCli != null) return fromCli
-
-    val fromParent = parseRequiredEnumOrFail(
-        propertyName = propertyName,
-        source = "consumer root gradle.properties",
-        rawValue = gradle.parent
-            ?.rootProject
-            ?.properties
-            ?.get(propertyName)
-            ?.toString(),
-        allowedValues = allowedValues
-    )
-    if (fromParent != null) return fromParent
-
-    if (gradle.parent != null) {
-        error(
-            "Missing required Gradle property '$propertyName'. " +
-                "Kalium intentionally has no default for this flag because $purpose and that behavior " +
-                "must be explicitly chosen by the consumer build. " +
-                "Set '$propertyName=$valuesForExample' in the consumer root gradle.properties, " +
-                "or pass -P$propertyName=$valuesForExample. " +
-                "Allowed values: $valuesForDisplay."
-        )
-    }
-
-    val fromLocal = parseRequiredEnumOrFail(
-        propertyName = propertyName,
-        source = "local gradle.properties",
-        rawValue = providers
-            .gradleProperty(propertyName)
-            .orNull,
-        allowedValues = allowedValues
-    )
-    if (fromLocal != null) return fromLocal
-
-    error(
-        "Missing required Gradle property '$propertyName'. " +
-            "Kalium intentionally has no default for this flag because $purpose. " +
-            "Set '$propertyName=$valuesForExample' in gradle.properties, " +
-            "or pass -P$propertyName=$valuesForExample. " +
-            "Allowed values: $valuesForDisplay."
-    )
 }

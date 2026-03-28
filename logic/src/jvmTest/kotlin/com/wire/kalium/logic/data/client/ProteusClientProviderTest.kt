@@ -3,6 +3,7 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.exceptions.ProteusStorageMigrationException
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
@@ -13,13 +14,13 @@ import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import java.nio.file.Paths
@@ -86,16 +87,18 @@ class ProteusClientProviderTest {
         val currentClientIdProvider: CurrentClientIdProvider = mock<CurrentClientIdProvider>()
         val passphraseStorage = mock<PassphraseStorage>()
         val proteusMigrationRecoveryHandler = mock<ProteusMigrationRecoveryHandler>()
+        val coreCryptoCentral = mock<CoreCryptoCentral>()
         val rootProteusPath = "/tmp/rootProteusPath_${System.nanoTime()}"
         val passphraseBase64 = Base64.encode(ByteArray(32) { 0xAB.toByte() })
 
         init {
-            runBlocking {
-                // getPassphrase is a regular (non-suspend) function
-                every { passphraseStorage.getPassphrase(any()) }.calls { passphraseBase64 }
-                // currentClientIdProvider is a suspend function
-                everySuspend { currentClientIdProvider() }.returns(TestClient.CLIENT_ID.right())
-            }
+            // getPassphrase is a regular (non-suspend) function
+            every { passphraseStorage.getPassphrase(any()) }.calls { passphraseBase64 }
+            // currentClientIdProvider is a suspend function
+            everySuspend { currentClientIdProvider() }.returns(TestClient.CLIENT_ID.right())
+            everySuspend { proteusMigrationRecoveryHandler.clearClientData(any()) }.returns(Unit)
+            everySuspend { coreCryptoCentral.proteusClient() }
+                .throws(ProteusStorageMigrationException("migration failed"))
         }
 
         /**
@@ -125,9 +128,7 @@ class ProteusClientProviderTest {
         }
 
         fun withCurrentClientIdFailure(failure: StorageFailure) = apply {
-            runBlocking {
-                everySuspend { currentClientIdProvider() }.returns(failure.left())
-            }
+            everySuspend { currentClientIdProvider() }.returns(failure.left())
         }
 
         fun arrange() = this to ProteusClientProviderImpl(
@@ -137,6 +138,7 @@ class ProteusClientProviderTest {
             dispatcher = KaliumDispatcherImpl,
             proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler,
             currentClientIdProvider = currentClientIdProvider,
+            coreCryptoCentralFactory = { _, _ -> coreCryptoCentral },
         )
 
         companion object {
