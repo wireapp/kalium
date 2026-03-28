@@ -45,7 +45,10 @@ class SendTypingEventUseCaseTest {
         useCase(TestConversation.ID, Conversation.TypingIndicatorMode.STOPPED)
 
         coVerify {
-            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STOPPED))
+            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(
+                eq(TestConversation.ID),
+                eq(Conversation.TypingIndicatorMode.STOPPED)
+            )
         }.wasInvoked()
     }
 
@@ -61,7 +64,10 @@ class SendTypingEventUseCaseTest {
         val result = useCase(TestConversation.ID, Conversation.TypingIndicatorMode.STARTED)
 
         coVerify {
-            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STARTED))
+            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(
+                eq(TestConversation.ID),
+                eq(Conversation.TypingIndicatorMode.STARTED)
+            )
         }.wasInvoked()
         assertEquals(Unit, result)
     }

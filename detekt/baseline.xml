@@ -387,8 +387,6 @@
     <ID>MaxLineLength:RetryFailedMessageUseCaseTest.kt$RetryFailedMessageUseCaseTest$arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.PENDING), eq(message.conversationId), eq(message.id))</ID>
     <ID>MaxLineLength:SendKnockUserCaseTest.kt$SendKnockUserCaseTest.Arrangement$ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement by ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl()</ID>
     <ID>MaxLineLength:SendLocationUseCaseTest.kt$SendLocationUseCaseTest.Arrangement$ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement by ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl()</ID>
-    <ID>MaxLineLength:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest$arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STARTED))</ID>
-    <ID>MaxLineLength:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest$arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STOPPED))</ID>
     <ID>MaxLineLength:SyncConversationsUseCaseTest.kt$SyncConversationsUseCaseTest.Arrangement$conversationRepository.getConversationIds(eq(Conversation.Type.Group.Regular), protocol?.let { eq(it) } ?: any(), eq&lt;TeamId?>(null))</ID>
     <ID>MaxLineLength:TypingIndicatorHandlerTest.kt$TypingIndicatorHandlerTest$arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(eq(TestConversation.ID), eq(TestUser.OTHER_USER_ID))</ID>
     <ID>MaxLineLength:UpdateKeyingMaterialsUseCaseTests.kt$UpdateKeyingMaterialsUseCaseTests$.</ID>
