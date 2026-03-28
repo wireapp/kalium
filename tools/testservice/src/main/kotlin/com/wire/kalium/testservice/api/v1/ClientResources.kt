@@ -28,7 +28,6 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import kotlinx.coroutines.runBlocking
-import org.slf4j.LoggerFactory
 import javax.validation.Valid
 import javax.ws.rs.Consumes
 import javax.ws.rs.GET
@@ -43,8 +42,6 @@ import javax.ws.rs.core.Response
 @Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
 class ClientResources(private val instanceService: InstanceService) {
-
-    private val log = LoggerFactory.getLogger(ClientResources::class.java.name)
 
     @POST
     @Path("/instance/{id}/availability")

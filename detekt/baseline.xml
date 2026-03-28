@@ -734,7 +734,6 @@
     <ID>UnusedPrivateProperty:CallingParticipantsOrderTest.kt$CallingParticipantsOrderTest.Companion$private val selfUser = SelfUser( id = selfUserId, name = null, handle = null, email = null, phone = null, accentId = 0, teamId = null, connectionStatus = ConnectionState.NOT_CONNECTED, previewPicture = null, completePicture = null, availabilityStatus = UserAvailabilityStatus.AVAILABLE, expiresAt = null, supportedProtocols = null, userType = UserTypeInfo.Regular(UserType.INTERNAL), )</ID>
     <ID>UnusedPrivateProperty:CellsApiTest.kt$CellsApiTest$val result = cellApi.moveNode("uuid", "path", "targetPath")</ID>
     <ID>UnusedPrivateProperty:CellsApiTest.kt$CellsApiTest$val result = cellApi.preCheck("path")</ID>
-    <ID>UnusedPrivateProperty:ClientResources.kt$ClientResources$private val log = LoggerFactory.getLogger(ClientResources::class.java.name)</ID>
     <ID>UnusedPrivateProperty:ConversationRepositoryTest.kt$ConversationRepositoryTest.Companion$private val TEST_QUALIFIED_ID_ENTITY = PersistenceQualifiedId("value", "domain")</ID>
     <ID>UnusedPrivateProperty:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$engine: CRUDEngineBaseCollection</ID>
     <ID>UnusedPrivateProperty:Cryptobox.module_@wireapp_cryptobox.kt$Cryptobox$minimumAmountOfPreKeys: Number = definedExternally</ID>
