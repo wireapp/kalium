@@ -103,6 +103,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
                 LogoutReason.SESSION_EXPIRED -> {
                     if (kaliumConfigs.wipeOnCookieInvalid || isNomadEnabled()) {
+                        kaliumLogger.withTextTag(TAG).d("Wiping all data due to session expiration configuration")
                         wipeAllData()
                     } else {
                         clearCurrentClientIdAndFirebaseTokenFlag()
