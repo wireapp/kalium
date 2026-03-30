@@ -114,9 +114,7 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
                 }
                 // Normal debounce path: protect the upload from late cancellations.
                 val currentJob = coroutineContext.job
-                val shouldBackup = mutex.withLock {
-                    hasPendingChange.also { hasPendingChange = false }
-                }
+                val shouldBackup = mutex.withLock { hasPendingChange }
                 if (shouldBackup) {
                     withContext(NonCancellable) {
                         runBackup(currentJob)
@@ -149,6 +147,7 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
             kaliumLogger.w("User-scoped crypto state change hook execution failed", exception)
         } finally {
             mutex.withLock {
+                hasPendingChange = false
                 if (debounceJob == currentJob) {
                     debounceJob = null
                 }
