@@ -2495,22 +2495,23 @@ public class UserSessionScope internal constructor(
 
     public val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
-            logoutRepository,
-            globalScope.sessionRepository,
-            clientRepository,
-            userConfigRepository,
-            userId,
-            client.deregisterNativePushToken,
-            client.clearClientData,
-            clearUserData,
-            userSessionScopeProvider,
-            pushTokenRepository,
-            globalScope,
-            userSessionWorkScheduler,
-            calls.establishedCall,
-            calls.endCall,
-            logoutCallback,
-            kaliumConfigs
+            logoutRepository = logoutRepository,
+            sessionRepository = globalScope.sessionRepository,
+            clientRepository = clientRepository,
+            userConfigRepository = userConfigRepository,
+            userId = userId,
+            deregisterTokenUseCase = client.deregisterNativePushToken,
+            clearClientDataUseCase = client.clearClientData,
+            clearUserDataUseCase = clearUserData,
+            userSessionScopeProvider = userSessionScopeProvider,
+            pushTokenRepository = pushTokenRepository,
+            globalCoroutineScope = globalScope,
+            userSessionWorkScheduler = userSessionWorkScheduler,
+            getEstablishedCallsUseCase = calls.establishedCall,
+            endCallUseCase = calls.endCall,
+            logoutCallback = logoutCallback,
+            kaliumConfigs = kaliumConfigs,
+            isNomadEnabled = { nomadServiceUrl?.isNotBlank() == true },
         )
     public val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(userId, globalScope.sessionRepository)
