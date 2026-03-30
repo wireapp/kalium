@@ -22,8 +22,8 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.api.json.model.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
 import com.wire.kalium.network.api.authenticated.nomaddevice.ConversationMetadataEntry
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi

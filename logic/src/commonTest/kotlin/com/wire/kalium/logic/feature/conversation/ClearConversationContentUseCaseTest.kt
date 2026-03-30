@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -207,13 +208,16 @@ class ClearConversationContentUseCaseTest {
             }.returns(Either.Right(conversationIds))
         }
 
+        val persistenceEventHookNotifier: PersistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
+
         fun arrange() = this to ClearConversationContentUseCaseImpl(
             conversationRepository,
             messageSender,
             TestUser.SELF.id,
             currentClientIdProvider,
             selfConversationIdProvider,
-            clearConversationAssetsLocally
+            clearConversationAssetsLocally,
+            persistenceEventHookNotifier,
         )
     }
 

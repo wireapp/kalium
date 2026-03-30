@@ -21,12 +21,16 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.Mockable
 
 /**
@@ -43,7 +47,9 @@ internal interface DeleteConversationUseCase {
 
 internal class DeleteConversationUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val mlsConversationRepository: MLSConversationRepository
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
+    private val selfUserId: UserId,
 ) : DeleteConversationUseCase {
     override suspend fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
         return conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
@@ -60,6 +66,11 @@ internal class DeleteConversationUseCaseImpl(
                     conversationRepository.deleteConversationLocally(conversationId).map {}
                 }
             }
+        }.onSuccess {
+            persistenceEventHookNotifier.onConversationDeleted(
+                ConversationDeleteEventData(conversationId),
+                selfUserId
+            )
         }
     }
 }
