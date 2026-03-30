@@ -63,9 +63,7 @@ internal class SyncNomadMessagesDuringSlowSyncUseCaseImpl(
             is Either.Right ->
                 logger.i(
                     "Nomad conversation-metadata slow sync finished for ${selfUserId.toLogString()}: " +
-                        "downloaded=${metadataResult.value.downloadedConversations}, " +
-                        "updated=${metadataResult.value.updatedConversations}, " +
-                        "skipped=${metadataResult.value.skippedConversations}"
+                        "downloaded=${metadataResult.value.downloadedConversations}"
                 )
         }
 

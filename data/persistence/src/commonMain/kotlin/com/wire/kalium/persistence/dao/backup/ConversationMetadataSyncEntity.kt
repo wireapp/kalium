@@ -18,7 +18,11 @@
 
 package com.wire.kalium.persistence.dao.backup
 
-data class ChangeLogSyncBatch(
-    val events: List<ChangeLogSyncEvent>,
-    val conversationMetadata: List<ConversationMetadataSyncEntity>,
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import kotlinx.datetime.Instant
+
+data class ConversationMetadataSyncEntity(
+    val conversationId: QualifiedIDEntity,
+    val lastReadDate: Instant,
+    val lastModifiedDate: Instant,
 )

@@ -16,12 +16,19 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.persistence.dao.backup
+package com.wire.kalium.network.api.authenticated.nomaddevice
 
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-data class ConversationLastReadSyncEntity(
-    val conversationId: QualifiedIDEntity,
-    val lastReadDate: Instant,
+@Serializable
+data class NomadBatchRestoreRequest(
+    @SerialName("conversation_ids")
+    val conversationIds: List<String>? = null,
+    @SerialName("limit")
+    val limit: Int? = null,
+    @SerialName("before_timestamp")
+    val beforeTimestamp: Long? = null,
+    @SerialName("next_cursor")
+    val nextCursor: Long? = null
 )

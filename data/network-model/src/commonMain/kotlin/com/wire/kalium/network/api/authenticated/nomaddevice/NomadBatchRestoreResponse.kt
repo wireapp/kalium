@@ -16,9 +16,27 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.persistence.dao.backup
+package com.wire.kalium.network.api.authenticated.nomaddevice
 
-data class ChangeLogSyncBatch(
-    val events: List<ChangeLogSyncEvent>,
-    val conversationMetadata: List<ConversationMetadataSyncEntity>,
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class NomadBatchRestoreResponse(
+    @SerialName("conversations")
+    val conversations: List<NomadConversationBatchRestore>
+)
+
+@Serializable
+data class NomadConversationBatchRestore(
+    @SerialName("conversation")
+    val conversation: Conversation,
+    @SerialName("messages")
+    val messages: List<NomadStoredMessage>,
+    @SerialName("has_more")
+    val hasMore: Boolean,
+    @SerialName("next_cursor")
+    val nextCursor: Long,
+    @SerialName("next_timestamp")
+    val nextTimestamp: Long
 )

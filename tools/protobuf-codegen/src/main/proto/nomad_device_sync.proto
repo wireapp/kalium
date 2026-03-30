@@ -110,3 +110,21 @@ message NomadDeviceLocation {
     optional string name = 3;
     optional int32 zoom = 4;
 }
+
+message NomadDeviceReactions {
+    repeated NomadDeviceReactionByUser reactions_by_user = 1;
+}
+
+message NomadDeviceReactionByUser {
+    required NomadDeviceQualifiedId user_id = 1;
+    repeated string emojis = 2;
+}
+
+message NomadDeviceReadReceipts {
+    repeated NomadDeviceReadReceiptEntry read_receipts = 1;
+}
+
+message NomadDeviceReadReceiptEntry {
+    required NomadDeviceQualifiedId user_id = 1;
+    required string date = 2;
+}

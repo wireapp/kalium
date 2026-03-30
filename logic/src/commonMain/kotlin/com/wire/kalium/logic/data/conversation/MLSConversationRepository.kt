@@ -714,24 +714,21 @@ internal class MLSConversationDataSource(
             val existingGroupList =
                 groupIdList.filter { hasEstablishedMLSGroup(mlsContext, it).fold({ false }, { hasEstablished -> hasEstablished }) }
             wrapMLSRequest { mlsContext.e2eiRotateGroups(existingGroupList.map { it.toCrypto() }) }
-                .flatMap { wrapMLSRequest { mlsContext.generateKeyPackages(keyPackageLimitsProvider.refillAmount()) } }
-                .flatMap { newKeyPackages ->
+                .flatMap {
                     crlNewDistributionPoints?.let { checkRevocationList(mlsContext, it) }
                     if (!isNewClient) {
-                        logger.w("enrollment for existing client: upload new keypackages and drop old ones")
-                        keyPackageRepository
-                            .replaceKeyPackages(clientId, newKeyPackages, mlsContext.getDefaultCipherSuite().toModel())
-                            .flatMap {
-                                logger.w("removing stale key packages")
-                                wrapMLSRequest {
-                                    mlsContext.removeStaleKeyPackages()
-                                }
-                            }
-                            .fold({ failure ->
-                                E2EIFailure.RotationAndMigration(failure).left()
-                            }, {
-                                Either.Right(Unit)
-                            })
+                        logger.w("enrollment for existing client: drop stale key packages and upload new ones")
+                        wrapMLSRequest {
+                            mlsContext.removeStaleKeyPackages()
+                        }.flatMap {
+                            wrapMLSRequest { mlsContext.generateKeyPackages(keyPackageLimitsProvider.refillAmount()) }
+                        }.flatMap { newKeyPackages ->
+                            keyPackageRepository.replaceKeyPackages(clientId, newKeyPackages, mlsContext.getDefaultCipherSuite().toModel())
+                        }.fold({ failure ->
+                            E2EIFailure.RotationAndMigration(failure).left()
+                        }, {
+                            Either.Right(Unit)
+                        })
                     } else {
                         Either.Right(Unit)
                     }

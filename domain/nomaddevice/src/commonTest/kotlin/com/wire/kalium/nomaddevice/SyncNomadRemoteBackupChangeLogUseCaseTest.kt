@@ -23,6 +23,8 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
@@ -34,7 +36,7 @@ import com.wire.kalium.persistence.dao.backup.ChangeLogEntry
 import com.wire.kalium.persistence.dao.backup.ChangeLogEventType
 import com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch
 import com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent
-import com.wire.kalium.persistence.dao.backup.ConversationLastReadSyncEntity
+import com.wire.kalium.persistence.dao.backup.ConversationMetadataSyncEntity
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
 import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -86,10 +88,11 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
                         )
                     )
                 ),
-                conversationLastReads = listOf(
-                    ConversationLastReadSyncEntity(
+                conversationMetadata = listOf(
+                    ConversationMetadataSyncEntity(
                         conversationId = CONVERSATION_ID,
-                        lastReadDate = Instant.parse("2026-02-25T10:15:00Z")
+                        lastReadDate = Instant.parse("2026-02-25T10:15:00Z"),
+                        lastModifiedDate = Instant.parse("2026-02-25T10:16:00Z")
                     )
                 )
             )
@@ -123,10 +126,11 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         assertEquals("quoted-message", decodedPayload.content.text?.quotedMessageId)
         assertEquals(1, decodedPayload.content.text?.mentions?.size)
 
-        val lastReadEvent = assertIs<NomadMessageEvent.LastReadEvent>(request.events.last())
-        assertEquals(1, lastReadEvent.lastRead.size)
-        assertEquals(CONVERSATION_ID.toString(), lastReadEvent.lastRead.first().conversationId)
-        assertEquals(1772014500000, lastReadEvent.lastRead.first().lastReadTimestamp)
+        val metadataEvent = assertIs<NomadMessageEvent.ConversationMetadataEvent>(request.events.last())
+        assertEquals(1, metadataEvent.conversationMetadata.size)
+        assertEquals(CONVERSATION_ID.toString(), metadataEvent.conversationMetadata.first().conversationId)
+        assertEquals(1772014500000, metadataEvent.conversationMetadata.first().lastReadTimestamp)
+        assertEquals(1772014560000, metadataEvent.conversationMetadata.first().lastModifiedTimestamp)
     }
 
     @Test
@@ -134,7 +138,7 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         val dao = FakeRemoteBackupChangeLogDAO(
             batch = ChangeLogSyncBatch(
                 events = listOf(messageDeleteEvent()),
-                conversationLastReads = emptyList()
+                conversationMetadata = emptyList()
             )
         )
         val api = FakeNomadDeviceSyncApi(NetworkResponse.Error(KaliumException.NoNetwork()))
@@ -157,7 +161,7 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         val dao = FakeRemoteBackupChangeLogDAO(
             batch = ChangeLogSyncBatch(
                 events = emptyList(),
-                conversationLastReads = emptyList()
+                conversationMetadata = emptyList()
             )
         )
         val api = FakeNomadDeviceSyncApi(NetworkResponse.Success(Unit, emptyMap(), 200))
@@ -205,7 +209,7 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
                         message = null
                     )
                 ),
-                conversationLastReads = emptyList()
+                conversationMetadata = emptyList()
             )
         )
         val api = FakeNomadDeviceSyncApi(NetworkResponse.Success(Unit, emptyMap(), 200))
@@ -236,10 +240,11 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
                         message = null
                     )
                 ),
-                conversationLastReads = listOf(
-                    ConversationLastReadSyncEntity(
+                conversationMetadata = listOf(
+                    ConversationMetadataSyncEntity(
                         conversationId = CONVERSATION_ID,
-                        lastReadDate = Instant.parse("2026-02-25T10:15:00Z")
+                        lastReadDate = Instant.parse("2026-02-25T10:15:00Z"),
+                        lastModifiedDate = Instant.parse("2026-02-25T10:16:00Z")
                     )
                 )
             )
@@ -257,7 +262,7 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         assertEquals(1, success.syncedEntries)
         assertEquals(1, success.postedEvents)
         assertEquals(1, api.requests.size)
-        assertIs<NomadMessageEvent.LastReadEvent>(api.requests.single().events.single())
+        assertIs<NomadMessageEvent.ConversationMetadataEvent>(api.requests.single().events.single())
         assertEquals(1, dao.deletedChanges.size)
     }
 
@@ -287,7 +292,7 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
             readResult = Either.Right(
                 ChangeLogSyncBatch(
                     events = listOf(messageDeleteEvent()),
-                    conversationLastReads = emptyList()
+                    conversationMetadata = emptyList()
                 )
             ),
             postResult = Either.Right(Unit),
@@ -347,6 +352,16 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         }
 
         override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> {
+            error("Not needed for test")
+        }
+
+        override suspend fun syncAllMessages(limit: Int): NetworkResponse<NomadAllMessagesResponse> {
+            error("Not needed for test")
+        }
+
+        override suspend fun restoreMessagesBatch(
+            request: NomadBatchRestoreRequest,
+        ): NetworkResponse<NomadBatchRestoreResponse> {
             error("Not needed for test")
         }
 
