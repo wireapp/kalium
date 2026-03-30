@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.coEvery
 import io.mockative.eq
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -105,7 +106,7 @@ internal class IsCurrentSessionNomadAccountUseCaseTest {
         }
 
         suspend fun withFullAccountInfo(userId: UserId, result: Either<StorageFailure, Account>) = apply {
-            coEvery { sessionRepository.fullAccountInfo(eq(userId)) }.returns(result)
+            every { sessionRepository.fullAccountInfo(eq(userId)) }.returns(result)
         }
 
         fun arrange() = this to useCase
