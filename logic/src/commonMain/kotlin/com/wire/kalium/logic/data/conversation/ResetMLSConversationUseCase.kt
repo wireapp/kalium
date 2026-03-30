@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -31,12 +32,19 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse as NetworkConversationResponse
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isMlsStaleMessage
+import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.Mockable
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.native.HiddenFromObjC
@@ -119,23 +127,15 @@ internal class ResetMLSConversationUseCaseImpl(
         val mlsContext = mls ?: return errorNotMlsConversation()
 
         return getMlsProtocolInfo(conversationId)
-            .flatMap { protocolInfo ->
-                wrapMLSRequest {
-                    mlsContext.conversationEpoch(protocolInfo.groupId.toCrypto()) to protocolInfo.groupId
-                }.flatMapLeft {
-                    logger.e("Failed to reset conversation: $it.")
-                    if (it is MLSFailure.ConversationNotFound) {
-                        (protocolInfo.epoch to protocolInfo.groupId).right()
-                    } else {
-                        it.left()
-                    }
-                }
-            }
-            .flatMap { (epoch, groupId) ->
-                conversationRepository.resetMlsConversation(groupId, epoch)
-                    .onSuccess {
-                        // the result of the leave can be ignored
-                        mlsConversationRepository.leaveGroup(mlsContext, groupId)
+            .flatMap { localProtocolInfo ->
+                getLocalResetInfo(mlsContext, localProtocolInfo)
+                    .flatMap { localResetInfo ->
+                        resetConversationWithRetryOnMlsStaleMessage(
+                            conversationId = conversationId,
+                            mlsContext = mlsContext,
+                            localGroupId = localProtocolInfo.groupId,
+                            resetInfo = localResetInfo
+                        )
                     }
             }
             .flatMap {
@@ -167,6 +167,57 @@ internal class ResetMLSConversationUseCaseImpl(
             }
     }
 
+    private suspend fun getLocalResetInfo(
+        mlsContext: MlsCoreCryptoContext,
+        protocolInfo: Conversation.ProtocolInfo.MLSCapable
+    ): Either<CoreFailure, ResetInfo> =
+        wrapMLSRequest {
+            ResetInfo(
+                groupId = protocolInfo.groupId,
+                epoch = mlsContext.conversationEpoch(protocolInfo.groupId.toCrypto())
+            )
+        }.flatMapLeft {
+            logger.e("Failed to get local epoch for reset conversation: $it.")
+            if (it is MLSFailure.ConversationNotFound) {
+                ResetInfo(protocolInfo.groupId, protocolInfo.epoch).right()
+            } else {
+                it.left()
+            }
+        }
+
+    private suspend fun resetConversationWithRetryOnMlsStaleMessage(
+        conversationId: ConversationId,
+        mlsContext: MlsCoreCryptoContext,
+        localGroupId: GroupID,
+        resetInfo: ResetInfo
+    ): Either<CoreFailure, Unit> =
+        performReset(mlsContext, localGroupId, resetInfo)
+            .flatMapLeft { failure ->
+                if (!failure.isMlsStaleMessageConflict()) return@flatMapLeft failure.left()
+
+                logger.w("MLS stale message during reset for ${conversationId.toLogString()}, refetching conversation and retrying.")
+                getRemoteResetInfo(conversationId)
+                    .flatMap { remoteResetInfo ->
+                        performReset(mlsContext, localGroupId, remoteResetInfo)
+                    }
+            }
+
+    private suspend fun performReset(
+        mlsContext: MlsCoreCryptoContext,
+        localGroupId: GroupID,
+        resetInfo: ResetInfo
+    ): Either<CoreFailure, Unit> =
+        conversationRepository.resetMlsConversation(resetInfo.groupId, resetInfo.epoch)
+            .onSuccess {
+                // the result of the leave can be ignored
+                mlsConversationRepository.leaveGroup(mlsContext, localGroupId)
+            }
+
+    @OptIn(ConversationPersistenceApi::class)
+    private suspend fun getRemoteResetInfo(conversationId: ConversationId): Either<CoreFailure, ResetInfo> =
+        conversationRepository.fetchConversation(conversationId)
+            .flatMap { it.mlsResetInfo() }
+
     private fun errorNotMlsConversation() =
         CoreFailure.Unknown(IllegalStateException("Conversation is not an MLS conversation.")).left()
 }
@@ -177,6 +228,36 @@ private fun Conversation.mlsProtocolInfo(): Conversation.ProtocolInfo.MLSCapable
         else -> null
     }
 }
+
+private data class ResetInfo(
+    val groupId: GroupID,
+    val epoch: ULong,
+)
+
+private fun NetworkConversationResponse.mlsResetInfo(): Either<CoreFailure, ResetInfo> = when (protocol) {
+    ConvProtocol.MLS, ConvProtocol.MIXED -> {
+        val remoteGroupId = groupId ?: return CoreFailure.Unknown(
+            IllegalStateException("Remote conversation is missing MLS group ID.")
+        ).left()
+        val remoteEpoch = epoch ?: return CoreFailure.Unknown(
+            IllegalStateException("Remote conversation is missing MLS epoch.")
+        ).left()
+        ResetInfo(
+            groupId = GroupID(remoteGroupId),
+            epoch = remoteEpoch
+        ).right()
+    }
+
+    ConvProtocol.PROTEUS -> CoreFailure.Unknown(
+        IllegalStateException("Conversation is not an MLS conversation.")
+    ).left()
+}
+
+private fun CoreFailure.isMlsStaleMessageConflict(): Boolean =
+    this is NetworkFailure.ServerMiscommunication && run {
+        val exception = kaliumException
+        exception is KaliumException.InvalidRequestError && exception.isMlsStaleMessage()
+    }
 
 public sealed class ResetMLSConversationResult {
     /**

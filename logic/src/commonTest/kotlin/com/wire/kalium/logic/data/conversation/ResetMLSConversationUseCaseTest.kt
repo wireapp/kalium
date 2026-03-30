@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
@@ -27,8 +28,14 @@ import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.feature.backup.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -118,6 +125,47 @@ class ResetMLSConversationUseCaseTest {
         coVerify {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
         }.wasInvoked()
+    }
+
+    @OptIn(ConversationPersistenceApi::class)
+    @Test
+    fun givenResetReturnsMlsStaleMessage_whenUseCaseCalled_thenConversationIsRefetchedAndResetRetriedWithRemoteEpoch() = runTest {
+
+        val remoteGroupId = "remote-group-id"
+        val remoteEpoch = 42UL
+
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .withResetMlsConversationResponses(
+                NetworkFailure.ServerMiscommunication(
+                    KaliumException.InvalidRequestError(
+                        ErrorResponse(409, "epoch is too old", "mls-stale-message")
+                    )
+                ).left(),
+                Unit.right()
+            )
+            .withRemoteConversationResponse(
+                TestConversation.CONVERSATION_RESPONSE.copy(
+                    protocol = ConvProtocol.MLS,
+                    groupId = remoteGroupId,
+                    epoch = remoteEpoch
+                )
+            )
+            .arrange()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(15UL))
+        }.wasInvoked(exactly = 1)
+
+        coVerify {
+            arrangement.conversationRepository.fetchConversation(eq(TEST_CONVERSATION_ID))
+        }.wasInvoked(exactly = 1)
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(eq(com.wire.kalium.logic.data.id.GroupID(remoteGroupId)), eq(remoteEpoch))
+        }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -262,6 +310,12 @@ class ResetMLSConversationUseCaseTest {
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val fetchConversationUseCase = mock(FetchConversationUseCase::class)
         var kaliumConfigs = KaliumConfigs(isMlsResetEnabled = true)
+        private var remoteConversationResponse = TestConversation.CONVERSATION_RESPONSE.copy(
+            protocol = ConvProtocol.MLS,
+            groupId = TestConversation.GROUP_ID.value,
+            epoch = 21UL
+        )
+        private var resetConversationResults: List<Either<NetworkFailure, Unit>> = listOf(Unit.right())
 
         fun withCompileTimeFlagDisabled() = apply {
             kaliumConfigs = kaliumConfigs.copy(isMlsResetEnabled = false)
@@ -295,12 +349,21 @@ class ResetMLSConversationUseCaseTest {
             } returns conversation.right()
         }
 
+        fun withRemoteConversationResponse(conversationResponse: ConversationResponse) = apply {
+            remoteConversationResponse = conversationResponse
+        }
+
+        fun withResetMlsConversationResponses(vararg results: Either<NetworkFailure, Unit>) = apply {
+            resetConversationResults = results.toList()
+        }
+
         suspend fun withLeaveGroupFailing() = apply {
             coEvery {
                 mlsConversationRepository.leaveGroup(any(), any())
             } returns CoreFailure.Unknown(RuntimeException("Leave group failed")).left()
         }
 
+        @OptIn(ConversationPersistenceApi::class)
         suspend fun arrange(): Pair<Arrangement, ResetMLSConversationUseCaseImpl> {
 
             withMLSTransactionReturning(Either.Right(Unit))
@@ -317,7 +380,11 @@ class ResetMLSConversationUseCaseTest {
 
             coEvery {
                 conversationRepository.resetMlsConversation(any(), any())
-            } returns Unit.right()
+            }.thenReturnSequentially(*resetConversationResults.toTypedArray())
+
+            coEvery {
+                conversationRepository.fetchConversation(any())
+            } returns remoteConversationResponse.right()
 
             coEvery {
                 mlsConversationRepository.leaveGroup(any(), any())
