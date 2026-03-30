@@ -412,6 +412,7 @@ public class MessageScope internal constructor(
             currentClientIdProvider,
             selfConversationIdProvider,
             deleteMessageAttachmentsUseCase.value,
+            persistenceEventHookNotifier,
         )
 
     public val toggleReaction: ToggleReactionUseCase
@@ -420,7 +421,8 @@ public class MessageScope internal constructor(
             selfUserId,
             slowSyncRepository,
             reactionRepository,
-            messageSender
+            messageSender,
+            persistenceEventHookNotifier
         )
 
     public val observeMessageReactions: ObserveMessageReactionsUseCase

@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
@@ -31,7 +32,9 @@ import com.wire.kalium.logic.util.arrangement.usecase.RegisterMLSClientUseCaseAr
 import com.wire.kalium.logic.util.arrangement.usecase.RegisterMLSClientUseCaseArrangementImpl
 import com.wire.kalium.util.DelicateKaliumApi
 import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.mock
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -128,15 +131,22 @@ class VerifyExistingClientUseCaseTest {
         RegisterMLSClientUseCaseArrangement by RegisterMLSClientUseCaseArrangementImpl(),
         ClientRepositoryArrangement by ClientRepositoryArrangementImpl(),
         IsAllowedToRegisterMLSClientUseCaseArrangement by IsAllowedToRegisterMLSClientUseCaseArrangementImpl() {
+        val slowSyncRepository = mock(SlowSyncRepository::class)
 
         fun arrange() = run {
             runBlocking { block() }
+            runBlocking {
+                coEvery {
+                    slowSyncRepository.clearLastSlowSyncCompletionInstant()
+                }.returns(Unit)
+            }
 
             this@Arrangement to VerifyExistingClientUseCaseImpl(
                 TestUser.USER_ID,
                 clientRepository,
                 isAllowedToRegisterMLSClientUseCase,
-                registerMLSClientUseCase
+                registerMLSClientUseCase,
+                slowSyncRepository
             )
         }
     }

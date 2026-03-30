@@ -392,6 +392,8 @@ class UserDatabaseBuilder internal constructor(
             conversationsQueries = database.conversationsQueries,
             messagesQueries = database.messagesQueries,
             messageAttachmentsQueries = database.messageAttachmentsQueries,
+            reactionsQueries = database.reactionsQueries,
+            receiptsQueries = database.receiptsQueries,
             writeDispatcher = writeDispatcher,
         )
 

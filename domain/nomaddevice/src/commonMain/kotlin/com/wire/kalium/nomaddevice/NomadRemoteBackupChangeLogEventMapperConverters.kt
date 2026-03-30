@@ -19,18 +19,11 @@
 package com.wire.kalium.nomaddevice
 
 import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
-import com.wire.kalium.network.api.authenticated.nomaddevice.ReadReceiptEntry
-import com.wire.kalium.network.api.authenticated.nomaddevice.ReadReceiptsPayload
-import com.wire.kalium.network.api.authenticated.nomaddevice.ReactionByUser
-import com.wire.kalium.network.api.authenticated.nomaddevice.ReactionsPayload
-import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionsSyncEntity
-import com.wire.kalium.persistence.dao.reaction.UserReactionsSyncEntity
 import com.wire.kalium.persistence.dao.receipt.MessageReadReceiptsSyncEntity
-import com.wire.kalium.persistence.dao.receipt.UserReadReceiptSyncEntity
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAsset
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAttachment
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAudioMetaData
@@ -38,30 +31,40 @@ import com.wire.kalium.protobuf.nomaddevice.NomadDeviceGenericMetaData
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceImageMetaData
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMention
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
+import com.wire.kalium.protobuf.nomaddevice.NomadDeviceReactionByUser
+import com.wire.kalium.protobuf.nomaddevice.NomadDeviceReactions
+import com.wire.kalium.protobuf.nomaddevice.NomadDeviceReadReceiptEntry
+import com.wire.kalium.protobuf.nomaddevice.NomadDeviceReadReceipts
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceVideoMetaData
 import pbandk.ByteArr
+import pbandk.encodeToByteArray
+import kotlin.io.encoding.Base64
 
-internal fun MessageReactionsSyncEntity.toReactionPayload() = ReactionsPayload(
-    reactionsByUser = reactionsByUser.map { it.toReactionByUser() }
-)
+internal fun MessageReactionsSyncEntity.toReactionBase64(): String {
+    val proto = NomadDeviceReactions(
+        reactionsByUser = reactionsByUser.map {
+            NomadDeviceReactionByUser(
+                userId = it.userId.toNomadDeviceQualifiedId(),
+                emojis = it.emojis.sorted()
+            )
+        }
+    )
+    return Base64.Default.encode(proto.encodeToByteArray())
+}
 
-internal fun UserReactionsSyncEntity.toReactionByUser() = ReactionByUser(
-    userId = userId.toApiQualifiedId(),
-    emojis = emojis.sorted()
-)
-
-internal fun MessageReadReceiptsSyncEntity.toReadReceiptsPayload() = ReadReceiptsPayload(
-    readReceipts = receipts.map { it.toReadReceiptEntry() }
-)
-
-internal fun UserReadReceiptSyncEntity.toReadReceiptEntry() = ReadReceiptEntry(
-    userId = userId.toApiQualifiedId(),
-    date = date.toString()
-)
+internal fun MessageReadReceiptsSyncEntity.toReadReceiptsBase64(): String {
+    val proto = NomadDeviceReadReceipts(
+        readReceipts = receipts.map {
+            NomadDeviceReadReceiptEntry(
+                userId = it.userId.toNomadDeviceQualifiedId(),
+                date = it.date.toString()
+            )
+        }
+    )
+    return Base64.Default.encode(proto.encodeToByteArray())
+}
 
 internal fun QualifiedIDEntity.toApiConversation(): Conversation = Conversation(id = value, domain = domain)
-
-internal fun QualifiedIDEntity.toApiQualifiedId() = QualifiedID(value = value, domain = domain)
 
 internal fun QualifiedIDEntity.toNomadDeviceQualifiedId(): NomadDeviceQualifiedId =
     NomadDeviceQualifiedId(value = value, domain = domain)
