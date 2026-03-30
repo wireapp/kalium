@@ -2462,6 +2462,7 @@ public class UserSessionScope internal constructor(
             isE2EIEnabled,
             certificateRevocationListRepository,
             incrementalSyncRepository,
+            slowSyncRepository,
             sessionManager,
             selfTeamId,
             checkRevocationList,
