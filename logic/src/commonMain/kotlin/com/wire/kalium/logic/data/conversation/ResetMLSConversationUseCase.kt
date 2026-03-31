@@ -129,12 +129,12 @@ internal class ResetMLSConversationUseCaseImpl(
         return getMlsProtocolInfo(conversationId)
             .flatMap { localProtocolInfo ->
                 getLocalResetInfo(mlsContext, localProtocolInfo)
-                    .flatMap { localResetInfo ->
+                    .flatMap { epoch ->
                         resetConversationWithRetryOnMlsStaleMessage(
                             conversationId = conversationId,
                             mlsContext = mlsContext,
                             localGroupId = localProtocolInfo.groupId,
-                            resetInfo = localResetInfo
+                            epoch = epoch
                         )
                     }
             }
@@ -170,16 +170,13 @@ internal class ResetMLSConversationUseCaseImpl(
     private suspend fun getLocalResetInfo(
         mlsContext: MlsCoreCryptoContext,
         protocolInfo: Conversation.ProtocolInfo.MLSCapable
-    ): Either<CoreFailure, ResetInfo> =
+    ): Either<CoreFailure, ULong> =
         wrapMLSRequest {
-            ResetInfo(
-                groupId = protocolInfo.groupId,
-                epoch = mlsContext.conversationEpoch(protocolInfo.groupId.toCrypto())
-            )
+            mlsContext.conversationEpoch(protocolInfo.groupId.toCrypto())
         }.flatMapLeft {
             logger.e("Failed to get local epoch for reset conversation: $it.")
             if (it is MLSFailure.ConversationNotFound) {
-                ResetInfo(protocolInfo.groupId, protocolInfo.epoch).right()
+                protocolInfo.epoch.right()
             } else {
                 it.left()
             }
@@ -189,32 +186,32 @@ internal class ResetMLSConversationUseCaseImpl(
         conversationId: ConversationId,
         mlsContext: MlsCoreCryptoContext,
         localGroupId: GroupID,
-        resetInfo: ResetInfo
+        epoch: ULong,
     ): Either<CoreFailure, Unit> =
-        performReset(mlsContext, localGroupId, resetInfo)
+        performReset(mlsContext, localGroupId, epoch)
             .flatMapLeft { failure ->
                 if (!failure.isMlsStaleMessageConflict()) return@flatMapLeft failure.left()
 
                 logger.w("MLS stale message during reset for ${conversationId.toLogString()}, refetching conversation and retrying.")
-                getRemoteResetInfo(conversationId)
-                    .flatMap { remoteResetInfo ->
-                        performReset(mlsContext, localGroupId, remoteResetInfo)
+                fetchEpoch(conversationId)
+                    .flatMap { epoch ->
+                        performReset(mlsContext, localGroupId, epoch)
                     }
             }
 
     private suspend fun performReset(
         mlsContext: MlsCoreCryptoContext,
         localGroupId: GroupID,
-        resetInfo: ResetInfo
+        epoch: ULong
     ): Either<CoreFailure, Unit> =
-        conversationRepository.resetMlsConversation(resetInfo.groupId, resetInfo.epoch)
+        conversationRepository.resetMlsConversation(localGroupId, epoch)
             .onSuccess {
                 // the result of the leave can be ignored
                 mlsConversationRepository.leaveGroup(mlsContext, localGroupId)
             }
 
     @OptIn(ConversationPersistenceApi::class)
-    private suspend fun getRemoteResetInfo(conversationId: ConversationId): Either<CoreFailure, ResetInfo> =
+    private suspend fun fetchEpoch(conversationId: ConversationId): Either<CoreFailure, ULong> =
         conversationRepository.fetchConversation(conversationId)
             .flatMap { it.mlsResetInfo() }
 
@@ -229,23 +226,11 @@ private fun Conversation.mlsProtocolInfo(): Conversation.ProtocolInfo.MLSCapable
     }
 }
 
-private data class ResetInfo(
-    val groupId: GroupID,
-    val epoch: ULong,
-)
-
-private fun NetworkConversationResponse.mlsResetInfo(): Either<CoreFailure, ResetInfo> = when (protocol) {
+private fun NetworkConversationResponse.mlsResetInfo(): Either<CoreFailure, ULong> = when (protocol) {
     ConvProtocol.MLS, ConvProtocol.MIXED -> {
-        val remoteGroupId = groupId ?: return CoreFailure.Unknown(
-            IllegalStateException("Remote conversation is missing MLS group ID.")
-        ).left()
-        val remoteEpoch = epoch ?: return CoreFailure.Unknown(
+        epoch?.right() ?: return CoreFailure.Unknown(
             IllegalStateException("Remote conversation is missing MLS epoch.")
         ).left()
-        ResetInfo(
-            groupId = GroupID(remoteGroupId),
-            epoch = remoteEpoch
-        ).right()
     }
 
     ConvProtocol.PROTEUS -> CoreFailure.Unknown(
