@@ -83,6 +83,22 @@ class GetAudioAssetUseCaseTest {
         coVerify { arrangement.getMessageAsset(any(), any()) }.wasInvoked(once)
     }
 
+    @Test
+    fun givenWireCellsEnabledAndAttachmentIsAssetStorage_whenInvoked_thenFallbackToGetMessageAsset() = runTest {
+        // Given
+        val (arrangement, useCase) = Arrangement()
+            .withCellsEnabled()
+            .withMessageAttachmentResult()
+            .withGetMessageAssetUseCaseReturning()
+            .arrange()
+
+        // When
+        useCase.invoke(conversationId, "messageId", "assetId").await()
+
+        // Then
+        coVerify { arrangement.getMessageAsset(conversationId, "messageId") }.wasInvoked(once)
+    }
+
     private class Arrangement {
 
         val isWireCellsEnabledForConversation = mock(IsWireCellsEnabledForConversationUseCase::class)
@@ -103,9 +119,6 @@ class GetAudioAssetUseCaseTest {
                         assetToken = "==some-asset-token",
                         assetDomain = "some-asset-domain.com",
                         encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
-                    ),
-                    AssetContent.LocalData(
-                        assetDataPath = "local_asset_path"
                     ),
                 )
             )
