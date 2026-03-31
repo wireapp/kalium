@@ -72,7 +72,7 @@ public class SyncNomadConversationMetadataUseCase internal constructor(
                     value = it.conversation.id,
                     domain = it.conversation.domain
                 ),
-                lastReadDate = Instant.fromEpochMilliseconds(it.metadata.lastRead),
+                lastReadDate = it.metadata.lastRead?.let(Instant::fromEpochMilliseconds),
                 lastModifiedDate = it.metadata.lastModified?.let(Instant::fromEpochMilliseconds)
             )
         }
@@ -90,6 +90,6 @@ public class SyncNomadConversationMetadataUseCase internal constructor(
  */
 internal data class NomadConversationMetadataToSync(
     val conversationId: QualifiedIDEntity,
-    val lastReadDate: Instant,
+    val lastReadDate: Instant?,
     val lastModifiedDate: Instant?,
 )

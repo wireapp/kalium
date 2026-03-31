@@ -1129,6 +1129,7 @@ public class UserSessionScope internal constructor(
             clientIdProvider = clientIdProvider,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            eventRepository = eventRepository,
             kaliumFileSystem = kaliumFileSystem,
             userStorage = userStorage,
             cryptoTransactionProvider = cryptoTransactionProvider,

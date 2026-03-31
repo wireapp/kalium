@@ -26,6 +26,8 @@ public data class CryptoStateBackupMetadata(
     val version: String,
     @SerialName("client_id")
     val clientId: String,
+    @SerialName("last_processed_event_id")
+    val lastProcessedEventId: String,
     @SerialName("mls_db_passphrase")
     val mlsDbPassphrase: String,
     @SerialName("proteus_db_passphrase")

@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAsset
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAttachment
+import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAudioMetaData
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceImageMetaData
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceLocation
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessageContent
@@ -40,6 +41,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class NomadAllMessagesMapperTest {
 
@@ -124,6 +126,30 @@ class NomadAllMessagesMapperTest {
         assertEquals(Instant.fromEpochMilliseconds(1_707_235_200_000L), message.date)
         assertEquals(Instant.fromEpochMilliseconds(1_707_235_201_000L), payload.creationDate)
         assertEquals(Instant.fromEpochMilliseconds(1_707_235_202_000L), payload.lastEditDate)
+    }
+
+    @Test
+    fun givenMultipartWithAudioAttachment_whenMapping_thenAttachmentKeepsCellsDownloadMetadata() {
+        val mapped = mapper.map(
+            responseWith(
+                storedMessage(
+                    messageId = "audio-message",
+                    timestamp = 1_707_235_500_000L,
+                    content = multipartContentWithAudioAttachment(attachmentAssetId = "audio-attachment")
+                )
+            )
+        )
+
+        val payload = assertIs<SyncableMessagePayloadEntity.Multipart>(mapped.messages.single().payload)
+        val attachment = payload.attachments.single()
+
+        assertTrue(attachment.cellAsset)
+        assertEquals("audio-attachment", attachment.assetId)
+        assertEquals("audio/ogg", attachment.mimeType)
+        assertEquals("cells/audio/audio-attachment.ogg", attachment.assetPath)
+        assertEquals(24L, attachment.assetSize)
+        assertEquals(7_654L, attachment.assetDuration)
+        assertEquals("NOT_DOWNLOADED", attachment.assetTransferStatus)
     }
 
     private fun responseWith(vararg messages: NomadStoredMessage): NomadAllMessagesResponse =
@@ -226,6 +252,32 @@ class NomadAllMessagesMapperTest {
                                             width = 128,
                                             height = 72
                                         )
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        )
+
+    private fun multipartContentWithAudioAttachment(attachmentAssetId: String): NomadDeviceMessageContent =
+        NomadDeviceMessageContent(
+            content = NomadDeviceMessageContent.Content.Multipart(
+                NomadDeviceMultipart(
+                    text = null,
+                    attachments = listOf(
+                        NomadDeviceAttachment(
+                            content = NomadDeviceAttachment.Content.Asset(
+                                NomadDeviceAsset(
+                                    mimeType = "audio/ogg",
+                                    size = 24L,
+                                    name = "cells/audio/$attachmentAssetId.ogg",
+                                    otrKey = ByteArr(byteArrayOf()),
+                                    sha256 = ByteArr(byteArrayOf()),
+                                    assetId = attachmentAssetId,
+                                    metaData = NomadDeviceAsset.MetaData.Audio(
+                                        NomadDeviceAudioMetaData(durationInMillis = 7_654L)
                                     )
                                 )
                             )
