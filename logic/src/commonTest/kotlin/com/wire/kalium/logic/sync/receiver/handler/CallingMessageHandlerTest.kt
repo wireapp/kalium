@@ -81,7 +81,7 @@ class CallingMessageHandlerTest {
     }
 
     @Test
-    fun givenCallingMessage_whenHandling_andShouldRemoteMuteReturnsTrue_thenDoNotCallMute_andDoNotPassMessageToCallManager() = runTest {
+    fun givenCallingMessage_whenHandling_andShouldRemoteMuteReturnsFalse_thenDoNotCallMute_andDoNotPassMessageToCallManager() = runTest {
         // given
         val content = REMOTE_MUTE_CONTENT
         val message = CALLING_MESSAGE.copy(content = content)
