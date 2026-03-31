@@ -20,6 +20,8 @@ package com.wire.kalium.nomaddevice
 
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -125,6 +127,49 @@ class NomadCryptoStateChangeHookNotifierTest {
     }
 
     @Test
+    fun givenUserScopedFactory_whenScopeCancelledDuringDebounce_thenPendingBackupIsFlushed() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<String>()
+        val notifier = createUserScopedNomadCryptoStateChangeHookNotifier(
+            selfUserId = USER_ID,
+            scope = scope,
+            backup = { calls += "backup" },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS / 2) // mid-debounce
+        scope.cancel() // simulate logout
+        scheduler.runCurrent()
+
+        assertEquals(listOf("backup"), calls)
+    }
+
+    @Test
+    fun givenUserScopedFactory_whenScopeCancelledDuringBackup_thenBackupCompletes() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<String>()
+        val notifier = createUserScopedNomadCryptoStateChangeHookNotifier(
+            selfUserId = USER_ID,
+            scope = scope,
+            backup = {
+                scope.cancel() // simulate logout mid-upload
+                delay(1) // suspension point that CancellationException would abort without NonCancellable
+                calls += "backup"
+            },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+
+        assertEquals(listOf("backup"), calls)
+    }
+
+    @Test
     fun givenUserScopedFactory_whenBackupThrows_thenExceptionIsSwallowed() = runTest {
         val scheduler = TestCoroutineScheduler()
         val scope = TestScope(scheduler)
@@ -138,6 +183,37 @@ class NomadCryptoStateChangeHookNotifierTest {
         notifier.onCryptoStateChanged(USER_ID)
         scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
         scheduler.runCurrent()
+    }
+
+    @Test
+    fun givenUserScopedFactory_whenBackupFails_thenNextTriggerRetriesBackup() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<String>()
+        var shouldFail = true
+        val notifier = createUserScopedNomadCryptoStateChangeHookNotifier(
+            selfUserId = USER_ID,
+            scope = scope,
+            backup = {
+                if (shouldFail) throw IllegalStateException("boom")
+                calls += "backup"
+            },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        // First trigger — backup fails, flag should remain true
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+        assertEquals(emptyList(), calls)
+
+        // Second trigger — backup succeeds this time
+        shouldFail = false
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+
+        assertEquals(listOf("backup"), calls)
     }
 
     private class FakeRepository(
