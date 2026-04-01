@@ -16,14 +16,13 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.util
+@file:Suppress("unused")
 
-expect object FileUtil {
-    fun mkDirs(path: String): Boolean
+package com.wire.kalium.cryptography
 
-    fun deleteDirectory(path: String): Boolean
+@JsModule("fake-indexeddb/auto")
+@JsNonModule
+private external val fakeIndexedDbAuto: dynamic
 
-    suspend fun deletePersistentDirectory(path: String): Boolean
-
-    fun isDirectoryNonEmpty(path: String): Boolean
-}
+// Force module side effects so js tests expose indexedDB in the Node-based runner.
+private val indexedDbPolyfill = fakeIndexedDbAuto
