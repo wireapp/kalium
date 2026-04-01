@@ -19,7 +19,7 @@
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     alias(libs.plugins.kotlin.serialization)
-    id(libs.plugins.sqldelight.get().pluginId)
+    alias(libs.plugins.sqldelight)
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
     alias(libs.plugins.mockative)
@@ -35,6 +35,7 @@ sqldelight {
     databases {
         create("UserDatabase") {
             dialect(libs.sqldelight.dialect.get().toString())
+            enableCustomQueryKeys.set(true)
             packageName.set("com.wire.kalium.persistence")
             val sourceFolderName = "db_user"
             srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))

@@ -1,0 +1,4 @@
+[submodule "vendor/sqldelight"]
+	path = vendor/sqldelight
+	url = https://github.com/MohamadJaara/sqldelight.git
+	branch = 2.2.1-with-custom-notify

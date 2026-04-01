@@ -34,7 +34,36 @@ rootDir
         include(":$projectPath")
     }
 
+val sqlDelightBuildPath = "vendor/sqldelight"
+val sqlDelightModules = mapOf(
+    "app.cash.sqldelight:gradle-plugin" to ":sqldelight-gradle-plugin",
+    "app.cash.sqldelight:runtime" to ":runtime",
+    "app.cash.sqldelight:coroutines-extensions" to ":extensions:coroutines-extensions",
+    "app.cash.sqldelight:android-driver" to ":drivers:android-driver",
+    "app.cash.sqldelight:androidx-paging3-extensions" to ":extensions:androidx-paging3",
+    "app.cash.sqldelight:native-driver" to ":drivers:native-driver",
+    "app.cash.sqldelight:sqlite-driver" to ":drivers:sqlite-driver",
+    "app.cash.sqldelight:web-worker-driver" to ":drivers:web-worker-driver",
+    "app.cash.sqldelight:primitive-adapters" to ":adapters:primitive-adapters",
+    "app.cash.sqldelight:compiler-env" to ":sqldelight-compiler:environment",
+    "app.cash.sqldelight:migration-env" to ":sqlite-migrations:environment",
+    "app.cash.sqldelight:sqlite-3-38-dialect" to ":dialects:sqlite-3-38",
+    "app.cash.sqldelight:postgresql-dialect" to ":dialects:postgresql",
+    "app.cash.sqldelight:r2dbc-driver" to ":drivers:r2dbc-driver",
+    "app.cash.sqldelight:async-extensions" to ":extensions:async-extensions",
+)
+
+fun org.gradle.api.initialization.ConfigurableIncludedBuild.useLocalSqlDelightFork() {
+    dependencySubstitution {
+        sqlDelightModules.forEach { (moduleCoordinates, projectPath) ->
+            substitute(module(moduleCoordinates)).using(project(projectPath))
+        }
+    }
+}
+
 pluginManagement {
+    includeBuild("vendor/sqldelight")
+
     repositories {
         gradlePluginPortal()
         google()
@@ -44,6 +73,10 @@ pluginManagement {
 
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.9.0"
+}
+
+includeBuild(sqlDelightBuildPath) {
+    useLocalSqlDelightFork()
 }
 
 dependencyResolutionManagement {

@@ -76,17 +76,25 @@ conversationIDByGroupId:
 SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;
 
 deleteAllConversations:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 DELETE FROM Conversation;
 
 deleteConversation:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 DELETE FROM Conversation WHERE qualified_id = ?;
 
 markAsDeletedLocally:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 UPDATE Conversation
 SET deleted_locally = 1
 WHERE qualified_id = ?;
 
 insertConversation:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time, is_channel, channel_access, channel_add_permission, wire_cell, history_sharing_retention_seconds)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
@@ -124,11 +132,15 @@ wire_cell = excluded.wire_cell,
 history_sharing_retention_seconds = excluded.history_sharing_retention_seconds;
 
 updateConversation:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 UPDATE Conversation
 SET name = ?, type = ?, team_id = ?
 WHERE qualified_id = ?;
 
 updateConversationGroupState:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 UPDATE Conversation
 SET mls_group_state = CASE
     WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
@@ -138,6 +150,8 @@ END
 WHERE mls_group_id = ?;
 
 updateConversationGroupStateByConversationId:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 UPDATE Conversation
 SET mls_group_state = CASE
     WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
@@ -147,6 +161,8 @@ END
 WHERE qualified_id = :conversation_id;
 
 updateMlsGroupStateAndCipherSuite:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 UPDATE Conversation
 SET mls_group_state = CASE
     WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
@@ -157,6 +173,8 @@ mls_cipher_suite = :mls_cipher_suite
 WHERE mls_group_id = :mls_group_id;
 
 updateMLSGroupIdAndState:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 UPDATE Conversation
 SET mls_group_id = :new_group_id, 
     mls_group_state = CASE
@@ -193,11 +211,15 @@ SET last_notified_date = (
 );
 
 updateConversationModifiedDate:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_order
 UPDATE Conversation
 SET last_modified_date = ?
 WHERE qualified_id = ?;
 
 updateConversationModifiedDateToMaxOfSources:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_order
 UPDATE Conversation
 SET last_modified_date = (
     SELECT MAX(last_modified_date)
@@ -274,11 +296,15 @@ selectConversationIds:
 SELECT qualified_id FROM Conversation WHERE protocol = :protocol AND type = :type AND (:teamId IS NULL OR team_id = :teamId);
 
 updateConversationMutingStatus:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_unread
 UPDATE Conversation
 SET muted_status = ?, muted_time = ?
 WHERE qualified_id = ?;
 
 updateConversationArchivingStatus:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 UPDATE Conversation
 SET archived = ?, archived_date_time = ?
 WHERE qualified_id = ?;
@@ -311,16 +337,23 @@ SELECT sender_user_id FROM Message WHERE id IN (
 ) ORDER BY creation_date DESC LIMIT 1;
 
 updateConversationName:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
 UPDATE Conversation
 SET name = ?, last_modified_date = ?
 WHERE qualified_id = ?;
 
 updateConversationType:
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 UPDATE Conversation
 SET type = ?
 WHERE qualified_id = ?;
 
 updateConversationGroupIdAndProtocolInfo {
+-- @NotifyCustomKey Conversation
+-- @NotifyCustomKey conversation_list_membership
 UPDATE Conversation
 SET mls_group_id = :groupId, protocol = :protocol, mls_cipher_suite = :mls_cipher_suite
 WHERE qualified_id = :qualified_id AND

@@ -18,8 +18,11 @@
 
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.coroutines.asFlow
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.util.mapToList
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -39,12 +42,13 @@ class MetadataDAOTest : BaseDatabaseTest() {
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     private lateinit var metadataDAO: MetadataDAO
+    private lateinit var databaseBuilder: UserDatabaseBuilder
 
     @BeforeTest
     fun setUp() {
         deleteDatabase(selfUserId)
-        val db = createDatabase(selfUserId, encryptedDBSecret, true)
-        metadataDAO = db.metadataDAO
+        databaseBuilder = createDatabase(selfUserId, encryptedDBSecret, true)
+        metadataDAO = databaseBuilder.metadataDAO
     }
 
     @Test
@@ -91,5 +95,66 @@ class MetadataDAOTest : BaseDatabaseTest() {
             expectNoEvents()
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun givenExistingKey_whenValueHasBeenDeleted_thenEmitNull() = runTest(dispatcher) {
+        metadataDAO.insertValue(value1, key1)
+
+        metadataDAO.valueByKeyFlow(key1).test {
+            assertEquals(value1, awaitItem())
+            metadataDAO.deleteValue(key1)
+            assertNull(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenExistingKey_whenClearDeletesThatKey_thenEmitNull() = runTest(dispatcher) {
+        metadataDAO.insertValue(value1, key1)
+        metadataDAO.insertValue(value2, key2)
+
+        metadataDAO.valueByKeyFlow(key1).test {
+            assertEquals(value1, awaitItem())
+            metadataDAO.clear(keysToKeep = listOf(key2))
+            assertNull(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenExistingKey_whenClearDeletesAll_thenEmitNull() = runTest(dispatcher) {
+        metadataDAO.insertValue(value1, key1)
+
+        metadataDAO.valueByKeyFlow(key1).test {
+            assertEquals(value1, awaitItem())
+            metadataDAO.clear(keysToKeep = null)
+            assertNull(awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenMetadataTableFlow_whenAnyKeyChanges_thenTableFlowEmitsUpdatedRows() = runTest(dispatcher) {
+        databaseBuilder.database.metadataQueries.selectAllMetadata()
+            .asFlow()
+            .mapToList()
+            .test {
+                assertEquals(emptyList(), awaitItem())
+
+                metadataDAO.insertValue(value1, key1)
+                assertEquals(listOf(key1 to value1), awaitItem().map { it.key to it.stringValue }.sortedBy { it.first })
+
+                metadataDAO.insertValue(value2, key2)
+                assertEquals(
+                    listOf(key1 to value1, key2 to value2),
+                    awaitItem().map { it.key to it.stringValue }.sortedBy { it.first }
+                )
+
+                metadataDAO.clear(keysToKeep = listOf(key2))
+                assertEquals(listOf(key2 to value2), awaitItem().map { it.key to it.stringValue })
+
+                cancelAndIgnoreRemainingEvents()
+            }
     }
 }

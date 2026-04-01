@@ -24,6 +24,7 @@ import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 
 buildscript {
     repositories {
+        maven(url = uri("$rootDir/vendor/sqldelight/build/localMaven"))
         google()
         mavenCentral()
     }
@@ -31,7 +32,6 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:${libs.versions.agp.get()}")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
-        classpath("app.cash.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:${libs.versions.dokka.get()}")
         classpath("com.google.protobuf:protobuf-gradle-plugin:${libs.versions.protobufCodegen.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${libs.versions.detekt.get()}")
@@ -40,6 +40,7 @@ buildscript {
 
 repositories {
     wireDetektRulesRepo()
+    maven(url = uri("$rootDir/vendor/sqldelight/build/localMaven"))
     google()
     mavenCentral()
     maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
@@ -121,6 +122,7 @@ val kaliumGitHash: Provider<String> = providers.environmentVariable("GITHUB_SHA"
 allprojects {
     version = kaliumGitHash.get()
     repositories {
+        maven(url = uri("$rootDir/vendor/sqldelight/build/localMaven"))
         google()
         mavenCentral()
     }
