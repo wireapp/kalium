@@ -26,6 +26,8 @@ import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.SessionDTO
 import com.wire.kalium.network.api.model.toSessionDto
 import com.wire.kalium.network.api.unauthenticated.login.LoginParam
+import com.wire.kalium.network.auth.extractManagedRefreshToken
+import com.wire.kalium.network.auth.withBrowserCredentials
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
@@ -76,12 +78,13 @@ internal open class LoginApiV0 internal constructor(
         persist: Boolean
     ): NetworkResponse<Pair<SessionDTO, SelfUserDTO>> = wrapKaliumResponse<AccessTokenDTO> {
         httpClient.post(PATH_LOGIN) {
+            withBrowserCredentials()
             parameter(QUERY_PERSIST, persist)
             setBody(param.toRequestBody())
         }
     }.flatMap { accessTokenDTOResponse ->
         with(accessTokenDTOResponse) {
-            cookies[RefreshTokenProperties.COOKIE_NAME]?.let { refreshToken ->
+            extractManagedRefreshToken(cookies)?.let { refreshToken ->
                 NetworkResponse.Success(refreshToken, headers, httpCode)
             } ?: CustomErrors.MISSING_REFRESH_TOKEN
         }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
