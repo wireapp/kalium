@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.backup.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
@@ -130,8 +131,6 @@ class ResetMLSConversationUseCaseTest {
     @OptIn(ConversationPersistenceApi::class)
     @Test
     fun givenResetReturnsMlsStaleMessage_whenUseCaseCalled_thenConversationIsRefetchedAndResetRetriedWithRemoteEpoch() = runTest {
-
-        val remoteGroupId = "remote-group-id"
         val remoteEpoch = 42UL
 
         val (arrangement, useCase) = Arrangement()
@@ -147,7 +146,7 @@ class ResetMLSConversationUseCaseTest {
             .withRemoteConversationResponse(
                 TestConversation.CONVERSATION_RESPONSE.copy(
                     protocol = ConvProtocol.MLS,
-                    groupId = remoteGroupId,
+                    groupId = TestConversation.GROUP_ID.value,
                     epoch = remoteEpoch
                 )
             )
@@ -164,7 +163,84 @@ class ResetMLSConversationUseCaseTest {
         }.wasInvoked(exactly = 1)
 
         coVerify {
-            arrangement.conversationRepository.resetMlsConversation(eq(com.wire.kalium.logic.data.id.GroupID(remoteGroupId)), eq(remoteEpoch))
+            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(remoteEpoch))
+        }.wasInvoked(exactly = 1)
+    }
+
+    @OptIn(ConversationPersistenceApi::class)
+    @Test
+    fun givenResetKeepsReturningMlsStaleMessageAndRemoteGroupIdChanges_whenUseCaseCalled_thenRetryIsCancelledAndConversationIsSynced() = runTest {
+        val refreshedEpoch = 42UL
+        val updatedGroupId = "remote-group-id"
+
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .withResetMlsConversationResponses(
+                NetworkFailure.ServerMiscommunication(
+                    KaliumException.InvalidRequestError(
+                        ErrorResponse(409, "epoch is too old", "mls-stale-message")
+                    )
+                ).left(),
+                NetworkFailure.ServerMiscommunication(
+                    KaliumException.InvalidRequestError(
+                        ErrorResponse(409, "epoch is too old", "mls-stale-message")
+                    )
+                ).left()
+            )
+            .withRemoteConversationResponses(
+                TestConversation.CONVERSATION_RESPONSE.copy(
+                    protocol = ConvProtocol.MLS,
+                    groupId = TestConversation.GROUP_ID.value,
+                    epoch = refreshedEpoch
+                ),
+                TestConversation.CONVERSATION_RESPONSE.copy(
+                    protocol = ConvProtocol.MLS,
+                    groupId = updatedGroupId,
+                    epoch = refreshedEpoch
+                )
+            )
+            .withConversations(
+                TestConversation.MLS_CONVERSATION,
+                TestConversation.MLS_CONVERSATION.copy(
+                    protocol = Conversation.ProtocolInfo.MLS(
+                        groupId = GroupID(updatedGroupId),
+                        groupState = TestConversation.MLS_PROTOCOL_INFO.groupState,
+                        epoch = refreshedEpoch,
+                        keyingMaterialLastUpdate = TestConversation.MLS_PROTOCOL_INFO.keyingMaterialLastUpdate,
+                        cipherSuite = TestConversation.MLS_PROTOCOL_INFO.cipherSuite
+                    )
+                )
+            )
+            .arrange()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(15UL))
+        }.wasInvoked(exactly = 1)
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(refreshedEpoch))
+        }.wasInvoked(exactly = 1)
+
+        coVerify {
+            arrangement.conversationRepository.fetchConversation(eq(TEST_CONVERSATION_ID))
+        }.wasInvoked(exactly = 2)
+
+        coVerify {
+            arrangement.conversationRepository.resetMlsConversation(eq(GroupID(updatedGroupId)), any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.fetchConversationUseCase(
+                transactionContext = any(),
+                conversationId = eq(TEST_CONVERSATION_ID),
+                reason = eq(ConversationSyncReason.ConversationReset)
+            )
+        }.wasInvoked(exactly = 1)
+
+        coVerify {
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), eq(GroupID(updatedGroupId)), any(), any(), any())
         }.wasInvoked(exactly = 1)
     }
 
@@ -310,12 +386,13 @@ class ResetMLSConversationUseCaseTest {
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val fetchConversationUseCase = mock(FetchConversationUseCase::class)
         var kaliumConfigs = KaliumConfigs(isMlsResetEnabled = true)
-        private var remoteConversationResponse = TestConversation.CONVERSATION_RESPONSE.copy(
+        private var remoteConversationResponses: List<ConversationResponse> = listOf(TestConversation.CONVERSATION_RESPONSE.copy(
             protocol = ConvProtocol.MLS,
             groupId = TestConversation.GROUP_ID.value,
             epoch = 21UL
-        )
+        ))
         private var resetConversationResults: List<Either<NetworkFailure, Unit>> = listOf(Unit.right())
+        private var conversations: List<Conversation> = listOf(TestConversation.MLS_CONVERSATION)
 
         fun withCompileTimeFlagDisabled() = apply {
             kaliumConfigs = kaliumConfigs.copy(isMlsResetEnabled = false)
@@ -344,13 +421,19 @@ class ResetMLSConversationUseCaseTest {
         }
 
         suspend fun withConversation(conversation: Conversation) = apply {
-            coEvery {
-                conversationRepository.getConversationById(any())
-            } returns conversation.right()
+            this.conversations = listOf(conversation)
+        }
+
+        suspend fun withConversations(vararg conversations: Conversation) = apply {
+            this.conversations = conversations.toList()
         }
 
         fun withRemoteConversationResponse(conversationResponse: ConversationResponse) = apply {
-            remoteConversationResponse = conversationResponse
+            remoteConversationResponses = listOf(conversationResponse)
+        }
+
+        fun withRemoteConversationResponses(vararg conversationResponses: ConversationResponse) = apply {
+            remoteConversationResponses = conversationResponses.toList()
         }
 
         fun withResetMlsConversationResponses(vararg results: Either<NetworkFailure, Unit>) = apply {
@@ -376,7 +459,13 @@ class ResetMLSConversationUseCaseTest {
 
             coEvery {
                 conversationRepository.getConversationById(any())
-            } returns TestConversation.MLS_CONVERSATION.right()
+            }.also {
+                if (conversations.size == 1) {
+                    it returns conversations.single().right()
+                } else {
+                    it.thenReturnSequentially(*conversations.map { conversation -> conversation.right() }.toTypedArray())
+                }
+            }
 
             coEvery {
                 conversationRepository.resetMlsConversation(any(), any())
@@ -384,7 +473,13 @@ class ResetMLSConversationUseCaseTest {
 
             coEvery {
                 conversationRepository.fetchConversation(any())
-            } returns remoteConversationResponse.right()
+            }.also {
+                if (remoteConversationResponses.size == 1) {
+                    it returns remoteConversationResponses.single().right()
+                } else {
+                    it.thenReturnSequentially(*remoteConversationResponses.map { response -> response.right() }.toTypedArray())
+                }
+            }
 
             coEvery {
                 mlsConversationRepository.leaveGroup(any(), any())
