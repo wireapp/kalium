@@ -31,8 +31,6 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -64,7 +62,6 @@ import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -103,14 +100,14 @@ internal class CallManagerTest {
 
         verify(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_recv_msg(
-                eq(BASE_HANDLE),
+                BASE_HANDLE,
                 matches { it.contentEquals(CALL_CONTENT.value.toByteArray()) },
-                eq(CALL_CONTENT.value.toByteArray().size),
+                CALL_CONTENT.value.toByteArray().size,
                 any(),
                 any(),
-                eq(CALL_CONV_ID.toString()),
-                eq(USER_ID.toString()),
-                eq(CLIENT_ID.value),
+                CALL_CONV_ID.toString(),
+                USER_ID.toString(),
+                CLIENT_ID.value,
                 any(),
                 any()
             )
@@ -126,7 +123,6 @@ internal class CallManagerTest {
             .onParseToFederatedIdReturning(CALL_CONV_ID, CALL_CONV_ID.toString())
             .onWcallCreateReturning(BASE_HANDLE)
             .onWcallRecvMsgReturning(0)
-            .onObserveConversationMembersReturning(emptyList())
             .onGetCallConversationTypeReturning(ConversationTypeCalling.Conference)
             .withFetchServerTimeReturning()
             .arrange()
@@ -162,7 +158,6 @@ internal class CallManagerTest {
         internal val flowManagerService = mock<FlowManagerService>(MockMode.autoUnit)
         internal val selfConversationIdProvider = mock<SelfConversationIdProvider>()
         internal val userConfigRepository = mock<UserConfigRepository>()
-        internal val conversationRepository = mock<ConversationRepository>()
         internal val federatedIdMapper = mock<FederatedIdMapper>()
         internal val qualifiedIdMapper = mock<QualifiedIdMapper>()
         internal val conversationClientsInCallUpdater = mock<ConversationClientsInCallUpdater>()
@@ -198,10 +193,6 @@ internal class CallManagerTest {
             every { calling.wcall_recv_msg(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns result
         }
 
-        fun onObserveConversationMembersReturning(result: List<Conversation.Member>) = apply {
-            everySuspend { conversationRepository.observeConversationMembers(any()) } returns flowOf(result)
-        }
-
         fun onGetCallConversationTypeReturning(result: ConversationTypeCalling) = apply {
             everySuspend { getCallConversationType(any()) } returns result
         }
@@ -215,7 +206,6 @@ internal class CallManagerTest {
             callRepository = callRepository,
             currentClientIdProvider = currentClientIdProvider,
             selfConversationIdProvider = selfConversationIdProvider,
-            conversationRepository = conversationRepository,
             userConfigRepository = userConfigRepository,
             messageSender = messageSender,
             kaliumDispatchers = kaliumTestDispatcher,
@@ -239,7 +229,6 @@ internal class CallManagerTest {
             onParseToFederatedIdReturning(CALL_CONV_ID, CALL_CONV_ID.toString())
             onWcallCreateReturning(BASE_HANDLE)
             onWcallRecvMsgReturning(0)
-            onObserveConversationMembersReturning(emptyList())
             onGetCallConversationTypeReturning(ConversationTypeCalling.Conference)
             withFetchServerTimeReturning()
         }
