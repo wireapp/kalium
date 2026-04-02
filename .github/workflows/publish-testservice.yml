@@ -5,8 +5,35 @@ on:
     branches: ["develop"]
     tags: ["android-v*", "test-service-v*"]
 
+permissions:
+  contents: read
+
 jobs:
-  quay_publish:
+  validate-tag:
+    if: github.repository == 'wireapp/kalium' && startsWith(github.ref, 'refs/tags/test-service-v')
+    uses: ./.github/workflows/validate-release-tag.yml
+    with:
+      tag-name: ${{ github.ref_name }}
+    secrets: inherit
+
+  build-testservice-jar:
+    if: startsWith(github.ref, 'refs/tags/test-service-v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build testservice fatjar
+        run: ./gradlew :tools:testservice:shadowJar
+
+      - name: Upload testservice fatjar
+        uses: actions/upload-artifact@v4
+        with:
+          name: testservice-fatjar
+          path: tools/testservice/build/libs/testservice-*-all.jar
+          if-no-files-found: error
+
+  publish-docker:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -42,3 +69,36 @@ jobs:
           platforms: linux/amd64
           tags: ${{ steps.image_tags.outputs.tags }}
           push: true
+
+  publish-github-release:
+    if: startsWith(github.ref, 'refs/tags/test-service-v')
+    needs: [validate-tag, build-testservice-jar, publish-docker]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download testservice fatjar
+        uses: actions/download-artifact@v8.0.0
+        with:
+          name: testservice-fatjar
+          path: release-artifacts
+
+      - name: Resolve release body
+        run: |
+          cat <<EOF > release-notes.md
+          Testservice release for tag ${{ github.ref_name }}.
+
+          Docker images:
+          - quay.io/wire/testservice:${{ github.ref_name }}
+          - quay.io/wire/testservice:${{ github.sha }}
+
+          Attached asset is the fatjar built for this tag.
+          EOF
+
+      - name: Publish GitHub release and upload fatjar
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          body_path: release-notes.md
+          files: release-artifacts/*
+          fail_on_unmatched_files: true
