@@ -99,6 +99,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
+          make_latest: false
           body_path: release-notes.md
           files: release-artifacts/*
           fail_on_unmatched_files: true
