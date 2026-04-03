@@ -553,7 +553,7 @@ internal class CallManagerImpl internal constructor(
         conversationId: ConversationId,
         clients: String
     ) {
-        if (callRepository.getCallMetadata(conversationId)?.protocol is Conversation.ProtocolInfo.Proteus) {
+        if (callRepository.getCallMetadata(conversationId)?.protocol !is Conversation.ProtocolInfo.MLS) {
             withCalling {
                 wcall_set_clients_for_conv(
                     it,
