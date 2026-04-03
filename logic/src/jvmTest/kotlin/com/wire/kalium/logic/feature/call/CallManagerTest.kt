@@ -27,10 +27,16 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperTest.Companion.CONVERSATION_MIXED_PROTOCOL_INFO
+import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperTest.Companion.CONVERSATION_MLS_PROTOCOL_INFO
+import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperTest.Companion.CONVERSATION_PROTEUS_PROTOCOL_INFO
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -45,6 +51,7 @@ import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedC
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.network.NetworkStateObserver
@@ -55,7 +62,6 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify
@@ -149,6 +155,34 @@ internal class CallManagerTest {
         }
     }
 
+    @Test
+    @Suppress("FunctionNaming") // native function has that name
+    fun givenCallManager_whenUpdatingConversationClients_then_wcall_set_clients_for_conv_IsCalledForProteusAndMixedProtocol() = runTest {
+        val callProteus = ConversationId(value = "proteus", domain = "domain")
+        val callMixed = ConversationId(value = "mixed", domain = "domain")
+        val callMLS = ConversationId(value = "mls", domain = "domain")
+        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .onParseToFederatedIdReturning(callProteus, callProteus.toString())
+            .onParseToFederatedIdReturning(callMixed, callMixed.toString())
+            .onParseToFederatedIdReturning(callMLS, callMLS.toString())
+            .withCallMetadataReturning(callProteus, CALL_METADATA.copy(protocol = CONVERSATION_PROTEUS_PROTOCOL_INFO))
+            .withCallMetadataReturning(callMixed, CALL_METADATA.copy(protocol = CONVERSATION_MIXED_PROTOCOL_INFO))
+            .withCallMetadataReturning(callMLS, CALL_METADATA.copy(protocol = CONVERSATION_MLS_PROTOCOL_INFO))
+            .arrange()
+
+        callManager.updateConversationClients(callProteus, "clients")
+        callManager.updateConversationClients(callMixed, "clients")
+        callManager.updateConversationClients(callMLS, "clients")
+
+        verify(VerifyMode.exactly(1)) { // called for proteus and mixed protocol
+            arrangement.calling.wcall_set_clients_for_conv(inst = any(), convId = callProteus.toString(), clientsJson = "clients")
+            arrangement.calling.wcall_set_clients_for_conv(inst = any(), convId = callMixed.toString(), clientsJson = "clients")
+        }
+        verify(VerifyMode.not) { // not called for MLS protocol
+            arrangement.calling.wcall_set_clients_for_conv(inst = any(), convId = callMLS.toString(), clientsJson = "clients")
+        }
+    }
+
     inner class Arrangement(private val kaliumTestDispatcher: KaliumDispatcher) {
         internal val calling = mock<Calling>(MockMode.autoUnit)
         internal val callRepository = mock<CallRepository>()
@@ -201,6 +235,10 @@ internal class CallManagerTest {
             everySuspend { callRepository.fetchServerTime() } returns "2022-03-30T16:36:00.000Z"
         }
 
+        fun withCallMetadataReturning(conversationId: ConversationId, callMetadata: CallMetadata?) = apply {
+            everySuspend { callRepository.getCallMetadata(conversationId) } returns callMetadata
+        }
+
         suspend fun arrange() = this to CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
@@ -250,6 +288,19 @@ internal class CallManagerTest {
             status = Message.Status.Sent,
             isSelfMessage = false,
             expirationData = null
+        )
+        private val CALL_METADATA = CallMetadata(
+            callerId = TestCall.CALLER_ID,
+            isMuted = false,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            conversationName = null,
+            conversationType = Conversation.Type.OneOnOne,
+            callerName = null,
+            callerTeamName = null,
+            establishedTime = null,
+            callStatus = CallStatus.INCOMING,
+            protocol = Conversation.ProtocolInfo.Proteus
         )
     }
 }
