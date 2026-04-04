@@ -23,16 +23,13 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
-import dev.mokkery.every as mokkeryEvery
+import dev.mokkery.every
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any as mokkeryAny
-import dev.mokkery.mock as mokkeryMock
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 
 internal interface CryptoTransactionProviderArrangement {
     val cryptoTransactionProvider: CryptoTransactionProvider
@@ -49,75 +46,21 @@ internal interface CryptoTransactionProviderArrangement {
 
 internal class CryptoTransactionProviderArrangementImpl : CryptoTransactionProviderArrangement {
 
-    override val proteusContext: ProteusCoreCryptoContext = mock(ProteusCoreCryptoContext::class)
-    override val mlsContext: MlsCoreCryptoContext = mock(MlsCoreCryptoContext::class)
-    override val transactionContext = mock(CryptoTransactionContext::class)
+    override val proteusContext: ProteusCoreCryptoContext = mock(mode = MockMode.autoUnit)
+    override val mlsContext: MlsCoreCryptoContext = mock(mode = MockMode.autoUnit)
+    override val transactionContext: CryptoTransactionContext = mock(mode = MockMode.autoUnit)
 
-    override val cryptoTransactionProvider: CryptoTransactionProvider = mock(CryptoTransactionProvider::class)
+    override val cryptoTransactionProvider: CryptoTransactionProvider = mock()
 
     init {
         every { transactionContext.proteus } returns proteusContext
         every { transactionContext.mls } returns mlsContext
     }
 
-    override suspend fun <R> withTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
-        coEvery {
-            cryptoTransactionProvider.transaction<R>(any(), any())
-        }.invokes { args ->
-            @Suppress("UNCHECKED_CAST")
-            val block = args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
-            block(transactionContext)
-        }
-    }
-
-    override suspend fun <R> withProteusTransactionReturning(
-        result: Either<CoreFailure, R>
-    ): CryptoTransactionProviderArrangement = apply {
-        coEvery {
-            cryptoTransactionProvider.proteusTransaction<R>(any(), any())
-        }.invokes { args ->
-            @Suppress("UNCHECKED_CAST")
-            val block = args[1] as suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, R>
-            block(proteusContext)
-        }
-    }
-
-    override suspend fun <R> withProteusTransactionResultOnly(
-        result: Either<CoreFailure, R>
-    ): CryptoTransactionProviderArrangement = apply {
-        coEvery {
-            cryptoTransactionProvider.proteusTransaction<R>(any(), any())
-        }.returns(result)
-    }
-
-    override suspend fun <R> withMLSTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
-        coEvery {
-            cryptoTransactionProvider.mlsTransaction<R>(any(), any())
-        }.invokes { args ->
-            @Suppress("UNCHECKED_CAST")
-            val block = args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>
-            block(mlsContext)
-        }
-    }
-}
-
-internal class CryptoTransactionProviderArrangementMokkeryImpl : CryptoTransactionProviderArrangement {
-
-    override val proteusContext: ProteusCoreCryptoContext = mokkeryMock()
-    override val mlsContext: MlsCoreCryptoContext = mokkeryMock()
-    override val transactionContext: CryptoTransactionContext = mokkeryMock()
-
-    override val cryptoTransactionProvider: CryptoTransactionProvider = mokkeryMock()
-
-    init {
-        mokkeryEvery { transactionContext.proteus } returns proteusContext
-        mokkeryEvery { transactionContext.mls } returns mlsContext
-    }
-
     @Suppress("UNCHECKED_CAST")
     override suspend fun <R> withTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
         everySuspend {
-            cryptoTransactionProvider.transaction<R>(mokkeryAny(), mokkeryAny())
+            cryptoTransactionProvider.transaction<R>(any(), any())
         } calls {
             val block = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
             block(transactionContext)
@@ -129,7 +72,7 @@ internal class CryptoTransactionProviderArrangementMokkeryImpl : CryptoTransacti
         result: Either<CoreFailure, R>
     ): CryptoTransactionProviderArrangement = apply {
         everySuspend {
-            cryptoTransactionProvider.proteusTransaction<R>(mokkeryAny(), mokkeryAny())
+            cryptoTransactionProvider.proteusTransaction<R>(any(), any())
         } calls {
             val block = it.args[1] as suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, R>
             block(proteusContext)
@@ -140,14 +83,14 @@ internal class CryptoTransactionProviderArrangementMokkeryImpl : CryptoTransacti
         result: Either<CoreFailure, R>
     ): CryptoTransactionProviderArrangement = apply {
         everySuspend {
-            cryptoTransactionProvider.proteusTransaction<R>(mokkeryAny(), mokkeryAny())
+            cryptoTransactionProvider.proteusTransaction<R>(any(), any())
         } returns result
     }
 
     @Suppress("UNCHECKED_CAST")
     override suspend fun <R> withMLSTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
         everySuspend {
-            cryptoTransactionProvider.mlsTransaction<R>(mokkeryAny(), mokkeryAny())
+            cryptoTransactionProvider.mlsTransaction<R>(any(), any())
         } calls {
             val block = it.args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>
             block(mlsContext)

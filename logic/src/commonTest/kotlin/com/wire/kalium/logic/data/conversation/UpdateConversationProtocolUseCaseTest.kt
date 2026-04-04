@@ -72,7 +72,7 @@ internal class UpdateConversationProtocolUseCaseTest {
             .arrange()
 
         // When
-        val result = useCase(any(), eq(CONVERSATION_RESPONSE.id.toModel()), eq(Protocol.MLS),  eq(false))
+        val result = useCase(arrangement.transactionContext, CONVERSATION_RESPONSE.id.toModel(), Protocol.MLS, false)
 
         // Then
         assertEquals(Either.Right(true), result)
