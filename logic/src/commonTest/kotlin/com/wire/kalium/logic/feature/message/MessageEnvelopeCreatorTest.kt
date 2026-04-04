@@ -39,19 +39,17 @@ import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextA
 import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.EqualsMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -83,20 +81,20 @@ class MessageEnvelopeCreatorTest {
 
         creator.createOutgoingEnvelope(arrangement.proteusContext, recipients, TestMessage.TEXT_MESSAGE)
 
-        coVerify {
+        verifySuspend {
             arrangement.proteusContext.encryptBatched(
-                eq(plainData),
-                eq(sessionIds)
+                plainData,
+                sessionIds
             )
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -135,13 +133,13 @@ class MessageEnvelopeCreatorTest {
             }
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -182,13 +180,13 @@ class MessageEnvelopeCreatorTest {
             }
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -224,13 +222,13 @@ class MessageEnvelopeCreatorTest {
             }
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -272,13 +270,13 @@ class MessageEnvelopeCreatorTest {
                 }
             }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -296,13 +294,13 @@ class MessageEnvelopeCreatorTest {
                 assertEquals(exception, it.proteusException)
             }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -314,17 +312,17 @@ class MessageEnvelopeCreatorTest {
 
         creator.createOutgoingEnvelope(arrangement.proteusContext, TEST_RECIPIENTS, TestMessage.TEXT_MESSAGE)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusContext.encryptBatched(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -346,10 +344,10 @@ class MessageEnvelopeCreatorTest {
 
         creator.createOutgoingBroadcastEnvelope(arrangement.proteusContext, recipients, TestMessage.BROADCAST_MESSAGE)
 
-        coVerify {
+        verifySuspend {
             arrangement.proteusContext.encryptBatched(
-                eq(plainData),
-                eq(sessionIds)
+                plainData,
+                sessionIds
             )
         }
     }
@@ -371,7 +369,7 @@ class MessageEnvelopeCreatorTest {
 
         // Should only attempt to E2EE the external instructions, not the content itself
         val (arrangement, creator) = Arrangement()
-            .withEncryptBatchedReturning(sessionIds.associateWith { encryptedData }, EqualsMatcher(externalInstructionsArray))
+            .withEncryptBatchedReturning(sessionIds.associateWith { encryptedData }) { it.contentEquals(externalInstructionsArray) }
             .withEncodeReadableReturning(PlainMessageBlob(plainData))
             .withEncodeExternalReturning(PlainMessageBlob(externalInstructionsArray))
             .arrange()
@@ -413,7 +411,7 @@ class MessageEnvelopeCreatorTest {
 
             // Should only attempt to E2EE the external instructions, not the content itself
             val (arrangement, creator) = Arrangement()
-                .withEncryptBatchedReturning(sessionIds.associateWith { encryptedData }, EqualsMatcher(externalInstructionsArray))
+                .withEncryptBatchedReturning(sessionIds.associateWith { encryptedData }) { it.contentEquals(externalInstructionsArray) }
                 .withEncodeReadableReturning(PlainMessageBlob(plainData))
                 .withEncodeExternalReturning(PlainMessageBlob(externalInstructionsArray))
                 .arrange()
@@ -446,7 +444,7 @@ class MessageEnvelopeCreatorTest {
 
         // Should only attempt to E2EE the content itself
         val (arrangement, creator) = Arrangement()
-            .withEncryptBatchedReturning(sessionIds.associateWith { encryptedData }, EqualsMatcher(plainData))
+            .withEncryptBatchedReturning(sessionIds.associateWith { encryptedData }) { it.contentEquals(plainData) }
             .withEncodeReadableReturning(PlainMessageBlob(plainData))
             .arrange()
 
@@ -532,18 +530,18 @@ class MessageEnvelopeCreatorTest {
 
         creator.createOutgoingBroadcastEnvelope(arrangement.proteusContext, TEST_RECIPIENTS, TestMessage.BROADCAST_MESSAGE)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusContext.encryptBatched(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement : ProteusCoreCryptoContextArrangement by ProteusCoreCryptoContextArrangementImpl() {
         private val selfUserId: UserId = UserId("user-id", "domain")
 
-        val proteusClient: ProteusClient = mock(ProteusClient::class)
-        private val protoContentMapper: ProtoContentMapper = mock(ProtoContentMapper::class)
-        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-        val legalHoldStatusMapper: LegalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
+        val proteusClient: ProteusClient = mock(mode = MockMode.autoUnit)
+        private val protoContentMapper: ProtoContentMapper = mock(mode = MockMode.autoUnit)
+        val conversationRepository: ConversationRepository = mock(mode = MockMode.autoUnit)
+        val legalHoldStatusMapper: LegalHoldStatusMapper = mock(mode = MockMode.autoUnit)
 
         val messageEnvelopeCreator: MessageEnvelopeCreator = MessageEnvelopeCreatorImpl(
             conversationRepository = conversationRepository,
@@ -552,14 +550,15 @@ class MessageEnvelopeCreatorTest {
             protoContentMapper = protoContentMapper
         )
 
-        suspend fun withEncryptBatchedReturning(expected: Map<CryptoSessionId, ByteArray>,
-                                                message: Matcher<ByteArray> = AnyMatcher(valueOf())
-                                                ) = apply {
-            coEvery { proteusContext.encryptBatched(matches { message.matches(it) }, any()) } returns expected
+        fun withEncryptBatchedReturning(
+            expected: Map<CryptoSessionId, ByteArray>,
+            message: (ByteArray) -> Boolean = { true }
+        ) = apply {
+            everySuspend { proteusContext.encryptBatched(matches { message(it) }, any()) } returns expected
         }
 
-        suspend fun withEncryptBatchedThrowing(exception: Throwable) = apply {
-            coEvery { proteusContext.encryptBatched(any(), any()) } throws exception
+        fun withEncryptBatchedThrowing(exception: Throwable) = apply {
+            everySuspend { proteusContext.encryptBatched(any(), any()) } throws exception
         }
 
         fun withEncodeReadableReturning(blob: PlainMessageBlob) = apply {
@@ -567,12 +566,12 @@ class MessageEnvelopeCreatorTest {
         }
 
         fun withEncodeExternalReturning(blob: PlainMessageBlob) = apply {
-            every { protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.ExternalMessageInstructions })} returns blob
+            every { protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.ExternalMessageInstructions }) } returns blob
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
             runBlocking { block() }
-            coEvery { conversationRepository.observeLegalHoldStatus(any()) } returns flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED))
+            everySuspend { conversationRepository.observeLegalHoldStatus(any()) } returns flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED))
             every { legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any()) } returns Conversation.LegalHoldStatus.DISABLED
 
             this to messageEnvelopeCreator
