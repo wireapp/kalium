@@ -26,14 +26,10 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
-import dev.mokkery.every as mokkeryEvery
+import dev.mokkery.every
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any as mokkeryAny
-import dev.mokkery.mock as mokkeryMock
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 
 internal interface CryptoTransactionProviderArrangement {
     val cryptoTransactionProvider: CryptoTransactionProvider
@@ -106,35 +102,35 @@ internal class CryptoTransactionProviderArrangementImpl : CryptoTransactionProvi
 
 internal class CryptoTransactionProviderArrangementMockativeImpl : CryptoTransactionProviderArrangement {
 
-    override val proteusContext: ProteusCoreCryptoContext = mock(ProteusCoreCryptoContext::class)
-    override val mlsContext: MlsCoreCryptoContext = mock(MlsCoreCryptoContext::class)
-    override val transactionContext: CryptoTransactionContext = mock(CryptoTransactionContext::class)
+    override val proteusContext: ProteusCoreCryptoContext = mock(mode = MockMode.autoUnit)
+    override val mlsContext: MlsCoreCryptoContext = mock(mode = MockMode.autoUnit)
+    override val transactionContext: CryptoTransactionContext = mock(mode = MockMode.autoUnit)
 
-    override val cryptoTransactionProvider: CryptoTransactionProvider = mock(CryptoTransactionProvider::class)
+    override val cryptoTransactionProvider: CryptoTransactionProvider = mock()
 
     init {
         every { transactionContext.proteus } returns proteusContext
         every { transactionContext.mls } returns mlsContext
     }
 
+    @Suppress("UNCHECKED_CAST")
     override suspend fun <R> withTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
-        coEvery {
+        everySuspend {
             cryptoTransactionProvider.transaction<R>(any(), any())
-        }.invokes { args ->
-            @Suppress("UNCHECKED_CAST")
-            val block = args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
+        } calls {
+            val block = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
             block(transactionContext)
         }
     }
 
+    @Suppress("UNCHECKED_CAST")
     override suspend fun <R> withProteusTransactionReturning(
         result: Either<CoreFailure, R>
     ): CryptoTransactionProviderArrangement = apply {
-        coEvery {
+        everySuspend {
             cryptoTransactionProvider.proteusTransaction<R>(any(), any())
-        }.invokes { args ->
-            @Suppress("UNCHECKED_CAST")
-            val block = args[1] as suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, R>
+        } calls {
+            val block = it.args[1] as suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, R>
             block(proteusContext)
         }
     }
@@ -142,17 +138,17 @@ internal class CryptoTransactionProviderArrangementMockativeImpl : CryptoTransac
     override suspend fun <R> withProteusTransactionResultOnly(
         result: Either<CoreFailure, R>
     ): CryptoTransactionProviderArrangement = apply {
-        coEvery {
+        everySuspend {
             cryptoTransactionProvider.proteusTransaction<R>(any(), any())
-        }.returns(result)
+        } returns result
     }
 
+    @Suppress("UNCHECKED_CAST")
     override suspend fun <R> withMLSTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
-        coEvery {
+        everySuspend {
             cryptoTransactionProvider.mlsTransaction<R>(any(), any())
-        }.invokes { args ->
-            @Suppress("UNCHECKED_CAST")
-            val block = args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>
+        } calls {
+            val block = it.args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>
             block(mlsContext)
         }
     }
