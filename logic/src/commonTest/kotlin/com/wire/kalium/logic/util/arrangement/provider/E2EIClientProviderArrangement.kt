@@ -35,11 +35,8 @@ import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.WireIdentity
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any as mokkeryAny
-import dev.mokkery.mock as mokkeryMock
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 
 internal interface E2EIClientProviderArrangement {
 
@@ -69,99 +66,41 @@ internal interface E2EIClientProviderArrangement {
 }
 
 internal class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
-    override val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
-    override val e2eiClient: E2EIClient = mock(E2EIClient::class)
-    override val userRepository: UserRepository = mock(UserRepository::class)
-    override val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-    override val coreCryptoCentral = mock(CoreCryptoCentral::class)
-    override val mlsContext: MlsCoreCryptoContext = mock(MlsCoreCryptoContext::class)
-    override val mlsClient: MLSClient = DummyMLSClient(mlsContext)
-
-    override suspend fun withGettingCoreCryptoSuccessful() {
-        coEvery {
-            mlsClientProvider.getCoreCrypto(any())
-        }.returns(Either.Right(coreCryptoCentral))
-    }
-
-    override suspend fun withGetNewAcmeEnrollmentSuccessful() {
-        coEvery {
-            coreCryptoCentral.newAcmeEnrollment(any(), any(), any(), any(), any(), any())
-        }.returns(e2eiClient)
-    }
-
-    override suspend fun withGetMLSClientSuccessful() {
-        coEvery {
-            mlsClientProvider.getMLSClient(any())
-        }.returns(Either.Right(mlsClient))
-    }
-
-    override suspend fun withE2EINewActivationEnrollmentSuccessful() {
-        coEvery {
-            mlsContext.e2eiNewActivationEnrollment(any(), any(), any(), any())
-        }.returns(e2eiClient)
-    }
-    override suspend fun withE2EINewRotationEnrollmentSuccessful() {
-        coEvery {
-            mlsContext.e2eiNewRotateEnrollment(any(), any(), any(), any())
-        }.returns(e2eiClient)
-    }
-
-    override suspend fun withE2EIEnabled(isEnabled: Boolean) {
-        coEvery {
-            mlsContext.isE2EIEnabled()
-        }.returns(isEnabled)
-    }
-
-    override suspend fun withSelfUser(result: Either<StorageFailure, SelfUser>) {
-        coEvery {
-            userRepository.getSelfUser()
-        }.returns(result)
-    }
-
-    override suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
-        coEvery {
-            mlsClientProvider.getOrFetchMLSConfig()
-        }.returns(result.right())
-    }
-
-}
-
-internal class E2EIClientProviderArrangementMokkeryImpl : E2EIClientProviderArrangement {
-    override val mlsClientProvider: MLSClientProvider = mokkeryMock<MLSClientProvider>()
-    override val e2eiClient: E2EIClient = mokkeryMock<E2EIClient>()
-    override val userRepository: UserRepository = mokkeryMock<UserRepository>()
-    override val currentClientIdProvider: CurrentClientIdProvider = mokkeryMock<CurrentClientIdProvider>()
-    override val coreCryptoCentral: CoreCryptoCentral = mokkeryMock<CoreCryptoCentral>()
-    override val mlsContext: MlsCoreCryptoContext = mokkeryMock<MlsCoreCryptoContext>()
+    override val mlsClientProvider: MLSClientProvider = mock<MLSClientProvider>()
+    override val e2eiClient: E2EIClient = mock<E2EIClient>()
+    override val userRepository: UserRepository = mock<UserRepository>()
+    override val currentClientIdProvider: CurrentClientIdProvider = mock<CurrentClientIdProvider>()
+    override val coreCryptoCentral: CoreCryptoCentral = mock<CoreCryptoCentral>()
+    override val mlsContext: MlsCoreCryptoContext = mock<MlsCoreCryptoContext>()
     override val mlsClient: MLSClient = DummyMLSClient(mlsContext)
 
     override suspend fun withGettingCoreCryptoSuccessful() {
         everySuspend {
-            mlsClientProvider.getCoreCrypto(mokkeryAny())
+            mlsClientProvider.getCoreCrypto(any())
         } returns Either.Right(coreCryptoCentral)
     }
 
     override suspend fun withGetNewAcmeEnrollmentSuccessful() {
         everySuspend {
-            coreCryptoCentral.newAcmeEnrollment(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny())
+            coreCryptoCentral.newAcmeEnrollment(any(), any(), any(), any(), any(), any())
         } returns e2eiClient
     }
 
     override suspend fun withGetMLSClientSuccessful() {
         everySuspend {
-            mlsClientProvider.getMLSClient(mokkeryAny())
+            mlsClientProvider.getMLSClient(any())
         } returns Either.Right(mlsClient)
     }
 
     override suspend fun withE2EINewActivationEnrollmentSuccessful() {
         everySuspend {
-            mlsContext.e2eiNewActivationEnrollment(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny())
+            mlsContext.e2eiNewActivationEnrollment(any(), any(), any(), any())
         } returns e2eiClient
     }
 
     override suspend fun withE2EINewRotationEnrollmentSuccessful() {
         everySuspend {
-            mlsContext.e2eiNewRotateEnrollment(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny())
+            mlsContext.e2eiNewRotateEnrollment(any(), any(), any(), any())
         } returns e2eiClient
     }
 

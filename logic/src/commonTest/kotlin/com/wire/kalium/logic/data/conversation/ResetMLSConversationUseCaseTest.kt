@@ -23,6 +23,14 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.GroupID
@@ -32,16 +40,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -61,9 +59,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -77,9 +75,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -93,9 +91,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -109,9 +107,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -123,9 +121,9 @@ class ResetMLSConversationUseCaseTest {
 
         useCase(TEST_CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasInvoked()
+        }
     }
 
     @OptIn(ConversationPersistenceApi::class)
@@ -253,9 +251,9 @@ class ResetMLSConversationUseCaseTest {
 
         useCase(TEST_CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -267,13 +265,13 @@ class ResetMLSConversationUseCaseTest {
 
         useCase(TEST_CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversationUseCase(
                 conversationId = any(),
                 transactionContext = any(),
                 reason = eq(ConversationSyncReason.ConversationReset)
             )
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     @Test
@@ -285,9 +283,9 @@ class ResetMLSConversationUseCaseTest {
 
         useCase(TEST_CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -301,9 +299,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -317,9 +315,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -333,13 +331,13 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
-        }.wasInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -352,13 +350,13 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
-        }.wasInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -372,19 +370,19 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         private val TEST_USER_ID = UserId("testUser", "domain")
 
-        val userConfig = mock(UserConfigRepository::class)
-        val conversationRepository = mock(ConversationRepository::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val fetchConversationUseCase = mock(FetchConversationUseCase::class)
+        val userConfig: UserConfigRepository = mock(mode = MockMode.autoUnit)
+        val conversationRepository: ConversationRepository = mock(mode = MockMode.autoUnit)
+        val mlsConversationRepository: MLSConversationRepository = mock(mode = MockMode.autoUnit)
+        val fetchConversationUseCase: FetchConversationUseCase = mock(mode = MockMode.autoUnit)
         var kaliumConfigs = KaliumConfigs(isMlsResetEnabled = true)
         private var remoteConversationResponses: List<ConversationResponse> = listOf(TestConversation.CONVERSATION_RESPONSE.copy(
             protocol = ConvProtocol.MLS,
@@ -403,11 +401,11 @@ class ResetMLSConversationUseCaseTest {
         }
 
         suspend fun withRuntimeFlagDisabled() = apply {
-            coEvery { userConfig.isMlsConversationsResetEnabled() } returns false
+            everySuspend { userConfig.isMlsConversationsResetEnabled() } returns false
         }
 
         suspend fun withRuntimeFlagEnabled() = apply {
-            coEvery { userConfig.isMlsConversationsResetEnabled() } returns true
+            everySuspend { userConfig.isMlsConversationsResetEnabled() } returns true
         }
 
         suspend fun withFeatureDisabled() = apply {
@@ -421,6 +419,9 @@ class ResetMLSConversationUseCaseTest {
         }
 
         suspend fun withConversation(conversation: Conversation) = apply {
+            everySuspend {
+                conversationRepository.getConversationById(any())
+            } returns conversation.right()
             this.conversations = listOf(conversation)
         }
 
@@ -441,7 +442,7 @@ class ResetMLSConversationUseCaseTest {
         }
 
         suspend fun withLeaveGroupFailing() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.leaveGroup(any(), any())
             } returns CoreFailure.Unknown(RuntimeException("Leave group failed")).left()
         }
@@ -452,12 +453,11 @@ class ResetMLSConversationUseCaseTest {
             withMLSTransactionReturning(Either.Right(Unit))
             withTransactionReturning(Either.Right(Unit))
 
-
-            coEvery {
+            everySuspend {
                 mlsContext.conversationEpoch(any())
             } returns 15UL
 
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationById(any())
             }.also {
                 if (conversations.size == 1) {
@@ -467,7 +467,7 @@ class ResetMLSConversationUseCaseTest {
                 }
             }
 
-            coEvery {
+            everySuspend {
                 conversationRepository.resetMlsConversation(any(), any())
             }.thenReturnSequentially(*resetConversationResults.toTypedArray())
 
@@ -481,19 +481,19 @@ class ResetMLSConversationUseCaseTest {
                 }
             }
 
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.leaveGroup(any(), any())
             } returns Unit.right()
 
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             } returns MLSAdditionResult(emptySet(), emptySet()).right()
 
-            coEvery {
+            everySuspend {
                 fetchConversationUseCase(any(), any(), reason = eq(ConversationSyncReason.ConversationReset))
             } returns Unit.right()
 
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationMembers(any())
             } returns listOf(UserId("test", "test@user")).right()
 
