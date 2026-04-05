@@ -27,34 +27,35 @@ import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
-import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.util.encodeBase64
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -72,9 +73,9 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldFail()
 
-        coVerify {
-            arrangement.conversationRepository.updateConversationGroupState(any(), any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.updateConversationGroupState(mokkeryAny(), mokkeryAny())
+        }
     }
 
     @Test
@@ -87,9 +88,9 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldFail()
 
-        coVerify {
-            arrangement.conversationRepository.updateConversationGroupState(any(), any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.updateConversationGroupState(mokkeryAny(), mokkeryAny())
+        }
     }
 
     @Test
@@ -104,9 +105,9 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
-        coVerify {
-            arrangement.fetchConversationIfUnknown(any(), eq(CONVERSATION_ID), any())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.fetchConversationIfUnknown(mokkeryAny(), CONVERSATION_ID, mokkeryAny())
+        }
     }
 
     @Test
@@ -121,12 +122,12 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateConversationGroupState(
-                eq(GroupID(MLS_GROUP_ID)),
-                eq(Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
+                GroupID(MLS_GROUP_ID),
+                Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -142,9 +143,9 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
-        coVerify {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), eq(CONVERSATION_ONE_ONE.otherUser), any())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(mokkeryAny(), CONVERSATION_ONE_ONE.otherUser, mokkeryAny())
+        }
     }
 
     @Test
@@ -159,9 +160,9 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
-        coVerify {
-            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(mokkeryAny(), mokkeryAny(), mokkeryAny())
+        }
     }
 
     @Test
@@ -209,9 +210,9 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
 
-        coVerify {
-            arrangement.refillKeyPackagesUseCase.invoke(any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.refillKeyPackagesUseCase.invoke(mokkeryAny())
+        }
     }
 
     @Test
@@ -226,9 +227,9 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
 
-        coVerify {
-            arrangement.refillKeyPackagesUseCase.invoke(any())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.refillKeyPackagesUseCase.invoke(mokkeryAny())
+        }
     }
 
     @Test
@@ -245,17 +246,17 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
 
-        coVerify {
-            arrangement.fetchConversationIfUnknown(any(), eq(CONVERSATION_ID), any())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.fetchConversationIfUnknown(mokkeryAny(), CONVERSATION_ID, mokkeryAny())
+        }
 
-        coVerify {
-            arrangement.checkRevocationList.check(any(), any())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.checkRevocationList.check(mokkeryAny(), mokkeryAny())
+        }
 
-        coVerify {
-            arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.certificateRevocationListRepository.addOrUpdateCRL(mokkeryAny(), mokkeryAny())
+        }
     }
 
     @Test
@@ -272,13 +273,13 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
-        coVerify {
-            arrangement.mlsContext.wipeConversation(any())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsContext.wipeConversation(mokkeryAny())
+        }
 
-        coVerify {
-            arrangement.mlsContext.processWelcomeMessage(any())
-        }.wasInvoked(exactly = twice)
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.mlsContext.processWelcomeMessage(mokkeryAny())
+        }
     }
 
     @Test
@@ -303,13 +304,13 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
-        coVerify {
-            arrangement.joinExistingMLSConversation.invoke(any(), any(), any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.joinExistingMLSConversation.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny())
+        }
 
-        coVerify {
-            arrangement.conversationRepository.updateConversationGroupState(any(), any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.updateConversationGroupState(mokkeryAny(), mokkeryAny())
+        }
     }
 
     @Test
@@ -334,25 +335,23 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
-        coVerify {
-            arrangement.joinExistingMLSConversation.invoke(any(), eq(CONVERSATION_ID), any())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversation.invoke(mokkeryAny(), CONVERSATION_ID, mokkeryAny())
+        }
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        FetchConversationIfUnknownUseCaseArrangement by FetchConversationIfUnknownUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
-        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
-        val refillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
-        val checkRevocationList = mock(RevocationListChecker::class)
-        val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
-        val joinExistingMLSConversation = mock(JoinExistingMLSConversationUseCase::class)
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val conversationRepository = mock<ConversationRepository>()
+        val fetchConversationIfUnknown = mock<FetchConversationIfUnknownUseCase>()
+        val oneOnOneResolver = mock<OneOnOneResolver>()
+        val refillKeyPackagesUseCase = mock<RefillKeyPackagesUseCase>()
+        val checkRevocationList = mock<RevocationListChecker>()
+        val certificateRevocationListRepository = mock<CertificateRevocationListRepository>(mode = MockMode.autoUnit)
+        val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>()
 
         suspend fun withMLSClientProcessingOfWelcomeMessageFailsWith(exception: Exception) = apply {
-            coEvery {
-                mlsContext.processWelcomeMessage(any())
-            }.throws(exception)
+            everySuspend { mlsContext.processWelcomeMessage(mokkeryAny()) } throws exception
         }
 
         suspend fun withMLSClientProcessingOfWelcomeMessageFailingOnceWithConversationAlreadyExistsThenSuccess(
@@ -360,9 +359,7 @@ class MLSWelcomeEventHandlerTest {
             welcomeBundle: WelcomeBundle = WELCOME_BUNDLE
         ) = apply {
             var callCount = 0
-            coEvery {
-                mlsContext.processWelcomeMessage(any())
-            }.invokes {
+            everySuspend { mlsContext.processWelcomeMessage(mokkeryAny()) } calls {
                 callCount += 1
                 if (callCount == callCountToFail) {
                     throw CommonizedMLSException(
@@ -375,39 +372,69 @@ class MLSWelcomeEventHandlerTest {
         }
 
         suspend fun withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(welcomeBundle: WelcomeBundle = WELCOME_BUNDLE) = apply {
-            coEvery {
-                mlsContext.processWelcomeMessage(any())
-            }.returns(welcomeBundle)
+            everySuspend { mlsContext.processWelcomeMessage(mokkeryAny()) } returns welcomeBundle
         }
 
         suspend fun withWipeConversationReturningSuccessfully() = apply {
-            coEvery {
-                mlsContext.wipeConversation(any())
-            }.returns(Unit)
+            everySuspend { mlsContext.wipeConversation(mokkeryAny()) } returns Unit
         }
 
         suspend fun withMLSConversationExists(exists: Boolean) = apply {
-            coEvery {
-                mlsContext.conversationExists(any())
-            }.returns(exists)
+            everySuspend { mlsContext.conversationExists(mokkeryAny()) } returns exists
+        }
+
+        suspend fun withFetchConversationIfUnknownFailingWith(coreFailure: CoreFailure) = apply {
+            everySuspend {
+                fetchConversationIfUnknown.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns Either.Left(coreFailure)
+        }
+
+        suspend fun withFetchConversationIfUnknownSucceeding() = apply {
+            everySuspend {
+                fetchConversationIfUnknown.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withUpdateGroupStateReturning(result: Either<StorageFailure, Unit>) = apply {
+            everySuspend {
+                conversationRepository.updateConversationGroupState(mokkeryAny(), mokkeryAny())
+            } returns result
+        }
+
+        suspend fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>) = apply {
+            everySuspend {
+                conversationRepository.observeConversationDetailsById(mokkeryAny())
+            } returns flowOf(*results)
+        }
+
+        suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) = apply {
+            everySuspend {
+                conversationRepository.getConversationProtocolInfo(mokkeryAny())
+            } returns result
+        }
+
+        suspend fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, com.wire.kalium.logic.data.id.ConversationId>) = apply {
+            everySuspend {
+                oneOnOneResolver.resolveOneOnOneConversationWithUser(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns result
         }
 
         suspend fun withJoinExistingMLSConversationReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
-                joinExistingMLSConversation.invoke(any(), any(), any())
-            }.returns(result)
+            everySuspend {
+                joinExistingMLSConversation.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns result
         }
 
-        suspend fun withCheckRevocationListResult() {
-            coEvery {
-                checkRevocationList.check(any(), any())
-            }.returns(Either.Right(1uL))
+        suspend fun withCheckRevocationListResult() = apply {
+            everySuspend {
+                checkRevocationList.check(mokkeryAny(), mokkeryAny())
+            } returns Either.Right(1uL)
         }
 
         suspend fun withRefillKeyPackagesReturning(result: RefillKeyPackagesResult) = apply {
-            coEvery {
-                refillKeyPackagesUseCase.invoke(any())
-            }.returns(result)
+            everySuspend {
+                refillKeyPackagesUseCase.invoke(mokkeryAny())
+            } returns result
         }
 
         suspend fun arrange() = run {

@@ -30,10 +30,12 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,7 +49,9 @@ class RepairFaultyRemovalKeysUseCaseTest {
 
         val result = useCase.invoke(TargetedRepairParam("wire.com", listOf("somekey")))
 
-        coVerify { arrangement.conversationRepository.getMLSConversationsByDomain(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.conversationRepository.getMLSConversationsByDomain(mokkeryAny())
+        }
         assertEquals(RepairResult.RepairNotNeeded, result)
     }
 
@@ -59,7 +63,9 @@ class RepairFaultyRemovalKeysUseCaseTest {
 
         val result = useCase.invoke(TargetedRepairParam("domain", listOf("somekey")))
 
-        coVerify { arrangement.conversationRepository.getMLSConversationsByDomain(any()) }.wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.getMLSConversationsByDomain(mokkeryAny())
+        }
         assertEquals(RepairResult.NoConversationsToRepair, result)
     }
 
@@ -73,8 +79,12 @@ class RepairFaultyRemovalKeysUseCaseTest {
 
         val result = useCase.invoke(TargetedRepairParam("domain", FAULTY_KEY))
 
-        coVerify { arrangement.conversationRepository.getMLSConversationsByDomain(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.resetMLSConversationUseCase(any(), any()) }.wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.getMLSConversationsByDomain(mokkeryAny())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.resetMLSConversationUseCase(mokkeryAny(), mokkeryAny())
+        }
         assertIs<RepairResult.RepairPerformed>(result)
         assertEquals(1, result.successfullyRepairedConversations)
         assertEquals(0, result.failedRepairs.size)
@@ -90,30 +100,34 @@ class RepairFaultyRemovalKeysUseCaseTest {
 
         val result = useCase.invoke(TargetedRepairParam("domain", FAULTY_KEY))
 
-        coVerify { arrangement.conversationRepository.getMLSConversationsByDomain(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.resetMLSConversationUseCase(any(), any()) }.wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.getMLSConversationsByDomain(mokkeryAny())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.resetMLSConversationUseCase(mokkeryAny(), mokkeryAny())
+        }
         assertIs<RepairResult.RepairPerformed>(result)
         assertEquals(0, result.successfullyRepairedConversations)
         assertEquals(1, result.failedRepairs.size)
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
-        val conversationRepository = mock(ConversationRepository::class)
+        val conversationRepository = mock<ConversationRepository>()
 
-        val resetMLSConversationUseCase = mock(ResetMLSConversationUseCase::class)
+        val resetMLSConversationUseCase = mock<ResetMLSConversationUseCase>()
 
         suspend fun withMlsConversations(result: Either<CoreFailure, List<Conversation>>) = apply {
-            coEvery { conversationRepository.getMLSConversationsByDomain(any()) } returns result
+            everySuspend { conversationRepository.getMLSConversationsByDomain(mokkeryAny()) } returns result
         }
 
         @OptIn(ExperimentalStdlibApi::class)
         suspend fun withGetExternalKeyForConversation(key: String) = apply {
-            coEvery { mlsContext.getExternalSenders(any()) } returns
-                    ExternalSenderKey(key.hexToByteArray())
+            everySuspend { mlsContext.getExternalSenders(mokkeryAny()) } returns
+                ExternalSenderKey(key.hexToByteArray())
         }
 
         suspend fun withResetMLSConversationResult(result: ResetMLSConversationResult) = apply {
-            coEvery { resetMLSConversationUseCase.invoke(any(), any()) } returns result
+            everySuspend { resetMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny()) } returns result
         }
 
         suspend fun arrange(): Pair<Arrangement, RepairFaultyRemovalKeysUseCaseImpl> {

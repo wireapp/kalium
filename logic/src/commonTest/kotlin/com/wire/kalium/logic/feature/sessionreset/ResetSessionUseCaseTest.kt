@@ -28,12 +28,12 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -64,8 +64,12 @@ class ResetSessionUseCaseTest {
 
         val result = useCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
-        coVerify { arrangement.proteusContext.deleteSession(any()) }.wasInvoked(once)
-        coVerify { arrangement.sessionResetSender.invoke(any(), any(), any()) }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.proteusContext.deleteSession(mokkeryAny())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.sessionResetSender.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny())
+        }
         assertEquals(ResetSessionResult.Failure(failure), result)
     }
 
@@ -80,7 +84,9 @@ class ResetSessionUseCaseTest {
 
         val result = useCase(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
-        coVerify { arrangement.messageRepository.markProteusMessagesAsDecryptionResolved(any(), any()) }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.markProteusMessagesAsDecryptionResolved(mokkeryAny(), mokkeryAny())
+        }
         assertEquals(ResetSessionResult.Failure(failure), result)
     }
 
@@ -104,22 +110,22 @@ class ResetSessionUseCaseTest {
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
-        val sessionResetSender = mock(SessionResetSender::class)
-        val messageRepository = mock(MessageRepository::class)
+        val sessionResetSender = mock<SessionResetSender>()
+        val messageRepository = mock<MessageRepository>()
         val idMapper = IdMapper()
 
         suspend fun withSessionResetReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { sessionResetSender.invoke(any(), any(), any()) } returns result
+            everySuspend { sessionResetSender.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny()) } returns result
         }
 
         suspend fun withMarkProteusMessagesAsDecryptionResolvedReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
-                messageRepository.markProteusMessagesAsDecryptionResolved(any(), any())
+            everySuspend {
+                messageRepository.markProteusMessagesAsDecryptionResolved(mokkeryAny(), mokkeryAny())
             } returns result
         }
 
         suspend fun withDeleteSession(): Arrangement = apply {
-            coEvery { proteusContext.deleteSession(any()) } returns Unit
+            everySuspend { proteusContext.deleteSession(mokkeryAny()) } returns Unit
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit) = let {

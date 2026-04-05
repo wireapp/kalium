@@ -22,19 +22,19 @@ import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -56,9 +56,9 @@ class MLSConfigHandlerTest {
             ), duringSlowSync = false
         )
 
-        coVerify {
-            arrangement.userConfigRepository.setDefaultProtocol(eq(SupportedProtocol.MLS))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setDefaultProtocol(SupportedProtocol.MLS)
+        }
     }
 
     @Test
@@ -77,9 +77,9 @@ class MLSConfigHandlerTest {
             ), duringSlowSync = false
         )
 
-        coVerify {
-            arrangement.userConfigRepository.setDefaultProtocol(eq(SupportedProtocol.PROTEUS))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setDefaultProtocol(SupportedProtocol.PROTEUS)
+        }
     }
 
     @Test
@@ -98,9 +98,9 @@ class MLSConfigHandlerTest {
             ), duringSlowSync = false
         )
 
-        coVerify {
-            arrangement.userConfigRepository.setDefaultProtocol(eq(SupportedProtocol.PROTEUS))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setDefaultProtocol(SupportedProtocol.PROTEUS)
+        }
     }
 
     @Test
@@ -120,9 +120,9 @@ class MLSConfigHandlerTest {
             ), duringSlowSync = false
         )
 
-        coVerify {
-            arrangement.userConfigRepository.setMLSEnabled(eq(true))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setMLSEnabled(true)
+        }
     }
 
     @Test
@@ -141,9 +141,9 @@ class MLSConfigHandlerTest {
             ), duringSlowSync = false
         )
 
-        coVerify {
-            arrangement.userConfigRepository.setMLSEnabled(eq(false))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setMLSEnabled(false)
+        }
     }
 
     @Test
@@ -163,9 +163,9 @@ class MLSConfigHandlerTest {
             ), duringSlowSync = false
         )
 
-        coVerify {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), eq(true))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes(mokkeryAny(), true)
+        }
     }
 
     @Test
@@ -185,9 +185,9 @@ class MLSConfigHandlerTest {
             ), duringSlowSync = true
         )
 
-        coVerify {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), eq(false))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes(mokkeryAny(), false)
+        }
     }
 
 
@@ -210,12 +210,12 @@ class MLSConfigHandlerTest {
             transactionContext = arrangement.transactionContext
         )
 
-        coVerify {
-            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), eq(true))
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes(arrangement.transactionContext, true)
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.cryptoTransactionProvider.transaction<Any>(mokkeryAny(), mokkeryAny())
+        }
     }
 
     @Test
@@ -243,25 +243,66 @@ class MLSConfigHandlerTest {
             duringSlowSync = true,
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setSupportedCipherSuite(
-                eq(
-                    SupportedCipherSuite(
-                        supported = listOf(
-                            CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-                            CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
-                        ),
-                        default = CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
-                    )
+                SupportedCipherSuite(
+                    supported = listOf(
+                        CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                        CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+                    ),
+                    default = CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
                 )
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
-        UpdateSupportedProtocolsAndResolveOneOnOnesArrangement by UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val userConfigRepository = mock<UserConfigRepository>()
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>()
+
+        suspend fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>) = apply {
+            everySuspend {
+                userConfigRepository.getSupportedProtocols()
+            } returns result
+        }
+
+        suspend fun withSetSupportedProtocolsSuccessful() = apply {
+            everySuspend {
+                userConfigRepository.setSupportedProtocols(mokkeryAny())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withSetDefaultProtocolSuccessful() = apply {
+            everySuspend {
+                userConfigRepository.setDefaultProtocol(mokkeryAny())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withSetMLSEnabledSuccessful() = apply {
+            everySuspend {
+                userConfigRepository.setMLSEnabled(mokkeryAny())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>) = apply {
+            everySuspend {
+                userConfigRepository.isMLSEnabled()
+            } returns result
+        }
+
+        suspend fun withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful() = apply {
+            everySuspend {
+                updateSupportedProtocolsAndResolveOneOnOnes(mokkeryAny(), mokkeryAny())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>) = apply {
+            everySuspend {
+                userConfigRepository.setSupportedCipherSuite(mokkeryAny())
+            } returns result
+        }
+
         suspend fun arrange() = run {
             withTransactionReturning(Either.Right(Unit))
             runBlocking { block() }
@@ -276,7 +317,6 @@ class MLSConfigHandlerTest {
     private companion object {
         suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
-        val SELF_USER_ID = TestUser.USER_ID
         val MLS_CONFIG = MLSModel(
             defaultProtocol = SupportedProtocol.MLS,
             supportedProtocols = setOf(SupportedProtocol.PROTEUS),

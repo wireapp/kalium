@@ -36,13 +36,13 @@ import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageRef
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.utils.NetworkResponse
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.util.encodeBase64
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,9 +59,9 @@ internal class KeyPackageRepositoryTest {
 
         keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 1)
 
-        coVerify {
-            arrangement.keyPackageApi.uploadKeyPackages(eq(Arrangement.SELF_CLIENT_ID.value), eq(Arrangement.KEY_PACKAGES_BASE64))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.keyPackageApi.uploadKeyPackages(Arrangement.SELF_CLIENT_ID.value, Arrangement.KEY_PACKAGES_BASE64)
+        }
     }
 
     @Test
@@ -170,53 +170,51 @@ internal class KeyPackageRepositoryTest {
     }
 
     class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
-        val keyPackageApi = mock(KeyPackageApi::class)
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+        val keyPackageApi = mock<KeyPackageApi>()
+        val currentClientIdProvider = mock<CurrentClientIdProvider>()
 
         suspend fun withCurrentClientId() = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(Either.Right(SELF_CLIENT_ID))
+            } returns Either.Right(SELF_CLIENT_ID)
         }
 
         suspend fun withGeneratingKeyPackagesSuccessful() = apply {
-            coEvery {
-                mlsContext.generateKeyPackages(eq(1))
-            }.returns(KEY_PACKAGES)
+            everySuspend {
+                mlsContext.generateKeyPackages(1)
+            } returns KEY_PACKAGES
         }
 
         suspend fun withUploadingKeyPackagesSuccessful() = apply {
-            coEvery {
-                keyPackageApi.uploadKeyPackages(any(), any())
-            }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
+            everySuspend {
+                keyPackageApi.uploadKeyPackages(mokkeryAny(), mokkeryAny())
+            } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 
         suspend fun withGetAvailableKeyPackageCountSuccessful() = apply {
-            coEvery {
-                keyPackageApi.getAvailableKeyPackageCount(eq(SELF_CLIENT_ID.value), any())
-            }.returns(NetworkResponse.Success(KEY_PACKAGE_COUNT_DTO, mapOf(), 200))
+            everySuspend {
+                keyPackageApi.getAvailableKeyPackageCount(SELF_CLIENT_ID.value, mokkeryAny())
+            } returns NetworkResponse.Success(KEY_PACKAGE_COUNT_DTO, mapOf(), 200)
         }
 
         suspend fun withClaimKeyPackagesSuccessful(userId: UserId) = apply {
-            coEvery {
+            everySuspend {
                 keyPackageApi.claimKeyPackages(
-                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                    KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag)
                 )
-            }.returns(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
+            } returns NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200)
         }
 
         suspend fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
-            coEvery {
+            everySuspend {
                 keyPackageApi.claimKeyPackages(
-                    eq(
-                        KeyPackageApi.Param.SkipOwnClient(
-                            userId.toApi(),
-                            SELF_CLIENT_ID.value,
-                            CIPHER_SUITE.tag
-                        )
+                    KeyPackageApi.Param.SkipOwnClient(
+                        userId.toApi(),
+                        SELF_CLIENT_ID.value,
+                        CIPHER_SUITE.tag
                     )
                 )
-            }.returns(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
+            } returns NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200)
         }
 
         fun arrange() = this to KeyPackageDataSource(currentClientIdProvider, keyPackageApi, SELF_USER_ID)

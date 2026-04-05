@@ -26,10 +26,11 @@ import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.legalhold.LegalHoldRequest
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.every as mokkeryEvery
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.mock as mokkeryMock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -89,30 +90,30 @@ class ObserveLegalHoldRequestUseCaseTest {
         }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository = mokkeryMock<UserConfigRepository>()
 
         fun withUserConfigRepositorySuccess() = apply {
-            every {
+            mokkeryEvery {
                 userConfigRepository.observeLegalHoldRequest()
-            }.returns(flowOf(Either.Right(legalHoldRequest)))
+            } returns flowOf(Either.Right(legalHoldRequest))
         }
 
         fun withUserConfigRepositoryDataNotFound() = apply {
-            every {
+            mokkeryEvery {
                 userConfigRepository.observeLegalHoldRequest()
-            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
+            } returns flowOf(Either.Left(StorageFailure.DataNotFound))
         }
 
         fun withUserConfigRepositoryFailure() = apply {
-            every {
+            mokkeryEvery {
                 userConfigRepository.observeLegalHoldRequest()
-            }.returns(flowOf(Either.Left(StorageFailure.Generic(IllegalStateException()))))
+            } returns flowOf(Either.Left(StorageFailure.Generic(IllegalStateException())))
         }
 
         suspend fun withPreKeyRepositorySuccess() = apply {
-            coEvery {
-                proteusContext.getFingerprintFromPreKey(any())
-            }.returns(fingerPrint)
+            everySuspend {
+                proteusContext.getFingerprintFromPreKey(mokkeryAny())
+            } returns fingerPrint
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit) = let {
