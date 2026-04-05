@@ -135,14 +135,14 @@ class ClientFingerprintUseCaseTest {
             transactionProvider = cryptoTransactionProvider
         )
 
-        suspend fun withRemoteFingerprintFailure(error: ProteusException) = apply {
+        fun withRemoteFingerprintFailure(error: ProteusException) = apply {
             everySuspend {
                 proteusContext.remoteFingerPrint(mokkeryAny())
             } throws error
         }
 
         private var getSessionCalled = 0
-        suspend fun withSessionNotFound(secondTimeResult: String) = apply {
+        fun withSessionNotFound(secondTimeResult: String) = apply {
             everySuspend { proteusContext.remoteFingerPrint(mokkeryAny()) } calls {
                 if (getSessionCalled == 0) {
                     getSessionCalled++
@@ -152,13 +152,13 @@ class ClientFingerprintUseCaseTest {
             }
         }
 
-        suspend fun withRemoteFingerprintSuccess(result: String) = apply {
+        fun withRemoteFingerprintSuccess(result: String) = apply {
             everySuspend {
                 proteusContext.remoteFingerPrint(mokkeryAny())
             } returns result
         }
 
-        suspend fun withEstablishSession(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
+        fun withEstablishSession(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
             everySuspend {
                 preKeyRepository.establishSessions(mokkeryAny(), mokkeryAny())
             } returns result
@@ -168,5 +168,6 @@ class ClientFingerprintUseCaseTest {
             runBlocking { block() }
             this to userCase
         }
+
     }
 }
