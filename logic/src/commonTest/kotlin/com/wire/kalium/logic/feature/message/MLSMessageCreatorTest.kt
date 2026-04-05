@@ -33,16 +33,16 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -66,21 +66,21 @@ class MLSMessageCreatorTest {
         creator.prepareMLSGroupAndCreateOutgoingMLSMessage(arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE)
             .shouldSucceed {}
 
-        coVerify {
-            arrangement.mlsContext.encryptMessage(eq(CRYPTO_GROUP_ID), eq(plainData))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsContext.encryptMessage(CRYPTO_GROUP_ID, plainData)
+        }
 
-        coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(GROUP_ID))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.commitPendingProposals(mokkeryAny(), GROUP_ID)
+        }
 
-        coVerify {
-            arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.observeLegalHoldStatus(mokkeryAny())
+        }
 
-        verify {
-            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }.wasInvoked(once)
+        verify(VerifyMode.exactly(1)) {
+            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(mokkeryAny(), mokkeryAny())
+        }
     }
 
     @Test
@@ -100,29 +100,29 @@ class MLSMessageCreatorTest {
         creator.prepareMLSGroupAndCreateOutgoingMLSMessage(arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE)
             .shouldSucceed {}
 
-        coVerify {
-            arrangement.joinExistingConversationUseCase(any(), eq(TestMessage.TEXT_MESSAGE.conversationId), any())
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingConversationUseCase(mokkeryAny(), TestMessage.TEXT_MESSAGE.conversationId, mokkeryAny())
+        }
 
-        coVerify {
-            arrangement.mlsContext.encryptMessage(eq(CRYPTO_GROUP_ID), eq(plainData))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsContext.encryptMessage(CRYPTO_GROUP_ID, plainData)
+        }
 
-        coVerify {
-            arrangement.conversationRepository.observeLegalHoldStatus(any())
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.observeLegalHoldStatus(mokkeryAny())
+        }
 
-        verify {
-            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-        }.wasInvoked(once)
+        verify(VerifyMode.exactly(1)) {
+            arrangement.legalHoldStatusMapper.mapLegalHoldConversationStatus(mokkeryAny(), mokkeryAny())
+        }
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val protoContentMapper = mock(ProtoContentMapper::class)
-        val conversationRepository = mock(ConversationRepository::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val joinExistingConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
-        val legalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val protoContentMapper = mock<ProtoContentMapper>()
+        val conversationRepository = mock<ConversationRepository>()
+        val mlsConversationRepository = mock<MLSConversationRepository>()
+        val joinExistingConversationUseCase = mock<JoinExistingMLSConversationUseCase>()
+        val legalHoldStatusMapper = mock<LegalHoldStatusMapper>()
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = apply {
             block()
@@ -138,44 +138,43 @@ class MLSMessageCreatorTest {
         }
 
         suspend fun withObserveLegalHoldStatus(result: Either<StorageFailure, Conversation.LegalHoldStatus>) = apply {
-            coEvery {
-                conversationRepository.observeLegalHoldStatus(any())
-            }.returns(flowOf(result))
+            everySuspend {
+                conversationRepository.observeLegalHoldStatus(mokkeryAny())
+            } returns flowOf(result)
         }
 
         fun withEncodeToProtobufReturning(plainData: ByteArray) = apply {
             every {
-                protoContentMapper.encodeToProtobuf(any())
-            }.returns(PlainMessageBlob(plainData))
+                protoContentMapper.encodeToProtobuf(mokkeryAny())
+            } returns PlainMessageBlob(plainData)
         }
 
         fun withMapLegalHoldConversationStatus(result: Conversation.LegalHoldStatus) = apply {
             every {
-                legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-            }.returns(result)
+                legalHoldStatusMapper.mapLegalHoldConversationStatus(mokkeryAny(), mokkeryAny())
+            } returns result
         }
 
         suspend fun withMLSEncryptMessage(data: ByteArray) = apply {
-            coEvery { mlsContext.encryptMessage(any(), any()) }
-                .returns(data)
+            everySuspend { mlsContext.encryptMessage(mokkeryAny(), mokkeryAny()) } returns data
         }
 
         suspend fun withCommitPendingProposals(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
-            coEvery {
-                mlsConversationRepository.commitPendingProposals(any(), any())
-            }.returns(result)
+            everySuspend {
+                mlsConversationRepository.commitPendingProposals(mokkeryAny(), mokkeryAny())
+            } returns result
         }
 
         suspend fun withMLSGroupConversationExisting(doesConversationExist: Boolean = true) = apply {
-            coEvery {
-                mlsContext.conversationExists(any())
-            }.returns(doesConversationExist)
+            everySuspend {
+                mlsContext.conversationExists(mokkeryAny())
+            } returns doesConversationExist
         }
 
         suspend fun withJoinExistingConversation(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
-            coEvery {
-                joinExistingConversationUseCase(any(), any(), any())
-            }.returns(result)
+            everySuspend {
+                joinExistingConversationUseCase(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns result
         }
 
     }

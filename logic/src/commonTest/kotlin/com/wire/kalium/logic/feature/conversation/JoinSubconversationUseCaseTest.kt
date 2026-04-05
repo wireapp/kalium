@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
@@ -40,13 +40,14 @@ import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.Test
@@ -65,11 +66,11 @@ class JoinSubconversationUseCaseTest {
 
             joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.establishMLSSubConversationGroup(
-                    any(), eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH.groupId)), any()
+                    mokkeryAny(), GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH.groupId), mokkeryAny()
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -83,11 +84,11 @@ class JoinSubconversationUseCaseTest {
 
             joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.joinGroupByExternalCommit(
-                    any(), eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)), any()
+                    mokkeryAny(), GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId), mokkeryAny()
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -101,13 +102,13 @@ class JoinSubconversationUseCaseTest {
 
             joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.subconversationRepository.insertSubconversation(
-                    eq(Arrangement.CONVERSATION_ID),
-                    eq(Arrangement.SUBCONVERSATION_ID),
-                    eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId))
+                    Arrangement.CONVERSATION_ID,
+                    Arrangement.SUBCONVERSATION_ID,
+                    GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -121,26 +122,24 @@ class JoinSubconversationUseCaseTest {
 
             joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.deleteSubconversation(
-                    eq(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.parentId),
-                    eq(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.id),
-                    eq(
-                        SubconversationDeleteRequest(
-                            Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.epoch,
-                            Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId
-                        )
+                    Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.parentId,
+                    Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.id,
+                    SubconversationDeleteRequest(
+                        Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.epoch,
+                        Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId
                     )
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.establishMLSSubConversationGroup(
-                    any(),
-                    eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId)),
-                    any(),
+                    mokkeryAny(),
+                    GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId),
+                    mokkeryAny(),
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -153,17 +152,17 @@ class JoinSubconversationUseCaseTest {
 
         joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
-                any(),
-                eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)),
-                any()
+                mokkeryAny(),
+                GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId),
+                mokkeryAny()
             )
-        }.wasInvoked(twice)
+        }
 
-        coVerify {
-            arrangement.cryptoTransactionProvider.mlsTransaction<Either<CoreFailure, Unit>>(eq("JoinSubconversation"), any())
-        }.wasInvoked(twice)
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.cryptoTransactionProvider.mlsTransaction<Either<CoreFailure, Unit>>("JoinSubconversation", mokkeryAny())
+        }
     }
 
     @Test
@@ -177,10 +176,10 @@ class JoinSubconversationUseCaseTest {
         joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldFail()
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val conversationApi = mock(ConversationApi::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val subconversationRepository = mock(SubconversationRepository::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val conversationApi = mock<ConversationApi>()
+        val mlsConversationRepository = mock<MLSConversationRepository>()
+        val subconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = this to JoinSubconversationUseCaseImpl(
             conversationApi,
@@ -192,39 +191,49 @@ class JoinSubconversationUseCaseTest {
         }
 
         suspend fun withEstablishMLSSubConversationGroupSuccessful() = apply {
-            coEvery {
-                mlsConversationRepository.establishMLSSubConversationGroup(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            everySuspend {
+                mlsConversationRepository.establishMLSSubConversationGroup(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns Either.Right(Unit)
         }
 
         suspend fun withJoinByExternalCommitSuccessful() = apply {
-            coEvery {
-                mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            everySuspend {
+                mlsConversationRepository.joinGroupByExternalCommit(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns Either.Right(Unit)
         }
 
         suspend fun withJoinByExternalCommitGroupReturning(vararg result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
-                mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
-            }.returnsMany(*result)
+            var callIndex = 0
+            everySuspend {
+                mlsConversationRepository.joinGroupByExternalCommit(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } calls {
+                result[callIndex++]
+            }
         }
 
         suspend fun withFetchingSubconversationGroupInfoSuccessful() = apply {
-            coEvery {
-                conversationApi.fetchSubconversationGroupInfo(any(), any())
-            }.returns(NetworkResponse.Success(PUBLIC_GROUP_STATE, mapOf(), 200))
+            everySuspend {
+                conversationApi.fetchSubconversationGroupInfo(CONVERSATION_ID.toApi(), SUBCONVERSATION_ID.toApi())
+            } returns NetworkResponse.Success(PUBLIC_GROUP_STATE, mapOf(), 200)
         }
 
         suspend fun withFetchingSubconversationDetails(response: SubconversationResponse) = apply {
-            coEvery {
-                conversationApi.fetchSubconversationDetails(any(), any())
-            }.returns(NetworkResponse.Success(response, emptyMap(), 200))
+            everySuspend {
+                conversationApi.fetchSubconversationDetails(CONVERSATION_ID.toApi(), SUBCONVERSATION_ID.toApi())
+            } returns NetworkResponse.Success(response, emptyMap(), 200)
         }
 
         suspend fun withDeleteSubconversationSuccessful() = apply {
-            coEvery {
-                conversationApi.deleteSubconversation(any(), any(), any())
-            }.returns(NetworkResponse.Success(Unit, emptyMap(), 200))
+            everySuspend {
+                conversationApi.deleteSubconversation(
+                    SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.parentId,
+                    SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.id,
+                    SubconversationDeleteRequest(
+                        SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.epoch,
+                        SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId
+                    )
+                )
+            } returns NetworkResponse.Success(Unit, emptyMap(), 200)
         }
 
         companion object {
