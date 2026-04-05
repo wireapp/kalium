@@ -15,6 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+import io.kayan.gradle.ExperimentalKayanGenerationApi
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 @Suppress("DSL_SCOPE_VIOLATION")
@@ -34,10 +35,16 @@ kaliumLibrary {
     }
 }
 
+@OptIn(ExperimentalKayanGenerationApi::class)
 kayan {
     inheritFromRoot()
     packageName.set("com.wire.kalium.logic.generated")
     className.set("KaliumLogicBuildConfig")
+    targets {
+        android()
+        jvm()
+        sourceSet(sourceSetName = "appleMain", targetName = "apple")
+    }
     schema {
         include("use_unified_core_crypto")
     }

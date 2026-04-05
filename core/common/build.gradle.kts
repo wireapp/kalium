@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+import io.kayan.gradle.ExperimentalKayanGenerationApi
+
 plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
@@ -25,10 +27,17 @@ kaliumLibrary {
     multiplatform()
 }
 
+@OptIn(ExperimentalKayanGenerationApi::class)
 kayan {
     inheritFromRoot()
     packageName.set("com.wire.kalium.core.common.generated")
     className.set("KaliumCoreCommonBuildConfig")
+    targets {
+        android()
+        jvm()
+        sourceSet(sourceSetName = "appleMain", targetName = "apple")
+        js()
+    }
     schema {
         include("use_unified_core_crypto")
     }

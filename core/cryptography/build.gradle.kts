@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 import com.wire.kalium.plugins.appleTargets
+import io.kayan.gradle.ExperimentalKayanGenerationApi
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -30,10 +31,17 @@ kaliumLibrary {
     }
 }
 
+@OptIn(ExperimentalKayanGenerationApi::class)
 kayan {
     inheritFromRoot()
     packageName.set("com.wire.kalium.cryptography.generated")
     className.set("KaliumCryptographyBuildConfig")
+    targets {
+        android()
+        jvm()
+        sourceSet(sourceSetName = "appleMain", targetName = "apple")
+        js()
+    }
     schema {
         include("use_unified_core_crypto")
     }
