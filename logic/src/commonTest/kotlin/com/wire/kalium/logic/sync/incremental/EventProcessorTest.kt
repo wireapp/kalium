@@ -30,7 +30,7 @@ import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangement
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldFail
 import io.mockative.any
 import io.mockative.coEvery
@@ -234,7 +234,7 @@ class EventProcessorTest {
     private class Arrangement(
         val processingScope: CoroutineScope
     ) : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val conversationEventReceiver = mock(ConversationEventReceiver::class)
         val userEventReceiver = mock(UserEventReceiver::class)

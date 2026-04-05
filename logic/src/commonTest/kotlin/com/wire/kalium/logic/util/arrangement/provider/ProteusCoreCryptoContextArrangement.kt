@@ -22,8 +22,11 @@ import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any
-import dev.mokkery.mock
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.mock as mokkeryMock
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.mock
 
 internal interface ProteusCoreCryptoContextArrangement {
     val proteusContext: ProteusCoreCryptoContext
@@ -36,24 +39,24 @@ internal interface ProteusCoreCryptoContextArrangement {
     suspend fun withDeleteSessionSuccess(): ProteusCoreCryptoContextArrangement
 }
 
-internal class ProteusCoreCryptoContextArrangementImpl : ProteusCoreCryptoContextArrangement {
+internal open class ProteusCoreCryptoContextArrangementMokkeryImpl : ProteusCoreCryptoContextArrangement {
 
-    override val proteusContext: ProteusCoreCryptoContext = mock()
+    override val proteusContext: ProteusCoreCryptoContext = mokkeryMock()
 
     override suspend fun withNewLastResortPreKeyReturning(result: PreKeyCrypto) = apply {
-        everySuspend { proteusContext.newLastResortPreKey() } returns  result
+        everySuspend { proteusContext.newLastResortPreKey() } returns result
     }
 
     override suspend fun withCreateSessionSuccess() = apply {
-        everySuspend { proteusContext.createSession(any(), any()) } returns Unit
+        everySuspend { proteusContext.createSession(mokkeryAny(), mokkeryAny()) } returns Unit
     }
 
     override suspend fun withCreateSessionThrowing(exception: Throwable) = apply {
-        everySuspend { proteusContext.createSession(any(), any()) } throws exception
+        everySuspend { proteusContext.createSession(mokkeryAny(), mokkeryAny()) } throws exception
     }
 
     override suspend fun withDoesSessionExistReturning(result: Boolean) = apply {
-        everySuspend { proteusContext.doesSessionExist(any()) } returns result
+        everySuspend { proteusContext.doesSessionExist(mokkeryAny()) } returns result
     }
 
     override suspend fun withGetLocalFingerprintReturning(fingerprint: String) = apply {
@@ -61,6 +64,37 @@ internal class ProteusCoreCryptoContextArrangementImpl : ProteusCoreCryptoContex
     }
 
     override suspend fun withDeleteSessionSuccess() = apply {
-        everySuspend { proteusContext.deleteSession(any()) } returns Unit
+        everySuspend { proteusContext.deleteSession(mokkeryAny()) } returns Unit
+    }
+}
+
+internal class ProteusCoreCryptoContextArrangementImpl : ProteusCoreCryptoContextArrangementMokkeryImpl()
+
+internal class ProteusCoreCryptoContextArrangementMockativeImpl : ProteusCoreCryptoContextArrangement {
+
+    override val proteusContext: ProteusCoreCryptoContext = mock(ProteusCoreCryptoContext::class)
+
+    override suspend fun withNewLastResortPreKeyReturning(result: PreKeyCrypto) = apply {
+        coEvery { proteusContext.newLastResortPreKey() }.returns(result)
+    }
+
+    override suspend fun withCreateSessionSuccess() = apply {
+        coEvery { proteusContext.createSession(any(), any()) }.returns(Unit)
+    }
+
+    override suspend fun withCreateSessionThrowing(exception: Throwable) = apply {
+        coEvery { proteusContext.createSession(any(), any()) }.throws(exception)
+    }
+
+    override suspend fun withDoesSessionExistReturning(result: Boolean) = apply {
+        coEvery { proteusContext.doesSessionExist(any()) }.returns(result)
+    }
+
+    override suspend fun withGetLocalFingerprintReturning(fingerprint: String) = apply {
+        coEvery { proteusContext.getLocalFingerprint() }.returns(fingerprint)
+    }
+
+    override suspend fun withDeleteSessionSuccess() = apply {
+        coEvery { proteusContext.deleteSession(any()) }.returns(Unit)
     }
 }

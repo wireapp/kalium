@@ -36,7 +36,7 @@ import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementIm
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.SubconversationRepositoryArrangement
@@ -289,7 +289,7 @@ class StaleEpochVerifierTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         SubconversationRepositoryArrangement by SubconversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl() {
         val fetchConversationUseCase = mock(FetchConversationUseCase::class)
 
