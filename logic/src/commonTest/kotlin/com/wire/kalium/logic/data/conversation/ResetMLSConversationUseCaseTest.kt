@@ -24,6 +24,7 @@ import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -34,12 +35,16 @@ import dev.mokkery.verifySuspend
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.feature.backup.UserId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.ConversationPersistenceApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -152,17 +157,17 @@ class ResetMLSConversationUseCaseTest {
 
         useCase(TEST_CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(15UL))
-        }.wasInvoked(exactly = 1)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.fetchConversation(eq(TEST_CONVERSATION_ID))
-        }.wasInvoked(exactly = 1)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(remoteEpoch))
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     @OptIn(ConversationPersistenceApi::class)
@@ -213,33 +218,33 @@ class ResetMLSConversationUseCaseTest {
 
         useCase(TEST_CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(15UL))
-        }.wasInvoked(exactly = 1)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(refreshedEpoch))
-        }.wasInvoked(exactly = 1)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.conversationRepository.fetchConversation(eq(TEST_CONVERSATION_ID))
-        }.wasInvoked(exactly = 2)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.resetMlsConversation(eq(GroupID(updatedGroupId)), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversationUseCase(
                 transactionContext = any(),
                 conversationId = eq(TEST_CONVERSATION_ID),
                 reason = eq(ConversationSyncReason.ConversationReset)
             )
-        }.wasInvoked(exactly = 1)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), eq(GroupID(updatedGroupId)), any(), any(), any())
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     @Test
@@ -400,32 +405,32 @@ class ResetMLSConversationUseCaseTest {
             kaliumConfigs = kaliumConfigs.copy(isMlsResetEnabled = true)
         }
 
-        suspend fun withRuntimeFlagDisabled() = apply {
+        fun withRuntimeFlagDisabled() = apply {
             everySuspend { userConfig.isMlsConversationsResetEnabled() } returns false
         }
 
-        suspend fun withRuntimeFlagEnabled() = apply {
+        fun withRuntimeFlagEnabled() = apply {
             everySuspend { userConfig.isMlsConversationsResetEnabled() } returns true
         }
 
-        suspend fun withFeatureDisabled() = apply {
+        fun withFeatureDisabled() = apply {
             withCompileTimeFlagEnabled()
             withRuntimeFlagDisabled()
         }
 
-        suspend fun withFeatureEnabled() = apply {
+        fun withFeatureEnabled() = apply {
             withCompileTimeFlagEnabled()
             withRuntimeFlagEnabled()
         }
 
-        suspend fun withConversation(conversation: Conversation) = apply {
+        fun withConversation(conversation: Conversation) = apply {
             everySuspend {
                 conversationRepository.getConversationById(any())
             } returns conversation.right()
             this.conversations = listOf(conversation)
         }
 
-        suspend fun withConversations(vararg conversations: Conversation) = apply {
+        fun withConversations(vararg conversations: Conversation) = apply {
             this.conversations = conversations.toList()
         }
 
@@ -441,7 +446,7 @@ class ResetMLSConversationUseCaseTest {
             resetConversationResults = results.toList()
         }
 
-        suspend fun withLeaveGroupFailing() = apply {
+        fun withLeaveGroupFailing() = apply {
             everySuspend {
                 mlsConversationRepository.leaveGroup(any(), any())
             } returns CoreFailure.Unknown(RuntimeException("Leave group failed")).left()
@@ -449,6 +454,9 @@ class ResetMLSConversationUseCaseTest {
 
         @OptIn(ConversationPersistenceApi::class)
         suspend fun arrange(): Pair<Arrangement, ResetMLSConversationUseCaseImpl> {
+            val conversationResults = conversations.map { it.right() }
+            val remoteConversationResults = remoteConversationResponses.map { it.right() }
+            var resetConversationResultIndex = 0
 
             withMLSTransactionReturning(Either.Right(Unit))
             withTransactionReturning(Either.Right(Unit))
@@ -460,24 +468,38 @@ class ResetMLSConversationUseCaseTest {
             everySuspend {
                 conversationRepository.getConversationById(any())
             }.also {
-                if (conversations.size == 1) {
-                    it returns conversations.single().right()
+                if (conversationResults.size == 1) {
+                    it returns conversationResults.single()
                 } else {
-                    it.thenReturnSequentially(*conversations.map { conversation -> conversation.right() }.toTypedArray())
+                    var conversationResultIndex = 0
+                    it calls {
+                        conversationResults.getOrElse(conversationResultIndex++) {
+                            error("getConversationById called more times than expected")
+                        }
+                    }
                 }
             }
 
             everySuspend {
                 conversationRepository.resetMlsConversation(any(), any())
-            }.thenReturnSequentially(*resetConversationResults.toTypedArray())
+            } calls {
+                resetConversationResults.getOrElse(resetConversationResultIndex++) {
+                    error("resetMlsConversation called more times than expected")
+                }
+            }
 
-            coEvery {
+            everySuspend {
                 conversationRepository.fetchConversation(any())
             }.also {
-                if (remoteConversationResponses.size == 1) {
-                    it returns remoteConversationResponses.single().right()
+                if (remoteConversationResults.size == 1) {
+                    it returns remoteConversationResults.single()
                 } else {
-                    it.thenReturnSequentially(*remoteConversationResponses.map { response -> response.right() }.toTypedArray())
+                    var remoteConversationResultIndex = 0
+                    it calls {
+                        remoteConversationResults.getOrElse(remoteConversationResultIndex++) {
+                            error("fetchConversation called more times than expected")
+                        }
+                    }
                 }
             }
 
