@@ -30,8 +30,8 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -46,7 +46,6 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any as mokkeryAny
 import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -54,6 +53,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import dev.mokkery.matcher.any as mokkeryAny
 
 internal class MemberLeaveEventHandlerTest {
 
@@ -360,7 +360,6 @@ internal class MemberLeaveEventHandlerTest {
 
     private class Arrangement :
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
-
         val userRepository = mock<UserRepository>()
         val persistMessageUseCase = mock<PersistMessageUseCase>()
         val memberDAO = mock<MemberDAO>()
@@ -372,7 +371,7 @@ internal class MemberLeaveEventHandlerTest {
 
         private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
 
-        suspend fun withFetchUsersIfUnknownByIdsReturning(
+        fun withFetchUsersIfUnknownByIdsReturning(
             result: Either<CoreFailure, Unit>,
             userIdList: Set<UserId>? = null
         ) = apply {
@@ -383,7 +382,7 @@ internal class MemberLeaveEventHandlerTest {
             }
         }
 
-        suspend fun withPersistingMessage(
+        fun withPersistingMessage(
             result: Either<CoreFailure, Unit>,
             message: Message.Standalone? = null
         ) = apply {
@@ -394,7 +393,7 @@ internal class MemberLeaveEventHandlerTest {
             }
         }
 
-        suspend fun withDeleteMembersByQualifiedID(
+        fun withDeleteMembersByQualifiedID(
             result: Long,
             conversationId: QualifiedIDEntity? = null,
             memberIdList: List<QualifiedIDEntity>? = null
@@ -406,7 +405,7 @@ internal class MemberLeaveEventHandlerTest {
             }
         }
 
-        suspend fun withDeleteMembersByQualifiedIDThrows(
+        fun withDeleteMembersByQualifiedIDThrows(
             throws: Throwable,
             conversationId: QualifiedIDEntity? = null,
             memberIdList: List<QualifiedIDEntity>? = null
@@ -418,7 +417,7 @@ internal class MemberLeaveEventHandlerTest {
             }
         }
 
-        suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: List<UserId>? = null) = apply {
+        fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: List<UserId>? = null) = apply {
             if (userId == null) {
                 everySuspend { userRepository.markAsDeleted(mokkeryAny()) } returns result
             } else {
@@ -426,11 +425,11 @@ internal class MemberLeaveEventHandlerTest {
             }
         }
 
-        suspend fun withTeamId(teamId: Either<StorageFailure, TeamId?>) = apply {
+        fun withTeamId(teamId: Either<StorageFailure, TeamId?>) = apply {
             everySuspend { selfTeamIdProvider.invoke() } returns teamId
         }
 
-        suspend fun withIsAtLeastOneUserATeamMember(
+        fun withIsAtLeastOneUserATeamMember(
             result: Either<StorageFailure, Boolean>,
             userIdList: List<UserId>? = null
         ) = apply {
@@ -441,15 +440,15 @@ internal class MemberLeaveEventHandlerTest {
             }
         }
 
-        suspend fun withGetConversationProtocolInfoReturns(protocolInfo: ConversationEntity.ProtocolInfo?) = apply {
+        fun withGetConversationProtocolInfoReturns(protocolInfo: ConversationEntity.ProtocolInfo?) = apply {
             // MemberLeaveEventHandler no longer depends on protocol info directly; keep this hook to preserve test setup readability.
         }
 
-        suspend fun withGetConversationsDeleteQueue(result: List<ConversationId>) = apply {
+        fun withGetConversationsDeleteQueue(result: List<ConversationId>) = apply {
             everySuspend { conversationRepository.getConversationsDeleteQueue() } returns result
         }
 
-        suspend fun withDeletingConversationSucceeding(conversationId: ConversationId? = null) = apply {
+        fun withDeletingConversationSucceeding(conversationId: ConversationId? = null) = apply {
             if (conversationId == null) {
                 everySuspend { deleteConversation(mokkeryAny(), mokkeryAny()) } returns Either.Right(Unit)
             } else {

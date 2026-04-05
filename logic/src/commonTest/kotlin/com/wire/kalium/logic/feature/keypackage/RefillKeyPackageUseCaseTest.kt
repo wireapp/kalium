@@ -121,7 +121,7 @@ class RefillKeyPackageUseCaseTest {
             } returns cipherSuite.toCrypto()
         }
 
-        suspend fun withExistingSelfClientId() = apply {
+        fun withExistingSelfClientId() = apply {
             everySuspend {
                 currentClientIdProvider.invoke()
             } returns Either.Right(TestClient.CLIENT_ID)
@@ -136,19 +136,19 @@ class RefillKeyPackageUseCaseTest {
             } returns refillAmount
         }
 
-        suspend fun withKeyPackageCount(count: Int) = apply {
+        fun withKeyPackageCount(count: Int) = apply {
             everySuspend {
                 keyPackageRepository.getAvailableKeyPackageCount(mokkeryAny(), mokkeryAny())
             } returns Either.Right(KeyPackageCountDTO(count))
         }
 
-        suspend fun withUploadKeyPackagesSuccessful() = apply {
+        fun withUploadKeyPackagesSuccessful() = apply {
             everySuspend {
                 keyPackageRepository.uploadNewKeyPackages(mokkeryAny(), TestClient.CLIENT_ID, mokkeryAny())
             } returns Either.Right(Unit)
         }
 
-        suspend fun withGetAvailableKeyPackagesFailing(failure: NetworkFailure) = apply {
+        fun withGetAvailableKeyPackagesFailing(failure: NetworkFailure) = apply {
             everySuspend {
                 keyPackageRepository.getAvailableKeyPackageCount(mokkeryAny(), mokkeryAny())
             } returns Either.Left(failure)
