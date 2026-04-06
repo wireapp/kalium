@@ -83,8 +83,6 @@ kotlin {
 
                 // Okio
                 implementation(libs.okio.core)
-
-                compileOnly(libs.coreCryptoKmp)
             }
         }
         val commonTest by getting {

@@ -69,7 +69,6 @@ internal class ProteusClientProviderImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val proteusMigrationRecoveryHandler: ProteusMigrationRecoveryHandler,
-    private val coreCryptoCentralFactory: suspend (String, ByteArray) -> CoreCryptoCentral = ::coreCryptoCentral,
 ) : ProteusClientProvider, CryptoBackupExporter {
 
     private var _proteusClient: ProteusClient? = null
@@ -112,7 +111,10 @@ internal class ProteusClientProviderImpl(
         val central = try {
 
             val dbSecret = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId, rootProteusPath)
-            coreCryptoCentralFactory(rootProteusPath, dbSecret.passphrase)
+            coreCryptoCentral(
+                rootDir = rootProteusPath,
+                passphrase = dbSecret.passphrase,
+            )
         } catch (e: Exception) {
             val logMap = mapOf(
                 "userId" to userId.value.obfuscateId(),

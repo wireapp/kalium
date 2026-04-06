@@ -138,7 +138,6 @@ class ProteusClientProviderTest {
             dispatcher = KaliumDispatcherImpl,
             proteusMigrationRecoveryHandler = proteusMigrationRecoveryHandler,
             currentClientIdProvider = currentClientIdProvider,
-            coreCryptoCentralFactory = { _, _ -> coreCryptoCentral },
         )
 
         companion object {
