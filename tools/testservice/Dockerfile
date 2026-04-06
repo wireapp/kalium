@@ -18,7 +18,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN ./gradlew :tools:testservice:shadowJar
+RUN ./gradlew :tools:testservice:shadowJar -PkaliumConfigPath=tools/testservice/kalium.yaml
 
 FROM eclipse-temurin:17-jdk-noble
 

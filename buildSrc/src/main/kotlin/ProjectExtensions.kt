@@ -42,6 +42,18 @@ fun Project.resolveKaliumCustomConfigPath(
         return rootProject.file(it).absolutePath
     }
 
+    val requestedTasks = gradle.startParameter.taskNames.map { it.trim().trimStart(':') }.filter { it.isNotEmpty() }
+    val testserviceTaskPrefix = "tools:testservice"
+    val isTestserviceOnlyInvocation = requestedTasks.isNotEmpty() && requestedTasks.all {
+        it == testserviceTaskPrefix || it.startsWith("$testserviceTaskPrefix:")
+    }
+    if (isTestserviceOnlyInvocation) {
+        val testserviceOverride = rootProject.file("tools/testservice/kalium.yaml")
+        if (testserviceOverride.isFile) {
+            return testserviceOverride.absolutePath
+        }
+    }
+
     val localFile = rootProject.file(localFileName)
     val isCi = providers.environmentVariable("CI").orNull?.trim()?.lowercase() in setOf("true", "1", "yes")
     if (isCi && localFile.isFile) {

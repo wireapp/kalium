@@ -1,0 +1,4 @@
+flavors:
+  default:
+    use_unified_core_crypto: false
+    provider_cache_scope: LOCAL

@@ -10,6 +10,10 @@ In root folder execute:
 ./gradlew :tools:testservice:run
 ```
 
+When only `:tools:testservice:*` tasks are requested, the build auto-resolves
+[`tools/testservice/kalium.yaml`](/Users/mohamadjaara/Desktop/work/clone1/wire-android/kalium/tools/testservice/kalium.yaml),
+which keeps `use_unified_core_crypto=false` and `provider_cache_scope=LOCAL` for testservice builds.
+
 Create fat jar for standalone execution:
 
 ```shell
