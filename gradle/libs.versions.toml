@@ -1,5 +1,5 @@
 [versions]
-kayan = "1.4.0-beta.11"
+kayan = "1.4.0"
 kotlin = "2.3.0"
 ksp = "2.3.4"
 activity-compose = "1.9.0"
