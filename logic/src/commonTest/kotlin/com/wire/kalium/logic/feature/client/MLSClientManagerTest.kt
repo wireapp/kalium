@@ -98,6 +98,25 @@ class MLSClientManagerTest {
         }
 
     @Test
+    fun givenE2EIIsRequired_whenObservingSyncFinishes_thenSlowSyncIsNotCleared() =
+        testScope.runTest {
+            val (arrangement, mlsClientManager) = Arrangement()
+                .withIsAllowedToRegisterMLSClient(true)
+                .withHasRegisteredMLSClient(Either.Right(false))
+                .withCurrentClientId(Either.Right(TestClient.CLIENT_ID))
+                .withRegisterMLSClientE2EIRequired()
+                .withSyncStates(Unit.right())
+                .arrange(testScope)
+
+            mlsClientManager.invoke()
+            advanceUntilIdle()
+
+            coVerify {
+                arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
+            }.wasNotInvoked()
+        }
+
+    @Test
     fun givenMLSClientIsRegistered_whenObservingSyncFinishes_thenMLSClientIsNotRegistered() =
         testScope.runTest {
             val (arrangement, mlsClientManager) = Arrangement()
@@ -155,7 +174,12 @@ class MLSClientManagerTest {
             coEvery {
                 registerMLSClient.invoke(any())
             }.returns(Either.Right(RegisterMLSClientResult.Success))
-            // todo: cover all cases
+        }
+
+        suspend fun withRegisterMLSClientE2EIRequired() = apply {
+            coEvery {
+                registerMLSClient.invoke(any())
+            }.returns(Either.Right(RegisterMLSClientResult.E2EICertificateRequired))
         }
 
         suspend fun withIsAllowedToRegisterMLSClient(enabled: Boolean) = apply {

@@ -55,7 +55,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class MessageDAOImpl internal constructor(
     private val queries: MessagesQueries,
     private val attachmentsQueries: MessageAttachmentsQueries,
@@ -289,6 +289,14 @@ internal class MessageDAOImpl internal constructor(
             .distinctUntilChanged()
             .flowOn(readDispatcher.value)
 
+    override suspend fun getOldestVisibleMessageTimestampByConversationId(
+        conversationId: ConversationIDEntity
+    ): Long? = withContext(readDispatcher.value) {
+        queries.selectOldestVisibleMessageTimestampByConversationId(conversationId)
+            .executeAsOneOrNull()
+            ?.MIN?.toEpochMilliseconds()
+    }
+
     override suspend fun getImageMessageAssets(
         conversationId: QualifiedIDEntity,
         mimeTypes: Set<String>,
@@ -483,8 +491,7 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
-    override suspend fun markMessagesAsDecryptionResolved(
-        conversationId: QualifiedIDEntity,
+    override suspend fun markProteusMessagesAsDecryptionResolved(
         userId: QualifiedIDEntity,
         clientId: String,
     ) {

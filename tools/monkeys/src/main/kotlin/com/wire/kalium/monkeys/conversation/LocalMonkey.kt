@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
@@ -62,6 +63,7 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
     /**
      * Logs user in and register client (if not registered)
      */
+    @Suppress("LongMethod")
     override suspend fun login(coreLogic: CoreLogic, callback: (Monkey) -> Unit) {
         val userData = this.monkeyType.userData()
         val secondFactor = userData.request2FA()
@@ -80,10 +82,14 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
 
         coreLogic.globalScope {
             val storeResult = addAuthenticatedAccount(
-                serverConfigId = loginResult.serverConfigId,
-                ssoId = loginResult.ssoID,
-                authTokens = loginResult.authData,
-                proxyCredentials = loginResult.proxyCredentials,
+                session = StoreSessionParam(
+                    serverConfigId = loginResult.serverConfigId,
+                    ssoId = loginResult.ssoID,
+                    accountTokens = loginResult.authData,
+                    proxyCredentials = loginResult.proxyCredentials,
+                    managedBy = null,
+                    isPersistentWebSocketEnabled = false,
+                ),
                 replace = true
             )
             if (storeResult !is AddAuthenticatedUserUseCase.Result.Success) {

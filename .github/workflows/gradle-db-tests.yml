@@ -33,7 +33,7 @@ jobs:
 
       - name: Archive DB test artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: db-test-artifacts
           path: |

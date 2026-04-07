@@ -319,7 +319,8 @@ sealed class EventContentDTO {
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
             @SerialName("data") val message: String,
-            @SerialName("from") val from: String
+            @SerialName("from") val from: String,
+            @SerialName("time") val time: Instant? = null
         ) : Conversation()
 
         @Serializable
@@ -418,6 +419,10 @@ sealed class EventContentDTO {
             @SerialName("id") val id: String,
             @SerialName("qualified_id") val userId: UserId
         ) : User()
+
+        @Serializable
+        @SerialName("user.session-refresh-suggested")
+        data object SessionRefreshSuggestedDTO : User()
     }
 
     @Serializable

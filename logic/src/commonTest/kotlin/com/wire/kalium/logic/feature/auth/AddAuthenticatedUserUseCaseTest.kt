@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.data.session.token.AccessToken
 import com.wire.kalium.logic.data.session.token.RefreshToken
 import com.wire.kalium.logic.data.user.SsoId
@@ -55,25 +56,27 @@ class AddAuthenticatedUserUseCaseTest {
         val tokens = TEST_AUTH_TOKENS
         val proxyCredentials = PROXY_CREDENTIALS
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
+            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(tokens.userId, Either.Right(false))
             .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, proxyCredentials, null, Either.Right(Unit))
             .withUpdateCurrentSessionResult(tokens.userId, Either.Right(Unit))
             .arrange()
 
         val actual = addAuthenticatedUserUseCase(
-            TEST_SERVER_CONFIG.id,
-            TEST_SSO_ID,
-            tokens,
-            proxyCredentials,
-            false,
-            null,
-            false
+            session = StoreSessionParam(
+                serverConfigId = TEST_SERVER_CONFIG.id,
+                ssoId = TEST_SSO_ID,
+                accountTokens = tokens,
+                proxyCredentials = proxyCredentials,
+                managedBy = null,
+                isPersistentWebSocketEnabled = false,
+            )
         )
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -90,23 +93,25 @@ class AddAuthenticatedUserUseCaseTest {
         val proxyCredentials = PROXY_CREDENTIALS
 
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
+            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(tokens.userId, Either.Right(true))
             .arrange()
 
         val actual = addAuthenticatedUserUseCase(
-            TEST_SERVER_CONFIG.id,
-            TEST_SSO_ID,
-            tokens,
-            proxyCredentials,
-            false,
-            null,
-            false
+            session = StoreSessionParam(
+                serverConfigId = TEST_SERVER_CONFIG.id,
+                ssoId = TEST_SSO_ID,
+                accountTokens = tokens,
+                proxyCredentials = proxyCredentials,
+                managedBy = null,
+                isPersistentWebSocketEnabled = false,
+            )
         )
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any())
         }.wasNotInvoked()
 
         coVerify {
@@ -133,6 +138,7 @@ class AddAuthenticatedUserUseCaseTest {
         val proxyCredentials = PROXY_CREDENTIALS
 
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
+            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(newSession.userId, Either.Right(true))
             .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession, proxyCredentials, null, Either.Right(Unit))
             .withUpdateCurrentSessionResult(newSession.userId, Either.Right(Unit))
@@ -141,19 +147,21 @@ class AddAuthenticatedUserUseCaseTest {
             .arrange()
 
         val actual = addAuthenticatedUserUseCase(
-            TEST_SERVER_CONFIG.id,
-            TEST_SSO_ID,
-            newSession,
-            proxyCredentials,
-            false,
-            null,
-            true
+            session = StoreSessionParam(
+                serverConfigId = TEST_SERVER_CONFIG.id,
+                ssoId = TEST_SSO_ID,
+                accountTokens = newSession,
+                proxyCredentials = proxyCredentials,
+                managedBy = null,
+                isPersistentWebSocketEnabled = false,
+            ),
+            replace = true
         )
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -197,6 +205,7 @@ class AddAuthenticatedUserUseCaseTest {
         val proxyCredentials = PROXY_CREDENTIALS
 
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
+            .withDoesValidNomadAccountExistResult(Either.Right(false))
             .withDoesValidSessionExistResult(newSession.userId, Either.Right(true))
             .withConfigForUserIdSuccess(oldSession.userId.toDao(), oldSessionServerEntity)
             .withConfigByIdSuccess(newSessionServer.id, newSessionServerEntity)
@@ -207,13 +216,15 @@ class AddAuthenticatedUserUseCaseTest {
             .arrange()
 
         val actual = addAuthenticatedUserUseCase(
-            newSessionServer.id,
-            TEST_SSO_ID,
-            newSession,
-            proxyCredentials,
-            isPersistentWebSocketEnabled = false,
-            null,
-            true
+            session = StoreSessionParam(
+                serverConfigId = newSessionServer.id,
+                ssoId = TEST_SSO_ID,
+                accountTokens = newSession,
+                proxyCredentials = proxyCredentials,
+                managedBy = null,
+                isPersistentWebSocketEnabled = false,
+            ),
+            replace = true
         )
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
@@ -222,7 +233,7 @@ class AddAuthenticatedUserUseCaseTest {
             arrangement.sessionRepository.doesValidSessionExist(any())
         }.wasInvoked(exactly = once)
         coVerify {
-            arrangement.sessionRepository.storeSession(any(), any(), any(), any(), any(), any())
+            arrangement.sessionRepository.storeSession(any())
         }.wasNotInvoked()
         coVerify {
             arrangement.sessionRepository.updateCurrentSession(any())
@@ -233,6 +244,133 @@ class AddAuthenticatedUserUseCaseTest {
         verify {
             arrangement.serverConfigurationDAO.configById(any())
         }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNomadServiceUrl_whenInvoked_thenItIsPassedToSessionStorage() = runTest {
+        val tokens = TEST_AUTH_TOKENS
+        val proxyCredentials = PROXY_CREDENTIALS
+        val nomadServiceUrl = "https://nomad.example.com/service"
+
+        val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
+            .withAllValidSessionsResult(Either.Right(emptyList()))
+            .withDoesValidSessionExistResult(tokens.userId, Either.Right(false))
+            .withStoreSessionResult(
+                serverConfigId = TEST_SERVER_CONFIG.id,
+                ssoId = TEST_SSO_ID,
+                accountTokens = tokens,
+                proxyCredentials = proxyCredentials,
+                result = Either.Right(Unit),
+                nomadServiceUrl = nomadServiceUrl
+            )
+            .withUpdateCurrentSessionResult(tokens.userId, Either.Right(Unit))
+            .arrange()
+
+        val actual = addAuthenticatedUserUseCase(
+            session = StoreSessionParam(
+                serverConfigId = TEST_SERVER_CONFIG.id,
+                ssoId = TEST_SSO_ID,
+                accountTokens = tokens,
+                proxyCredentials = proxyCredentials,
+                managedBy = null,
+                isPersistentWebSocketEnabled = false,
+                nomadServiceUrl = nomadServiceUrl,
+            )
+        )
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
+
+        coVerify {
+            arrangement.sessionRepository.storeSession(
+                StoreSessionParam(
+                    serverConfigId = TEST_SERVER_CONFIG.id,
+                    ssoId = TEST_SSO_ID,
+                    accountTokens = tokens,
+                    proxyCredentials = proxyCredentials,
+                    managedBy = null,
+                    isPersistentWebSocketEnabled = false,
+                    nomadServiceUrl = nomadServiceUrl,
+                )
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNomadSessionAndExistingValidSessions_whenInvoked_thenNomadSingleUserViolationIsReturned() = runTest {
+        val tokens = TEST_AUTH_TOKENS
+        val proxyCredentials = PROXY_CREDENTIALS
+
+        val (_, addAuthenticatedUserUseCase) = Arrangement()
+            .withAllValidSessionsResult(Either.Right(listOf(AccountInfo.Valid(UserId("other", "domain.de")))))
+            .arrange()
+
+        val actual = addAuthenticatedUserUseCase(
+            session = StoreSessionParam(
+                serverConfigId = TEST_SERVER_CONFIG.id,
+                ssoId = TEST_SSO_ID,
+                accountTokens = tokens,
+                proxyCredentials = proxyCredentials,
+                managedBy = null,
+                isPersistentWebSocketEnabled = false,
+                nomadServiceUrl = "https://nomad.example.com/service",
+            )
+        )
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Failure.NomadSingleUserViolation>(actual)
+    }
+
+    @Test
+    fun givenNormalSessionAndNomadAccountExists_whenInvoked_thenNomadSingleUserViolationIsReturned() = runTest {
+        val tokens = TEST_AUTH_TOKENS
+        val proxyCredentials = PROXY_CREDENTIALS
+
+        val (_, addAuthenticatedUserUseCase) = Arrangement()
+            .withDoesValidNomadAccountExistResult(Either.Right(true))
+            .arrange()
+
+        val actual = addAuthenticatedUserUseCase(
+            session = StoreSessionParam(
+                serverConfigId = TEST_SERVER_CONFIG.id,
+                ssoId = TEST_SSO_ID,
+                accountTokens = tokens,
+                proxyCredentials = proxyCredentials,
+                managedBy = null,
+                isPersistentWebSocketEnabled = false,
+            )
+        )
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Failure.NomadSingleUserViolation>(actual)
+    }
+
+    @Test
+    fun givenNomadSessionAndNoExistingSessions_whenInvoked_thenSuccessIsReturned() = runTest {
+        val tokens = TEST_AUTH_TOKENS
+        val proxyCredentials = PROXY_CREDENTIALS
+        val nomadServiceUrl = "https://nomad.example.com/service"
+
+        val (_, addAuthenticatedUserUseCase) = Arrangement()
+            .withAllValidSessionsResult(Either.Right(emptyList()))
+            .withDoesValidSessionExistResult(tokens.userId, Either.Right(false))
+            .withStoreSessionResult(
+                TEST_SERVER_CONFIG.id, TEST_SSO_ID, tokens, proxyCredentials, null, Either.Right(Unit),
+                nomadServiceUrl = nomadServiceUrl
+            )
+            .withUpdateCurrentSessionResult(tokens.userId, Either.Right(Unit))
+            .arrange()
+
+        val actual = addAuthenticatedUserUseCase(
+            session = StoreSessionParam(
+                serverConfigId = TEST_SERVER_CONFIG.id,
+                ssoId = TEST_SSO_ID,
+                accountTokens = tokens,
+                proxyCredentials = proxyCredentials,
+                managedBy = null,
+                isPersistentWebSocketEnabled = false,
+                nomadServiceUrl = nomadServiceUrl,
+            )
+        )
+
+        assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
     }
 
     private companion object {
@@ -270,6 +408,18 @@ class AddAuthenticatedUserUseCaseTest {
             coEvery { sessionRepository.doesValidSessionExist(userId) }.returns(result)
         }
 
+        suspend fun withAllValidSessionsResult(
+            result: Either<StorageFailure, List<AccountInfo.Valid>>
+        ) = apply {
+            coEvery { sessionRepository.allValidSessions() }.returns(result)
+        }
+
+        suspend fun withDoesValidNomadAccountExistResult(
+            result: Either<StorageFailure, Boolean>
+        ) = apply {
+            coEvery { sessionRepository.doesValidNomadAccountExist() }.returns(result)
+        }
+
         suspend fun withConfigForUserIdSuccess(
             userId: UserIDEntity,
             result: ServerConfigEntity
@@ -298,16 +448,20 @@ class AddAuthenticatedUserUseCaseTest {
             proxyCredentials: ProxyCredentials?,
             managedBy: SsoManagedBy? = null,
             result: Either<StorageFailure, Unit>,
-            isPersistentWebSocketEnabled: Boolean = false
+            isPersistentWebSocketEnabled: Boolean = false,
+            nomadServiceUrl: String? = null
         ) = apply {
             coEvery {
                 sessionRepository.storeSession(
-                    serverConfigId,
-                    ssoId,
-                    accountTokens,
-                    proxyCredentials,
-                    managedBy,
-                    isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
+                    StoreSessionParam(
+                        serverConfigId = serverConfigId,
+                        ssoId = ssoId,
+                        accountTokens = accountTokens,
+                        proxyCredentials = proxyCredentials,
+                        managedBy = managedBy,
+                        isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
+                        nomadServiceUrl = nomadServiceUrl,
+                    )
                 )
             }.returns(result)
         }

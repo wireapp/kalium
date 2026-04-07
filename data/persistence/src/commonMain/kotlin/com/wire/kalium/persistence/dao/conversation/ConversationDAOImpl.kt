@@ -51,7 +51,7 @@ internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_D
 // TODO: Refactor. We can split this into smaller DAOs.
 //       For example, one for Members, one for Protocol/MLS-related things, etc.
 //       Even if they operate on the same table underneath, these DAOs can represent/do different things.
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class ConversationDAOImpl internal constructor(
     private val conversationDetailsCache: FlowCache<ConversationIDEntity, ConversationViewEntity?>,
     private val conversationCache: FlowCache<ConversationIDEntity, ConversationEntity?>,
@@ -247,6 +247,15 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updateConversationGroupStateByConversationId(
+        groupState: ConversationEntity.GroupState,
+        conversationId: QualifiedIDEntity
+    ) {
+        withContext(writeDispatcher.value) {
+            conversationQueries.updateConversationGroupStateByConversationId(groupState, conversationId)
+        }
+    }
+
     override suspend fun updateMlsGroupStateAndCipherSuite(
         groupState: ConversationEntity.GroupState,
         cipherSuite: ConversationEntity.CipherSuite,
@@ -271,6 +280,15 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant) {
         withContext(writeDispatcher.value) {
             conversationQueries.updateConversationModifiedDate(date, qualifiedID)
+        }
+    }
+
+    override suspend fun updateConversationModifiedDateToMaxOfSources(
+        targetId: QualifiedIDEntity,
+        sourceIds: Collection<QualifiedIDEntity>
+    ) {
+        withContext(writeDispatcher.value) {
+            conversationQueries.updateConversationModifiedDateToMaxOfSources(sourceIds, targetId)
         }
     }
 
@@ -452,6 +470,46 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.transaction {
                 unreadEventsQueries.deleteUnreadEvents(date, conversationID)
                 conversationQueries.updateConversationReadDate(date, conversationID)
+            }
+        }
+    }
+
+    override suspend fun updateConversationReadDates(conversationDates: Map<QualifiedIDEntity, Instant>): Int =
+        withContext(writeDispatcher.value) {
+            if (conversationDates.isEmpty()) {
+                return@withContext 0
+            }
+
+            conversationQueries.transactionWithResult {
+                var updatedConversations = 0
+
+                conversationDates.forEach { (conversationId, date) ->
+                    unreadEventsQueries.deleteUnreadEvents(date, conversationId)
+                    conversationQueries.updateConversationReadDate(date, conversationId)
+                    updatedConversations += conversationQueries.selectChanges().executeAsOne().toInt()
+                }
+
+                updatedConversations
+            }
+        }
+
+    override suspend fun updateConversationReadAndModifiedDates(
+        readDates: Map<QualifiedIDEntity, Instant>,
+        modifiedDates: Map<QualifiedIDEntity, Instant>,
+    ) = withContext(writeDispatcher.value) {
+        if (readDates.isEmpty() && modifiedDates.isEmpty()) {
+            return@withContext
+        }
+
+        conversationQueries.transaction {
+
+            readDates.forEach { (conversationId, date) ->
+                unreadEventsQueries.deleteUnreadEvents(date, conversationId)
+                conversationQueries.updateConversationReadDate(date, conversationId)
+            }
+
+            modifiedDates.forEach { (conversationId, date) ->
+                conversationQueries.updateConversationModifiedDate(date, conversationId)
             }
         }
     }
@@ -689,8 +747,29 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updateReadDatesAndGetHasUnreadEvents(
+        conversationDates: Map<QualifiedIDEntity, Instant>
+    ): Map<QualifiedIDEntity, Boolean> = withContext(writeDispatcher.value) {
+        if (conversationDates.isEmpty()) {
+            return@withContext emptyMap()
+        }
+        conversationQueries.transactionWithResult {
+            buildMap(conversationDates.size) {
+                conversationDates.forEach { (conversationId, date) ->
+                    unreadEventsQueries.deleteUnreadEvents(date, conversationId)
+                    conversationQueries.updateConversationReadDate(date, conversationId)
+                    put(conversationId, unreadEventsQueries.getHasUnreadEventsForConversation(conversationId).executeAsOneOrNull() ?: false)
+                }
+            }
+        }
+    }
+
     override suspend fun getMLSConversationsByDomain(domain: String): List<ConversationEntity> =
         withContext(readDispatcher.value) {
             conversationQueries.selectAllMLSConversationsByDomain(domain, conversationMapper::toConversationEntity).executeAsList()
         }
+
+    override suspend fun getCellGroupConversations(): List<ConversationEntity> = withContext(readDispatcher.value) {
+        conversationQueries.selectCellGroupConversations(conversationMapper::toConversationEntity).executeAsList()
+    }
 }

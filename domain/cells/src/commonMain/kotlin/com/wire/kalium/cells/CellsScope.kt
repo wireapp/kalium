@@ -51,14 +51,18 @@ import com.wire.kalium.cells.domain.usecase.GetCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetCellGroupConversationsUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCase
 import com.wire.kalium.cells.domain.usecase.GetFoldersUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetCellGroupConversationsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCase
 import com.wire.kalium.cells.domain.usecase.GetMessageAttachmentsUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetOwnersUseCase
+import com.wire.kalium.cells.domain.usecase.GetOwnersUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCase
 import com.wire.kalium.cells.domain.usecase.GetPaginatedNodesUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetWireCellConfigurationUseCase
@@ -127,6 +131,7 @@ import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import com.wire.kalium.persistence.dao.UserConfigDAO
+import com.wire.kalium.persistence.dao.member.MemberDAO
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpRedirect
 import kotlinx.coroutines.CoroutineScope
@@ -152,6 +157,7 @@ public class CellsScope(
         val attachmentsDao: MessageAttachmentsDao,
         val assetsDao: AssetDAO,
         val userDao: UserDAO,
+        val memberDao: MemberDAO,
         val publicLinkDao: PublicLinkDao,
         val userConfigDAO: UserConfigDAO,
     )
@@ -224,7 +230,7 @@ public class CellsScope(
     }
 
     private val usersRepository: CellUsersRepository by lazy {
-        CellUsersDataSource(dao.userDao)
+        CellUsersDataSource(dao.userDao, dao.memberDao)
     }
 
     private val cellConfigRepository: CellConfigRepository by lazy {
@@ -341,6 +347,13 @@ public class CellsScope(
 
     public val getMessageAttachmentUseCase: GetMessageAttachmentUseCase by lazy {
         GetMessageAttachmentUseCaseImpl(cellAttachmentsRepository)
+    }
+    public val getOwnersUseCase: GetOwnersUseCase by lazy {
+        GetOwnersUseCaseImpl(usersRepository)
+    }
+
+    public val getCellGroupConversationsUseCase: GetCellGroupConversationsUseCase by lazy {
+        GetCellGroupConversationsUseCaseImpl(cellsConversationRepository)
     }
 
     public val getMessageAttachmentsUseCase: GetMessageAttachmentsUseCase by lazy {

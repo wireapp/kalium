@@ -42,6 +42,7 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
 import io.mockative.matches
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.mock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
@@ -186,6 +187,7 @@ class ToggleReactionUseCaseTest {
         val currentClientIdProvider: CurrentClientIdProvider = CurrentClientIdProvider { Either.Right(TEST_CURRENT_CLIENT) }
         val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
         val messageSender: MessageSender = mock(MessageSender::class)
+        val persistenceEventHookNotifier: PersistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
 
         fun withSlowSyncCompleted() = apply {
             every {
@@ -205,6 +207,7 @@ class ToggleReactionUseCaseTest {
             slowSyncRepository,
             reactionRepository,
             messageSender,
+            persistenceEventHookNotifier,
             dispatcher
         ).also {
             withSlowSyncCompleted()

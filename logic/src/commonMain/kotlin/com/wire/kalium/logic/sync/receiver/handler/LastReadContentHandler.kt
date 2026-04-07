@@ -86,21 +86,18 @@ internal class LastReadContentHandlerImpl internal constructor(
         if (pending.isEmpty()) return
         logger.d("$TAG Flushing LastRead updates")
 
-        pending.forEach { (conversationId, readAt) ->
-            conversationRepository
-                .updateReadDateAndGetHasUnreadEvents(
-                    qualifiedID = conversationId,
-                    date = readAt
-                )
-                .onSuccess { hasUnreadEvents ->
+        conversationRepository
+            .updateReadDatesAndGetHasUnreadEvents(pending)
+            .onSuccess { hasUnreadByConversation ->
+                hasUnreadByConversation.forEach { (conversationId, hasUnreadEvents) ->
                     if (!hasUnreadEvents) {
                         notificationEventsManager.scheduleConversationSeenNotification(conversationId)
                     }
                 }
-                .onFailure {
-                    logger.w("$TAG Failed to flush LastRead. conversationId=${conversationId.toLogString()}")
-                }
-        }
+            }
+            .onFailure {
+                logger.w("$TAG Failed to flush LastRead for ${pending.size} conversation(s): $it")
+            }
         logger.d("$TAG Flush finished")
     }
 

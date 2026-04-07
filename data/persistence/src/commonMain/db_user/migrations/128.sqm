@@ -1,0 +1,23 @@
+CREATE TABLE RemotebackupChangeLog_new (
+    conversation_id TEXT NOT NULL,
+    message_id TEXT,
+    event_type INTEGER NOT NULL,
+    timestamp_ms INTEGER NOT NULL,
+    message_timestamp_ms INTEGER NOT NULL,
+    CHECK (
+        (event_type >= 500 AND message_id IS NULL )
+        OR
+        (event_type < 500 AND message_id IS NOT NULL)
+    ),
+    PRIMARY KEY (conversation_id, message_id, event_type)
+);
+
+INSERT INTO RemotebackupChangeLog_new (conversation_id, message_id, event_type, timestamp_ms, message_timestamp_ms)
+SELECT conversation_id, message_id, event_type, timestamp_ms, timestamp_ms
+FROM RemotebackupChangeLog;
+
+DROP TABLE RemotebackupChangeLog;
+
+ALTER TABLE RemotebackupChangeLog_new RENAME TO RemotebackupChangeLog;
+
+CREATE INDEX RemotebackupChangeLog_timestamp_idx ON RemotebackupChangeLog(timestamp_ms);

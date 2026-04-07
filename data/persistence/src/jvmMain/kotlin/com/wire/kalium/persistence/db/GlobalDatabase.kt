@@ -42,18 +42,15 @@ actual fun globalDatabaseProvider(
         throw NotImplementedError("Encrypted DB is not supported on JVM")
     }
 
+    val schema = GlobalDatabase.Schema
     val databasePath = storageData.file.resolve(FileNameUtil.globalDBName())
-    val databaseExists = databasePath.exists()
 
     // Make sure all intermediate directories exist
     storageData.file.mkdirs()
-    val driver = databaseDriver("jdbc:sqlite:${databasePath.absolutePath}") {
+    val url = "jdbc:sqlite:${databasePath.absolutePath}"
+    val driver = databaseDriver(uri = url, schema = schema) {
         isWALEnabled = enableWAL
         areForeignKeyConstraintsEnforced = true
-    }
-
-    if (!databaseExists) {
-        GlobalDatabase.Schema.create(driver)
     }
 
     return GlobalDatabaseBuilder(driver, platformDatabaseData, queriesContext)
@@ -64,10 +61,9 @@ actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
 }
 
 fun createGlobalInMemoryDatabase(dispatcher: CoroutineDispatcher): GlobalDatabaseBuilder {
-    val driver = databaseDriver(JdbcSqliteDriver.IN_MEMORY) {
+    val driver = databaseDriver(uri = JdbcSqliteDriver.IN_MEMORY, schema = GlobalDatabase.Schema) {
         isWALEnabled = false
         areForeignKeyConstraintsEnforced = true
     }
-    GlobalDatabase.Schema.create(driver)
     return GlobalDatabaseBuilder(driver, PlatformDatabaseData(StorageData.InMemory), dispatcher)
 }

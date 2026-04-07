@@ -19,7 +19,7 @@ Create fat jar for standalone execution:
 Run fat jar:
 
 ```shell
-java -jar tools/testservice/build/libs/testservice-*-all.jar server testservice/config.yml
+java -jar tools/testservice/build/libs/testservice-*-all.jar server tools/testservice/config.yml
 ```
 
 ## Installation

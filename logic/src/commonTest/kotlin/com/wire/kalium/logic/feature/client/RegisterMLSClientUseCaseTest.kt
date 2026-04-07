@@ -18,26 +18,25 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.MLSCiphersuite
+import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.client.toModel
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.E2EI_TEAM_SETTINGS
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.MLS_CIPHER_SUITE
 import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.cryptography.MLSCiphersuite
-import com.wire.kalium.cryptography.MlsCoreCryptoContext
-import com.wire.kalium.logic.data.client.toModel
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.any
 import io.mockative.coEvery
@@ -218,7 +217,9 @@ class RegisterMLSClientUseCaseTest {
             clientRepository,
             keyPackageRepository,
             keyPackageLimitsProvider,
-            userConfigRepository
+            userConfigRepository,
+            TestUser.SELF.id,
+            NoOpCryptoStateChangeHookNotifier
         )
 
         companion object {

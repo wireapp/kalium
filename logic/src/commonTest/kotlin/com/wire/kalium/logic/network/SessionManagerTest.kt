@@ -20,7 +20,11 @@ package com.wire.kalium.logic.network
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.configuration.server.CommonApiVersionType
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.data.auth.Account
+import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -173,6 +177,42 @@ class SessionManagerTest {
         assertEquals(updatedTokens.cookieLabel, secondResult.cookieLabel)
     }
 
+    @Test
+    fun givenServerConfigAndNomadUrl_whenReadingBoth_thenFullAccountInfoShouldBeFetchedOnlyOnce() = runTest {
+        var fullAccountInfoCalls = 0
+        val expectedNomadUrl = "https://nomad.example.com/service"
+        val expectedServerConfig = ServerConfig(
+            id = "server-config-id",
+            links = ServerConfig.PRODUCTION,
+            metaData = ServerConfig.MetaData(
+                federation = false,
+                commonApiVersion = CommonApiVersionType.Valid(0),
+                domain = "example.com"
+            )
+        )
+        val (_, sessionManager) = arrange {
+            withServerConfigDTO(expectedServerConfig)
+            withFullAccountInfoReturning {
+                fullAccountInfoCalls++
+                Either.Right(
+                    Account(
+                        info = AccountInfo.Valid(TestUser.USER_ID),
+                        serverConfig = expectedServerConfig,
+                        ssoId = null,
+                        nomadServiceUrl = expectedNomadUrl
+                    )
+                )
+            }
+        }
+
+        val actualServerConfig = sessionManager.serverConfig()
+        val actualNomadServiceUrl = sessionManager.nomadServiceUrl()
+
+        assertEquals(expectedServerConfig.id, actualServerConfig.id)
+        assertEquals(expectedNomadUrl, actualNomadServiceUrl)
+        assertEquals(1, fullAccountInfoCalls)
+    }
+
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) {
         private val sessionRepository = mock(SessionRepository::class)
 
@@ -223,6 +263,18 @@ class SessionManagerTest {
             every {
                 tokenStorage.getToken(any())
             }.invokes(block)
+        }
+
+        fun withFullAccountInfoReturning(block: (args: Array<Any?>) -> Either<StorageFailure, Account>) = apply {
+            every {
+                sessionRepository.fullAccountInfo(any())
+            }.invokes(block)
+        }
+
+        fun withServerConfigDTO(serverConfig: ServerConfig) = apply {
+            every {
+                serverConfigMapper.toDTO(eq(serverConfig))
+            }.returns(MapperProvider.serverConfigMapper().toDTO(serverConfig))
         }
     }
 

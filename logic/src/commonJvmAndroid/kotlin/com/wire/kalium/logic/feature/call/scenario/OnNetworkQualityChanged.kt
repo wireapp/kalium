@@ -20,25 +20,33 @@ package com.wire.kalium.logic.feature.call.scenario
 
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.callbacks.NetworkQualityChangedHandler
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.common.logger.callingLogger
+import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.call.CallQualityData
+import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import kotlinx.serialization.json.Json
 
-internal class OnNetworkQualityChanged : NetworkQualityChangedHandler {
+internal class OnNetworkQualityChanged(
+    private val callRepository: CallRepository,
+    private val qualifiedIdMapper: QualifiedIdMapper
+) : NetworkQualityChangedHandler {
 
     override fun onNetworkQualityChanged(
         conversationId: String,
         userId: String?,
         clientId: String?,
-        quality: Int,
-        roundTripTimeInMilliseconds: Int,
-        upstreamPacketLossPercentage: Int,
-        downstreamPacketLossPercentage: Int,
+        qualityInfoJson: String?,
         arg: Pointer?
     ) {
-        // Not yet implemented
-        callingLogger.i(
-            "[OnNetworkQualityChanged] - ConversationId: ${conversationId.obfuscateId()}" +
-                    " | UserId: ${userId?.obfuscateId()} | Quality: $quality"
-        )
+        val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
+        qualityInfoJson?.let { qualityInfoJson ->
+            val callQualityData = Json.decodeFromString<CallQualityData>(qualityInfoJson)
+            callRepository.updateCallQualityData(conversationId = conversationIdWithDomain, callQualityData = callQualityData)
+            callingLogger.i(
+                "[OnNetworkQualityChanged] - ConversationId: ${conversationId.obfuscateId()}" +
+                        " | UserId: ${userId?.obfuscateId()} | QualityInfo: $qualityInfoJson"
+            )
+        }
     }
 }

@@ -295,6 +295,14 @@ interface E2EIFailure : CoreFailure {
     }
 }
 
+sealed class BackupFailure : CoreFailure {
+    /**
+     * The Nomad service has no crypto state backup for this user,
+     * either because the user is not enrolled or no state has been stored yet.
+     */
+    data object NoCryptoStateAvailable : BackupFailure()
+}
+
 class ProteusFailure(val proteusException: ProteusException) : CoreFailure {
 
     val rootCause: Throwable get() = proteusException

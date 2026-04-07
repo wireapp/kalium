@@ -18,32 +18,36 @@
 package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.domain.CellConversationRepository
+import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
 internal class CellConversationDataSource(
-    private val conversation: ConversationDAO,
+    private val conversationDao: ConversationDAO,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : CellConversationRepository {
 
     override suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?> =
         withContext(dispatchers.io) {
             wrapStorageRequest {
-                conversation.getCellName(conversationId)
+                conversationDao.getCellName(conversationId)
             }
         }
 
     override suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>> =
         withContext(dispatchers.io) {
             wrapStorageRequest {
-                conversation.getAllConversations().firstOrNull()?.mapNotNull { conv ->
+                conversationDao.getAllConversations().firstOrNull()?.mapNotNull { conv ->
                     conv.name?.let { name ->
                         conv.id.toString() to name
                     }
@@ -54,7 +58,31 @@ internal class CellConversationDataSource(
     override suspend fun hasConversationWithCell(): Either<StorageFailure, Boolean> =
         withContext(dispatchers.io) {
             wrapStorageRequest {
-                conversation.hasConversationWithCell()
+                conversationDao.hasConversationWithCell()
+            }
+        }
+
+    override suspend fun getCellGroupConversations(): Either<StorageFailure, List<CellConversation>> =
+        withContext(dispatchers.io) {
+            wrapStorageRequest {
+                conversationDao.getCellGroupConversations().mapNotNull { conversation ->
+                    conversation.name?.takeIf { it.isNotEmpty() }?.let { name ->
+                        CellConversation(
+                            id = ConversationId(conversation.id.value, conversation.id.domain),
+                            name = name,
+                            isChannel = conversation.isChannel,
+                            channelAccess = conversation.channelAccess?.let { access ->
+                                when (access) {
+                                    ConversationEntity.ChannelAccess.PRIVATE ->
+                                        ConversationDetails.Group.Channel.ChannelAccess.PRIVATE
+
+                                    ConversationEntity.ChannelAccess.PUBLIC ->
+                                        ConversationDetails.Group.Channel.ChannelAccess.PUBLIC
+                                }
+                            }
+                        )
+                    }
+                }
             }
         }
 }

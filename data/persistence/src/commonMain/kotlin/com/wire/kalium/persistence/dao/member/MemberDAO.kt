@@ -72,6 +72,7 @@ interface MemberDAO {
     suspend fun selectMembersNameAndHandle(conversationId: QualifiedIDEntity): Map<QualifiedIDEntity, NameAndHandleEntity>
 
     suspend fun getAllMembers(): List<UserIDEntity>
+    suspend fun getConversationMembers(conversationId: QualifiedIDEntity): List<UserIDEntity>
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -243,4 +244,11 @@ internal class MemberDAOImpl internal constructor(
             .executeAsList()
             .map { it.user }
     }
+
+    override suspend fun getConversationMembers(conversationId: QualifiedIDEntity): List<UserIDEntity> =
+        withContext(readDispatcher.value) {
+            memberQueries.selectAllMembersByConversation(conversationId)
+                .executeAsList()
+                .map { it.user }
+        }
 }

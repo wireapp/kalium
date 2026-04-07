@@ -55,7 +55,8 @@ public data class PersistentWebSocketStatus(
 internal data class Account(
     val info: AccountInfo,
     val serverConfig: ServerConfig,
-    val ssoId: SsoId?
+    val ssoId: SsoId?,
+    val nomadServiceUrl: String? = null
 )
 
 /**

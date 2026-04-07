@@ -31,10 +31,21 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(projects.core.common)
+                implementation(projects.data.protobuf)
                 implementation(projects.domain.messaging.hooks)
                 implementation(projects.domain.usernetwork)
                 implementation(projects.domain.userstorage)
                 implementation(projects.data.persistence)
+                implementation(libs.coroutines.core)
+                implementation(libs.ktxSerialization)
+                implementation(libs.coroutines.core)
+            }
+        }
+        val commonTest by getting {
+            dependencies {
+                implementation(libs.coroutines.test)
+                implementation(libs.okio.core)
             }
         }
     }

@@ -7,6 +7,7 @@ on:
 
 jobs:
   Changelog:
+    if: "!contains(github.ref_name, '-')"
     runs-on: ubuntu-latest
 
     steps:
@@ -41,4 +42,4 @@ jobs:
           name: ${{env.CURRENT_TAG}}
           body_path: ./CHANGELOG.md
           draft: false
-          prerelease: false
+          prerelease: ${{ contains(env.CURRENT_TAG, '-') }}

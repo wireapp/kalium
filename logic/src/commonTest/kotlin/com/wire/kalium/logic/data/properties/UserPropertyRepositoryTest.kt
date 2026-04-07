@@ -145,7 +145,7 @@ class UserPropertyRepositoryTest {
 
     @Test
     fun whenSyncingPropertiesStatusesAndResponseIsEmptyJson_thenShouldPersistAllDefaults() = runTest {
-        // readReceipts defaults to false, typingIndicator defaults to true, screenshotCensoring defaults to false
+        // readReceipts defaults to true, typingIndicator defaults to true, screenshotCensoring defaults to false
         val (arrangement, repository) = Arrangement()
             .withGetPropertiesValuesReturning(JsonObject(emptyMap()))
             .withUpdateReadReceiptsLocallySuccess()
@@ -156,7 +156,7 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }
     }
@@ -175,7 +175,7 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }
         verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }
     }
@@ -194,9 +194,52 @@ class UserPropertyRepositoryTest {
         val result = repository.syncPropertiesStatuses()
 
         result.shouldSucceed()
-        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }
+    }
+
+    @Test
+    fun whenSyncingPropertiesAndReadReceiptModeIsNull_thenShouldDefaultToTrue() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withGetPropertiesValuesReturning(
+                JsonObject(
+                    mapOf(
+                        PropertyKey.WIRE_TYPING_INDICATOR_MODE.key to JsonPrimitive(1),
+                        PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE.key to JsonPrimitive(0),
+                    )
+                )
+            )
+            .withUpdateReadReceiptsLocallySuccess()
+            .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateScreenshotCensoringLocallySuccess()
+            .arrange()
+
+        val result = repository.syncPropertiesStatuses()
+
+        result.shouldSucceed()
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
+    }
+
+    @Test
+    fun whenSyncingPropertiesAndReadReceiptModeIsZero_thenShouldBeFalse() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withGetPropertiesValuesReturning(
+                JsonObject(
+                    mapOf(
+                        PropertyKey.WIRE_RECEIPT_MODE.key to JsonPrimitive(0),
+                    )
+                )
+            )
+            .withUpdateReadReceiptsLocallySuccess()
+            .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateScreenshotCensoringLocallySuccess()
+            .arrange()
+
+        val result = repository.syncPropertiesStatuses()
+
+        result.shouldSucceed()
+        verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(false)) }
     }
 
     @Test

@@ -17,14 +17,16 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
-import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.messaging.hooks.MessageDeleteEventData
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.Mockable
 
 @Mockable
@@ -40,7 +42,8 @@ internal class DeleteMessageHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
     private val notificationEventsManager: NotificationEventsManager,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
 ) : DeleteMessageHandler {
     override suspend fun invoke(
         content: MessageContent.DeleteMessage,
@@ -75,6 +78,10 @@ internal class DeleteMessageHandlerImpl internal constructor(
             }
             removeAssetIfExists(messageToRemove)
         }
+        persistenceEventHookNotifier.onMessageDeleted(
+            MessageDeleteEventData(conversationId, content.messageId),
+            selfUserId
+        )
     }
 
     /**

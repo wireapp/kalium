@@ -25,7 +25,10 @@ import io.mockative.Mockable
 
 @Mockable
 internal interface CallingParticipantsOrder {
-    suspend fun reorderItems(participants: List<Participant>): List<Participant>
+    suspend fun reorderItems(
+        participants: List<Participant>,
+        orderType: CallingParticipantsOrderType = CallingParticipantsOrderType.VIDEOS_FIRST
+    ): List<Participant>
 }
 
 internal class CallingParticipantsOrderImpl(
@@ -35,15 +38,23 @@ internal class CallingParticipantsOrderImpl(
     private val selfUserId: UserId
 ) : CallingParticipantsOrder {
 
-    override suspend fun reorderItems(participants: List<Participant>): List<Participant> {
-        return if (participants.isNotEmpty()) {
-            currentClientIdProvider().fold({
-                participants
-            }, { selfClientId ->
-
+    override suspend fun reorderItems(
+        participants: List<Participant>,
+        orderType: CallingParticipantsOrderType
+    ): List<Participant> = if (participants.isNotEmpty()) {
+        val (selfParticipant, otherParticipants) = currentClientIdProvider().fold(
+            {
+                null to participants // cannot determine, so return null as self participant and all list as other participants
+            },
+            { selfClientId ->
                 val selfParticipant = participantsFilter.selfParticipant(participants, selfUserId, selfClientId.value)
                 val otherParticipants = participantsFilter.otherParticipants(participants, selfClientId.value)
+                selfParticipant to otherParticipants
+            }
+        )
 
+        when (orderType) {
+            CallingParticipantsOrderType.VIDEOS_FIRST -> {
                 val participantsSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, true)
                 val participantsNotSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, false)
 
@@ -62,8 +73,28 @@ internal class CallingParticipantsOrderImpl(
                 val sortedParticipantsByName =
                     participantsSharingScreenSortedByName + participantsWithVideoOnSortedByName + participantsWithVideoOffSortedByName
 
-                return mutableListOf(selfParticipant) + sortedParticipantsByName
-            })
-        } else participants
-    }
+                listOfNotNull(selfParticipant) + sortedParticipantsByName
+            }
+
+            CallingParticipantsOrderType.ALPHABETICALLY -> {
+                val sortedParticipants = participantsOrderByName.sortItems(otherParticipants)
+                listOfNotNull(selfParticipant) + sortedParticipants
+            }
+        }
+    } else participants
+}
+
+public enum class CallingParticipantsOrderType {
+    /**
+     * Self participant is always on top, no matter if sharing screen, has video on or off.
+     * Then, the rest of the participants are sorted in the following order: first the participants sharing screen, then the participants
+     * with video on, and finally the participants with video off. Inside each of these groups, participants are sorted alphabetically.
+     */
+    VIDEOS_FIRST,
+
+    /**
+     * Self participant is always on top, no matter if sharing screen, has video on or off.
+     * Then, the rest of the participants are sorted alphabetically, regardless of their video or screen sharing status.
+     */
+    ALPHABETICALLY
 }

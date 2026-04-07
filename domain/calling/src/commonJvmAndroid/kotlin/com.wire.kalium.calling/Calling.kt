@@ -75,7 +75,7 @@ interface Calling : Library {
 
     fun wcall_run()
 
-    fun wcall_start(inst: Handle, conversationId: String, callType: Int, convType: Int, audioCbr: Int): Int
+    fun wcall_start(inst: Handle, conversationId: String, callType: Int, convType: Int, audioCbr: Int, meeting: Int): Int
 
     fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)
 
@@ -111,7 +111,8 @@ interface Calling : Library {
         convId: String,
         userId: String,
         clientId: String,
-        convType: Int
+        convType: Int,
+        meeting: Int
     ): Int
 
     fun wcall_resp(

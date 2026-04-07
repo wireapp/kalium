@@ -1,0 +1,52 @@
+name: Release Logic Artifacts
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+  attestations: write
+  artifact-metadata: write
+
+jobs:
+  validate-tag:
+    if: github.repository == 'wireapp/kalium' && !contains(github.ref_name, '-')
+    uses: ./.github/workflows/validate-release-tag.yml
+    with:
+      tag-name: ${{ github.ref_name }}
+    secrets: inherit
+
+  build:
+    needs: validate-tag
+    uses: ./.github/workflows/build-kalium-unified.yml
+    with:
+      concurrency-group-suffix: release
+      run-quality-checks: true
+      build-config: |
+        [
+          "logic-android-aar",
+          "logic-kmp"
+        ]
+    secrets: inherit
+
+  deploy:
+    needs: build
+    uses: ./.github/workflows/deploy-kalium.yml
+    with:
+      tag-name: ${{ github.ref_name }}
+      deployment-targets: |
+        [
+          {
+            "type": "github-release",
+            "artifacts": "logic-*",
+            "fail-on-unmatched": true
+          }
+        ]

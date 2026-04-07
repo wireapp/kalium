@@ -65,3 +65,17 @@ data class MessageReactionUserEntity(
     val emoji: String,
     val userId: QualifiedIDEntity,
 )
+
+//
+// Entities for remote backup sync payloads.
+//
+data class MessageReactionsSyncEntity(
+    val messageId: String,
+    val conversationId: QualifiedIDEntity,
+    val reactionsByUser: List<UserReactionsSyncEntity>,
+)
+
+data class UserReactionsSyncEntity(
+    val userId: QualifiedIDEntity,
+    val emojis: Set<String>,
+)

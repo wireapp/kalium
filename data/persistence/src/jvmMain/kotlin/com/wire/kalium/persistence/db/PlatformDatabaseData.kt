@@ -17,7 +17,9 @@
  */
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.db.SqlSchema
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.sqlite.SQLiteConfig
 import java.io.File
@@ -31,11 +33,36 @@ sealed interface StorageData {
     data object InMemory : StorageData
 }
 
-fun databaseDriver(uri: String, config: DriverConfigurationBuilder.() -> Unit = {}): SqlDriver {
+/**
+ * Creates a JVM SQLite driver with optional SQLDelight-managed schema initialization.
+ *
+ * Behavior:
+ * - When [schema] is provided: SQLDelight will create or migrate the database to [schema.version]
+ *   and update `PRAGMA user_version`.
+ * - When [schema] is null: a raw driver is returned and the caller is responsible for schema
+ *   creation and/or migration.
+ *
+ * Use the raw mode only for special flows that intentionally control migration externally
+ * (for example import/backup flows).
+ */
+fun databaseDriver(
+    uri: String,
+    schema: SqlSchema<QueryResult.Value<Unit>>? = null,
+    config: DriverConfigurationBuilder.() -> Unit = {}
+): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
     val sqliteConfig = SQLiteConfig()
     val journalMode = if (driverConfiguration.isWALEnabled) SQLiteConfig.JournalMode.WAL else SQLiteConfig.JournalMode.DELETE
     sqliteConfig.setJournalMode(journalMode)
     sqliteConfig.enforceForeignKeys(driverConfiguration.areForeignKeyConstraintsEnforced)
-    return JdbcSqliteDriver(uri, sqliteConfig.toProperties())
+    val properties = sqliteConfig.toProperties()
+    return if (schema == null) {
+        JdbcSqliteDriver(uri, properties)
+    } else {
+        JdbcSqliteDriver(
+            url = uri,
+            properties = properties,
+            schema = schema
+        )
+    }
 }

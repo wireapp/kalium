@@ -22,9 +22,12 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.message.receipt.ReceiptsMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import io.mockative.Mockable
 
 @Mockable
@@ -39,6 +42,7 @@ internal class ReceiptMessageHandlerImpl(
     private val selfUserId: UserId,
     private val receiptRepository: ReceiptRepository,
     private val messageRepository: MessageRepository,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val receiptsMapper: ReceiptsMapper = MapperProvider.receiptsMapper()
 ) : ReceiptMessageHandler {
 
@@ -60,6 +64,13 @@ internal class ReceiptMessageHandlerImpl(
             type = messageContent.type,
             messageIds = messageContent.messageIds
         )
+
+        if (messageContent.type == ReceiptType.READ) {
+            persistenceEventHookNotifier.onReadReceiptPersisted(
+                ReadReceiptEventData(message.conversationId, messageContent.messageIds, message.date),
+                selfUserId
+            )
+        }
     }
 
     private suspend fun updateMessagesStatus(

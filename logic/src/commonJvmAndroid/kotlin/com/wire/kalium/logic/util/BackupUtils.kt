@@ -156,9 +156,4 @@ private fun readCompressedEntry(
     return totalExtractedFilesSize
 }
 
-/**
- * Verification that the entry path is valid and does not contain any invalid characters leading to write in undesired directories.
- */
-internal fun isInvalidEntryPathDestination(entryName: String) = entryName.contains("../")
-
 private const val BUFFER_SIZE = 8192L

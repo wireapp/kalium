@@ -50,7 +50,8 @@ data class FullAccountEntity(
     val serverConfigId: String,
     val ssoId: SsoIdEntity?,
     val persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity,
-    val managedBy: ManagedByEntity?
+    val managedBy: ManagedByEntity?,
+    val nomadServiceUrl: String? = null
 )
 
 @Suppress("FunctionParameterNaming", "LongParameterList")
@@ -79,13 +80,15 @@ internal object AccountMapper {
         server_config_id: String,
         logout_reason: LogoutReason?,
         isPersistentWebSocketEnabled: Boolean,
-        managedBy: ManagedByEntity?
+        managedBy: ManagedByEntity?,
+        nomadServiceUrl: String?
     ): FullAccountEntity = FullAccountEntity(
         info = fromAccount(id, logout_reason),
         serverConfigId = server_config_id,
         ssoId = toSsoIdEntity(scim_external_id, subject, tenant),
         persistentWebSocketStatusEntity = fromPersistentWebSocketStatus(id, isPersistentWebSocketEnabled),
-        managedBy = managedBy
+        managedBy = managedBy,
+        nomadServiceUrl = nomadServiceUrl
     )
 
     fun toSsoIdEntity(
@@ -157,13 +160,14 @@ interface AccountsDAO {
         ssoIdEntity: SsoIdEntity?,
         managedByEntity: ManagedByEntity?,
         serverConfigId: String,
-        isPersistentWebSocketEnabled: Boolean
+        isPersistentWebSocketEnabled: Boolean,
+        nomadServiceUrl: String? = null
     )
 
     suspend fun observeAccount(userIDEntity: UserIDEntity): Flow<AccountInfoEntity?>
     suspend fun allAccountList(): List<AccountInfoEntity>
     suspend fun allValidAccountList(): List<AccountInfoEntity>
-    fun observerValidAccountList(): Flow<List<AccountInfoEntity>>
+    suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>>
     suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>>
     suspend fun isFederated(userIDEntity: UserIDEntity): Boolean?
     suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean
@@ -181,6 +185,7 @@ interface AccountsDAO {
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>>
     suspend fun getAccountManagedBy(userIDEntity: UserIDEntity): ManagedByEntity?
     suspend fun validAccountWithServerConfigId(): Map<UserIDEntity, ServerConfigEntity>
+    suspend fun doesValidNomadAccountExist(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -206,7 +211,8 @@ internal class AccountsDAOImpl internal constructor(
         ssoIdEntity: SsoIdEntity?,
         managedByEntity: ManagedByEntity?,
         serverConfigId: String,
-        isPersistentWebSocketEnabled: Boolean
+        isPersistentWebSocketEnabled: Boolean,
+        nomadServiceUrl: String?
     ) {
         withContext(queriesContext) {
             queries.insertOrReplace(
@@ -218,6 +224,7 @@ internal class AccountsDAOImpl internal constructor(
                 logoutReason = null,
                 isPersistentWebSocketEnabled = isPersistentWebSocketEnabled,
                 managedBy = managedByEntity,
+                nomadServiceUrl = nomadServiceUrl,
             )
         }
     }
@@ -236,7 +243,7 @@ internal class AccountsDAOImpl internal constructor(
         queries.allValidAccounts(mapper = mapper::fromAccount).executeAsList()
     }
 
-    override fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
+    override suspend fun observerValidAccountList(): Flow<List<AccountInfoEntity>> =
         queries.allValidAccounts(mapper = mapper::fromAccount)
             .asFlow()
             .mapToList()
@@ -335,4 +342,8 @@ internal class AccountsDAOImpl internal constructor(
 
     override fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? =
         queries.fullAccountInfo(userIDEntity, mapper = mapper::fromFullAccountInfo).executeAsOneOrNull()
+
+    override suspend fun doesValidNomadAccountExist(): Boolean = withContext(queriesContext) {
+        queries.doesValidNomadAccountExist().executeAsOne()
+    }
 }

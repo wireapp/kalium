@@ -70,10 +70,6 @@ jobs:
       #          disable-animations: false
       #          script: echo "Generated AVD snapshot for caching."
 
-      - name: Build the samples
-        run: |
-          ./gradlew :sample:samples:compileAndroidDeviceTestSources
-
         # API 30+ emulators only have x86_64 system images.
       - name: Get AVD info
         uses: ./.github/actions/get-avd-info
@@ -104,14 +100,14 @@ jobs:
 
       - name: Archive Test Reports
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: ./**/build/reports/tests/**
 
       - name: Archive Test Results
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: test-results
           path: |
@@ -140,7 +136,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v8.0.0
         continue-on-error: true
         with:
           name: test-results

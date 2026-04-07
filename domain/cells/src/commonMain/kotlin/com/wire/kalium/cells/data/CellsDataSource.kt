@@ -91,8 +91,8 @@ internal class CellsDataSource internal constructor(
         query: String,
         limit: Int,
         offset: Int,
-        onlyDeleted: Boolean,
-        tags: List<String>
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
     ) = withContext(dispatchers.io) {
         wrapApiRequest {
             if (path == null) {
@@ -100,7 +100,8 @@ internal class CellsDataSource internal constructor(
                     query = query,
                     limit = limit,
                     offset = offset,
-                    tags = tags
+                    fileFilters = fileFilters,
+                    sortingSpec = sortingSpec,
                 )
             } else {
                 cellsApi.getNodesForPath(
@@ -108,9 +109,8 @@ internal class CellsDataSource internal constructor(
                     path = path,
                     limit = limit,
                     offset = offset,
-                    onlyDeleted = onlyDeleted,
-                    onlyFolders = false,
-                    tags = tags
+                    fileFilters = fileFilters,
+                    sortingSpec = sortingSpec,
                 )
             }
         }.map { response ->
@@ -128,10 +128,16 @@ internal class CellsDataSource internal constructor(
     override suspend fun getNodesByPath(
         query: String,
         path: String,
-        onlyFolders: Boolean
+        fileFilters: FileFilters,
+        sortingSpec: SortingSpec,
     ): Either<NetworkFailure, List<CellNode>> = withContext(dispatchers.io) {
         wrapApiRequest {
-            cellsApi.getNodesForPath(query = query, path = path, onlyFolders = onlyFolders).mapSuccess { response ->
+            cellsApi.getNodesForPath(
+                query = query,
+                path = path,
+                fileFilters = fileFilters,
+                sortingSpec = sortingSpec
+            ).mapSuccess { response ->
                 response.nodes.map { it.toModel() }
             }
         }

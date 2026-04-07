@@ -51,6 +51,8 @@ import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveAskCallFeedbackUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveCallQualityDataUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveCallQualityDataUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveEndCallDueToConversationDegradationUseCase
@@ -76,6 +78,8 @@ import com.wire.kalium.logic.feature.call.usecase.RejectCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.RequestVideoStreamsUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetBackgroundUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetBackgroundUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.SetCallQualityIntervalUseCase
+import com.wire.kalium.logic.feature.call.usecase.SetCallQualityIntervalUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.SetTestPreviewActiveUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestRemoteVideoStatesUseCase
 import com.wire.kalium.logic.feature.call.usecase.SetTestVideoTypeUseCase
@@ -269,4 +273,10 @@ public class CallsScope internal constructor(
 
     public val setBackground: SetBackgroundUseCase
         get() = SetBackgroundUseCaseImpl(callBackgroundManager = callBackgroundManager)
+
+    public val observeCallQualityData: ObserveCallQualityDataUseCase
+        get() = ObserveCallQualityDataUseCaseImpl(callRepository = callRepository)
+
+    public val setCallQualityInterval: SetCallQualityIntervalUseCase
+        get() = SetCallQualityIntervalUseCaseImpl(callManager = callManager, dispatchers = dispatcher)
 }

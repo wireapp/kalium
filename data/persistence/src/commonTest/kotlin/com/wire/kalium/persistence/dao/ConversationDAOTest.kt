@@ -303,6 +303,31 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingConversation_ThenConversationGroupStateCanBeUpdatedByConversationId() = runTest(dispatcher) {
+        conversationDAO.insertConversation(
+            conversationEntity3.copy(
+                protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                    groupId = (conversationEntity3.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                    groupState = ConversationEntity.GroupState.ESTABLISHED,
+                    epoch = 123UL,
+                    cipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+                    keyingMaterialLastUpdate = Instant.DISTANT_PAST
+                )
+            )
+        )
+
+        conversationDAO.updateConversationGroupStateByConversationId(
+            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+            conversationEntity3.id
+        )
+        val result = conversationDAO.getConversationDetailsById(conversationEntity3.id)
+        assertEquals(
+            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState
+        )
+    }
+
+    @Test
     fun givenExistingConversation_ThenConversationGroupStateCanBeUpdatedToEstablished() = runTest(dispatcher) {
         conversationDAO.insertConversation(
             conversationEntity3.copy(
@@ -403,6 +428,80 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
 
     }
+
+    @Test
+    fun givenOlderTargetAndNewerSources_whenUpdatingModifiedDateToMaxOfSources_thenTargetDateIsUpdatedToSourceMax() =
+        runTest(dispatcher) {
+            val targetId = QualifiedIDEntity("target", "wire.com")
+            val sourceId1 = QualifiedIDEntity("source1", "wire.com")
+            val sourceId2 = QualifiedIDEntity("source2", "wire.com")
+
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = targetId,
+                    lastModified = Instant.fromEpochMilliseconds(10)
+                )
+            )
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = sourceId1,
+                    lastModified = Instant.fromEpochMilliseconds(20)
+                )
+            )
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = sourceId2,
+                    lastModified = Instant.fromEpochMilliseconds(30)
+                )
+            )
+
+            conversationDAO.updateConversationModifiedDateToMaxOfSources(
+                targetId = targetId,
+                sourceIds = listOf(sourceId1, sourceId2)
+            )
+
+            val updatedTarget = conversationDAO.getConversationById(targetId)
+
+            assertNotNull(updatedTarget)
+            assertEquals(Instant.fromEpochMilliseconds(30), updatedTarget.lastModifiedDate)
+        }
+
+    @Test
+    fun givenNewerTargetAndOlderSources_whenUpdatingModifiedDateToMaxOfSources_thenTargetDateIsNotDecreased() =
+        runTest(dispatcher) {
+            val targetId = QualifiedIDEntity("target", "wire.com")
+            val sourceId1 = QualifiedIDEntity("source1", "wire.com")
+            val sourceId2 = QualifiedIDEntity("source2", "wire.com")
+
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = targetId,
+                    lastModified = Instant.fromEpochMilliseconds(30)
+                )
+            )
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = sourceId1,
+                    lastModified = Instant.fromEpochMilliseconds(1)
+                )
+            )
+            conversationDAO.insertConversation(
+                newConversationEntity(
+                    id = sourceId2,
+                    lastModified = Instant.fromEpochMilliseconds(2)
+                )
+            )
+
+            conversationDAO.updateConversationModifiedDateToMaxOfSources(
+                targetId = targetId,
+                sourceIds = listOf(sourceId1, sourceId2)
+            )
+
+            val updatedTarget = conversationDAO.getConversationById(targetId)
+
+            assertNotNull(updatedTarget)
+            assertEquals(Instant.fromEpochMilliseconds(30), updatedTarget.lastModifiedDate)
+        }
 
     @Test
     fun givenExistingConversation_whenUpdatingTheConversationLastReadDate_ThenTheConversationHasTheDate() = runTest(dispatcher) {
@@ -2906,6 +3005,72 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // then
         assertFalse(hasUnread)
+    }
+
+    @Test
+    fun givenUnreadMessagesInTwoConversations_whenUpdateReadDatesAndGetHasUnreadEvents_thenReturnsMapForEachConversation() = runTest(dispatcher) {
+        // given
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        insertTeamUserAndMember(team, user2, conversationEntity2.id)
+
+        val messageDate = Clock.System.now()
+        val messages = listOf(
+            newRegularMessageEntity(
+                id = "conversation-1-message",
+                conversationId = conversationEntity1.id,
+                senderUserId = user1.id,
+                date = messageDate
+            ),
+            newRegularMessageEntity(
+                id = "conversation-2-message",
+                conversationId = conversationEntity2.id,
+                senderUserId = user2.id,
+                date = messageDate
+            )
+        )
+        messageDAO.insertOrIgnoreMessages(messages, withUnreadEvents = true)
+
+        // when
+        val hasUnreadByConversation = conversationDAO.updateReadDatesAndGetHasUnreadEvents(
+            mapOf(
+                conversationEntity1.id to (messageDate - 1.days),
+                conversationEntity2.id to (messageDate + 1.days),
+            )
+        )
+
+        // then
+        assertEquals(
+            mapOf(
+                conversationEntity1.id to true,
+                conversationEntity2.id to false
+            ),
+            hasUnreadByConversation
+        )
+    }
+
+    @Test
+    fun givenExistingAndMissingConversations_whenUpdatingReadDates_thenReturnUpdatedCountForExistingOnes() = runTest(dispatcher) {
+        val firstReadDate = Instant.fromEpochMilliseconds(1_648_654_560_000)
+        val secondReadDate = Instant.fromEpochMilliseconds(1_648_654_561_000)
+        val missingConversationId = QualifiedIDEntity("missing-conversation", "domain")
+
+        conversationDAO.insertConversation(conversationEntity1)
+        conversationDAO.insertConversation(conversationEntity2)
+
+        val updatedCount = conversationDAO.updateConversationReadDates(
+            mapOf(
+                conversationEntity1.id to firstReadDate,
+                conversationEntity2.id to secondReadDate,
+                missingConversationId to Instant.fromEpochMilliseconds(1_648_654_562_000)
+            )
+        )
+
+        assertEquals(2, updatedCount)
+        assertEquals(firstReadDate, conversationDAO.getConversationDetailsById(conversationEntity1.id)?.lastReadDate)
+        assertEquals(secondReadDate, conversationDAO.getConversationDetailsById(conversationEntity2.id)?.lastReadDate)
+        assertEquals(null, conversationDAO.getConversationDetailsById(missingConversationId))
     }
 
     @Test

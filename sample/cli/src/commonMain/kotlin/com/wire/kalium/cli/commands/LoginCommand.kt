@@ -26,6 +26,7 @@ import com.github.ajalt.clikt.parameters.options.prompt
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.verification.VerifiableAction
+import com.wire.kalium.logic.data.session.StoreSessionParam
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
@@ -123,13 +124,15 @@ class LoginCommand : CliktCommand(name = "login") {
 
         val userId = coreLogic.globalScope {
             addAuthenticatedAccount(
-                loginResult.serverConfigId,
-                loginResult.ssoID,
-                loginResult.authData,
-                null,
-                false,
-                null,
-                true
+                session = StoreSessionParam(
+                    serverConfigId = loginResult.serverConfigId,
+                    ssoId = loginResult.ssoID,
+                    accountTokens = loginResult.authData,
+                    proxyCredentials = null,
+                    managedBy = null,
+                    isPersistentWebSocketEnabled = false,
+                ),
+                replace = true
             )
             loginResult.authData.userId
         }

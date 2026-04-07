@@ -81,7 +81,8 @@ internal class LegalHoldSystemMessagesHandlerImpl(
                 createSystemMessage(MessageContent.LegalHold.ForConversation.Enabled, conversationId, instant)
             )
 
-            else -> { /* do nothing */ }
+            Conversation.LegalHoldStatus.DEGRADED,
+            Conversation.LegalHoldStatus.UNKNOWN -> { /* do nothing */ }
         }
     }
 

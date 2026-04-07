@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
 import app.cash.turbine.test
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
@@ -27,12 +28,15 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.util.IgnoreIOS
+import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -67,7 +71,9 @@ class ReceiptMessageHandlerTest {
 
         private val messageRepository: MessageRepository = mock(MessageRepository::class)
 
-    private val receiptMessageHandler = ReceiptMessageHandlerImpl(SELF_USER_ID, receiptRepository, messageRepository)
+    private val receiptMessageHandler = ReceiptMessageHandlerImpl(
+        SELF_USER_ID, receiptRepository, messageRepository, NoOpPersistenceEventHookNotifier
+    )
 
     private suspend fun insertTestData() {
         userDatabase.builder.userDAO.upsertUser(TestUser.ENTITY.copy(id = SELF_USER_ID_ENTITY))
@@ -202,6 +208,77 @@ class ReceiptMessageHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenReadReceipt_whenHandled_thenHookIsNotifiedForReadOnly() = runTest {
+        // given
+        val hookNotifier = RecordingPersistenceEventHookNotifier()
+        val handler = ReceiptMessageHandlerImpl(
+            SELF_USER_ID, receiptRepository, messageRepository, hookNotifier
+        )
+        insertTestData()
+        val date = DateTimeUtil.currentInstant()
+
+        coEvery {
+            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
+        }.returns(Either.Right(Unit))
+
+        val readContent = MessageContent.Receipt(type = ReceiptType.READ, messageIds = listOf(MESSAGE_ID))
+        handler.handle(
+            message = Message.Signaling(
+                id = "signalingId",
+                content = readContent,
+                conversationId = CONVERSATION_ID,
+                date = date,
+                senderUserId = OTHER_USER_ID,
+                senderClientId = ClientId("SomeClientId"),
+                status = Message.Status.Sent,
+                isSelfMessage = false,
+                expirationData = null
+            ),
+            messageContent = readContent
+        )
+
+        // then READ receipt should trigger hook
+        assertEquals(1, hookNotifier.readReceiptCalls.size)
+        val (data, selfUserId) = hookNotifier.readReceiptCalls.single()
+        assertEquals(CONVERSATION_ID, data.conversationId)
+        assertEquals(listOf(MESSAGE_ID), data.messageIds)
+        assertEquals(SELF_USER_ID, selfUserId)
+    }
+
+    @Test
+    fun givenDeliveredReceipt_whenHandled_thenHookIsNotNotified() = runTest {
+        // given
+        val hookNotifier = RecordingPersistenceEventHookNotifier()
+        val handler = ReceiptMessageHandlerImpl(
+            SELF_USER_ID, receiptRepository, messageRepository, hookNotifier
+        )
+        val date = DateTimeUtil.currentInstant()
+
+        coEvery {
+            messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
+        }.returns(Either.Right(Unit))
+
+        val deliveredContent = MessageContent.Receipt(type = ReceiptType.DELIVERED, messageIds = listOf(MESSAGE_ID))
+        handler.handle(
+            message = Message.Signaling(
+                id = "signalingId",
+                content = deliveredContent,
+                conversationId = CONVERSATION_ID,
+                date = date,
+                senderUserId = OTHER_USER_ID,
+                senderClientId = ClientId("SomeClientId"),
+                status = Message.Status.Sent,
+                isSelfMessage = false,
+                expirationData = null
+            ),
+            messageContent = deliveredContent
+        )
+
+        // then DELIVERED receipt should NOT trigger hook
+        assertTrue(hookNotifier.readReceiptCalls.isEmpty())
+    }
+
     private suspend fun handleNewReceipt(
         type: ReceiptType,
         date: Instant,
@@ -226,6 +303,14 @@ class ReceiptMessageHandlerTest {
             ),
             messageContent = content
         )
+    }
+
+    private class RecordingPersistenceEventHookNotifier : PersistenceEventHookNotifier {
+        val readReceiptCalls = mutableListOf<Pair<ReadReceiptEventData, UserId>>()
+
+        override suspend fun onReadReceiptPersisted(data: ReadReceiptEventData, selfUserId: UserId) {
+            readReceiptCalls += data to selfUserId
+        }
     }
 
     private companion object {

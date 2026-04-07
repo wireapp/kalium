@@ -20,6 +20,8 @@ package com.wire.kalium.network.api.v6.unauthenticated.networkContainer
 
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApiImpl
+import com.wire.kalium.network.api.base.unauthenticated.systemsettings.UnauthorizedSettingsApi
+import com.wire.kalium.network.api.base.unauthenticated.systemsettings.UnauthorizedSettingsApiImpl
 import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
 import com.wire.kalium.network.api.base.unauthenticated.domainregistration.GetDomainRegistrationApi
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
@@ -72,6 +74,7 @@ class UnauthenticatedNetworkContainerV6 internal constructor(
     override val registerApi: RegisterApi get() = RegisterApiV6(unauthenticatedNetworkClient)
     override val sso: SSOLoginApi get() = SSOLoginApiV6(unauthenticatedNetworkClient)
     override val appVersioningApi: AppVersioningApi get() = AppVersioningApiImpl(unauthenticatedNetworkClient)
+    override val unauthorizedSettingsApi: UnauthorizedSettingsApi get() = UnauthorizedSettingsApiImpl(unauthenticatedNetworkClient)
     override val getDomainRegistrationApi: GetDomainRegistrationApi
         get() = GetDomainRegistrationApiV6(unauthenticatedNetworkClient)
 }

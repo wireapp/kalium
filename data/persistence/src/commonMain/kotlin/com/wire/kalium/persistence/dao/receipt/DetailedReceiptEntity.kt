@@ -37,3 +37,14 @@ data class DetailedReceiptEntity(
     val availabilityStatus: UserAvailabilityStatusEntity,
     val accentId: Int
 )
+
+data class MessageReadReceiptsSyncEntity(
+    val messageId: String,
+    val conversationId: QualifiedIDEntity,
+    val receipts: List<UserReadReceiptSyncEntity>,
+)
+
+data class UserReadReceiptSyncEntity(
+    val userId: QualifiedIDEntity,
+    val date: Instant,
+)

@@ -39,15 +39,11 @@ class EventDAOImpl(
             .flowOn(readDispatcher.value)
     }
 
-    override suspend fun observeUnprocessedEvents(): Flow<List<EventEntity>> {
-        return eventsQueries.selectUnprocessedEvents(::mapEvent)
+    override suspend fun observeUnprocessedEvents(limit: Long): Flow<List<EventEntity>> {
+        return eventsQueries.selectUnprocessedEvents(limit, ::mapEvent)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
-    }
-
-    override suspend fun getUnprocessedEvents(): List<EventEntity> = withContext(readDispatcher.value) {
-        eventsQueries.selectUnprocessedEvents(::mapEvent).executeAsList()
     }
 
     override suspend fun deleteUnprocessedLiveEventsByIds(ids: List<String>) {

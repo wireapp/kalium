@@ -48,6 +48,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
 import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
@@ -194,8 +195,7 @@ internal interface MessageRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetTransferStatus()
-    suspend fun markMessagesAsDecryptionResolved(
-        conversationId: ConversationId,
+    suspend fun markProteusMessagesAsDecryptionResolved(
         userId: UserId,
         clientId: ClientId,
     ): Either<CoreFailure, Unit>
@@ -331,6 +331,7 @@ internal class MessageDataSource internal constructor(
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
+    nomadMessagePagingCoordinator: NomadMessagePagingCoordinator? = null,
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
@@ -340,7 +341,11 @@ internal class MessageDataSource internal constructor(
     private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
 ) : MessageRepository {
 
-    override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, messageMapper)
+    override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(
+        messageDAO,
+        messageMapper,
+        nomadMessagePagingCoordinator,
+    )
 
     override suspend fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
@@ -666,13 +671,11 @@ internal class MessageDataSource internal constructor(
         }
     }
 
-    override suspend fun markMessagesAsDecryptionResolved(
-        conversationId: ConversationId,
+    override suspend fun markProteusMessagesAsDecryptionResolved(
         userId: UserId,
         clientId: ClientId,
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.markMessagesAsDecryptionResolved(
-            conversationId = conversationId.toDao(),
+        messageDAO.markProteusMessagesAsDecryptionResolved(
             userId = userId.toDao(),
             clientId = clientId.value
         )

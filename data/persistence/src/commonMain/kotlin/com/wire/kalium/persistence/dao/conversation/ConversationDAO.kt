@@ -50,6 +50,10 @@ interface ConversationDAO {
     suspend fun insertOrUpdateLastModified(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
+    suspend fun updateConversationGroupStateByConversationId(
+        groupState: ConversationEntity.GroupState,
+        conversationId: QualifiedIDEntity
+    )
     suspend fun updateMlsGroupStateAndCipherSuite(
         groupState: ConversationEntity.GroupState,
         cipherSuite: ConversationEntity.CipherSuite,
@@ -57,8 +61,17 @@ interface ConversationDAO {
     )
 
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant)
+    suspend fun updateConversationModifiedDateToMaxOfSources(
+        targetId: QualifiedIDEntity,
+        sourceIds: Collection<QualifiedIDEntity>
+    )
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant? = null)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
+    suspend fun updateConversationReadDates(conversationDates: Map<QualifiedIDEntity, Instant>): Int
+    suspend fun updateConversationReadAndModifiedDates(
+        readDates: Map<QualifiedIDEntity, Instant>,
+        modifiedDates: Map<QualifiedIDEntity, Instant>,
+    )
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun getAllConversationDetails(
@@ -171,7 +184,9 @@ interface ConversationDAO {
     suspend fun getCellName(conversationId: QualifiedIDEntity): String?
     suspend fun hasConversationWithCell(): Boolean
     suspend fun updateReadDateAndGetHasUnreadEvents(conversationID: QualifiedIDEntity, date: Instant): Boolean
+    suspend fun updateReadDatesAndGetHasUnreadEvents(conversationDates: Map<QualifiedIDEntity, Instant>): Map<QualifiedIDEntity, Boolean>
     suspend fun getMLSConversationsByDomain(domain: String): List<ConversationEntity>
+    suspend fun getCellGroupConversations(): List<ConversationEntity>
 }
 
 data class NameAndHandleEntity(

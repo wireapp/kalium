@@ -25,22 +25,12 @@ import com.wire.kalium.logic.data.user.OtherUserMinimized
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.datetime.Instant
 
 class CallMetadataProfile(
     data: Map<ConversationId, CallMetadata> = emptyMap()
-) {
-    private val flowData: Map<ConversationId, MutableStateFlow<CallMetadata>> = data.mapValues {
-        MutableStateFlow(it.value)
-    }
-
-    operator fun get(conversationId: ConversationId): MutableStateFlow<CallMetadata>? = flowData[conversationId]
-
-    fun containsKey(conversationId: ConversationId): Boolean = flowData.containsKey(conversationId)
-
-    fun plus(conversationId: ConversationId, metadata: CallMetadata): CallMetadataProfile =
-        CallMetadataProfile(data = flowData.mapValues { it.value.value } + (conversationId to metadata))
+) : Map<ConversationId, CallMetadata> by data {
+    fun plus(conversationId: ConversationId, metadata: CallMetadata) = CallMetadataProfile(this + (conversationId to metadata))
 }
 
 data class CallMetadata(

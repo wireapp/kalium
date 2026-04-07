@@ -25,6 +25,7 @@ import com.wire.kalium.network.api.base.unauthenticated.domainregistration.GetDo
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.systemsettings.UnauthorizedSettingsApi
 import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
@@ -36,6 +37,7 @@ import com.wire.kalium.network.api.v11.unauthenticated.networkContainer.Unauthen
 import com.wire.kalium.network.api.v12.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV12
 import com.wire.kalium.network.api.v13.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV13
 import com.wire.kalium.network.api.v14.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV14
+import com.wire.kalium.network.api.v15.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV15
 import com.wire.kalium.network.api.v2.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v4.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV5
@@ -52,6 +54,7 @@ interface UnauthenticatedNetworkContainer {
     val registerApi: RegisterApi
     val sso: SSOLoginApi
     val appVersioningApi: AppVersioningApi
+    val unauthorizedSettingsApi: UnauthorizedSettingsApi
     val verificationCodeApi: VerificationCodeApi
     val domainLookupApi: DomainLookupApi
     val remoteVersion: VersionApi
@@ -187,6 +190,14 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 14 -> UnauthenticatedNetworkContainerV14(
+                    backendLinks = serverConfigDTO,
+                    proxyCredentials = proxyCredentials,
+                    certificatePinning = certificatePinning,
+                    mockEngine = mockEngine,
+                    developmentApiEnabled = developmentApiEnabled
+                )
+
+                15 -> UnauthenticatedNetworkContainerV15(
                     backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,

@@ -73,7 +73,12 @@ tasks.shadowJar {
     exclude("META-INF/MANIFEST.MF")
 
     manifest {
-        attributes(mapOf("Main-Class" to mainFunctionClassName))
+        attributes(
+            mapOf(
+                "Main-Class" to mainFunctionClassName,
+                "Git-Commit" to rootProject.version
+            )
+        )
     }
 }
 
@@ -98,6 +103,7 @@ dependencies {
 
     // Okio
     implementation(libs.okio.core)
+    implementation(libs.ktxSerialization)
 
     // Test
     testImplementation(libs.kotlin.test)
