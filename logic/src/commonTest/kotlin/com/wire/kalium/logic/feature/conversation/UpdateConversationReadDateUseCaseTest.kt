@@ -142,6 +142,44 @@ class UpdateConversationReadDateUseCaseTest {
     }
 
     @Test
+    fun givenProvidedTimeIsNewer_whenInvokedImmediately_thenSendConfirmationIsCalled() = runTest {
+        val persistedLastRead = Clock.System.now()
+        val newLastRead = persistedLastRead + 1.seconds
+        val conversationId = TestConversation.CONVERSATION.id
+        val (arrangement, updateConversationReadDateUseCase) = arrange {
+            withObserveByIdReturning(
+                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
+            )
+        }
+
+        updateConversationReadDateUseCase(conversationId, newLastRead, invokeImmediately = true)
+
+        coVerify {
+            arrangement.sendConfirmation(eq(conversationId), eq(persistedLastRead), eq(newLastRead))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenStoredLastReadDateIsNewer_whenInvokedImmediately_thenSendConfirmationIsNotCalled() = runTest {
+        val persistedLastRead = Clock.System.now()
+        val conversationId = TestConversation.CONVERSATION.id
+        val (arrangement, updateConversationReadDateUseCase) = arrange {
+            withObserveByIdReturning(
+                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
+            )
+        }
+
+        updateConversationReadDateUseCase(conversationId, persistedLastRead - 1.seconds, invokeImmediately = true)
+
+        coVerify {
+            arrangement.sendConfirmation(any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateConversationReadDate(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
     fun givenAnyCall_whenInvoking_thenShouldEnqueueWork() = runTest {
         val expectedId = TestConversation.CONVERSATION.id.copy(value = "potato")
         val expectedTime = Clock.System.now()
