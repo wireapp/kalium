@@ -54,14 +54,9 @@ internal class ObserveAllServicesUseCaseImpl internal constructor(
         //  or have a in memory timer to avoid calling it too often
         val scope = CoroutineScope(currentCoroutineContext())
         scope.launch {
-
-//             if (mls && appsEnabled) {
-//                 search in DB for user with type=app
-//             } else {
-                selfTeamIdProvider().getOrNull()?.let { teamId ->
-                    teamRepository.syncServices(teamId = teamId)
-                }
-            // }
+            selfTeamIdProvider().getOrNull()?.let { teamId ->
+                teamRepository.syncServices(teamId = teamId)
+            }
         }
 
         emitAll(
