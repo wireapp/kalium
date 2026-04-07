@@ -56,7 +56,7 @@ class NomadConversationMetadataSyncRepositoryTest {
     }
 
     @Test
-    fun givenMissingStore_whenApplyingMetadata_thenReturnZero() = runTest {
+    fun givenMissingStore_whenApplyingMetadata_thenReturnSuccess() = runTest {
         val repository = NomadConversationMetadataSyncDataSource(
             nomadDeviceSyncApiProvider = {
                 FakeNomadDeviceSyncApi(NetworkResponse.Success(metadataResponse(), emptyMap(), 200))
@@ -64,14 +64,14 @@ class NomadConversationMetadataSyncRepositoryTest {
             metadataStoreProvider = { null }
         )
 
-        val result = repository.applyLastReadMetadata(SELF_USER_ID, metadataToSync())
+        val result = repository.applyMetadata(SELF_USER_ID, metadataToSync())
 
-        assertEquals(0, assertIs<Either.Right<Int>>(result).value)
+        assertIs<Either.Right<Unit>>(result)
     }
 
     @Test
-    fun givenStore_whenApplyingMetadata_thenForwardAndReturnCount() = runTest {
-        val store = FakeNomadConversationMetadataStore(updatedConversations = 2)
+    fun givenStore_whenApplyingMetadata_thenForwardAndReturnSuccess() = runTest {
+        val store = FakeNomadConversationMetadataStore()
         val repository = NomadConversationMetadataSyncDataSource(
             nomadDeviceSyncApiProvider = {
                 FakeNomadDeviceSyncApi(NetworkResponse.Success(metadataResponse(), emptyMap(), 200))
@@ -79,20 +79,17 @@ class NomadConversationMetadataSyncRepositoryTest {
             metadataStoreProvider = { store }
         )
 
-        val result = repository.applyLastReadMetadata(SELF_USER_ID, metadataToSync())
+        val result = repository.applyMetadata(SELF_USER_ID, metadataToSync())
 
-        assertEquals(2, assertIs<Either.Right<Int>>(result).value)
+        assertIs<Either.Right<Unit>>(result)
         assertEquals(metadataToSync(), store.appliedMetadata)
     }
 
-    private class FakeNomadConversationMetadataStore(
-        private val updatedConversations: Int,
-    ) : NomadConversationMetadataStore {
+    private class FakeNomadConversationMetadataStore : NomadConversationMetadataStore {
         var appliedMetadata: List<NomadConversationMetadataToSync> = emptyList()
 
-        override suspend fun applyLastReadMetadata(metadata: List<NomadConversationMetadataToSync>): Int {
+        override suspend fun applyMetadata(metadata: List<NomadConversationMetadataToSync>) {
             appliedMetadata = metadata
-            return updatedConversations
         }
     }
 
@@ -134,7 +131,7 @@ class NomadConversationMetadataSyncRepositoryTest {
             conversations = listOf(
                 NomadConversationMetadataItem(
                     conversation = Conversation(id = CONVERSATION_ID, domain = CONVERSATION_DOMAIN),
-                    metadata = NomadConversationMetadata(lastRead = LAST_READ_TIMESTAMP)
+                    metadata = NomadConversationMetadata(lastRead = LAST_READ_TIMESTAMP, lastModified = LAST_MODIFIED_TIMESTAMP)
                 )
             )
         )
@@ -143,11 +140,13 @@ class NomadConversationMetadataSyncRepositoryTest {
         listOf(
             NomadConversationMetadataToSync(
                 conversationId = QualifiedIDEntity(CONVERSATION_ID, CONVERSATION_DOMAIN),
-                lastReadDate = Instant.fromEpochMilliseconds(LAST_READ_TIMESTAMP)
+                lastReadDate = Instant.fromEpochMilliseconds(LAST_READ_TIMESTAMP),
+                lastModifiedDate = Instant.fromEpochMilliseconds(LAST_MODIFIED_TIMESTAMP)
             ),
             NomadConversationMetadataToSync(
                 conversationId = QualifiedIDEntity("conversation-id-2", CONVERSATION_DOMAIN),
-                lastReadDate = Instant.fromEpochMilliseconds(LAST_READ_TIMESTAMP + 1_000)
+                lastReadDate = Instant.fromEpochMilliseconds(LAST_READ_TIMESTAMP + 1_000),
+                lastModifiedDate = Instant.fromEpochMilliseconds(LAST_MODIFIED_TIMESTAMP + 1_000)
             )
         )
 
@@ -156,5 +155,6 @@ class NomadConversationMetadataSyncRepositoryTest {
         const val CONVERSATION_ID = "conversation-id"
         const val CONVERSATION_DOMAIN = "wire.test"
         const val LAST_READ_TIMESTAMP = 1_707_235_200_000L
+        const val LAST_MODIFIED_TIMESTAMP = 1_707_235_300_000L
     }
 }

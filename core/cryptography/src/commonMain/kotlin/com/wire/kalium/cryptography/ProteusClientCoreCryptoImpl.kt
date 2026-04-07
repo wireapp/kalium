@@ -198,7 +198,8 @@ class ProteusClientCoreCryptoImpl private constructor(
         } catch (e: Exception) {
             kaliumLogger.e(
                 "Unexpected non-Proteus exception in " +
-                        "ProteusClientCoreCrypto.wrapException: ${e::class.simpleName}: $e"
+                        "ProteusClientCoreCrypto.wrapException: ${e::class.simpleName}: $e\n" +
+                        "Stack trace: ${e.stackTraceToString()}"
             )
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, null, e)
         }

@@ -38,10 +38,10 @@ import com.wire.kalium.logic.data.message.hasValidData
 import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
+import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
@@ -89,7 +89,6 @@ internal class ApplicationMessageHandlerImpl(
     private val userRepository: UserRepository,
     private val messageRepository: MessageRepository,
     private val assetMessageHandler: AssetMessageHandler,
-    private val callManagerImpl: Lazy<CallManager>,
     private val persistMessage: PersistMessageUseCase,
     private val persistReaction: PersistReactionUseCase,
     private val editTextHandler: MessageTextEditHandler,
@@ -105,6 +104,7 @@ internal class ApplicationMessageHandlerImpl(
     private val inCallReactionsRepository: InCallReactionsRepository,
     private val buttonActionHandler: ButtonActionHandler,
     private val messageCompositeEditHandler: MessageCompositeEditHandler,
+    private val callingMessageHandler: CallingMessageHandler,
     private val selfUserId: UserId,
 ) : ApplicationMessageHandler {
 
@@ -195,12 +195,8 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.DeleteForMe -> deleteForMeHandler.handle(signaling, content)
             is MessageContent.Calling -> {
                 logger.d("MessageContent.Calling")
-                callManagerImpl.value.onCallingMessageReceived(
-                    message = signaling,
-                    content = content,
-                )
+                callingMessageHandler.handle(message = signaling, content = content)
             }
-
             is MessageContent.TextEdited -> editTextHandler.handle(signaling, content)
             is MessageContent.LastRead -> lastReadContentHandler.handle(signaling, content)
             is MessageContent.Cleared -> clearConversationContentHandler.handle(transactionContext, signaling, content)

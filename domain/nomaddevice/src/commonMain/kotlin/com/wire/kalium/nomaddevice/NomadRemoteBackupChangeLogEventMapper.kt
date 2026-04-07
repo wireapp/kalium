@@ -18,7 +18,7 @@
 
 package com.wire.kalium.nomaddevice
 
-import com.wire.kalium.network.api.authenticated.nomaddevice.LastRead
+import com.wire.kalium.network.api.authenticated.nomaddevice.ConversationMetadataEntry
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
 import com.wire.kalium.persistence.dao.backup.ChangeLogSyncBatch
 import com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent
@@ -40,14 +40,15 @@ import kotlin.io.encoding.Base64
 internal class NomadRemoteBackupChangeLogEventMapper {
     fun mapBatchToApiEvents(batch: ChangeLogSyncBatch): List<NomadMessageEvent> {
         val events = batch.events.mapNotNull { it.toApiEventOrNull() }.toMutableList()
-        val lastReads = batch.conversationLastReads.map {
-            LastRead(
+        val metadataEntries = batch.conversationMetadata.map {
+            ConversationMetadataEntry(
                 conversationId = it.conversationId.toString(),
-                lastReadTimestamp = it.lastReadDate.toEpochMilliseconds()
+                lastReadTimestamp = it.lastReadDate.toEpochMilliseconds(),
+                lastModifiedTimestamp = it.lastModifiedDate.toEpochMilliseconds()
             )
         }
-        if (lastReads.isNotEmpty()) {
-            events += NomadMessageEvent.LastReadEvent(lastRead = lastReads)
+        if (metadataEntries.isNotEmpty()) {
+            events += NomadMessageEvent.ConversationMetadataEvent(conversationMetadata = metadataEntries)
         }
         return events
     }
@@ -62,13 +63,13 @@ internal class NomadRemoteBackupChangeLogEventMapper {
         is ChangeLogSyncEvent.ReactionsSync -> NomadMessageEvent.UpsertMessageStatusEvent(
             messageId = messageId,
             conversation = conversationId.toApiConversation(),
-            reaction = reactions.toReactionPayload()
+            reaction = reactions.toReactionBase64()
         )
 
         is ChangeLogSyncEvent.ReadReceiptSync -> NomadMessageEvent.UpsertMessageStatusEvent(
             messageId = messageId,
             conversation = conversationId.toApiConversation(),
-            readReceipt = readReceipts.toReadReceiptsPayload()
+            readReceipt = readReceipts.toReadReceiptsBase64()
         )
 
         is ChangeLogSyncEvent.ConversationDelete -> NomadMessageEvent.WipeConversationEvent(

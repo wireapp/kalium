@@ -24,28 +24,32 @@ import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationWi
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadStoredMessage
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
+import com.wire.kalium.persistence.dao.backup.NomadMessageToInsert
+import com.wire.kalium.persistence.dao.backup.NomadReactionToInsert
+import com.wire.kalium.persistence.dao.backup.NomadReadReceiptToInsert
 import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
-import com.wire.kalium.persistence.dao.backup.NomadMessageToInsert
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAsset
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAttachment
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessageContent
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceQualifiedId
+import com.wire.kalium.protobuf.nomaddevice.NomadDeviceReactions
+import com.wire.kalium.protobuf.nomaddevice.NomadDeviceReadReceipts
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.Base64
 
-internal data class NomadMappedMessages(
+public data class NomadMappedMessages(
     val totalMessages: Int,
     val messages: List<NomadMessageToInsert>,
     val skippedMessages: Int,
 )
 
-internal class NomadAllMessagesMapper {
+public class NomadAllMessagesMapper {
 
-    fun map(
+    public fun map(
         response: NomadAllMessagesResponse,
     ): NomadMappedMessages {
         var skipped = 0
@@ -90,13 +94,79 @@ internal class NomadAllMessagesMapper {
         )
         val conversationId = conversationWithMessages.conversation.toDaoConversationId()
 
+        val reactions = decodeReactionsOrEmpty(storedMessage.reaction, storedMessage, conversationWithMessages)
+        val readReceipts = decodeReadReceiptsOrEmpty(storedMessage.readReceipt, storedMessage, conversationWithMessages)
+
         return NomadMessageToInsert(
             id = storedMessage.messageId,
             conversationId = conversationId,
             date = Instant.fromEpochMilliseconds(storedMessage.timestamp),
             payload = content,
+            reactions = reactions,
+            readReceipts = readReceipts,
         )
     }
+
+    private fun decodeReactionsOrEmpty(
+        base64: String?,
+        storedMessage: NomadStoredMessage,
+        conversation: NomadConversationWithMessages,
+    ): List<NomadReactionToInsert> =
+        decodeProtoOrNull(
+            base64 = base64,
+            storedMessage = storedMessage,
+            conversation = conversation,
+            invalidBase64Reason = "invalid base64 reaction",
+            invalidProtoReason = "invalid protobuf reaction",
+            decoder = NomadDeviceReactions::decodeFromByteArray
+        )?.reactionsByUser?.map { r ->
+            NomadReactionToInsert(
+                userId = r.userId.toDaoQualifiedId(),
+                emojis = r.emojis
+            )
+        }.orEmpty()
+
+    private fun decodeReadReceiptsOrEmpty(
+        base64: String?,
+        storedMessage: NomadStoredMessage,
+        conversation: NomadConversationWithMessages,
+    ): List<NomadReadReceiptToInsert> =
+        decodeProtoOrNull(
+            base64 = base64,
+            storedMessage = storedMessage,
+            conversation = conversation,
+            invalidBase64Reason = "invalid base64 read receipt",
+            invalidProtoReason = "invalid protobuf read receipt",
+            decoder = NomadDeviceReadReceipts::decodeFromByteArray
+        )?.readReceipts?.map { reaction ->
+            NomadReadReceiptToInsert(
+                userId = reaction.userId.toDaoQualifiedId(),
+                date = Instant.parse(reaction.date)
+            )
+        }.orEmpty()
+
+    private fun <T> decodeProtoOrNull(
+        base64: String?,
+        storedMessage: NomadStoredMessage,
+        conversation: NomadConversationWithMessages,
+        invalidBase64Reason: String,
+        invalidProtoReason: String,
+        decoder: (ByteArray) -> T,
+    ): T? =
+        base64
+            ?.takeUnless { it.isEmpty() }
+            ?.let { encoded ->
+                runCatching { Base64.Default.decode(encoded) }.getOrElse {
+                    logSkip(storedMessage, conversation, invalidBase64Reason)
+                    null
+                }
+            }
+            ?.let { bytes ->
+                runCatching { decoder(bytes) }.getOrElse {
+                    logSkip(storedMessage, conversation, invalidProtoReason)
+                    null
+                }
+            }
 
     private fun NomadDeviceMessageContent.toSyncableMessageContent(
         senderUserId: QualifiedIDEntity,

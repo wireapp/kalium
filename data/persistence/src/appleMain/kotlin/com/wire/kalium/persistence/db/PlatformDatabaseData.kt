@@ -74,7 +74,7 @@ fun databaseDriver(
             foreignKeyConstraints = driverConfiguration.areForeignKeyConstraintsEnforced
         )
     )
-    return NativeSqliteDriver(configuration)
+    return NativeSqliteDriver(configuration, maxReaderConnections = NATIVE_MAX_READER_CONNECTIONS)
 }
 
 private object GradleSafeSqliterLogger : Logger {
@@ -98,6 +98,7 @@ private object GradleSafeSqliterLogger : Logger {
 
 private const val SQLITER_FULL_TRACES_ENV = "KALIUM_SQLITER_FULL_TRACES"
 private const val SQLITER_TRACE_FILE_ENV = "KALIUM_SQLITER_TRACE_FILE"
+private const val NATIVE_MAX_READER_CONNECTIONS = 32
 
 private fun isSqliterFullTracesEnabled(): Boolean {
     val value = getenv(SQLITER_FULL_TRACES_ENV)?.toKString()?.lowercase() ?: return false

@@ -440,6 +440,9 @@ SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 countByConversationIdAndVisibility:
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ?;
 
+selectOldestVisibleMessageTimestampByConversationId:
+SELECT MIN(creation_date) FROM Message WHERE conversation_id = ? AND visibility = "VISIBLE";
+
 selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
 

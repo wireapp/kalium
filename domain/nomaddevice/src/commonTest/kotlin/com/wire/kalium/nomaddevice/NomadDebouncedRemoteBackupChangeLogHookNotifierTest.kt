@@ -54,17 +54,17 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         }
 
         controller.onHookTriggered(USER_A)
-        advanceTimeBy(5_000)
+        advanceTimeBy(500)
         runCurrent()
         controller.onHookTriggered(USER_A)
 
-        advanceTimeBy(9_999)
+        advanceTimeBy(999)
         runCurrent()
         assertTrue(invocations.isEmpty())
 
         advanceTimeBy(1)
         runCurrent()
-        assertEquals(listOf(15_000L), invocations)
+        assertEquals(listOf(1_500L), invocations)
     }
 
     @Test
@@ -76,19 +76,19 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         }
 
         controller.onHookTriggered(USER_A)
-        repeat(6) {
-            advanceTimeBy(9_000)
+        repeat(3) {
+            advanceTimeBy(900)
             runCurrent()
             controller.onHookTriggered(USER_A)
         }
 
-        advanceTimeBy(5_999)
+        advanceTimeBy(299)
         runCurrent()
         assertTrue(invocations.isEmpty())
 
         advanceTimeBy(1)
         runCurrent()
-        assertEquals(listOf(60_000L), invocations)
+        assertEquals(listOf(3_000L), invocations)
     }
 
     @Test
@@ -100,16 +100,16 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         }
 
         controller.onHookTriggered(USER_A)
-        advanceTimeBy(5_000)
+        advanceTimeBy(500)
         runCurrent()
         controller.onHookTriggered(USER_B)
 
-        advanceTimeBy(5_000)
+        advanceTimeBy(500)
         runCurrent()
-        advanceTimeBy(5_000)
+        advanceTimeBy(500)
         runCurrent()
 
-        assertEquals(listOf(USER_A to 10_000L, USER_B to 15_000L), invocations)
+        assertEquals(listOf(USER_A to 1_000L, USER_B to 1_500L), invocations)
     }
 
     @Test
@@ -128,7 +128,7 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         }
 
         controller.onHookTriggered(USER_A)
-        advanceTimeBy(10_000)
+        advanceTimeBy(1_000)
         runCurrent()
 
         assertEquals(3, invocations.size)
@@ -143,16 +143,16 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         }
 
         controller.onHookTriggered(USER_A)
-        advanceTimeBy(10_000)
+        advanceTimeBy(1_000)
         runCurrent()
-        advanceTimeBy(10_000)
+        advanceTimeBy(3_000)
         runCurrent()
-        advanceTimeBy(20_000)
+        advanceTimeBy(3_000)
         runCurrent()
-        advanceTimeBy(200_000)
+        advanceTimeBy(100_000)
         runCurrent()
 
-        assertEquals(listOf(10_000L, 20_000L, 40_000L), invocations)
+        assertEquals(listOf(1_000L, 4_000L, 7_000L), invocations)
     }
 
     @Test
@@ -164,21 +164,21 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         }
 
         controller.onHookTriggered(USER_A)
-        advanceTimeBy(10_000)
+        advanceTimeBy(1_000)
+        runCurrent()
+        advanceTimeBy(3_000)
+        runCurrent()
+        advanceTimeBy(3_000)
         runCurrent()
         advanceTimeBy(10_000)
         runCurrent()
-        advanceTimeBy(20_000)
-        runCurrent()
-        advanceTimeBy(100_000)
-        runCurrent()
-        assertEquals(listOf(10_000L, 20_000L, 40_000L), invocations)
+        assertEquals(listOf(1_000L, 4_000L, 7_000L), invocations)
 
         controller.onHookTriggered(USER_A)
-        advanceTimeBy(10_000)
+        advanceTimeBy(1_000)
         runCurrent()
 
-        assertEquals(listOf(10_000L, 20_000L, 40_000L, 150_000L), invocations)
+        assertEquals(listOf(1_000L, 4_000L, 7_000L, 18_000L), invocations)
     }
 
     @Test
@@ -196,17 +196,17 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         }
 
         controller.onHookTriggered(USER_A)
-        advanceTimeBy(10_000)
+        advanceTimeBy(1_000)
         runCurrent()
 
-        advanceTimeBy(5_000)
+        advanceTimeBy(1_500)
         runCurrent()
         controller.onHookTriggered(USER_A)
 
-        advanceTimeBy(5_000)
+        advanceTimeBy(1_500)
         runCurrent()
 
-        assertEquals(listOf(10_000L, 20_000L), invocations)
+        assertEquals(listOf(1_000L, 4_000L), invocations)
     }
 
     @Test
@@ -225,21 +225,21 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         }
 
         controller.onHookTriggered(USER_A)
-        advanceTimeBy(10_000)
+        advanceTimeBy(1_000)
         runCurrent()
-        advanceTimeBy(10_000)
+        advanceTimeBy(3_000)
         runCurrent()
 
-        advanceTimeBy(5_000)
+        advanceTimeBy(1_000)
         runCurrent()
         controller.onHookTriggered(USER_A)
-        advanceTimeBy(9_999)
+        advanceTimeBy(999)
         runCurrent()
-        assertEquals(listOf(10_000L, 20_000L), invocations)
+        assertEquals(listOf(1_000L, 4_000L), invocations)
 
         advanceTimeBy(1)
         runCurrent()
-        assertEquals(listOf(10_000L, 20_000L, 35_000L), invocations)
+        assertEquals(listOf(1_000L, 4_000L, 6_000L), invocations)
     }
 
     @Test
@@ -256,7 +256,7 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         }
 
         controller.onHookTriggered(USER_A)
-        advanceTimeBy(10_000)
+        advanceTimeBy(1_000)
         runCurrent()
         advanceTimeBy(50)
         runCurrent()
@@ -265,7 +265,7 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         runCurrent()
         assertEquals(1, invocations.size)
 
-        advanceTimeBy(9_050)
+        advanceTimeBy(50)
         runCurrent()
 
         assertEquals(2, invocations.size)
