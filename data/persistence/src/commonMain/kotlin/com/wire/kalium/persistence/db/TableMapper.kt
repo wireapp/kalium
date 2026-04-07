@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.FloatColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
+import com.wire.kalium.persistence.App
 import com.wire.kalium.persistence.Call
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
@@ -268,5 +269,12 @@ internal object TableMapper {
     val remoteBackupChangeLogAdapter = RemotebackupChangeLog.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         event_typeAdapter = ChangeLogEventTypeAdapter
+    )
+
+    val appCategoryAdapter = App.Adapter(
+        idAdapter = QualifiedIDAdapter,
+        categoryAdapter = EnumColumnAdapter(),
+        preview_asset_idAdapter = QualifiedIDAdapter,
+        complete_asset_idAdapter = QualifiedIDAdapter
     )
 }

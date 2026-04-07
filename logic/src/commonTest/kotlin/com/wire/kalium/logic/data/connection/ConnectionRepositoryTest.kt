@@ -560,7 +560,8 @@ class ConnectionRepositoryTest {
             nonQualifiedId = "value",
             service = null,
             supportedProtocols = null,
-            type = UserTypeDTO.REGULAR
+            type = UserTypeDTO.REGULAR,
+            app = null
         )
         val stubConnectionEntity = ConnectionEntity(
             conversationId = "conversationId1",

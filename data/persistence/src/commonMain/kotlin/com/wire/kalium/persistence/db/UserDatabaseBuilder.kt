@@ -30,6 +30,8 @@ import com.wire.kalium.persistence.backup.DatabaseImporterImpl
 import com.wire.kalium.persistence.backup.ObfuscatedCopyExporter
 import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.config.UserConfigStorage
+import com.wire.kalium.persistence.dao.AppDAO
+import com.wire.kalium.persistence.dao.AppDAOImpl
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -190,7 +192,8 @@ class UserDatabaseBuilder internal constructor(
         MessageAttachmentsAdapter = TableMapper.messageAttachmentsAdapter,
         HistoryClientAdapter = TableMapper.historyClientAdapter,
         MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
-        RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter
+        RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter,
+        AppAdapter = TableMapper.appCategoryAdapter
     )
 
     init {
@@ -255,6 +258,13 @@ class UserDatabaseBuilder internal constructor(
 
     private val conversationMembersCache =
         FlowCache<ConversationIDEntity, List<MemberEntity>>(databaseScope)
+
+    val appDAO: AppDAO
+        get() = AppDAOImpl(
+            database.appsQueries,
+            readDispatcher,
+            writeDispatcher
+        )
 
     val memberDAO: MemberDAO
         get() = MemberDAOImpl(

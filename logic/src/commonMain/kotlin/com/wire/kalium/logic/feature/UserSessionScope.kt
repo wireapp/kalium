@@ -41,6 +41,8 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.data.analytics.AnalyticsDataSource
 import com.wire.kalium.logic.data.analytics.AnalyticsRepository
+import com.wire.kalium.logic.data.app.AppDataSource
+import com.wire.kalium.logic.data.app.AppRepository
 import com.wire.kalium.logic.data.asset.AssetDataSource
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.DataStoragePaths
@@ -205,6 +207,7 @@ import com.wire.kalium.logic.feature.analytics.GetAnalyticsContactsDataUseCase
 import com.wire.kalium.logic.feature.analytics.GetCurrentAnalyticsTrackingIdentifierUseCase
 import com.wire.kalium.logic.feature.analytics.ObserveAnalyticsTrackingIdentifierStatusUseCase
 import com.wire.kalium.logic.feature.analytics.SetNewUserTrackingIdentifierUseCase
+import com.wire.kalium.logic.feature.app.AppScope
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
@@ -940,6 +943,7 @@ public class UserSessionScope internal constructor(
             userDAO = userStorage.database.userDAO,
             clientDAO = userStorage.database.clientDAO,
             memberDAO = userStorage.database.memberDAO,
+            appDAO = userStorage.database.appDAO,
             selfApi = authenticatedNetworkContainer.selfApi,
             userDetailsApi = authenticatedNetworkContainer.userDetailsApi,
             upgradePersonalToTeamApi = authenticatedNetworkContainer.upgradePersonalToTeamApi,
@@ -975,7 +979,11 @@ public class UserSessionScope internal constructor(
     private val serviceRepository: ServiceRepository
         get() = ServiceDataSource(
             serviceDAO = userStorage.database.serviceDAO,
-            userDAO = userStorage.database.userDAO
+        )
+
+    private val appRepository: AppRepository
+        get() = AppDataSource(
+            appDAO = userStorage.database.appDAO
         )
 
     private val persistConversationsUseCase: PersistConversationsUseCase
@@ -1038,6 +1046,7 @@ public class UserSessionScope internal constructor(
         get() = SearchUserRepositoryImpl(
             userStorage.database.userDAO,
             userStorage.database.searchDAO,
+            userStorage.database.appDAO,
             authenticatedNetworkContainer.userDetailsApi,
             userSearchApiWrapper,
             userId,
@@ -2502,6 +2511,11 @@ public class UserSessionScope internal constructor(
             teamRepository,
             userConfigRepository,
             selfTeamId
+        )
+
+    public val apps: AppScope
+        get() = AppScope(
+            appRepository = appRepository
         )
 
     public val calls: CallsScope

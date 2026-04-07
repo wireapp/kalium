@@ -541,25 +541,4 @@ class UserDAOImpl internal constructor(
     override suspend fun countTeamMembersAmount(teamId: String): Int = withContext(readDispatcher.value) {
         userQueries.countTeamMembersFromTeam(teamId).executeAsOneOrNull()?.toInt() ?: 0
     }
-
-    override fun observeAppsDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>> =
-        userQueries.getAppsDetailsNotInConversation(conversationId)
-            .asFlow()
-            .mapToList()
-            .map { it.map(mapper::toDetailsModel) }
-            .flowOn(readDispatcher.value)
-
-    override fun observeAllApps(): Flow<List<UserDetailsEntity>> =
-        userQueries.getAllApps()
-            .asFlow()
-            .mapToList()
-            .map { it.map(mapper::toDetailsModel) }
-            .flowOn(readDispatcher.value)
-
-    override suspend fun searchAppsByName(query: String): Flow<List<UserDetailsEntity>> =
-        userQueries.searchAppsByName(query)
-            .asFlow()
-            .mapToList()
-            .map { it.map(mapper::toDetailsModel) }
-            .flowOn(readDispatcher.value)
 }

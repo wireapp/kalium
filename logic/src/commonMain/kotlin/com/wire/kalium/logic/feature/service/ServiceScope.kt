@@ -48,13 +48,6 @@ public class ServiceScope internal constructor(
             selfTeamIdProvider = selfTeamIdProvider
         )
 
-    public val ObserveServicesNotInConversation: ObserveServicesNotInConversationUseCase
-        get() = ObserveServicesNotInConversationUseCaseImpl(
-            serviceRepository = serviceRepository,
-            teamRepository = teamRepository,
-            selfTeamIdProvider = selfTeamIdProvider
-        )
-
     public val searchServicesByName: SearchServicesByNameUseCase
         get() = SearchServicesByNameUseCaseImpl(
             serviceRepository = serviceRepository

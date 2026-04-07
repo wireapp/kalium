@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,29 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.service
+package com.wire.kalium.persistence.utils.stubs
 
-import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.persistence.dao.AppCategoryEntity
+import com.wire.kalium.persistence.dao.AppEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
-data class ServiceDetails(
-    val id: ServiceId,
-    val name: String,
-    val description: String,
-    val summary: String,
-    val enabled: Boolean,
-    val tags: List<String>,
-    val previewAssetId: UserAssetId?,
-    val completeAssetId: UserAssetId?
-)
+fun newAppEntity(id: String = "test") = newAppEntity(QualifiedIDEntity(id, "wire.com"), id)
 
-data class ServiceId(
-    val id: String,
-    val provider: String
-)
-
-fun ServiceId.toQualifiedID(): QualifiedID =
-    QualifiedID(
-        value = this.id,
-        domain = this.provider
+fun newAppEntity(qualifiedIDEntity: QualifiedIDEntity, id: String = "test") =
+    AppEntity(
+        id = qualifiedIDEntity,
+        name = "app$id",
+        description = "description$id",
+        category = AppCategoryEntity.DEVELOPER,
+        previewAssetId = null,
+        completeAssetId = null
     )

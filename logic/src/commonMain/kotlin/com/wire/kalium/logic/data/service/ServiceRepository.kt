@@ -27,11 +27,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.error.wrapFlowStorageRequest
 import com.wire.kalium.common.error.wrapNullableFlowStorageRequest
 import com.wire.kalium.common.error.wrapStorageNullableRequest
-import com.wire.kalium.common.error.wrapStorageRequest
-import com.wire.kalium.common.functional.mapRight
-import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.persistence.dao.ServiceDAO
-import com.wire.kalium.persistence.dao.UserDAO
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -46,40 +42,18 @@ internal interface ServiceRepository {
         serviceId: ServiceId,
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, UserId?>>
-    fun observeAllKnownServicesNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<ServiceDetails>>>
 }
 
 internal class ServiceDataSource internal constructor(
     private val serviceDAO: ServiceDAO,
-    private val userDAO: UserDAO,
     private val serviceMapper: ServiceMapper = MapperProvider.serviceMapper()
 ) : ServiceRepository {
 
     override suspend fun searchServicesByName(name: String): Flow<Either<StorageFailure, List<ServiceDetails>>> =
         wrapFlowStorageRequest {
-
-//            serviceDAO.searchServicesByName(query = name).map {
-//                it.map { serviceEntity ->
-//                    serviceMapper.fromDaoToModel(service = serviceEntity)
-//                }
-//            }
-            userDAO.searchAppsByName(query = name).map {
-                it.filter { !it.deleted && !it.hasIncompleteMetadata }
-                .map { userDetailsEntity ->
-                    // TODO(Alexandre): Properly map from user to App/Service Details
-                    ServiceDetails(
-                        id = ServiceId(
-                            id = userDetailsEntity.id.value,
-                            provider = userDetailsEntity.id.domain
-                        ),
-                        name = userDetailsEntity.name ?: "No App Name: ${userDetailsEntity.id}",
-                        description = "Description for ${userDetailsEntity.name}",
-                        summary = "Summary for ${userDetailsEntity.name}",
-                        enabled = true,
-                        tags = emptyList(),
-                        previewAssetId = null,
-                        completeAssetId = null
-                    )
+            serviceDAO.searchServicesByName(query = name).map {
+                it.map { serviceEntity ->
+                    serviceMapper.fromDaoToModel(service = serviceEntity)
                 }
             }
         }
@@ -103,58 +77,11 @@ internal class ServiceDataSource internal constructor(
     }
 
     override suspend fun observeAllServices(): Flow<Either<StorageFailure, List<ServiceDetails>>> =
-        // wrapFlowStorageRequest {
-//             serviceDAO.getAllServices().map {
-//                 it.map { serviceEntity ->
-//                     serviceMapper.fromDaoToModel(service = serviceEntity)
-//                 }
-//             }
-            userDAO.observeAllApps()
-                .wrapStorageRequest()
-                .mapRight { users ->
-                    users
-                        .filter { !it.deleted && !it.hasIncompleteMetadata }
-                        .map { userDetailsEntity ->
-                            // TODO(Alexandre): Properly map from user to App/Service Details
-                            ServiceDetails(
-                                id = ServiceId(
-                                    id = userDetailsEntity.id.value,
-                                    provider = userDetailsEntity.id.domain
-                                ),
-                                name = userDetailsEntity.name ?: "No App Name: ${userDetailsEntity.id}",
-                                description = "Description for ${userDetailsEntity.name}",
-                                summary = "Summary for ${userDetailsEntity.name}",
-                                enabled = true,
-                                tags = emptyList(),
-                                previewAssetId = null,
-                                completeAssetId = null
-                            )
-                        }
-                }
-        // }
-
-    override fun observeAllKnownServicesNotInConversation(conversationId: ConversationId): Flow<Either<StorageFailure, List<ServiceDetails>>> {
-        return userDAO.observeAppsDetailsNotInConversation(conversationId = conversationId.toDao())
-            .wrapStorageRequest()
-            .mapRight { users ->
-                users
-                    .filter { !it.deleted && !it.hasIncompleteMetadata }
-                    .map { userDetailsEntity ->
-                        // TODO(Alexandre): Properly map from user to App/Service Details
-                        ServiceDetails(
-                            id = ServiceId(
-                                id = userDetailsEntity.id.value,
-                                provider = userDetailsEntity.id.domain
-                            ),
-                            name = userDetailsEntity.name ?: "No App Name: ${userDetailsEntity.id}",
-                            description = "Description for ${userDetailsEntity.name}",
-                            summary = "Summary for ${userDetailsEntity.name}",
-                            enabled = true,
-                            tags = emptyList(),
-                            previewAssetId = null,
-                            completeAssetId = null
-                        )
-                    }
-            }
-    }
+     wrapFlowStorageRequest {
+             serviceDAO.getAllServices().map {
+                 it.map { serviceEntity ->
+                     serviceMapper.fromDaoToModel(service = serviceEntity)
+                 }
+             }
+     }
 }

@@ -60,6 +60,7 @@ import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.AppDAO
 import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -828,6 +829,7 @@ class UserRepositoryTest {
         val userDAO = mock(UserDAO::class)
         val clientDAO = mock(ClientDAO::class)
         val memberDAO = mock(MemberDAO::class)
+        val appDAO = mock(AppDAO::class)
         val selfApi = mock(SelfApi::class)
         val userDetailsApi = mock(UserDetailsApi::class)
         val teamsApi = mock(TeamsApi::class)
@@ -843,6 +845,7 @@ class UserRepositoryTest {
                 userDAO = userDAO,
                 clientDAO = clientDAO,
                 memberDAO = memberDAO,
+                appDAO = appDAO,
                 selfApi = selfApi,
                 userDetailsApi = userDetailsApi,
                 teamsApi = teamsApi,
