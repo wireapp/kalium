@@ -198,6 +198,45 @@ class JoinExistingMLSConversationUseCaseTest {
         }
 
     @Test
+    fun givenPendingJoinConversationWithRemoteEpoch_whenLocalGroupAlreadyExists_thenSkipExternalCommitAndSyncEstablishedState() =
+        runTest {
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
+                .withGetConversationsByIdSuccessful(Arrangement.MLS_CONVERSATION1)
+                .withFetchingGroupInfoSuccessful()
+                .withJoinByExternalCommitSuccessful()
+                .withLocalGroupExists(true)
+                .arrange()
+
+            joinExistingMLSConversationsUseCase(
+                arrangement.transactionContext,
+                Arrangement.MLS_CONVERSATION1.id
+            ).shouldSucceed()
+
+            coVerify {
+                arrangement.conversationApi.fetchGroupInfo(any())
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.mlsConversationRepository.updateGroupIdAndState(
+                    eq(Arrangement.MLS_CONVERSATION1.id),
+                    eq(Arrangement.GROUP_ID1),
+                    eq(Arrangement.LOCAL_GROUP_EPOCH.toLong()),
+                    eq(ConversationEntity.GroupState.ESTABLISHED)
+                )
+            }.wasInvoked(once)
+        }
+
+    @Test
     fun givenEstablishedConversationAndLocalGroupExists_whenInvokingUseCase_thenDoNotUpdateLocalGroupState() =
         runTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
