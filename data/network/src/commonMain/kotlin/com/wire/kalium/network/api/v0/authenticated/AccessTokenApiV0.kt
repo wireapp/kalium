@@ -33,7 +33,7 @@ import io.ktor.client.request.post
 internal open class AccessTokenApiV0(private val httpClient: HttpClient) : AccessTokenApi {
     override suspend fun getToken(refreshToken: String, clientId: String?): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>> =
         wrapKaliumResponse<AccessTokenDTO> {
-            httpClient.post(PATH_ACCESS) {
+            httpClient.post("/$PATH_ACCESS") {
                 skipApiVersion()
                 withManagedRefreshCookie(refreshToken)
             }
@@ -54,6 +54,6 @@ internal open class AccessTokenApiV0(private val httpClient: HttpClient) : Acces
         }
 
     private companion object {
-        const val PATH_ACCESS = "/access"
+        const val PATH_ACCESS = "access"
     }
 }

@@ -36,7 +36,7 @@ internal open class AccessTokenApiV3 internal constructor(
 ) : AccessTokenApiV2(httpClient) {
     override suspend fun getToken(refreshToken: String, clientId: String?): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>> =
         wrapKaliumResponse<AccessTokenDTO> {
-            httpClient.post(PATH_ACCESS) {
+            httpClient.post("/$PATH_ACCESS") {
                 skipApiVersion()
                 withManagedRefreshCookie(refreshToken)
                 parameter(CLIENT_ID_QUERY_KEY, clientId)
@@ -58,7 +58,7 @@ internal open class AccessTokenApiV3 internal constructor(
         }
 
     private companion object {
-        const val PATH_ACCESS = "/access"
+        const val PATH_ACCESS = "access"
         const val CLIENT_ID_QUERY_KEY = "client_id"
     }
 }
