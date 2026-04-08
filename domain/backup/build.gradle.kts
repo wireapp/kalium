@@ -38,8 +38,8 @@ publishing {
             name = "GitHubPackages"
             url = uri("https://maven.pkg.github.com/wireapp/kalium")
             credentials {
-                username = System.getenv("GITHUB_ACTOR") ?: error("GITHUB_ACTOR env variable is missing")
-                password = System.getenv("GITHUB_TOKEN") ?: error("GITHUB_TOKEN env variable is missing")
+                username = System.getenv("GITHUB_ACTOR") ?: ""
+                password = System.getenv("GITHUB_TOKEN") ?: ""
             }
         }
     }
