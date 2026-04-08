@@ -26,10 +26,12 @@ import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingStatus
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
@@ -65,6 +67,8 @@ internal interface MessageRepositoryExtensions {
         conversationId: ConversationId,
         pageSize: Int,
     )
+
+    fun observeNomadMessagePagingState(conversationId: ConversationId): Flow<NomadMessagePagingStatus>
 }
 
 internal class MessageRepositoryExtensionsImpl internal constructor(
@@ -158,4 +162,8 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             onInvalidate = {}
         )
     }
+
+    override fun observeNomadMessagePagingState(conversationId: ConversationId): Flow<NomadMessagePagingStatus> =
+        nomadMessagePagingCoordinator?.observePagingState(conversationId)
+            ?: flowOf(NomadMessagePagingStatus(isFetching = false, hasMore = false))
 }

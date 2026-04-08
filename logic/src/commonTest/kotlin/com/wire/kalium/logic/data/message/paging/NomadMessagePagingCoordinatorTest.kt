@@ -40,6 +40,7 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.Test
@@ -142,6 +143,17 @@ class NomadMessagePagingCoordinatorTest {
 
         assertEquals(1, capturedRequests.size)
         assertTrue(capturedRequests.first() != null)
+    }
+
+    @Test
+    fun givenNomadEnabled_whenObserving_thenEmitsDefaultState() = runTest {
+        val (_, coordinator) = Arrangement()
+            .withNomadEnabled(true)
+            .arrange()
+
+        val state = coordinator.observePagingState(CONVERSATION_ID).first()
+
+        assertEquals(NomadMessagePagingStatus(isFetching = false, hasMore = true), state)
     }
 
     private data class Arrangement(

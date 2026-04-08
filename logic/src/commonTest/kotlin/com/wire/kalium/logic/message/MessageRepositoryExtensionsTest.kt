@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensionsImpl
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.persistence.dao.message.KaliumPager
@@ -43,9 +44,12 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class MessageRepositoryExtensionsTest {
 
@@ -132,6 +136,31 @@ class MessageRepositoryExtensionsTest {
             .wasInvoked(exactly = 0)
     }
 
+    @Test
+    fun givenPagingCoordinator_whenObservingNomadState_thenUsesCoordinatorFlow() = runTest {
+        val expectedState = NomadMessagePagingStatus(isFetching = true, hasMore = true)
+        val (arrangement, messageRepositoryExtensions) = Arrangement()
+            .withPagingCoordinatorState(flowOf(expectedState))
+            .arrange()
+
+        val state = messageRepositoryExtensions.observeNomadMessagePagingState(TestConversation.ID).first()
+
+        assertEquals(expectedState, state)
+        verify { arrangement.pagingCoordinator.observePagingState(any()) }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNoPagingCoordinator_whenObservingNomadState_thenReturnsDefaults() = runTest {
+        val (arrangement, messageRepositoryExtensions) = Arrangement()
+            .withoutPagingCoordinator()
+            .arrange()
+
+        val state = messageRepositoryExtensions.observeNomadMessagePagingState(TestConversation.ID).first()
+
+        assertEquals(NomadMessagePagingStatus(isFetching = false, hasMore = false), state)
+        verify { arrangement.pagingCoordinator.observePagingState(any()) }.wasInvoked(exactly = 0)
+    }
+
     private data class Arrangement(
         val messageDaoExtensions: MessageExtensions = mock(MessageExtensions::class),
         val messageDAO: MessageDAO = mock(MessageDAO::class),
@@ -162,6 +191,11 @@ class MessageRepositoryExtensionsTest {
                 it.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any())
             }.returns(Unit)
         }
+
+        fun withPagingCoordinatorState(flow: kotlinx.coroutines.flow.Flow<NomadMessagePagingStatus>): Arrangement =
+            copy(usePagingCoordinator = true).also {
+                every { it.pagingCoordinator.observePagingState(any()) }.returns(flow)
+            }
 
         fun withoutPagingCoordinator(): Arrangement = copy(usePagingCoordinator = false)
 
