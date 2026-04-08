@@ -177,65 +177,59 @@ You can run locally in your terminal:
 graph LR
   :logic["logic"]
   subgraph :core
-    :core:cryptography["cryptography"]
-    :core:logger["logger"]
-    :core:util["util"]
-    :core:common["common"]
-    :core:data["data"]
-    :core:cryptography["cryptography"]
     :core:common["common"]
     :core:data["data"]
     :core:logger["logger"]
-    :core:cryptography["cryptography"]
     :core:util["util"]
-    :core:data["data"]
+    :core:cryptography["cryptography"]
     :core:common["common"]
+    :core:cryptography["cryptography"]
+    :core:libsodium["libsodium"]
+    :core:data["data"]
+  end
+  subgraph :data
+    :data:persistence["persistence"]
+    :data:network["network"]
+    :data:network-util["network-util"]
+    :data:persistence["persistence"]
+    :data:persistence-test["persistence-test"]
+    :data:data-mappers["data-mappers"]
+    :data:protobuf["protobuf"]
+    :data:persistence-test["persistence-test"]
+    :data:network-model["network-model"]
+    :data:network-util["network-util"]
+    :data:network["network"]
+    :data:network-model["network-model"]
+    :data:data-mappers["data-mappers"]
   end
   subgraph :domain
-    :domain:backup["backup"]
+    :domain:work["work"]
     :domain:calling["calling"]
     :domain:cells["cells"]
     :domain:backup["backup"]
+    :domain:nomaddevice["nomaddevice"]
+    :domain:userstorage["userstorage"]
+    :domain:usernetwork["usernetwork"]
+    :domain:userstorage["userstorage"]
+    :domain:work["work"]
+    :domain:nomaddevice["nomaddevice"]
+    :domain:usernetwork["usernetwork"]
+    :domain:backup["backup"]
     :domain:cells["cells"]
     subgraph :messaging
+      :domain:messaging:hooks["hooks"]
       :domain:messaging:sending["sending"]
+      :domain:messaging:hooks["hooks"]
       :domain:messaging:sending["sending"]
     end
   end
-  subgraph :data
-    :data:protobuf["protobuf"]
-    :data:network["network"]
-    :data:network-model["network-model"]
-    :data:network-util["network-util"]
-    :data:persistence["persistence"]
-    :data:network["network"]
-    :data:persistence["persistence"]
-    :data:persistence-test["persistence-test"]
-    :data:network-util["network-util"]
-    :data:network["network"]
-    :data:data-mappers["data-mappers"]
-    :data:persistence["persistence"]
-    :data:protobuf["protobuf"]
-    :data:persistence-test["persistence-test"]
-    :data:network-model["network-model"]
-    :data:network-util["network-util"]
-    :data:data-mappers["data-mappers"]
-  end
   subgraph :test
+    :test:data-mocks["data-mocks"]
+    :test:data-mocks["data-mocks"]
     :test:mocks["mocks"]
-    :test:data-mocks["data-mocks"]
-    :test:data-mocks["data-mocks"]
     :test:mocks["mocks"]
   end
 
-  :core:cryptography --> :core:logger
-  :domain:backup --> :data:protobuf
-  :data:network --> :data:network-model
-  :data:network --> :core:logger
-  :data:network --> :data:protobuf
-  :data:network --> :core:util
-  :data:network --> :data:network-util
-  :data:network --> :test:mocks
   :core:common --> :core:data
   :core:common --> :core:logger
   :core:common --> :core:util
@@ -243,10 +237,14 @@ graph LR
   :core:common --> :data:network
   :core:common --> :data:network-util
   :core:common --> :core:cryptography
+  :domain:messaging:hooks --> :core:data
+  :domain:messaging:hooks --> :core:common
+  :domain:messaging:hooks --> :core:logger
   :data:persistence --> :core:logger
   :data:persistence --> :core:util
   :data:persistence-test --> :data:persistence
   :logic --> :core:common
+  :logic --> :domain:work
   :logic --> :core:data
   :logic --> :data:network-util
   :logic --> :core:logger
@@ -259,23 +257,51 @@ graph LR
   :logic --> :core:util
   :logic --> :domain:cells
   :logic --> :domain:backup
+  :logic --> :domain:nomaddevice
+  :logic --> :domain:userstorage
+  :logic --> :domain:usernetwork
   :logic --> :domain:messaging:sending
+  :logic --> :domain:messaging:hooks
   :logic --> :data:persistence-test
   :logic --> :test:data-mocks
-  :data:network-model --> :core:logger
-  :data:network-model --> :core:util
+  :domain:userstorage --> :data:persistence
+  :domain:userstorage --> :core:util
+  :domain:userstorage --> :core:data
+  :domain:work --> :core:common
+  :domain:work --> :core:data
+  :domain:work --> :core:logger
+  :domain:work --> :core:util
   :test:data-mocks --> :core:data
   :test:data-mocks --> :data:persistence
   :test:data-mocks --> :data:network-model
   :test:data-mocks --> :core:util
+  :domain:nomaddevice --> :core:common
+  :domain:nomaddevice --> :data:protobuf
+  :domain:nomaddevice --> :domain:messaging:hooks
+  :domain:nomaddevice --> :domain:usernetwork
+  :domain:nomaddevice --> :domain:userstorage
+  :domain:nomaddevice --> :data:persistence
   :data:network-util --> :core:logger
-  :core:data --> :data:network-model
-  :core:data --> :core:util
   :test:mocks --> :data:network-model
   :domain:messaging:sending --> :core:common
   :domain:messaging:sending --> :core:data
   :domain:messaging:sending --> :core:logger
   :domain:messaging:sending --> :core:util
+  :domain:usernetwork --> :data:network
+  :core:cryptography --> :core:logger
+  :core:cryptography --> :core:libsodium
+  :domain:backup --> :core:libsodium
+  :domain:backup --> :data:protobuf
+  :data:network --> :data:network-model
+  :data:network --> :core:logger
+  :data:network --> :data:protobuf
+  :data:network --> :core:util
+  :data:network --> :data:network-util
+  :data:network --> :test:mocks
+  :data:network-model --> :core:logger
+  :data:network-model --> :core:util
+  :core:data --> :data:network-model
+  :core:data --> :core:util
   :domain:cells --> :core:common
   :domain:cells --> :data:network
   :domain:cells --> :core:data
@@ -289,25 +315,31 @@ graph LR
   :data:data-mappers --> :core:util
 
 classDef kotlin-multiplatform fill:#C792EA,stroke:#fff,stroke-width:2px,color:#fff;
-class :core:cryptography kotlin-multiplatform
-class :core:logger kotlin-multiplatform
-class :domain:backup kotlin-multiplatform
-class :data:protobuf kotlin-multiplatform
-class :data:network kotlin-multiplatform
-class :data:network-model kotlin-multiplatform
-class :core:util kotlin-multiplatform
-class :data:network-util kotlin-multiplatform
-class :test:mocks kotlin-multiplatform
 class :core:common kotlin-multiplatform
 class :core:data kotlin-multiplatform
+class :core:logger kotlin-multiplatform
+class :core:util kotlin-multiplatform
 class :data:persistence kotlin-multiplatform
+class :data:network kotlin-multiplatform
+class :data:network-util kotlin-multiplatform
+class :core:cryptography kotlin-multiplatform
+class :domain:messaging:hooks kotlin-multiplatform
 class :data:persistence-test kotlin-multiplatform
 class :logic kotlin-multiplatform
+class :domain:work kotlin-multiplatform
 class :domain:calling kotlin-multiplatform
 class :data:data-mappers kotlin-multiplatform
+class :data:protobuf kotlin-multiplatform
 class :domain:cells kotlin-multiplatform
+class :domain:backup kotlin-multiplatform
+class :domain:nomaddevice kotlin-multiplatform
+class :domain:userstorage kotlin-multiplatform
+class :domain:usernetwork kotlin-multiplatform
 class :domain:messaging:sending kotlin-multiplatform
 class :test:data-mocks kotlin-multiplatform
+class :data:network-model kotlin-multiplatform
+class :test:mocks kotlin-multiplatform
+class :core:libsodium kotlin-multiplatform
 
 ```
 #### Logo

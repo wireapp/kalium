@@ -279,7 +279,7 @@ jobs:
 
       - name: Post-build — attest release artifacts
         id: attest
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-checksums: release/${{ matrix.artifact-name }}/${{ matrix.artifact-name }}-SHA256SUMS.txt
 
