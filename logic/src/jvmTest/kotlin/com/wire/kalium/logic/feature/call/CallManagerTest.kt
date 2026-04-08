@@ -35,9 +35,6 @@ import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperTest.Companion.CONVERSATION_MIXED_PROTOCOL_INFO
-import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperTest.Companion.CONVERSATION_MLS_PROTOCOL_INFO
-import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperTest.Companion.CONVERSATION_PROTEUS_PROTOCOL_INFO
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
