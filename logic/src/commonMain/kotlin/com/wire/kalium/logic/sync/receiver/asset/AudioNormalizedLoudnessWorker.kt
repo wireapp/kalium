@@ -21,6 +21,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.feature.asset.MessageAssetResult
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.message.GetMessageByIdUseCase
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -44,10 +45,14 @@ internal class AudioNormalizedLoudnessWorkerImpl(
     override suspend fun doWork(): Result {
         getAssetContentOrNull()?.let { assetContent ->
             val assetMetadata = assetContent.metadata
-            val assetLocalData = assetContent.localData
 
-            if (assetLocalData != null && assetMetadata is AssetMetadata.Audio && assetMetadata.normalizedLoudness == null) {
-                val normalizedLoudness = audioNormalizedLoudnessBuilder(assetLocalData.assetDataPath)
+            if (assetMetadata is AssetMetadata.Audio && assetMetadata.normalizedLoudness == null) {
+                val assetDataPath = getAssetPathOrNull()
+                val normalizedLoudness = if (assetDataPath != null) {
+                    audioNormalizedLoudnessBuilder(assetDataPath)
+                } else {
+                    null
+                }
                 if (normalizedLoudness != null) {
                     messageScope.updateAudioMessageNormalizedLoudnessUseCase(conversationId, messageId, normalizedLoudness)
                     return Result.Success
@@ -61,5 +66,16 @@ internal class AudioNormalizedLoudnessWorkerImpl(
         (it as? GetMessageByIdUseCase.Result.Success)?.message?.content?.let {
             (it as? MessageContent.Asset)?.value
         }
+    }
+
+    private suspend fun getAssetPathOrNull(): String? = when (
+        val result = messageScope.getAssetMessage(
+            conversationId,
+            messageId
+        )
+            .await()
+    ) {
+        is MessageAssetResult.Success -> result.decodedAssetPath.toString()
+        else -> null
     }
 }
