@@ -499,6 +499,8 @@ import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
@@ -1129,6 +1131,7 @@ public class UserSessionScope internal constructor(
             clientIdProvider = clientIdProvider,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            eventRepository = eventRepository,
             kaliumFileSystem = kaliumFileSystem,
             userStorage = userStorage,
             cryptoTransactionProvider = cryptoTransactionProvider,
@@ -1773,12 +1776,21 @@ public class UserSessionScope internal constructor(
         ButtonActionHandlerImpl(userId, compositeMessageRepository, userScopedLogger)
     }
 
+    private val callingMessageHandler: CallingMessageHandler by lazy {
+        CallingMessageHandlerImpl(
+            selfUserId = userId,
+            currentClientIdProvider = clientIdProvider,
+            callManager = callManager,
+            conversationRepository = conversationRepository,
+            muteCall = calls.muteCall,
+        )
+    }
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
             messageRepository,
             assetMessageHandler,
-            callManager,
             persistMessage,
             persistReaction,
             MessageTextEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
@@ -1812,6 +1824,7 @@ public class UserSessionScope internal constructor(
             inCallReactionsRepository,
             buttonActionHandler,
             MessageCompositeEditHandlerImpl(messageRepository),
+            callingMessageHandler,
             userId
         )
 

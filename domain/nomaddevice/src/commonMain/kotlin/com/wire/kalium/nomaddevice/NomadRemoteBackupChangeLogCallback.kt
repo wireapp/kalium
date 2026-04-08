@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
@@ -230,9 +231,7 @@ private fun PersistedMessageData.shouldLogMessageUpsert(): Boolean = when (val m
 private fun MessageContent.Multipart.hasSupportedPartForChangelog(): Boolean {
     // `value` is the textual part of a multipart message.
     val hasTextPart = value != null
-    // Only regular message assets are currently syncable in this changelog flow.
-    // Multipart payloads with only CellAssetContent attachments are intentionally skipped.
-    val hasSyncableAssetPart = attachments.any { it is AssetContent }
+    val hasSyncableAssetPart = attachments.any { it is AssetContent || it is CellAssetContent }
     return hasTextPart || hasSyncableAssetPart
 }
 
