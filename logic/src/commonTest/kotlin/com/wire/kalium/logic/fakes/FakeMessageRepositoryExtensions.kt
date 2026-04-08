@@ -23,10 +23,9 @@ import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
-import com.wire.kalium.logic.data.message.paging.NomadMessagePagingStatus
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import kotlinx.coroutines.flow.flowOf
 
 internal open class FakeMessageRepositoryExtensions : MessageRepositoryExtensions {
     override suspend fun getPaginatedMessagesByConversationIdAndVisibility(
@@ -58,10 +57,5 @@ internal open class FakeMessageRepositoryExtensions : MessageRepositoryExtension
     override suspend fun fetchOlderNomadMessagesByConversationId(
         conversationId: ConversationId,
         pageSize: Int,
-    ) {
-        // no-op for tests
-    }
-
-    override fun observeNomadMessagePagingState(conversationId: ConversationId): Flow<NomadMessagePagingStatus> =
-        flowOf(NomadMessagePagingStatus(isFetching = false, hasMore = false))
+    ): NomadMessagePagingResult = NomadMessagePagingResult(hasMore = false)
 }
