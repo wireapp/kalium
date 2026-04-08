@@ -22,27 +22,38 @@ import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.shouldAddApiVersion
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.defaultRequest
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.encodedPath
+import io.ktor.util.AttributeKey
 
 fun HttpClientConfig<*>.installWireDefaultRequest(serverConfigDTO: ServerConfigDTO) {
     defaultRequest {
         header(HttpHeaders.ContentType, ContentType.Application.Json)
         with(serverConfigDTO) {
             val apiBaseUrl = Url(links.api)
+            val requestPath = url.encodedPath.trim('/')
+            val shouldSkipVersion =
+                attributes.contains(SkipApiVersionKey) || requestPath == "access" || requestPath.startsWith("access/")
             // enforce https as url protocol
             url.protocol = URLProtocol.HTTPS
             // add the default host
             url.host = apiBaseUrl.host
             // for api version 0 no api version should be added to the request
             url.encodedPath =
-                if (shouldAddApiVersion(metaData.commonApiVersion.version))
+                if (!shouldSkipVersion && shouldAddApiVersion(metaData.commonApiVersion.version))
                     apiBaseUrl.encodedPath + "v${metaData.commonApiVersion.version}/"
                 else apiBaseUrl.encodedPath
         }
     }
+}
+
+private val SkipApiVersionKey = AttributeKey<Unit>("SkipApiVersionKey")
+
+fun HttpRequestBuilder.skipApiVersion() {
+    attributes.put(SkipApiVersionKey, Unit)
 }

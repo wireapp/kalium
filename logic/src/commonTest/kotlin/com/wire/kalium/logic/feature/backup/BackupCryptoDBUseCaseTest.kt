@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProviderImpl
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
@@ -89,8 +90,10 @@ class BackupCryptoDBUseCaseTest {
         val proteusDbData: ByteArray = Base64.decode("cHJvdGV1cy1kYi1ieXRlcw==")
         val passphrase = ByteArray(32) { 0xAB.toByte() }
         val proteusPassphrase = ByteArray(32) { 0xBC.toByte() }
+        val lastProcessedEventId = "event-123"
         val (arrangement, useCase) = Arrangement()
             .withClientId(TestClient.CLIENT_ID)
+            .withLastProcessedEventId(lastProcessedEventId)
             .withMlsExportedCryptoDB("keystore_export", dbData, passphrase, TestClient.CLIENT_ID)
             .withProteusExportedCryptoDB("keystore_export_proteus", proteusDbData, proteusPassphrase, TestClient.CLIENT_ID)
             .withMlsTransactionSuccess()
@@ -122,6 +125,7 @@ class BackupCryptoDBUseCaseTest {
             val metadata = Json.decodeFromString<CryptoStateBackupMetadata>(metadataJson)
             assertEquals(metadata.version, CryptoStateBackupMetadata.CURRENT_VERSION)
             assertEquals(metadata.clientId, TestClient.CLIENT_ID.value)
+            assertEquals(metadata.lastProcessedEventId, lastProcessedEventId)
             assertEquals(metadata.mlsDbPassphrase, Base64.encode(passphrase))
             assertEquals(metadata.proteusDbPassphrase, Base64.encode(proteusPassphrase))
             val extractedMlsDB = listDirectories(extractedFilesPath).firstOrNull {
@@ -201,9 +205,11 @@ class BackupCryptoDBUseCaseTest {
     }
 
     private inner class Arrangement {
+        private val defaultLastProcessedEventId = "event-default"
         val clientIdProvider = mock<CurrentClientIdProvider>()
         val mlsClientProvider = mock<MLSClientProvider>()
         val proteusClientProvider = mock<ProteusClientProvider>()
+        val eventRepository = mock<EventRepository>()
         private val mlsClient = mock<MLSClient>()
         private val mlsContext = mock<MlsCoreCryptoContext>()
         private val proteusClient = mock<ProteusClient>()
@@ -214,8 +220,24 @@ class BackupCryptoDBUseCaseTest {
             proteusClientProvider = proteusClientProvider
         )
 
+        init {
+            withLastProcessedEventId(defaultLastProcessedEventId)
+        }
+
         fun withClientId(clientId: ClientId) = apply {
             everySuspend { clientIdProvider.invoke() }.returns(Either.Right(clientId))
+        }
+
+        fun withLastProcessedEventId(lastProcessedEventId: String) = apply {
+            everySuspend { eventRepository.lastSavedEventId() }.returns(Either.Right(lastProcessedEventId))
+        }
+
+        fun withMissingLastProcessedEventId() = apply {
+            everySuspend { eventRepository.lastSavedEventId() }.returns(Either.Left(StorageFailure.DataNotFound))
+        }
+
+        fun withMostRecentEventId(lastProcessedEventId: String) = apply {
+            everySuspend { eventRepository.fetchMostRecentEventId() }.returns(Either.Right(lastProcessedEventId))
         }
 
         fun withMlsExportedCryptoDB(path: String, dbData: ByteArray, passphrase: ByteArray, clientId: ClientId) = apply {
@@ -311,6 +333,7 @@ class BackupCryptoDBUseCaseTest {
         fun arrange(): Pair<Arrangement, BackupCryptoDBUseCase> = this to BackupCryptoDBUseCaseImpl(
             userId = TestUser.USER_ID,
             cryptoTransactionProvider = cryptoTransactionProvider,
+            eventRepository = eventRepository,
             kaliumFileSystem = fakeFileSystem,
             dispatchers = dispatcher
         )

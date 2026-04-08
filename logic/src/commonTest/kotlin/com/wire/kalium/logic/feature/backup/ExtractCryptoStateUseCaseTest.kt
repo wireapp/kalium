@@ -218,6 +218,7 @@ class ExtractCryptoStateUseCaseTest {
             val metadata = CryptoStateBackupMetadata(
                 version = CryptoStateBackupMetadata.CURRENT_VERSION,
                 clientId = "test-client-id",
+                lastProcessedEventId = "event-123",
                 mlsDbPassphrase = "mls-passphrase",
                 proteusDbPassphrase = "proteus-passphrase"
             )

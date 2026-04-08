@@ -23,7 +23,6 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
-import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
 import kotlinx.coroutines.CompletableDeferred
@@ -53,6 +52,9 @@ internal class GetAudioAssetUseCaseImpl(
         messageId: MessageId?,
         assetId: String?
     ): Deferred<MessageAssetResult> {
+        suspend fun fallbackToMessageAsset(): Deferred<MessageAssetResult> =
+            getMessageAsset(conversationId, requireNotNull(messageId))
+
         return if (isWireCellsEnabledForConversation(conversationId) && assetId != null) {
             getMessageAttachment(assetId).fold(
                 {
@@ -71,20 +73,12 @@ internal class GetAudioAssetUseCaseImpl(
                             )
                         }
 
-                        is AssetContent -> {
-                            CompletableDeferred(
-                                MessageAssetResult.Success(
-                                    message.localData?.assetDataPath!!.toPath(),
-                                    message.sizeInBytes,
-                                    message.localData?.assetDataPath!!.substringAfterLast('/')
-                                )
-                            )
-                        }
+                        else -> fallbackToMessageAsset()
                     }
                 }
             )
         } else {
-            getMessageAsset(conversationId, messageId!!)
+            fallbackToMessageAsset()
         }
     }
 }
