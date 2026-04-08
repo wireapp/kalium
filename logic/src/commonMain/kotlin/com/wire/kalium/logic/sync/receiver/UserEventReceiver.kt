@@ -44,6 +44,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.sync.incremental.EventSource
+import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
@@ -67,6 +68,7 @@ internal class UserEventReceiverImpl internal constructor(
     private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
     private val legalHoldRequestHandler: LegalHoldRequestHandler,
     private val legalHoldHandler: LegalHoldHandler,
+    private val sessionRefreshSuggestedEventHandler: SessionRefreshSuggestedEventHandler,
 ) : UserEventReceiver {
 
     override suspend fun onEvent(
@@ -83,6 +85,7 @@ internal class UserEventReceiverImpl internal constructor(
             is Event.User.LegalHoldRequest -> legalHoldRequestHandler.handle(event)
             is Event.User.LegalHoldEnabled -> legalHoldHandler.handleEnable(event)
             is Event.User.LegalHoldDisabled -> legalHoldHandler.handleDisable(event)
+            is Event.User.SessionRefreshSuggested -> handleSessionRefreshSuggested(event)
         }
     }
 
@@ -189,5 +192,12 @@ internal class UserEventReceiverImpl internal constructor(
                 .onSuccess { logger.logSuccess() }
                 .onFailure { logger.logFailure(it) }
         }
+    }
+
+    private suspend fun handleSessionRefreshSuggested(event: Event.User.SessionRefreshSuggested): Either<CoreFailure, Unit> {
+        val logger = kaliumLogger.createEventProcessingLogger(event)
+        return sessionRefreshSuggestedEventHandler.handle(event)
+            .onSuccess { logger.logSuccess() }
+            .onFailure { logger.logFailure(it) }
     }
 }

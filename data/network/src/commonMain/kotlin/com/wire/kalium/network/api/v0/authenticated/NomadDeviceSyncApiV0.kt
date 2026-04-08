@@ -20,11 +20,16 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
+import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationMetadataResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEventsRequest
+import com.wire.kalium.network.api.authenticated.nomaddevice.SetLastDeviceIdRequest
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.NetworkErrorLabel
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.setUrl
@@ -35,9 +40,12 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareGet
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -71,10 +79,40 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
             }
         }
 
+    @Deprecated("Replaced with batched version", replaceWith = ReplaceWith("syncAllMessages"))
     override suspend fun getAllMessages(): NetworkResponse<NomadAllMessagesResponse> =
         requireNomadServiceUrl(apiName = "getAllMessages") ?: wrapRequest {
             httpClient.get {
                 setNomadUrlIfAvailable(PATH_EVENT, PATH_MESSAGES)
+            }
+        }
+
+    override suspend fun syncAllMessages(limit: Int): NetworkResponse<NomadAllMessagesResponse> =
+        requireNomadServiceUrl(apiName = "syncAllMessages") ?: wrapRequest {
+            httpClient.get {
+                setNomadUrlIfAvailable(PATH_EVENT, "$PATH_MESSAGES/$PATH_MESSAGES_SYNC")
+                parameter(QUERY_LIMIT, limit)
+            }
+        }
+
+    override suspend fun restoreMessagesBatch(
+        request: NomadBatchRestoreRequest,
+    ): NetworkResponse<NomadBatchRestoreResponse> =
+        requireNomadServiceUrl(apiName = "restoreMessagesBatch") ?: wrapRequest {
+            httpClient.get {
+                setNomadUrlIfAvailable(PATH_EVENT, "$PATH_MESSAGES/$PATH_MESSAGES_BATCH", PATH_MESSAGES_RESTORE)
+                request.conversationIds?.let { conversationIds ->
+                    parameter(QUERY_CONVERSATION_IDS, conversationIds.joinToString(separator = ","))
+                }
+                request.limit?.let { limit ->
+                    parameter(QUERY_LIMIT, limit)
+                }
+                request.beforeTimestamp?.let { beforeTimestamp ->
+                    parameter(QUERY_BEFORE_TIMESTAMP, beforeTimestamp)
+                }
+                request.nextCursor?.let { nextCursor ->
+                    parameter(QUERY_NEXT_CURSOR, nextCursor)
+                }
             }
         }
 
@@ -103,17 +141,48 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
             httpClient.prepareGet {
                 setNomadUrlIfAvailable(PATH_EVENT, PATH_CRYPTO_STATE)
             }.execute { httpResponse ->
-                if (httpResponse.status.isSuccess()) {
-                    handleCryptoStateDownload(httpResponse, tempBackupFileSink)
-                } else {
-                    handleUnsuccessfulResponse(httpResponse)
+                when {
+                    httpResponse.status.isSuccess() ->
+                        handleCryptoStateDownload(httpResponse, tempBackupFileSink)
+
+                    httpResponse.status == HttpStatusCode.Unauthorized ->
+                        handleLabeledError(httpResponse, NetworkErrorLabel.USER_NOT_FOUND, UNAUTHORIZED_CODE)
+
+                    httpResponse.status == HttpStatusCode.Forbidden ->
+                        handleLabeledError(httpResponse, NetworkErrorLabel.NO_CRYPTO_STATE, FORBIDDEN_CODE)
+
+                    else -> handleUnsuccessfulResponse(httpResponse)
                 }
             }
         }.getOrElse { unhandledException ->
-            if (unhandledException is CancellationException) {
-                throw unhandledException
-            }
+            if (unhandledException is CancellationException) throw unhandledException
             NetworkResponse.Error(KaliumException.GenericError(unhandledException))
+        }
+
+    private suspend fun handleLabeledError(
+        httpResponse: HttpResponse,
+        expectedLabel: String,
+        code: Int
+    ): NetworkResponse<Unit> {
+        val body = runCatching { httpResponse.bodyAsText() }.getOrElse { "" }
+        return if (body.contains(expectedLabel)) {
+            NetworkResponse.Error(
+                KaliumException.InvalidRequestError(
+                    GenericAPIErrorResponse(code = code, label = expectedLabel, message = body)
+                )
+            )
+        } else {
+            handleUnsuccessfulResponse(httpResponse)
+        }
+    }
+
+    override suspend fun setLastDeviceId(deviceId: String): NetworkResponse<Unit> =
+        requireNomadServiceUrl(apiName = "setLastDeviceId") ?: wrapRequest {
+            httpClient.put {
+                setNomadUrlIfAvailable(PATH_EVENT, PATH_CRYPTO_DEVICE)
+                contentType(ContentType.Application.Json)
+                setBody(SetLastDeviceIdRequest(deviceId = deviceId))
+            }
         }
 
     @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
@@ -205,13 +274,23 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
     private companion object {
         const val PATH_EVENT = "event"
         const val PATH_MESSAGES = "messages"
-        const val PATH_CONVERSATION_METADATA = "conversation/metadata"
+        const val PATH_MESSAGES_SYNC = "sync"
+        const val PATH_MESSAGES_BATCH = "batch"
+        const val PATH_MESSAGES_RESTORE = "restore"
+        const val PATH_CONVERSATION_METADATA = "conversations"
         const val PATH_CRYPTO_STATE = "crypto/state"
+        const val PATH_CRYPTO_DEVICE = "crypto/device"
         const val QUERY_DEVICE_ID = "device_id"
+        const val QUERY_CONVERSATION_IDS = "conversation_ids"
+        const val QUERY_LIMIT = "limit"
+        const val QUERY_BEFORE_TIMESTAMP = "before_timestamp"
+        const val QUERY_NEXT_CURSOR = "next_cursor"
         const val BUFFER_SIZE = 8L * 1024
         const val BOUNDARY = "frontier"
         const val CRYPTO_ZIP_FILENAME = "CHANGELOG.zip"
         const val PATH_SEPARATOR = "/"
         const val API_NAME = "NomadDeviceSyncApiV0"
+        const val UNAUTHORIZED_CODE = 401
+        const val FORBIDDEN_CODE = 403
     }
 }

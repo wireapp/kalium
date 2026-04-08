@@ -53,6 +53,8 @@ import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_REC
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey.WIRE_TYPING_INDICATOR_MODE
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
+import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.SerializationException
@@ -121,6 +123,7 @@ internal class EventMapper(
             is EventContentDTO.User.NewLegalHoldRequestDTO -> legalHoldRequest(id, eventContentDTO)
             is EventContentDTO.User.LegalHoldEnabledDTO -> legalHoldEnabled(id, eventContentDTO)
             is EventContentDTO.User.LegalHoldDisabledDTO -> legalHoldDisabled(id, eventContentDTO)
+            is EventContentDTO.User.SessionRefreshSuggestedDTO -> sessionRefreshSuggested(id)
             is EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO -> featureConfig(id, eventContentDTO)
             is EventContentDTO.Unknown -> unknown(id, eventContentDTO)
             is EventContentDTO.Conversation.AccessUpdate -> conversationAccessUpdate(id, eventContentDTO)
@@ -317,9 +320,9 @@ internal class EventMapper(
     ) = Event.Conversation.MLSWelcome(
         id,
         eventContentDTO.qualifiedConversation.toModel(),
-
         eventContentDTO.qualifiedFrom.toModel(),
         eventContentDTO.message,
+        timestampIso = eventContentDTO.time?.toIsoDateTimeString() ?: DateTimeUtil.currentIsoDateTimeString()
     )
 
     private fun newMessage(
@@ -388,6 +391,9 @@ internal class EventMapper(
             qualifiedIdMapper.fromStringToQualifiedID(eventContentDTO.id)
         )
     }
+
+    private fun sessionRefreshSuggested(id: String): Event.User.SessionRefreshSuggested =
+        Event.User.SessionRefreshSuggested(id = id)
 
     private fun userDelete(
         id: String,

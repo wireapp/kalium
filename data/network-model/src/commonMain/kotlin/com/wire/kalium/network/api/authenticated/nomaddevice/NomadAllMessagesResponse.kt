@@ -24,7 +24,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class NomadAllMessagesResponse(
     @SerialName("conversations")
-    val conversations: List<NomadConversationWithMessages>
+    val conversations: List<NomadConversationWithMessages>,
+    @SerialName("has_more")
+    val hasMore: Boolean = false,
+    @SerialName("next_cursor")
+    val nextCursor: Int?,
+    @SerialName("next_timestamp")
+    val nextTimestamp: Long?
 )
 
 @Serializable

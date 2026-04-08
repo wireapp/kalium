@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -252,6 +253,8 @@ class DeleteMessageUseCaseTest {
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
+        val persistenceEventHookNotifier: PersistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
+
         fun arrange() = this to DeleteMessageUseCase(
             messageRepository,
             assetRepository,
@@ -261,6 +264,7 @@ class DeleteMessageUseCaseTest {
             currentClientIdProvider,
             selfConversationIdProvider,
             deleteCellAssets,
+            persistenceEventHookNotifier,
             dispatcher
         )
 

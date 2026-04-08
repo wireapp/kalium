@@ -52,4 +52,11 @@ internal open class FakeMessageRepositoryExtensions : MessageRepositoryExtension
         pagingConfig: PagingConfig,
         startingOffset: Long
     ): Flow<PagingData<AssetMessage>> = emptyFlow()
+
+    override suspend fun fetchOlderNomadMessagesByConversationId(
+        conversationId: ConversationId,
+        pageSize: Int,
+    ) {
+        // no-op for tests
+    }
 }

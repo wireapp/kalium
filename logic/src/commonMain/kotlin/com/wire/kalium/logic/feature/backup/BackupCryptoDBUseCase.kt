@@ -27,6 +27,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.client.CryptoBackupMetadata
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.createCompressedFile
 import com.wire.kalium.util.DateTimeUtil
@@ -52,18 +53,31 @@ public interface BackupCryptoDBUseCase {
 internal class BackupCryptoDBUseCaseImpl(
     private val userId: UserId,
     private val cryptoTransactionProvider: CryptoTransactionProvider,
+    private val eventRepository: EventRepository,
     private val kaliumFileSystem: KaliumFileSystem,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : BackupCryptoDBUseCase {
 
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
         val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
+        if (kaliumFileSystem.exists(mlsBackupPath)) {
+            kaliumFileSystem.delete(mlsBackupPath)
+        }
         val (mlsExportData, mlsDbBytes) = createMLSBackup(mlsBackupPath).fold(
-            { return@withContext BackupCryptoDBResult.Failure(it) },
+            {
+                kaliumLogger.e("Failed to create MLS backup")
+                return@withContext BackupCryptoDBResult.Failure(it)
+            },
             { it }
         )
+        if (kaliumFileSystem.exists(proteusBackupPath)) {
+            kaliumFileSystem.delete(proteusBackupPath)
+        }
         val (proteusExportData, proteusDbBytes) = createProteusBackup(proteusBackupPath).fold(
-            { return@withContext BackupCryptoDBResult.Failure(it) },
+            {
+                kaliumLogger.e("Failed to create Proteus backup")
+                return@withContext BackupCryptoDBResult.Failure(it)
+            },
             { it }
         )
 
@@ -72,7 +86,21 @@ internal class BackupCryptoDBUseCaseImpl(
             val tempBackupName = createTempBackupFileName(backupName)
             val tempBackupPath = cryptoBackupRootPath.resolve(tempBackupName)
             val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
-            val metadataPath = createMetadataFile(mlsExportData, proteusExportData)
+            val lastProcessedEventId = when (val result = eventRepository.lastSavedEventId()) {
+                is Either.Right -> result.value
+                is Either.Left -> when (result.value) {
+                    is StorageFailure.DataNotFound -> when (val fetchResult = eventRepository.fetchMostRecentEventId()) {
+                        is Either.Right -> fetchResult.value
+                        is Either.Left -> return@withContext BackupCryptoDBResult.Failure(fetchResult.value)
+                    }
+                    else -> return@withContext BackupCryptoDBResult.Failure(result.value)
+                }
+            }
+            val metadataPath = createMetadataFile(
+                mlsExportData = mlsExportData,
+                proteusExportData = proteusExportData,
+                lastProcessedEventId = lastProcessedEventId
+            )
             createBackupZip(mlsDbBytes, proteusDbBytes, metadataPath, tempBackupPath).fold(
                 { error -> BackupCryptoDBResult.Failure(error) },
                 {
@@ -95,7 +123,10 @@ internal class BackupCryptoDBUseCaseImpl(
             cryptoTransactionProvider.mlsClientProvider
                 .exportCryptoDB(mlsBackupPath.toString())
                 .fold(
-                    { Either.Left(it) },
+                    {
+                        kaliumLogger.e("MLS backup export failed with error: $it")
+                        Either.Left(it)
+                    },
                     { exportData ->
                         try {
                             val bytes = kaliumFileSystem.source(exportData.dbPath.toPath()).use {
@@ -164,10 +195,12 @@ internal class BackupCryptoDBUseCaseImpl(
     private fun createMetadataFile(
         mlsExportData: CryptoBackupMetadata,
         proteusExportData: CryptoBackupMetadata,
+        lastProcessedEventId: String,
     ): Path {
         val metadata = CryptoStateBackupMetadata(
             version = CryptoStateBackupMetadata.CURRENT_VERSION,
             clientId = mlsExportData.clientId.value,
+            lastProcessedEventId = lastProcessedEventId,
             mlsDbPassphrase = Base64.encode(mlsExportData.passphrase),
             proteusDbPassphrase = Base64.encode(proteusExportData.passphrase)
         )

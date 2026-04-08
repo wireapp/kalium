@@ -57,10 +57,10 @@ public data class NomadRemoteBackupDebouncedSyncConfig(
     }
 
     public companion object {
-        public const val DEFAULT_DEBOUNCE_MS: Long = 10_000L
-        public const val DEFAULT_MAX_WAIT_MS: Long = 60_000L
+        public const val DEFAULT_DEBOUNCE_MS: Long = 1000L
+        public const val DEFAULT_MAX_WAIT_MS: Long = 3000L
         public const val DEFAULT_MAX_ATTEMPTS_TOTAL: Int = 3
-        public val DEFAULT_RETRY_DELAYS_MS: List<Long> = listOf(10_000L, 20_000L)
+        public val DEFAULT_RETRY_DELAYS_MS: List<Long> = listOf(3000L, 3000L)
     }
 }
 

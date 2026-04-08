@@ -22,22 +22,39 @@ import com.sun.jna.Callback
 import com.sun.jna.Pointer
 
 /**
- * QUALITY_NORMAL          = 1
- * QUALITY_MEDIUM          = 2
- * QUALITY_POOR            = 3
- * QUALITY_NETWORK_PROBLEM = 4
+ * Callback interface for handling network quality changes in a call.
+ *
+ *    "qualityInfoJson": {
+ *      "quality": int,         one of: NORMAL=1, MEDIUM=2, POOR=3, NETWORK_PROBLEM=4, RECONNECTING=5
+ *      "tx": int,              percentage of up packets lost
+ *      "rx": int,              percentage of down packets lost
+ *      "loss": {
+ *        "tx": int,            percentage of up packets lost
+ *        "rx": int,            percentage of down packets lost
+ *      },
+ *      "jitter": {
+ *        "audio": {
+ *          "tx": int,          audio up jitter in milliseconds
+ *          "rx": int           audio down jitter in milliseconds
+ *        },
+ *        "video": {
+ *          "tx": int,          video up jitter in milliseconds
+ *          "rx": int           video down jitter in milliseconds
+ *        },
+ *      },
+ *      "connection": {
+ *        "protocol": string,   one of: UDP, TCP, Unknown
+ *        "candidate": string,  one of: Relay, Host, Srflx, Prflx, Unknown
+ *      },
+ *      "peer": string,         one of: Server, User, Unknown
+ *    }
  */
 interface NetworkQualityChangedHandler : Callback {
-
-    @Suppress("LongParameterList")
     fun onNetworkQualityChanged(
         conversationId: String,
         userId: String?,
         clientId: String?,
-        quality: Int,
-        roundTripTimeInMilliseconds: Int,
-        upstreamPacketLossPercentage: Int,
-        downstreamPacketLossPercentage: Int,
+        qualityInfoJson: String?,
         arg: Pointer?
     )
 }

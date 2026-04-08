@@ -42,7 +42,10 @@ actual fun ByteArray.toStringFromUtf16BE(): String = memScoped {
 }
 
 fun NSData.toByteArray(): ByteArray {
-    val buffer = ByteArray(length.toInt())
+    val size = length.toInt()
+    // addressOf(0) on an empty ByteArray throws ArrayIndexOutOfBoundsException in K/N
+    if (size == 0) return ByteArray(0)
+    val buffer = ByteArray(size)
     buffer.usePinned {
         getBytes(it.addressOf(0))
     }

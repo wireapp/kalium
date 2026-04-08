@@ -32,12 +32,12 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
+import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
@@ -50,13 +50,14 @@ import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
@@ -98,13 +99,13 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetMessageHandler.handle(
                 matches {
                     it.content is MessageContent.Asset
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -122,7 +123,6 @@ class ApplicationMessageHandlerTest {
         )
         val (arrangement, messageHandler) = Arrangement()
             .withPersistingMessageReturning(Either.Right(Unit))
-            .withButtonAction()
             .arrange()
 
         val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
@@ -136,9 +136,9 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.buttonActionHandler.handle(any(), any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -174,9 +174,9 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageCompositeEditHandler.handle(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -208,9 +208,9 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageMultipartEditHandler.handle(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -242,9 +242,9 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.buttonActionConfirmationHandler.handle(any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -281,9 +281,9 @@ class ApplicationMessageHandlerTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.dataTransferEventHandler.handle(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -317,38 +317,69 @@ class ApplicationMessageHandlerTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.inCallReactionsRepository.addInCallReaction(messageEvent.conversationId, messageEvent.senderUserId, setOf("1"))
-        }.wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenCallingMessageReceived_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
+        // given
+        val messageId = "messageId"
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+        val callingContent = MessageContent.Calling(value = "json content", conversationId = messageEvent.conversationId)
+        val protoContent = ProtoContent.Readable(
+            messageUid = messageId,
+            messageContent = callingContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .arrange()
+
+        // when
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        // then
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callingMessageHandler.handle(any(), callingContent)
+        }
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
-        val persistMessage = mock(PersistMessageUseCase::class)
-        val messageRepository = mock(MessageRepository::class)
-        private val userRepository = mock(UserRepository::class)
-        val userConfigRepository = mock(UserConfigRepository::class)
-        private val callManager = mock(CallManager::class)
-        val persistReactionsUseCase = mock(PersistReactionUseCase::class)
-        val messageTextEditHandler = mock(MessageTextEditHandler::class)
-        val messageMultipartEditHandler = mock(MessageMultipartEditHandler::class)
-        val lastReadContentHandler = mock(LastReadContentHandler::class)
-        val clearConversationContentHandler = mock(ClearConversationContentHandler::class)
-        val deleteForMeHandler = mock(DeleteForMeHandler::class)
-        val deleteMessageHandler = mock(DeleteMessageHandler::class)
-        val receiptMessageHandler = mock(ReceiptMessageHandler::class)
-        val assetMessageHandler = mock(AssetMessageHandler::class)
-        val buttonActionConfirmationHandler = mock(ButtonActionConfirmationHandler::class)
-        val inCallReactionsRepository = mock(InCallReactionsRepository::class)
-        val dataTransferEventHandler = mock(DataTransferEventHandler::class)
-        val buttonActionHandler = mock(ButtonActionHandler::class)
-        val messageCompositeEditHandler = mock(MessageCompositeEditHandler::class)
+        val persistMessage = mock<PersistMessageUseCase>(MockMode.autoUnit)
+        val messageRepository = mock<MessageRepository>(MockMode.autoUnit)
+        private val userRepository = mock<UserRepository>(MockMode.autoUnit)
+        val userConfigRepository = mock<UserConfigRepository>(MockMode.autoUnit)
+        val persistReactionsUseCase = mock<PersistReactionUseCase>(MockMode.autoUnit)
+        val messageTextEditHandler = mock<MessageTextEditHandler>(MockMode.autoUnit)
+        val messageMultipartEditHandler = mock<MessageMultipartEditHandler>(MockMode.autoUnit)
+        val lastReadContentHandler = mock<LastReadContentHandler>(MockMode.autoUnit)
+        val clearConversationContentHandler = mock<ClearConversationContentHandler>(MockMode.autoUnit)
+        val deleteForMeHandler = mock<DeleteForMeHandler>(MockMode.autoUnit)
+        val deleteMessageHandler = mock<DeleteMessageHandler>(MockMode.autoUnit)
+        val receiptMessageHandler = mock<ReceiptMessageHandler>(MockMode.autoUnit)
+        val assetMessageHandler = mock<AssetMessageHandler>(MockMode.autoUnit)
+        val buttonActionConfirmationHandler = mock<ButtonActionConfirmationHandler>(MockMode.autoUnit)
+        val inCallReactionsRepository = mock<InCallReactionsRepository>(MockMode.autoUnit)
+        val dataTransferEventHandler = mock<DataTransferEventHandler>(MockMode.autoUnit)
+        val buttonActionHandler = mock<ButtonActionHandler>(MockMode.autoUnit)
+        val messageCompositeEditHandler = mock<MessageCompositeEditHandler>(MockMode.autoUnit)
+        val callingMessageHandler = mock<CallingMessageHandler>(MockMode.autoUnit)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
             messageRepository,
             assetMessageHandler,
-            lazyOf(callManager),
             persistMessage,
             persistReactionsUseCase,
             messageTextEditHandler,
@@ -364,17 +395,18 @@ class ApplicationMessageHandlerTest {
             inCallReactionsRepository,
             buttonActionHandler,
             messageCompositeEditHandler,
+            callingMessageHandler,
             TestUser.SELF.id
         )
 
-        suspend fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+        fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
+            everySuspend {
                 persistMessage.invoke(any())
             }.returns(result)
         }
 
-        suspend fun withFileSharingEnabled() = apply {
-            coEvery {
+        fun withFileSharingEnabled() = apply {
+            everySuspend {
                 userConfigRepository.isFileSharingEnabled()
             }.returns(
                 Either.Right(
@@ -386,34 +418,28 @@ class ApplicationMessageHandlerTest {
             )
         }
 
-        suspend fun withErrorGetMessageById(storageFailure: StorageFailure) = apply {
-            coEvery {
+        fun withErrorGetMessageById(storageFailure: StorageFailure) = apply {
+            everySuspend {
                 messageRepository.getMessageById(any(), any())
             }.returns(Either.Left(storageFailure))
         }
 
-        suspend fun withButtonActionConfirmation(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+        fun withButtonActionConfirmation(result: Either<StorageFailure, Unit>) = apply {
+            everySuspend {
                 buttonActionConfirmationHandler.handle(any(), any(), any())
             }.returns(result)
         }
 
-        suspend fun withMessageCompositeEditHandler() = apply {
-            coEvery {
+        fun withMessageCompositeEditHandler() = apply {
+            everySuspend {
                 messageCompositeEditHandler.handle(any(), any())
             }.returns(Either.Right(Unit))
         }
 
-        suspend fun withMessageMultipartEditHandler() = apply {
-            coEvery {
+        fun withMessageMultipartEditHandler() = apply {
+            everySuspend {
                 messageMultipartEditHandler.handle(any(), any())
             }.returns(Either.Right(Unit))
-        }
-
-        suspend fun withButtonAction() = apply {
-            coEvery {
-                buttonActionHandler.handle(any(), any(), any(), any())
-            }.returns(Unit)
         }
 
         fun arrange() = this to applicationMessageHandler

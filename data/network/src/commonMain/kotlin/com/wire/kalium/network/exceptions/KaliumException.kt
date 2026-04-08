@@ -152,7 +152,7 @@ fun KaliumException.InvalidRequestError.isInvalidHandle(): Boolean {
 }
 
 fun KaliumException.InvalidRequestError.isTooManyRequests(): Boolean {
-    return errorResponse.code == HttpStatusCode.TooManyRequests.value
+    return errorResponse.code == HttpStatusCode.TooManyRequests.value || errorResponse.code == HTTP_STATUS_NGINZ_TOO_MANY_REQUESTS
 }
 
 fun KaliumException.InvalidRequestError.isHandleExists(): Boolean {
@@ -213,9 +213,13 @@ val KaliumException.InvalidRequestError.authenticationCodeFailure: Authenticatio
         errorResponse.label == it.responseLabel
     }
 
+fun KaliumException.InvalidRequestError.isUserNotFound(): Boolean = errorResponse.label == NetworkErrorLabel.USER_NOT_FOUND
+fun KaliumException.InvalidRequestError.isNoCryptoState(): Boolean = errorResponse.label == NetworkErrorLabel.NO_CRYPTO_STATE
 fun KaliumException.InvalidRequestError.isMissingLegalHoldConsent(): Boolean = errorResponse.label == MISSING_LEGALHOLD_CONSENT
 fun KaliumException.InvalidRequestError.isAccountSuspended(): Boolean = errorResponse.label == ACCOUNT_SUSPENDED
 fun KaliumException.InvalidRequestError.isAccountPendingActivation(): Boolean = errorResponse.label == ACCOUNT_PENDING_ACTIVATION
 
 fun KaliumException.ServerError.isEnterpriseServiceNotEnabled(): Boolean =
     errorResponse.code == HttpStatusCode.ServiceUnavailable.value && errorResponse.label == ENTERPRISE_SERVICE_NOT_ENABLED
+
+private const val HTTP_STATUS_NGINZ_TOO_MANY_REQUESTS = 420

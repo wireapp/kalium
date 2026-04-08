@@ -23,22 +23,26 @@ import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallingParticipantsOrder
+import com.wire.kalium.logic.data.call.CallingParticipantsOrderType
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.verify
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@Suppress("UnusedFlow")
 class ObserveLastActiveCallWithSortedParticipantsUseCaseTest {
 
     @Test
@@ -54,16 +58,16 @@ class ObserveLastActiveCallWithSortedParticipantsUseCaseTest {
             assertEquals(call, awaitItem())
             awaitComplete()
         }
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.callRepository.observeLastActiveCallByConversationId(establishedCall.conversationId)
-        }.wasInvoked(exactly = 1)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.callingParticipantsOrder.reorderItems(establishedCall.participants)
-        }.wasInvoked(exactly = 0)
+        }
     }
 
     @Test
-    fun givenActiveLastCall_whenUseCaseIsRunning_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
+    fun givenActiveLastCall_whenUseCaseIsRunning_withVideosFirstOrder_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
         // given
         val call = establishedCall
         val (arrangement, useCase) = Arrangement()
@@ -71,17 +75,39 @@ class ObserveLastActiveCallWithSortedParticipantsUseCaseTest {
             .withObserveLastActiveCallByConversationIdReturning(flowOf(call))
             .arrange()
         // when
-        useCase(call.conversationId).test {
+        useCase(call.conversationId, CallingParticipantsOrderType.VIDEOS_FIRST).test {
         // then
             assertEquals(call, awaitItem())
             awaitComplete()
         }
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.callRepository.observeLastActiveCallByConversationId(call.conversationId)
-        }.wasInvoked(exactly = 1)
-        coVerify {
-            arrangement.callingParticipantsOrder.reorderItems(call.participants)
-        }.wasInvoked(exactly = 1)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callingParticipantsOrder.reorderItems(call.participants, CallingParticipantsOrderType.VIDEOS_FIRST)
+        }
+    }
+
+    @Test
+    fun givenActiveLastCall_whenUseCaseIsRunning_withAlphabeticalOrder_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
+        // given
+        val call = establishedCall
+        val (arrangement, useCase) = Arrangement()
+            .withReorderItemsReturning(call.participants)
+            .withObserveLastActiveCallByConversationIdReturning(flowOf(call))
+            .arrange()
+        // when
+        useCase(call.conversationId, CallingParticipantsOrderType.ALPHABETICALLY).test {
+            // then
+            assertEquals(call, awaitItem())
+            awaitComplete()
+        }
+        verify(VerifyMode.exactly(1)) {
+            arrangement.callRepository.observeLastActiveCallByConversationId(call.conversationId)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callingParticipantsOrder.reorderItems(call.participants, CallingParticipantsOrderType.ALPHABETICALLY)
+        }
     }
 
     @Test
@@ -100,12 +126,12 @@ class ObserveLastActiveCallWithSortedParticipantsUseCaseTest {
             assertEquals(updatedCall, awaitItem())
             awaitComplete()
         }
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.callRepository.observeLastActiveCallByConversationId(establishedCall.conversationId)
-        }.wasInvoked(exactly = 1)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.callingParticipantsOrder.reorderItems(establishedCall.participants)
-        }.wasInvoked(exactly = 2)
+        }
     }
 
     @Test
@@ -124,25 +150,25 @@ class ObserveLastActiveCallWithSortedParticipantsUseCaseTest {
             assertEquals(updatedCall, awaitItem())
             awaitComplete()
         }
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.callRepository.observeLastActiveCallByConversationId(establishedCall.conversationId)
-        }.wasInvoked(exactly = 1)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callingParticipantsOrder.reorderItems(establishedCall.participants)
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     private inner class Arrangement {
-        val callRepository = mock(CallRepository::class)
-        val callingParticipantsOrder = mock(CallingParticipantsOrder::class)
+        val callRepository = mock<CallRepository>()
+        val callingParticipantsOrder = mock<CallingParticipantsOrder>()
 
         fun arrange() = this to ObserveLastActiveCallWithSortedParticipantsUseCaseImpl(
             callRepository,
             callingParticipantsOrder
         )
         suspend fun withReorderItemsReturning(result: List<Participant>) = apply {
-            coEvery {
-                callingParticipantsOrder.reorderItems(any())
+            everySuspend {
+                callingParticipantsOrder.reorderItems(any(), any())
             }.returns(result)
         }
         fun withObserveLastActiveCallByConversationIdReturning(result: Flow<Call?>) = apply {

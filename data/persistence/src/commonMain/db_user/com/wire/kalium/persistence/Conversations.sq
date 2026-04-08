@@ -137,6 +137,15 @@ SET mls_group_state = CASE
 END
 WHERE mls_group_id = ?;
 
+updateConversationGroupStateByConversationId:
+UPDATE Conversation
+SET mls_group_state = CASE
+    WHEN mls_group_state = 'ESTABLISHED' THEN :mls_group_state
+    WHEN :mls_group_state IN ('ESTABLISHED', 'PENDING_AFTER_RESET') THEN :mls_group_state
+    ELSE mls_group_state
+END
+WHERE qualified_id = :conversation_id;
+
 updateMlsGroupStateAndCipherSuite:
 UPDATE Conversation
 SET mls_group_state = CASE

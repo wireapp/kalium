@@ -18,7 +18,6 @@
 
 package com.wire.kalium.network.api.authenticated.nomaddevice
 
-import com.wire.kalium.network.api.model.QualifiedID
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -52,9 +51,9 @@ sealed interface NomadMessageEvent {
         @SerialName("conversation")
         val conversation: Conversation,
         @SerialName("reaction")
-        val reaction: ReactionsPayload? = null,
+        val reaction: String? = null,
         @SerialName("read_receipt")
-        val readReceipt: ReadReceiptsPayload? = null
+        val readReceipt: String? = null
     ) : NomadMessageEvent {
         init {
             require((reaction == null) xor (readReceipt == null)) {
@@ -82,23 +81,25 @@ sealed interface NomadMessageEvent {
     ) : NomadMessageEvent
 
     @Serializable
-    @SerialName("LAST_READ")
-    data class LastReadEvent(
-        @SerialName("last_read")
-        val lastRead: List<LastRead>
+    @SerialName("CONVERSATION_METADATA")
+    data class ConversationMetadataEvent(
+        @SerialName("conversation_metadata")
+        val conversationMetadata: List<ConversationMetadataEntry>
     ) : NomadMessageEvent {
         init {
-            require(lastRead.isNotEmpty()) { "last_read must not be empty." }
+            require(conversationMetadata.isNotEmpty()) { "conversation_metadata must not be empty." }
         }
     }
 }
 
 @Serializable
-data class LastRead(
+data class ConversationMetadataEntry(
     @SerialName("conversation_id")
     val conversationId: String,
     @SerialName("last_read")
-    val lastReadTimestamp: Long
+    val lastReadTimestamp: Long,
+    @SerialName("last_modified")
+    val lastModifiedTimestamp: Long,
 )
 
 @Serializable
@@ -107,32 +108,4 @@ data class Conversation(
     val id: String,
     @SerialName("domain")
     val domain: String
-)
-
-@Serializable
-data class ReactionsPayload(
-    @SerialName("reactions_by_user")
-    val reactionsByUser: List<ReactionByUser>
-)
-
-@Serializable
-data class ReactionByUser(
-    @SerialName("user_id")
-    val userId: QualifiedID,
-    @SerialName("emojis")
-    val emojis: List<String>
-)
-
-@Serializable
-data class ReadReceiptsPayload(
-    @SerialName("read_receipts")
-    val readReceipts: List<ReadReceiptEntry>
-)
-
-@Serializable
-data class ReadReceiptEntry(
-    @SerialName("user_id")
-    val userId: QualifiedID,
-    @SerialName("date")
-    val date: String
 )

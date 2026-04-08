@@ -18,10 +18,10 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import app.cash.turbine.test
-import com.wire.kalium.logic.data.call.CallQuality
 import com.wire.kalium.logic.data.call.CallQualityData
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.framework.TestCall.CALL_QUALITY_DATA
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -39,7 +39,7 @@ class ObserveCallQualityDataUseCaseTest {
     @Test
     fun givenOngoingCallWithCallQualityDataUpdated_whenObservingCallQualityData_thenQualityDataIsEmitted() = runTest {
         // given
-        val callQualityData = CallQualityData(CallQuality.POOR, 1,2,3)
+        val callQualityData = CALL_QUALITY_DATA
         val (_, useCase) = Arrangement()
             .withObserveCallQualityDataReturning(flowOf(callQualityData))
             .arrange()

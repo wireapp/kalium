@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -36,6 +37,8 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -47,6 +50,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertIs
 
 class OneOnOneResolverTest {
 
@@ -265,7 +269,70 @@ class OneOnOneResolverTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
+    @Test
+    fun givenThrottleError_whenResolveAllOneOnOneConversations_thenRetriesBeforePropagatingFailure() = runTest {
+        // given
+        val oneOnOneUsers = listOf(TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID))
+        val (arrangement, resolver) = arrange(maxThrottleRetries = 2, throttleRetryDelayMs = 1) {
+            withGetUsersWithOneOnOneConversationReturning(oneOnOneUsers)
+            withGetProtocolForUser(
+                Either.Left(
+                    NetworkFailure.ServerMiscommunication(
+                        KaliumException.InvalidRequestError(
+                            ErrorResponse(420, "", "Unknown Status Code")
+                        )
+                    )
+                )
+            )
+        }
+
+        // when
+        resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldFail {
+            assertIs<NetworkFailure.ServerMiscommunication>(it)
+        }
+
+        // then - initial attempt + 2 retries = 3 invocations
+        coVerify {
+            arrangement.oneOnOneProtocolSelector.getProtocolForUser(any())
+        }.wasInvoked(exactly = 3)
+    }
+
+    @Test
+    fun givenThrottleErrorThenSuccess_whenResolveAllOneOnOneConversations_thenSucceeds() = runTest {
+        // given
+        val oneOnOneUsers = listOf(TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID))
+        val throttleFailure = Either.Left(
+            NetworkFailure.ServerMiscommunication(
+                KaliumException.InvalidRequestError(
+                    ErrorResponse(420, "", "Unknown Status Code")
+                )
+            )
+        )
+        val (arrangement, resolver) = arrange(maxThrottleRetries = 3, throttleRetryDelayMs = 1) {
+            withGetUsersWithOneOnOneConversationReturning(oneOnOneUsers)
+            withMigrateToMLSReturns(Either.Right(TestConversation.ID))
+        }
+
+        // First call returns throttle, second succeeds
+        coEvery {
+            arrangement.oneOnOneProtocolSelector.getProtocolForUser(any())
+        }.returnsMany(throttleFailure, Either.Right(SupportedProtocol.MLS))
+
+        // when
+        resolver.resolveAllOneOnOneConversations(arrangement.transactionContext).shouldSucceed()
+
+        // then - initial attempt (throttled) + 1 retry (succeeds) = 2
+        coVerify {
+            arrangement.oneOnOneProtocolSelector.getProtocolForUser(any())
+        }.wasInvoked(exactly = twice)
+    }
+
+    private class Arrangement(
+        private val maxConcurrentResolutions: Int = 4,
+        private val maxThrottleRetries: Int = 3,
+        private val throttleRetryDelayMs: Long = 250,
+        private val block: suspend Arrangement.() -> Unit,
+    ) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneProtocolSelectorArrangement by OneOnOneProtocolSelectorArrangementImpl(),
         OneOnOneMigratorArrangement by OneOnOneMigratorArrangementImpl(),
@@ -277,13 +344,26 @@ class OneOnOneResolverTest {
                 userRepository = userRepository,
                 oneOnOneProtocolSelector = oneOnOneProtocolSelector,
                 oneOnOneMigrator = oneOnOneMigrator,
-                incrementalSyncRepository = incrementalSyncRepository
+                incrementalSyncRepository = incrementalSyncRepository,
+                maxConcurrentResolutions = maxConcurrentResolutions,
+                maxThrottleRetries = maxThrottleRetries,
+                throttleRetryDelayMs = throttleRetryDelayMs,
             )
         }
     }
 
     private companion object {
-        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        fun arrange(
+            maxConcurrentResolutions: Int = 4,
+            maxThrottleRetries: Int = 3,
+            throttleRetryDelayMs: Long = 250,
+            configuration: suspend Arrangement.() -> Unit,
+        ) = Arrangement(
+            maxConcurrentResolutions = maxConcurrentResolutions,
+            maxThrottleRetries = maxThrottleRetries,
+            throttleRetryDelayMs = throttleRetryDelayMs,
+            block = configuration,
+        ).arrange()
 
         val OTHER_USER = TestUser.OTHER
     }

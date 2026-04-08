@@ -300,7 +300,7 @@ sealed interface MessageContent {
          * Note: This is only valid for the creator of the conversation, local-only.
          */
         data class FailedToAdd(override val members: List<UserId>, val type: Type) : MemberChange(members) {
-            enum class Type { Federation, LegalHold, Unknown; }
+            enum class Type { Federation, LegalHold, Unknown, MissingKeyPackages; }
         }
 
         /**

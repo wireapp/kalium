@@ -45,6 +45,7 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
@@ -153,6 +154,15 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         return when {
             protocol !is Conversation.ProtocolInfo.MLSCapable -> Either.Right(Unit)
 
+            transactionContext.wrapInMLSContext { mlsContext ->
+                mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, protocol.groupId)
+            }.fold({ false }, { it }) -> {
+                logger.d(
+                    "Skipping join/establish for ${conversation.id.toLogString()} because MLS group already exists locally"
+                )
+                syncEstablishedConversationMetadata(transactionContext, conversation)
+            }
+
             protocol.epoch != 0UL -> {
                 // TODO(refactor): don't use conversationAPI directly
                 //                 we could use mlsConversationRepository to solve this
@@ -256,5 +266,29 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         put("protocol", CreateConversationParam.Protocol.MLS.name)
         put("protocolInfo", protocol.toLogMap())
         failure?.let { put("errorInfo", "$it") }
+    }
+
+    private suspend fun syncEstablishedConversationMetadata(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation
+    ): Either<CoreFailure, Unit> {
+        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable ?: return Either.Right(Unit)
+        return transactionContext.wrapInMLSContext { mlsContext ->
+            mlsConversationRepository.getLocalGroupEpoch(mlsContext, protocol.groupId)
+        }.flatMap { localEpoch ->
+            if (protocol.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED && protocol.epoch == localEpoch) {
+                Either.Right(Unit)
+            } else {
+                logger.d(
+                    "Updating local MLS metadata for ${conversation.id.toLogString()} to sync DB with local MLS state"
+                )
+                mlsConversationRepository.updateGroupIdAndState(
+                    conversation.id,
+                    protocol.groupId,
+                    localEpoch.toLong(),
+                    ConversationEntity.GroupState.ESTABLISHED
+                )
+            }
+        }
     }
 }

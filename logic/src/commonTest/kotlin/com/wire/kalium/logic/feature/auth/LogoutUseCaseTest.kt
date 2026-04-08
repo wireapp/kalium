@@ -62,7 +62,7 @@ class LogoutUseCaseTest {
 
     @Test
     fun givenAnyReason_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
-        for (reason in LogoutReason.values()) {
+        for (reason in LogoutReason.entries) {
             val (arrangement, logoutUseCase) = Arrangement()
                 .withLogoutResult(Either.Right(Unit))
                 .withSessionLogoutResult(Either.Right(Unit))
@@ -201,6 +201,41 @@ class LogoutUseCaseTest {
             .withUserSessionScopeGetResult(null)
             .withFirebaseTokenUpdate()
             .withKaliumConfigs { it.copy(wipeOnCookieInvalid = true) }
+            .withNoOngoingCalls()
+            .arrange()
+
+        logoutUseCase.invoke(reason)
+        arrangement.globalTestScope.advanceUntilIdle()
+
+        coVerify {
+            arrangement.deregisterTokenUseCase.invoke()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.logoutRepository.logout()
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.clearClientDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clearUserDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSessionExpired_whenLoggingOutWithNomadProfiles_thenExecuteAllRequiredActions() = runTest {
+        val reason = LogoutReason.SESSION_EXPIRED
+        val (arrangement, logoutUseCase) = Arrangement()
+            .withLogoutResult(Either.Right(Unit))
+            .withSessionLogoutResult(Either.Right(Unit))
+            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
+            .withKaliumConfigs { it.copy(wipeOnCookieInvalid = false) }
+            .withIsNomadEnabled(true)
             .withNoOngoingCalls()
             .arrange()
 
@@ -401,45 +436,24 @@ class LogoutUseCaseTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
-                val logoutRepository = mock(LogoutRepository::class)
-        val sessionRepository = mock(SessionRepository::class)
-        val clientRepository = mock(ClientRepository::class)
-        val userConfigRepository = mock(UserConfigRepository::class)
-        val deregisterTokenUseCase = mock(DeregisterTokenUseCase::class)
-        val clearClientDataUseCase = mock(ClearClientDataUseCase::class)
-        val clearUserDataUseCase = mock(ClearUserDataUseCase::class)
-        val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
-        val pushTokenRepository = mock(PushTokenRepository::class)
-        val userSessionWorkScheduler = mock(UserSessionWorkScheduler::class)
-        val observeEstablishedCallsUseCase = mock(ObserveEstablishedCallsUseCase::class)
-        val endCall = mock(EndCallUseCase::class)
-        val logoutCallback = mock(LogoutCallback::class)
-
-        var kaliumConfigs = KaliumConfigs()
-
-        val globalTestScope = TestScope()
-
-        private val logoutUseCase
-            get() = LogoutUseCaseImpl(
-                logoutRepository,
-                sessionRepository,
-                clientRepository,
-                userConfigRepository,
-                USER_ID,
-                deregisterTokenUseCase,
-                clearClientDataUseCase,
-                clearUserDataUseCase,
-                userSessionScopeProvider,
-                pushTokenRepository,
-                globalTestScope,
-                userSessionWorkScheduler,
-                observeEstablishedCallsUseCase,
-                endCall,
-                logoutCallback,
-                kaliumConfigs
-            )
-
+    private data class Arrangement(
+        val logoutRepository: LogoutRepository = mock(LogoutRepository::class),
+        val sessionRepository: SessionRepository = mock(SessionRepository::class),
+        val clientRepository: ClientRepository = mock(ClientRepository::class),
+        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class),
+        val deregisterTokenUseCase: DeregisterTokenUseCase = mock(DeregisterTokenUseCase::class),
+        val clearClientDataUseCase: ClearClientDataUseCase = mock(ClearClientDataUseCase::class),
+        val clearUserDataUseCase: ClearUserDataUseCase = mock(ClearUserDataUseCase::class),
+        val userSessionScopeProvider: UserSessionScopeProvider = mock(UserSessionScopeProvider::class),
+        val pushTokenRepository: PushTokenRepository = mock(PushTokenRepository::class),
+        val userSessionWorkScheduler: UserSessionWorkScheduler = mock(UserSessionWorkScheduler::class),
+        val observeEstablishedCallsUseCase: ObserveEstablishedCallsUseCase = mock(ObserveEstablishedCallsUseCase::class),
+        val endCall: EndCallUseCase = mock(EndCallUseCase::class),
+        val logoutCallback: LogoutCallback = mock(LogoutCallback::class),
+        val isNomadEnabled: () -> Boolean = { false },
+        var kaliumConfigs: KaliumConfigs = KaliumConfigs(),
+        val globalTestScope: TestScope = TestScope()
+    ) {
         suspend fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {
             coEvery {
                 deregisterTokenUseCase.invoke()
@@ -527,7 +541,29 @@ class LogoutUseCaseTest {
             }.returns(flowOf(emptyList()))
         }
 
-        suspend fun arrange() = this to logoutUseCase.also {
+        fun withIsNomadEnabled(isEnabled: Boolean): Arrangement {
+            return copy(isNomadEnabled = { isEnabled })
+        }
+
+        suspend fun arrange() = this to LogoutUseCaseImpl(
+            logoutRepository = logoutRepository,
+            sessionRepository = sessionRepository,
+            clientRepository = clientRepository,
+            userConfigRepository = userConfigRepository,
+            userId = USER_ID,
+            deregisterTokenUseCase = deregisterTokenUseCase,
+            clearClientDataUseCase = clearClientDataUseCase,
+            clearUserDataUseCase = clearUserDataUseCase,
+            userSessionScopeProvider = userSessionScopeProvider,
+            pushTokenRepository = pushTokenRepository,
+            globalCoroutineScope = globalTestScope,
+            userSessionWorkScheduler = userSessionWorkScheduler,
+            getEstablishedCallsUseCase = observeEstablishedCallsUseCase,
+            endCallUseCase = endCall,
+            logoutCallback = logoutCallback,
+            kaliumConfigs = kaliumConfigs,
+            isNomadEnabled = isNomadEnabled
+        ).also {
             coEvery {
                 endCall.invoke(any())
             }.returns(Unit)

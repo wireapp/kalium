@@ -50,6 +50,10 @@ interface ConversationDAO {
     suspend fun insertOrUpdateLastModified(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
+    suspend fun updateConversationGroupStateByConversationId(
+        groupState: ConversationEntity.GroupState,
+        conversationId: QualifiedIDEntity
+    )
     suspend fun updateMlsGroupStateAndCipherSuite(
         groupState: ConversationEntity.GroupState,
         cipherSuite: ConversationEntity.CipherSuite,
@@ -63,6 +67,11 @@ interface ConversationDAO {
     )
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity, date: Instant? = null)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
+    suspend fun updateConversationReadDates(conversationDates: Map<QualifiedIDEntity, Instant>): Int
+    suspend fun updateConversationReadAndModifiedDates(
+        readDates: Map<QualifiedIDEntity, Instant>,
+        modifiedDates: Map<QualifiedIDEntity, Instant>,
+    )
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun getAllConversationDetails(

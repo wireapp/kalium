@@ -617,9 +617,11 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenSuccessfulResponses_whenCallingJoinByExternalCommit_ThenGroupStateIsUpdated() = runTest {
+    fun givenSuccessfulResponses_whenCallingJoinByExternalCommit_ThenGroupStateAndEpochAreUpdated() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withJoinByExternalCommitSuccessful()
+            .withGetGroupEpochReturn(2UL)
+            .withGetConversationByGroupID(MockConversation.entity())
             .arrange()
 
         mlsConversationRepository.joinGroupByExternalCommit(arrangement.mlsContext, Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
@@ -629,6 +631,34 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
+            arrangement.conversationDAO.updateMLSGroupIdAndState(
+                any(),
+                eq(Arrangement.RAW_GROUP_ID),
+                eq(2L),
+                eq(ConversationEntity.GroupState.ESTABLISHED),
+            )
+        }.wasInvoked(once)
+
+        coVerify {
+            arrangement.conversationDAO.updateConversationGroupState(any(), any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.checkRevocationList.check(any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenMissingLocalConversation_whenCallingJoinByExternalCommit_ThenFallbackToGroupStateUpdate() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withJoinByExternalCommitSuccessful()
+            .withGetGroupEpochReturn(2UL)
+            .arrange()
+        coEvery { arrangement.conversationDAO.getConversationByGroupID(any()) }.returns(null)
+
+        mlsConversationRepository.joinGroupByExternalCommit(arrangement.mlsContext, Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
+
+        coVerify {
             arrangement.conversationDAO.updateConversationGroupState(
                 eq(ConversationEntity.GroupState.ESTABLISHED),
                 eq(Arrangement.RAW_GROUP_ID)
@@ -636,7 +666,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.checkRevocationList.check(any(), any())
+            arrangement.conversationDAO.updateMLSGroupIdAndState(any(), any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -1048,7 +1078,27 @@ class MLSConversationRepositoryTest {
             .withKeyPackageLimits(10)
             .withGenerateKeyPackageSuccessful(listOf())
             .withReplaceKeyPackagesReturning(Either.Right(Unit))
+            .withRemoveStaleKeyPackages()
             .arrange()
+        val invocationOrder = mutableListOf<String>()
+
+        coEvery { arrangement.mlsContext.removeStaleKeyPackages() }
+            .invokes {
+                invocationOrder += "removeStaleKeyPackages"
+                Unit
+            }
+
+        coEvery { arrangement.mlsContext.generateKeyPackages(any()) }
+            .invokes {
+                invocationOrder += "generateKeyPackages"
+                emptyList()
+            }
+
+        coEvery { arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any()) }
+            .invokes {
+                invocationOrder += "replaceKeyPackages"
+                Either.Right(Unit)
+            }
 
         assertEquals(
             Either.Right(Unit),
@@ -1076,6 +1126,11 @@ class MLSConversationRepositoryTest {
         coVerify {
             arrangement.mlsContext.removeStaleKeyPackages()
         }.wasInvoked(once)
+
+        assertEquals(
+            listOf("removeStaleKeyPackages", "generateKeyPackages", "replaceKeyPackages"),
+            invocationOrder
+        )
     }
 
     @Test

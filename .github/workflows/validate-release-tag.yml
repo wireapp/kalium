@@ -1,0 +1,88 @@
+name: Validate Release Tag
+
+on:
+  workflow_call:
+    inputs:
+      tag-name:
+        description: Tag being validated
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Verify signed tag and protected branch ancestry
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          tag_name="${{ inputs.tag-name }}"
+          api_url="https://api.github.com/repos/${{ github.repository }}"
+
+          ref_response=$(curl -fsSL \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$api_url/git/ref/tags/$tag_name")
+
+          ref_object_type=$(echo "$ref_response" | jq -r '.object.type')
+          ref_object_sha=$(echo "$ref_response" | jq -r '.object.sha')
+
+          if [[ "$ref_object_type" != "tag" ]]; then
+            echo "::error::Tag $tag_name must be an annotated signed tag."
+            exit 1
+          fi
+
+          tag_response=$(curl -fsSL \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$api_url/git/tags/$ref_object_sha")
+
+          verified=$(echo "$tag_response" | jq -r '.verification.verified')
+          reason=$(echo "$tag_response" | jq -r '.verification.reason // "unknown"')
+          target_type=$(echo "$tag_response" | jq -r '.object.type')
+          target_sha=$(echo "$tag_response" | jq -r '.object.sha')
+
+          if [[ "$target_type" != "commit" || -z "$target_sha" || "$target_sha" == "null" ]]; then
+            echo "::error::Tag $tag_name does not point to a commit."
+            exit 1
+          fi
+
+          if [[ "$verified" != "true" ]]; then
+            echo "::error::Tag $tag_name signature is not verified by GitHub (reason: $reason)."
+            exit 1
+          fi
+
+          git fetch --no-tags --prune origin +refs/heads/*:refs/remotes/origin/*
+
+          branches_response=$(curl -fsSL \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$api_url/branches?protected=true&per_page=100")
+
+          mapfile -t protected_branches < <(echo "$branches_response" | jq -r '.[].name')
+
+          if [[ "${#protected_branches[@]}" -eq 0 ]]; then
+            echo "::error::No protected branches were returned by the GitHub API."
+            exit 1
+          fi
+
+          for branch in "${protected_branches[@]}"; do
+            if git show-ref --verify --quiet "refs/remotes/origin/$branch" &&
+              git merge-base --is-ancestor "$target_sha" "refs/remotes/origin/$branch"; then
+              echo "Verified signed tag $tag_name for commit $target_sha on protected branch $branch"
+              exit 0
+            fi
+          done
+
+          echo "::error::Tag commit $target_sha is not reachable from any protected branch."
+          printf 'Protected branches checked: %s\n' "${protected_branches[*]}"
+          exit 1
