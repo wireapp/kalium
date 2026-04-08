@@ -379,6 +379,22 @@ public class MessageScope internal constructor(
             dispatcher,
         )
 
+    public val sendExistingAssetMessage: SendExistingAssetMessageUseCase
+        get() = SendExistingAssetMessageUseCase(
+            persistMessage,
+            selfUserId,
+            currentClientIdProvider,
+            slowSyncRepository,
+            messageSender,
+            messageSendFailureHandler,
+            userPropertyRepository,
+            observeSelfDeletingMessages,
+            observeFileSharingStatusUseCase,
+            validateAssetMimeTypeUseCase,
+            dispatcher,
+            scope,
+        )
+
     public val getAssetMessage: GetMessageAssetUseCase
         get() = GetMessageAssetUseCaseImpl(
             assetRepository,
