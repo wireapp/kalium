@@ -237,6 +237,36 @@ class JoinExistingMLSConversationUseCaseTest {
         }
 
     @Test
+    fun givenPendingJoinConversationWithRemoteEpoch_whenExternalCommitJoinIsDisabled_thenSkipJoiningAndKeepPendingState() =
+        runTest {
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
+                .withGetConversationsByIdSuccessful(Arrangement.MLS_CONVERSATION1)
+                .withFetchingGroupInfoSuccessful()
+                .withJoinByExternalCommitSuccessful()
+                .arrange()
+
+            joinExistingMLSConversationsUseCase(
+                transactionContext = arrangement.transactionContext,
+                conversationId = Arrangement.MLS_CONVERSATION1.id,
+                allowJoinByExternalCommit = false
+            ).shouldSucceed()
+
+            coVerify {
+                arrangement.conversationApi.fetchGroupInfo(any())
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
+            }.wasNotInvoked()
+        }
+
+    @Test
     fun givenEstablishedConversationAndLocalGroupExists_whenInvokingUseCase_thenDoNotUpdateLocalGroupState() =
         runTest {
             val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
