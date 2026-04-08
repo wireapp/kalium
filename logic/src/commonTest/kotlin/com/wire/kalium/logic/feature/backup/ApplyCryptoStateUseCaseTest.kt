@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.util.SecurityHelper
@@ -48,6 +49,7 @@ class ApplyCryptoStateUseCaseTest {
             .withSuccessfulFolderDeletion()
             .withSuccessfulFileCopy()
             .withSuccessfulDBPassphraseUpdate()
+            .withSuccessfulLastProcessedEventIdUpdate()
             .withSuccessfulMLSClientRegistration()
             .arrange()
 
@@ -56,6 +58,9 @@ class ApplyCryptoStateUseCaseTest {
         assertEquals(ApplyCryptoStateResult.Success, result)
         verifySuspend(VerifyMode.exactly(2)) {
             arrangement.securityHelper.setDBPassphrase(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.eventRepository.updateLastSavedEventId(LAST_PROCESSED_EVENT_ID)
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.setHasRegisteredMLSClient()
@@ -120,11 +125,33 @@ class ApplyCryptoStateUseCaseTest {
         }
     }
 
+    @Test
+    fun givenStoringLastProcessedEventIdFails_whenInvoked_thenReturnFailure() = runTest {
+        val (_, useCase) = Arrangement()
+            .withFileExistingCheckReturning(true)
+            .withSuccessfulFileDeletion()
+            .withSuccessfulFolderDeletion()
+            .withSuccessfulFileCopy()
+            .withSuccessfulDBPassphraseUpdate()
+            .withLastProcessedEventIdUpdateFailure()
+            .arrange()
+
+        val result = useCase.invoke(extractResult)
+
+        assertTrue(result is ApplyCryptoStateResult.Failure)
+        assertTrue(result.error is StorageFailure.Generic)
+    }
+
     private inner class Arrangement {
 
         val kaliumFileSystem = mock<KaliumFileSystem>()
         val securityHelper = mock<SecurityHelper>()
         val clientRepository = mock<ClientRepository>()
+        val eventRepository = mock<EventRepository>()
+
+        init {
+            withSuccessfulLastProcessedEventIdUpdate()
+        }
 
         fun withExistingMLSKeystore(result: Boolean) = apply {
             everySuspend { kaliumFileSystem.exists(mlsKeystorePath) } returns result
@@ -154,6 +181,16 @@ class ApplyCryptoStateUseCaseTest {
             everySuspend { clientRepository.setHasRegisteredMLSClient() } returns Either.Right(Unit)
         }
 
+        fun withSuccessfulLastProcessedEventIdUpdate() = apply {
+            everySuspend { eventRepository.updateLastSavedEventId(any()) } returns Either.Right(Unit)
+        }
+
+        fun withLastProcessedEventIdUpdateFailure() = apply {
+            everySuspend { eventRepository.updateLastSavedEventId(any()) }.returns(
+                Either.Left(StorageFailure.Generic(Exception("db write failed")))
+            )
+        }
+
         fun withFileExistingCheckReturning(result: Boolean) = apply {
             everySuspend { kaliumFileSystem.exists(any()) } returns result
         }
@@ -168,7 +205,8 @@ class ApplyCryptoStateUseCaseTest {
                 rootPathsProvider = FakeRootPathsProvider(),
                 kaliumFileSystem = kaliumFileSystem,
                 securityHelper = securityHelper,
-                clientRepository = clientRepository
+                clientRepository = clientRepository,
+                eventRepository = eventRepository
             )
         }
     }
@@ -179,12 +217,14 @@ class ApplyCryptoStateUseCaseTest {
         private val proteusKeystorePath = "/tmp/proteus-keystore".toPath()
         private val extractedDir = "/tmp/extracted".toPath()
         private const val CLIENT_ID = "client-123"
+        private const val LAST_PROCESSED_EVENT_ID = "event-123"
         const val MLS_DB_PASSPHRASE = "mls-pass"
         const val PROTEUS_DB_PASSPHRASE = "proteus-pass"
 
         private val metadata = CryptoStateBackupMetadata(
             version = CryptoStateBackupMetadata.CURRENT_VERSION,
             clientId = CLIENT_ID,
+            lastProcessedEventId = LAST_PROCESSED_EVENT_ID,
             mlsDbPassphrase = MLS_DB_PASSPHRASE,
             proteusDbPassphrase = PROTEUS_DB_PASSPHRASE
         )

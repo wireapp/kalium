@@ -277,7 +277,7 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
         const val PATH_MESSAGES_SYNC = "sync"
         const val PATH_MESSAGES_BATCH = "batch"
         const val PATH_MESSAGES_RESTORE = "restore"
-        const val PATH_CONVERSATION_METADATA = "conversation/metadata"
+        const val PATH_CONVERSATION_METADATA = "conversations"
         const val PATH_CRYPTO_STATE = "crypto/state"
         const val PATH_CRYPTO_DEVICE = "crypto/device"
         const val QUERY_DEVICE_ID = "device_id"
