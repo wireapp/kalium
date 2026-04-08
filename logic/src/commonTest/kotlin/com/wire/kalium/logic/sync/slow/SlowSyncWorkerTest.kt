@@ -547,7 +547,7 @@ class SlowSyncWorkerTest {
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
             .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = true)
-            .withResolveOneOnOneConversationsSuccess()
+            .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = true)
             .withFetchLegalHoldStatusSuccess()
             .arrange()
 
@@ -597,13 +597,62 @@ class SlowSyncWorkerTest {
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
             .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = true)
-            .withResolveOneOnOneConversationsSuccess()
+            .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = true)
             .arrange()
 
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
         coVerify {
             arrangement.joinMLSConversations.invoke(eq(true), eq(true))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAlreadyExistingLastProcessedId_whenResolvingOneOnOnes_thenSkipExternalCommitJoins() = runTest {
+        val (arrangement, slowSyncWorker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = false)
+            .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = false)
+            .arrange()
+
+        slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
+
+        coVerify {
+            arrangement.oneOnOneResolver.resolveAllOneOnOneConversations(any(), eq(false), eq(false))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNoExistingLastProcessedId_whenResolvingOneOnOnes_thenAllowExternalCommitJoins() = runTest {
+        val fetchedEventId = "aTestEventId"
+        val (arrangement, slowSyncWorker) = Arrangement().apply {
+            withLastSavedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+            withFetchMostRecentEventReturning(Either.Right(fetchedEventId))
+            withUpdateLastSavedEventIdReturning(Either.Right(Unit))
+        }
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = true)
+            .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = true)
+            .arrange()
+
+        slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
+
+        coVerify {
+            arrangement.oneOnOneResolver.resolveAllOneOnOneConversations(any(), eq(false), eq(true))
         }.wasInvoked(exactly = once)
     }
 
@@ -851,9 +900,11 @@ class SlowSyncWorkerTest {
             }.returns(Either.Right(status))
         }
 
-        suspend fun withResolveOneOnOneConversationsSuccess() = apply {
+        suspend fun withResolveOneOnOneConversationsSuccess(
+            allowJoinByExternalCommit: Boolean = false,
+        ) = apply {
             coEvery {
-                oneOnOneResolver.resolveAllOneOnOneConversations(any(), any())
+                oneOnOneResolver.resolveAllOneOnOneConversations(any(), any(), eq(allowJoinByExternalCommit))
             }.returns(success)
         }
 

@@ -150,7 +150,10 @@ internal class SlowSyncWorkerImpl(
                 }
                 .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS) {
                     transactionProvider.transaction(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS.name) {
-                        oneOnOneResolver.resolveAllOneOnOneConversations(it)
+                        oneOnOneResolver.resolveAllOneOnOneConversations(
+                            transactionContext = it,
+                            allowJoinByExternalCommit = !lastSavedEventIdState.hasExistingLastSavedEventId
+                        )
                     }
                 }
                 .flatMap {
