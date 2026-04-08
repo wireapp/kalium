@@ -23,12 +23,26 @@ plugins {
     alias(libs.plugins.ksp)
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.skie)
+    `maven-publish`
 }
 
 version = "0.0.4"
 
 kaliumLibrary {
     multiplatform { jsModuleName.set("@wireapp/kalium-backup") }
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/wireapp/kalium")
+            credentials {
+                username = System.getenv("GITHUB_ACTOR") ?: error("GITHUB_ACTOR env variable is missing")
+                password = System.getenv("GITHUB_TOKEN") ?: error("GITHUB_TOKEN env variable is missing")
+            }
+        }
+    }
 }
 
 kotlin {

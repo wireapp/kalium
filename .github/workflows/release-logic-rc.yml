@@ -33,7 +33,10 @@ jobs:
       build-config: |
         [
           "logic-android-aar",
-          "logic-kmp"
+          "logic-kmp",
+          "backup-jvm",
+          "backup-web",
+          "backup-swift"
         ]
     secrets: inherit
 
@@ -54,7 +57,7 @@ jobs:
         [
           {
             "type": "github-release",
-            "artifacts": "logic-*",
+            "artifacts": "{logic-*,backup-*}",
             "fail-on-unmatched": true
           }
         ]

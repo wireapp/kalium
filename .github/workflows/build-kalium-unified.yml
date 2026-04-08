@@ -49,10 +49,19 @@ jobs:
           while IFS= read -r build_target; do
             case "$build_target" in
               logic-android-aar)
-                BUILD_MATRIX_ENTRY='{"build-target":"logic-android-aar","platform":"android-aar","runner":"ubuntu-latest","gradle-tasks":":logic:bundleAndroidMainAar -PUSE_UNIFIED_CORE_CRYPTO=false","artifact-glob":"logic/build/outputs/aar/*.aar","xcframework-dir":"","artifact-name":"logic-android-aar"}'
+                BUILD_MATRIX_ENTRY='{"build-target":"logic-android-aar","platform":"android-aar","runner":"ubuntu-latest","gradle-tasks":":logic:bundleAndroidMainAar -PUSE_UNIFIED_CORE_CRYPTO=false","artifact-glob":"","xcframework-dir":"","artifact-name":"logic-android-aar","npm-pack-dir":"","zip-bundles":"[{\"name\":\"logic-android\",\"globs\":\"logic/build/outputs/aar/*.aar\"}]"}'
                 ;;
               logic-kmp)
-                BUILD_MATRIX_ENTRY='{"build-target":"logic-kmp","platform":"kmp","runner":"macos-15","gradle-tasks":":logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar :logic:assembleKaliumLogicReleaseXCFramework -PUSE_UNIFIED_CORE_CRYPTO=true","artifact-glob":"logic/build/outputs/aar/*.aar logic/build/libs/*.jar","xcframework-dir":"logic/build/XCFrameworks/release/KaliumLogic.xcframework","artifact-name":"logic-kmp"}'
+                BUILD_MATRIX_ENTRY='{"build-target":"logic-kmp","platform":"kmp","runner":"macos-15","gradle-tasks":":logic:jvmJar :logic:allMetadataJar :logic:sourcesJar :logic:assembleKaliumLogicReleaseXCFramework -PUSE_UNIFIED_CORE_CRYPTO=true","artifact-glob":"","xcframework-dir":"logic/build/XCFrameworks/release/KaliumLogic.xcframework","artifact-name":"logic-kmp","npm-pack-dir":"","zip-bundles":"[{\"name\":\"logic-jvm\",\"globs\":\"logic/build/libs/*jvm*.jar\"},{\"name\":\"logic-metadata\",\"globs\":\"logic/build/libs/*metadata*.jar logic/build/libs/*sources*.jar\"},{\"name\":\"logic-apple\",\"type\":\"xcframework\"}]"}'
+                ;;
+              backup-web)
+                BUILD_MATRIX_ENTRY='{"build-target":"backup-web","platform":"web","runner":"ubuntu-latest","gradle-tasks":":domain:backup:jsBrowserProductionLibraryDistribution","artifact-glob":"","xcframework-dir":"","artifact-name":"backup-web","npm-pack-dir":"domain/backup/build/dist/js/productionLibrary","zip-bundles":""}'
+                ;;
+              backup-jvm)
+                BUILD_MATRIX_ENTRY='{"build-target":"backup-jvm","platform":"jvm","runner":"ubuntu-latest","gradle-tasks":":domain:backup:jvmJar","artifact-glob":"","xcframework-dir":"","artifact-name":"backup-jvm","npm-pack-dir":"","zip-bundles":"[{\"name\":\"backup-jvm\",\"globs\":\"domain/backup/build/libs/*jvm*.jar\"}]"}'
+                ;;
+              backup-swift)
+                BUILD_MATRIX_ENTRY='{"build-target":"backup-swift","platform":"apple","runner":"macos-15","gradle-tasks":":domain:backup:assembleBackupReleaseXCFramework","artifact-glob":"","xcframework-dir":"domain/backup/build/XCFrameworks/release/KaliumBackup.xcframework","artifact-name":"backup-swift","npm-pack-dir":"","zip-bundles":""}'
                 ;;
               *)
                 echo "::error::Unsupported build target: $build_target"
@@ -222,8 +231,22 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew ${{ matrix.gradle-tasks }}
 
+      - name: Setup Node.js
+        if: matrix.npm-pack-dir != ''
+        uses: actions/setup-node@v6
+        with:
+          scope: "@wireapp"
+
+      - name: Post-build — npm pack
+        if: matrix.npm-pack-dir != ''
+        run: |
+          mkdir -p release/${{ matrix.artifact-name }}
+          cd "${{ matrix.npm-pack-dir }}"
+          package_tgz=$(npm pack | tail -n 1)
+          cp "$package_tgz" "$GITHUB_WORKSPACE/release/${{ matrix.artifact-name }}/"
+
       - name: Post-build — collect file artifacts
-        if: matrix.artifact-glob != ''
+        if: matrix.artifact-glob != '' && matrix.zip-bundles == ''
         run: |
           mkdir -p release/${{ matrix.artifact-name }}
           IFS=' ' read -ra GLOBS <<< "${{ matrix.artifact-glob }}"
@@ -235,7 +258,7 @@ jobs:
           test -n "$(ls -A release/${{ matrix.artifact-name }})"
 
       - name: Post-build — zip XCFramework
-        if: matrix.xcframework-dir != ''
+        if: matrix.xcframework-dir != '' && matrix.zip-bundles == ''
         run: |
           XCFRAMEWORK_DIR="${{ matrix.xcframework-dir }}"
           if [ ! -d "$XCFRAMEWORK_DIR" ]; then
@@ -247,6 +270,44 @@ jobs:
           FRAMEWORK_NAME=$(basename "$XCFRAMEWORK_DIR")
           (cd "$PARENT_DIR" && zip -rXq "${FRAMEWORK_NAME}.zip" "$FRAMEWORK_NAME")
           mv "${PARENT_DIR}/${FRAMEWORK_NAME}.zip" release/${{ matrix.artifact-name }}/
+
+      - name: Post-build — create per-target zip bundles
+        if: matrix.zip-bundles != ''
+        run: |
+          mkdir -p release/${{ matrix.artifact-name }}
+          BUNDLES='${{ matrix.zip-bundles }}'
+          echo "$BUNDLES" | jq -c '.[]' | while IFS= read -r bundle; do
+            name=$(echo "$bundle" | jq -r '.name')
+            type=$(echo "$bundle" | jq -r '.type // ""')
+            globs=$(echo "$bundle" | jq -r '.globs // ""')
+
+            if [ "$type" = "xcframework" ]; then
+              XCFRAMEWORK_DIR="${{ matrix.xcframework-dir }}"
+              if [ ! -d "$XCFRAMEWORK_DIR" ]; then
+                echo "::error::XCFramework not found at $XCFRAMEWORK_DIR"
+                exit 1
+              fi
+              PARENT_DIR=$(dirname "$XCFRAMEWORK_DIR")
+              FRAMEWORK_NAME=$(basename "$XCFRAMEWORK_DIR")
+              (cd "$PARENT_DIR" && zip -rXq "${name}.zip" "$FRAMEWORK_NAME")
+              mv "${PARENT_DIR}/${name}.zip" release/${{ matrix.artifact-name }}/
+            else
+              tmpdir=$(mktemp -d)
+              IFS=' ' read -ra GLOB_ARRAY <<< "$globs"
+              for glob in "${GLOB_ARRAY[@]}"; do
+                dir=$(dirname "$glob")
+                pattern=$(basename "$glob")
+                find "$dir" -maxdepth 1 -name "$pattern" -exec cp {} "$tmpdir/" \;
+              done
+              if [ -z "$(ls -A "$tmpdir")" ]; then
+                echo "::error::No files found for bundle $name (globs: $globs)"
+                exit 1
+              fi
+              (cd "$tmpdir" && zip -rXq "${name}.zip" .)
+              mv "$tmpdir/${name}.zip" release/${{ matrix.artifact-name }}/
+              rm -rf "$tmpdir"
+            fi
+          done
 
       - name: Post-build — generate checksums
         if: matrix.artifact-name != ''
