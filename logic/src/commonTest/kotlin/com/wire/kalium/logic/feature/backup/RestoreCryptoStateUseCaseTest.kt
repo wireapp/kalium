@@ -277,6 +277,7 @@ internal class RestoreCryptoStateUseCaseTest {
         private val metadata = CryptoStateBackupMetadata(
             version = CryptoStateBackupMetadata.CURRENT_VERSION,
             clientId = CLIENT_ID_VALUE,
+            lastProcessedEventId = "event-123",
             mlsDbPassphrase = "mls-passphrase",
             proteusDbPassphrase = "proteus-passphrase"
         )

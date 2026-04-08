@@ -22,15 +22,14 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import com.wire.kalium.network.api.authenticated.logout.RemoveCookiesByIdsRequest
 import com.wire.kalium.network.api.authenticated.logout.RemoveCookiesByLabels
-import com.wire.kalium.network.api.model.RefreshTokenProperties
+import com.wire.kalium.network.auth.withBrowserCredentials
+import com.wire.kalium.network.auth.withManagedRefreshCookie
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.CustomErrors.MISSING_REFRESH_TOKEN
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
-import io.ktor.http.HttpHeaders
 
 internal open class LogoutApiV0 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -42,7 +41,7 @@ internal open class LogoutApiV0 internal constructor(
     override suspend fun logout(): NetworkResponse<Unit> = sessionManager.session()?.refreshToken?.let { refreshToken ->
         wrapKaliumResponse {
             httpClient.post("$PATH_ACCESS/$PATH_LOGOUT") {
-                header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
+                withManagedRefreshCookie(refreshToken)
             }
         }
     } ?: MISSING_REFRESH_TOKEN
@@ -50,6 +49,7 @@ internal open class LogoutApiV0 internal constructor(
     override suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.post("$PATH_COOKIES/$PATH_REMOVE") {
+                withBrowserCredentials()
                 setBody(removeCookiesByIdsRequest)
             }
         }
@@ -57,6 +57,7 @@ internal open class LogoutApiV0 internal constructor(
     override suspend fun removeCookiesByLabels(removeCookiesByLabelsRequest: RemoveCookiesByLabels): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.post("$PATH_COOKIES/$PATH_REMOVE") {
+                withBrowserCredentials()
                 setBody(removeCookiesByLabelsRequest)
             }
         }

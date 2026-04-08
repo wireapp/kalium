@@ -47,6 +47,7 @@ import okio.Path
 import okio.Path.Companion.toPath
 import okio.Sink
 import okio.use
+import kotlin.uuid.Uuid
 
 @Mockable
 internal interface AssetRepository {
@@ -340,11 +341,13 @@ internal class AssetDataSource(
             FetchedAssetData(it, false) // Asset found locally, no need to download, return the local path with 'false' flag
         }
         .flatMapLeft {
-            val tempFile = kaliumFileSystem.tempFilePath("temp_$assetId")
+            val tempFile = kaliumFileSystem.tempFilePath("temp_${assetId}_${Uuid.random()}")
             val tempFileSink = kaliumFileSystem.sink(tempFile)
             wrapApiRequest {
-                // Backend sends asset messages with empty asset tokens
-                assetApi.downloadAsset(assetId, assetDomain, assetToken?.ifEmpty { null }, tempFileSink).also {
+                try {
+                    // Backend sends asset messages with empty asset tokens
+                    assetApi.downloadAsset(assetId, assetDomain, assetToken?.ifEmpty { null }, tempFileSink)
+                } finally {
                     tempFileSink.close()
                 }
             }.flatMap {
@@ -367,13 +370,12 @@ internal class AssetDataSource(
                         )
 
                     val decodedAssetSink = kaliumFileSystem.sink(decodedAssetPath)
-
-                    // Public assets are stored already decrypted on the backend, hence no decryption is needed
-                    val (hashError, assetDataSize) = decodeAssetIfNeeded(tempFile, encryptionKeys, decodedAssetSink)
-
-                    // Delete temp path now that the decoded asset has been persisted correctly
-                    kaliumFileSystem.delete(tempFile)
-                    decodedAssetSink.close()
+                    val (hashError, assetDataSize) = try {
+                        // Public assets are stored already decrypted on the backend, hence no decryption is needed
+                        decodeAssetIfNeeded(tempFile, encryptionKeys, decodedAssetSink)
+                    } finally {
+                        decodedAssetSink.close()
+                    }
 
                     when {
                         // Either a decryption error or a hash error occurred
@@ -389,6 +391,8 @@ internal class AssetDataSource(
                 } catch (e: IOException) {
                     kaliumLogger.e("Something went wrong when handling the Asset paths on the file system", e)
                     Either.Left(StorageFailure.DataNotFound)
+                } finally {
+                    kaliumFileSystem.delete(tempFile, mustExist = false)
                 }
             }
         }

@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -39,6 +40,7 @@ public class BackupScope internal constructor(
     private val clientIdProvider: CurrentClientIdProvider,
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
+    private val eventRepository: EventRepository,
     private val upgradeCurrentSession: UpgradeCurrentSessionUseCase,
     private val kaliumFileSystem: KaliumFileSystem,
     private val userStorage: UserStorage,
@@ -85,6 +87,7 @@ public class BackupScope internal constructor(
         BackupCryptoDBUseCaseImpl(
             userId,
             cryptoTransactionProvider,
+            eventRepository,
             kaliumFileSystem,
         )
     }
@@ -120,7 +123,8 @@ public class BackupScope internal constructor(
             rootPathsProvider = rootPathsProvider,
             kaliumFileSystem = kaliumFileSystem,
             securityHelper = securityHelper,
-            clientRepository = clientRepository
+            clientRepository = clientRepository,
+            eventRepository = eventRepository
         )
 
     public val restoreCryptoState: RestoreCryptoStateUseCase

@@ -154,7 +154,7 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
             statusCode = HttpStatusCode.OK,
             assertion = {
                 assertGet()
-                assertPathEqual("/event/conversation/metadata")
+                assertPathEqual("/event/conversations")
             }
         )
 
@@ -164,6 +164,26 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
         assertTrue(response.isSuccessful())
         assertEquals(1, response.value.conversations.size)
         assertEquals(1707235100L, response.value.conversations.first().metadata.lastRead)
+        assertEquals(1707235200L, response.value.conversations.first().metadata.lastModified)
+    }
+
+    @Test
+    fun givenConversationMetadataWithoutLastRead_whenGettingConversationMetadata_thenResponseShouldAllowNullLastRead() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = CONVERSATION_METADATA_RESPONSE_WITH_NULL_LAST_READ_JSON,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertPathEqual("/event/conversations")
+            }
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
+        val response = api.getConversationMetadata()
+
+        assertTrue(response.isSuccessful())
+        assertEquals(1, response.value.conversations.size)
+        assertEquals(null, response.value.conversations.first().metadata.lastRead)
         assertEquals(1707235200L, response.value.conversations.first().metadata.lastModified)
     }
 
@@ -277,7 +297,7 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
                 assertGet()
                 assertEquals("nomad.example.com", url.host)
                 assertEquals(URLProtocol.HTTPS, url.protocol)
-                assertPathEqual("/service/event/conversation/metadata")
+                assertPathEqual("/service/event/conversations")
             }
         )
 
@@ -752,6 +772,24 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
                   },
                   "metadata": {
                     "last_read": 1707235100,
+                    "last_modified": 1707235200
+                  }
+                }
+              ]
+            }
+            """.trimIndent()
+
+        val CONVERSATION_METADATA_RESPONSE_WITH_NULL_LAST_READ_JSON =
+            """
+            {
+              "conversations": [
+                {
+                  "conversation": {
+                    "id": "conv-12345",
+                    "domain": "example.com"
+                  },
+                  "metadata": {
+                    "last_read": null,
                     "last_modified": 1707235200
                   }
                 }

@@ -69,7 +69,25 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
             persistedMessage(
                 content = MessageContent.Multipart(
                     value = null,
-                    attachments = listOf(unsupportedAttachment(), assetContent("asset-multipart"))
+                    attachments = listOf(cellAttachment(), assetContent("asset-multipart"))
+                )
+            ),
+            SELF_USER_ID
+        )
+
+        assertEquals(1, dao.messageUpsertCalls.size)
+    }
+
+    @Test
+    fun givenMultipartWithOnlyCellAttachment_whenCallbackInvoked_thenMessageUpsertIsLogged() = runTest {
+        val dao = RecordingRemoteBackupChangeLogDAO()
+        val notifier = createNotifier(daoProvider = { dao })
+
+        notifier.onMessagePersisted(
+            persistedMessage(
+                content = MessageContent.Multipart(
+                    value = null,
+                    attachments = listOf(cellAttachment())
                 )
             ),
             SELF_USER_ID
@@ -97,7 +115,7 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
     }
 
     @Test
-    fun givenMultipartWithOnlyUnsupportedParts_whenCallbackInvoked_thenEntryIsSkipped() = runTest {
+    fun givenMultipartWithoutTextOrAttachments_whenCallbackInvoked_thenEntryIsSkipped() = runTest {
         val dao = RecordingRemoteBackupChangeLogDAO()
         val notifier = createNotifier(daoProvider = { dao })
 
@@ -105,7 +123,7 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
             persistedMessage(
                 content = MessageContent.Multipart(
                     value = null,
-                    attachments = listOf(unsupportedAttachment())
+                    attachments = emptyList()
                 )
             ),
             SELF_USER_ID
@@ -285,7 +303,7 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
             )
         )
 
-    private fun unsupportedAttachment(): CellAssetContent =
+    private fun cellAttachment(): CellAssetContent =
         CellAssetContent(
             id = "cell-attachment-id",
             versionId = "v1",
