@@ -26,6 +26,7 @@ import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.toSessionDto
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
+import com.wire.kalium.network.auth.withManagedRefreshCookie
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.CustomErrors.MISSING_REFRESH_TOKEN
@@ -39,11 +40,9 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.head
-import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
 import io.ktor.http.appendPathSegments
 import io.ktor.http.parseServerSetCookieHeader
 
@@ -78,14 +77,14 @@ internal open class SSOLoginApiV0 internal constructor(
 
     override suspend fun finalize(cookie: String): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.post("$PATH_SSO/$PATH_FINALIZE") {
-            header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
+            withManagedRefreshCookie(cookie)
         }
     }
 
     override suspend fun provideLoginSession(cookie: String): NetworkResponse<AuthenticationResultDTO> =
         wrapKaliumResponse<AccessTokenDTO> {
             httpClient.post(PATH_ACCESS) {
-                header(HttpHeaders.Cookie, cookie)
+                withManagedRefreshCookie(cookie)
             }
         }.flatMap { accessTokenDTOResponse ->
             val refreshToken = cookie.splitSetCookieHeader().flatMap { it.splitSetCookieHeader() }

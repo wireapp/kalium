@@ -42,7 +42,7 @@ class ShouldRemoteMuteCheckerTest {
     }
 
     @Test
-    fun givenNullTargets_whenChecking_thenReturnTrue() {
+    fun givenNullTargets_whenChecking_thenReturnFalse() {
         val (_, checker) = Arrangement()
             .arrange()
 
@@ -54,11 +54,11 @@ class ShouldRemoteMuteCheckerTest {
             conversationMembers = listOf(conversationMember)
         )
 
-        assertEquals(true, shouldRemoteMute)
+        assertEquals(false, shouldRemoteMute)
     }
 
     @Test
-    fun givenTargetContainsCurrentUser_whenChecking_thenReturnFalse() {
+    fun givenTargetsDoNotContainCurrentUserId_whenChecking_thenReturnFalse() {
         val (_, checker) = Arrangement()
             .arrange()
 
@@ -74,7 +74,7 @@ class ShouldRemoteMuteCheckerTest {
     }
 
     @Test
-    fun givenTargetDoesNotContainCurrentUser_whenChecking_thenReturnTrue() {
+    fun givenTargetsContainCurrentUserIdButDoNotContainCurrentClientId_whenChecking_thenReturnFalse() {
         val (_, checker) = Arrangement()
             .arrange()
 
@@ -82,27 +82,27 @@ class ShouldRemoteMuteCheckerTest {
             senderUserId = OTHER_USER_ID,
             selfUserId = SELF_USER_ID,
             selfClientId = SELF_CLIENT_ID,
-            targets = targetsWithCurrentUser,
-            conversationMembers = listOf(conversationMember)
-        )
-
-        assertEquals(true, shouldRemoteMute)
-    }
-
-    @Test
-    fun givenTargetThatDoesNotContainCurrentClientId_whenChecking_thenReturnFalse() {
-        val (_, checker) = Arrangement()
-            .arrange()
-
-        val shouldRemoteMute = checker.check(
-            senderUserId = OTHER_USER_ID,
-            selfUserId = SELF_USER_ID,
-            selfClientId = SELF_CLIENT_ID,
-            targets = targetsWithDifferentClientId,
+            targets = targetsWithCurrentUserButDifferentClient,
             conversationMembers = listOf(conversationMember)
         )
 
         assertEquals(false, shouldRemoteMute)
+    }
+
+    @Test
+    fun givenTargetsContainCurrentUserIdAndCurrentClientId_whenChecking_thenReturnTrue() {
+        val (_, checker) = Arrangement()
+            .arrange()
+
+        val shouldRemoteMute = checker.check(
+            senderUserId = OTHER_USER_ID,
+            selfUserId = SELF_USER_ID,
+            selfClientId = SELF_CLIENT_ID,
+            targets = targetsWithCurrentUserAndCurrentClient,
+            conversationMembers = listOf(conversationMember)
+        )
+
+        assertEquals(true, shouldRemoteMute)
     }
 
     internal class Arrangement {
@@ -115,7 +115,7 @@ class ShouldRemoteMuteCheckerTest {
         private val OTHER_USER_ID = UserId("otherUserId", "domain")
         private const val SELF_CLIENT_ID = "selfClientId"
         private const val OTHER_CLIENT_ID = "otherClientId"
-        val targetsWithCurrentUser = MessageContent.Calling.Targets(
+        val targetsWithCurrentUserAndCurrentClient = MessageContent.Calling.Targets(
             domainToUserIdToClients = mapOf(
                 "anta-env" to mapOf(
                     OTHER_USER_ID.value to listOf(OTHER_CLIENT_ID, OTHER_CLIENT_ID)
@@ -137,7 +137,7 @@ class ShouldRemoteMuteCheckerTest {
             )
         )
 
-        val targetsWithDifferentClientId = MessageContent.Calling.Targets(
+        val targetsWithCurrentUserButDifferentClient = MessageContent.Calling.Targets(
             domainToUserIdToClients = mapOf(
                 "diya-env" to mapOf(
                     SELF_USER_ID.value to listOf(OTHER_CLIENT_ID, OTHER_CLIENT_ID),

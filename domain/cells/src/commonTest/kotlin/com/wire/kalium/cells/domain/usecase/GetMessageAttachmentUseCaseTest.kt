@@ -50,9 +50,6 @@ class GetMessageAttachmentUseCaseTest {
                 assetDomain = "some-asset-domain.com",
                 encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
             ),
-            AssetContent.LocalData(
-                assetDataPath = "local_asset_path"
-            ),
         )
         val (_, useCase) = Arrangement()
             .withRepositoryReturning(Either.Right(messageAttachment))
