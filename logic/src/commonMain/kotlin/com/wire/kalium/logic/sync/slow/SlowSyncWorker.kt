@@ -141,6 +141,9 @@ internal class SlowSyncWorkerImpl(
                     syncNomadMessagesDuringSlowSync::invoke
                 )
                 .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS) {
+                    // If a last saved event ID already exists, pending events may still contain the
+                    // commit that establishes this MLS group, so slow sync must not force an
+                    // external-commit join here.
                     joinMLSConversations(
                         allowJoinByExternalCommit = !lastSavedEventIdState.hasExistingLastSavedEventId
                     )
