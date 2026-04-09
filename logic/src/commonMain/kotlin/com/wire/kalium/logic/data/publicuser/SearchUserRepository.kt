@@ -26,11 +26,9 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
-import com.wire.kalium.logic.data.user.ConnectionStateMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.toDao
-import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -38,10 +36,13 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.data.app.AppMapper
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.api.model.UserTypeDTO
+import com.wire.kalium.persistence.dao.AppDAO
 import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.SearchDAO
 import com.wire.kalium.persistence.dao.UserDAO
@@ -91,13 +92,13 @@ internal sealed class ConversationMemberExcludedOptions {
 internal class SearchUserRepositoryImpl(
     private val userDAO: UserDAO,
     private val searchDAO: SearchDAO,
+    private val appDAO: AppDAO,
     private val userDetailsApi: UserDetailsApi,
     private val userSearchAPiWrapper: UserSearchApiWrapper,
     private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
-    private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper()
+    private val appMapper: AppMapper = MapperProvider.appMapper()
 ) : SearchUserRepository {
     override suspend fun searchUserRemoteDirectory(
         searchQuery: String,
@@ -122,7 +123,10 @@ internal class SearchUserRepositoryImpl(
                     updateLocalUsers(userProfileDTOList.usersFound)
                 }.map { userProfileDTOList ->
                     UserSearchResult(
-                        userProfileDTOList.usersFound.map { userProfileDTO ->
+                        userProfileDTOList
+                            .usersFound
+                            .filter { it.type != UserTypeDTO.APP }
+                            .map { userProfileDTO ->
                             userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUserId, selfTeamId)
                         }
                     )
@@ -188,6 +192,14 @@ internal class SearchUserRepositoryImpl(
                 if (it.isNotEmpty()) {
                     userDAO.updateUser(it)
                 }
+            }
+
+        userProfileDTOList
+            .filter { it.type == UserTypeDTO.APP }
+            .map { user ->
+                appMapper.fromUserProfileToAppEntity(userProfileDTO = user)
+            }.also {
+                appDAO.upsertApps(it)
             }
     }
 }
