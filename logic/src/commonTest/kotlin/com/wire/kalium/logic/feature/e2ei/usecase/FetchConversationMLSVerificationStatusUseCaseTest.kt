@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
@@ -63,7 +64,9 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
 
     @Test
     fun givenMLSConversation_whenCalledToCheck_thenFetchingMLSVerificationIsCalled() = runTest {
-        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO
+        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO.copy(
+            groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
+        )
         val (arrangement, useCase) = arrange {
             withConversationDetailsByIdReturning(Either.Right(TestConversation.ONE_ON_ONE(protocolInfo)))
         }
@@ -73,6 +76,22 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
 
         coVerify { arrangement.fetchMLSVerificationStatusUseCase(eq(protocolInfo.groupId)) }
             .wasInvoked()
+    }
+
+    @Test
+    fun givenMLSConversationInPendingJoinState_whenCalledToCheck_thenFetchingMLSVerificationIsNotCalled() = runTest {
+        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO.copy(
+            groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN
+        )
+        val (arrangement, useCase) = arrange {
+            withConversationDetailsByIdReturning(Either.Right(TestConversation.ONE_ON_ONE(protocolInfo)))
+        }
+
+        useCase(TestConversation.ID)
+        advanceUntilIdle()
+
+        coVerify { arrangement.fetchMLSVerificationStatusUseCase(any()) }
+            .wasNotInvoked()
     }
 
     private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
