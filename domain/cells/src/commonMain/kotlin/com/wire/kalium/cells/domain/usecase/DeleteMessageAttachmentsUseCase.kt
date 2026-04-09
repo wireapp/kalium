@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CellAssetContent
-import com.wire.kalium.logic.data.message.localPath
 import io.mockative.Mockable
 import kotlinx.coroutines.CancellationException
 import okio.FileSystem
@@ -60,7 +59,7 @@ internal class DeleteMessageAttachmentsUseCaseImpl(
                     cellsRepository.deleteFiles(paths, permanentDelete = true)
                 }
 
-                val localPaths = attachments.mapNotNull { it.localPath() }
+                val localPaths = attachments.filterIsInstance<CellAssetContent>().mapNotNull { it.localPath }
 
                 localPaths.forEach {
                     fileSystem.delete(it.toPath())

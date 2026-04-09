@@ -35,7 +35,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangement
-import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
@@ -341,7 +341,7 @@ class PreKeyRepositoryTest {
         val NETWORK_ERROR = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
     }
 
-    private class Arrangement : ProteusCoreCryptoContextArrangement by ProteusCoreCryptoContextArrangementImpl() {
+    private class Arrangement : ProteusCoreCryptoContextArrangement by ProteusCoreCryptoContextArrangementMockativeImpl() {
         val preKeyApi: PreKeyApi = mock(PreKeyApi::class)
         val proteusClient: ProteusClient = mock(ProteusClient::class)
         val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)

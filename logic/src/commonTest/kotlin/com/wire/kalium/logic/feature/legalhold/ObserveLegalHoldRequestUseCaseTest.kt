@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.legalhold.LegalHoldRequest
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
@@ -88,7 +88,7 @@ class ObserveLegalHoldRequestUseCaseTest {
             assertTrue(result.first() is ObserveLegalHoldRequestUseCase.Result.LegalHoldRequestAvailable)
         }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val userConfigRepository = mock(UserConfigRepository::class)
 
         fun withUserConfigRepositorySuccess() = apply {

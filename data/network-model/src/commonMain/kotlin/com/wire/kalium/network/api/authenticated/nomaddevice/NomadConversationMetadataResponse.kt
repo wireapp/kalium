@@ -38,7 +38,7 @@ data class NomadConversationMetadataItem(
 @Serializable
 data class NomadConversationMetadata(
     @SerialName("last_read")
-    val lastRead: Long,
+    val lastRead: Long? = null,
     @SerialName("last_modified")
     val lastModified: Long? = null,
 )

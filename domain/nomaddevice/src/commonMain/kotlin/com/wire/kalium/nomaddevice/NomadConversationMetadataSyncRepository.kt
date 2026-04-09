@@ -80,7 +80,9 @@ internal class ConversationDAONomadConversationMetadataStore(
 
     override suspend fun applyMetadata(metadata: List<NomadConversationMetadataToSync>) =
         conversationDAO.updateConversationReadAndModifiedDates(
-            readDates = metadata.associate { it.conversationId to it.lastReadDate },
+            readDates = metadata.mapNotNull { entry ->
+                entry.lastReadDate?.let { entry.conversationId to it }
+            }.toMap(),
             modifiedDates = metadata.mapNotNull { entry ->
                 entry.lastModifiedDate?.let { entry.conversationId to it }
             }.toMap()

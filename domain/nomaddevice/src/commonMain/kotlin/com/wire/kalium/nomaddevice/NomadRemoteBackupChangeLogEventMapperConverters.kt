@@ -80,7 +80,7 @@ internal fun List<MessageEntity.Mention>.toNomadDeviceMentions(): List<NomadDevi
 
 @Suppress("CyclomaticComplexMethod")
 internal fun List<MessageAttachmentEntity>.toNomadDeviceAttachments(): List<NomadDeviceAttachment> =
-    filter { !it.cellAsset }.map { attachment ->
+    map { attachment ->
         NomadDeviceAttachment(
             content = NomadDeviceAttachment.Content.Asset(
                 NomadDeviceAsset(
