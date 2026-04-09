@@ -7,20 +7,17 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -42,11 +39,11 @@ class PersistConversationsUseCaseTest {
             reason = ConversationSyncReason.Event,
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.persistConversations(
-                matches { list -> list.any { it.id.value == CONVERSATION_RESPONSE.id.value } }
+                matching { list -> list.any { it.id.value == CONVERSATION_RESPONSE.id.value } }
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -70,9 +67,9 @@ class PersistConversationsUseCaseTest {
             reason = ConversationSyncReason.Event,
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.persistConversations(
-                matches { list ->
+                matching { list ->
                     list.any {
                         it.id.value == mlsConversation.id.value &&
                                 it.protocolInfo is ConversationEntity.ProtocolInfo.MLS &&
@@ -80,7 +77,7 @@ class PersistConversationsUseCaseTest {
                     }
                 }
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -97,7 +94,9 @@ class PersistConversationsUseCaseTest {
             reason = ConversationSyncReason.Other
         )
 
-        coVerify { arrangement.conversationRepository.insertConversations(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.insertConversations(any())
+        }
     }
 
     @Test
@@ -121,11 +120,13 @@ class PersistConversationsUseCaseTest {
             reason = ConversationSyncReason.Event
         )
 
-        coVerify { arrangement.mlsContext.conversationExists(eq("groupId")) }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsContext.conversationExists("groupId")
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.persistConversations(
-                matches { list ->
+                matching { list ->
                     list.any {
                         it.id.value == mlsConversation.id.value &&
                                 it.protocolInfo is ConversationEntity.ProtocolInfo.MLS &&
@@ -133,18 +134,19 @@ class PersistConversationsUseCaseTest {
                     }
                 }
             )
-        }.wasInvoked(once)
+        }
     }
 
     private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+    ) {
 
-        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val mlsContext: MlsCoreCryptoContext = mock(MlsCoreCryptoContext::class)
-        val transactionContext = mock(CryptoTransactionContext::class)
+        val conversationRepository = mock<ConversationRepository>()
+        val selfTeamIdProvider = mock<SelfTeamIdProvider>()
+        val mlsContext = mock<MlsCoreCryptoContext>()
+        val transactionContext = mock<CryptoTransactionContext>()
 
         init {
             every { transactionContext.mls } returns mlsContext
@@ -152,7 +154,7 @@ class PersistConversationsUseCaseTest {
 
         suspend fun withMLSGroupEstablished(exists: Boolean) = apply {
             every { transactionContext.mls } returns mlsContext
-            coEvery { mlsContext.conversationExists(any()) } returns exists
+            everySuspend { mlsContext.conversationExists(any()) } returns exists
         }
 
         suspend fun withDisabledMLSClient() = apply {
@@ -160,18 +162,18 @@ class PersistConversationsUseCaseTest {
         }
 
         suspend fun withConversationInsertSuccess() = apply {
-            coEvery { conversationRepository.persistConversations(any()) } returns Either.Right(Unit)
+            everySuspend { conversationRepository.persistConversations(any()) } returns Either.Right(Unit)
         }
 
         suspend fun withUpdateMembers() = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateConversationMembers(any(), any(), any())
             } returns Either.Right(Unit)
         }
 
         suspend fun arrange(): Pair<Arrangement, PersistConversationsUseCase> {
-            runBlocking { block() }
-            coEvery { selfTeamIdProvider() } returns Either.Right(TeamId("selfTeamId"))
+            block()
+            everySuspend { selfTeamIdProvider.invoke() } returns Either.Right(TeamId("selfTeamId"))
             return this to PersistConversationsUseCaseImpl(
                 selfUserId = TestUser.SELF.id,
                 conversationRepository = conversationRepository,
