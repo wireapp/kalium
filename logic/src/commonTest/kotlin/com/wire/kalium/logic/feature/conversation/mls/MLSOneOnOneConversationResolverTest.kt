@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangement
@@ -142,7 +142,7 @@ class MLSOneOnOneConversationResolverTest {
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl()
     {
             val fetchMLSOneToOneConversation = mock(FetchMLSOneToOneConversationUseCase::class)
 

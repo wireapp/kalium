@@ -40,7 +40,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangement
@@ -342,7 +342,7 @@ class MLSWelcomeEventHandlerTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         FetchConversationIfUnknownUseCaseArrangement by FetchConversationIfUnknownUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
         val refillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
         val checkRevocationList = mock(RevocationListChecker::class)

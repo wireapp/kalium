@@ -26,7 +26,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.FetchConversationsUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -88,7 +88,7 @@ class SyncConversationsUseCaseTest {
         }.wasNotInvoked()
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val conversationRepository = mock(ConversationRepository::class)
         val systemMessageInserter = mock(SystemMessageInserter::class)
