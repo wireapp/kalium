@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import kotlinx.io.IOException
 import io.mockative.any
 import io.mockative.coEvery
@@ -118,7 +118,7 @@ class UpdateKeyingMaterialsUseCaseTests {
         assertIs<UpdateKeyingMaterialsResult.Failure>(actual)
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 

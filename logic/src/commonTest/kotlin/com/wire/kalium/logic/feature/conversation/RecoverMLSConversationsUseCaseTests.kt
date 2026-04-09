@@ -33,7 +33,7 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.any
 import io.mockative.coEvery
@@ -230,7 +230,7 @@ class RecoverMLSConversationsUseCaseTests {
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val featureSupport = mock(FeatureSupport::class)
         val joinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
