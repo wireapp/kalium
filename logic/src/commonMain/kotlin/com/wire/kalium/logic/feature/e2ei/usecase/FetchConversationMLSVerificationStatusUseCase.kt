@@ -37,8 +37,15 @@ internal class FetchConversationMLSVerificationStatusUseCaseImpl(
     override suspend fun invoke(conversationId: ConversationId) {
         conversationRepository.getConversationById(conversationId).onSuccess {
             val protocol = it.protocol
-            if (protocol is Conversation.ProtocolInfo.MLSCapable)
+            // Skip verification check when the group is PENDING_JOIN: the local device has not yet
+            // performed the external commit, so the group does not exist in CoreCrypto and any
+            // attempt to query its state (e.g. e2eiConversationState) will fail with "Couldn't
+            // find conversation".
+            if (protocol is Conversation.ProtocolInfo.MLSCapable &&
+                protocol.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN
+            ) {
                 fetchMLSVerificationStatusUseCase(protocol.groupId)
+            }
         }
     }
 }
