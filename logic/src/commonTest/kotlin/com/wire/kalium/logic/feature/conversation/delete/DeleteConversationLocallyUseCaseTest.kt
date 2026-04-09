@@ -22,7 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import io.mockative.any
@@ -76,7 +76,7 @@ class DeleteConversationLocallyUseCaseTest {
     }
 
     private class Arrangement : DeleteConversationArrangement by DeleteConversationArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val clearConversationContent = mock(ClearConversationContentUseCase::class)
 

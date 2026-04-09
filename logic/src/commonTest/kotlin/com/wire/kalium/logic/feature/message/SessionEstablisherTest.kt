@@ -33,7 +33,7 @@ import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
@@ -129,7 +129,7 @@ class SessionEstablisherTest {
         val TEST_RECIPIENT_1 = Recipient(TestUser.USER_ID, listOf(TestClient.CLIENT_ID))
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val preKeyRepository = mock(PreKeyRepository::class)
 
         private val sessionEstablisher: SessionEstablisher =

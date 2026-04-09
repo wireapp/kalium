@@ -31,7 +31,7 @@ import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.persistence.TestUserDatabase
 import io.mockative.any
 import io.mockative.coEvery
@@ -212,7 +212,7 @@ class IncrementalSyncWorkerTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val eventProcessor: EventProcessor = mock(EventProcessor::class)
         val eventGatherer: EventGatherer = mock(EventGatherer::class)
         val eventRepository: EventRepository = mock(EventRepository::class)

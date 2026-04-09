@@ -27,7 +27,7 @@ import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -76,7 +76,7 @@ class UnblockUserUseCaseTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
 

@@ -51,7 +51,7 @@ import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
 import io.mockative.coEvery
@@ -391,7 +391,7 @@ class FeatureConfigEventReceiverTest {
         ).shouldSucceed()
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         var kaliumConfigs = KaliumConfigs()
 

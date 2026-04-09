@@ -31,7 +31,7 @@ import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -236,7 +236,7 @@ class FederationEventReceiverTest {
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         MemberDAOArrangement by MemberDAOArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl()
     {
 
         var dispatcher: KaliumDispatcher = TestKaliumDispatcher

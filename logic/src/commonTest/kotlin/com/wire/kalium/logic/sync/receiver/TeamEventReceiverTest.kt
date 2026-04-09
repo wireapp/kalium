@@ -24,7 +24,7 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.any
@@ -62,7 +62,7 @@ class TeamEventReceiverTest {
     }
 
     private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val persistMessageUseCase = mock(PersistMessageUseCase::class)
 
         private val teamEventReceiver: TeamEventReceiver = TeamEventReceiverImpl(
