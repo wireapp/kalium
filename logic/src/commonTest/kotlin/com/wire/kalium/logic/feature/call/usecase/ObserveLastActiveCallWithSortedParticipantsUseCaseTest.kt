@@ -75,7 +75,7 @@ class ObserveLastActiveCallWithSortedParticipantsUseCaseTest {
             .withObserveLastActiveCallByConversationIdReturning(flowOf(call))
             .arrange()
         // when
-        useCase(call.conversationId, CallingParticipantsOrderType.VIDEOS_FIRST).test {
+        useCase(call.conversationId, CallingParticipantsOrderType.ALL_MEDIA_FIRST).test {
         // then
             assertEquals(call, awaitItem())
             awaitComplete()
@@ -84,7 +84,7 @@ class ObserveLastActiveCallWithSortedParticipantsUseCaseTest {
             arrangement.callRepository.observeLastActiveCallByConversationId(call.conversationId)
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.callingParticipantsOrder.reorderItems(call.participants, CallingParticipantsOrderType.VIDEOS_FIRST)
+            arrangement.callingParticipantsOrder.reorderItems(call.participants, CallingParticipantsOrderType.ALL_MEDIA_FIRST)
         }
     }
 
@@ -166,7 +166,7 @@ class ObserveLastActiveCallWithSortedParticipantsUseCaseTest {
             callRepository,
             callingParticipantsOrder
         )
-        suspend fun withReorderItemsReturning(result: List<Participant>) = apply {
+        fun withReorderItemsReturning(result: List<Participant>) = apply {
             everySuspend {
                 callingParticipantsOrder.reorderItems(any(), any())
             }.returns(result)

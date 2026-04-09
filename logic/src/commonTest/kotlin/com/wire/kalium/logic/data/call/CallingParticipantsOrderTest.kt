@@ -47,25 +47,25 @@ class CallingParticipantsOrderTest {
     }
 
     @Test
-    fun givenAListOfParticipants_andNotKnownCurrentClient_whenOrderingByVideosFirst_thenOrderAllItemsProperly() = runTest {
+    fun givenAListOfParticipants_andNotKnownCurrentClient_whenOrderingByAllMediaFirst_thenOrderAllItemsProperly() = runTest {
         // given
         val (arrangement, callingParticipantsOrder) = Arrangement()
             .withCurrentClientIdProviderReturning(Either.Left(CoreFailure.MissingClientRegistration))
             .arrange()
         val expected = with(arrangement) {
             // no self participant at the beginning as it cannot be determined
-            allParticipants.sharingScreen().sortedByName() + // first all participants, including self, sharing screen sorted by name
+            allParticipants.sharingScreen().sortedByName() + // first all participants sharing screen sorted by name
                     allParticipants.notSharingScreen().withCameraOn().sortedByName() + // then others with camera on sorted by name
                     allParticipants.notSharingScreen().withCameraOff().sortedByName() // then the rest sorted by name
         }
         // when
-        val result = callingParticipantsOrder.reorderItems(arrangement.allParticipants, CallingParticipantsOrderType.VIDEOS_FIRST)
+        val result = callingParticipantsOrder.reorderItems(arrangement.allParticipants, CallingParticipantsOrderType.ALL_MEDIA_FIRST)
         // then
         assertEquals(expected, result)
     }
 
     @Test
-    fun givenAListOfParticipants_andKnownCurrentClientWithoutVideo_whenOrderingByVideosFirst_thenOrderItemsProperly() = runTest {
+    fun givenAListOfParticipants_andKnownCurrentClientWithoutVideo_whenOrderingByAllMediaFirst_thenOrderItemsProperly() = runTest {
         // given
         val (arrangement, callingParticipantsOrder) = Arrangement()
             .withCurrentClientIdProviderReturning(Either.Right(ClientId(selfClientId)))
@@ -77,13 +77,13 @@ class CallingParticipantsOrderTest {
                     otherParticipants.notSharingScreen().withCameraOff().sortedByName() // then the rest sorted by name
         }
         // when
-        val result = callingParticipantsOrder.reorderItems(arrangement.allParticipants, CallingParticipantsOrderType.VIDEOS_FIRST)
+        val result = callingParticipantsOrder.reorderItems(arrangement.allParticipants, CallingParticipantsOrderType.ALL_MEDIA_FIRST)
         // then
         assertEquals(expected, result)
     }
 
     @Test
-    fun givenAListOfParticipants_andKnownCurrentClientWithVideo_whenOrderingByVideosFirst_thenOrderItemsProperly() = runTest {
+    fun givenAListOfParticipants_andKnownCurrentClientWithVideo_whenOrderingByAllMediaFirst_thenOrderItemsProperly() = runTest {
         // given
         val (arrangement, callingParticipantsOrder) = Arrangement()
             .withCurrentClientIdProviderReturning(Either.Right(ClientId(selfClientId)))
@@ -95,7 +95,58 @@ class CallingParticipantsOrderTest {
                     otherParticipants.notSharingScreen().withCameraOff().sortedByName() // then the rest sorted by name
         }
         // when
-        val result = callingParticipantsOrder.reorderItems(arrangement.allParticipants, CallingParticipantsOrderType.VIDEOS_FIRST)
+        val result = callingParticipantsOrder.reorderItems(arrangement.allParticipants, CallingParticipantsOrderType.ALL_MEDIA_FIRST)
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenAListOfParticipants_andNotKnownCurrentClient_whenOrderingByPresentersFirst_thenOrderAllItemsProperly() = runTest {
+        // given
+        val (arrangement, callingParticipantsOrder) = Arrangement()
+            .withCurrentClientIdProviderReturning(Either.Left(CoreFailure.MissingClientRegistration))
+            .arrange()
+        val expected = with(arrangement) {
+            // no self participant at the beginning as it cannot be determined
+            allParticipants.sharingScreen().sortedByName() + // first all participants sharing screen sorted by name
+                    allParticipants.notSharingScreen().sortedByName() // then all others not sharing screen sorted by name
+        }
+        // when
+        val result = callingParticipantsOrder.reorderItems(arrangement.allParticipants, CallingParticipantsOrderType.PRESENTERS_FIRST)
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenAListOfParticipants_andKnownCurrentClientWithoutVideo_whenOrderingByPresentersFirst_thenOrderItemsProperly() = runTest {
+        // given
+        val (arrangement, callingParticipantsOrder) = Arrangement()
+            .withCurrentClientIdProviderReturning(Either.Right(ClientId(selfClientId)))
+            .arrange()
+        val expected = with(arrangement) {
+            listOf(selfParticipant) + // self participant first, even if not sharing screen and with camera off
+                    otherParticipants.sharingScreen().sortedByName() + // then other participants sharing screen sorted by name
+                    otherParticipants.notSharingScreen().sortedByName() // then all others not sharing screen sorted by name
+        }
+        // when
+        val result = callingParticipantsOrder.reorderItems(arrangement.allParticipants, CallingParticipantsOrderType.PRESENTERS_FIRST)
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenAListOfParticipants_andKnownCurrentClientWithVideo_whenOrderingByPresentersFirst_thenOrderItemsProperly() = runTest {
+        // given
+        val (arrangement, callingParticipantsOrder) = Arrangement()
+            .withCurrentClientIdProviderReturning(Either.Right(ClientId(selfClientId)))
+            .arrange()
+        val expected = with(arrangement) {
+            listOf(selfParticipant) + // self participant first
+                    otherParticipants.sharingScreen().sortedByName() + // then other participants sharing screen sorted by name
+                    otherParticipants.notSharingScreen().sortedByName() // then all others not sharing screen sorted by name
+        }
+        // when
+        val result = callingParticipantsOrder.reorderItems(arrangement.allParticipants, CallingParticipantsOrderType.PRESENTERS_FIRST)
         // then
         assertEquals(expected, result)
     }
@@ -108,7 +159,7 @@ class CallingParticipantsOrderTest {
             .arrange()
         val expected = with(arrangement) {
             // no self participant at the beginning as it cannot be determined
-            allParticipants.sortedByName() // all participants, including self, sorted by name regardless of video or screen sharing
+            allParticipants.sortedByName() // all participants sorted by name regardless of video or screen sharing
         }
         // when
         val result = callingParticipantsOrder.reorderItems(arrangement.allParticipants, CallingParticipantsOrderType.ALPHABETICALLY)
@@ -152,7 +203,8 @@ class CallingParticipantsOrderTest {
 
         var selfParticipant = participant1
             private set
-        var otherParticipants: List<Participant> = listOf(participant5, participant2, participant4, participant3) // unordered list
+        var otherParticipants: List<Participant> =
+            listOf(participant5, participant2, participant6, participant4, participant3) // unordered list
             private set
         val allParticipants get() = listOf(selfParticipant) + otherParticipants
 
@@ -161,7 +213,8 @@ class CallingParticipantsOrderTest {
         }
 
         init {
-            every { participantsFilter.otherParticipants(any(), selfClientId)
+            every {
+                participantsFilter.otherParticipants(any(), selfClientId)
             } returns otherParticipants
             every {
                 participantsFilter.selfParticipant(any(), selfUserId, selfClientId)
@@ -209,7 +262,7 @@ class CallingParticipantsOrderTest {
             hasEstablishedAudio = true,
             accentId = 0
         )
-        private  val participant2 = Participant(
+        private val participant2 = Participant(
             id = QualifiedID("participant2", "domain"),
             clientId = "client2",
             isMuted = false,
@@ -243,6 +296,16 @@ class CallingParticipantsOrderTest {
             isMuted = false,
             isCameraOn = true,
             name = "Other user 5",
+            hasEstablishedAudio = true,
+            accentId = 0
+        )
+        private val participant6 = Participant(
+            id = QualifiedID("participant6", "domain"),
+            clientId = "client6",
+            isMuted = false,
+            isCameraOn = false,
+            isSharingScreen = true,
+            name = "Other user 6",
             hasEstablishedAudio = true,
             accentId = 0
         )
