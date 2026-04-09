@@ -28,9 +28,11 @@ import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -124,54 +126,54 @@ class ObservableMLSConversationRepositoryTest {
     }
 
     private class Arrangement {
-        private val delegate = mock(MLSConversationRepository::class)
+        private val delegate: MLSConversationRepository = mock(mode = MockMode.autoUnit)
         private val hook = RecordingHookNotifier()
         private val repository = ObservableMLSConversationRepository(delegate, USER_ID, hook)
-        private val context = mock(MlsCoreCryptoContext::class)
-        private val e2eiClient = mock(E2EIClient::class)
+        private val context: MlsCoreCryptoContext = mock(mode = MockMode.autoUnit)
+        private val e2eiClient: E2EIClient = mock(mode = MockMode.autoUnit)
 
         suspend fun withEstablishSuccess() = apply {
-            coEvery {
+            everySuspend {
                 delegate.establishMLSGroup(any(), any(), any(), any(), any())
-            }.returns(Either.Right(MLSAdditionResult(emptySet(), emptySet())))
+            } returns Either.Right(MLSAdditionResult(emptySet(), emptySet()))
         }
 
         suspend fun withEstablishFailure() = apply {
-            coEvery {
+            everySuspend {
                 delegate.establishMLSGroup(any(), any(), any(), any(), any())
-            }.returns(Either.Left(CoreFailure.Unknown(null)))
+            } returns Either.Left(CoreFailure.Unknown(null))
         }
 
         suspend fun withCommitSuccess() = apply {
-            coEvery { delegate.commitPendingProposals(any(), any()) }.returns(Either.Right(Unit))
+            everySuspend { delegate.commitPendingProposals(any(), any()) } returns Either.Right(Unit)
         }
 
         suspend fun withCommitFailure() = apply {
-            coEvery { delegate.commitPendingProposals(any(), any()) }.returns(Either.Left(CoreFailure.Unknown(null)))
+            everySuspend { delegate.commitPendingProposals(any(), any()) } returns Either.Left(CoreFailure.Unknown(null))
         }
 
         suspend fun withRotateSuccess() = apply {
-            coEvery {
+            everySuspend {
                 delegate.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withRotateFailure() = apply {
-            coEvery {
+            everySuspend {
                 delegate.rotateKeysAndMigrateConversations(any(), any(), any(), any(), any(), any())
-            }.returns(Either.Left(E2EIFailure.Generic(Exception("boom"))))
+            } returns Either.Left(E2EIFailure.Generic(Exception("boom")))
         }
 
         suspend fun withDecryptMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 delegate.decryptMessage(any(), any(), any())
-            }.returns(Either.Right(emptyList()))
+            } returns Either.Right(emptyList())
         }
 
         suspend fun withDecryptMessageFailure() = apply {
-            coEvery {
+            everySuspend {
                 delegate.decryptMessage(any(), any(), any())
-            }.returns(CoreFailure.Unknown(null).left())
+            } returns CoreFailure.Unknown(null).left()
         }
 
 
