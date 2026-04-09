@@ -44,10 +44,6 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
-import dev.mokkery.answering.returns
-import dev.mokkery.everySuspend
-import dev.mokkery.matcher.any as mokkeryAny
-import dev.mokkery.mock as mokkeryMock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -247,7 +243,7 @@ class FetchMLSVerificationStatusUseCaseTest {
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
         val mlsClientProvider = mock(MLSClientProvider::class)
-        val mlsClient = mokkeryMock<MLSClient>()
+        val mlsClient = mock(MLSClient::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         suspend fun withGetMLSClientSuccess() {
@@ -255,7 +251,9 @@ class FetchMLSVerificationStatusUseCaseTest {
         }
 
         suspend fun withIsGroupVerified(result: E2EIConversationState) {
-            everySuspend { mlsClient.getGroupState(mokkeryAny()) } returns result
+            coEvery {
+                mlsClient.getGroupState(any())
+            }.returns(result)
         }
 
         suspend fun withGetMembersIdentities(result: Map<UserId, List<WireIdentity>>) {

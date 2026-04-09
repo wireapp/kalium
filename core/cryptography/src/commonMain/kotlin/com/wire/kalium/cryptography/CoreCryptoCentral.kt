@@ -22,10 +22,12 @@ import com.wire.crypto.CoreCryptoLogLevel
 import com.wire.crypto.DatabaseKey
 import com.wire.crypto.invoke
 import com.wire.crypto.setLogger
+import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlin.time.Duration
 
 @Suppress("LongParameterList")
+@Mockable
 interface CoreCryptoCentral {
     suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
