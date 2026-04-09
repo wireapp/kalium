@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangement
 import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import dev.mokkery.MockMode
@@ -535,7 +536,7 @@ class MessageEnvelopeCreatorTest {
         }
     }
 
-    private class Arrangement : ProteusCoreCryptoContextArrangement by ProteusCoreCryptoContextArrangementMockativeImpl() {
+    private class Arrangement : ProteusCoreCryptoContextArrangement by ProteusCoreCryptoContextArrangementMokkeryImpl() {
         private val selfUserId: UserId = UserId("user-id", "domain")
 
         val proteusClient: ProteusClient = mock(mode = MockMode.autoUnit)
@@ -562,15 +563,15 @@ class MessageEnvelopeCreatorTest {
         }
 
         fun withEncodeReadableReturning(blob: PlainMessageBlob) = apply {
-            every { protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.Readable }) } returns blob
+            everySuspend { protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.Readable }) } returns blob
         }
 
         fun withEncodeExternalReturning(blob: PlainMessageBlob) = apply {
-            every { protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.ExternalMessageInstructions }) } returns blob
+            everySuspend { protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.ExternalMessageInstructions }) } returns blob
         }
 
-        suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
-            runBlocking { block() }
+        fun arrange(block: Arrangement.() -> Unit = {}) = let {
+            block()
             everySuspend { conversationRepository.observeLegalHoldStatus(any()) } returns flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED))
             every { legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any()) } returns Conversation.LegalHoldStatus.DISABLED
 
