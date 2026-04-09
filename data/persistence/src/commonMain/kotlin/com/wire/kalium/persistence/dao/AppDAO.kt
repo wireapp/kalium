@@ -82,7 +82,6 @@ private fun mapAppToAppEntity(app: App): AppEntity =
         completeAssetId = app.complete_asset_id
     )
 
-
 @Mockable
 interface AppDAO {
     suspend fun insert(appEntity: AppEntity)
