@@ -304,7 +304,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), any())
+            arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), eq(true))
         }.wasNotInvoked()
 
         coVerify {
@@ -335,7 +335,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversation.invoke(any(), eq(CONVERSATION_ID), any(), any())
+            arrangement.joinExistingMLSConversation.invoke(any(), eq(CONVERSATION_ID), any(), eq(true))
         }.wasInvoked(exactly = once)
     }
 
@@ -394,7 +394,7 @@ class MLSWelcomeEventHandlerTest {
 
         suspend fun withJoinExistingMLSConversationReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                joinExistingMLSConversation.invoke(any(), any(), any(), any())
+                joinExistingMLSConversation.invoke(any(), any(), any(), eq(true))
             }.returns(result)
         }
 
