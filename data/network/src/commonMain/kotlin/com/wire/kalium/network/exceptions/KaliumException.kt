@@ -41,6 +41,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_CREDENTIALS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_HANDLE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_STALE_MESSAGE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_LEGALHOLD_CONSENT
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.NOT_FOUND
@@ -215,6 +216,7 @@ val KaliumException.InvalidRequestError.authenticationCodeFailure: Authenticatio
 
 fun KaliumException.InvalidRequestError.isUserNotFound(): Boolean = errorResponse.label == NetworkErrorLabel.USER_NOT_FOUND
 fun KaliumException.InvalidRequestError.isNoCryptoState(): Boolean = errorResponse.label == NetworkErrorLabel.NO_CRYPTO_STATE
+fun KaliumException.InvalidRequestError.isMlsStaleMessage(): Boolean = errorResponse.label == MLS_STALE_MESSAGE
 fun KaliumException.InvalidRequestError.isMissingLegalHoldConsent(): Boolean = errorResponse.label == MISSING_LEGALHOLD_CONSENT
 fun KaliumException.InvalidRequestError.isAccountSuspended(): Boolean = errorResponse.label == ACCOUNT_SUSPENDED
 fun KaliumException.InvalidRequestError.isAccountPendingActivation(): Boolean = errorResponse.label == ACCOUNT_PENDING_ACTIVATION

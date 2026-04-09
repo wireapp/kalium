@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.any
 import io.mockative.coEvery
@@ -237,7 +237,7 @@ class MLSResetConversationEventHandlerTest {
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 

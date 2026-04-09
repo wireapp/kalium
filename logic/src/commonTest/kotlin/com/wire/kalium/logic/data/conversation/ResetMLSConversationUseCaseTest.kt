@@ -18,22 +18,33 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
-import com.wire.kalium.logic.feature.backup.UserId
+import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.ConversationPersistenceApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -53,9 +64,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -69,9 +80,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -85,9 +96,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -101,9 +112,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -115,9 +126,125 @@ class ResetMLSConversationUseCaseTest {
 
         useCase(TEST_CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasInvoked()
+        }
+    }
+
+    @OptIn(ConversationPersistenceApi::class)
+    @Test
+    fun givenResetReturnsMlsStaleMessage_whenUseCaseCalled_thenConversationIsRefetchedAndResetRetriedWithRemoteEpoch() = runTest {
+        val remoteEpoch = 42UL
+
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .withResetMlsConversationResponses(
+                NetworkFailure.ServerMiscommunication(
+                    KaliumException.InvalidRequestError(
+                        ErrorResponse(409, "epoch is too old", "mls-stale-message")
+                    )
+                ).left(),
+                Unit.right()
+            )
+            .withRemoteConversationResponse(
+                TestConversation.CONVERSATION_RESPONSE.copy(
+                    protocol = ConvProtocol.MLS,
+                    groupId = TestConversation.GROUP_ID.value,
+                    epoch = remoteEpoch
+                )
+            )
+            .arrange()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(15UL))
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.fetchConversation(eq(TEST_CONVERSATION_ID))
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(remoteEpoch))
+        }
+    }
+
+    @OptIn(ConversationPersistenceApi::class)
+    @Test
+    fun givenResetKeepsReturningMlsStaleMessageAndRemoteGroupIdChanges_whenUseCaseCalled_thenRetryIsCancelledAndConversationIsSynced() = runTest {
+        val refreshedEpoch = 42UL
+        val updatedGroupId = "remote-group-id"
+
+        val (arrangement, useCase) = Arrangement()
+            .withFeatureEnabled()
+            .withResetMlsConversationResponses(
+                NetworkFailure.ServerMiscommunication(
+                    KaliumException.InvalidRequestError(
+                        ErrorResponse(409, "epoch is too old", "mls-stale-message")
+                    )
+                ).left(),
+                NetworkFailure.ServerMiscommunication(
+                    KaliumException.InvalidRequestError(
+                        ErrorResponse(409, "epoch is too old", "mls-stale-message")
+                    )
+                ).left()
+            )
+            .withRemoteConversationResponses(
+                TestConversation.CONVERSATION_RESPONSE.copy(
+                    protocol = ConvProtocol.MLS,
+                    groupId = TestConversation.GROUP_ID.value,
+                    epoch = refreshedEpoch
+                ),
+                TestConversation.CONVERSATION_RESPONSE.copy(
+                    protocol = ConvProtocol.MLS,
+                    groupId = updatedGroupId,
+                    epoch = refreshedEpoch
+                )
+            )
+            .withConversations(
+                TestConversation.MLS_CONVERSATION,
+                TestConversation.MLS_CONVERSATION.copy(
+                    protocol = Conversation.ProtocolInfo.MLS(
+                        groupId = GroupID(updatedGroupId),
+                        groupState = TestConversation.MLS_PROTOCOL_INFO.groupState,
+                        epoch = refreshedEpoch,
+                        keyingMaterialLastUpdate = TestConversation.MLS_PROTOCOL_INFO.keyingMaterialLastUpdate,
+                        cipherSuite = TestConversation.MLS_PROTOCOL_INFO.cipherSuite
+                    )
+                )
+            )
+            .arrange()
+
+        useCase(TEST_CONVERSATION_ID)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(15UL))
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.resetMlsConversation(eq(TestConversation.GROUP_ID), eq(refreshedEpoch))
+        }
+
+        verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.conversationRepository.fetchConversation(eq(TEST_CONVERSATION_ID))
+        }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.resetMlsConversation(eq(GroupID(updatedGroupId)), any())
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.fetchConversationUseCase(
+                transactionContext = any(),
+                conversationId = eq(TEST_CONVERSATION_ID),
+                reason = eq(ConversationSyncReason.ConversationReset)
+            )
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), eq(GroupID(updatedGroupId)), any(), any(), any())
+        }
     }
 
     @Test
@@ -129,9 +256,9 @@ class ResetMLSConversationUseCaseTest {
 
         useCase(TEST_CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -143,13 +270,13 @@ class ResetMLSConversationUseCaseTest {
 
         useCase(TEST_CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversationUseCase(
                 conversationId = any(),
                 transactionContext = any(),
                 reason = eq(ConversationSyncReason.ConversationReset)
             )
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     @Test
@@ -161,9 +288,9 @@ class ResetMLSConversationUseCaseTest {
 
         useCase(TEST_CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -177,9 +304,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -193,9 +320,9 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -209,13 +336,13 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
-        }.wasInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -228,13 +355,13 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
-        }.wasInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -248,20 +375,27 @@ class ResetMLSConversationUseCaseTest {
 
         assertTrue(result.isRight())
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.resetMlsConversation(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         private val TEST_USER_ID = UserId("testUser", "domain")
 
-        val userConfig = mock(UserConfigRepository::class)
-        val conversationRepository = mock(ConversationRepository::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val fetchConversationUseCase = mock(FetchConversationUseCase::class)
+        val userConfig: UserConfigRepository = mock(mode = MockMode.autoUnit)
+        val conversationRepository: ConversationRepository = mock(mode = MockMode.autoUnit)
+        val mlsConversationRepository: MLSConversationRepository = mock(mode = MockMode.autoUnit)
+        val fetchConversationUseCase: FetchConversationUseCase = mock(mode = MockMode.autoUnit)
         var kaliumConfigs = KaliumConfigs(isMlsResetEnabled = true)
+        private var remoteConversationResponses: List<ConversationResponse> = listOf(TestConversation.CONVERSATION_RESPONSE.copy(
+            protocol = ConvProtocol.MLS,
+            groupId = TestConversation.GROUP_ID.value,
+            epoch = 21UL
+        ))
+        private var resetConversationResults: List<Either<NetworkFailure, Unit>> = listOf(Unit.right())
+        private var conversations: List<Conversation> = listOf(TestConversation.MLS_CONVERSATION)
 
         fun withCompileTimeFlagDisabled() = apply {
             kaliumConfigs = kaliumConfigs.copy(isMlsResetEnabled = false)
@@ -271,67 +405,117 @@ class ResetMLSConversationUseCaseTest {
             kaliumConfigs = kaliumConfigs.copy(isMlsResetEnabled = true)
         }
 
-        suspend fun withRuntimeFlagDisabled() = apply {
-            coEvery { userConfig.isMlsConversationsResetEnabled() } returns false
+        fun withRuntimeFlagDisabled() = apply {
+            everySuspend { userConfig.isMlsConversationsResetEnabled() } returns false
         }
 
-        suspend fun withRuntimeFlagEnabled() = apply {
-            coEvery { userConfig.isMlsConversationsResetEnabled() } returns true
+        fun withRuntimeFlagEnabled() = apply {
+            everySuspend { userConfig.isMlsConversationsResetEnabled() } returns true
         }
 
-        suspend fun withFeatureDisabled() = apply {
+        fun withFeatureDisabled() = apply {
             withCompileTimeFlagEnabled()
             withRuntimeFlagDisabled()
         }
 
-        suspend fun withFeatureEnabled() = apply {
+        fun withFeatureEnabled() = apply {
             withCompileTimeFlagEnabled()
             withRuntimeFlagEnabled()
         }
 
-        suspend fun withConversation(conversation: Conversation) = apply {
-            coEvery {
+        fun withConversation(conversation: Conversation) = apply {
+            everySuspend {
                 conversationRepository.getConversationById(any())
             } returns conversation.right()
+            this.conversations = listOf(conversation)
         }
 
-        suspend fun withLeaveGroupFailing() = apply {
-            coEvery {
+        fun withConversations(vararg conversations: Conversation) = apply {
+            this.conversations = conversations.toList()
+        }
+
+        fun withRemoteConversationResponse(conversationResponse: ConversationResponse) = apply {
+            remoteConversationResponses = listOf(conversationResponse)
+        }
+
+        fun withRemoteConversationResponses(vararg conversationResponses: ConversationResponse) = apply {
+            remoteConversationResponses = conversationResponses.toList()
+        }
+
+        fun withResetMlsConversationResponses(vararg results: Either<NetworkFailure, Unit>) = apply {
+            resetConversationResults = results.toList()
+        }
+
+        fun withLeaveGroupFailing() = apply {
+            everySuspend {
                 mlsConversationRepository.leaveGroup(any(), any())
             } returns CoreFailure.Unknown(RuntimeException("Leave group failed")).left()
         }
 
+        @OptIn(ConversationPersistenceApi::class)
         suspend fun arrange(): Pair<Arrangement, ResetMLSConversationUseCaseImpl> {
+            val conversationResults = conversations.map { it.right() }
+            val remoteConversationResults = remoteConversationResponses.map { it.right() }
+            var resetConversationResultIndex = 0
 
             withMLSTransactionReturning(Either.Right(Unit))
             withTransactionReturning(Either.Right(Unit))
 
-
-            coEvery {
+            everySuspend {
                 mlsContext.conversationEpoch(any())
             } returns 15UL
 
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationById(any())
-            } returns TestConversation.MLS_CONVERSATION.right()
+            }.also {
+                if (conversationResults.size == 1) {
+                    it returns conversationResults.single()
+                } else {
+                    var conversationResultIndex = 0
+                    it calls {
+                        conversationResults.getOrElse(conversationResultIndex++) {
+                            error("getConversationById called more times than expected")
+                        }
+                    }
+                }
+            }
 
-            coEvery {
+            everySuspend {
                 conversationRepository.resetMlsConversation(any(), any())
-            } returns Unit.right()
+            } calls {
+                resetConversationResults.getOrElse(resetConversationResultIndex++) {
+                    error("resetMlsConversation called more times than expected")
+                }
+            }
 
-            coEvery {
+            everySuspend {
+                conversationRepository.fetchConversation(any())
+            }.also {
+                if (remoteConversationResults.size == 1) {
+                    it returns remoteConversationResults.single()
+                } else {
+                    var remoteConversationResultIndex = 0
+                    it calls {
+                        remoteConversationResults.getOrElse(remoteConversationResultIndex++) {
+                            error("fetchConversation called more times than expected")
+                        }
+                    }
+                }
+            }
+
+            everySuspend {
                 mlsConversationRepository.leaveGroup(any(), any())
             } returns Unit.right()
 
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             } returns MLSAdditionResult(emptySet(), emptySet()).right()
 
-            coEvery {
+            everySuspend {
                 fetchConversationUseCase(any(), any(), reason = eq(ConversationSyncReason.ConversationReset))
             } returns Unit.right()
 
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationMembers(any())
             } returns listOf(UserId("test", "test@user")).right()
 
