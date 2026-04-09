@@ -20,29 +20,28 @@ package com.wire.kalium.network.api.v3.authenticated
 
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
-import com.wire.kalium.network.auth.extractManagedRefreshToken
-import com.wire.kalium.network.auth.withManagedRefreshCookie
+import com.wire.kalium.network.api.model.RefreshTokenProperties
 import com.wire.kalium.network.api.v2.authenticated.AccessTokenApiV2
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
-import com.wire.kalium.network.utils.skipApiVersion
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.HttpClient
+import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.http.HttpHeaders
 
 internal open class AccessTokenApiV3 internal constructor(
     private val httpClient: HttpClient
 ) : AccessTokenApiV2(httpClient) {
     override suspend fun getToken(refreshToken: String, clientId: String?): NetworkResponse<Pair<AccessTokenDTO, RefreshTokenDTO?>> =
         wrapKaliumResponse<AccessTokenDTO> {
-            httpClient.post("/$PATH_ACCESS") {
-                skipApiVersion()
-                withManagedRefreshCookie(refreshToken)
+            httpClient.post(PATH_ACCESS) {
+                header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
                 parameter(CLIENT_ID_QUERY_KEY, clientId)
             }
         }.flatMap { accessTokenResponse ->
-            extractManagedRefreshToken(accessTokenResponse.cookies).let { newRefreshToken ->
+            accessTokenResponse.cookies[RefreshTokenProperties.COOKIE_NAME].let { newRefreshToken ->
                 newRefreshToken?.let {
                     NetworkResponse.Success(
                         Pair(accessTokenResponse.value, RefreshTokenDTO(newRefreshToken)),
