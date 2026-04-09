@@ -36,7 +36,7 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangement
-import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
@@ -537,7 +537,7 @@ class MessageEnvelopeCreatorTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement : ProteusCoreCryptoContextArrangement by ProteusCoreCryptoContextArrangementImpl() {
+    private class Arrangement : ProteusCoreCryptoContextArrangement by ProteusCoreCryptoContextArrangementMockativeImpl() {
         private val selfUserId: UserId = UserId("user-id", "domain")
 
         val proteusClient: ProteusClient = mock(ProteusClient::class)

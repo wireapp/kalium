@@ -28,7 +28,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
@@ -178,7 +178,7 @@ class E2EIClientProviderTest {
 
     private class Arrangement(
         private val testDispatcher: KaliumDispatcher
-    ) : E2EIClientProviderArrangement by E2EIClientProviderArrangementMokkeryImpl() {
+    ) : E2EIClientProviderArrangement by E2EIClientProviderArrangementImpl() {
         private lateinit var e2eiClientProvider: E2EIClientProvider
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, E2EIClientProvider> {

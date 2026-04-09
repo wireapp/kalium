@@ -26,7 +26,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE_DTO
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.any
 import io.mockative.coEvery
@@ -82,7 +82,7 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
     }
 
     private class Arrangement(private val dispatcher: KaliumDispatcher) :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val conversationRepository = mock(ConversationRepository::class)
         val persistConversations = mock(PersistConversationsUseCase::class)
 
