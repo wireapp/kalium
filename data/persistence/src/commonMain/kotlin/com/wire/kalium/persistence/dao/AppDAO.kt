@@ -133,6 +133,19 @@ internal class AppDAOImpl(
         appsQueries.byId(id = id, mapper = ::mapToAppEntity).executeAsOneOrNull()
     }
 
+    /**
+     *  Returns the userId only if the given user is a member of the conversation.
+     *
+     *  NOTE:
+     *  This may look redundant since it returns the same userId that is passed in.
+     *  However, this follows the existing patter used for legacy bots/services,
+     *  where a serviceId is resolved to a userId via Member table.
+     *
+     *  We keep this behavior for consistency while old bots/services and new Apps coexist.
+     *  Effectively, this acts as a member check + userId passthrough.
+     *
+     *  Can be refactored to a boolean check (isMember) in the future once old bots/services dependencies are removed.
+     */
     override suspend fun observeIsAppMember(
         appId: QualifiedIDEntity,
         conversationId: ConversationIDEntity
