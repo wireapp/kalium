@@ -62,7 +62,7 @@ import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
@@ -857,7 +857,7 @@ class SyncFeatureConfigsUseCaseTest {
     private fun TestScope.arrangement() = Arrangement(coroutineContext[CoroutineDispatcher]!! as TestDispatcher)
 
     private class Arrangement(dispatcher: TestDispatcher) :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         private val inMemoryStorage = inMemoryUserConfigStorage()
         private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, dispatcher)
         val channelsConfigurationStorage = ChannelsConfigurationStorage(userDatabase.builder.metadataDAO)

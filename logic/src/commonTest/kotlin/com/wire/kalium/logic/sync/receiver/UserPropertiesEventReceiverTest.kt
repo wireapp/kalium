@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.conversation.folders.ConversationFolderReposit
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -65,7 +65,7 @@ class UserPropertiesEventReceiverTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val userConfigRepository = mock(UserConfigRepository::class)
         val conversationFolderRepository = mock(ConversationFolderRepository::class)

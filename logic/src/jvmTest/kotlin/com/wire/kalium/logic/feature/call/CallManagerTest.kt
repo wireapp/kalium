@@ -34,9 +34,6 @@ import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperTest.Companion.CONVERSATION_MIXED_PROTOCOL_INFO
-import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperTest.Companion.CONVERSATION_MLS_PROTOCOL_INFO
-import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperTest.Companion.CONVERSATION_PROTEUS_PROTOCOL_INFO
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -157,29 +154,18 @@ internal class CallManagerTest {
 
     @Test
     @Suppress("FunctionNaming") // native function has that name
-    fun givenCallManager_whenUpdatingConversationClients_then_wcall_set_clients_for_conv_IsCalledForProteusAndMixedProtocol() = runTest {
-        val callProteus = ConversationId(value = "proteus", domain = "domain")
-        val callMixed = ConversationId(value = "mixed", domain = "domain")
-        val callMLS = ConversationId(value = "mls", domain = "domain")
+    fun givenCallManager_whenUpdatingConversationClients_then_wcall_set_clients_for_conv_IsCalled() = runTest {
+        val call = ConversationId(value = "call", domain = "domain")
+        val clients = "clients"
         val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .onParseToFederatedIdReturning(callProteus, callProteus.toString())
-            .onParseToFederatedIdReturning(callMixed, callMixed.toString())
-            .onParseToFederatedIdReturning(callMLS, callMLS.toString())
-            .withCallMetadataReturning(callProteus, CALL_METADATA.copy(protocol = CONVERSATION_PROTEUS_PROTOCOL_INFO))
-            .withCallMetadataReturning(callMixed, CALL_METADATA.copy(protocol = CONVERSATION_MIXED_PROTOCOL_INFO))
-            .withCallMetadataReturning(callMLS, CALL_METADATA.copy(protocol = CONVERSATION_MLS_PROTOCOL_INFO))
+            .onParseToFederatedIdReturning(call, call.toString())
+            .withCallMetadataReturning(call, CALL_METADATA)
             .arrange()
 
-        callManager.updateConversationClients(callProteus, "clients")
-        callManager.updateConversationClients(callMixed, "clients")
-        callManager.updateConversationClients(callMLS, "clients")
+        callManager.updateConversationClients(call, clients)
 
-        verify(VerifyMode.exactly(1)) { // called for proteus and mixed protocol
-            arrangement.calling.wcall_set_clients_for_conv(inst = any(), convId = callProteus.toString(), clientsJson = "clients")
-            arrangement.calling.wcall_set_clients_for_conv(inst = any(), convId = callMixed.toString(), clientsJson = "clients")
-        }
-        verify(VerifyMode.not) { // not called for MLS protocol
-            arrangement.calling.wcall_set_clients_for_conv(inst = any(), convId = callMLS.toString(), clientsJson = "clients")
+        verify(VerifyMode.exactly(1)) {
+            arrangement.calling.wcall_set_clients_for_conv(inst = any(), convId = call.toString(), clientsJson = clients)
         }
     }
 

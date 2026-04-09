@@ -27,7 +27,7 @@ import com.wire.kalium.logic.feature.message.SessionResetSender
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -103,7 +103,7 @@ class ResetSessionUseCaseTest {
         val failure = CoreFailure.Unknown(null)
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val sessionResetSender = mock(SessionResetSender::class)
         val messageRepository = mock(MessageRepository::class)
         val idMapper = IdMapper()

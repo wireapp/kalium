@@ -37,7 +37,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
@@ -216,7 +216,7 @@ class MLSMigrationWorkerTest {
             coVerify { arrangement.mlsMigrator.finaliseProteusConversations() }.wasNotInvoked()
         }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val userConfigRepository: UserConfigRepository = mock(of<UserConfigRepository>())
         val featureConfigRepository: FeatureConfigRepository = mock(of<FeatureConfigRepository>())
         val updateSupportedProtocolsAndResolveOneOnOnes = mock(of<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())

@@ -27,7 +27,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandl
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangement
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -152,7 +152,7 @@ class ProtocolUpdateEventHandlerTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         SystemMessageInserterArrangement by SystemMessageInserterArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
         CallRepositoryArrangement by CallRepositoryArrangementImpl() {
         val updateConversationProtocol = mock(UpdateConversationProtocolUseCase::class)
 

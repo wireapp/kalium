@@ -41,7 +41,7 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.any
@@ -400,7 +400,7 @@ class UserEventReceiverTest {
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val connectionRepository = mock(ConnectionRepository::class)
         val logoutUseCase = mock(LogoutUseCase::class)
         private val currentClientIdProvider = mock(CurrentClientIdProvider::class)

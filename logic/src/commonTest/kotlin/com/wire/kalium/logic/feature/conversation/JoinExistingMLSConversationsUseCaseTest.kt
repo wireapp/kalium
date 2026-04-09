@@ -33,7 +33,7 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.model.ErrorResponse
@@ -213,7 +213,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         private val maxConcurrentJoins: Int = 4,
         private val maxThrottleRetries: Int = 3,
         private val throttleRetryDelayMs: Long = 250L,
-    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val featureSupport = mock(FeatureSupport::class)
         val clientRepository = mock(ClientRepository::class)
         val conversationRepository = mock(ConversationRepository::class)

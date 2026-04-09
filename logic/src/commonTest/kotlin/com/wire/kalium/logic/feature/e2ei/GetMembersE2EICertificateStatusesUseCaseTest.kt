@@ -34,9 +34,11 @@ import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArran
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -120,11 +122,11 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
-        val mlsClientProvider = mock(MLSClientProvider::class)
-        val mlsClient = mock(MLSClient::class)
+        val mlsClientProvider: MLSClientProvider = mock(mode = MockMode.autoUnit)
+        val mlsClient: MLSClient = mock(mode = MockMode.autoUnit)
 
-        suspend fun withMLSClientSuccess() {
-            coEvery { mlsClientProvider.getMLSClient(any()) }.returns(Either.Right(mlsClient))
+        fun withMLSClientSuccess() {
+            everySuspend { mlsClientProvider.getMLSClient(any()) } returns Either.Right(mlsClient)
         }
 
         suspend fun arrange() = run {
