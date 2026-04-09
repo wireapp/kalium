@@ -101,7 +101,7 @@ class MLSMessageCreatorTest {
             .shouldSucceed {}
 
         coVerify {
-            arrangement.joinExistingConversationUseCase(any(), eq(TestMessage.TEXT_MESSAGE.conversationId), any())
+            arrangement.joinExistingConversationUseCase(any(), eq(TestMessage.TEXT_MESSAGE.conversationId), any(), eq(true))
         }.wasInvoked(once)
 
         coVerify {
@@ -174,7 +174,7 @@ class MLSMessageCreatorTest {
 
         suspend fun withJoinExistingConversation(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
             coEvery {
-                joinExistingConversationUseCase(any(), any(), any())
+                joinExistingConversationUseCase(any(), any(), any(), eq(true))
             }.returns(result)
         }
 

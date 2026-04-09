@@ -985,6 +985,7 @@ class ConversationGroupRepositoryTest {
             arrangement.joinExistingMLSConversation.invoke(
                 any(),
                 eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
+                any(),
                 any()
             )
         }.wasInvoked(exactly = once)
@@ -1035,6 +1036,7 @@ class ConversationGroupRepositoryTest {
             arrangement.joinExistingMLSConversation.invoke(
                 any(),
                 eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
+                any(),
                 any()
             )
         }.wasInvoked(exactly = once)
@@ -1921,7 +1923,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withJoinExistingMlsConversationSucceeds() = apply {
             coEvery {
-                joinExistingMLSConversation.invoke(any(), any(), any())
+                joinExistingMLSConversation.invoke(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
