@@ -144,6 +144,7 @@ class NomadMessagePagingCoordinatorTest {
         assertTrue(capturedRequests.first() != null)
     }
 
+
     private data class Arrangement(
         val nomadDeviceSyncApi: NomadDeviceSyncApi = mock(),
         val nomadMessagesDAO: NomadMessagesDAO = mock(),

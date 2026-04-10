@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensionsImpl
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingResult
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.persistence.dao.message.KaliumPager
@@ -46,6 +47,7 @@ import io.mockative.verify
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
 class MessageRepositoryExtensionsTest {
 
@@ -132,6 +134,24 @@ class MessageRepositoryExtensionsTest {
             .wasInvoked(exactly = 0)
     }
 
+    @Test
+    fun givenPagingCoordinator_whenFetchingOlderMessages_thenReturnsCoordinatorResult() = runTest {
+        val expectedResult = NomadMessagePagingResult(hasMore = true)
+        val (arrangement, messageRepositoryExtensions) = Arrangement()
+            .withPagingCoordinatorResult(expectedResult)
+            .withOldestTimestamp(1234L)
+            .arrange()
+
+        val result = messageRepositoryExtensions.fetchOlderNomadMessagesByConversationId(
+            conversationId = TestConversation.ID,
+            pageSize = 5,
+        )
+
+        assertEquals(expectedResult, result)
+        coVerify { arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) }
+            .wasInvoked(exactly = once)
+    }
+
     private data class Arrangement(
         val messageDaoExtensions: MessageExtensions = mock(MessageExtensions::class),
         val messageDAO: MessageDAO = mock(MessageDAO::class),
@@ -160,8 +180,14 @@ class MessageRepositoryExtensionsTest {
         suspend fun withPagingCoordinator(): Arrangement = copy(usePagingCoordinator = true).also {
             coEvery {
                 it.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any())
-            }.returns(Unit)
+            }.returns(NomadMessagePagingResult(hasMore = true))
         }
+
+        suspend fun withPagingCoordinatorResult(result: NomadMessagePagingResult): Arrangement =
+            copy(usePagingCoordinator = true).also {
+                coEvery { it.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) }
+                    .returns(result)
+            }
 
         fun withoutPagingCoordinator(): Arrangement = copy(usePagingCoordinator = false)
 
