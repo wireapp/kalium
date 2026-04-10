@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.persistence.utils.stubs
 
-import com.wire.kalium.persistence.dao.AppCategoryEntity
 import com.wire.kalium.persistence.dao.AppEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
@@ -28,7 +27,7 @@ fun newAppEntity(qualifiedIDEntity: QualifiedIDEntity, id: String = "test") =
         id = qualifiedIDEntity,
         name = "app$id",
         description = "description$id",
-        category = AppCategoryEntity.DEVELOPER,
+        category = "DEVELOPER",
         previewAssetId = null,
         completeAssetId = null
     )

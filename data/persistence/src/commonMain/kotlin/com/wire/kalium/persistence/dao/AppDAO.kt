@@ -34,33 +34,16 @@ data class AppEntity(
     val id: QualifiedIDEntity,
     val name: String,
     val description: String,
-    val category: AppCategoryEntity?,
+    val category: String?,
     val previewAssetId: UserAssetIdEntity?,
     val completeAssetId: UserAssetIdEntity?
 )
-
-enum class AppCategoryEntity {
-    SECURITY,
-    COLLABORATION,
-    PRODUCTIVITY,
-    AUTOMATION,
-    FILES,
-    AI,
-    DEVELOPER,
-    SUPPORT,
-    FINANCE,
-    HR,
-    INTEGRATION,
-    COMPLIANCE,
-    OTHER,
-    UNKNOWN
-}
 
 private fun mapToAppEntity(
     id: QualifiedIDEntity,
     name: String,
     description: String,
-    category: AppCategoryEntity?,
+    category: String?,
     previewAssetId: UserAssetIdEntity?,
     completeAssetId: UserAssetIdEntity?
 ): AppEntity = AppEntity(

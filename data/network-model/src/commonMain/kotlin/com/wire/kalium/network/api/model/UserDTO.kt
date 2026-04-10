@@ -19,8 +19,13 @@
 package com.wire.kalium.network.api.model
 
 import com.wire.kalium.network.api.unauthenticated.register.NewBindingTeamDTO
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 sealed class UserDTO {
@@ -149,49 +154,8 @@ enum class UserTypeDTO {
     }
 }
 
-enum class AppCategoryDTO {
-    @SerialName("security")
-    SECURITY,
-
-    @SerialName("collaboration")
-    COLLABORATION,
-
-    @SerialName("productivity")
-    PRODUCTIVITY,
-
-    @SerialName("automation")
-    AUTOMATION,
-
-    @SerialName("files")
-    FILES,
-
-    @SerialName("ai")
-    AI,
-
-    @SerialName("developer")
-    DEVELOPER,
-
-    @SerialName("support")
-    SUPPORT,
-
-    @SerialName("finance")
-    FINANCE,
-
-    @SerialName("hr")
-    HR,
-
-    @SerialName("integration")
-    INTEGRATION,
-
-    @SerialName("compliance")
-    COMPLIANCE,
-
-    @SerialName("other")
-    OTHER
-}
-
 @Serializable
 data class AppDTO(
     @SerialName("description") val description: String,
-    @SerialName("category") val category: AppCategoryDTO
+    @SerialName("category") val category: String?
 )

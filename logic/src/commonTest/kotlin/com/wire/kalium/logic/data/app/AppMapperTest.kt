@@ -21,13 +21,11 @@ import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
-import com.wire.kalium.network.api.model.AppCategoryDTO
 import com.wire.kalium.network.api.model.AppDTO
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.QualifiedID as NetworkQualifiedID
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.UserTypeDTO
-import com.wire.kalium.persistence.dao.AppCategoryEntity
 import com.wire.kalium.persistence.dao.AppEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -67,36 +65,6 @@ class AppMapperTest {
     }
 
     @Test
-    fun givenAppCategoryDTO_whenMappingToEntity_thenReturnAppCategoryEntity() = runTest {
-        // given
-        val (_, appMapper) = Arrangement()
-            .arrange()
-
-        // when
-        val result = appMapper.fromCategoryDTOToEntity(
-            categoryDTO = Arrangement.userProfileDTO.app?.category
-        )
-
-        // then
-        assertEquals(Arrangement.appEntity.category, result)
-    }
-
-    @Test
-    fun givenAppCategoryEntity_whenMappingToModel_thenReturnAppCategory() = runTest {
-        // given
-        val (_, appMapper) = Arrangement()
-            .arrange()
-
-        // when
-        val result = appMapper.fromCategoryEntityToModel(
-            appCategoryEntity = Arrangement.appEntity.category
-        )
-
-        // then
-        assertEquals(Arrangement.appDetails.category, result)
-    }
-
-    @Test
     fun givenAppDetails_whenMappingToServiceDetails_thenReturnServiceDetails() = runTest {
         // given
         val (_, appMapper) = Arrangement()
@@ -128,9 +96,7 @@ class AppMapperTest {
             )
             const val APP_NAME = "App Name"
             const val APP_DESCRIPTION = "App Description"
-            val APP_CATEGORY = AppCategory.DEVELOPER
-            val APP_CATEGORY_ENTITY = AppCategoryEntity.DEVELOPER
-            val APP_CATEGORY_DTO = AppCategoryDTO.DEVELOPER
+            const val APP_CATEGORY = "DEVELOPER"
 
             val appDetails = AppDetails(
                 id = APP_ID,
@@ -145,7 +111,7 @@ class AppMapperTest {
                 id = APP_ID_ENTITY,
                 name = APP_NAME,
                 description = APP_DESCRIPTION,
-                category = APP_CATEGORY_ENTITY,
+                category = APP_CATEGORY,
                 previewAssetId = null,
                 completeAssetId = null
             )
@@ -184,7 +150,7 @@ class AppMapperTest {
                 type = UserTypeDTO.APP,
                 app = AppDTO(
                     description = APP_DESCRIPTION,
-                    category = APP_CATEGORY_DTO
+                    category = APP_CATEGORY
                 )
             )
         }

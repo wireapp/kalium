@@ -201,7 +201,7 @@ class UserDatabaseBuilder internal constructor(
         HistoryClientAdapter = TableMapper.historyClientAdapter,
         MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
         RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter,
-        AppAdapter = TableMapper.appCategoryAdapter
+        AppAdapter = TableMapper.appAdapter
     )
 
     init {

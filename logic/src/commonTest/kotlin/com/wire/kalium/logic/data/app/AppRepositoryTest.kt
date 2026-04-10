@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.persistence.dao.AppCategoryEntity
 import com.wire.kalium.persistence.dao.AppDAO
 import com.wire.kalium.persistence.dao.AppEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -298,8 +297,7 @@ class AppRepositoryTest {
             )
             const val APP_NAME = "App Name"
             const val APP_DESCRIPTION = "App Description"
-            val APP_CATEGORY = AppCategory.DEVELOPER
-            val APP_CATEGORY_ENTITY = AppCategoryEntity.DEVELOPER
+            const val APP_CATEGORY = "DEVELOPER"
 
             val CONVERSATION_ID = QualifiedID(
                 value = Uuid.Companion.random().toString(),
@@ -319,7 +317,7 @@ class AppRepositoryTest {
                 id = APP_ID_ENTITY,
                 name = APP_NAME,
                 description = APP_DESCRIPTION,
-                category = APP_CATEGORY_ENTITY,
+                category = APP_CATEGORY,
                 previewAssetId = null,
                 completeAssetId = null
             )

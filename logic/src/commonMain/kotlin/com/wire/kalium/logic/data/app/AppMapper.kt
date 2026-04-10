@@ -22,11 +22,9 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserAssetId
-import com.wire.kalium.network.api.model.AppCategoryDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.model.getPreviewAssetOrNull
-import com.wire.kalium.persistence.dao.AppCategoryEntity
 import com.wire.kalium.persistence.dao.AppEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
@@ -34,8 +32,6 @@ internal interface AppMapper {
 
     fun fromUserProfileToAppEntity(userProfileDTO: UserProfileDTO): AppEntity
     fun fromDaoToModel(appEntity: AppEntity): AppDetails
-    fun fromCategoryDTOToEntity(categoryDTO: AppCategoryDTO?): AppCategoryEntity
-    fun fromCategoryEntityToModel(appCategoryEntity: AppCategoryEntity?): AppCategory
     fun toServiceDetails(appDetails: AppDetails): ServiceDetails
 }
 
@@ -46,7 +42,7 @@ internal class AppMapperImpl : AppMapper {
             id = userProfileDTO.id.toDao(),
             name = userProfileDTO.name,
             description = userProfileDTO.app?.description.orEmpty(),
-            category = fromCategoryDTOToEntity(userProfileDTO.app?.category),
+            category = userProfileDTO.app?.category,
             previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.let {
                 QualifiedIDEntity(
                     value = it.key,
@@ -67,7 +63,7 @@ internal class AppMapperImpl : AppMapper {
             id = appEntity.id.toModel(),
             name = appEntity.name,
             description = appEntity.description,
-            category = fromCategoryEntityToModel(appCategoryEntity = appEntity.category),
+            category = appEntity.category,
             previewAssetId = appEntity.previewAssetId?.let { asset ->
                 UserAssetId(
                     value = asset.value,
@@ -82,45 +78,6 @@ internal class AppMapperImpl : AppMapper {
             }
         )
     }
-
-    @Suppress("CyclomaticComplexMethod")
-    override fun fromCategoryEntityToModel(appCategoryEntity: AppCategoryEntity?): AppCategory =
-        when (appCategoryEntity) {
-            AppCategoryEntity.SECURITY -> AppCategory.SECURITY
-            AppCategoryEntity.COLLABORATION -> AppCategory.COLLABORATION
-            AppCategoryEntity.PRODUCTIVITY -> AppCategory.PRODUCTIVITY
-            AppCategoryEntity.AUTOMATION -> AppCategory.AUTOMATION
-            AppCategoryEntity.FILES -> AppCategory.FILES
-            AppCategoryEntity.AI -> AppCategory.AI
-            AppCategoryEntity.DEVELOPER -> AppCategory.DEVELOPER
-            AppCategoryEntity.SUPPORT -> AppCategory.SUPPORT
-            AppCategoryEntity.FINANCE -> AppCategory.FINANCE
-            AppCategoryEntity.HR -> AppCategory.HR
-            AppCategoryEntity.INTEGRATION -> AppCategory.INTEGRATION
-            AppCategoryEntity.COMPLIANCE -> AppCategory.COMPLIANCE
-            AppCategoryEntity.OTHER -> AppCategory.OTHER
-            AppCategoryEntity.UNKNOWN -> AppCategory.UNKNOWN
-            else -> AppCategory.UNKNOWN
-        }
-
-    @Suppress("CyclomaticComplexMethod")
-    override fun fromCategoryDTOToEntity(categoryDTO: AppCategoryDTO?): AppCategoryEntity =
-        when (categoryDTO) {
-            AppCategoryDTO.SECURITY -> AppCategoryEntity.SECURITY
-            AppCategoryDTO.COLLABORATION -> AppCategoryEntity.COLLABORATION
-            AppCategoryDTO.PRODUCTIVITY -> AppCategoryEntity.PRODUCTIVITY
-            AppCategoryDTO.AUTOMATION -> AppCategoryEntity.AUTOMATION
-            AppCategoryDTO.FILES -> AppCategoryEntity.FILES
-            AppCategoryDTO.AI -> AppCategoryEntity.AI
-            AppCategoryDTO.DEVELOPER -> AppCategoryEntity.DEVELOPER
-            AppCategoryDTO.SUPPORT -> AppCategoryEntity.SUPPORT
-            AppCategoryDTO.FINANCE -> AppCategoryEntity.FINANCE
-            AppCategoryDTO.HR -> AppCategoryEntity.HR
-            AppCategoryDTO.INTEGRATION -> AppCategoryEntity.INTEGRATION
-            AppCategoryDTO.COMPLIANCE -> AppCategoryEntity.COMPLIANCE
-            AppCategoryDTO.OTHER -> AppCategoryEntity.OTHER
-            else -> AppCategoryEntity.UNKNOWN
-        }
 
     override fun toServiceDetails(appDetails: AppDetails): ServiceDetails =
         ServiceDetails(

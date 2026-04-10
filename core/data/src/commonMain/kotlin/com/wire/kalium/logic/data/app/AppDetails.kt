@@ -24,24 +24,7 @@ data class AppDetails(
     val id: QualifiedID,
     val name: String,
     val description: String,
-    val category: AppCategory,
+    val category: String?,
     val previewAssetId: UserAssetId?,
     val completeAssetId: UserAssetId?
 )
-
-enum class AppCategory {
-    SECURITY,
-    COLLABORATION,
-    PRODUCTIVITY,
-    AUTOMATION,
-    FILES,
-    AI,
-    DEVELOPER,
-    SUPPORT,
-    FINANCE,
-    HR,
-    INTEGRATION,
-    COMPLIANCE,
-    OTHER,
-    UNKNOWN
-}
