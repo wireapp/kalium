@@ -39,6 +39,8 @@ import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.util.ConversationPersistenceApi
 import io.mockative.Mockable
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
