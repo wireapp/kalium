@@ -19,13 +19,15 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangementImpl
 import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -64,11 +66,10 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
 
     @Test
     fun givenMLSConversation_whenCalledToCheck_thenFetchingMLSVerificationIsCalled() = runTest {
-        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO.copy(
-            groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
-        )
+        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO
         val (arrangement, useCase) = arrange {
             withConversationDetailsByIdReturning(Either.Right(TestConversation.ONE_ON_ONE(protocolInfo)))
+            // default: withConversationExistsInCrypto(true)
         }
 
         useCase(TestConversation.ID)
@@ -79,12 +80,10 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
     }
 
     @Test
-    fun givenMLSConversationInPendingJoinState_whenCalledToCheck_thenFetchingMLSVerificationIsNotCalled() = runTest {
-        val protocolInfo = TestConversation.MLS_PROTOCOL_INFO.copy(
-            groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN
-        )
+    fun givenMLSConversationNotExistingInCrypto_whenCalledToCheck_thenFetchingMLSVerificationIsNotCalled() = runTest {
         val (arrangement, useCase) = arrange {
-            withConversationDetailsByIdReturning(Either.Right(TestConversation.ONE_ON_ONE(protocolInfo)))
+            withConversationDetailsByIdReturning(Either.Right(TestConversation.ONE_ON_ONE(TestConversation.MLS_PROTOCOL_INFO)))
+            withConversationExistsInCrypto(false)
         }
 
         useCase(TestConversation.ID)
@@ -99,14 +98,22 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
     ) : FetchMLSVerificationStatusArrangement by FetchMLSVerificationStatusArrangementImpl(),
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+
+        suspend fun withConversationExistsInCrypto(exists: Boolean) = apply {
+            coEvery { mlsContext.conversationExists(any()) }.returns(exists)
+        }
 
         suspend fun arrange() = let {
+            withConversationExistsInCrypto(true)
+            withMLSTransactionReturning(Either.Right(true))
             block()
             mockFetchMLSVerificationStatus()
             this to FetchConversationMLSVerificationStatusUseCaseImpl(
                 conversationRepository = conversationRepository,
-                fetchMLSVerificationStatusUseCase = fetchMLSVerificationStatusUseCase
+                fetchMLSVerificationStatusUseCase = fetchMLSVerificationStatusUseCase,
+                transactionProvider = cryptoTransactionProvider
             )
         }
     }

@@ -17,10 +17,12 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.common.error.wrapMLSRequest
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.common.functional.onSuccess
 
 /**
  * Trigger the checking and updating MLS Conversations Verification status.
@@ -31,20 +33,20 @@ public interface FetchConversationMLSVerificationStatusUseCase {
 
 internal class FetchConversationMLSVerificationStatusUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase
+    private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase,
+    private val transactionProvider: CryptoTransactionProvider
 ) : FetchConversationMLSVerificationStatusUseCase {
 
     override suspend fun invoke(conversationId: ConversationId) {
         conversationRepository.getConversationById(conversationId).onSuccess {
             val protocol = it.protocol
-            // Skip verification check when the group is PENDING_JOIN: the local device has not yet
-            // performed the external commit, so the group does not exist in CoreCrypto and any
-            // attempt to query its state (e.g. e2eiConversationState) will fail with "Couldn't
-            // find conversation".
-            if (protocol is Conversation.ProtocolInfo.MLSCapable &&
-                protocol.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN
-            ) {
-                fetchMLSVerificationStatusUseCase(protocol.groupId)
+            if (protocol is Conversation.ProtocolInfo.MLSCapable) {
+                val groupId = protocol.groupId.value
+                transactionProvider.mlsTransaction { mlsContext ->
+                    wrapMLSRequest { mlsContext.conversationExists(groupId) }
+                }.onSuccess { exists ->
+                    if (exists) fetchMLSVerificationStatusUseCase(protocol.groupId)
+                }
             }
         }
     }

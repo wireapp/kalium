@@ -2692,7 +2692,8 @@ public class UserSessionScope internal constructor(
     public val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
         get() = FetchConversationMLSVerificationStatusUseCaseImpl(
             conversationRepository,
-            fetchMLSVerificationStatusUseCase
+            fetchMLSVerificationStatusUseCase,
+            cryptoTransactionProvider
         )
 
     public val kaliumFileSystem: KaliumFileSystem by lazy {
