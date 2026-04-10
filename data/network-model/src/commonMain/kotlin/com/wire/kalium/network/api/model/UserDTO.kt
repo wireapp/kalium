@@ -19,13 +19,8 @@
 package com.wire.kalium.network.api.model
 
 import com.wire.kalium.network.api.unauthenticated.register.NewBindingTeamDTO
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 
 @Serializable
 sealed class UserDTO {
