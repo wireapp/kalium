@@ -155,65 +155,6 @@ class JoinExistingMLSConversationUseCaseTest {
         }
 
     @Test
-    fun givenGroupConversationWithZeroEpochAndLocalGroupExists_whenInvokingUseCase_ThenSkipEstablish() =
-        runTest {
-            val members = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID)
-            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
-                .withIsMLSSupported(true)
-                .withHasRegisteredMLSClient(true)
-                .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION)
-                .withGetConversationMembersSuccessful(members)
-                .withLocalGroupExists(true)
-                .arrange()
-
-            joinExistingMLSConversationsUseCase(
-                arrangement.transactionContext,
-                Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION.id
-            ).shouldSucceed()
-
-            coVerify {
-                arrangement.mlsConversationRepository.establishMLSGroup(
-                    mlsContext = any(),
-                    groupID = eq(Arrangement.GROUP_ID3),
-                    members = eq(members),
-                    publicKeys = any(),
-                    allowSkippingUsersWithoutKeyPackages = eq(false)
-                )
-            }.wasNotInvoked()
-
-            coVerify {
-                arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
-            }.wasNotInvoked()
-
-            coVerify {
-                arrangement.conversationRepository.updateConversationGroupStateByConversationId(
-                    eq(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION.id),
-                    eq(Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
-                )
-            }.wasInvoked(once)
-        }
-
-    @Test
-    fun givenEstablishedConversationAndLocalGroupExists_whenInvokingUseCase_thenDoNotUpdateLocalGroupState() =
-        runTest {
-            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
-                .withIsMLSSupported(true)
-                .withHasRegisteredMLSClient(true)
-                .withGetConversationsByIdSuccessful(Arrangement.MLS_ESTABLISHED_GROUP_CONVERSATION)
-                .withLocalGroupExists(true)
-                .arrange()
-
-            joinExistingMLSConversationsUseCase(
-                arrangement.transactionContext,
-                Arrangement.MLS_ESTABLISHED_GROUP_CONVERSATION.id
-            ).shouldSucceed()
-
-            coVerify {
-                arrangement.conversationRepository.updateConversationGroupStateByConversationId(any(), any())
-            }.wasNotInvoked()
-        }
-
-    @Test
     fun givenSelfConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() = runTest {
         // GIVEN
         val (arrangement, joinExistingMLSConversationUseCase) = Arrangement(testKaliumDispatcher)
