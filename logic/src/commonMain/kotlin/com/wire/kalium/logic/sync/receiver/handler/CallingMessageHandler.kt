@@ -20,6 +20,8 @@ package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.logger.callingLogger
+import com.wire.kalium.logic.data.call.CallModerationAction
+import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -43,6 +45,7 @@ internal class CallingMessageHandlerImpl internal constructor(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val callManager: Lazy<CallManager>,
     private val conversationRepository: ConversationRepository,
+    private val callModerationActionsRepository: CallModerationActionsRepository,
     private val muteCall: MuteCallUseCase,
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     private val json: Json = Json { ignoreUnknownKeys = true },
@@ -89,6 +92,10 @@ internal class CallingMessageHandlerImpl internal constructor(
         callingLogger.i("$tagWithUserId: Calling $REMOTE_MUTE_TYPE message received for conversationId: $targetConversationId.")
         if (shouldRemoteMute) {
             muteCall(targetConversationId, true)
+            callModerationActionsRepository.addAction(
+                conversationId = targetConversationId,
+                callModerationAction = CallModerationAction(message.id, message.senderUserId, CallModerationAction.Type.MUTED)
+            )
         }
     }
 
