@@ -34,7 +34,7 @@ import kotlinx.coroutines.flow.map
 public interface ObserveLastActiveCallWithSortedParticipantsUseCase {
     public suspend operator fun invoke(
         conversationId: ConversationId,
-        orderType: CallingParticipantsOrderType = CallingParticipantsOrderType.VIDEOS_FIRST
+        orderType: CallingParticipantsOrderType = CallingParticipantsOrderType.ALL_MEDIA_FIRST
     ): Flow<Call?>
 }
 

@@ -6,7 +6,7 @@ on:
 
 jobs:
   semantic-commit-pr-title-lint-merge:
-    name: action-semantic-pull-request
+    name: semantic-commit-pr-title-lint
     runs-on: ubuntu-latest
     steps:
       - name: Skip semantic PR title check on merge queue

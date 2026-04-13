@@ -27,7 +27,7 @@ import io.mockative.Mockable
 internal interface CallingParticipantsOrder {
     suspend fun reorderItems(
         participants: List<Participant>,
-        orderType: CallingParticipantsOrderType = CallingParticipantsOrderType.VIDEOS_FIRST
+        orderType: CallingParticipantsOrderType = CallingParticipantsOrderType.ALL_MEDIA_FIRST
     ): List<Participant>
 }
 
@@ -54,7 +54,7 @@ internal class CallingParticipantsOrderImpl(
         )
 
         when (orderType) {
-            CallingParticipantsOrderType.VIDEOS_FIRST -> {
+            CallingParticipantsOrderType.ALL_MEDIA_FIRST -> {
                 val participantsSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, true)
                 val participantsNotSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, false)
 
@@ -76,6 +76,18 @@ internal class CallingParticipantsOrderImpl(
                 listOfNotNull(selfParticipant) + sortedParticipantsByName
             }
 
+            CallingParticipantsOrderType.PRESENTERS_FIRST -> {
+                val participantsSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, true)
+                val participantsNotSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, false)
+
+                val participantsSharingScreenSortedByName = participantsOrderByName.sortItems(participantsSharingScreen)
+                val participantsNotSharingScreenSortedByName = participantsOrderByName.sortItems(participantsNotSharingScreen)
+
+                val sortedParticipantsByName = participantsSharingScreenSortedByName + participantsNotSharingScreenSortedByName
+
+                listOfNotNull(selfParticipant) + sortedParticipantsByName
+            }
+
             CallingParticipantsOrderType.ALPHABETICALLY -> {
                 val sortedParticipants = participantsOrderByName.sortItems(otherParticipants)
                 listOfNotNull(selfParticipant) + sortedParticipants
@@ -86,15 +98,26 @@ internal class CallingParticipantsOrderImpl(
 
 public enum class CallingParticipantsOrderType {
     /**
-     * Self participant is always on top, no matter if sharing screen, has video on or off.
-     * Then, the rest of the participants are sorted in the following order: first the participants sharing screen, then the participants
-     * with video on, and finally the participants with video off. Inside each of these groups, participants are sorted alphabetically.
+     * Participants are sorted in the following order:
+     * - self participant, always on top, no matter if sharing screen, has video on or off
+     * - participants sharing screen alphabetically
+     * - participants with video on alphabetically
+     * - participants with video off alphabetically
      */
-    VIDEOS_FIRST,
+    ALL_MEDIA_FIRST,
 
     /**
-     * Self participant is always on top, no matter if sharing screen, has video on or off.
-     * Then, the rest of the participants are sorted alphabetically, regardless of their video or screen sharing status.
+     * Participants are sorted in the following order:
+     * - self participant, always on top, no matter if sharing screen, has video on or off
+     * - participants sharing screen alphabetically
+     * - all other participants alphabetically
+     */
+    PRESENTERS_FIRST,
+
+    /**
+     * Participants are sorted in the following order:
+     * - self participant, always on top, no matter if sharing screen, has video on or off
+     * - all other participants alphabetically
      */
     ALPHABETICALLY
 }
