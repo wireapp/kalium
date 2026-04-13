@@ -1029,7 +1029,8 @@ public class UserSessionScope internal constructor(
             sessionRepository = globalScope.sessionRepository,
             selfUserId = userId,
             selfTeamIdProvider = selfTeamId,
-            legalHoldHandler = legalHoldHandler
+            legalHoldHandler = legalHoldHandler,
+            appDAO = userStorage.database.appDAO
         )
 
     private val accountRepository: AccountRepository
@@ -1119,6 +1120,7 @@ public class UserSessionScope internal constructor(
         get() = SearchUserRepositoryImpl(
             userStorage.database.userDAO,
             userStorage.database.searchDAO,
+            userStorage.database.appDAO,
             authenticatedNetworkContainer.userDetailsApi,
             userSearchApiWrapper,
             userId,

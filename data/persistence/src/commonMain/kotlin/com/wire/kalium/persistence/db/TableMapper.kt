@@ -271,9 +271,8 @@ internal object TableMapper {
         event_typeAdapter = ChangeLogEventTypeAdapter
     )
 
-    val appCategoryAdapter = App.Adapter(
+    val appAdapter = App.Adapter(
         idAdapter = QualifiedIDAdapter,
-        categoryAdapter = EnumColumnAdapter(),
         preview_asset_idAdapter = QualifiedIDAdapter,
         complete_asset_idAdapter = QualifiedIDAdapter
     )

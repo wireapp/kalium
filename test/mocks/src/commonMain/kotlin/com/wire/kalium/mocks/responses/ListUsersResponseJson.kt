@@ -47,7 +47,8 @@ object ListUsersResponseJson {
             nonQualifiedId = USER_1.value,
             service = null,
             supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS, SupportedProtocolDTO.MLS),
-            type = null
+            type = null,
+            app = null
         ),
         UserProfileDTO(
             id = USER_2,
@@ -63,7 +64,8 @@ object ListUsersResponseJson {
             nonQualifiedId = USER_2.value,
             service = null,
             supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS),
-            type = null
+            type = null,
+            app = null
         ),
     )
 
@@ -204,7 +206,8 @@ object ListUsersResponseJson {
                 service = null,
                 nonQualifiedId = USER_1.value,
                 supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS, SupportedProtocolDTO.MLS),
-                type = type
+                type = type,
+                app = null
             )
         ) {
             validUserInfoProviderV12(it)
@@ -226,7 +229,8 @@ object ListUsersResponseJson {
                 service = null,
                 nonQualifiedId = USER_1.value,
                 supportedProtocols = listOf(SupportedProtocolDTO.PROTEUS, SupportedProtocolDTO.MLS),
-                type = type
+                type = type,
+                app = null
             )
         ) {
             validUserInfoProviderV13(it)

@@ -1,11 +1,10 @@
-import com.wire.kalium.persistence.dao.AppCategoryEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 
 CREATE TABLE App (
     id TEXT AS QualifiedIDEntity PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT NOT NULL,
-    category TEXT AS AppCategoryEntity,
+    category TEXT,
     preview_asset_id TEXT AS QualifiedIDEntity,
     complete_asset_id TEXT AS QualifiedIDEntity
 );

@@ -15,19 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.utils.stubs
+package com.wire.kalium.logic.data.app
 
-import com.wire.kalium.persistence.dao.AppEntity
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.user.UserAssetId
 
-fun newAppEntity(id: String = "test") = newAppEntity(QualifiedIDEntity(id, "wire.com"), id)
-
-fun newAppEntity(qualifiedIDEntity: QualifiedIDEntity, id: String = "test") =
-    AppEntity(
-        id = qualifiedIDEntity,
-        name = "app$id",
-        description = "description$id",
-        category = "DEVELOPER",
-        previewAssetId = null,
-        completeAssetId = null
-    )
+data class AppDetails(
+    val id: QualifiedID,
+    val name: String,
+    val description: String,
+    val category: String?,
+    val previewAssetId: UserAssetId?,
+    val completeAssetId: UserAssetId?
+)
