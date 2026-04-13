@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.app
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.app.AppDetails
 import com.wire.kalium.logic.data.app.AppRepository
@@ -49,6 +50,34 @@ class GetAppByIdUseCaseTest {
         assertEquals(Arrangement.serviceDetails, result)
     }
 
+    @Test
+    fun givenAppId_whenGettingAppByIdAndDoesntExist_thenReturnsStorageFailure() = runTest {
+        // given
+        val (_, getAppById) = Arrangement()
+            .withGetAppByIdFailsWithStorageFailure(appId = Arrangement.APP_ID)
+            .arrange()
+
+        // when
+        val result = getAppById(appId = Arrangement.APP_ID)
+
+        // then
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun givenAppId_whenGettingAppByIdReturnsNull_thenReturnNull() = runTest {
+        // given
+        val (_, getAppById) = Arrangement()
+            .withGetAppByIdReturnsNull(appId = Arrangement.APP_ID)
+            .arrange()
+
+        // when
+        val result = getAppById(appId = Arrangement.APP_ID)
+
+        // then
+        assertEquals(null, result)
+    }
+
     private class Arrangement {
         private val appRepository = mock(AppRepository::class)
 
@@ -64,6 +93,22 @@ class GetAppByIdUseCaseTest {
             coEvery {
                 appRepository.getAppById(eq(appId))
             }.returns(Either.Right(appDetails))
+        }
+
+        suspend fun withGetAppByIdFailsWithStorageFailure(
+            appId: QualifiedID
+        ) = apply {
+            coEvery {
+                appRepository.getAppById(eq(appId))
+            }.returns(Either.Left(StorageFailure.DataNotFound))
+        }
+
+        suspend fun withGetAppByIdReturnsNull(
+            appId: QualifiedID
+        ) = apply {
+            coEvery {
+                appRepository.getAppById(eq(appId))
+            }.returns(Either.Right(null))
         }
 
         companion object {

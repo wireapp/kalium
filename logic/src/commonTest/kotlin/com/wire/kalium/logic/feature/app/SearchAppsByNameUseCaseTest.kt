@@ -80,6 +80,22 @@ class SearchAppsByNameUseCaseTest {
         }
     }
 
+    @Test
+    fun givenNoAppsExist_whenSearchingAppsByName_thenResultIsEmpty() = runTest {
+        // given
+        val query = "random query"
+
+        val (_, searchAppsByName) = Arrangement()
+            .withSearchAppsByName(query, flowOf(Either.Right(emptyList())))
+            .arrange()
+
+        // when
+        searchAppsByName(query).first().also {
+            // then
+            assertEquals(emptyList(), it)
+        }
+    }
+
     private class Arrangement {
         private val appRepository = mock(AppRepository::class)
 

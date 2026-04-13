@@ -76,6 +76,24 @@ class ObserveAllAppsUseCaseTest {
         }
     }
 
+    @Test
+    fun givenNoAppsExist_whenObservingAllApps_thenResultIsEmpty() = runTest {
+        // given
+        val (_, observeAllApps) = Arrangement()
+            .withObserveAllApps(
+                flowOf(
+                    Either.Right(emptyList())
+                )
+            )
+            .arrange()
+
+        // when
+        observeAllApps().first().also {
+            // then
+            assertEquals(emptyList(), it)
+        }
+    }
+
     private class Arrangement {
         private val appRepository = mock(AppRepository::class)
 

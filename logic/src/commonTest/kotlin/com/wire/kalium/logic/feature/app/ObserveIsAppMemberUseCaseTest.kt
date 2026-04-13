@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.app
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.app.AppRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -55,6 +56,27 @@ class ObserveIsAppMemberUseCaseTest {
         assertEquals(Arrangement.APP_ID, result.userId)
     }
 
+    @Test
+    fun givenAppIdAndConversationId_whenObservingIsAppMemberAndAppDoesntExist_thenReturnStorageFailure() = runTest {
+        // given
+        val (_, observeIsAppMember) = Arrangement()
+            .withObserveIsAppMemberFailure(
+                appId = Arrangement.APP_ID,
+                conversationId = Arrangement.CONVERSATION_ID
+            )
+            .arrange()
+
+        // when
+        val result = observeIsAppMember.invoke(
+            appId = Arrangement.APP_ID,
+            conversationId = Arrangement.CONVERSATION_ID
+        ).first()
+
+        // then
+        assertIs<ObserveIsAppMemberResult.Failure>(result)
+        assertIs<StorageFailure.DataNotFound>(result.failure)
+    }
+
     private class Arrangement {
         private val appRepository = mock(AppRepository::class)
 
@@ -69,6 +91,15 @@ class ObserveIsAppMemberUseCaseTest {
             coEvery {
                 appRepository.observeIsAppMember(eq(appId), eq(conversationId))
             }.returns(flowOf(Either.Right(APP_ID)))
+        }
+
+        suspend fun withObserveIsAppMemberFailure(
+            appId: QualifiedID,
+            conversationId: ConversationId
+        ) = apply {
+            coEvery {
+                appRepository.observeIsAppMember(eq(appId), eq(conversationId))
+            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
         fun arrange() = this to useCase

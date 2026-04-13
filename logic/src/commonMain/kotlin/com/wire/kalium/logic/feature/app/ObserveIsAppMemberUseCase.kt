@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.feature.app
 
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.isRight
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.app.AppRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -51,10 +51,11 @@ internal class ObserveIsAppMemberUseCaseImpl internal constructor(
             appId = appId,
             conversationId = conversationId
         ).map {
-            when (it.isRight()) {
-                true -> ObserveIsAppMemberResult.Success(it.value)
-                false -> ObserveIsAppMemberResult.Failure(it.value)
-            }
+            it.fold({ failure ->
+                ObserveIsAppMemberResult.Failure(failure)
+            }, { success ->
+                ObserveIsAppMemberResult.Success(success)
+            })
         }
 }
 
