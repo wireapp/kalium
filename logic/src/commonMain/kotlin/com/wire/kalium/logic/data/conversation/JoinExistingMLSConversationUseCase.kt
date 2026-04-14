@@ -217,15 +217,6 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         return when {
             protocol !is Conversation.ProtocolInfo.MLSCapable -> Either.Right(Unit)
 
-            transactionContext.wrapInMLSContext { mlsContext ->
-                mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, protocol.groupId)
-            }.fold({ false }, { it }) -> {
-                logger.d(
-                    "Skipping join/establish for ${conversation.id.toLogString()} because MLS group already exists locally"
-                )
-                syncEstablishedConversationMetadata(transactionContext, conversation)
-            }
-
             protocol.epoch != 0UL && !allowJoinByExternalCommit -> {
                 logger.d(
                     "Skipping external commit join for ${conversation.id.toLogString()} because pending events may still establish it"

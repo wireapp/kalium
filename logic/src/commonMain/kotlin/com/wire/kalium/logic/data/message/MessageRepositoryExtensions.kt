@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingResult
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -64,7 +65,7 @@ internal interface MessageRepositoryExtensions {
     suspend fun fetchOlderNomadMessagesByConversationId(
         conversationId: ConversationId,
         pageSize: Int,
-    )
+    ): NomadMessagePagingResult
 }
 
 internal class MessageRepositoryExtensionsImpl internal constructor(
@@ -146,12 +147,13 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
     override suspend fun fetchOlderNomadMessagesByConversationId(
         conversationId: ConversationId,
         pageSize: Int,
-    ) {
-        val coordinator = nomadMessagePagingCoordinator ?: return
+    ): NomadMessagePagingResult {
+        val coordinator = nomadMessagePagingCoordinator
+            ?: return NomadMessagePagingResult(hasMore = false)
         val beforeTimestampMs = messageDAO.getOldestVisibleMessageTimestampByConversationId(
             conversationId.toDao()
         ) ?: Clock.System.now().toEpochMilliseconds()
-        coordinator.fetchOlderMessagesIfNeeded(
+        return coordinator.fetchOlderMessagesIfNeeded(
             conversationId = conversationId,
             pageSize = pageSize,
             beforeTimestampMs = beforeTimestampMs,
