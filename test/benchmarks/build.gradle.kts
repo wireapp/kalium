@@ -1,4 +1,5 @@
 import kotlinx.benchmark.gradle.JvmBenchmarkTarget
+import org.gradle.api.tasks.compile.JavaCompile
 
 plugins {
     kotlin("multiplatform")
@@ -30,6 +31,7 @@ kotlin {
                 implementation(libs.ktxDateTime)
                 implementation(libs.kotlinx.benchmark.runtime)
                 implementation(libs.ktor.mock)
+                implementation(libs.sqldelight.androidxPaging)
             }
         }
 
@@ -48,6 +50,14 @@ benchmark {
         }
         register("persistence") {
             include("Messages")
+            include("MessageRead")
+        }
+        register("messageRead") {
+            include("MessageRead")
+            iterations = 10
+            warmups = 2
+            iterationTime = 1
+            iterationTimeUnit = "s"
         }
     }
     targets {
@@ -59,8 +69,20 @@ benchmark {
 }
 
 jmhReport {
-    val baseFolder = project.file("build/reports/benchmarks/main").absolutePath
-    val lastFolder = project.file(baseFolder).list()?.sortedArray()?.lastOrNull() ?: ""
-    jmhResultPath = "$baseFolder/$lastFolder/jvm.json"
-    jmhReportOutput = "$baseFolder/$lastFolder"
+    val reportsRoot = project.file("build/reports/benchmarks")
+    val latestResultDir = reportsRoot
+        .walkTopDown()
+        .filter { it.isFile && it.name == "jvm.json" }
+        .maxByOrNull { it.lastModified() }
+        ?.parentFile
+
+    val fallbackDir = reportsRoot.resolve("messageRead")
+    val reportDir = latestResultDir ?: fallbackDir
+
+    jmhResultPath = reportDir.resolve("jvm.json").absolutePath
+    jmhReportOutput = reportDir.absolutePath
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(JavaVersion.VERSION_17.majorVersion.toInt())
 }

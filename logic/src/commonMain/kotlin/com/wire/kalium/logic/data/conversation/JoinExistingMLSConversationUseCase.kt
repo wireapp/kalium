@@ -45,6 +45,7 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.mockative.Mockable
@@ -94,10 +95,58 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 Either.Left(StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
-                    joinOrEstablishMLSGroupAndRetry(transactionContext, conversation, mlsPublicKeys)
+                    refreshConversationMetadataIfPendingAfterReset(
+                        transactionContext = transactionContext,
+                        conversation = conversation,
+                        currentPublicKeys = mlsPublicKeys
+                    ).flatMap { refreshedConversation ->
+                        joinOrEstablishMLSGroupAndRetry(
+                            transactionContext,
+                            refreshedConversation.conversation,
+                            refreshedConversation.publicKeys
+                        )
+                    }
                 }
             })
         }
+
+    private suspend fun refreshConversationMetadataIfPendingAfterReset(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+        currentPublicKeys: MLSPublicKeys?
+    ): Either<CoreFailure, RefreshedConversation> {
+        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
+            ?: return Either.Right(RefreshedConversation(conversation, currentPublicKeys))
+
+        return when {
+            protocol.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET ->
+                Either.Right(RefreshedConversation(conversation, currentPublicKeys))
+
+            conversation.type == Conversation.Type.OneOnOne -> {
+                logger.d("Refreshing oneOnOne conversation metadata before rejoining ${conversation.id.toLogString()}")
+                conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
+                    fetchMLSOneToOneConversation(transactionContext, members.first()).map { refreshedConversation ->
+                        RefreshedConversation(
+                            conversation = refreshedConversation,
+                            publicKeys = refreshedConversation.mlsPublicKeys ?: currentPublicKeys
+                        )
+                    }
+                }
+            }
+
+            else -> {
+                logger.d("Refreshing conversation metadata before rejoining ${conversation.id.toLogString()}")
+                fetchConversation(transactionContext, conversation.id).flatMap {
+                    conversationRepository.getConversationById(conversation.id).map { refreshedConversation ->
+                        RefreshedConversation(
+                            conversation = refreshedConversation,
+                            publicKeys = currentPublicKeys
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     private suspend fun joinOrEstablishMLSGroupAndRetry(
         transactionContext: CryptoTransactionContext,
@@ -276,4 +325,33 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         put("protocolInfo", protocol.toLogMap())
         failure?.let { put("errorInfo", "$it") }
     }
+
+    private suspend fun syncEstablishedConversationMetadata(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation
+    ): Either<CoreFailure, Unit> {
+        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable ?: return Either.Right(Unit)
+        return transactionContext.wrapInMLSContext { mlsContext ->
+            mlsConversationRepository.getLocalGroupEpoch(mlsContext, protocol.groupId)
+        }.flatMap { localEpoch ->
+            if (protocol.groupState == Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED && protocol.epoch == localEpoch) {
+                Either.Right(Unit)
+            } else {
+                logger.d(
+                    "Updating local MLS metadata for ${conversation.id.toLogString()} to sync DB with local MLS state"
+                )
+                mlsConversationRepository.updateGroupIdAndState(
+                    conversation.id,
+                    protocol.groupId,
+                    localEpoch.toLong(),
+                    ConversationEntity.GroupState.ESTABLISHED
+                )
+            }
+        }
+    }
+
+    private data class RefreshedConversation(
+        val conversation: Conversation,
+        val publicKeys: MLSPublicKeys?
+    )
 }

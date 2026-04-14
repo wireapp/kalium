@@ -67,12 +67,27 @@ public class UpdateConversationReadDateUseCase internal constructor(
     /**
      * @param conversationId The conversation id to update the last read date.
      * @param time The last read date to update.
+     * @param invokeImmediately If true, executes the work directly in the calling coroutine instead of
+     *   enqueuing it to the debounced work queue. Use this when the read receipt must be sent within the
+     *   active sync session (e.g. when replying from a notification).
      */
-    public operator fun invoke(conversationId: QualifiedID, time: Instant) {
-        workQueue.enqueue(ConversationTimeEventInput(conversationId, time), worker)
+    public suspend operator fun invoke(
+        conversationId: QualifiedID,
+        time: Instant,
+        invokeImmediately: Boolean = false,
+    ) {
+        if (invokeImmediately) {
+            doWork(conversationId, time)
+        } else {
+            workQueue.enqueue(ConversationTimeEventInput(conversationId, time), worker)
+        }
     }
 
     private val worker = ConversationTimeEventWorker { (conversationId, time) ->
+        doWork(conversationId, time)
+    }
+
+    private suspend fun doWork(conversationId: QualifiedID, time: Instant) {
         coroutineScope {
             conversationRepository.observeConversationById(conversationId).first().onFailure {
                 logger.w("Failed to update conversation read date; StorageFailure $it")

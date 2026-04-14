@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2026 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,12 +16,10 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.persistence.dao.backup
+package com.wire.kalium.network.api.v15.authenticated
 
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.datetime.Instant
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.v14.authenticated.ClientApiV14
 
-data class ConversationLastReadSyncEntity(
-    val conversationId: QualifiedIDEntity,
-    val lastReadDate: Instant,
-)
+internal open class ClientApiV15 internal constructor(authenticatedNetworkClient: AuthenticatedNetworkClient) :
+    ClientApiV14(authenticatedNetworkClient)

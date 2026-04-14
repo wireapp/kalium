@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.AccountRepository
@@ -131,6 +132,7 @@ public class UserScope internal constructor(
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val slowSyncRepository: SlowSyncRepository,
     private val sessionManager: SessionManager,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val checkRevocationList: RevocationListChecker,
@@ -168,7 +170,8 @@ public class UserScope internal constructor(
     public val finalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollment
         get() = FinalizeMLSClientAfterE2EIEnrollmentImpl(
             clientRepository,
-            joinExistingMLSConversationsUseCase
+            joinExistingMLSConversationsUseCase,
+            slowSyncRepository
         )
     public val getE2EICertificate: GetMLSClientIdentityUseCase
         get() = GetMLSClientIdentityUseCaseImpl(

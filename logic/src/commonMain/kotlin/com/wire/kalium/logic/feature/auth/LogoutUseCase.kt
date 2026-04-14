@@ -69,7 +69,8 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val getEstablishedCallsUseCase: ObserveEstablishedCallsUseCase,
     private val endCallUseCase: EndCallUseCase,
     private val logoutCallback: LogoutCallback,
-    private val kaliumConfigs: KaliumConfigs
+    private val kaliumConfigs: KaliumConfigs,
+    private val isNomadEnabled: () -> Boolean,
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
     //                 Perhaps [UserSessionScope] (or another specialised class) can observe
@@ -101,7 +102,8 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 }
 
                 LogoutReason.SESSION_EXPIRED -> {
-                    if (kaliumConfigs.wipeOnCookieInvalid) {
+                    if (kaliumConfigs.wipeOnCookieInvalid || isNomadEnabled()) {
+                        kaliumLogger.withTextTag(TAG).d("Wiping all data due to session expiration configuration")
                         wipeAllData()
                     } else {
                         clearCurrentClientIdAndFirebaseTokenFlag()

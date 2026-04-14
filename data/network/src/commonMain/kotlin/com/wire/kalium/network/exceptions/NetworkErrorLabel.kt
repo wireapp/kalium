@@ -46,6 +46,9 @@ internal object NetworkErrorLabel {
     const val ACCOUNT_SUSPENDED = "suspended"
     const val ACCOUNT_PENDING_ACTIVATION = "pending-activation"
     const val ENTERPRISE_SERVICE_NOT_ENABLED = "enterprise-service-not-enabled"
+    const val USER_NOT_FOUND = "user_not_found"
+    const val NO_CRYPTO_STATE = "no_crypto_state"
+    const val MLS_STALE_MESSAGE = "mls-stale-message"
 
     // connection
     const val BAD_CONNECTION_UPDATE = "bad-conn-update"

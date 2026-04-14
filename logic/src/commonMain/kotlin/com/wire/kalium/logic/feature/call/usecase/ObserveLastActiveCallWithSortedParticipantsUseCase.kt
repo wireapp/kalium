@@ -21,17 +21,21 @@ package com.wire.kalium.logic.feature.call.usecase
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallingParticipantsOrder
+import com.wire.kalium.logic.data.call.CallingParticipantsOrderType
 import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
  * Use case to observe the last active call for the given [ConversationId] or null if there is no such call,
- * with sorted participants according to the [CallingParticipantsOrder].
+ * with sorted participants according to the [CallingParticipantsOrderType].
  * The call is active when it's one of the following states: STARTED, INCOMING, ANSWERED, ESTABLISHED, STILL_ONGOING.
  */
 public interface ObserveLastActiveCallWithSortedParticipantsUseCase {
-    public suspend operator fun invoke(conversationId: ConversationId): Flow<Call?>
+    public suspend operator fun invoke(
+        conversationId: ConversationId,
+        orderType: CallingParticipantsOrderType = CallingParticipantsOrderType.ALL_MEDIA_FIRST
+    ): Flow<Call?>
 }
 
 internal class ObserveLastActiveCallWithSortedParticipantsUseCaseImpl internal constructor(
@@ -39,10 +43,13 @@ internal class ObserveLastActiveCallWithSortedParticipantsUseCaseImpl internal c
     private val callingParticipantsOrder: CallingParticipantsOrder
 ) : ObserveLastActiveCallWithSortedParticipantsUseCase {
 
-    override suspend operator fun invoke(conversationId: ConversationId): Flow<Call?> =
+    override suspend operator fun invoke(
+        conversationId: ConversationId,
+        orderType: CallingParticipantsOrderType
+    ): Flow<Call?> =
         callRepository.observeLastActiveCallByConversationId(conversationId).map { call ->
             call?.let {
-                val sortedParticipants = callingParticipantsOrder.reorderItems(call.participants)
+                val sortedParticipants = callingParticipantsOrder.reorderItems(call.participants, orderType)
                 call.copy(participants = sortedParticipants)
             }
         }

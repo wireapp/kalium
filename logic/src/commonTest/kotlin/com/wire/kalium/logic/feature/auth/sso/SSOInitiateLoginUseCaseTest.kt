@@ -133,9 +133,28 @@ class SSOInitiateLoginUseCaseTest {
             assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
         }
 
+    @Test
+    fun givenCookieLabel_whenInitiatingWithRedirect_thenPassCookieLabelToRepository() =
+        runTest {
+            val expectedRedirects = SSORedirects(serverConfig.id)
+            every {
+                validateUUIDUseCase.invoke(TEST_CODE)
+            }.returns(ValidateSSOCodeResult.Valid(TEST_UUID))
+            coEvery {
+                ssoLoginRepository.initiate(TEST_UUID, expectedRedirects.success, expectedRedirects.error, TEST_COOKIE_LABEL)
+            }.returns(Either.Right(TEST_RESPONSE))
+
+            val result = ssoInitiateLoginUseCase(
+                SSOInitiateLoginUseCase.Param.WithRedirect(TEST_CODE, TEST_COOKIE_LABEL)
+            )
+
+            assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
+        }
+
     private companion object {
         const val TEST_UUID = "fd994b20-b9af-11ec-ae36-00163e9b33ca"
         const val TEST_CODE = "wire-$TEST_UUID"
         const val TEST_RESPONSE = "wire/response"
+        const val TEST_COOKIE_LABEL = "shared-device"
     }
 }

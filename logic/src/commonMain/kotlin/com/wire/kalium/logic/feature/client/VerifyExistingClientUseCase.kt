@@ -22,8 +22,10 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.util.DelicateKaliumApi
 import io.mockative.Mockable
 
@@ -45,6 +47,7 @@ internal class VerifyExistingClientUseCaseImpl @OptIn(DelicateKaliumApi::class) 
     private val clientRepository: ClientRepository,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val registerMLSClientUseCase: RegisterMLSClientUseCase,
+    private val slowSyncRepository: SlowSyncRepository,
 ) : VerifyExistingClientUseCase {
 
     @OptIn(DelicateKaliumApi::class)
@@ -63,7 +66,12 @@ internal class VerifyExistingClientUseCaseImpl @OptIn(DelicateKaliumApi::class) 
                         }, {
                             if (it is RegisterMLSClientResult.E2EICertificateRequired)
                                 VerifyExistingClientResult.Failure.E2EICertificateRequired(registeredClient, selfUserId)
-                            else VerifyExistingClientResult.Success(registeredClient)
+                            else {
+                                kaliumLogger.i("Clearing last slow sync completion instant after verifying existing MLS client")
+                                slowSyncRepository.clearLastSlowSyncCompletionInstant()
+
+                                VerifyExistingClientResult.Success(registeredClient)
+                            }
                         })
                     }
 

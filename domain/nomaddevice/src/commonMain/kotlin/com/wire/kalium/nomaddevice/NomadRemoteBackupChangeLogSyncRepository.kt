@@ -46,7 +46,7 @@ internal class NomadRemoteBackupChangeLogSyncDataSource(
 
     override suspend fun getLastPendingChangesBatch(selfUserId: UserId, limit: Long): Either<CoreFailure, ChangeLogSyncBatch> {
         val dao = resolveDaoForUser(selfUserId, operation = "read")
-            ?: return ChangeLogSyncBatch(events = emptyList(), conversationLastReads = emptyList()).right()
+            ?: return ChangeLogSyncBatch(events = emptyList(), conversationMetadata = emptyList()).right()
         return wrapStorageRequest { dao.getLastPendingChangesBatch(limit) }
     }
 

@@ -27,6 +27,7 @@ import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.api.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginApiV0
+import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpHeaders
@@ -37,6 +38,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.fail
 
 internal class SSOLoginApiV0Test : ApiTest() {
 
@@ -83,6 +85,43 @@ internal class SSOLoginApiV0Test : ApiTest() {
         assertIs<NetworkResponse.Success<String>>(actual)
         assertEquals(expectedPathAndQuery, Url(actual.value).encodedPathAndQuery)
         assertEquals("${Url(TEST_BACKEND.links.api).protocolWithAuthority}$expectedPathAndQuery", actual.value)
+    }
+
+    @Test
+    fun givenOlderApi_whenCallingInitiateSSOEndpointWithRedirectAndLabel_thenReturnApiNotSupported() = runTest {
+        val uuid = "uuid"
+        val param =
+            InitiateParam.WithRedirect(uuid = uuid, success = "wire://success", error = "wire://error", label = "shared-device")
+        val networkClient = mockUnauthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                fail("Older API versions should not send a request when label is provided")
+            }
+        )
+        val ssoApi: SSOLoginApi = SSOLoginApiV0(networkClient)
+        val actual = ssoApi.initiate(param)
+
+        assertIs<NetworkResponse.Error>(actual)
+        assertIs<APINotSupported>(actual.kException)
+    }
+
+    @Test
+    fun givenOlderApi_whenCallingInitiateSSOEndpointWithNoRedirectAndLabel_thenReturnApiNotSupported() = runTest {
+        val uuid = "uuid"
+        val param = InitiateParam.WithoutRedirect(uuid = uuid, label = "shared-device")
+        val networkClient = mockUnauthenticatedNetworkClient(
+            "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                fail("Older API versions should not send a request when label is provided")
+            }
+        )
+        val ssoApi: SSOLoginApi = SSOLoginApiV0(networkClient)
+        val actual = ssoApi.initiate(param)
+
+        assertIs<NetworkResponse.Error>(actual)
+        assertIs<APINotSupported>(actual.kException)
     }
 
     @Test

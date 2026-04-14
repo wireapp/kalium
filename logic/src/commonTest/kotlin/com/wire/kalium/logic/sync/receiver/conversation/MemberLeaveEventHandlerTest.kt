@@ -32,7 +32,7 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -362,7 +362,7 @@ internal class MemberLeaveEventHandlerTest {
         SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),
         DeleteConversationArrangement by DeleteConversationArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val updateConversationClientsForCurrentCall = mock(UpdateConversationClientsForCurrentCallUseCase::class)
         val legalHoldHandler = mock(LegalHoldHandler::class)

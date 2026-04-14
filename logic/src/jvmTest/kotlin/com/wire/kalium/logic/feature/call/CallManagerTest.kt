@@ -27,12 +27,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -41,11 +42,13 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.call.CallManagerImpl.Companion.DEFAULT_NETWORK_QUALITY_INTERVAL_SECONDS
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedCallMetadataUseCase
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.network.NetworkStateObserver
@@ -56,14 +59,12 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -89,20 +90,11 @@ internal class CallManagerTest {
         Dispatchers.resetMain()
     }
 
-
     @Test
     @Suppress("FunctionNaming") // native function has that name
     fun givenCallManager_whenCallingMessageIsReceived_then_wcall_recv_msg_IsCalled() = runTest {
-        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .onCurrentClientIdReturning(CLIENT_ID.right())
-            .onParseToFederatedIdReturning(USER_ID, USER_ID.toString())
-            .onParseToFederatedIdReturning(CALL_CONV_ID, CALL_CONV_ID.toString())
-            .onWcallCreateReturning(BASE_HANDLE)
-            .onWcallRecvMsgReturning(0)
-            .onObserveConversationMembersReturning(emptyList())
-            .onGetCallConversationTypeReturning(ConversationTypeCalling.Conference)
-            .withFetchServerTimeReturning()
-            .arrange()
+        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
+        callManager.waitUntilInitialized()
 
         callManager.onCallingMessageReceived(
             content = CALL_CONTENT,
@@ -111,16 +103,69 @@ internal class CallManagerTest {
 
         verify(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_recv_msg(
-                eq(BASE_HANDLE),
+                BASE_HANDLE,
                 matches { it.contentEquals(CALL_CONTENT.value.toByteArray()) },
-                eq(CALL_CONTENT.value.toByteArray().size),
+                CALL_CONTENT.value.toByteArray().size,
                 any(),
                 any(),
-                eq(CALL_CONV_ID.toString()),
-                eq(USER_ID.toString()),
-                eq(CLIENT_ID.value),
+                CALL_CONV_ID.toString(),
+                USER_ID.toString(),
+                CLIENT_ID.value,
+                any(),
                 any()
             )
+        }
+    }
+
+    @Test
+    @Suppress("FunctionNaming") // native function has that name
+    fun givenCallManager_whenSettingCallQualityInterval_then_wcall_set_network_quality_handler_IsCalled() = runTest {
+        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .onCurrentClientIdReturning(CLIENT_ID.right())
+            .onParseToFederatedIdReturning(USER_ID, USER_ID.toString())
+            .onParseToFederatedIdReturning(CALL_CONV_ID, CALL_CONV_ID.toString())
+            .onWcallCreateReturning(BASE_HANDLE)
+            .onWcallRecvMsgReturning(0)
+            .onGetCallConversationTypeReturning(ConversationTypeCalling.Conference)
+            .withFetchServerTimeReturning()
+            .arrange()
+        callManager.waitUntilInitialized()
+
+        // initially the default interval should be set when the call manager is created, so we verify that first
+        verify(VerifyMode.exactly(1)) {
+            arrangement.calling.wcall_set_network_quality_handler(
+                inst = BASE_HANDLE,
+                wcall_network_quality_h = any(),
+                intervalInSeconds = DEFAULT_NETWORK_QUALITY_INTERVAL_SECONDS,
+                arg = any()
+            )
+        }
+
+        callManager.setNetworkQualityInterval(1)
+        verify(VerifyMode.exactly(1)) {
+            arrangement.calling.wcall_set_network_quality_handler(
+                inst = BASE_HANDLE,
+                wcall_network_quality_h = any(),
+                intervalInSeconds = 1,
+                arg = any()
+            )
+        }
+    }
+
+    @Test
+    @Suppress("FunctionNaming") // native function has that name
+    fun givenCallManager_whenUpdatingConversationClients_then_wcall_set_clients_for_conv_IsCalled() = runTest {
+        val call = ConversationId(value = "call", domain = "domain")
+        val clients = "clients"
+        val (arrangement, callManager) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .onParseToFederatedIdReturning(call, call.toString())
+            .withCallMetadataReturning(call, CALL_METADATA)
+            .arrange()
+
+        callManager.updateConversationClients(call, clients)
+
+        verify(VerifyMode.exactly(1)) {
+            arrangement.calling.wcall_set_clients_for_conv(inst = any(), convId = call.toString(), clientsJson = clients)
         }
     }
 
@@ -133,7 +178,6 @@ internal class CallManagerTest {
         internal val flowManagerService = mock<FlowManagerService>(MockMode.autoUnit)
         internal val selfConversationIdProvider = mock<SelfConversationIdProvider>()
         internal val userConfigRepository = mock<UserConfigRepository>()
-        internal val conversationRepository = mock<ConversationRepository>()
         internal val federatedIdMapper = mock<FederatedIdMapper>()
         internal val qualifiedIdMapper = mock<QualifiedIdMapper>()
         internal val conversationClientsInCallUpdater = mock<ConversationClientsInCallUpdater>()
@@ -166,11 +210,7 @@ internal class CallManagerTest {
         }
 
         fun onWcallRecvMsgReturning(result: Int) = apply {
-            every { calling.wcall_recv_msg(any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns result
-        }
-
-        fun onObserveConversationMembersReturning(result: List<Conversation.Member>) = apply {
-            everySuspend { conversationRepository.observeConversationMembers(any()) } returns flowOf(result)
+            every { calling.wcall_recv_msg(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns result
         }
 
         fun onGetCallConversationTypeReturning(result: ConversationTypeCalling) = apply {
@@ -181,12 +221,15 @@ internal class CallManagerTest {
             everySuspend { callRepository.fetchServerTime() } returns "2022-03-30T16:36:00.000Z"
         }
 
+        fun withCallMetadataReturning(conversationId: ConversationId, callMetadata: CallMetadata?) = apply {
+            everySuspend { callRepository.getCallMetadata(conversationId) } returns callMetadata
+        }
+
         suspend fun arrange() = this to CallManagerImpl(
             calling = calling,
             callRepository = callRepository,
             currentClientIdProvider = currentClientIdProvider,
             selfConversationIdProvider = selfConversationIdProvider,
-            conversationRepository = conversationRepository,
             userConfigRepository = userConfigRepository,
             messageSender = messageSender,
             kaliumDispatchers = kaliumTestDispatcher,
@@ -204,7 +247,14 @@ internal class CallManagerTest {
             createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata,
             selfUserId = selfUserId
         ).also {
+            onCurrentClientIdReturning(CLIENT_ID.right())
             onParseToFederatedIdReturning(selfUserId, selfUserId.toString())
+            onParseToFederatedIdReturning(USER_ID, USER_ID.toString())
+            onParseToFederatedIdReturning(CALL_CONV_ID, CALL_CONV_ID.toString())
+            onWcallCreateReturning(BASE_HANDLE)
+            onWcallRecvMsgReturning(0)
+            onGetCallConversationTypeReturning(ConversationTypeCalling.Conference)
+            withFetchServerTimeReturning()
         }
     }
 
@@ -224,6 +274,19 @@ internal class CallManagerTest {
             status = Message.Status.Sent,
             isSelfMessage = false,
             expirationData = null
+        )
+        private val CALL_METADATA = CallMetadata(
+            callerId = TestCall.CALLER_ID,
+            isMuted = false,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            conversationName = null,
+            conversationType = Conversation.Type.OneOnOne,
+            callerName = null,
+            callerTeamName = null,
+            establishedTime = null,
+            callStatus = CallStatus.INCOMING,
+            protocol = Conversation.ProtocolInfo.Proteus
         )
     }
 }

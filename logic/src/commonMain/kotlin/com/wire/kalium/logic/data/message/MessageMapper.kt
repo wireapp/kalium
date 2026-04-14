@@ -467,6 +467,9 @@ internal fun MessageEntityContent.System.toMessageContent(): MessageContent.Syst
             MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN ->
                 MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.Unknown)
 
+            MessageEntity.MemberChangeType.FAILED_TO_ADD_MISSING_KEY_PACKAGES ->
+                MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages)
+
             MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
             MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessageContent.MemberChange.RemovedFromTeam(memberList)
         }
@@ -765,6 +768,12 @@ internal fun MessageContent.System.toMessageEntityContent(): MessageEntityConten
 
                     MessageContent.MemberChange.FailedToAdd.Type.Unknown ->
                         MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN)
+
+                    MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages ->
+                        MessageEntityContent.MemberChange(
+                            memberUserIdList,
+                            MessageEntity.MemberChangeType.FAILED_TO_ADD_MISSING_KEY_PACKAGES
+                        )
                 }
 
             is MessageContent.MemberChange.FederationRemoved -> MessageEntityContent.MemberChange(

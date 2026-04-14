@@ -35,10 +35,11 @@ internal interface SSOLoginRepository {
     suspend fun initiate(
         uuid: String,
         successRedirect: String,
-        errorRedirect: String
+        errorRedirect: String,
+        cookieLabel: String? = null,
     ): Either<NetworkFailure, String>
 
-    suspend fun initiate(uuid: String): Either<NetworkFailure, String>
+    suspend fun initiate(uuid: String, cookieLabel: String? = null): Either<NetworkFailure, String>
 
     suspend fun finalize(cookie: String): Either<NetworkFailure, String>
 
@@ -58,13 +59,14 @@ internal class SSOLoginRepositoryImpl(
     override suspend fun initiate(
         uuid: String,
         successRedirect: String,
-        errorRedirect: String
+        errorRedirect: String,
+        cookieLabel: String?,
     ): Either<NetworkFailure, String> = wrapApiRequest {
-        ssoLogin.initiate(InitiateParam.WithRedirect(successRedirect, errorRedirect, uuid))
+        ssoLogin.initiate(InitiateParam.WithRedirect(successRedirect, errorRedirect, uuid, cookieLabel))
     }
 
-    override suspend fun initiate(uuid: String): Either<NetworkFailure, String> = wrapApiRequest {
-        ssoLogin.initiate(InitiateParam.WithoutRedirect(uuid))
+    override suspend fun initiate(uuid: String, cookieLabel: String?): Either<NetworkFailure, String> = wrapApiRequest {
+        ssoLogin.initiate(InitiateParam.WithoutRedirect(uuid, cookieLabel))
     }
 
     override suspend fun finalize(cookie: String): Either<NetworkFailure, String> = wrapApiRequest {

@@ -25,7 +25,10 @@ import io.mockative.Mockable
 
 @Mockable
 internal interface CallingParticipantsOrder {
-    suspend fun reorderItems(participants: List<Participant>): List<Participant>
+    suspend fun reorderItems(
+        participants: List<Participant>,
+        orderType: CallingParticipantsOrderType = CallingParticipantsOrderType.ALL_MEDIA_FIRST
+    ): List<Participant>
 }
 
 internal class CallingParticipantsOrderImpl(
@@ -35,15 +38,23 @@ internal class CallingParticipantsOrderImpl(
     private val selfUserId: UserId
 ) : CallingParticipantsOrder {
 
-    override suspend fun reorderItems(participants: List<Participant>): List<Participant> {
-        return if (participants.isNotEmpty()) {
-            currentClientIdProvider().fold({
-                participants
-            }, { selfClientId ->
-
+    override suspend fun reorderItems(
+        participants: List<Participant>,
+        orderType: CallingParticipantsOrderType
+    ): List<Participant> = if (participants.isNotEmpty()) {
+        val (selfParticipant, otherParticipants) = currentClientIdProvider().fold(
+            {
+                null to participants // cannot determine, so return null as self participant and all list as other participants
+            },
+            { selfClientId ->
                 val selfParticipant = participantsFilter.selfParticipant(participants, selfUserId, selfClientId.value)
                 val otherParticipants = participantsFilter.otherParticipants(participants, selfClientId.value)
+                selfParticipant to otherParticipants
+            }
+        )
 
+        when (orderType) {
+            CallingParticipantsOrderType.ALL_MEDIA_FIRST -> {
                 val participantsSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, true)
                 val participantsNotSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, false)
 
@@ -62,8 +73,51 @@ internal class CallingParticipantsOrderImpl(
                 val sortedParticipantsByName =
                     participantsSharingScreenSortedByName + participantsWithVideoOnSortedByName + participantsWithVideoOffSortedByName
 
-                return mutableListOf(selfParticipant) + sortedParticipantsByName
-            })
-        } else participants
-    }
+                listOfNotNull(selfParticipant) + sortedParticipantsByName
+            }
+
+            CallingParticipantsOrderType.PRESENTERS_FIRST -> {
+                val participantsSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, true)
+                val participantsNotSharingScreen = participantsFilter.participantsSharingScreen(otherParticipants, false)
+
+                val participantsSharingScreenSortedByName = participantsOrderByName.sortItems(participantsSharingScreen)
+                val participantsNotSharingScreenSortedByName = participantsOrderByName.sortItems(participantsNotSharingScreen)
+
+                val sortedParticipantsByName = participantsSharingScreenSortedByName + participantsNotSharingScreenSortedByName
+
+                listOfNotNull(selfParticipant) + sortedParticipantsByName
+            }
+
+            CallingParticipantsOrderType.ALPHABETICALLY -> {
+                val sortedParticipants = participantsOrderByName.sortItems(otherParticipants)
+                listOfNotNull(selfParticipant) + sortedParticipants
+            }
+        }
+    } else participants
+}
+
+public enum class CallingParticipantsOrderType {
+    /**
+     * Participants are sorted in the following order:
+     * - self participant, always on top, no matter if sharing screen, has video on or off
+     * - participants sharing screen alphabetically
+     * - participants with video on alphabetically
+     * - participants with video off alphabetically
+     */
+    ALL_MEDIA_FIRST,
+
+    /**
+     * Participants are sorted in the following order:
+     * - self participant, always on top, no matter if sharing screen, has video on or off
+     * - participants sharing screen alphabetically
+     * - all other participants alphabetically
+     */
+    PRESENTERS_FIRST,
+
+    /**
+     * Participants are sorted in the following order:
+     * - self participant, always on top, no matter if sharing screen, has video on or off
+     * - all other participants alphabetically
+     */
+    ALPHABETICALLY
 }

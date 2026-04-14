@@ -160,6 +160,11 @@ internal interface MLSConversationRepository : MLSMemberAdder {
 
     suspend fun hasEstablishedMLSGroup(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<MLSFailure, Boolean>
 
+    suspend fun getLocalGroupEpoch(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID
+    ): Either<CoreFailure, ULong>
+
     suspend fun removeMembersFromMLSGroup(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID,
@@ -355,6 +360,13 @@ internal class MLSConversationDataSource(
         groupID: GroupID
     ): Either<MLSFailure, Boolean> = wrapMLSRequest {
         mlsContext.conversationExists(idMapper.toCryptoModel(groupID))
+    }
+
+    override suspend fun getLocalGroupEpoch(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID
+    ): Either<CoreFailure, ULong> = wrapMLSRequest {
+        mlsContext.conversationEpoch(idMapper.toCryptoModel(groupID))
     }
 
     override suspend fun joinGroupByExternalCommit(
@@ -702,24 +714,21 @@ internal class MLSConversationDataSource(
             val existingGroupList =
                 groupIdList.filter { hasEstablishedMLSGroup(mlsContext, it).fold({ false }, { hasEstablished -> hasEstablished }) }
             wrapMLSRequest { mlsContext.e2eiRotateGroups(existingGroupList.map { it.toCrypto() }) }
-                .flatMap { wrapMLSRequest { mlsContext.generateKeyPackages(keyPackageLimitsProvider.refillAmount()) } }
-                .flatMap { newKeyPackages ->
+                .flatMap {
                     crlNewDistributionPoints?.let { checkRevocationList(mlsContext, it) }
                     if (!isNewClient) {
-                        logger.w("enrollment for existing client: upload new keypackages and drop old ones")
-                        keyPackageRepository
-                            .replaceKeyPackages(clientId, newKeyPackages, mlsContext.getDefaultCipherSuite().toModel())
-                            .flatMap {
-                                logger.w("removing stale key packages")
-                                wrapMLSRequest {
-                                    mlsContext.removeStaleKeyPackages()
-                                }
-                            }
-                            .fold({ failure ->
-                                E2EIFailure.RotationAndMigration(failure).left()
-                            }, {
-                                Either.Right(Unit)
-                            })
+                        logger.w("enrollment for existing client: drop stale key packages and upload new ones")
+                        wrapMLSRequest {
+                            mlsContext.removeStaleKeyPackages()
+                        }.flatMap {
+                            wrapMLSRequest { mlsContext.generateKeyPackages(keyPackageLimitsProvider.refillAmount()) }
+                        }.flatMap { newKeyPackages ->
+                            keyPackageRepository.replaceKeyPackages(clientId, newKeyPackages, mlsContext.getDefaultCipherSuite().toModel())
+                        }.fold({ failure ->
+                            E2EIFailure.RotationAndMigration(failure).left()
+                        }, {
+                            Either.Right(Unit)
+                        })
                     } else {
                         Either.Right(Unit)
                     }

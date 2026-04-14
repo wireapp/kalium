@@ -17,7 +17,12 @@
  */
 package com.wire.kalium.network.api.unauthenticated.sso
 
-sealed class InitiateParam(open val uuid: String) {
-    data class WithoutRedirect(override val uuid: String) : InitiateParam(uuid)
-    data class WithRedirect(val success: String, val error: String, override val uuid: String) : InitiateParam(uuid)
+sealed class InitiateParam(open val uuid: String, open val label: String? = null) {
+    data class WithoutRedirect(override val uuid: String, override val label: String? = null) : InitiateParam(uuid, label)
+    data class WithRedirect(
+        val success: String,
+        val error: String,
+        override val uuid: String,
+        override val label: String? = null,
+    ) : InitiateParam(uuid, label)
 }

@@ -51,12 +51,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
+import com.wire.kalium.logic.framework.TestCall.CALL_QUALITY_DATA
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
 import com.wire.kalium.network.api.base.authenticated.CallApi
@@ -1885,7 +1886,7 @@ class CallRepositoryTest {
     fun givenACall_whenUpdatingCallQualityData_thenCallQualityDataIsUpdatedCorrectlyAndCallQualityDataObserverEmitsData() = runTest {
         // given
         val conversationId = Arrangement.randomConversationId
-        val callQualityData = CallQualityData(CallQuality.POOR, 1,2,3)
+        val callQualityData = CALL_QUALITY_DATA
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
 
         callRepository.observeCallQualityData(conversationId).test {
@@ -1953,7 +1954,7 @@ class CallRepositoryTest {
 
     private class Arrangement(
         private val kaliumTestDispatcher: KaliumDispatcher
-    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val callApi = mock<CallApi>()
         val conversationRepository = mock<ConversationRepository>()

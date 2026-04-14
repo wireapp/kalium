@@ -20,10 +20,12 @@ package com.wire.kalium.logic.feature.conversation.delete
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
@@ -99,12 +101,16 @@ class DeleteConversationUseCaseTest {
     private class Arrangement :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+
+        val persistenceEventHookNotifier: PersistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteConversationUseCase> = run {
             val useCase = DeleteConversationUseCaseImpl(
                 conversationRepository = conversationRepository,
-                mlsConversationRepository = mlsConversationRepository
+                mlsConversationRepository = mlsConversationRepository,
+                persistenceEventHookNotifier = persistenceEventHookNotifier,
+                selfUserId = SELF_USER_ID,
             )
             block()
             return this to useCase
@@ -112,6 +118,7 @@ class DeleteConversationUseCaseTest {
     }
 
     companion object {
+        val SELF_USER_ID = UserId("self-user", "self-domain")
         val GROUP_ID = GroupID("mls_group_id")
         val CONVERSATION_ID = ConversationId("conv_id", "conv_domain")
 

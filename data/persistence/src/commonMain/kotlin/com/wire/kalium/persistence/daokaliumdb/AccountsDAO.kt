@@ -185,6 +185,7 @@ interface AccountsDAO {
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>>
     suspend fun getAccountManagedBy(userIDEntity: UserIDEntity): ManagedByEntity?
     suspend fun validAccountWithServerConfigId(): Map<UserIDEntity, ServerConfigEntity>
+    suspend fun doesValidNomadAccountExist(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -341,4 +342,8 @@ internal class AccountsDAOImpl internal constructor(
 
     override fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? =
         queries.fullAccountInfo(userIDEntity, mapper = mapper::fromFullAccountInfo).executeAsOneOrNull()
+
+    override suspend fun doesValidNomadAccountExist(): Boolean = withContext(queriesContext) {
+        queries.doesValidNomadAccountExist().executeAsOne()
+    }
 }

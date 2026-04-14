@@ -25,12 +25,15 @@ import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingResult
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 
 internal interface MessageRepositoryExtensions {
     suspend fun getPaginatedMessagesByConversationIdAndVisibility(
@@ -58,11 +61,17 @@ internal interface MessageRepositoryExtensions {
         pagingConfig: PagingConfig,
         startingOffset: Long
     ): Flow<PagingData<AssetMessage>>
+
+    suspend fun fetchOlderNomadMessagesByConversationId(
+        conversationId: ConversationId,
+        pageSize: Int,
+    ): NomadMessagePagingResult
 }
 
 internal class MessageRepositoryExtensionsImpl internal constructor(
     private val messageDAO: MessageDAO,
     private val messageMapper: MessageMapper,
+    private val nomadMessagePagingCoordinator: NomadMessagePagingCoordinator? = null,
 ) : MessageRepositoryExtensions {
 
     override suspend fun getPaginatedMessagesByConversationIdAndVisibility(
@@ -75,7 +84,7 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
             conversationId.toDao(),
             visibility.map { it.toEntityVisibility() },
             pagingConfig,
-            startingOffset
+            startingOffset,
         )
 
         return pager.pagingDataFlow.map {
@@ -133,5 +142,22 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         return pager.pagingDataFlow.map {
             it.map { messageEntity -> messageMapper.fromAssetEntityToAssetMessage(messageEntity) }
         }
+    }
+
+    override suspend fun fetchOlderNomadMessagesByConversationId(
+        conversationId: ConversationId,
+        pageSize: Int,
+    ): NomadMessagePagingResult {
+        val coordinator = nomadMessagePagingCoordinator
+            ?: return NomadMessagePagingResult(hasMore = false)
+        val beforeTimestampMs = messageDAO.getOldestVisibleMessageTimestampByConversationId(
+            conversationId.toDao()
+        ) ?: Clock.System.now().toEpochMilliseconds()
+        return coordinator.fetchOlderMessagesIfNeeded(
+            conversationId = conversationId,
+            pageSize = pageSize,
+            beforeTimestampMs = beforeTimestampMs,
+            onInvalidate = {}
+        )
     }
 }

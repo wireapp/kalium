@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.common.error.BackupFailure
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.E2EIFailure
 import com.wire.kalium.common.error.MLSFailure
@@ -70,7 +71,8 @@ internal object MLSMessageFailureHandler {
             MLSFailure.ConversationNotFound,
             MLSFailure.BufferedCommit,
             MLSFailure.OrphanWelcome,
-            is CoreFailure.DevelopmentAPINotAllowedOnProduction -> MLSMessageFailureResolution.Ignore
+            is CoreFailure.DevelopmentAPINotAllowedOnProduction,
+            is BackupFailure -> MLSMessageFailureResolution.Ignore
 
             MLSFailure.ConversationAlreadyExists,
             MLSFailure.ConversationDoesNotSupportMLS,
