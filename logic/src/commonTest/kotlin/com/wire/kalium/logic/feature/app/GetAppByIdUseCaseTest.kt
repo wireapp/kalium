@@ -24,9 +24,9 @@ import com.wire.kalium.logic.data.app.AppRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
+import dev.mokkery.everySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -79,7 +79,7 @@ class GetAppByIdUseCaseTest {
     }
 
     private class Arrangement {
-        private val appRepository = mock(AppRepository::class)
+        private val appRepository = mock<AppRepository>()
 
         private val getAppById = GetAppByIdUseCaseImpl(
             appRepository = appRepository
@@ -90,24 +90,24 @@ class GetAppByIdUseCaseTest {
         suspend fun withGetAppByIdSuccess(
             appId: QualifiedID
         ) = apply {
-            coEvery {
-                appRepository.getAppById(eq(appId))
-            }.returns(Either.Right(appDetails))
+            everySuspend {
+                appRepository.getAppById(appId)
+            } returns Either.Right(appDetails)
         }
 
         suspend fun withGetAppByIdFailsWithStorageFailure(
             appId: QualifiedID
         ) = apply {
-            coEvery {
-                appRepository.getAppById(eq(appId))
+            everySuspend {
+                appRepository.getAppById(appId)
             }.returns(Either.Left(StorageFailure.DataNotFound))
         }
 
         suspend fun withGetAppByIdReturnsNull(
             appId: QualifiedID
         ) = apply {
-            coEvery {
-                appRepository.getAppById(eq(appId))
+            everySuspend {
+                appRepository.getAppById(appId)
             }.returns(Either.Right(null))
         }
 

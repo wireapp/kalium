@@ -22,9 +22,9 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.app.AppRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
+import dev.mokkery.everySuspend
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -78,7 +78,7 @@ class ObserveIsAppMemberUseCaseTest {
     }
 
     private class Arrangement {
-        private val appRepository = mock(AppRepository::class)
+        private val appRepository = mock<AppRepository>()
 
         private val useCase: ObserveIsAppMemberUseCase = ObserveIsAppMemberUseCaseImpl(
             appRepository = appRepository
@@ -88,18 +88,18 @@ class ObserveIsAppMemberUseCaseTest {
             appId: QualifiedID,
             conversationId: ConversationId
         ) = apply {
-            coEvery {
-                appRepository.observeIsAppMember(eq(appId), eq(conversationId))
-            }.returns(flowOf(Either.Right(APP_ID)))
+            everySuspend {
+                appRepository.observeIsAppMember(appId, conversationId)
+            } returns flowOf(Either.Right(APP_ID))
         }
 
         suspend fun withObserveIsAppMemberFailure(
             appId: QualifiedID,
             conversationId: ConversationId
         ) = apply {
-            coEvery {
-                appRepository.observeIsAppMember(eq(appId), eq(conversationId))
-            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
+            everySuspend {
+                appRepository.observeIsAppMember(appId, conversationId)
+            } returns flowOf(Either.Left(StorageFailure.DataNotFound))
         }
 
         fun arrange() = this to useCase
