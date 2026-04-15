@@ -17,8 +17,15 @@
  */
 package com.wire.kalium.cells
 
+import com.wire.kalium.cells.domain.usecase.GetPaginatedCellConversationsFlowUseCase
+import com.wire.kalium.cells.domain.usecase.GetPaginatedCellConversationsFlowUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetPaginatedFilesFlowUseCase
 import com.wire.kalium.cells.domain.usecase.GetPaginatedFilesFlowUseCaseImpl
 
 public val CellsScope.paginatedFilesFlowUseCase: GetPaginatedFilesFlowUseCase
     get() = GetPaginatedFilesFlowUseCaseImpl(observePagedFiles)
+
+public val CellsScope.paginatedConversationsFlowUseCase: GetPaginatedCellConversationsFlowUseCase
+    get() = GetPaginatedCellConversationsFlowUseCaseImpl(getCellConversationsPagedUseCase)
+
+

@@ -1,0 +1,61 @@
+/*
+ * Wire
+ * Copyright (C) 2026 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
+package com.wire.kalium.cells.domain.paging
+
+import app.cash.paging.PagingSource
+import app.cash.paging.PagingSourceLoadParams
+import app.cash.paging.PagingSourceLoadResult
+import app.cash.paging.PagingSourceLoadResultError
+import app.cash.paging.PagingSourceLoadResultPage
+import app.cash.paging.PagingState
+import com.wire.kalium.cells.domain.CellConversationRepository
+import com.wire.kalium.cells.domain.model.CellConversation
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.logger.kaliumLogger
+
+internal class ConversationPagingSource(
+    private val pageSize: Int,
+    private val repository: CellConversationRepository,
+    private val query: String = "",
+) : PagingSource<Int, CellConversation>() {
+
+    override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, CellConversation> {
+        val offset = params.key ?: 0
+        return repository.getPaginatedCellGroupConversations(
+            limit = pageSize,
+            offset = offset,
+            query = query,
+        ).fold(
+            { error ->
+                PagingSourceLoadResultError<Int, CellConversation>(
+                    throwable = Throwable("Failed to load conversations: $error")
+                ) as PagingSourceLoadResult<Int, CellConversation>
+            },
+            { conversations ->
+                val nextOffset = if (conversations.size < pageSize) null else offset + pageSize
+                PagingSourceLoadResultPage(
+                    data = conversations,
+                    prevKey = null,
+                    nextKey = nextOffset,
+                ) as PagingSourceLoadResult<Int, CellConversation>
+            }
+        )
+    }
+
+    override fun getRefreshKey(state: PagingState<Int, CellConversation>): Int? = null
+}
