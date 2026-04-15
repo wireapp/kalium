@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.data.service
 
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserAssetId
 
 data class ServiceDetails(
@@ -35,9 +34,3 @@ data class ServiceId(
     val id: String,
     val provider: String
 )
-
-fun ServiceId.toQualifiedID(): QualifiedID =
-    QualifiedID(
-        value = this.id,
-        domain = this.provider
-    )
