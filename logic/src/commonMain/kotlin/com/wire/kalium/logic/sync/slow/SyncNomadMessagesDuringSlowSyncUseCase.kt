@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.slow
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.logger.nomadTrace
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.nomaddevice.NomadAuthenticatedNetworkAccess
@@ -66,6 +67,14 @@ internal class SyncNomadMessagesDuringSlowSyncUseCaseImpl(
                         "downloaded=${metadataResult.value.downloadedConversations}"
                 )
         }
+        logger.nomadTrace(
+            stage = "nomad.messages.restore.metadata",
+            fields = mapOf(
+                "userId" to selfUserId.toLogString(),
+                "result" to if (metadataResult is Either.Right) "success" else "failure",
+                "downloadedConversations" to (metadataResult as? Either.Right)?.value?.downloadedConversations
+            )
+        )
 
         val messagesResult = SyncNomadAllMessagesUseCase(
             userStorageProvider = userStorageProvider,
@@ -75,6 +84,16 @@ internal class SyncNomadMessagesDuringSlowSyncUseCaseImpl(
         return when (messagesResult) {
             is Either.Left -> messagesResult
             is Either.Right -> {
+                logger.nomadTrace(
+                    stage = "nomad.messages.restore.slow_sync",
+                    fields = mapOf(
+                        "userId" to selfUserId.toLogString(),
+                        "downloadedMessages" to messagesResult.value.downloadedMessages,
+                        "storedMessages" to messagesResult.value.storedMessages,
+                        "skippedMessages" to messagesResult.value.skippedMessages,
+                        "batches" to messagesResult.value.batches
+                    )
+                )
                 logger.i(
                     "Nomad all-messages slow sync finished for ${selfUserId.toLogString()}: " +
                         "downloaded=${messagesResult.value.downloadedMessages}, " +

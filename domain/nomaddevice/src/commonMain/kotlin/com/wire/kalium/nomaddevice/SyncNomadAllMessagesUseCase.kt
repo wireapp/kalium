@@ -25,6 +25,8 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.nomadTrace
+import com.wire.kalium.common.logger.nomadTraceTextPreview
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
@@ -110,8 +112,21 @@ public class SyncNomadAllMessagesUseCase internal constructor(
      *         or a [NomadAllMessagesSyncResult] with the synchronization statistics.
      */
     public suspend operator fun invoke(selfUserId: UserId): Either<CoreFailure, NomadAllMessagesSyncResult> {
+        nomadLogger.nomadTrace(
+            stage = "nomad.messages.restore.batch.fetch.start",
+            fields = mapOf("userId" to selfUserId.toLogString())
+        )
         val responseResult = wrapApiRequest {
             nomadDeviceSyncApiProvider(selfUserId).syncAllMessages()
+        }
+        if (responseResult is Either.Left) {
+            nomadLogger.nomadTrace(
+                stage = "nomad.messages.restore.batch.fetch.failure",
+                fields = mapOf(
+                    "userId" to selfUserId.toLogString(),
+                    "error" to responseResult.value
+                )
+            )
         }
 
         return when (responseResult) {
@@ -125,6 +140,15 @@ public class SyncNomadAllMessagesUseCase internal constructor(
         response: NomadAllMessagesResponse,
     ): Either<CoreFailure, NomadAllMessagesSyncResult> {
         val mapped = mapper.map(response)
+        nomadLogger.nomadTrace(
+            stage = "nomad.messages.restore.batch.mapped",
+            fields = mapOf(
+                "userId" to selfUserId.toLogString(),
+                "downloadedMessages" to mapped.totalMessages,
+                "mappedMessages" to mapped.messages.size,
+                "mapperSkippedMessages" to mapped.skippedMessages
+            )
+        )
         val dao = nomadMessagesDAOProvider(selfUserId)
         if (dao == null) {
             nomadLogger.w(
@@ -143,8 +167,31 @@ public class SyncNomadAllMessagesUseCase internal constructor(
                 messages = mapped.messages,
                 batchSize = batchSize
             )
-        }.map {
-            mapResult(mapped, it)
+        }.map { storeResult ->
+            nomadLogger.nomadTrace(
+                stage = "nomad.messages.restore.batch.stored",
+                fields = mapOf(
+                    "userId" to selfUserId.toLogString(),
+                    "downloadedMessages" to mapped.totalMessages,
+                    "mappedMessages" to mapped.messages.size,
+                    "storedMessages" to storeResult.storedMessages,
+                    "batches" to storeResult.batches
+                )
+            )
+            storeResult.outcomes.forEach { outcome ->
+                nomadLogger.nomadTrace(
+                    stage = "nomad.messages.restore.message",
+                    fields = mapOf(
+                        "userId" to selfUserId.toLogString(),
+                        "conversationId" to outcome.conversationId.toLogString(),
+                        "messageId" to outcome.messageId,
+                        "status" to outcome.status.name,
+                        "contentType" to outcome.contentType.name,
+                        "textPreview" to nomadTraceTextPreview(outcome.textPreview)
+                    )
+                )
+            }
+            mapResult(mapped, storeResult)
         }
     }
 

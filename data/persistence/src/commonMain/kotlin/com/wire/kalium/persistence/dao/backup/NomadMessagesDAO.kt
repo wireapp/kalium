@@ -30,9 +30,23 @@ import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
+enum class NomadMessageStoreStatus {
+    INSERTED,
+    SKIPPED_EXISTING
+}
+
+data class NomadMessageStoreOutcome(
+    val conversationId: QualifiedIDEntity,
+    val messageId: String,
+    val status: NomadMessageStoreStatus,
+    val contentType: MessageEntity.ContentType,
+    val textPreview: String? = null,
+)
+
 data class NomadMessageStoreResult(
     val storedMessages: Int,
     val batches: Int,
+    val outcomes: List<NomadMessageStoreOutcome> = emptyList(),
 )
 
 data class NomadReactionToInsert(
@@ -76,25 +90,26 @@ internal class NomadMessagesDAOImpl internal constructor(
         messages: List<NomadMessageToInsert>,
         batchSize: Int,
     ): NomadMessageStoreResult {
-        if (messages.isEmpty()) return NomadMessageStoreResult(storedMessages = 0, batches = 0)
+        if (messages.isEmpty()) return NomadMessageStoreResult(storedMessages = 0, batches = 0, outcomes = emptyList())
 
         val normalizedBatchSize = batchSize.coerceAtLeast(MIN_BATCH_SIZE)
-        var insertedMessages = 0
+        val outcomes = mutableListOf<NomadMessageStoreOutcome>()
         var batches = 0
         withContext(writeDispatcher.value) {
             messages.chunked(normalizedBatchSize).forEach { batch ->
                 messagesQueries.transaction {
                     insertPlaceholderUsers(batch)
                     insertPlaceholderConversations(batch)
-                    insertedMessages += insertMessages(batch)
+                    outcomes += insertMessages(batch)
                 }
                 batches += 1
             }
         }
 
         return NomadMessageStoreResult(
-            storedMessages = insertedMessages,
-            batches = batches
+            storedMessages = outcomes.count { it.status == NomadMessageStoreStatus.INSERTED },
+            batches = batches,
+            outcomes = outcomes.toList()
         )
     }
 
@@ -117,12 +132,10 @@ internal class NomadMessagesDAOImpl internal constructor(
             }
     }
 
-    private fun insertMessages(messages: List<NomadMessageToInsert>): Int =
-        messages.count { message ->
-            insertMessageWithContentOrThrow(message)
-        }
+    private fun insertMessages(messages: List<NomadMessageToInsert>): List<NomadMessageStoreOutcome> =
+        messages.map { message -> insertMessageWithContentOrThrow(message) }
 
-    private fun insertMessageWithContentOrThrow(message: NomadMessageToInsert): Boolean {
+    private fun insertMessageWithContentOrThrow(message: NomadMessageToInsert): NomadMessageStoreOutcome {
         messagesQueries.insertOrIgnoreMessage(
             id = message.id,
             content_type = message.payload.contentType,
@@ -139,7 +152,13 @@ internal class NomadMessagesDAOImpl internal constructor(
         )
         val insertedMessage = messagesQueries.selectChanges().executeAsOne() > 0
         if (!insertedMessage) {
-            return false
+            return NomadMessageStoreOutcome(
+                conversationId = message.conversationId,
+                messageId = message.id,
+                status = NomadMessageStoreStatus.SKIPPED_EXISTING,
+                contentType = message.payload.contentType,
+                textPreview = message.payload.nomadTraceTextPreview(),
+            )
         }
 
         val insertedContent = insertRegularContent(message)
@@ -148,7 +167,13 @@ internal class NomadMessagesDAOImpl internal constructor(
         }
         insertReactions(message)
         insertReadReceipts(message)
-        return true
+        return NomadMessageStoreOutcome(
+            conversationId = message.conversationId,
+            messageId = message.id,
+            status = NomadMessageStoreStatus.INSERTED,
+            contentType = message.payload.contentType,
+            textPreview = message.payload.nomadTraceTextPreview(),
+        )
     }
 
     private fun insertReactions(message: NomadMessageToInsert) {
@@ -337,3 +362,10 @@ internal class NomadMessagesDAOImpl internal constructor(
         const val RECEIPT_TYPE_READ = "READ"
     }
 }
+
+private fun SyncableMessagePayloadEntity.nomadTraceTextPreview(): String? =
+    when (this) {
+        is SyncableMessagePayloadEntity.Text -> text
+        is SyncableMessagePayloadEntity.Multipart -> text
+        else -> null
+    }

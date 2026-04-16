@@ -24,6 +24,7 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.nomadTrace
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.client.CryptoBackupMetadata
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
@@ -96,6 +97,13 @@ internal class BackupCryptoDBUseCaseImpl(
                     else -> return@withContext BackupCryptoDBResult.Failure(result.value)
                 }
             }
+            kaliumLogger.nomadTrace(
+                stage = "backup.capture_event_id",
+                fields = mapOf(
+                    "userId" to userId.toLogString(),
+                    "lastProcessedEventId" to lastProcessedEventId
+                )
+            )
             val metadataPath = createMetadataFile(
                 mlsExportData = mlsExportData,
                 proteusExportData = proteusExportData,
@@ -105,8 +113,22 @@ internal class BackupCryptoDBUseCaseImpl(
                 { error -> BackupCryptoDBResult.Failure(error) },
                 {
                     persistBackup(tempBackupPath, backupFilePath)
+                    val backupSize = kaliumFileSystem.size(backupFilePath)
+                    kaliumLogger.nomadTrace(
+                        stage = "backup.file.ready",
+                        fields = mapOf(
+                            "userId" to userId.toLogString(),
+                            "backupPath" to backupFilePath.toString(),
+                            "backupSizeBytes" to backupSize,
+                            "lastProcessedEventId" to lastProcessedEventId
+                        )
+                    )
                     deleteOlderBackups(backupFilePath.parent!!, backupFilePath)
-                    BackupCryptoDBResult.Success(backupFilePath, backupName)
+                    BackupCryptoDBResult.Success(
+                        backupFilePath = backupFilePath,
+                        backupName = backupName,
+                        lastProcessedEventId = lastProcessedEventId
+                    )
                 }
             )
         } catch (e: Exception) {
@@ -246,6 +268,10 @@ internal class BackupCryptoDBUseCaseImpl(
 }
 
 public sealed interface BackupCryptoDBResult {
-    public data class Success(val backupFilePath: Path, val backupName: String) : BackupCryptoDBResult
+    public data class Success(
+        val backupFilePath: Path,
+        val backupName: String,
+        val lastProcessedEventId: String
+    ) : BackupCryptoDBResult
     public data class Failure(val error: CoreFailure) : BackupCryptoDBResult
 }

@@ -23,9 +23,11 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.nomadTrace
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logger.obfuscateId
 import okio.blackholeSink
 import okio.buffer
 import okio.use
@@ -52,6 +54,10 @@ internal class BackupAndUploadCryptoStateUseCaseImpl(
                 val clientId = when (val clientResult = currentClientIdProvider.invoke()) {
                     is Either.Left -> {
                         kaliumLogger.e("Failed to read current client id")
+                        kaliumLogger.nomadTrace(
+                            stage = "backup.upload.client_id.failure",
+                            fields = mapOf("error" to clientResult.value)
+                        )
                         return BackupAndUploadCryptoStateResult.Failure(clientResult.value)
                     }
 
@@ -60,25 +66,55 @@ internal class BackupAndUploadCryptoStateUseCaseImpl(
                 val backupSize = kaliumFileSystem.source(backupResult.backupFilePath).use { source ->
                     source.buffer().readAll(blackholeSink())
                 }
+                kaliumLogger.nomadTrace(
+                    stage = "backup.upload.start",
+                    fields = mapOf(
+                        "clientId" to clientId.value.obfuscateId(),
+                        "backupPath" to backupResult.backupFilePath.toString(),
+                        "backupSizeBytes" to backupSize,
+                        "lastProcessedEventId" to backupResult.lastProcessedEventId
+                    )
+                )
                 val uploadResult = cryptoStateBackupRemoteRepository.uploadCryptoState(
                     clientId = clientId.value,
                     sourceProvider = { kaliumFileSystem.source(backupResult.backupFilePath) },
                     size = backupSize
                 ).mapLeft { error ->
                     kaliumLogger.e("Failed to upload crypto state backup")
+                    kaliumLogger.nomadTrace(
+                        stage = "backup.upload.failure",
+                        fields = mapOf(
+                            "clientId" to clientId.value.obfuscateId(),
+                            "lastProcessedEventId" to backupResult.lastProcessedEventId,
+                            "error" to error
+                        )
+                    )
                     error
                 }
                 when (uploadResult) {
                     is Either.Left ->
                         BackupAndUploadCryptoStateResult.Failure(uploadResult.value)
 
-                    is Either.Right ->
+                    is Either.Right -> {
+                        kaliumLogger.nomadTrace(
+                            stage = "backup.upload.success",
+                            fields = mapOf(
+                                "clientId" to clientId.value.obfuscateId(),
+                                "lastProcessedEventId" to backupResult.lastProcessedEventId,
+                                "backupSizeBytes" to backupSize
+                            )
+                        )
                         BackupAndUploadCryptoStateResult.Success
+                    }
                 }
             }
 
             is BackupCryptoDBResult.Failure -> {
                 kaliumLogger.e("Failed to create crypto state backup ${backupResult.error}")
+                kaliumLogger.nomadTrace(
+                    stage = "backup.create.failure",
+                    fields = mapOf("error" to backupResult.error)
+                )
                 BackupAndUploadCryptoStateResult.Failure(backupResult.error)
             }
         }

@@ -31,6 +31,8 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.common.logger.nomadTrace
+import com.wire.kalium.common.logger.nomadTraceTextPreview
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
@@ -351,6 +353,16 @@ internal class MessageSenderImpl internal constructor(
                         "protocol" to CreateConversationParam.Protocol.MLS.name,
                     )
                 )
+                logger.nomadTrace(
+                    stage = "nomad.messages.local.send.success",
+                    fields = mapOf(
+                        "conversationId" to message.conversationId.toLogString(),
+                        "messageId" to message.id,
+                        "protocol" to CreateConversationParam.Protocol.MLS.name,
+                        "contentType" to message.content.getType(),
+                        "textPreview" to nomadTraceTextPreview(message.textPreview())
+                    )
+                )
             }
 
     /**
@@ -390,6 +402,16 @@ internal class MessageSenderImpl internal constructor(
                     jsonStringKeyValues = mapOf(
                         "message" to message.toLogString(),
                         "protocol" to CreateConversationParam.Protocol.PROTEUS.name
+                    )
+                )
+                logger.nomadTrace(
+                    stage = "nomad.messages.local.send.success",
+                    fields = mapOf(
+                        "conversationId" to message.conversationId.toLogString(),
+                        "messageId" to message.id,
+                        "protocol" to CreateConversationParam.Protocol.PROTEUS.name,
+                        "contentType" to message.content.getType(),
+                        "textPreview" to nomadTraceTextPreview(message.textPreview())
                     )
                 )
             }
@@ -534,6 +556,13 @@ internal class MessageSenderImpl internal constructor(
 
         return BroadcastMessageOption.ReportSome(broadcastRecipients.map { it.id }) to broadcastRecipients
     }
+
+    private fun Message.Sendable.textPreview(): String? =
+        when (val messageContent = content) {
+            is MessageContent.Text -> messageContent.value
+            is MessageContent.Multipart -> messageContent.value
+            else -> null
+        }
 
     /**
      * At this point the message was SENT, here we are mapping/persisting the recipients that couldn't get the message.

@@ -19,7 +19,9 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.nomadTrace
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -65,6 +67,14 @@ internal class ApplyCryptoStateUseCaseImpl(
     override suspend fun invoke(extractResult: ExtractCryptoStateResult.Success): ApplyCryptoStateResult =
         withContext(dispatcher.io) {
             kaliumLogger.i("$TAG: Starting crypto state apply for userId: ${userId.toLogString()}")
+            kaliumLogger.nomadTrace(
+                stage = "restore.apply.start",
+                fields = mapOf(
+                    "userId" to userId.toLogString(),
+                    "metadataClientId" to extractResult.metadata.clientId.obfuscateId(),
+                    "metadataLastProcessedEventId" to extractResult.metadata.lastProcessedEventId
+                )
+            )
             val clientId = extractResult.metadata.clientId
 
             try {
@@ -97,11 +107,27 @@ internal class ApplyCryptoStateUseCaseImpl(
                 clientRepository.setHasRegisteredMLSClient()
 
                 kaliumLogger.i("$TAG: Successfully applied crypto state for clientId: ${clientId.obfuscateId()}")
+                kaliumLogger.nomadTrace(
+                    stage = "restore.apply.success",
+                    fields = mapOf(
+                        "userId" to userId.toLogString(),
+                        "clientId" to clientId.obfuscateId(),
+                        "lastProcessedEventId" to extractResult.metadata.lastProcessedEventId
+                    )
+                )
                 ApplyCryptoStateResult.Success
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 kaliumLogger.e("$TAG: Failed to apply crypto state", e)
+                kaliumLogger.nomadTrace(
+                    stage = "restore.apply.failure",
+                    fields = mapOf(
+                        "userId" to userId.toLogString(),
+                        "clientId" to clientId.obfuscateId(),
+                        "error" to e.message
+                    )
+                )
                 ApplyCryptoStateResult.Failure(CoreFailure.Unknown(e))
             } finally {
                 // Ensure extracted files are cleaned up even if an error occurs
@@ -126,14 +152,35 @@ internal class ApplyCryptoStateUseCaseImpl(
     }
 
     private suspend fun restoreLastProcessedEventId(metadata: CryptoStateBackupMetadata): ApplyCryptoStateResult {
+        val previousEventId = when (val existing = eventRepository.lastSavedEventId()) {
+            is Either.Right -> existing.value
+            is Either.Left -> null
+        }
         return when (val result = eventRepository.updateLastSavedEventId(metadata.lastProcessedEventId)) {
             is com.wire.kalium.common.functional.Either.Right -> {
                 kaliumLogger.i("$TAG: Restored last processed event ID from crypto backup metadata")
+                kaliumLogger.nomadTrace(
+                    stage = "restore.apply.event_id",
+                    fields = mapOf(
+                        "userId" to userId.toLogString(),
+                        "previousEventId" to previousEventId,
+                        "restoredEventId" to metadata.lastProcessedEventId
+                    )
+                )
                 ApplyCryptoStateResult.Success
             }
 
             is com.wire.kalium.common.functional.Either.Left -> {
                 kaliumLogger.e("$TAG: Failed to restore last processed event ID from crypto backup metadata")
+                kaliumLogger.nomadTrace(
+                    stage = "restore.apply.event_id.failure",
+                    fields = mapOf(
+                        "userId" to userId.toLogString(),
+                        "previousEventId" to previousEventId,
+                        "restoredEventId" to metadata.lastProcessedEventId,
+                        "error" to result.value
+                    )
+                )
                 ApplyCryptoStateResult.Failure(result.value)
             }
         }

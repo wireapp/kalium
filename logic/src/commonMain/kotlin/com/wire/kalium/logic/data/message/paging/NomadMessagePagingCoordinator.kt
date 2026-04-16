@@ -23,6 +23,8 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.nomadTrace
+import com.wire.kalium.common.logger.nomadTraceTextPreview
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
@@ -114,6 +116,26 @@ internal class NomadMessagePagingCoordinatorImpl(
                 )
             )
         }
+        if (responseResult is Either.Right) {
+            val response = responseResult.value
+            val entry = response.conversations.firstOrNull {
+                it.conversation.id == conversationId.value && it.conversation.domain == conversationId.domain
+            }
+            kaliumLogger.nomadTrace(
+                stage = "nomad.messages.restore.batch",
+                fields = mapOf(
+                    "userId" to selfUserId.toLogString(),
+                    "conversationId" to conversationId.toLogString(),
+                    "requestedPageSize" to pageSize,
+                    "nextCursor" to currentState.nextCursor,
+                    "beforeTimestampMs" to currentState.nextTimestamp,
+                    "remoteMessagesCount" to entry?.messages?.size,
+                    "remoteHasMore" to entry?.hasMore,
+                    "remoteNextCursor" to entry?.nextCursor,
+                    "remoteNextTimestamp" to entry?.nextTimestamp
+                )
+            )
+        }
 
         return when (responseResult) {
             is Either.Left -> {
@@ -171,6 +193,31 @@ internal class NomadMessagePagingCoordinatorImpl(
                     val nextState = response.nextStateFor(conversationId, state)
                     map[conversationId] = nextState
                     hasMore = nextState.hasMore
+                    kaliumLogger.nomadTrace(
+                        stage = "nomad.messages.restore.batch.stored",
+                        fields = mapOf(
+                            "userId" to selfUserId.toLogString(),
+                            "conversationId" to conversationId.toLogString(),
+                            "storedMessages" to storeResult.value.storedMessages,
+                            "batches" to storeResult.value.batches,
+                            "hasMore" to nextState.hasMore,
+                            "nextCursor" to nextState.nextCursor,
+                            "nextTimestamp" to nextState.nextTimestamp
+                        )
+                    )
+                    storeResult.value.outcomes.forEach { outcome ->
+                        kaliumLogger.nomadTrace(
+                            stage = "nomad.messages.restore.message",
+                            fields = mapOf(
+                                "userId" to selfUserId.toLogString(),
+                                "conversationId" to outcome.conversationId.toLogString(),
+                                "messageId" to outcome.messageId,
+                                "status" to outcome.status.name,
+                                "contentType" to outcome.contentType.name,
+                                "textPreview" to nomadTraceTextPreview(outcome.textPreview)
+                            )
+                        )
+                    }
                     kaliumLogger.d(
                         "[$TAG] Nomad paging stored ${storeResult.value.storedMessages} messages for conversation " +
                                 "'${conversationId.toLogString()}', hasMore=${nextState.hasMore}, " +

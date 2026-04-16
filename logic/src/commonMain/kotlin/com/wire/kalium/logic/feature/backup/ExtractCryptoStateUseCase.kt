@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.nomadTrace
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.util.ExtractFilesParam
 import com.wire.kalium.logic.util.extractCompressedFile
@@ -56,6 +57,13 @@ internal class ExtractCryptoStateUseCaseImpl(
         try {
             val backupFileExists = kaliumFileSystem.exists(backupFilePath)
             kaliumLogger.i("$TAG Backup file path: $backupFilePath, exists: $backupFileExists")
+            kaliumLogger.nomadTrace(
+                stage = "restore.extract.start",
+                fields = mapOf(
+                    "backupPath" to backupFilePath.toString(),
+                    "backupExists" to backupFileExists
+                )
+            )
 
             if (!backupFileExists) {
                 kaliumLogger.e("$TAG Backup file does not exist at: $backupFilePath")
@@ -76,6 +84,13 @@ internal class ExtractCryptoStateUseCaseImpl(
             extractResult.fold(
                 { error ->
                     kaliumLogger.e("$TAG Failed to extract crypto state backup: $error")
+                    kaliumLogger.nomadTrace(
+                        stage = "restore.extract.failure",
+                        fields = mapOf(
+                            "backupPath" to backupFilePath.toString(),
+                            "error" to error
+                        )
+                    )
                     cleanup(extractedDir)
                     ExtractCryptoStateResult.Failure(error)
                 },
@@ -91,6 +106,16 @@ internal class ExtractCryptoStateUseCaseImpl(
                             CoreFailure.Unknown(IllegalStateException("Missing or invalid metadata file"))
                         )
                     }
+                    kaliumLogger.nomadTrace(
+                        stage = "restore.extract.success",
+                        fields = mapOf(
+                            "backupPath" to backupFilePath.toString(),
+                            "extractedDir" to extractedDir.toString(),
+                            "extractedSizeBytes" to extractedSize,
+                            "metadataClientId" to metadata.clientId,
+                            "metadataLastProcessedEventId" to metadata.lastProcessedEventId
+                        )
+                    )
 
                     // Find MLS and Proteus keystore files
                     val mlsKeystorePath = extractedDir.resolve(MLS_KEYSTORE_NAME)

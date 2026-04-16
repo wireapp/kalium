@@ -18,6 +18,8 @@
 
 package com.wire.kalium.nomaddevice
 
+import com.wire.kalium.common.logger.nomadTrace
+import com.wire.kalium.common.logger.nomadTraceTextPreview
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadAllMessagesResponse
 import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadConversationWithMessages
@@ -104,7 +106,17 @@ public class NomadAllMessagesMapper {
             payload = content,
             reactions = reactions,
             readReceipts = readReceipts,
-        )
+        ).also { mapped ->
+            nomadLogger.nomadTrace(
+                stage = "nomad.messages.restore.message.mapped",
+                fields = mapOf(
+                    "conversationId" to "${conversationWithMessages.conversation.id}@${conversationWithMessages.conversation.domain}",
+                    "messageId" to mapped.id,
+                    "contentType" to mapped.payload.contentType.name,
+                    "textPreview" to nomadTraceTextPreview(mapped.payload.nomadTraceTextPreview())
+                )
+            )
+        }
     }
 
     private fun decodeReactionsOrEmpty(
@@ -315,6 +327,14 @@ public class NomadAllMessagesMapper {
         conversation: NomadConversationWithMessages,
         reason: String,
     ) {
+        nomadLogger.nomadTrace(
+            stage = "nomad.messages.restore.message.skipped",
+            fields = mapOf(
+                "conversationId" to "${conversation.conversation.id}@${conversation.conversation.domain}",
+                "messageId" to storedMessage.messageId,
+                "reason" to reason
+            )
+        )
         nomadLogger.w(
             "Skipping Nomad message '${storedMessage.messageId}' in conversation " +
                 "'${conversation.conversation.id}@${conversation.conversation.domain}': $reason."
@@ -328,3 +348,10 @@ private fun Conversation.toDaoConversationId(): QualifiedIDEntity =
 
 private fun NomadDeviceQualifiedId.toDaoQualifiedId(): QualifiedIDEntity =
     QualifiedIDEntity(value = value, domain = domain)
+
+private fun SyncableMessagePayloadEntity.nomadTraceTextPreview(): String? =
+    when (this) {
+        is SyncableMessagePayloadEntity.Text -> text
+        is SyncableMessagePayloadEntity.Multipart -> text
+        else -> null
+    }

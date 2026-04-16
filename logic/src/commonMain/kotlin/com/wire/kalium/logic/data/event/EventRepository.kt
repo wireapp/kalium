@@ -32,6 +32,7 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.logger.nomadTrace
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -428,6 +429,24 @@ internal class EventDataSource(
     private suspend fun fetchPendingEvents(clientId: ClientId): Either<CoreFailure, Unit> {
         var hasMore = true
         var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
+        if (lastFetchedNotificationId.isNullOrBlank()) {
+            logger.nomadTrace(
+                stage = "sync.anchor.missing",
+                fields = mapOf(
+                    "clientId" to clientId.value,
+                    "source" to "metadata"
+                )
+            )
+        } else {
+            logger.nomadTrace(
+                stage = "sync.anchor.reuse",
+                fields = mapOf(
+                    "clientId" to clientId.value,
+                    "anchorId" to lastFetchedNotificationId,
+                    "source" to "metadata"
+                )
+            )
+        }
 
         while (coroutineContext.isActive && hasMore) {
             val notificationsPageResult = getNextPendingEventsPage(lastFetchedNotificationId, clientId)
@@ -476,10 +495,26 @@ internal class EventDataSource(
 
     override suspend fun lastSavedEventId(): Either<StorageFailure, String> = wrapStorageRequest {
         metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
+    }.onSuccess {
+        logger.nomadTrace(
+            stage = "sync.anchor.read",
+            fields = mapOf(
+                "anchorId" to it,
+                "source" to "metadata"
+            )
+        )
     }
 
     override suspend fun clearLastSavedEventId(): Either<StorageFailure, Unit> = wrapStorageRequest {
+        val previous = metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
         metadataDAO.deleteValue(LAST_SAVED_EVENT_ID_KEY)
+        logger.nomadTrace(
+            stage = "sync.anchor.clear",
+            fields = mapOf(
+                "previousAnchorId" to previous,
+                "source" to "metadata"
+            )
+        )
     }
 
     override suspend fun fetchMostRecentEventId(): Either<CoreFailure, String> =
@@ -490,7 +525,16 @@ internal class EventDataSource(
             }
 
     override suspend fun updateLastSavedEventId(eventId: String): Either<StorageFailure, Unit> = wrapStorageRequest {
+        val previous = metadataDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
         metadataDAO.insertValue(eventId, LAST_SAVED_EVENT_ID_KEY)
+        logger.nomadTrace(
+            stage = "sync.anchor.update",
+            fields = mapOf(
+                "previousAnchorId" to previous,
+                "newAnchorId" to eventId,
+                "source" to "metadata"
+            )
+        )
     }
 
     override suspend fun setEventAsProcessed(eventId: String): Either<StorageFailure, Unit> = wrapStorageRequest {

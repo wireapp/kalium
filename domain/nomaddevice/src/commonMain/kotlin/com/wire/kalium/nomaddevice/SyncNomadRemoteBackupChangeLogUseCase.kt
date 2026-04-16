@@ -21,6 +21,8 @@ package com.wire.kalium.nomaddevice
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
+import com.wire.kalium.common.logger.nomadTrace
+import com.wire.kalium.common.logger.nomadTraceTextPreview
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
@@ -76,7 +78,18 @@ public class SyncNomadRemoteBackupChangeLogUseCase internal constructor(
     public suspend operator fun invoke(selfUserId: UserId): Either<CoreFailure, NomadRemoteBackupChangeLogSyncResult> =
         when (val batchResult = repository.getLastPendingChangesBatch(selfUserId, pageSize)) {
             is Either.Left -> batchResult.value.left()
-            is Either.Right -> syncBatch(selfUserId, batchResult.value)
+            is Either.Right -> {
+                nomadLogger.nomadTrace(
+                    stage = "nomad.messages.upload.batch.loaded",
+                    fields = mapOf(
+                        "userId" to selfUserId.toLogString(),
+                        "eventsCount" to batchResult.value.events.size,
+                        "metadataCount" to batchResult.value.conversationMetadata.size,
+                        "pageSize" to pageSize
+                    )
+                )
+                syncBatch(selfUserId, batchResult.value)
+            }
         }
 
     private suspend fun syncBatch(
@@ -94,6 +107,28 @@ public class SyncNomadRemoteBackupChangeLogUseCase internal constructor(
         batch: ChangeLogSyncBatch
     ): Either<CoreFailure, NomadRemoteBackupChangeLogSyncResult> {
         val mappedEvents = eventMapper.mapBatchToApiEvents(batch)
+        nomadLogger.nomadTrace(
+            stage = "nomad.messages.upload.batch.mapped",
+            fields = mapOf(
+                "userId" to selfUserId.toLogString(),
+                "eventsCount" to batch.events.size,
+                "mappedEventsCount" to mappedEvents.size
+            )
+        )
+        batch.events.forEach { event ->
+            if (event is com.wire.kalium.persistence.dao.backup.ChangeLogSyncEvent.MessageUpsert) {
+                nomadLogger.nomadTrace(
+                    stage = "nomad.messages.upload.message",
+                    fields = mapOf(
+                        "userId" to selfUserId.toLogString(),
+                        "conversationId" to event.conversationId.toLogString(),
+                        "messageId" to event.messageId,
+                        "contentType" to event.message?.contentType?.name,
+                        "textPreview" to nomadTraceTextPreview(event.message?.textForNomadTrace())
+                    )
+                )
+            }
+        }
         return when (val postResult = postMappedEvents(selfUserId, batch, mappedEvents)) {
             is Either.Left -> postResult.value.left()
             is Either.Right -> deleteChanges(
@@ -110,7 +145,34 @@ public class SyncNomadRemoteBackupChangeLogUseCase internal constructor(
         mappedEvents: List<NomadMessageEvent>,
     ): Either<CoreFailure, Unit> =
         if (mappedEvents.isNotEmpty()) {
+            nomadLogger.nomadTrace(
+                stage = "nomad.messages.upload.batch.post.start",
+                fields = mapOf(
+                    "userId" to selfUserId.toLogString(),
+                    "eventsCount" to batch.events.size,
+                    "mappedEventsCount" to mappedEvents.size
+                )
+            )
             repository.postMessageEvents(selfUserId, NomadMessageEventsRequest(events = mappedEvents))
+                .also { result ->
+                    when (result) {
+                        is Either.Left -> nomadLogger.nomadTrace(
+                            stage = "nomad.messages.upload.batch.post.failure",
+                            fields = mapOf(
+                                "userId" to selfUserId.toLogString(),
+                                "error" to result.value
+                            )
+                        )
+
+                        is Either.Right -> nomadLogger.nomadTrace(
+                            stage = "nomad.messages.upload.batch.post.success",
+                            fields = mapOf(
+                                "userId" to selfUserId.toLogString(),
+                                "mappedEventsCount" to mappedEvents.size
+                            )
+                        )
+                    }
+                }
         } else {
             nomadLogger.w(
                 "Dropping ${batch.events.size} changelog entries that cannot be mapped to Nomad events " +
@@ -127,10 +189,20 @@ public class SyncNomadRemoteBackupChangeLogUseCase internal constructor(
         val changesToDelete = batch.events.map { it.change }
         return when (val deleteResult = repository.deleteChanges(selfUserId, changesToDelete)) {
             is Either.Left -> deleteResult.value.left()
-            is Either.Right -> NomadRemoteBackupChangeLogSyncResult(
-                syncedEntries = changesToDelete.size,
-                postedEvents = postedEvents
-            ).right()
+            is Either.Right -> {
+                nomadLogger.nomadTrace(
+                    stage = "nomad.messages.upload.batch.delete.success",
+                    fields = mapOf(
+                        "userId" to selfUserId.toLogString(),
+                        "syncedEntries" to changesToDelete.size,
+                        "postedEvents" to postedEvents
+                    )
+                )
+                NomadRemoteBackupChangeLogSyncResult(
+                    syncedEntries = changesToDelete.size,
+                    postedEvents = postedEvents
+                ).right()
+            }
         }
     }
 
@@ -147,3 +219,10 @@ public typealias NomadRemoteBackupChangeLogSyncer = SyncNomadRemoteBackupChangeL
 
 internal fun UserId.toNetworkUserId(): com.wire.kalium.network.api.model.UserId =
     com.wire.kalium.network.api.model.QualifiedID(value = value, domain = domain)
+
+private fun com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity.textForNomadTrace(): String? =
+    when (this) {
+        is com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity.Text -> text
+        is com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity.Multipart -> text
+        else -> null
+    }

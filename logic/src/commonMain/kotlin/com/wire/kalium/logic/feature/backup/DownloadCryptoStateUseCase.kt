@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.logger.nomadTrace
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -58,14 +59,33 @@ internal class DownloadCryptoStateUseCaseImpl(
         val backupFilePath = kaliumFileSystem.tempFilePath(backupFileName)
 
         try {
+            kaliumLogger.nomadTrace(
+                stage = "restore.download.start",
+                fields = mapOf(
+                    "userId" to userId.toLogString(),
+                    "backupPath" to backupFilePath.toString()
+                )
+            )
             kaliumFileSystem.sink(backupFilePath).use { sink ->
                 cryptoStateBackupRemoteRepository.downloadCryptoState(sink).fold(
                     { error ->
                         kaliumLogger.e("$TAG Failed to download crypto state backup: $error")
+                        kaliumLogger.nomadTrace(
+                            stage = "restore.download.failure",
+                            fields = mapOf(
+                                "userId" to userId.toLogString(),
+                                "backupPath" to backupFilePath.toString(),
+                                "error" to error
+                            )
+                        )
                         kaliumFileSystem.delete(backupFilePath)
                         when (error) {
                             is BackupFailure.NoCryptoStateAvailable -> {
                                 kaliumLogger.i("$TAG No crypto state backup available on Nomad service")
+                                kaliumLogger.nomadTrace(
+                                    stage = "restore.download.no_backup",
+                                    fields = mapOf("userId" to userId.toLogString())
+                                )
                                 DownloadCryptoStateResult.NoBackupAvailable
                             }
                             else -> DownloadCryptoStateResult.Failure(error)
@@ -92,6 +112,14 @@ internal class DownloadCryptoStateUseCaseImpl(
         val fileSize = kaliumFileSystem.size(backupFilePath)
 
         kaliumLogger.i("$TAG Downloaded crypto state backup (size: $fileSize bytes)")
+        kaliumLogger.nomadTrace(
+            stage = "restore.download.success",
+            fields = mapOf(
+                "userId" to userId.toLogString(),
+                "backupPath" to backupFilePath.toString(),
+                "backupSizeBytes" to fileSize
+            )
+        )
 
         return when (fileSize) {
             null -> {
@@ -102,6 +130,13 @@ internal class DownloadCryptoStateUseCaseImpl(
 
             0L -> {
                 kaliumLogger.i("$TAG No crypto state backup available on server (empty response)")
+                kaliumLogger.nomadTrace(
+                    stage = "restore.download.no_backup",
+                    fields = mapOf(
+                        "userId" to userId.toLogString(),
+                        "backupPath" to backupFilePath.toString()
+                    )
+                )
                 kaliumFileSystem.delete(backupFilePath)
                 DownloadCryptoStateResult.NoBackupAvailable
             }
