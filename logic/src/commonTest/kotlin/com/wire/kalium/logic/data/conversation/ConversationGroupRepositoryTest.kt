@@ -551,7 +551,7 @@ class ConversationGroupRepositoryTest {
                     arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                         any(),
                         matches { it.containsAll(missingMembersFromMLSGroup) },
-                        eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
+                        eq(MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages)
                     )
                 }.wasInvoked(once)
             }

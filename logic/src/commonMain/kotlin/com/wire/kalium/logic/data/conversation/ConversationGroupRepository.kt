@@ -208,7 +208,7 @@ internal class ConversationGroupRepositoryImpl(
                     newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
                         conversationId = conversationEntity.id.toModel(),
                         userIdList = protocolSpecificAdditionFailures.toList(),
-                        type = FailedToAdd.Type.Federation
+                        type = FailedToAdd.Type.MissingKeyPackages
                     )
                 }
             }.flatMap {
