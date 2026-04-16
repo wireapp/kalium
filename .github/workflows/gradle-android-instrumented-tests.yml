@@ -84,7 +84,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Android Instrumentation Tests
-        uses: reactivecircus/android-emulator-runner@v2.35.0
+        uses: reactivecircus/android-emulator-runner@v2.37.0
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
