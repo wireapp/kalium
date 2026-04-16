@@ -29,5 +29,9 @@ internal interface CellConversationRepository {
     suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>>
     suspend fun hasConversationWithCell(): Either<StorageFailure, Boolean>
     suspend fun getCellGroupConversations(): Either<StorageFailure, List<CellConversation>>
-    suspend fun getPaginatedCellGroupConversations(limit: Int, offset: Int, query: String = ""): Either<StorageFailure, List<CellConversation>>
+    suspend fun getPaginatedCellGroupConversations(
+        limit: Int,
+        offset: Int,
+        query: String = ""
+    ): Either<StorageFailure, List<CellConversation>>
 }

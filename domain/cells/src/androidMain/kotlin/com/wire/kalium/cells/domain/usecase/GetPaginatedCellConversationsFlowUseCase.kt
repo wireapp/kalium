@@ -33,4 +33,3 @@ internal class GetPaginatedCellConversationsFlowUseCaseImpl(
 ) : GetPaginatedCellConversationsFlowUseCase {
     override fun invoke(query: String): Flow<PagingData<CellConversation>> = getCellConversations(query)
 }
-

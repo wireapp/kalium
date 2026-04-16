@@ -27,5 +27,3 @@ public val CellsScope.paginatedFilesFlowUseCase: GetPaginatedFilesFlowUseCase
 
 public val CellsScope.paginatedConversationsFlowUseCase: GetPaginatedCellConversationsFlowUseCase
     get() = GetPaginatedCellConversationsFlowUseCaseImpl(getCellConversationsPagedUseCase)
-
-

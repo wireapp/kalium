@@ -26,7 +26,6 @@ import app.cash.paging.PagingState
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.logger.kaliumLogger
 
 internal class ConversationPagingSource(
     private val pageSize: Int,
