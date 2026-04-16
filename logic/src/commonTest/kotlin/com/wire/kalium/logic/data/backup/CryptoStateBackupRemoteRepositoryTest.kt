@@ -24,6 +24,7 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
 import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.any
@@ -91,6 +92,23 @@ class CryptoStateBackupRemoteRepositoryTest {
         )
         val (arrangement, repository) = Arrangement()
             .withDownloadCryptoState(NetworkResponse.Error(noCryptoStateError))
+            .arrange()
+
+        val result = repository.downloadCryptoState(Buffer())
+
+        result.shouldFail { failure ->
+            assertIs<BackupFailure.NoCryptoStateAvailable>(failure)
+        }
+        coVerify { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenApiReturnsSuccessWithZeroContentLength_whenDownloadingCryptoState_thenReturnNoCryptoStateAvailable() = runTest {
+        val emptyResponseError = KaliumException.InvalidRequestError(
+            GenericAPIErrorResponse(200, "Empty response body", "no_crypto_state")
+        )
+        val (arrangement, repository) = Arrangement()
+            .withDownloadCryptoState(NetworkResponse.Error(emptyResponseError))
             .arrange()
 
         val result = repository.downloadCryptoState(Buffer())

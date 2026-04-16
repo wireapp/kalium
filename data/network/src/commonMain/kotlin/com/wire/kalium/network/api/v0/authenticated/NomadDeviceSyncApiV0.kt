@@ -47,6 +47,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
+import io.ktor.http.contentLength
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteWriteChannel
@@ -142,8 +143,21 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
                 setNomadUrlIfAvailable(PATH_EVENT, PATH_CRYPTO_STATE)
             }.execute { httpResponse ->
                 when {
-                    httpResponse.status.isSuccess() ->
-                        handleCryptoStateDownload(httpResponse, tempBackupFileSink)
+                    httpResponse.status.isSuccess() -> {
+                        if (httpResponse.contentLength() == 0L) {
+                            NetworkResponse.Error(
+                                KaliumException.InvalidRequestError(
+                                    GenericAPIErrorResponse(
+                                        code = httpResponse.status.value,
+                                        label = NetworkErrorLabel.NO_CRYPTO_STATE,
+                                        message = "Empty response body"
+                                    )
+                                )
+                            )
+                        } else {
+                            handleCryptoStateDownload(httpResponse, tempBackupFileSink)
+                        }
+                    }
 
                     httpResponse.status == HttpStatusCode.Unauthorized ->
                         handleLabeledError(httpResponse, NetworkErrorLabel.USER_NOT_FOUND, UNAUTHORIZED_CODE)

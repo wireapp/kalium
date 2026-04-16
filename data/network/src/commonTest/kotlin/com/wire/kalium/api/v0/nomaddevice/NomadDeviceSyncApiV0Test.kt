@@ -44,6 +44,7 @@ import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.utils.io.ByteReadChannel
@@ -519,6 +520,26 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
 
         assertTrue(response.isSuccessful())
         assertEquals(responseContent, sink.readUtf8())
+    }
+
+    @Test
+    fun givenSuccessfulResponseWithZeroContentLength_whenDownloadingCryptoState_thenReturnNoCryptoStateError() = runTest {
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertGet()
+                assertPathEqual("/event/crypto/state")
+            },
+            headers = mapOf(HttpHeaders.ContentLength to "0")
+        )
+
+        val api: NomadDeviceSyncApi = NomadDeviceSyncApiV0(networkClient, nomadServiceUrl = "https://nomad.example.com")
+        val response = api.downloadCryptoState(Buffer())
+
+        val error = assertIs<NetworkResponse.Error>(response)
+        val exception = assertIs<KaliumException.InvalidRequestError>(error.kException)
+        assertTrue(exception.isNoCryptoState())
     }
 
     @Test
