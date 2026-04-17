@@ -25,6 +25,10 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 
+/**
+ * Returns the current conv epoch from core-crypto
+ * see [MlsCoreCryptoContext.conversationEpoch]
+ */
 public interface GetConversationEpochFromCCUseCase {
     public suspend operator fun invoke(conversationId: ConversationId): GetConversationEpochFromCCResult
 }
