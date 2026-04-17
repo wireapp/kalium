@@ -17,11 +17,11 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
-import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 
 /**
@@ -33,6 +33,7 @@ public interface FetchConversationMLSVerificationStatusUseCase {
 
 internal class FetchConversationMLSVerificationStatusUseCaseImpl(
     private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase,
     private val transactionProvider: CryptoTransactionProvider
 ) : FetchConversationMLSVerificationStatusUseCase {
@@ -41,9 +42,8 @@ internal class FetchConversationMLSVerificationStatusUseCaseImpl(
         conversationRepository.getConversationById(conversationId).onSuccess {
             val protocol = it.protocol
             if (protocol is Conversation.ProtocolInfo.MLSCapable) {
-                val groupId = protocol.groupId.value
                 transactionProvider.mlsTransaction { mlsContext ->
-                    wrapMLSRequest { mlsContext.conversationExists(groupId) }
+                    mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, protocol.groupId)
                 }.onSuccess { exists ->
                     if (exists) fetchMLSVerificationStatusUseCase(protocol.groupId)
                 }
