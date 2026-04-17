@@ -56,6 +56,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.Json
 import okio.buffer
+import okio.Path.Companion.toPath
 import okio.use
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -204,12 +205,62 @@ class BackupCryptoDBUseCaseTest {
         assertTrue(fakeFileSystem.exists(result.backupFilePath))
     }
 
+    @Test
+    fun givenFixedTempRoot_whenInvoked_thenExportsIntoThatRoot() = runTest(dispatcher.default) {
+        val passphrase = ByteArray(32) { 0xAB.toByte() }
+        val proteusPassphrase = ByteArray(32) { 0xBC.toByte() }
+        val fixedTempRootName = "crypto_backup_temp_test"
+        val clientId = TestClient.CLIENT_ID
+        val (arrangement, useCase) = Arrangement()
+            .withClientId(TestClient.CLIENT_ID)
+            .withLastProcessedEventId("event-123")
+            .withMlsTransactionSuccess()
+            .withProteusTransactionSuccess()
+            .withTempBackupDirNameProvider { fixedTempRootName }
+            .arrange()
+
+        val expectedRoot = fakeFileSystem.tempFilePath(fixedTempRootName)
+        val expectedMlsExportPath = expectedRoot.resolve(BackupCryptoDBUseCaseImpl.MLS_KEYSTORE_NAME).toString()
+        val expectedProteusExportPath = expectedRoot.resolve(BackupCryptoDBUseCaseImpl.PROTEUS_KEYSTORE_NAME).toString()
+
+        everySuspend { arrangement.mlsClientProvider.exportCryptoDB(any()) }.calls { invocation ->
+            val exportPath = invocation.args[0] as String
+            with(fakeFileSystem) {
+                sink(exportPath.toPath()).buffer().use { it.writeUtf8("mls-db") }
+            }
+            com.wire.kalium.logic.data.client.CryptoBackupMetadata(
+                dbPath = exportPath,
+                passphrase = passphrase,
+                clientId = clientId
+            ).right()
+        }
+        everySuspend { arrangement.proteusClientProvider.exportCryptoDB(any()) }.calls { invocation ->
+            val exportPath = invocation.args[0] as String
+            with(fakeFileSystem) {
+                sink(exportPath.toPath()).buffer().use { it.writeUtf8("proteus-db") }
+            }
+            com.wire.kalium.logic.data.client.CryptoBackupMetadata(
+                dbPath = exportPath,
+                passphrase = proteusPassphrase,
+                clientId = clientId
+            ).right()
+        }
+
+        val result = useCase()
+        advanceUntilIdle()
+
+        assertIs<BackupCryptoDBResult.Success>(result)
+        verifySuspend { arrangement.mlsClientProvider.exportCryptoDB(expectedMlsExportPath) }
+        verifySuspend { arrangement.proteusClientProvider.exportCryptoDB(expectedProteusExportPath) }
+    }
+
     private inner class Arrangement {
         private val defaultLastProcessedEventId = "event-default"
         val clientIdProvider = mock<CurrentClientIdProvider>()
         val mlsClientProvider = mock<MLSClientProvider>()
         val proteusClientProvider = mock<ProteusClientProvider>()
         val eventRepository = mock<EventRepository>()
+        private var tempBackupDirNameProvider: () -> String = { BackupCryptoDBUseCaseImpl.TEMP_CRYPTO_BACKUP_DIR }
         private val mlsClient = mock<MLSClient>()
         private val mlsContext = mock<MlsCoreCryptoContext>()
         private val proteusClient = mock<ProteusClient>()
@@ -330,12 +381,17 @@ class BackupCryptoDBUseCaseTest {
             }.returns(Either.Left(failure))
         }
 
+        fun withTempBackupDirNameProvider(provider: () -> String) = apply {
+            tempBackupDirNameProvider = provider
+        }
+
         fun arrange(): Pair<Arrangement, BackupCryptoDBUseCase> = this to BackupCryptoDBUseCaseImpl(
             userId = TestUser.USER_ID,
             cryptoTransactionProvider = cryptoTransactionProvider,
             eventRepository = eventRepository,
             kaliumFileSystem = fakeFileSystem,
-            dispatchers = dispatcher
+            dispatchers = dispatcher,
+            tempBackupDirNameProvider = tempBackupDirNameProvider,
         )
     }
 

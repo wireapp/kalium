@@ -150,6 +150,7 @@ class ApplyCryptoStateUseCaseTest {
         val eventRepository = mock<EventRepository>()
 
         init {
+            everySuspend { eventRepository.lastSavedEventId() } returns Either.Left(StorageFailure.DataNotFound)
             withSuccessfulLastProcessedEventIdUpdate()
         }
 

@@ -77,6 +77,7 @@ internal class NomadMessagePagingCoordinatorImpl(
 
     private val stateByConversation = ConcurrentMutableMap<ConversationId, State>()
 
+    @Suppress("LongMethod")
     override suspend fun fetchOlderMessagesIfNeeded(
         conversationId: ConversationId,
         pageSize: Int,
@@ -160,6 +161,7 @@ internal class NomadMessagePagingCoordinatorImpl(
         }
     }
 
+    @Suppress("LongMethod")
     private suspend fun storeAndUpdateState(
         conversationId: ConversationId,
         response: NomadBatchRestoreResponse,

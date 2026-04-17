@@ -291,6 +291,7 @@ internal class MessageSenderImpl internal constructor(
      *
      * Will handle re-trying on "mls-stale-message" after we are live again or fail if we are not syncing.
      */
+    @Suppress("LongMethod")
     private suspend fun attemptToSendWithMLS(
         transactionContext: CryptoTransactionContext,
         protocolInfo: Conversation.ProtocolInfo.MLS,

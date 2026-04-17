@@ -43,6 +43,7 @@ import okio.Source
 import okio.buffer
 import okio.use
 import kotlin.io.encoding.Base64
+import kotlin.random.Random
 
 /**
  * Performs the backup of the cryptographic database by exporting it, creating a metadata file, and packaging them into a ZIP file.
@@ -57,8 +58,13 @@ internal class BackupCryptoDBUseCaseImpl(
     private val eventRepository: EventRepository,
     private val kaliumFileSystem: KaliumFileSystem,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val tempBackupDirNameProvider: () -> String = {
+        val timeStamp = DateTimeUtil.currentSimpleDateTimeString().replace(":", "-")
+        "${TEMP_CRYPTO_BACKUP_DIR}_${timeStamp}_${Random.nextInt()}"
+    },
 ) : BackupCryptoDBUseCase {
 
+    @Suppress("LongMethod")
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
         val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
         if (kaliumFileSystem.exists(mlsBackupPath)) {
@@ -105,6 +111,7 @@ internal class BackupCryptoDBUseCaseImpl(
                 )
             )
             val metadataPath = createMetadataFile(
+                cryptoBackupRootPath = cryptoBackupRootPath,
                 mlsExportData = mlsExportData,
                 proteusExportData = proteusExportData,
                 lastProcessedEventId = lastProcessedEventId
@@ -135,7 +142,6 @@ internal class BackupCryptoDBUseCaseImpl(
             kaliumLogger.e("CoreCrypto export failed", e)
             BackupCryptoDBResult.Failure(StorageFailure.Generic(e))
         } finally {
-            kaliumFileSystem.delete(kaliumFileSystem.tempFilePath(BackupConstants.BACKUP_METADATA_FILE_NAME))
             kaliumFileSystem.deleteContents(cryptoBackupRootPath)
         }
     }
@@ -182,7 +188,7 @@ internal class BackupCryptoDBUseCaseImpl(
         }
 
     private fun createBackupDirectories(): Triple<Path, Path, Path> {
-        val cryptoBackupRootPath = kaliumFileSystem.tempFilePath(TEMP_CRYPTO_BACKUP_DIR)
+        val cryptoBackupRootPath = kaliumFileSystem.tempFilePath(tempBackupDirNameProvider())
         kaliumFileSystem.createDirectories(cryptoBackupRootPath)
         val mlsBackupPath = cryptoBackupRootPath.resolve(MLS_KEYSTORE_NAME)
         val proteusBackupPath = cryptoBackupRootPath.resolve(PROTEUS_KEYSTORE_NAME)
@@ -215,6 +221,7 @@ internal class BackupCryptoDBUseCaseImpl(
     }
 
     private fun createMetadataFile(
+        cryptoBackupRootPath: Path,
         mlsExportData: CryptoBackupMetadata,
         proteusExportData: CryptoBackupMetadata,
         lastProcessedEventId: String,
@@ -228,7 +235,7 @@ internal class BackupCryptoDBUseCaseImpl(
         )
         val metadataJson = Json.encodeToString(metadata)
 
-        val metadataFilePath = kaliumFileSystem.tempFilePath(BackupConstants.BACKUP_METADATA_FILE_NAME)
+        val metadataFilePath = cryptoBackupRootPath.resolve(BackupConstants.BACKUP_METADATA_FILE_NAME)
         kaliumFileSystem.sink(metadataFilePath).buffer().use {
             it.write(metadataJson.encodeToByteArray())
         }
