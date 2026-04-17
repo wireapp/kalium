@@ -131,15 +131,6 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
         }
     }
 
-    data class AppsAllowedResultTestCase(
-        val description: String,
-        val appsEnabled: Either<StorageFailure, Boolean>,
-        val defaultProtocol: Either<StorageFailure, SupportedProtocol>,
-        val supportedProtocols: Either<StorageFailure, Set<SupportedProtocol>>,
-        val selfTeamId: Either<StorageFailure, TeamId?>,
-        val expectedResult: AppsAllowedResult
-    )
-
     private val testCases = listOf(
         AppsAllowedResultTestCase(
             description = "Proteus Default Protocol, Proteus Supported Protocol, Apps Disabled",
@@ -248,5 +239,13 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
             return this to ObserveIsAppsAllowedForUsageUseCaseImpl(userConfigRepository, selfTeamIdProvider)
         }
     }
-
 }
+
+data class AppsAllowedResultTestCase(
+    val description: String,
+    val appsEnabled: Either<StorageFailure, Boolean>,
+    val defaultProtocol: Either<StorageFailure, SupportedProtocol>,
+    val supportedProtocols: Either<StorageFailure, Set<SupportedProtocol>>,
+    val selfTeamId: Either<StorageFailure, TeamId?>,
+    val expectedResult: AppsAllowedResult
+)
