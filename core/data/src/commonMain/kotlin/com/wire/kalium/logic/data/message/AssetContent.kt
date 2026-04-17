@@ -29,7 +29,6 @@ data class AssetContent(
     val mimeType: String,
     val metadata: AssetMetadata? = null,
     val remoteData: RemoteData,
-    val localData: LocalData? = null,
 ) : MessageAttachment {
 
     private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()
@@ -68,10 +67,6 @@ data class AssetContent(
             }
         }
     }
-
-    data class LocalData(
-        val assetDataPath: String,
-    )
 
     data class RemoteData(
         val otrKey: ByteArray,
@@ -150,7 +145,7 @@ fun AssetMetadata.durationMs() = when (this) {
 
 fun MessageAttachment.localPath() = when (this) {
     is CellAssetContent -> localPath
-    is AssetContent -> localData?.assetDataPath
+    is AssetContent -> null
 }
 
 fun MessageAttachment.uuid() = when (this) {

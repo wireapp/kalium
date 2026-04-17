@@ -23,6 +23,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.util.SecurityHelper
@@ -49,12 +50,14 @@ internal interface ApplyCryptoStateUseCase {
     suspend operator fun invoke(extractResult: ExtractCryptoStateResult.Success): ApplyCryptoStateResult
 }
 
+@Suppress("LongParameterList")
 internal class ApplyCryptoStateUseCaseImpl(
     private val userId: UserId,
     private val rootPathsProvider: RootPathsProvider,
     private val kaliumFileSystem: KaliumFileSystem,
     private val securityHelper: SecurityHelper,
     private val clientRepository: ClientRepository,
+    private val eventRepository: EventRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : ApplyCryptoStateUseCase {
 
@@ -84,6 +87,11 @@ internal class ApplyCryptoStateUseCaseImpl(
 
                 // Update database passphrases from backup metadata
                 updatePassphrases(extractResult.metadata)
+
+                when (val restoreEventIdResult = restoreLastProcessedEventId(extractResult.metadata)) {
+                    is ApplyCryptoStateResult.Failure -> return@withContext restoreEventIdResult
+                    ApplyCryptoStateResult.Success -> Unit
+                }
 
                 // Mark the client as having registered for MLS
                 clientRepository.setHasRegisteredMLSClient()
@@ -115,6 +123,20 @@ internal class ApplyCryptoStateUseCaseImpl(
         val proteusPassphraseKey = "${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId"
         securityHelper.setDBPassphrase(proteusPassphraseKey, metadata.proteusDbPassphrase)
         kaliumLogger.i("$TAG: Updated Proteus database passphrase")
+    }
+
+    private suspend fun restoreLastProcessedEventId(metadata: CryptoStateBackupMetadata): ApplyCryptoStateResult {
+        return when (val result = eventRepository.updateLastSavedEventId(metadata.lastProcessedEventId)) {
+            is com.wire.kalium.common.functional.Either.Right -> {
+                kaliumLogger.i("$TAG: Restored last processed event ID from crypto backup metadata")
+                ApplyCryptoStateResult.Success
+            }
+
+            is com.wire.kalium.common.functional.Either.Left -> {
+                kaliumLogger.e("$TAG: Failed to restore last processed event ID from crypto backup metadata")
+                ApplyCryptoStateResult.Failure(result.value)
+            }
+        }
     }
 
     private fun applyMLSKeystore(extractedMlsPath: Path, clientId: String): ApplyCryptoStateResult {

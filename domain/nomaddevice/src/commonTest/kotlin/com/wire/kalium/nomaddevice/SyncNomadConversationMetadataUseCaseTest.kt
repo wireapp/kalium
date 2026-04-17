@@ -70,6 +70,24 @@ class SyncNomadConversationMetadataUseCaseTest {
     }
 
     @Test
+    fun givenMetadataResponseWithoutLastRead_whenInvoking_thenApplyNullLastReadDate() = runTest {
+        val repository = FakeNomadConversationMetadataSyncRepository(
+            metadataResponse = Either.Right(metadataResponse(lastRead = null)),
+        )
+        val useCase = SyncNomadConversationMetadataUseCase(
+            repository = repository
+        )
+
+        val result = useCase(SELF_USER_ID)
+
+        val success = assertIs<Either.Right<NomadConversationMetadataSyncResult>>(result).value
+        assertEquals(1, success.downloadedConversations)
+        assertEquals(1, repository.appliedMetadata.size)
+        assertEquals(null, repository.appliedMetadata.single().lastReadDate)
+        assertEquals(Instant.fromEpochMilliseconds(LAST_MODIFIED_TIMESTAMP), repository.appliedMetadata.single().lastModifiedDate)
+    }
+
+    @Test
     fun givenApiFailure_whenInvoking_thenDoNotTouchStorage() = runTest {
         val repository = FakeNomadConversationMetadataSyncRepository(
             metadataResponse = Either.Left(NetworkFailure.NoNetworkConnection(null)),
@@ -102,12 +120,12 @@ class SyncNomadConversationMetadataUseCaseTest {
         }
     }
 
-    private fun metadataResponse(): NomadConversationMetadataResponse =
+    private fun metadataResponse(lastRead: Long? = LAST_READ_TIMESTAMP): NomadConversationMetadataResponse =
         NomadConversationMetadataResponse(
             conversations = listOf(
                 NomadConversationMetadataItem(
                     conversation = Conversation(id = CONVERSATION_ID, domain = CONVERSATION_DOMAIN),
-                    metadata = NomadConversationMetadata(lastRead = LAST_READ_TIMESTAMP, lastModified = LAST_MODIFIED_TIMESTAMP)
+                    metadata = NomadConversationMetadata(lastRead = lastRead, lastModified = LAST_MODIFIED_TIMESTAMP)
                 )
             )
         )

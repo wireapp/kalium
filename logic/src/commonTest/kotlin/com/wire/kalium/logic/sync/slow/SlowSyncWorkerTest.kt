@@ -39,7 +39,7 @@ import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl
 import com.wire.kalium.logic.util.stubs.FailureSyncMigration
@@ -634,7 +634,7 @@ class SlowSyncWorkerTest {
     }
 
     private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val syncSelfUser: SyncSelfUserUseCase = mock(SyncSelfUserUseCase::class)
         val syncUserProperties: SyncUserPropertiesUseCase = mokkeryMock<SyncUserPropertiesUseCase>()
         val syncFeatureConfigs: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)

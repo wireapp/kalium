@@ -117,7 +117,7 @@ internal class RefreshCellAssetStateUseCaseImpl internal constructor(
     private suspend fun removeLocalAssetData(assetId: String) {
         attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
         attachmentsRepository.getAttachment(assetId).map { attachment ->
-            attachment.localPath()?.takeIf { it.isNotBlank() }?.let { localPath ->
+            (attachment as? CellAssetContent)?.localPath?.takeIf { it.isNotBlank() }?.let { localPath ->
                 deleteLocalFile(localPath.toPath())
             }
         }

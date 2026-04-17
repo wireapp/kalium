@@ -38,7 +38,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangement
@@ -362,7 +362,7 @@ internal class MessageSendFailureHandlerTest {
 
     class Arrangement : ClientRepositoryArrangement by ClientRepositoryArrangementImpl(),
         FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         internal val userRepository = mock(UserRepository::class)
         internal val messageRepository = mock(MessageRepository::class)
         val messageSendingScheduler = mock(MessageSendingScheduler::class)

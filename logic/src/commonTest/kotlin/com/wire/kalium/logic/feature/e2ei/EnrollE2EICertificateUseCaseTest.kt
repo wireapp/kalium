@@ -38,7 +38,7 @@ import com.wire.kalium.logic.feature.e2ei.usecase.FinalizeEnrollmentResult
 import com.wire.kalium.logic.feature.e2ei.usecase.InitialEnrollmentResult
 import com.wire.kalium.logic.framework.TestConversation.MLS_CONVERSATION
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
@@ -1049,7 +1049,7 @@ internal class EnrollE2EICertificateUseCaseTest {
     }
 
     private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val e2EIRepository = mock(E2EIRepository::class)
         val conversationRepository = mock(ConversationRepository::class)

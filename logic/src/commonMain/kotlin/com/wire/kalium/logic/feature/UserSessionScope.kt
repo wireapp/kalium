@@ -53,6 +53,8 @@ import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteDataSource
 import com.wire.kalium.logic.data.backup.CryptoStateBackupRemoteRepository
 import com.wire.kalium.logic.data.call.CallDataSource
+import com.wire.kalium.logic.data.call.CallModerationActionsDataSource
+import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.InCallReactionsDataSource
 import com.wire.kalium.logic.data.call.InCallReactionsRepository
@@ -1141,6 +1143,7 @@ public class UserSessionScope internal constructor(
             clientIdProvider = clientIdProvider,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            eventRepository = eventRepository,
             kaliumFileSystem = kaliumFileSystem,
             userStorage = userStorage,
             cryptoTransactionProvider = cryptoTransactionProvider,
@@ -1781,6 +1784,10 @@ public class UserSessionScope internal constructor(
         InCallReactionsDataSource()
     }
 
+    private val callModerationActionsRepository: CallModerationActionsRepository by lazy {
+        CallModerationActionsDataSource()
+    }
+
     private val buttonActionHandler: ButtonActionHandler by lazy {
         ButtonActionHandlerImpl(userId, compositeMessageRepository, userScopedLogger)
     }
@@ -1791,6 +1798,7 @@ public class UserSessionScope internal constructor(
             currentClientIdProvider = clientIdProvider,
             callManager = callManager,
             conversationRepository = conversationRepository,
+            callModerationActionsRepository = callModerationActionsRepository,
             muteCall = calls.muteCall,
         )
     }
@@ -2672,6 +2680,7 @@ public class UserSessionScope internal constructor(
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
             kaliumConfigs = kaliumConfigs,
             inCallReactionsRepository = inCallReactionsRepository,
+            callModerationActionsRepository = callModerationActionsRepository,
             selfUserId = userId,
             userRepository = userRepository
         )

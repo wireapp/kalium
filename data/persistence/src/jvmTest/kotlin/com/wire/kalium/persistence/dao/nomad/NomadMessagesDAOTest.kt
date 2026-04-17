@@ -187,6 +187,47 @@ class NomadMessagesDAOTest {
         assertTrue(database.userDAO.getUsersDetailsByQualifiedIDList(listOf(invalidMessage.payload.senderUserId)).isEmpty())
     }
 
+    @Test
+    fun givenMultipartMessageWithAudioCellAttachment_whenStoring_thenAttachmentKeepsCellsRetrievalMetadata() = runTest {
+        val database = newDatabase()
+        val dao = newDao(database)
+        val message = NomadMessageToInsert(
+            id = "m-audio",
+            conversationId = qid("c1"),
+            date = Instant.fromEpochMilliseconds(1_500),
+            payload = SyncableMessagePayloadEntity.Multipart(
+                creationDate = Instant.fromEpochMilliseconds(1_500),
+                senderUserId = qid("u1"),
+                senderClientId = "sender-client",
+                lastEditDate = null,
+                text = null,
+                quotedMessageId = null,
+                mentions = emptyList(),
+                attachments = listOf(audioAttachment(assetId = "audio-1"))
+            ),
+        )
+
+        val result = dao.storeMessages(
+            messages = listOf(message),
+            batchSize = 20
+        )
+
+        assertEquals(1, result.storedMessages)
+
+        val storedMessage = assertNotNull(database.messageDAO.getMessageById("m-audio", qid("c1")))
+        val multipartContent = assertIs<MessageEntityContent.Multipart>(storedMessage.content)
+        assertEquals(1, multipartContent.attachments.size)
+        assertEquals("audio-1", multipartContent.attachments.single().assetId)
+
+        val storedAttachment = database.messageAttachments.getAttachment("audio-1")
+        assertTrue(storedAttachment.cellAsset)
+        assertEquals("audio/ogg", storedAttachment.mimeType)
+        assertEquals("cells/audio/audio-1.ogg", storedAttachment.assetPath)
+        assertEquals(2048L, storedAttachment.assetSize)
+        assertEquals(98_765L, storedAttachment.assetDuration)
+        assertEquals("NOT_DOWNLOADED", storedAttachment.assetTransferStatus)
+    }
+
     private fun newDatabase(): UserDatabaseBuilder = userDatabaseBuilder(
         platformDatabaseData = PlatformDatabaseData(StorageData.InMemory),
         userId = SELF_USER_ID_DAO,
@@ -312,6 +353,19 @@ class NomadMessagesDAOTest {
         assetWidth = null,
         assetHeight = null,
         assetDuration = null,
+        assetTransferStatus = "NOT_DOWNLOADED",
+        isEditSupported = false
+    )
+
+    private fun audioAttachment(assetId: String): MessageAttachmentEntity = MessageAttachmentEntity(
+        assetId = assetId,
+        cellAsset = true,
+        mimeType = "audio/ogg",
+        assetPath = "cells/audio/$assetId.ogg",
+        assetSize = 2048L,
+        assetWidth = null,
+        assetHeight = null,
+        assetDuration = 98_765L,
         assetTransferStatus = "NOT_DOWNLOADED",
         isEditSupported = false
     )
