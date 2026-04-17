@@ -18,18 +18,20 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,9 +48,9 @@ class GetConversationEpochFromCCUseCaseTest {
 
         val result = useCase(TestConversation.ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsContext.conversationEpoch(eq(TestConversation.GROUP_ID.value))
-        }.wasInvoked(exactly = 1)
+        }
         assertEquals(GetConversationEpochFromCCResult.Success(EXPECTED_EPOCH), result)
     }
 
@@ -60,23 +62,23 @@ class GetConversationEpochFromCCUseCaseTest {
 
         val result = useCase(TestConversation.ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.mlsTransaction<ULong>(any(), any())
-        }.wasNotInvoked()
+        }
         assertIs<GetConversationEpochFromCCResult.Failure.NotMlsConversation>(result)
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val conversationRepository = mock(ConversationRepository::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val conversationRepository = mock<ConversationRepository>()
         private var ccEpoch = EXPECTED_EPOCH
 
         suspend fun withConversation(result: Either<StorageFailure, Conversation>) = apply {
-            coEvery { conversationRepository.getConversationById(any()) } returns result
+            everySuspend { conversationRepository.getConversationById(any()) } returns result
         }
 
         suspend fun withCCEpoch(epoch: ULong) = apply {
             ccEpoch = epoch
-            coEvery { mlsContext.conversationEpoch(any()) } returns epoch
+            everySuspend { mlsContext.conversationEpoch(any()) } returns epoch
         }
 
         suspend fun arrange(): Pair<Arrangement, GetConversationEpochFromCCUseCaseImpl> {

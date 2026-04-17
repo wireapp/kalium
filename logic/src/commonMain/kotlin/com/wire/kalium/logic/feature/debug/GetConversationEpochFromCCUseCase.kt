@@ -24,9 +24,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.Mockable
 
-@Mockable
 public interface GetConversationEpochFromCCUseCase {
     public suspend operator fun invoke(conversationId: ConversationId): GetConversationEpochFromCCResult
 }
