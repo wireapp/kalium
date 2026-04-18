@@ -404,6 +404,8 @@ class UserDatabaseBuilder internal constructor(
             messageAttachmentsQueries = database.messageAttachmentsQueries,
             reactionsQueries = database.reactionsQueries,
             receiptsQueries = database.receiptsQueries,
+            unreadEventsQueries = database.unreadEventsQueries,
+            selfUserId = userId,
             writeDispatcher = writeDispatcher,
         )
 

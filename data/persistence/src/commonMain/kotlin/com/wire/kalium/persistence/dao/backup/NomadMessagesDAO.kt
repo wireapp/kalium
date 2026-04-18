@@ -23,9 +23,12 @@ import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.ReceiptsQueries
+import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
@@ -69,6 +72,8 @@ internal class NomadMessagesDAOImpl internal constructor(
     private val messageAttachmentsQueries: MessageAttachmentsQueries,
     private val reactionsQueries: ReactionsQueries,
     private val receiptsQueries: ReceiptsQueries,
+    private val unreadEventsQueries: UnreadEventsQueries,
+    private val selfUserId: UserIDEntity,
     private val writeDispatcher: WriteDispatcher,
 ) : NomadMessagesDAO {
 
@@ -86,7 +91,8 @@ internal class NomadMessagesDAOImpl internal constructor(
                 messagesQueries.transaction {
                     insertPlaceholderUsers(batch)
                     insertPlaceholderConversations(batch)
-                    insertedMessages += insertMessages(batch)
+                    val lastReadDatesByConversation = batch.lastReadDatesByConversation()
+                    insertedMessages += insertMessages(batch, lastReadDatesByConversation)
                 }
                 batches += 1
             }
@@ -117,12 +123,18 @@ internal class NomadMessagesDAOImpl internal constructor(
             }
     }
 
-    private fun insertMessages(messages: List<NomadMessageToInsert>): Int =
+    private fun insertMessages(
+        messages: List<NomadMessageToInsert>,
+        lastReadDatesByConversation: Map<QualifiedIDEntity, Instant>,
+    ): Int =
         messages.count { message ->
-            insertMessageWithContentOrThrow(message)
+            insertMessageWithContentOrThrow(message, lastReadDatesByConversation)
         }
 
-    private fun insertMessageWithContentOrThrow(message: NomadMessageToInsert): Boolean {
+    private fun insertMessageWithContentOrThrow(
+        message: NomadMessageToInsert,
+        lastReadDatesByConversation: Map<QualifiedIDEntity, Instant>,
+    ): Boolean {
         messagesQueries.insertOrIgnoreMessage(
             id = message.id,
             content_type = message.payload.contentType,
@@ -148,6 +160,7 @@ internal class NomadMessagesDAOImpl internal constructor(
         }
         insertReactions(message)
         insertReadReceipts(message)
+        insertUnreadEvent(message, lastReadDatesByConversation)
         return true
     }
 
@@ -176,6 +189,76 @@ internal class NomadMessagesDAOImpl internal constructor(
             )
         }
     }
+
+    private fun insertUnreadEvent(
+        message: NomadMessageToInsert,
+        lastReadDatesByConversation: Map<QualifiedIDEntity, Instant>,
+    ) {
+        val lastRead = lastReadDatesByConversation[message.conversationId] ?: Instant.DISTANT_PAST
+        if (message.payload.senderUserId == selfUserId || message.date <= lastRead) {
+            return
+        }
+
+        when (val content = message.payload) {
+            is SyncableMessagePayloadEntity.Text -> insertUnreadTextLikeContent(
+                message = message,
+                quotedMessageId = content.quotedMessageId,
+                mentions = content.mentions
+            )
+
+            is SyncableMessagePayloadEntity.Multipart -> insertUnreadTextLikeContent(
+                message = message,
+                quotedMessageId = content.quotedMessageId,
+                mentions = content.mentions
+            )
+
+            is SyncableMessagePayloadEntity.Asset,
+            is SyncableMessagePayloadEntity.Location -> {
+                unreadEventsQueries.insertEvent(
+                    message.id,
+                    UnreadEventTypeEntity.MESSAGE,
+                    message.conversationId,
+                    message.date
+                )
+            }
+
+            is SyncableMessagePayloadEntity.Unsupported -> {
+                /* no-op */
+            }
+        }
+    }
+
+    private fun insertUnreadTextLikeContent(
+        message: NomadMessageToInsert,
+        quotedMessageId: String?,
+        mentions: List<MessageEntity.Mention>,
+    ) {
+        val isQuotingSelfUser = quotedMessageId?.let { quotedId ->
+            messagesQueries.getMessageSenderId(quotedId, message.conversationId).executeAsOneOrNull() == selfUserId
+        } ?: false
+
+        val unreadType = when {
+            isQuotingSelfUser -> UnreadEventTypeEntity.REPLY
+            mentions.any { it.userId == selfUserId } -> UnreadEventTypeEntity.MENTION
+            else -> UnreadEventTypeEntity.MESSAGE
+        }
+
+        unreadEventsQueries.insertEvent(
+            message.id,
+            unreadType,
+            message.conversationId,
+            message.date
+        )
+    }
+
+    private fun List<NomadMessageToInsert>.lastReadDatesByConversation(): Map<QualifiedIDEntity, Instant> =
+        asSequence()
+            .map { it.conversationId }
+            .distinct()
+            .associateWith { conversationId ->
+                conversationsQueries.getConversationLastReadDate(conversationId).executeAsOneOrNull()
+                    ?: Instant.DISTANT_PAST
+            }
 
     private fun insertRegularContent(message: NomadMessageToInsert): Boolean {
         val content = message.payload
