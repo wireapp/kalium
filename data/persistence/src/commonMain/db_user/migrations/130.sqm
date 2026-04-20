@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS App (
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     category TEXT,
+    team_id TEXT,
     preview_asset_id TEXT AS QualifiedIDEntity,
     complete_asset_id TEXT AS QualifiedIDEntity
 );

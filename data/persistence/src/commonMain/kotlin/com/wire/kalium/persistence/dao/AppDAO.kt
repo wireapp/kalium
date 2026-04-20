@@ -35,6 +35,7 @@ data class AppEntity(
     val name: String,
     val description: String,
     val category: String?,
+    val teamId: String?,
     val previewAssetId: UserAssetIdEntity?,
     val completeAssetId: UserAssetIdEntity?
 )
@@ -44,6 +45,7 @@ private fun mapToAppEntity(
     name: String,
     description: String,
     category: String?,
+    teamId: String?,
     previewAssetId: UserAssetIdEntity?,
     completeAssetId: UserAssetIdEntity?
 ): AppEntity = AppEntity(
@@ -51,6 +53,7 @@ private fun mapToAppEntity(
     name = name,
     description = description,
     category = category,
+    teamId = teamId,
     previewAssetId = previewAssetId,
     completeAssetId = completeAssetId
 )
@@ -61,6 +64,7 @@ private fun mapAppToAppEntity(app: App): AppEntity =
         name = app.name,
         description = app.description,
         category = app.category,
+        teamId = app.team_id,
         previewAssetId = app.preview_asset_id,
         completeAssetId = app.complete_asset_id
     )
@@ -91,6 +95,7 @@ internal class AppDAOImpl(
                 name = appEntity.name,
                 description = appEntity.description,
                 category = appEntity.category,
+                team_id = appEntity.teamId,
                 preview_asset_id = appEntity.previewAssetId,
                 complete_asset_id = appEntity.completeAssetId
             )
@@ -105,6 +110,7 @@ internal class AppDAOImpl(
                     name = appEntity.name,
                     description = appEntity.description,
                     category = appEntity.category,
+                    team_id = appEntity.teamId,
                     preview_asset_id = appEntity.previewAssetId,
                     complete_asset_id = appEntity.completeAssetId
                 )
