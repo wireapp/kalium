@@ -38,13 +38,15 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -71,16 +73,16 @@ class RegisterMLSClientUseCaseTest {
 
             assertIs<RegisterMLSClientResult.Success>(result.value)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.clientRepository.registerMLSClient(
-                    eq(TestClient.CLIENT_ID),
-                    eq(Arrangement.MLS_PUBLIC_KEY),
-                    eq(MLS_CIPHER_SUITE.toModel())
+                    TestClient.CLIENT_ID,
+                    Arrangement.MLS_PUBLIC_KEY,
+                    MLS_CIPHER_SUITE.toModel()
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
-                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), eq(Arrangement.REFILL_AMOUNT))
+            verifySuspend {
+                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
             }
         }
 
@@ -105,17 +107,17 @@ class RegisterMLSClientUseCaseTest {
 
             assertIs<RegisterMLSClientResult.E2EICertificateRequired>(result.value)
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.clientRepository.registerMLSClient(
-                    eq(TestClient.CLIENT_ID),
-                    eq(Arrangement.MLS_PUBLIC_KEY),
-                    eq(MLS_CIPHER_SUITE.toModel())
+                    TestClient.CLIENT_ID,
+                    Arrangement.MLS_PUBLIC_KEY,
+                    MLS_CIPHER_SUITE.toModel()
                 )
-            }.wasNotInvoked()
+            }
 
-            coVerify {
-                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), eq(Arrangement.REFILL_AMOUNT))
-            }.wasNotInvoked()
+            verifySuspend(VerifyMode.not) {
+                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
+            }
         }
 
     @Test
@@ -138,76 +140,76 @@ class RegisterMLSClientUseCaseTest {
 
             assertIs<RegisterMLSClientResult.Success>(result.value)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.clientRepository.registerMLSClient(
-                    eq(TestClient.CLIENT_ID),
-                    eq(Arrangement.MLS_PUBLIC_KEY),
-                    eq(MLS_CIPHER_SUITE.toModel())
+                    TestClient.CLIENT_ID,
+                    Arrangement.MLS_PUBLIC_KEY,
+                    MLS_CIPHER_SUITE.toModel()
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
-                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), eq(Arrangement.REFILL_AMOUNT))
+            verifySuspend {
+                arrangement.keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, Arrangement.REFILL_AMOUNT)
             }
         }
 
     private class Arrangement {
-        val mlsClient = mock(MLSClient::class)
-        val mlsContext = mock(MlsCoreCryptoContext::class)
-        var mlsClientProvider = mock(MLSClientProvider::class)
-        val clientRepository = mock(ClientRepository::class)
-        val keyPackageRepository = mock(KeyPackageRepository::class)
-        val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val mlsClient: MLSClient = mock(mode = MockMode.autoUnit)
+        val mlsContext: MlsCoreCryptoContext = mock(mode = MockMode.autoUnit)
+        var mlsClientProvider: MLSClientProvider = mock(mode = MockMode.autoUnit)
+        val clientRepository: ClientRepository = mock(mode = MockMode.autoUnit)
+        val keyPackageRepository: KeyPackageRepository = mock(mode = MockMode.autoUnit)
+        val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock(mode = MockMode.autoUnit)
+        val userConfigRepository: UserConfigRepository = mock(mode = MockMode.autoUnit)
 
         suspend fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getE2EISettings()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withIsMLSClientInitialisedReturns(result: Boolean = true) = apply {
-            coEvery {
+            everySuspend {
                 mlsClientProvider.isMLSClientInitialised()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withRegisterMLSClient(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.registerMLSClient(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         fun withKeyPackageLimits(refillAmount: Int) = apply {
             every {
                 keyPackageLimitsProvider.refillAmount()
-            }.returns(refillAmount)
+            } returns refillAmount
         }
 
         suspend fun withUploadKeyPackagesSuccessful() = apply {
-            coEvery {
-                keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), any())
-            }.returns(Either.Right(Unit))
+            everySuspend {
+                keyPackageRepository.uploadNewKeyPackages(any(), TestClient.CLIENT_ID, any())
+            } returns Either.Right(Unit)
         }
 
         suspend fun withGetPublicKey(publicKey: ByteArray, cipherSuite: MLSCiphersuite) = apply {
-            coEvery {
+            everySuspend {
                 mlsClient.getPublicKey()
-            }.returns(publicKey to cipherSuite)
+            } returns (publicKey to cipherSuite)
         }
 
         suspend fun withGetMLSClientSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsClientProvider.getMLSClient(any())
-            }.returns(Either.Right(mlsClient))
+            } returns Either.Right(mlsClient)
         }
 
         suspend fun <R> withMLSTransaction() = apply {
-            coEvery {
+            everySuspend {
                 mlsClient.transaction<R>(any(), any())
-            }.invokes { args ->
+            } calls { invocation ->
                 @Suppress("UNCHECKED_CAST")
-                val block = args[1] as suspend (MlsCoreCryptoContext) -> R
+                val block = invocation.args[1] as suspend (MlsCoreCryptoContext) -> R
                 block(mlsContext)
             }
         }
