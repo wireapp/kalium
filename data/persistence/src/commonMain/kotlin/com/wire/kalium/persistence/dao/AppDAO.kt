@@ -40,6 +40,7 @@ data class AppEntity(
     val completeAssetId: UserAssetIdEntity?
 )
 
+@Suppress("LongParameterList")
 private fun mapToAppEntity(
     id: QualifiedIDEntity,
     name: String,

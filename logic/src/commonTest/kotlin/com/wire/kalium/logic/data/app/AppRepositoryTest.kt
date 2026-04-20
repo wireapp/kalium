@@ -28,12 +28,14 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.AppDAO
 import com.wire.kalium.persistence.dao.AppEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.persistence.dao.TeamDAO
+import com.wire.kalium.persistence.dao.TeamEntity
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -49,7 +51,9 @@ class AppRepositoryTest {
     @Test
     fun givenSuccess_whenReadingAppDetailsById_thenSuccessIsPropagated() = runTest {
         // given
-        val expected = Arrangement.appDetails
+        val expected = Arrangement.appDetails.copy(
+            creator = Arrangement.TEAM_NAME
+        )
 
         val (arrangement, appRepository) = Arrangement()
             .withAppByIdSuccess(
@@ -66,9 +70,9 @@ class AppRepositoryTest {
             }
         }
 
-        coVerify {
+        verifySuspend {
             arrangement.appDAO.byId(Arrangement.APP_ID_ENTITY)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -91,9 +95,9 @@ class AppRepositoryTest {
             }
         }
 
-        coVerify {
+        verifySuspend {
             arrangement.appDAO.byId(Arrangement.APP_ID_ENTITY)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -117,9 +121,9 @@ class AppRepositoryTest {
             awaitComplete()
         }
 
-        coVerify {
+        verifySuspend {
             arrangement.appDAO.observeIsAppMember(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -139,9 +143,9 @@ class AppRepositoryTest {
             }
         }
 
-        coVerify {
+        verifySuspend {
             arrangement.appDAO.observeIsAppMember(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -162,9 +166,9 @@ class AppRepositoryTest {
             awaitComplete()
         }
 
-        coVerify {
+        verifySuspend {
             arrangement.appDAO.observeAllApps()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -183,9 +187,9 @@ class AppRepositoryTest {
             awaitComplete()
         }
 
-        coVerify {
+        verifySuspend {
             arrangement.appDAO.observeAllApps()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -206,9 +210,9 @@ class AppRepositoryTest {
             awaitComplete()
         }
 
-        coVerify {
+        verifySuspend {
             arrangement.appDAO.searchAppsByName(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -227,68 +231,86 @@ class AppRepositoryTest {
             awaitComplete()
         }
 
-        coVerify {
+        verifySuspend {
             arrangement.appDAO.searchAppsByName(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        val appDAO = mock(AppDAO::class)
-        private val appRepository = AppDataSource(appDAO)
+        val appDAO = mock<AppDAO>()
+        val teamDAO = mock<TeamDAO>()
 
+        private val appRepository = AppDataSource(appDAO, teamDAO)
+
+        init {
+            everySuspend { teamDAO.getTeamById(any()) } returns flowOf(null)
+        }
 
         suspend fun withAppByIdSuccess(appId: PersistenceQualifiedId, result: AppEntity) = apply {
-            coEvery {
-                appDAO.byId(eq(appId))
-            }.returns(result)
+            everySuspend {
+                appDAO.byId(appId)
+            } returns result
+            everySuspend {
+                teamDAO.getTeamById(TEAM_ID)
+            } returns flowOf(
+                TeamEntity(
+                    id = TEAM_ID,
+                    name = TEAM_NAME,
+                    icon = ""
+                )
+            )
         }
 
         suspend fun withAppByIdFailure(appId: PersistenceQualifiedId, error: Throwable) = apply {
-            coEvery {
-                appDAO.byId(eq(appId))
-            }.throws(error)
+            everySuspend {
+                appDAO.byId(appId)
+            } throws error
         }
 
         suspend fun withObserveIsMemberSuccess(result: Flow<QualifiedIDEntity?>) = apply {
-            coEvery {
+            everySuspend {
                 appDAO.observeIsAppMember(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withObserveIsMemberFailure(error: Throwable) = apply {
-            coEvery {
+            everySuspend {
                 appDAO.observeIsAppMember(any(), any())
-            }.throws(error)
+            } throws error
         }
 
         suspend fun withObserveAllAppsSuccess(result: Flow<List<AppEntity>>) = apply {
-            coEvery {
+            everySuspend {
                 appDAO.observeAllApps()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withObserveAllAppsFailure(error: Throwable) = apply {
-            coEvery { appDAO.observeAllApps() }
-                .throws(error)
+            everySuspend {
+                appDAO.observeAllApps()
+            } throws error
         }
 
         suspend fun withSearchAppsByNameSuccess(result: Flow<List<AppEntity>>) = apply {
-            coEvery {
+            everySuspend {
                 appDAO.searchAppsByName(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withSearchAppsByNameFailure(error: Throwable) = apply {
-            coEvery {
+            everySuspend {
                 appDAO.searchAppsByName(any())
-            }.throws(error)
+            } throws error
         }
 
         fun arrange() = this to appRepository
 
         companion object {
+            val TEAM_ID = Uuid.random().toString()
+            val TEAM_NAME = "Wire Team"
+
             val APP_ID = QualifiedID(
-                value = Uuid.Companion.random().toString(),
+                value = Uuid.random().toString(),
                 domain = "wire.com"
             )
             val APP_ID_ENTITY = PersistenceQualifiedId(
@@ -300,7 +322,7 @@ class AppRepositoryTest {
             const val APP_CATEGORY = "DEVELOPER"
 
             val CONVERSATION_ID = QualifiedID(
-                value = Uuid.Companion.random().toString(),
+                value = Uuid.random().toString(),
                 domain = "wire.com"
             )
 
@@ -309,6 +331,7 @@ class AppRepositoryTest {
                 name = APP_NAME,
                 description = APP_DESCRIPTION,
                 category = APP_CATEGORY,
+                creator = null,
                 previewAssetId = null,
                 completeAssetId = null
             )
@@ -318,6 +341,7 @@ class AppRepositoryTest {
                 name = APP_NAME,
                 description = APP_DESCRIPTION,
                 category = APP_CATEGORY,
+                teamId = TEAM_ID,
                 previewAssetId = null,
                 completeAssetId = null
             )
