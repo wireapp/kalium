@@ -56,7 +56,7 @@ internal class BackupAndUploadCryptoStateUseCaseImpl(
     /** Tracks whether a backup/upload operation is currently running. Protected by [mutex]. */
     private var isInFlight = false
 
-    /** 
+    /**
      * Flag indicating that one or more requests were coalesced during the current upload.
      * When true, a trailing upload will execute after the current one finishes to capture the latest state.
      * Protected by [mutex].

@@ -60,14 +60,14 @@ class MLSMessageCreatorTest {
             .withEncodeToProtobufReturning(plainData)
             .withMLSGroupConversationExisting(true)
             .withCommitPendingProposals(Either.Right(Unit))
-            .withMLSEncryptMessage(encryptedData)
+            .withEncryptMessage(Either.Right(encryptedData))
             .arrange {}
 
         creator.prepareMLSGroupAndCreateOutgoingMLSMessage(arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE)
             .shouldSucceed {}
 
         coVerify {
-            arrangement.mlsContext.encryptMessage(eq(CRYPTO_GROUP_ID), eq(plainData))
+            arrangement.mlsConversationRepository.encryptMessage(any(), eq(GROUP_ID), eq(plainData))
         }.wasInvoked(once)
 
         coVerify {
@@ -94,7 +94,7 @@ class MLSMessageCreatorTest {
             .withEncodeToProtobufReturning(plainData)
             .withMLSGroupConversationExisting(false)
             .withJoinExistingConversation(Either.Right(Unit))
-            .withMLSEncryptMessage(encryptedData)
+            .withEncryptMessage(Either.Right(encryptedData))
             .arrange {}
 
         creator.prepareMLSGroupAndCreateOutgoingMLSMessage(arrangement.transactionContext, GROUP_ID, TestMessage.TEXT_MESSAGE)
@@ -105,7 +105,7 @@ class MLSMessageCreatorTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsContext.encryptMessage(eq(CRYPTO_GROUP_ID), eq(plainData))
+            arrangement.mlsConversationRepository.encryptMessage(any(), eq(GROUP_ID), eq(plainData))
         }.wasInvoked(once)
 
         coVerify {
@@ -155,9 +155,9 @@ class MLSMessageCreatorTest {
             }.returns(result)
         }
 
-        suspend fun withMLSEncryptMessage(data: ByteArray) = apply {
-            coEvery { mlsContext.encryptMessage(any(), any()) }
-                .returns(data)
+        suspend fun withEncryptMessage(result: Either<CoreFailure, ByteArray>) = apply {
+            coEvery { mlsConversationRepository.encryptMessage(any(), any(), any()) }
+                .returns(result)
         }
 
         suspend fun withCommitPendingProposals(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
@@ -183,7 +183,6 @@ class MLSMessageCreatorTest {
     private companion object {
         val SELF_USER_ID = UserId("user-id", "domain")
         val GROUP_ID = GroupID("groupId")
-        val CRYPTO_GROUP_ID = MapperProvider.idMapper().toCryptoModel(GroupID("groupId"))
     }
 
 }

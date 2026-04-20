@@ -58,6 +58,24 @@ class ObservableMLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenDelegateSucceeds_whenEncryptingMessage_thenHookIsNotified() = runTest {
+        val arrangement = Arrangement().withEncryptMessageSuccess().arrange()
+
+        arrangement.repository.encryptMessage(arrangement.context, GROUP_ID, byteArrayOf())
+
+        assertEquals(listOf(USER_ID), arrangement.hook.calls)
+    }
+
+    @Test
+    fun givenDelegateFails_whenEncryptingMessage_thenHookIsNotNotified() = runTest {
+        val arrangement = Arrangement().withEncryptMessageFailure().arrange()
+
+        arrangement.repository.encryptMessage(arrangement.context, GROUP_ID, byteArrayOf())
+
+        assertEquals(emptyList(), arrangement.hook.calls)
+    }
+
+    @Test
     fun givenDelegateSucceeds_whenEstablishingGroup_thenHookIsNotified() = runTest {
         val arrangement = Arrangement().withEstablishSuccess().arrange()
 
@@ -173,6 +191,18 @@ class ObservableMLSConversationRepositoryTest {
         suspend fun withDecryptMessageFailure() = apply {
             everySuspend {
                 delegate.decryptMessage(any(), any(), any())
+            } returns CoreFailure.Unknown(null).left()
+        }
+
+        suspend fun withEncryptMessageSuccess() = apply {
+            everySuspend {
+                delegate.encryptMessage(any(), any(), any())
+            } returns Either.Right(byteArrayOf())
+        }
+
+        suspend fun withEncryptMessageFailure() = apply {
+            everySuspend {
+                delegate.encryptMessage(any(), any(), any())
             } returns CoreFailure.Unknown(null).left()
         }
 
