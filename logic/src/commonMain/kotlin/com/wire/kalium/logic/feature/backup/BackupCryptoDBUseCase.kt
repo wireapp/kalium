@@ -97,6 +97,7 @@ internal class BackupCryptoDBUseCaseImpl(
                 }
             }
             val metadataPath = createMetadataFile(
+                cryptoBackupRootPath = cryptoBackupRootPath,
                 mlsExportData = mlsExportData,
                 proteusExportData = proteusExportData,
                 lastProcessedEventId = lastProcessedEventId
@@ -113,7 +114,6 @@ internal class BackupCryptoDBUseCaseImpl(
             kaliumLogger.e("CoreCrypto export failed", e)
             BackupCryptoDBResult.Failure(StorageFailure.Generic(e))
         } finally {
-            kaliumFileSystem.delete(kaliumFileSystem.tempFilePath(BackupConstants.BACKUP_METADATA_FILE_NAME))
             kaliumFileSystem.deleteContents(cryptoBackupRootPath)
         }
     }
@@ -193,6 +193,7 @@ internal class BackupCryptoDBUseCaseImpl(
     }
 
     private fun createMetadataFile(
+        cryptoBackupRootPath: Path,
         mlsExportData: CryptoBackupMetadata,
         proteusExportData: CryptoBackupMetadata,
         lastProcessedEventId: String,
@@ -206,7 +207,7 @@ internal class BackupCryptoDBUseCaseImpl(
         )
         val metadataJson = Json.encodeToString(metadata)
 
-        val metadataFilePath = kaliumFileSystem.tempFilePath(BackupConstants.BACKUP_METADATA_FILE_NAME)
+        val metadataFilePath = cryptoBackupRootPath.resolve(BackupConstants.BACKUP_METADATA_FILE_NAME)
         kaliumFileSystem.sink(metadataFilePath).buffer().use {
             it.write(metadataJson.encodeToByteArray())
         }
