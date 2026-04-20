@@ -19,11 +19,14 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangementImpl
 import io.mockative.any
@@ -99,10 +102,11 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
         private val block: suspend Arrangement.() -> Unit
     ) : FetchMLSVerificationStatusArrangement by FetchMLSVerificationStatusArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         suspend fun withConversationExistsInCrypto(exists: Boolean) = apply {
-            coEvery { mlsContext.conversationExists(any()) }.returns(exists)
+            coEvery { mlsConversationRepository.hasEstablishedMLSGroup(any(), any()) }.returns(exists.right())
         }
 
         suspend fun arrange() = let {
@@ -112,6 +116,7 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
             mockFetchMLSVerificationStatus()
             this to FetchConversationMLSVerificationStatusUseCaseImpl(
                 conversationRepository = conversationRepository,
+                mlsConversationRepository = mlsConversationRepository,
                 fetchMLSVerificationStatusUseCase = fetchMLSVerificationStatusUseCase,
                 transactionProvider = cryptoTransactionProvider
             )

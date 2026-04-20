@@ -2700,6 +2700,7 @@ public class UserSessionScope internal constructor(
     public val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
         get() = FetchConversationMLSVerificationStatusUseCaseImpl(
             conversationRepository,
+            mlsConversationRepository,
             fetchMLSVerificationStatusUseCase,
             cryptoTransactionProvider
         )
