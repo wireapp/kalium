@@ -31,7 +31,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 internal interface AppMapper {
 
     fun fromUserProfileToAppEntity(userProfileDTO: UserProfileDTO): AppEntity
-    fun fromDaoToModel(appEntity: AppEntity): AppDetails
+    fun fromDaoToModel(appEntity: AppEntity, creator: String? = null): AppDetails
     fun toServiceDetails(appDetails: AppDetails): ServiceDetails
 }
 
@@ -43,6 +43,7 @@ internal class AppMapperImpl : AppMapper {
             name = userProfileDTO.name,
             description = userProfileDTO.app?.description.orEmpty(),
             category = userProfileDTO.app?.category,
+            teamId = userProfileDTO.teamId,
             previewAssetId = userProfileDTO.assets.getPreviewAssetOrNull()?.let {
                 QualifiedIDEntity(
                     value = it.key,
@@ -58,12 +59,13 @@ internal class AppMapperImpl : AppMapper {
         )
     }
 
-    override fun fromDaoToModel(appEntity: AppEntity): AppDetails = with(appEntity) {
+    override fun fromDaoToModel(appEntity: AppEntity, creator: String?): AppDetails = with(appEntity) {
         AppDetails(
             id = appEntity.id.toModel(),
             name = appEntity.name,
             description = appEntity.description,
             category = appEntity.category,
+            creator = creator,
             previewAssetId = appEntity.previewAssetId?.let { asset ->
                 UserAssetId(
                     value = asset.value,
@@ -87,6 +89,8 @@ internal class AppMapperImpl : AppMapper {
             ),
             name = appDetails.name,
             description = appDetails.description,
+            category = appDetails.category,
+            creator = appDetails.creator,
             summary = "",
             enabled = true,
             tags = emptyList(),
