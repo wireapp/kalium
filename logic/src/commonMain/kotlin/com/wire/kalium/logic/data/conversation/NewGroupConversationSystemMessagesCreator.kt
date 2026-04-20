@@ -84,6 +84,7 @@ internal interface NewGroupConversationSystemMessagesCreator {
     ): Either<CoreFailure, Unit>
 }
 
+@Suppress("TooManyFunctions")
 internal class NewGroupConversationSystemMessagesCreatorImpl(
     private val persistMessage: PersistMessageUseCase,
     private val selfTeamIdProvider: SelfTeamIdProvider,
