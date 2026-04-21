@@ -339,10 +339,10 @@ class OneOnOneResolverTest {
         OneOnOneMigratorArrangement by OneOnOneMigratorArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
         IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl() {
-        val pendingOneOnOneResolutionsRepository = mock(PendingOneOnOneResolutionsRepository::class)
+        val pendingActionsRepository = mock(PendingActionsRepository::class)
         fun arrange() = run {
             runBlocking {
-                coEvery { pendingOneOnOneResolutionsRepository.enqueue(any()) }.returns(Unit)
+                coEvery { pendingActionsRepository.enqueuePendingOneOnOneResolution(any()) }.returns(Unit)
             }
             runBlocking { block() }
             this@Arrangement to OneOnOneResolverImpl(
@@ -350,7 +350,7 @@ class OneOnOneResolverTest {
                 oneOnOneProtocolSelector = oneOnOneProtocolSelector,
                 oneOnOneMigrator = oneOnOneMigrator,
                 incrementalSyncRepository = incrementalSyncRepository,
-                pendingOneOnOneResolutionsRepository = pendingOneOnOneResolutionsRepository,
+                pendingActionsRepository = pendingActionsRepository,
                 maxConcurrentResolutions = maxConcurrentResolutions,
                 maxThrottleRetries = maxThrottleRetries,
                 throttleRetryDelayMs = throttleRetryDelayMs,

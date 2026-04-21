@@ -282,14 +282,14 @@ import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCa
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
-import com.wire.kalium.logic.feature.conversation.mls.InMemoryPendingOneOnOneResolutionsRepository
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
-import com.wire.kalium.logic.feature.conversation.mls.PendingOneOnOneResolutionsRepository
+import com.wire.kalium.logic.feature.conversation.mls.PendingActionsRepository
+import com.wire.kalium.logic.feature.conversation.mls.PersistentPendingActionsRepository
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCaseImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
@@ -1386,8 +1386,10 @@ public class UserSessionScope internal constructor(
             userRepository,
             systemMessageInserter
         )
-    private val pendingOneOnOneResolutionsRepository: PendingOneOnOneResolutionsRepository by lazy {
-        InMemoryPendingOneOnOneResolutionsRepository()
+    private val pendingActionsRepository: PendingActionsRepository by lazy {
+        PersistentPendingActionsRepository(
+            pendingActionDAO = userStorage.database.pendingActionDAO
+        )
     }
     private val oneOnOneResolver: OneOnOneResolver
         get() = OneOnOneResolverImpl(
@@ -1395,12 +1397,12 @@ public class UserSessionScope internal constructor(
             oneOnOneProtocolSelector,
             oneOnOneMigrator,
             incrementalSyncRepository,
-            pendingOneOnOneResolutionsRepository
+            pendingActionsRepository
         )
 
     private val recoverPendingOneOnOneResolutionsUseCase: RecoverPendingOneOnOneResolutionsUseCase
         get() = RecoverPendingOneOnOneResolutionsUseCaseImpl(
-            pendingOneOnOneResolutionsRepository = pendingOneOnOneResolutionsRepository,
+            pendingActionsRepository = pendingActionsRepository,
             incrementalSyncRepository = incrementalSyncRepository,
             transactionProvider = cryptoTransactionProvider,
             oneOnOneResolver = oneOnOneResolver

@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.feature.conversation.mls
 
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import io.mockative.Mockable
@@ -34,7 +34,7 @@ internal interface RecoverPendingOneOnOneResolutionsUseCase {
 }
 
 internal class RecoverPendingOneOnOneResolutionsUseCaseImpl(
-    private val pendingOneOnOneResolutionsRepository: PendingOneOnOneResolutionsRepository,
+    private val pendingActionsRepository: PendingActionsRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val transactionProvider: CryptoTransactionProvider,
     private val oneOnOneResolver: OneOnOneResolver,
@@ -45,23 +45,42 @@ internal class RecoverPendingOneOnOneResolutionsUseCaseImpl(
             return
         }
 
-        val pendingUserIds = pendingOneOnOneResolutionsRepository.dequeueAll()
+        val pendingUserIds = pendingActionsRepository.getPendingOneOnOneResolutions()
         if (pendingUserIds.isEmpty()) return
 
-        transactionProvider.transaction("recoverPendingOneOnOneResolutions") { transactionContext ->
-            var result: Either<CoreFailure, Unit> = Either.Right(Unit)
-            pendingUserIds.forEach { userId ->
-                if (result is Either.Right) {
-                    result = oneOnOneResolver.resolveOneOnOneConversationWithUserId(
-                        transactionContext = transactionContext,
-                        userId = userId,
-                        invalidateCurrentKnownProtocols = true
-                    ).onFailure {
-                        kaliumLogger.w("Failed to recover pending one-on-one resolution for ${userId.toLogString()}: $it")
-                    }.map { Unit }
+        val successfulRecoveries = transactionProvider.transaction("recoverPendingOneOnOneResolutions") { transactionContext ->
+            Either.Right(recoverPendingUsers(transactionContext, pendingUserIds))
+        }
+
+        when (successfulRecoveries) {
+            is Either.Left -> Unit
+            is Either.Right -> {
+                if (successfulRecoveries.value.isNotEmpty()) {
+                    pendingActionsRepository.acknowledgePendingOneOnOneResolutions(successfulRecoveries.value)
                 }
             }
-            result
         }
+    }
+
+    private suspend fun recoverPendingUsers(
+        transactionContext: CryptoTransactionContext,
+        pendingUserIds: List<UserId>
+    ): List<UserId> {
+        val successfulUserIds = mutableListOf<UserId>()
+        pendingUserIds.forEach { userId ->
+            when (
+                oneOnOneResolver.resolveOneOnOneConversationWithUserId(
+                    transactionContext = transactionContext,
+                    userId = userId,
+                    invalidateCurrentKnownProtocols = true
+                ).onFailure {
+                    kaliumLogger.w("Failed to recover pending one-on-one resolution for ${userId.toLogString()}: $it")
+                }
+            ) {
+                is Either.Left -> Unit
+                is Either.Right -> successfulUserIds.add(userId)
+            }
+        }
+        return successfulUserIds
     }
 }
