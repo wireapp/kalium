@@ -1066,7 +1066,8 @@ public class UserSessionScope internal constructor(
 
     private val appRepository: AppRepository
         get() = AppDataSource(
-            appDAO = userStorage.database.appDAO
+            appDAO = userStorage.database.appDAO,
+            teamDAO = userStorage.database.teamDAO
         )
 
     private val persistConversationsUseCase: PersistConversationsUseCase

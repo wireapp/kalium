@@ -25,6 +25,7 @@ data class AppDetails(
     val name: String,
     val description: String,
     val category: String?,
+    val creator: String? = null,
     val previewAssetId: UserAssetId?,
     val completeAssetId: UserAssetId?
 )

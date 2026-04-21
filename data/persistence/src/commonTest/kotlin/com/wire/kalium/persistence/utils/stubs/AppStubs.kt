@@ -28,6 +28,7 @@ fun newAppEntity(qualifiedIDEntity: QualifiedIDEntity, id: String = "test") =
         name = "app$id",
         description = "description$id",
         category = "DEVELOPER",
+        teamId = "team_$id",
         previewAssetId = null,
         completeAssetId = null
     )

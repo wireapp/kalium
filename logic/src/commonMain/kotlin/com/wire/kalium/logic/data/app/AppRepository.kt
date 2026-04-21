@@ -29,8 +29,10 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.AppDAO
+import com.wire.kalium.persistence.dao.TeamDAO
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlin.collections.map
 
@@ -47,6 +49,7 @@ internal interface AppRepository {
 
 internal class AppDataSource internal constructor(
     private val appDAO: AppDAO,
+    private val teamDAO: TeamDAO,
     private val appMapper: AppMapper = MapperProvider.appMapper()
 ) : AppRepository {
     override suspend fun observeAllApps(): Flow<Either<StorageFailure, List<AppDetails>>> =
@@ -71,7 +74,8 @@ internal class AppDataSource internal constructor(
         wrapStorageNullableRequest {
             appDAO.byId(id = appId.toDao())
                 ?.let { appEntity ->
-                    appMapper.fromDaoToModel(appEntity = appEntity)
+                    val creator = appEntity.teamId?.let { teamDAO.getTeamById(it).firstOrNull()?.name }
+                    appMapper.fromDaoToModel(appEntity = appEntity, creator = creator)
                 }
         }
 

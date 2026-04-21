@@ -5,13 +5,14 @@ CREATE TABLE App (
     name TEXT NOT NULL,
     description TEXT NOT NULL,
     category TEXT,
+    team_id TEXT,
     preview_asset_id TEXT AS QualifiedIDEntity,
     complete_asset_id TEXT AS QualifiedIDEntity
 );
 
 insert:
-INSERT OR REPLACE INTO App (id, name, description, category, preview_asset_id, complete_asset_id)
-VALUES (:id, :name, :description, :category, :preview_asset_id, :complete_asset_id);
+INSERT OR REPLACE INTO App (id, name, description, category, team_id, preview_asset_id, complete_asset_id)
+VALUES (:id, :name, :description, :category, :team_id, :preview_asset_id, :complete_asset_id);
 
 byId:
 SELECT *

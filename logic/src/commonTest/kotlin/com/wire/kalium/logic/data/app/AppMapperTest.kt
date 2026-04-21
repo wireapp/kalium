@@ -52,16 +52,20 @@ class AppMapperTest {
     @Test
     fun givenAppEntity_whenMappingToModel_thenReturnAppDetails() = runTest {
         // given
+        val expected = Arrangement.appDetails.copy(
+            creator = Arrangement.TEAM_NAME
+        )
         val (_, appMapper) = Arrangement()
             .arrange()
 
         // when
         val result = appMapper.fromDaoToModel(
-            appEntity = Arrangement.appEntity
+            appEntity = Arrangement.appEntity,
+            creator = Arrangement.TEAM_NAME
         )
 
         // then
-        assertEquals(Arrangement.appDetails, result)
+        assertEquals(expected, result)
     }
 
     @Test
@@ -72,7 +76,9 @@ class AppMapperTest {
 
         // when
         val result = appMapper.toServiceDetails(
-            appDetails = Arrangement.appDetails
+            appDetails = Arrangement.appDetails.copy(
+                creator = Arrangement.TEAM_NAME
+            )
         )
 
         // then
@@ -86,6 +92,9 @@ class AppMapperTest {
         fun arrange() = this to appMapper
 
         companion object {
+            val TEAM_ID = Uuid.random().toString()
+            val TEAM_NAME = "Wire Team"
+
             val APP_ID = QualifiedID(
                 value = Uuid.random().toString(),
                 domain = "wire.com"
@@ -103,6 +112,7 @@ class AppMapperTest {
                 name = APP_NAME,
                 description = APP_DESCRIPTION,
                 category = APP_CATEGORY,
+                creator = null,
                 previewAssetId = null,
                 completeAssetId = null
             )
@@ -112,6 +122,7 @@ class AppMapperTest {
                 name = APP_NAME,
                 description = APP_DESCRIPTION,
                 category = APP_CATEGORY,
+                teamId = TEAM_ID,
                 previewAssetId = null,
                 completeAssetId = null
             )
@@ -123,6 +134,8 @@ class AppMapperTest {
                 ),
                 name = APP_NAME,
                 description = APP_DESCRIPTION,
+                category = APP_CATEGORY,
+                creator = TEAM_NAME,
                 summary = "",
                 enabled = true,
                 tags = emptyList(),
@@ -137,7 +150,7 @@ class AppMapperTest {
                 ),
                 name = APP_NAME,
                 handle = null,
-                teamId = Uuid.random().toString(),
+                teamId = TEAM_ID,
                 accentId = 0,
                 assets = emptyList(),
                 deleted = false,

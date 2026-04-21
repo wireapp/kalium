@@ -136,6 +136,7 @@ class GetAppByIdUseCaseTest {
                 ),
                 name = APP_NAME,
                 description = APP_DESCRIPTION,
+                category = APP_CATEGORY,
                 summary = "",
                 enabled = true,
                 tags = emptyList(),
