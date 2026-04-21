@@ -68,8 +68,10 @@ internal class MLSClientManagerImpl internal constructor(
                         kaliumLogger.i("No existing MLS Client, registering..")
                         registerMLSClient.value(clientId).onSuccess { mlsClientRegistrationResult ->
                             kaliumLogger.i("Registering mls client result: $mlsClientRegistrationResult")
-                            kaliumLogger.i("Triggering slow sync after enabling MLS")
-                            slowSyncRepository.value.clearLastSlowSyncCompletionInstant()
+                            if (mlsClientRegistrationResult is RegisterMLSClientResult.Success) {
+                                kaliumLogger.i("Triggering slow sync after enabling MLS")
+                                slowSyncRepository.value.clearLastSlowSyncCompletionInstant()
+                            }
                         }
                     }
                 }.await()

@@ -503,6 +503,8 @@ import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandler
+import com.wire.kalium.logic.sync.receiver.handler.CallingMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
@@ -1133,6 +1135,7 @@ public class UserSessionScope internal constructor(
             clientIdProvider = clientIdProvider,
             userRepository = userRepository,
             clientRepository = clientRepository,
+            eventRepository = eventRepository,
             kaliumFileSystem = kaliumFileSystem,
             userStorage = userStorage,
             cryptoTransactionProvider = cryptoTransactionProvider,
@@ -1789,12 +1792,21 @@ public class UserSessionScope internal constructor(
         ButtonActionHandlerImpl(userId, compositeMessageRepository, userScopedLogger)
     }
 
+    private val callingMessageHandler: CallingMessageHandler by lazy {
+        CallingMessageHandlerImpl(
+            selfUserId = userId,
+            currentClientIdProvider = clientIdProvider,
+            callManager = callManager,
+            conversationRepository = conversationRepository,
+            muteCall = calls.muteCall,
+        )
+    }
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
             messageRepository,
             assetMessageHandler,
-            callManager,
             persistMessage,
             persistReaction,
             MessageTextEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
@@ -1828,6 +1840,7 @@ public class UserSessionScope internal constructor(
             inCallReactionsRepository,
             buttonActionHandler,
             MessageCompositeEditHandlerImpl(messageRepository),
+            callingMessageHandler,
             userId
         )
 
@@ -2478,6 +2491,7 @@ public class UserSessionScope internal constructor(
             isE2EIEnabled,
             certificateRevocationListRepository,
             incrementalSyncRepository,
+            slowSyncRepository,
             sessionManager,
             selfTeamId,
             checkRevocationList,
@@ -2513,22 +2527,23 @@ public class UserSessionScope internal constructor(
 
     public val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
-            logoutRepository,
-            globalScope.sessionRepository,
-            clientRepository,
-            userConfigRepository,
-            userId,
-            client.deregisterNativePushToken,
-            client.clearClientData,
-            clearUserData,
-            userSessionScopeProvider,
-            pushTokenRepository,
-            globalScope,
-            userSessionWorkScheduler,
-            calls.establishedCall,
-            calls.endCall,
-            logoutCallback,
-            kaliumConfigs
+            logoutRepository = logoutRepository,
+            sessionRepository = globalScope.sessionRepository,
+            clientRepository = clientRepository,
+            userConfigRepository = userConfigRepository,
+            userId = userId,
+            deregisterTokenUseCase = client.deregisterNativePushToken,
+            clearClientDataUseCase = client.clearClientData,
+            clearUserDataUseCase = clearUserData,
+            userSessionScopeProvider = userSessionScopeProvider,
+            pushTokenRepository = pushTokenRepository,
+            globalCoroutineScope = globalScope,
+            userSessionWorkScheduler = userSessionWorkScheduler,
+            getEstablishedCallsUseCase = calls.establishedCall,
+            endCallUseCase = calls.endCall,
+            logoutCallback = logoutCallback,
+            kaliumConfigs = kaliumConfigs,
+            isNomadEnabled = { nomadServiceUrl?.isNotBlank() == true },
         )
     public val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
         get() = PersistPersistentWebSocketConnectionStatusUseCaseImpl(userId, globalScope.sessionRepository)

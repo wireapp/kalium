@@ -22,7 +22,9 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
+import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
 import io.mockative.any
 import io.mockative.coEvery
@@ -42,7 +44,7 @@ class GetAudioAssetUseCaseTest {
         // Given
         val (_, useCase) = Arrangement()
             .withCellsEnabled()
-            .withMessageAttachmentResult()
+            .withCellMessageAttachmentResult()
             .arrange()
 
         // When
@@ -83,13 +85,47 @@ class GetAudioAssetUseCaseTest {
         coVerify { arrangement.getMessageAsset(any(), any()) }.wasInvoked(once)
     }
 
+    @Test
+    fun givenWireCellsEnabledAndAttachmentIsAssetStorage_whenInvoked_thenFallbackToGetMessageAsset() = runTest {
+        // Given
+        val (arrangement, useCase) = Arrangement()
+            .withCellsEnabled()
+            .withAssetStorageAttachmentResult()
+            .withGetMessageAssetUseCaseReturning()
+            .arrange()
+
+        // When
+        useCase.invoke(conversationId, "messageId", "assetId").await()
+
+        // Then
+        coVerify { arrangement.getMessageAsset(conversationId, "messageId") }.wasInvoked(once)
+    }
+
     private class Arrangement {
 
         val isWireCellsEnabledForConversation = mock(IsWireCellsEnabledForConversationUseCase::class)
         val getMessageAsset = mock(GetMessageAssetUseCase::class)
         val getMessageAttachment = mock(GetMessageAttachmentUseCase::class)
 
-        suspend fun withMessageAttachmentResult() = apply {
+        suspend fun withCellMessageAttachmentResult() = apply {
+            coEvery { getMessageAttachment(any()) } returns Either.Right(
+                CellAssetContent(
+                    id = "asset-id",
+                    versionId = "version-id",
+                    mimeType = "audio/mp4",
+                    assetPath = null,
+                    assetSize = 123L,
+                    localPath = "/tmp/audio.m4a",
+                    contentUrl = null,
+                    contentUrlExpiresAt = null,
+                    previewUrl = null,
+                    metadata = null,
+                    transferStatus = AssetTransferStatus.SAVED_INTERNALLY
+                )
+            )
+        }
+
+        suspend fun withAssetStorageAttachmentResult() = apply {
             coEvery { getMessageAttachment(any()) } returns Either.Right(
                 AssetContent(
                     0L,
@@ -103,9 +139,6 @@ class GetAudioAssetUseCaseTest {
                         assetToken = "==some-asset-token",
                         assetDomain = "some-asset-domain.com",
                         encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
-                    ),
-                    AssetContent.LocalData(
-                        assetDataPath = "local_asset_path"
                     ),
                 )
             )

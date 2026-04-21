@@ -43,26 +43,20 @@ internal class ShouldRemoteMuteCheckerImpl : ShouldRemoteMuteChecker {
         selfClientId: String,
         targets: MessageContent.Calling.Targets?,
         conversationMembers: List<Conversation.Member>
-    ): Boolean {
-        val isAdmin = conversationMembers.any { member ->
+    ): Boolean = isSenderAnAdmin(senderUserId, conversationMembers) && isCurrentClientTargeted(selfUserId, selfClientId, targets)
+
+    // Only admins can remotely mute other participants, so we need to check if the sender is an admin or not.
+    private fun isSenderAnAdmin(senderUserId: UserId, conversationMembers: List<Conversation.Member>): Boolean =
+        conversationMembers.any { member ->
             member.id == senderUserId && member.role == Conversation.Member.Role.Admin
         }
-        return if (isAdmin) {
-            targets?.let {
-                // Having targets means that we are in an MLS call.
-                it.domainToUserIdToClients.values.any { userClientsMap ->
-                    userClientsMap[selfUserId.value]?.any { client ->
-                        client == selfClientId
-                    } ?: run {
-                        false
-                    }
-                }
-            } ?: run {
-                // If there are no targets, we should mute. It's a proteus message with no targets.
-                true
+
+    // Because of the nature of MLS (where all the MLS group members always receive a message),
+    // we need to check if the current client is a target of the remote mute or not.
+    private fun isCurrentClientTargeted(selfUserId: UserId, selfClientId: String, targets: MessageContent.Calling.Targets?): Boolean =
+        targets?.domainToUserIdToClients?.values.orEmpty().any { userClientsMap ->
+            userClientsMap[selfUserId.value].orEmpty().any { client ->
+                client == selfClientId
             }
-        } else {
-            false
         }
-    }
 }

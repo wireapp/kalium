@@ -23,9 +23,9 @@ import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.api.model.DeleteAccountRequest
-import com.wire.kalium.network.api.model.RefreshTokenProperties
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
+import com.wire.kalium.network.auth.withManagedRefreshCookie
 import com.wire.kalium.network.api.model.UpdateEmailRequest
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.session.SessionManager
@@ -34,10 +34,8 @@ import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
-import io.ktor.client.request.header
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
-import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 
 internal open class SelfApiV0 internal constructor(
@@ -67,7 +65,7 @@ internal open class SelfApiV0 internal constructor(
         sessionManager.session()?.refreshToken?.let { cookie ->
             wrapKaliumResponse<Unit> {
                 httpClient.put("$PATH_ACCESS/$PATH_SELF/$PATH_EMAIL") {
-                    header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
+                    withManagedRefreshCookie(cookie)
                     setBody(UpdateEmailRequest(email))
                 }
             }.flatMap { successResponse ->

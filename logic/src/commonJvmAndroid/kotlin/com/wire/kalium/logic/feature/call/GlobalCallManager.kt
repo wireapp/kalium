@@ -109,7 +109,6 @@ internal actual class GlobalCallManager(
                     selfConversationIdProvider = selfConversationIdProvider,
                     callMapper = callMapper,
                     messageSender = messageSender,
-                    conversationRepository = conversationRepository,
                     federatedIdMapper = federatedIdMapper,
                     qualifiedIdMapper = qualifiedIdMapper,
                     videoStateChecker = videoStateChecker,

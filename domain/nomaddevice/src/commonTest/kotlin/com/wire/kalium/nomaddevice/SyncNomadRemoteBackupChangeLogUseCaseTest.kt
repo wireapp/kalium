@@ -40,6 +40,9 @@ import com.wire.kalium.persistence.dao.backup.ConversationMetadataSyncEntity
 import com.wire.kalium.persistence.dao.backup.RemoteBackupChangeLogDAO
 import com.wire.kalium.persistence.dao.backup.SyncableMessagePayloadEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
+import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAsset
+import com.wire.kalium.protobuf.nomaddevice.NomadDeviceAttachment
 import com.wire.kalium.protobuf.nomaddevice.NomadDeviceMessagePayload
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -195,6 +198,63 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         assertEquals(0, success.syncedEntries)
         assertEquals(0, success.postedEvents)
         assertTrue(api.requests.isEmpty())
+    }
+
+    @Test
+    fun givenMultipartWithCellAudioAttachment_whenSyncingPage_thenPayloadKeepsAttachmentMetadata() = runTest {
+        val dao = FakeRemoteBackupChangeLogDAO(
+            batch = ChangeLogSyncBatch(
+                events = listOf(
+                    ChangeLogSyncEvent.MessageUpsert(
+                        conversationId = CONVERSATION_ID,
+                        messageId = MESSAGE_ID,
+                        change = messageUpsertChange(),
+                        message = SyncableMessagePayloadEntity.Multipart(
+                            creationDate = Instant.fromEpochMilliseconds(1000L),
+                            senderUserId = SENDER_ID,
+                            senderClientId = "sender-client",
+                            lastEditDate = null,
+                            text = null,
+                            quotedMessageId = null,
+                            mentions = emptyList(),
+                            attachments = listOf(
+                                audioAttachment(assetId = "cell-audio", cellAsset = true),
+                                imageAttachment(assetId = "regular-image", cellAsset = false),
+                            )
+                        )
+                    )
+                ),
+                conversationMetadata = emptyList()
+            )
+        )
+        val api = FakeNomadDeviceSyncApi(NetworkResponse.Success(Unit, emptyMap(), 200))
+        val useCase = SyncNomadRemoteBackupChangeLogUseCase(
+            remoteBackupChangeLogDAOProvider = { dao },
+            nomadDeviceSyncApiProvider = { api },
+            pageSize = 10
+        )
+
+        useCase(SELF_USER_ID)
+
+        val upsertEvent = assertIs<NomadMessageEvent.UpsertMessageEvent>(api.requests.single().events.single())
+        val decodedPayload = NomadDeviceMessagePayload.decodeFromByteArray(Base64.Default.decode(upsertEvent.payload))
+        val attachments = decodedPayload.content.multipart?.attachments.orEmpty()
+
+        assertEquals(2, attachments.size)
+
+        val audioAttachment = attachments
+            .map { (it.content as NomadDeviceAttachment.Content.Asset).value }
+            .single { it.assetId == "cell-audio" }
+        assertEquals("audio/ogg", audioAttachment.mimeType)
+        assertEquals(1024L, audioAttachment.size)
+        assertEquals("cells/audio/cell-audio.ogg", audioAttachment.name)
+        assertEquals(12_345L, (audioAttachment.metaData as NomadDeviceAsset.MetaData.Audio).value.durationInMillis)
+
+        val imageAttachment = attachments
+            .map { (it.content as NomadDeviceAttachment.Content.Asset).value }
+            .single { it.assetId == "regular-image" }
+        assertEquals("image/png", imageAttachment.mimeType)
+        assertEquals("cells/image/regular-image.png", imageAttachment.name)
     }
 
     @Test
@@ -438,6 +498,34 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         timestampMs = 2000L,
         messageTimestampMs = 1500L
     )
+
+    private fun audioAttachment(assetId: String, cellAsset: Boolean): MessageAttachmentEntity =
+        MessageAttachmentEntity(
+            assetId = assetId,
+            cellAsset = cellAsset,
+            mimeType = "audio/ogg",
+            assetPath = "cells/audio/$assetId.ogg",
+            assetSize = 1024L,
+            assetWidth = null,
+            assetHeight = null,
+            assetDuration = 12_345L,
+            assetTransferStatus = "NOT_DOWNLOADED",
+            isEditSupported = false
+        )
+
+    private fun imageAttachment(assetId: String, cellAsset: Boolean): MessageAttachmentEntity =
+        MessageAttachmentEntity(
+            assetId = assetId,
+            cellAsset = cellAsset,
+            mimeType = "image/png",
+            assetPath = "cells/image/$assetId.png",
+            assetSize = 512L,
+            assetWidth = 320,
+            assetHeight = 180,
+            assetDuration = null,
+            assetTransferStatus = "NOT_DOWNLOADED",
+            isEditSupported = false
+        )
 
     private companion object {
         val SELF_USER_ID: UserId = UserId("self-user", "wire.test")
