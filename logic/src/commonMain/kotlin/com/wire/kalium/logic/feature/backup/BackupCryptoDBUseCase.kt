@@ -59,11 +59,11 @@ internal class BackupCryptoDBUseCaseImpl(
 ) : BackupCryptoDBUseCase {
 
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
-        val backupName = createBackupFileName()
-        val tempBackupName = createTempBackupFileName(backupName)
         val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
 
         try {
+            val backupName = createBackupFileName()
+            val tempBackupName = createTempBackupFileName(backupName)
             if (kaliumFileSystem.exists(proteusBackupPath)) {
                 kaliumFileSystem.delete(proteusBackupPath)
             }
