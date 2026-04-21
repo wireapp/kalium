@@ -96,47 +96,65 @@ internal class NomadCryptoStateChangeHookNotifier(
 
     @Suppress("TooGenericExceptionCaught")
     private suspend fun drainPendingBackups(userId: UserId, workerJob: Job) {
-        while (true) {
+        var shouldContinue = true
+        while (shouldContinue) {
             val shouldRun = mutex.withLock {
-                val state = userStates[userId] ?: return
-                if (state.workerJob != workerJob) return
-                if (!state.hasPendingChange) {
-                    userStates.remove(userId)
-                    return
-                }
+                preparePendingBackupRun(userId, workerJob)
+            }
 
+            if (shouldRun) {
+                try {
+                    withContext(NonCancellable) {
+                        repository.backupAndUpload(userId)
+                    }
+                } catch (exception: Exception) {
+                    kaliumLogger.w("Multi-user crypto state change hook execution failed", exception)
+                }
+            }
+
+            shouldContinue = shouldRun && mutex.withLock {
+                finishPendingBackupRun(userId, workerJob)
+            }
+        }
+    }
+
+    private fun preparePendingBackupRun(userId: UserId, workerJob: Job): Boolean {
+        val state = userStates[userId]
+        return when {
+            state == null -> false
+            !state.isOwnedBy(workerJob) -> false
+            !state.hasPendingChange -> {
+                userStates.remove(userId)
+                false
+            }
+            else -> {
                 state.hasPendingChange = false
                 state.isRunning = true
                 true
             }
+        }
+    }
 
-            if (!shouldRun) return
-
-            try {
-                withContext(NonCancellable) {
-                    repository.backupAndUpload(userId)
-                }
-            } catch (exception: Exception) {
-                kaliumLogger.w("Multi-user crypto state change hook execution failed", exception)
-            }
-
-            val shouldRerunImmediately = mutex.withLock {
-                val state = userStates[userId] ?: return
-                if (state.workerJob != workerJob) return
-
+    private fun finishPendingBackupRun(userId: UserId, workerJob: Job): Boolean {
+        val state = userStates[userId]
+        return when {
+            state == null -> false
+            !state.isOwnedBy(workerJob) -> false
+            else -> {
                 state.isRunning = false
-                state.hasPendingChange
-            }
-
-            if (!shouldRerunImmediately) {
-                mutex.withLock {
-                    val state = userStates[userId]
-                    if (state != null && state.workerJob == workerJob && !state.isRunning && !state.hasPendingChange) {
-                        userStates.remove(userId)
-                    }
+                if (state.hasPendingChange) {
+                    true
+                } else {
+                    cleanupUserStateIfIdle(userId, workerJob)
+                    false
                 }
-                return
             }
+        }
+    }
+
+    private fun cleanupUserStateIfIdle(userId: UserId, workerJob: Job) {
+        if (userStates[userId]?.canBeRemovedFor(workerJob) == true) {
+            userStates.remove(userId)
         }
     }
 
@@ -144,5 +162,9 @@ internal class NomadCryptoStateChangeHookNotifier(
         var workerJob: Job? = null,
         var isRunning: Boolean = false,
         var hasPendingChange: Boolean = false,
-    )
+    ) {
+        fun isOwnedBy(workerJob: Job): Boolean = this.workerJob == workerJob
+
+        fun canBeRemovedFor(workerJob: Job): Boolean = isOwnedBy(workerJob) && !isRunning && !hasPendingChange
+    }
 }

@@ -175,7 +175,7 @@ internal class BackupCryptoDBUseCaseImpl(
     }
 
     private fun createBackupFileName(backupRunId: String): String =
-        "${CRYPTO_BACKUP_PREFIX}_${userId}_${backupRunId}.zip"
+        "${CRYPTO_BACKUP_PREFIX}_${userId}_$backupRunId.zip"
 
     private fun createTempBackupFileName(backupName: String): String = "$backupName.tmp"
 
