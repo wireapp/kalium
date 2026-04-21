@@ -215,7 +215,13 @@ class ConversationGroupRepositoryTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(any(), any(), any(), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
+                any(),
+                any(),
+                any(),
+                any(),
+                any<ConversationEntity.Type>()
+            )
         }.wasInvoked(once)
     }
 
@@ -2087,7 +2093,13 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withConversationAppsAccessIfEnabled() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(any(), any(), any(), any())
+                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any<ConversationEntity.Type>()
+                )
             }.returns(Unit.right())
         }
 

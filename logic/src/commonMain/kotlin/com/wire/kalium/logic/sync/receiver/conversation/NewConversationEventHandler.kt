@@ -78,7 +78,7 @@ internal class NewConversationEventHandlerImpl(
                     }
                     .map { isNewUnhandledConversation }
             }.onSuccess { isNewUnhandledConversation ->
-                createSystemMessagesForNewConversation(isNewUnhandledConversation, event)
+                createSystemMessagesForNewConversation(selfUserTeamId, isNewUnhandledConversation, event)
                 eventLogger.logSuccess()
             }.onFailure {
                 eventLogger.logFailure(it)
@@ -108,6 +108,7 @@ internal class NewConversationEventHandlerImpl(
      * @param event new conversation event
      */
     private suspend fun createSystemMessagesForNewConversation(
+        selfUserTeamId: TeamId?,
         isNewUnhandledConversation: Boolean,
         event: Event.Conversation.NewConversation
     ) {
@@ -134,7 +135,8 @@ internal class NewConversationEventHandlerImpl(
                 eventId = event.id,
                 conversationId = event.conversationId,
                 hasAppsAccessEnabled = event.conversation.hasAppsAccessEnabled(),
-                creatorId = event.senderUserId
+                creatorId = event.senderUserId,
+                type = event.conversation.toConversationType(selfUserTeamId)
             )
         }
     }
