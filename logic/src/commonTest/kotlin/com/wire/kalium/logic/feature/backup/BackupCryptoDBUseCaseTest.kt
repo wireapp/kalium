@@ -254,6 +254,47 @@ class BackupCryptoDBUseCaseTest {
         verifySuspend { arrangement.proteusClientProvider.exportCryptoDB(expectedProteusExportPath) }
     }
 
+    @OptIn(ExperimentalEncodingApi::class)
+    @Test
+    fun givenEventIdCapturedWithinTransaction_whenBackingUpCryptoDb_thenAnchorIsSynchronizedWithMlsExport() =
+        runTest(dispatcher.default) {
+            val dbData: ByteArray = Base64.decode("c29tZS1jYy1kYi1ieXRlcw==")
+            val proteusDbData: ByteArray = Base64.decode("cHJvdGV1cy1kYi1ieXRlcw==")
+            val passphrase = ByteArray(32) { 0xAB.toByte() }
+            val proteusPassphrase = ByteArray(32) { 0xBC.toByte() }
+            val syncedEventId = "event-synced-456"
+            val (arrangement, useCase) = Arrangement()
+                .withClientId(TestClient.CLIENT_ID)
+                .withLastProcessedEventId(syncedEventId)
+                .withMlsExportedCryptoDB("keystore_export", dbData, passphrase, TestClient.CLIENT_ID)
+                .withProteusExportedCryptoDB("keystore_export_proteus", proteusDbData, proteusPassphrase, TestClient.CLIENT_ID)
+                .withMlsTransactionSuccess()
+                .withProteusTransactionSuccess()
+                .arrange()
+
+            val result = useCase()
+            advanceUntilIdle()
+
+            assertIs<BackupCryptoDBResult.Success>(result)
+            // Verify the anchor in the result matches the one captured within the transaction
+            assertEquals(result.lastProcessedEventId, syncedEventId)
+
+            with(fakeFileSystem) {
+                val extractedFilesPath = tempFilePath()
+                createDirectory(extractedFilesPath)
+                extractCompressedFile(source(result.backupFilePath), extractedFilesPath, ExtractFilesParam.All, fakeFileSystem)
+
+                val metadataPath = listDirectories(extractedFilesPath).firstOrNull {
+                    it.name == BackupConstants.BACKUP_METADATA_FILE_NAME
+                }
+                assertTrue(metadataPath != null)
+                val metadataJson = source(metadataPath!!).buffer().use { it.readUtf8() }
+                val metadata = Json.decodeFromString<CryptoStateBackupMetadata>(metadataJson)
+                // The critical check: anchor in metadata must equal the synced event ID from the transaction
+                assertEquals(metadata.lastProcessedEventId, syncedEventId)
+            }
+        }
+
     private inner class Arrangement {
         private val defaultLastProcessedEventId = "event-default"
         val clientIdProvider = mock<CurrentClientIdProvider>()
