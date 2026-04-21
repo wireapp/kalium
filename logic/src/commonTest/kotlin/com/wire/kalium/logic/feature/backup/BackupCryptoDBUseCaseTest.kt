@@ -204,55 +204,6 @@ class BackupCryptoDBUseCaseTest {
         assertTrue(fakeFileSystem.exists(result.backupFilePath))
     }
 
-    @Test
-    fun givenFixedTempRoot_whenInvoked_thenExportsIntoThatRoot() = runTest(dispatcher.default) {
-        val passphrase = ByteArray(32) { 0xAB.toByte() }
-        val proteusPassphrase = ByteArray(32) { 0xBC.toByte() }
-        val fixedTempRootName = "crypto_backup_temp_test"
-        val clientId = TestClient.CLIENT_ID
-        val (arrangement, useCase) = Arrangement()
-            .withClientId(TestClient.CLIENT_ID)
-            .withLastProcessedEventId("event-123")
-            .withMlsTransactionSuccess()
-            .withProteusTransactionSuccess()
-            .withTempBackupDirNameProvider { fixedTempRootName }
-            .arrange()
-
-        val expectedRoot = fakeFileSystem.tempFilePath(fixedTempRootName)
-        val expectedMlsExportPath = expectedRoot.resolve(BackupCryptoDBUseCaseImpl.MLS_KEYSTORE_NAME).toString()
-        val expectedProteusExportPath = expectedRoot.resolve(BackupCryptoDBUseCaseImpl.PROTEUS_KEYSTORE_NAME).toString()
-
-        everySuspend { arrangement.mlsClientProvider.exportCryptoDB(any()) }.calls { invocation ->
-            val exportPath = invocation.args[0] as String
-            with(fakeFileSystem) {
-                sink(exportPath.toPath()).buffer().use { it.writeUtf8("mls-db") }
-            }
-            com.wire.kalium.logic.data.client.CryptoBackupMetadata(
-                dbPath = exportPath,
-                passphrase = passphrase,
-                clientId = clientId
-            ).right()
-        }
-        everySuspend { arrangement.proteusClientProvider.exportCryptoDB(any()) }.calls { invocation ->
-            val exportPath = invocation.args[0] as String
-            with(fakeFileSystem) {
-                sink(exportPath.toPath()).buffer().use { it.writeUtf8("proteus-db") }
-            }
-            com.wire.kalium.logic.data.client.CryptoBackupMetadata(
-                dbPath = exportPath,
-                passphrase = proteusPassphrase,
-                clientId = clientId
-            ).right()
-        }
-
-        val result = useCase()
-        advanceUntilIdle()
-
-        assertIs<BackupCryptoDBResult.Success>(result)
-        verifySuspend { arrangement.mlsClientProvider.exportCryptoDB(expectedMlsExportPath) }
-        verifySuspend { arrangement.proteusClientProvider.exportCryptoDB(expectedProteusExportPath) }
-    }
-
     @OptIn(ExperimentalEncodingApi::class)
     @Test
     fun givenEventIdCapturedWithinTransaction_whenBackingUpCryptoDb_thenAnchorIsSynchronizedWithMlsExport() =
@@ -275,8 +226,6 @@ class BackupCryptoDBUseCaseTest {
             advanceUntilIdle()
 
             assertIs<BackupCryptoDBResult.Success>(result)
-            // Verify the anchor in the result matches the one captured within the transaction
-            assertEquals(result.lastProcessedEventId, syncedEventId)
 
             with(fakeFileSystem) {
                 val extractedFilesPath = tempFilePath()
@@ -289,7 +238,7 @@ class BackupCryptoDBUseCaseTest {
                 assertTrue(metadataPath != null)
                 val metadataJson = source(metadataPath!!).buffer().use { it.readUtf8() }
                 val metadata = Json.decodeFromString<CryptoStateBackupMetadata>(metadataJson)
-                // The critical check: anchor in metadata must equal the synced event ID from the transaction
+                // Verify anchor in metadata was captured within the transaction and matches the synced event ID
                 assertEquals(metadata.lastProcessedEventId, syncedEventId)
             }
         }

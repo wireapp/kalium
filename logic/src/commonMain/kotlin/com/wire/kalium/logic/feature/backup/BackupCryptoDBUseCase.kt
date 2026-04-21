@@ -266,6 +266,9 @@ internal class BackupCryptoDBUseCaseImpl(
 }
 
 public sealed interface BackupCryptoDBResult {
-    public data class Success(val backupFilePath: Path, val backupName: String) : BackupCryptoDBResult
+    public data class Success(
+        val backupFilePath: Path,
+        val backupName: String
+    ) : BackupCryptoDBResult
     public data class Failure(val error: CoreFailure) : BackupCryptoDBResult
 }
