@@ -268,6 +268,7 @@ com.wire.kalium.logic.configuration.appVersioning
 com.wire.kalium.logic.configuration.notification
 com.wire.kalium.logic.configuration.server
 com.wire.kalium.logic.data.analytics
+com.wire.kalium.logic.data.app
 com.wire.kalium.logic.data.asset
 com.wire.kalium.logic.data.auth
 com.wire.kalium.logic.data.auth.login
@@ -316,6 +317,7 @@ com.wire.kalium.logic.di
 com.wire.kalium.logic.failure
 com.wire.kalium.logic.feature
 com.wire.kalium.logic.feature.analytics
+com.wire.kalium.logic.feature.app
 com.wire.kalium.logic.feature.appVersioning
 com.wire.kalium.logic.feature.applock
 com.wire.kalium.logic.feature.asset
