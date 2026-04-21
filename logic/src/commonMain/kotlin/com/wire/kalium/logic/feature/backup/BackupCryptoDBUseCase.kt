@@ -93,7 +93,6 @@ internal class BackupCryptoDBUseCaseImpl(
                         is Either.Right -> fetchResult.value
                         is Either.Left -> return@withContext BackupCryptoDBResult.Failure(fetchResult.value)
                     }
-
                     else -> return@withContext BackupCryptoDBResult.Failure(result.value)
                 }
             }
