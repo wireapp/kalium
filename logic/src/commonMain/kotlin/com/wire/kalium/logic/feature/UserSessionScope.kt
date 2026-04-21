@@ -942,7 +942,6 @@ public class UserSessionScope internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository
         get() = ConversationGroupRepositoryImpl(
             mlsConversationRepository,
-            joinExistingMLSConversationUseCase,
             localEventRepository,
             conversationMessageTimerEventHandler,
             userStorage.database.conversationDAO,
@@ -1907,7 +1906,8 @@ public class UserSessionScope internal constructor(
             legalHoldHandler = legalHoldHandler,
             newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
             selfUserId = userId,
-            fetchConversationUseCase
+            fetchConversation = fetchConversationUseCase,
+            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
@@ -2716,7 +2716,9 @@ public class UserSessionScope internal constructor(
     public val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
         get() = FetchConversationMLSVerificationStatusUseCaseImpl(
             conversationRepository,
-            fetchMLSVerificationStatusUseCase
+            mlsConversationRepository,
+            fetchMLSVerificationStatusUseCase,
+            cryptoTransactionProvider
         )
 
     public val kaliumFileSystem: KaliumFileSystem by lazy {
