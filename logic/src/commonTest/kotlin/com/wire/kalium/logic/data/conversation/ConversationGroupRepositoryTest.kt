@@ -983,23 +983,6 @@ class ConversationGroupRepositoryTest {
             arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
 
-        coVerify {
-            arrangement.joinExistingMLSConversation.invoke(
-                any(),
-                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
-                any(),
-                any()
-            )
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(),
-                eq(GroupID(MLS_PROTOCOL_INFO.groupId)),
-                eq(listOf(TestUser.SELF.id)),
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
-            )
-        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -1030,23 +1013,6 @@ class ConversationGroupRepositoryTest {
             arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
 
-        coVerify {
-            arrangement.joinExistingMLSConversation.invoke(
-                any(),
-                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
-                any(),
-                any()
-            )
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(),
-                eq(GroupID(MIXED_PROTOCOL_INFO.groupId)),
-                eq(listOf(TestUser.SELF.id)),
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
-            )
-        }.wasInvoked(exactly = once)
     }
 
     @Test

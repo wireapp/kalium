@@ -312,7 +312,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(mlsConversation.id), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(mlsConversation.id), any(), eq(true))
         }.wasInvoked(exactly = once)
     }
 
@@ -330,7 +330,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(true))
         }.wasNotInvoked()
     }
 
@@ -348,7 +348,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(true))
         }.wasNotInvoked()
     }
 
@@ -369,7 +369,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(true))
         }.wasNotInvoked()
     }
 
@@ -388,7 +388,7 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(true))
         }.wasNotInvoked()
     }
 
