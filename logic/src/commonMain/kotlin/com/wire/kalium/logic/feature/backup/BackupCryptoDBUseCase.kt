@@ -66,33 +66,12 @@ internal class BackupCryptoDBUseCaseImpl(
 
     @Suppress("LongMethod")
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
-        val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
-        if (kaliumFileSystem.exists(mlsBackupPath)) {
-            kaliumFileSystem.delete(mlsBackupPath)
-        }
-        val (mlsExportData, mlsDbBytes) = createMLSBackup(mlsBackupPath).fold(
-            {
-                kaliumLogger.e("Failed to create MLS backup")
-                return@withContext BackupCryptoDBResult.Failure(it)
-            },
-            { it }
-        )
-        if (kaliumFileSystem.exists(proteusBackupPath)) {
-            kaliumFileSystem.delete(proteusBackupPath)
-        }
-        val (proteusExportData, proteusDbBytes) = createProteusBackup(proteusBackupPath).fold(
-            {
-                kaliumLogger.e("Failed to create Proteus backup")
-                return@withContext BackupCryptoDBResult.Failure(it)
-            },
-            { it }
-        )
-
         try {
             val backupName = createBackupFileName()
             val tempBackupName = createTempBackupFileName(backupName)
-            val tempBackupPath = cryptoBackupRootPath.resolve(tempBackupName)
-            val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
+            val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
+
+            // Read event anchor BEFORE crypto exports to ensure anchor <= MLS state
             val lastProcessedEventId = when (val result = eventRepository.lastSavedEventId()) {
                 is Either.Right -> result.value
                 is Either.Left -> when (result.value) {
@@ -103,6 +82,30 @@ internal class BackupCryptoDBUseCaseImpl(
                     else -> return@withContext BackupCryptoDBResult.Failure(result.value)
                 }
             }
+
+            if (kaliumFileSystem.exists(mlsBackupPath)) {
+                kaliumFileSystem.delete(mlsBackupPath)
+            }
+            val (mlsExportData, mlsDbBytes) = createMLSBackup(mlsBackupPath).fold(
+                {
+                    kaliumLogger.e("Failed to create MLS backup")
+                    return@withContext BackupCryptoDBResult.Failure(it)
+                },
+                { it }
+            )
+            if (kaliumFileSystem.exists(proteusBackupPath)) {
+                kaliumFileSystem.delete(proteusBackupPath)
+            }
+            val (proteusExportData, proteusDbBytes) = createProteusBackup(proteusBackupPath).fold(
+                {
+                    kaliumLogger.e("Failed to create Proteus backup")
+                    return@withContext BackupCryptoDBResult.Failure(it)
+                },
+                { it }
+            )
+
+            val tempBackupPath = cryptoBackupRootPath.resolve(tempBackupName)
+            val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
             kaliumLogger.nomadTrace(
                 stage = "backup.capture_event_id",
                 fields = mapOf(
