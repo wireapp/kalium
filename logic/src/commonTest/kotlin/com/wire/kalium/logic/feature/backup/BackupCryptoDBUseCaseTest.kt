@@ -204,25 +204,6 @@ class BackupCryptoDBUseCaseTest {
         assertTrue(fakeFileSystem.exists(result.backupFilePath))
     }
 
-    @Test
-    fun givenFixedTempRoot_whenInvoked_thenExportsIntoThatRoot() = runTest(dispatcher.default) {
-        val customTempDirName = "custom_temp_backup_123"
-        val (arrangement, useCase) = Arrangement()
-            .withClientId(TestClient.CLIENT_ID)
-            .withTempBackupDirNameProvider(customTempDirName)
-            .withMlsExportedCryptoDB("keystore_export", byteArrayOf(0x1), ByteArray(32) { 0xAB.toByte() }, TestClient.CLIENT_ID)
-            .withProteusExportedCryptoDB("keystore_export_proteus", byteArrayOf(0x2), ByteArray(32) { 0xBC.toByte() }, TestClient.CLIENT_ID)
-            .withMlsTransactionSuccess()
-            .withProteusTransactionSuccess()
-            .arrange()
-
-        val result = useCase()
-        advanceUntilIdle()
-
-        assertIs<BackupCryptoDBResult.Success>(result)
-        assertTrue(result.backupFilePath.name.contains(".zip"))
-    }
-
     private inner class Arrangement {
         private val defaultLastProcessedEventId = "event-default"
         val clientIdProvider = mock<CurrentClientIdProvider>()
@@ -238,7 +219,6 @@ class BackupCryptoDBUseCaseTest {
             mlsClientProvider = mlsClientProvider,
             proteusClientProvider = proteusClientProvider
         )
-        private var tempBackupDirNameProviderLambda: (() -> String)? = null
 
         init {
             withLastProcessedEventId(defaultLastProcessedEventId)
@@ -258,10 +238,6 @@ class BackupCryptoDBUseCaseTest {
 
         fun withMostRecentEventId(lastProcessedEventId: String) = apply {
             everySuspend { eventRepository.fetchMostRecentEventId() }.returns(Either.Right(lastProcessedEventId))
-        }
-
-        fun withTempBackupDirNameProvider(dirName: String) = apply {
-            tempBackupDirNameProviderLambda = { dirName }
         }
 
         fun withMlsExportedCryptoDB(path: String, dbData: ByteArray, passphrase: ByteArray, clientId: ClientId) = apply {
@@ -354,25 +330,12 @@ class BackupCryptoDBUseCaseTest {
             }.returns(Either.Left(failure))
         }
 
-        fun arrange(): Pair<Arrangement, BackupCryptoDBUseCase> = this to (
-            if (tempBackupDirNameProviderLambda != null) {
-                BackupCryptoDBUseCaseImpl(
-                    userId = TestUser.USER_ID,
-                    cryptoTransactionProvider = cryptoTransactionProvider,
-                    eventRepository = eventRepository,
-                    kaliumFileSystem = fakeFileSystem,
-                    dispatchers = dispatcher,
-                    tempBackupDirNameProvider = tempBackupDirNameProviderLambda!!
-                )
-            } else {
-                BackupCryptoDBUseCaseImpl(
-                    userId = TestUser.USER_ID,
-                    cryptoTransactionProvider = cryptoTransactionProvider,
-                    eventRepository = eventRepository,
-                    kaliumFileSystem = fakeFileSystem,
-                    dispatchers = dispatcher
-                )
-            }
+        fun arrange(): Pair<Arrangement, BackupCryptoDBUseCase> = this to BackupCryptoDBUseCaseImpl(
+            userId = TestUser.USER_ID,
+            cryptoTransactionProvider = cryptoTransactionProvider,
+            eventRepository = eventRepository,
+            kaliumFileSystem = fakeFileSystem,
+            dispatchers = dispatcher
         )
     }
 
