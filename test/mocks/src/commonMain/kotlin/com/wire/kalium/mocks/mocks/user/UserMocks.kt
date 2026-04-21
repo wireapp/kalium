@@ -75,7 +75,8 @@ object UserMocks {
         nonQualifiedId = "",
         service = null,
         supportedProtocols = listOf(SupportedProtocolDTO.MLS),
-        type = UserTypeDTO.REGULAR
+        type = UserTypeDTO.REGULAR,
+        app = null
     )
 
     val usersFoundList = listOf(otherProfile)
