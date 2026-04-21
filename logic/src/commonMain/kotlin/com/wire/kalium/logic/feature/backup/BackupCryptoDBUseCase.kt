@@ -42,6 +42,7 @@ import okio.Source
 import okio.buffer
 import okio.use
 import kotlin.io.encoding.Base64
+import kotlin.random.Random
 
 /**
  * Performs the backup of the cryptographic database by exporting it, creating a metadata file, and packaging them into a ZIP file.
@@ -56,6 +57,10 @@ internal class BackupCryptoDBUseCaseImpl(
     private val eventRepository: EventRepository,
     private val kaliumFileSystem: KaliumFileSystem,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val tempBackupDirNameProvider: () -> String = {
+        val timeStamp = DateTimeUtil.currentSimpleDateTimeString().replace(":", "-")
+        "${TEMP_CRYPTO_BACKUP_DIR}_${timeStamp}_${Random.nextInt()}"
+    },
 ) : BackupCryptoDBUseCase {
 
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
@@ -160,7 +165,7 @@ internal class BackupCryptoDBUseCaseImpl(
         }
 
     private fun createBackupDirectories(): Triple<Path, Path, Path> {
-        val cryptoBackupRootPath = kaliumFileSystem.tempFilePath(TEMP_CRYPTO_BACKUP_DIR)
+        val cryptoBackupRootPath = kaliumFileSystem.tempFilePath(tempBackupDirNameProvider())
         kaliumFileSystem.createDirectories(cryptoBackupRootPath)
         val mlsBackupPath = cryptoBackupRootPath.resolve(MLS_KEYSTORE_NAME)
         val proteusBackupPath = cryptoBackupRootPath.resolve(PROTEUS_KEYSTORE_NAME)
