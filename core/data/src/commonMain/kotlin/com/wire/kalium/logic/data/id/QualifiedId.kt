@@ -49,6 +49,8 @@ val FEDERATION_REGEX = """[^@.]+@[^@.]+\.[^@]+""".toRegex()
 typealias ConversationId = QualifiedID
 
 @JvmInline
+@Serializable
+@Suppress("EnforceSerializableFields")
 value class GroupID(val value: String) {
     fun toLogString() = value
 }
