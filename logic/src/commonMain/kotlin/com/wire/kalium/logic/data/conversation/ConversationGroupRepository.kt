@@ -181,6 +181,7 @@ internal class ConversationGroupRepositoryImpl(
                 conversationId = conversationEntity.id.toModel(),
                 hasAppsAccessEnabled = conversationResponse.hasAppsAccessEnabled(),
                 creatorId = selfUserId,
+                type = conversationEntity.type
             )
         }.flatMap {
             when (protocol) {
