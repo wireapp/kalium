@@ -64,6 +64,16 @@ internal class BackupCryptoDBUseCaseImpl(
         val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
 
         try {
+            if (kaliumFileSystem.exists(proteusBackupPath)) {
+                kaliumFileSystem.delete(proteusBackupPath)
+            }
+            val (proteusExportData, proteusDbBytes) = createProteusBackup(proteusBackupPath).fold(
+                {
+                    kaliumLogger.e("Failed to create Proteus backup")
+                    return@withContext BackupCryptoDBResult.Failure(it)
+                },
+                { it }
+            )
             if (kaliumFileSystem.exists(mlsBackupPath)) {
                 kaliumFileSystem.delete(mlsBackupPath)
             }
@@ -74,17 +84,6 @@ internal class BackupCryptoDBUseCaseImpl(
                 },
                 { it }
             )
-            if (kaliumFileSystem.exists(proteusBackupPath)) {
-                kaliumFileSystem.delete(proteusBackupPath)
-            }
-            val (proteusExportData, proteusDbBytes, _) = createProteusBackup(proteusBackupPath).fold(
-                {
-                    kaliumLogger.e("Failed to create Proteus backup")
-                    return@withContext BackupCryptoDBResult.Failure(it)
-                },
-                { it }
-            )
-
             // Use the anchor captured within the backup transaction for consistency
             val lastProcessedEventId = mlsEventAnchor
 
@@ -136,6 +135,7 @@ internal class BackupCryptoDBUseCaseImpl(
                                         is Either.Right -> fetchResult.value
                                         is Either.Left -> return@fold Either.Left(fetchResult.value)
                                     }
+
                                     else -> return@fold Either.Left(result.value)
                                 }
                             }
@@ -149,7 +149,7 @@ internal class BackupCryptoDBUseCaseImpl(
 
     private suspend fun createProteusBackup(
         proteusBackupPath: Path
-    ): Either<CoreFailure, Triple<CryptoBackupMetadata, ByteArray, String>> =
+    ): Either<CoreFailure, Pair<CryptoBackupMetadata, ByteArray>> =
         cryptoTransactionProvider.proteusTransaction("backup_read_proteus") { _ ->
             cryptoTransactionProvider.proteusClientProvider
                 .exportCryptoDB(proteusBackupPath.toString())
@@ -160,18 +160,7 @@ internal class BackupCryptoDBUseCaseImpl(
                             val bytes = kaliumFileSystem.source(exportData.dbPath.toPath()).use {
                                 it.buffer().readByteArray()
                             }
-                            // Capture anchor within transaction for consistency with crypto export
-                            val lastProcessedEventId = when (val result = eventRepository.lastSavedEventId()) {
-                                is Either.Right -> result.value
-                                is Either.Left -> when (result.value) {
-                                    is StorageFailure.DataNotFound -> when (val fetchResult = eventRepository.fetchMostRecentEventId()) {
-                                        is Either.Right -> fetchResult.value
-                                        is Either.Left -> return@fold Either.Left(fetchResult.value)
-                                    }
-                                    else -> return@fold Either.Left(result.value)
-                                }
-                            }
-                            Either.Right(Triple(exportData, bytes, lastProcessedEventId))
+                            Either.Right(exportData to bytes)
                         } catch (e: Exception) {
                             Either.Left(StorageFailure.Generic(e))
                         }
@@ -270,5 +259,6 @@ public sealed interface BackupCryptoDBResult {
         val backupFilePath: Path,
         val backupName: String
     ) : BackupCryptoDBResult
+
     public data class Failure(val error: CoreFailure) : BackupCryptoDBResult
 }
