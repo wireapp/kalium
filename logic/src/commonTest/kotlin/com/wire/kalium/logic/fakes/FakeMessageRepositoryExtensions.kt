@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
@@ -56,7 +57,5 @@ internal open class FakeMessageRepositoryExtensions : MessageRepositoryExtension
     override suspend fun fetchOlderNomadMessagesByConversationId(
         conversationId: ConversationId,
         pageSize: Int,
-    ) {
-        // no-op for tests
-    }
+    ): NomadMessagePagingResult = NomadMessagePagingResult(hasMore = false)
 }

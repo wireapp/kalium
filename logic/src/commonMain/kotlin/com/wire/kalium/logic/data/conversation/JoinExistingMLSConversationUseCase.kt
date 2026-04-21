@@ -95,10 +95,58 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 Either.Left(StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
-                    joinOrEstablishMLSGroupAndRetry(transactionContext, conversation, mlsPublicKeys)
+                    refreshConversationMetadataIfPendingAfterReset(
+                        transactionContext = transactionContext,
+                        conversation = conversation,
+                        currentPublicKeys = mlsPublicKeys
+                    ).flatMap { refreshedConversation ->
+                        joinOrEstablishMLSGroupAndRetry(
+                            transactionContext,
+                            refreshedConversation.conversation,
+                            refreshedConversation.publicKeys
+                        )
+                    }
                 }
             })
         }
+
+    private suspend fun refreshConversationMetadataIfPendingAfterReset(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+        currentPublicKeys: MLSPublicKeys?
+    ): Either<CoreFailure, RefreshedConversation> {
+        val protocol = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
+            ?: return Either.Right(RefreshedConversation(conversation, currentPublicKeys))
+
+        return when {
+            protocol.groupState != Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET ->
+                Either.Right(RefreshedConversation(conversation, currentPublicKeys))
+
+            conversation.type == Conversation.Type.OneOnOne -> {
+                logger.d("Refreshing oneOnOne conversation metadata before rejoining ${conversation.id.toLogString()}")
+                conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
+                    fetchMLSOneToOneConversation(transactionContext, members.first()).map { refreshedConversation ->
+                        RefreshedConversation(
+                            conversation = refreshedConversation,
+                            publicKeys = refreshedConversation.mlsPublicKeys ?: currentPublicKeys
+                        )
+                    }
+                }
+            }
+
+            else -> {
+                logger.d("Refreshing conversation metadata before rejoining ${conversation.id.toLogString()}")
+                fetchConversation(transactionContext, conversation.id).flatMap {
+                    conversationRepository.getConversationById(conversation.id).map { refreshedConversation ->
+                        RefreshedConversation(
+                            conversation = refreshedConversation,
+                            publicKeys = currentPublicKeys
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     private suspend fun joinOrEstablishMLSGroupAndRetry(
         transactionContext: CryptoTransactionContext,
@@ -153,15 +201,6 @@ internal class JoinExistingMLSConversationUseCaseImpl(
         val type = conversation.type
         return when {
             protocol !is Conversation.ProtocolInfo.MLSCapable -> Either.Right(Unit)
-
-            transactionContext.wrapInMLSContext { mlsContext ->
-                mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, protocol.groupId)
-            }.fold({ false }, { it }) -> {
-                logger.d(
-                    "Skipping join/establish for ${conversation.id.toLogString()} because MLS group already exists locally"
-                )
-                syncEstablishedConversationMetadata(transactionContext, conversation)
-            }
 
             protocol.epoch != 0UL -> {
                 // TODO(refactor): don't use conversationAPI directly
@@ -291,4 +330,9 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             }
         }
     }
+
+    private data class RefreshedConversation(
+        val conversation: Conversation,
+        val publicKeys: MLSPublicKeys?
+    )
 }

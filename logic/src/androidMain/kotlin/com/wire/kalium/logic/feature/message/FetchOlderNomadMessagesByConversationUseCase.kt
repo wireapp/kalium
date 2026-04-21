@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.paging.NomadMessagePagingResult
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
@@ -32,7 +33,7 @@ public interface FetchOlderNomadMessagesByConversationUseCase {
     public suspend operator fun invoke(
         conversationId: ConversationId,
         pageSize: Int = DEFAULT_PAGE_SIZE,
-    )
+    ): NomadMessagePagingResult
 
     private companion object {
         const val DEFAULT_PAGE_SIZE = 50
@@ -47,7 +48,7 @@ internal class FetchOlderNomadMessagesByConversationUseCaseImpl(
     override suspend operator fun invoke(
         conversationId: ConversationId,
         pageSize: Int,
-    ): Unit = withContext(dispatcher.default) {
+    ): NomadMessagePagingResult = withContext(dispatcher.default) {
         messageRepository.extensions.fetchOlderNomadMessagesByConversationId(
             conversationId = conversationId,
             pageSize = pageSize,

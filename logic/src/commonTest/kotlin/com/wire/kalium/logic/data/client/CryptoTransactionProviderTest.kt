@@ -29,9 +29,13 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.util.InternalCryptoAccess
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -101,48 +105,48 @@ class CryptoTransactionProviderCrashTest {
     }
 
     private class Arrangement {
-        val proteusClient = mock(ProteusClient::class)
-        val mlsClient = mock(MLSClient::class)
+        val proteusClient: ProteusClient = mock(mode = MockMode.autoUnit)
+        val mlsClient: MLSClient = mock(mode = MockMode.autoUnit)
 
-        val proteusContext = mock(ProteusCoreCryptoContext::class)
-        val mlsContext = mock(MlsCoreCryptoContext::class)
+        val proteusContext: ProteusCoreCryptoContext = mock(mode = MockMode.autoUnit)
+        val mlsContext: MlsCoreCryptoContext = mock(mode = MockMode.autoUnit)
 
-        val proteusProvider = mock(ProteusClientProvider::class)
-        val mlsProvider = mock(MLSClientProvider::class)
+        val proteusProvider: ProteusClientProvider = mock(mode = MockMode.autoUnit)
+        val mlsProvider: MLSClientProvider = mock(mode = MockMode.autoUnit)
 
-        suspend fun withProteusTransactionSucceeds() = apply {
-            coEvery {
+        fun withProteusTransactionSucceeds() = apply {
+            everySuspend {
                 proteusClient.transaction(any(), any<suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, Unit>>())
-            } invokes { args ->
-                val block = args[1] as suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, Unit>
+            } calls { invocation ->
+                val block = invocation.args[1] as suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, Unit>
                 block(proteusContext)
             }
         }
 
-        suspend fun withProteusTransactionThrowing(e: Throwable) = apply {
-            coEvery {
+        fun withProteusTransactionThrowing(e: Throwable) = apply {
+            everySuspend {
                 proteusClient.transaction<String>(any(), any())
             } throws e
         }
 
-        suspend fun withMlsTransactionSucceeds() = apply {
-            coEvery {
+        fun withMlsTransactionSucceeds() = apply {
+            everySuspend {
                 mlsClient.transaction(any(), any<suspend (MlsCoreCryptoContext) -> Either<CoreFailure, String>>())
-            } invokes { args ->
-                val block = args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, String>
+            } calls { invocation ->
+                val block = invocation.args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, String>
                 block(mlsContext)
             }
         }
 
-        suspend fun withMlsTransactionThrowing(e: Throwable) = apply {
-            coEvery {
+        fun withMlsTransactionThrowing(e: Throwable) = apply {
+            everySuspend {
                 mlsClient.transaction<String>(any(), any())
             } throws e
         }
 
-        suspend fun arrange(): Pair<Arrangement, CryptoTransactionProvider> {
-            coEvery { proteusProvider.getOrError() } returns proteusClient.right()
-            coEvery { mlsProvider.getMLSClient() } returns mlsClient.right()
+        fun arrange(): Pair<Arrangement, CryptoTransactionProvider> {
+            everySuspend { proteusProvider.getOrError() } returns proteusClient.right()
+            everySuspend { mlsProvider.getMLSClient() } returns mlsClient.right()
             return this to CryptoTransactionProviderImpl(mlsProvider, proteusProvider)
         }
     }
