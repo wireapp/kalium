@@ -20,12 +20,15 @@ package com.wire.kalium.nomaddevice
 
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Nomad implementation of [CryptoStateChangeHookNotifier] that debounces calls to [backupForUser] when crypto state changes for a user.
@@ -39,18 +42,68 @@ internal class NomadCryptoStateChangeHookNotifier(
 ) : CryptoStateChangeHookNotifier {
 
     private val mutex = Mutex()
-    private val debounceJobs = mutableMapOf<UserId, Job>()
+    private val userStates = mutableMapOf<UserId, UserBackupState>()
 
     override suspend fun onCryptoStateChanged(userId: UserId) {
         mutex.withLock {
-            debounceJobs[userId]?.cancel()
-            debounceJobs[userId] = scope.launch {
-                delay(debounceMs)
-                repository.backupAndUpload(userId)
-                mutex.withLock {
-                    debounceJobs.remove(userId)
+            val state = userStates.getOrPut(userId) { UserBackupState() }
+            state.hasPendingChange = true
+            if (state.isRunning) return
+
+            state.workerJob?.cancel()
+            state.workerJob = launchDebouncedWorker(userId)
+        }
+    }
+
+    private fun launchDebouncedWorker(userId: UserId): Job = scope.launch {
+        delay(debounceMs)
+        drainPendingBackups(userId, coroutineContext.job)
+    }
+
+    private suspend fun drainPendingBackups(userId: UserId, workerJob: Job) {
+        while (true) {
+            val shouldRun = mutex.withLock {
+                val state = userStates[userId] ?: return
+                if (state.workerJob != workerJob) return
+                if (!state.hasPendingChange) {
+                    userStates.remove(userId)
+                    return
                 }
+
+                state.hasPendingChange = false
+                state.isRunning = true
+                true
+            }
+
+            if (!shouldRun) return
+
+            withContext(NonCancellable) {
+                repository.backupAndUpload(userId)
+            }
+
+            val shouldRerunImmediately = mutex.withLock {
+                val state = userStates[userId] ?: return
+                if (state.workerJob != workerJob) return
+
+                state.isRunning = false
+                state.hasPendingChange
+            }
+
+            if (!shouldRerunImmediately) {
+                mutex.withLock {
+                    val state = userStates[userId]
+                    if (state != null && state.workerJob == workerJob && !state.isRunning && !state.hasPendingChange) {
+                        userStates.remove(userId)
+                    }
+                }
+                return
             }
         }
     }
+
+    private class UserBackupState(
+        var workerJob: Job? = null,
+        var isRunning: Boolean = false,
+        var hasPendingChange: Boolean = false,
+    )
 }

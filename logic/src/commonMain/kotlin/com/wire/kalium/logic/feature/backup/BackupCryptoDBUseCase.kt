@@ -59,7 +59,8 @@ internal class BackupCryptoDBUseCaseImpl(
 ) : BackupCryptoDBUseCase {
 
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
-        val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
+        val backupRunId = createBackupRunId()
+        val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories(backupRunId)
         if (kaliumFileSystem.exists(mlsBackupPath)) {
             kaliumFileSystem.delete(mlsBackupPath)
         }
@@ -82,7 +83,7 @@ internal class BackupCryptoDBUseCaseImpl(
         )
 
         try {
-            val backupName = createBackupFileName()
+            val backupName = createBackupFileName(backupRunId)
             val tempBackupName = createTempBackupFileName(backupName)
             val tempBackupPath = cryptoBackupRootPath.resolve(tempBackupName)
             val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
@@ -97,6 +98,7 @@ internal class BackupCryptoDBUseCaseImpl(
                 }
             }
             val metadataPath = createMetadataFile(
+                backupRootPath = cryptoBackupRootPath,
                 mlsExportData = mlsExportData,
                 proteusExportData = proteusExportData,
                 lastProcessedEventId = lastProcessedEventId
@@ -113,7 +115,6 @@ internal class BackupCryptoDBUseCaseImpl(
             kaliumLogger.e("CoreCrypto export failed", e)
             BackupCryptoDBResult.Failure(StorageFailure.Generic(e))
         } finally {
-            kaliumFileSystem.delete(kaliumFileSystem.tempFilePath(BackupConstants.BACKUP_METADATA_FILE_NAME))
             kaliumFileSystem.deleteContents(cryptoBackupRootPath)
         }
     }
@@ -159,18 +160,22 @@ internal class BackupCryptoDBUseCaseImpl(
                 )
         }
 
-    private fun createBackupDirectories(): Triple<Path, Path, Path> {
-        val cryptoBackupRootPath = kaliumFileSystem.tempFilePath(TEMP_CRYPTO_BACKUP_DIR)
+    private fun createBackupDirectories(backupRunId: String): Triple<Path, Path, Path> {
+        val cryptoBackupRootPath = kaliumFileSystem.tempFilePath("${TEMP_CRYPTO_BACKUP_DIR}_$backupRunId")
         kaliumFileSystem.createDirectories(cryptoBackupRootPath)
         val mlsBackupPath = cryptoBackupRootPath.resolve(MLS_KEYSTORE_NAME)
         val proteusBackupPath = cryptoBackupRootPath.resolve(PROTEUS_KEYSTORE_NAME)
         return Triple(cryptoBackupRootPath, mlsBackupPath, proteusBackupPath)
     }
 
-    private fun createBackupFileName(): String {
-        val timeStamp = DateTimeUtil.currentSimpleDateTimeString()
-        return "${CRYPTO_BACKUP_PREFIX}_${userId}_${timeStamp.replace(":", "-")}.zip"
+    private fun createBackupRunId(): String {
+        val currentInstant = DateTimeUtil.currentInstant()
+        val timeStamp = DateTimeUtil.fromInstantToSimpleDateTimeString(currentInstant).replace(":", "-")
+        return "${timeStamp}_${currentInstant.toEpochMilliseconds()}"
     }
+
+    private fun createBackupFileName(backupRunId: String): String =
+        "${CRYPTO_BACKUP_PREFIX}_${userId}_${backupRunId}.zip"
 
     private fun createTempBackupFileName(backupName: String): String = "$backupName.tmp"
 
@@ -193,6 +198,7 @@ internal class BackupCryptoDBUseCaseImpl(
     }
 
     private fun createMetadataFile(
+        backupRootPath: Path,
         mlsExportData: CryptoBackupMetadata,
         proteusExportData: CryptoBackupMetadata,
         lastProcessedEventId: String,
@@ -206,7 +212,7 @@ internal class BackupCryptoDBUseCaseImpl(
         )
         val metadataJson = Json.encodeToString(metadata)
 
-        val metadataFilePath = kaliumFileSystem.tempFilePath(BackupConstants.BACKUP_METADATA_FILE_NAME)
+        val metadataFilePath = backupRootPath.resolve(BackupConstants.BACKUP_METADATA_FILE_NAME)
         kaliumFileSystem.sink(metadataFilePath).buffer().use {
             it.write(metadataJson.encodeToByteArray())
         }

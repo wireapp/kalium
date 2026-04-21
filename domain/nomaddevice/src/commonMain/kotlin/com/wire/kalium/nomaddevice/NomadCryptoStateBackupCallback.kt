@@ -91,7 +91,8 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
 ) : CryptoStateChangeHookNotifier {
 
     private val mutex = Mutex()
-    private var debounceJob: Job? = null
+    private var workerJob: Job? = null
+    private var isRunning = false
     private var hasPendingChange = false
 
     override suspend fun onCryptoStateChanged(userId: UserId) {
@@ -101,33 +102,33 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
 
         mutex.withLock {
             hasPendingChange = true
-            debounceJob?.cancel()
-            debounceJob = scope.launch {
-                try {
-                    delay(debounceMs)
-                } catch (e: CancellationException) {
-                    // Scope is shutting down (e.g. logout): flush any pending change before stopping.
-                    if (!scope.isActive) {
-                        withContext(NonCancellable) { flushIfPending() }
-                    }
-                    throw e
-                }
-                // Normal debounce path: protect the upload from late cancellations.
-                val currentJob = coroutineContext.job
-                val shouldBackup = mutex.withLock { hasPendingChange }
-                if (shouldBackup) {
-                    withContext(NonCancellable) {
-                        runBackup(currentJob)
-                    }
-                }
+            if (isRunning) return
+            workerJob?.cancel()
+            workerJob = launchDebouncedWorker()
+        }
+    }
+
+    private fun launchDebouncedWorker(): Job = scope.launch {
+        try {
+            delay(debounceMs)
+            drainPendingBackups(coroutineContext.job)
+        } catch (e: CancellationException) {
+            // Scope is shutting down (e.g. logout): flush any pending change before stopping.
+            if (!scope.isActive) {
+                withContext(NonCancellable) { flushIfPending() }
             }
+            throw e
         }
     }
 
     @Suppress("TooGenericExceptionCaught")
     private suspend fun flushIfPending() {
         val shouldBackup = mutex.withLock {
-            hasPendingChange.also { hasPendingChange = false }
+            val pending = hasPendingChange
+            hasPendingChange = false
+            isRunning = false
+            workerJob = null
+            pending
         }
         if (shouldBackup) {
             try {
@@ -136,21 +137,47 @@ internal class UserScopedNomadCryptoStateChangeHookNotifier(
                 kaliumLogger.w("User-scoped crypto state change hook execution failed", exception)
             }
         }
-        mutex.withLock { debounceJob = null }
     }
 
     @Suppress("TooGenericExceptionCaught")
-    private suspend fun runBackup(currentJob: Job) {
-        try {
-            backup()
-        } catch (exception: Exception) {
-            kaliumLogger.w("User-scoped crypto state change hook execution failed", exception)
-        } finally {
-            mutex.withLock {
-                hasPendingChange = false
-                if (debounceJob == currentJob) {
-                    debounceJob = null
+    private suspend fun drainPendingBackups(currentJob: Job) {
+        while (true) {
+            val shouldRun = mutex.withLock {
+                if (workerJob != currentJob) return
+                if (!hasPendingChange) {
+                    workerJob = null
+                    return
                 }
+
+                hasPendingChange = false
+                isRunning = true
+                true
+            }
+
+            if (!shouldRun) return
+
+            try {
+                withContext(NonCancellable) {
+                    backup()
+                }
+            } catch (exception: Exception) {
+                kaliumLogger.w("User-scoped crypto state change hook execution failed", exception)
+            }
+
+            val shouldRerunImmediately = mutex.withLock {
+                if (workerJob != currentJob) return
+
+                isRunning = false
+                hasPendingChange
+            }
+
+            if (!shouldRerunImmediately) {
+                mutex.withLock {
+                    if (workerJob == currentJob && !isRunning && !hasPendingChange) {
+                        workerJob = null
+                    }
+                }
+                return
             }
         }
     }
