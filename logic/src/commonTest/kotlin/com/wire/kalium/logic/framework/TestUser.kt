@@ -160,7 +160,8 @@ object TestUser {
         nonQualifiedId = NETWORK_ID.value,
         service = null,
         supportedProtocols = listOf(SupportedProtocolDTO.MLS),
-        type = UserTypeDTO.REGULAR
+        type = UserTypeDTO.REGULAR,
+        app = null
     )
 
     val SELF_USER_DTO = SelfUserDTO(
