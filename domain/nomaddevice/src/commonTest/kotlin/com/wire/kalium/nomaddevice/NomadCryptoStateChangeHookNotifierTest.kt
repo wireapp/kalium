@@ -186,6 +186,68 @@ class NomadCryptoStateChangeHookNotifierTest {
     }
 
     @Test
+    fun givenMultiUserFactory_whenScopeCancelledDuringDebounce_thenPendingBackupIsFlushed() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<UserId>()
+        val notifier = createNomadCryptoStateChangeHookNotifier(
+            scope = scope,
+            backupForUser = { calls += it },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS / 2)
+        scope.cancel()
+        scheduler.runCurrent()
+
+        assertEquals(listOf(USER_ID), calls)
+    }
+
+    @Test
+    fun givenMultiUserFactory_whenBackupThrows_thenExceptionIsSwallowed() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val notifier = createNomadCryptoStateChangeHookNotifier(
+            scope = scope,
+            backupForUser = { throw IllegalStateException("boom") },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+    }
+
+    @Test
+    fun givenMultiUserFactory_whenBackupFails_thenNextTriggerRetriesBackup() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<UserId>()
+        var shouldFail = true
+        val notifier = createNomadCryptoStateChangeHookNotifier(
+            scope = scope,
+            backupForUser = {
+                if (shouldFail) throw IllegalStateException("boom")
+                calls += it
+            },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+        assertEquals(emptyList(), calls)
+
+        shouldFail = false
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+
+        assertEquals(listOf(USER_ID), calls)
+    }
+
+    @Test
     fun givenUserScopedFactory_whenOtherUserChanges_thenBackupIsIgnored() = runTest {
         val scheduler = TestCoroutineScheduler()
         val scope = TestScope(scheduler)

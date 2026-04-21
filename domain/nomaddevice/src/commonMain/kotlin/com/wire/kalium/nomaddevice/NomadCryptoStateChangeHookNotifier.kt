@@ -18,12 +18,15 @@
 
 package com.wire.kalium.nomaddevice
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -56,10 +59,42 @@ internal class NomadCryptoStateChangeHookNotifier(
     }
 
     private fun launchDebouncedWorker(userId: UserId): Job = scope.launch {
-        delay(debounceMs)
-        drainPendingBackups(userId, coroutineContext.job)
+        try {
+            delay(debounceMs)
+            drainPendingBackups(userId, coroutineContext.job)
+        } catch (exception: CancellationException) {
+            // Scope is shutting down (e.g. logout): flush any pending change before stopping.
+            if (!scope.isActive) {
+                withContext(NonCancellable) { flushIfPending(userId) }
+            }
+            throw exception
+        }
     }
 
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun flushIfPending(userId: UserId) {
+        val shouldBackup = mutex.withLock {
+            val state = userStates[userId] ?: return
+
+            val pending = state.hasPendingChange
+            if (!pending) {
+                userStates.remove(userId)
+                return
+            }
+
+            userStates.remove(userId)
+            pending
+        }
+        if (shouldBackup) {
+            try {
+                repository.backupAndUpload(userId)
+            } catch (exception: Exception) {
+                kaliumLogger.w("Multi-user crypto state change hook execution failed", exception)
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun drainPendingBackups(userId: UserId, workerJob: Job) {
         while (true) {
             val shouldRun = mutex.withLock {
@@ -77,8 +112,12 @@ internal class NomadCryptoStateChangeHookNotifier(
 
             if (!shouldRun) return
 
-            withContext(NonCancellable) {
-                repository.backupAndUpload(userId)
+            try {
+                withContext(NonCancellable) {
+                    repository.backupAndUpload(userId)
+                }
+            } catch (exception: Exception) {
+                kaliumLogger.w("Multi-user crypto state change hook execution failed", exception)
             }
 
             val shouldRerunImmediately = mutex.withLock {
