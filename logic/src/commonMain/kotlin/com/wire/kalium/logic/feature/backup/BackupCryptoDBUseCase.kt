@@ -59,43 +59,37 @@ internal class BackupCryptoDBUseCaseImpl(
 ) : BackupCryptoDBUseCase {
 
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
+        val backupName = createBackupFileName()
+        val tempBackupName = createTempBackupFileName(backupName)
         val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
-        if (kaliumFileSystem.exists(mlsBackupPath)) {
-            kaliumFileSystem.delete(mlsBackupPath)
-        }
-        val (mlsExportData, mlsDbBytes) = createMLSBackup(mlsBackupPath).fold(
-            {
-                kaliumLogger.e("Failed to create MLS backup")
-                return@withContext BackupCryptoDBResult.Failure(it)
-            },
-            { it }
-        )
-        if (kaliumFileSystem.exists(proteusBackupPath)) {
-            kaliumFileSystem.delete(proteusBackupPath)
-        }
-        val (proteusExportData, proteusDbBytes) = createProteusBackup(proteusBackupPath).fold(
-            {
-                kaliumLogger.e("Failed to create Proteus backup")
-                return@withContext BackupCryptoDBResult.Failure(it)
-            },
-            { it }
-        )
 
         try {
-            val backupName = createBackupFileName()
-            val tempBackupName = createTempBackupFileName(backupName)
+            if (kaliumFileSystem.exists(mlsBackupPath)) {
+                kaliumFileSystem.delete(mlsBackupPath)
+            }
+            val (mlsExportData, mlsDbBytes, mlsEventAnchor) = createMLSBackup(mlsBackupPath).fold(
+                {
+                    kaliumLogger.e("Failed to create MLS backup")
+                    return@withContext BackupCryptoDBResult.Failure(it)
+                },
+                { it }
+            )
+            if (kaliumFileSystem.exists(proteusBackupPath)) {
+                kaliumFileSystem.delete(proteusBackupPath)
+            }
+            val (proteusExportData, proteusDbBytes, _) = createProteusBackup(proteusBackupPath).fold(
+                {
+                    kaliumLogger.e("Failed to create Proteus backup")
+                    return@withContext BackupCryptoDBResult.Failure(it)
+                },
+                { it }
+            )
+
+            // Use the anchor captured within the backup transaction for consistency
+            val lastProcessedEventId = mlsEventAnchor
+
             val tempBackupPath = cryptoBackupRootPath.resolve(tempBackupName)
             val backupFilePath = kaliumFileSystem.tempFilePath(backupName)
-            val lastProcessedEventId = when (val result = eventRepository.lastSavedEventId()) {
-                is Either.Right -> result.value
-                is Either.Left -> when (result.value) {
-                    is StorageFailure.DataNotFound -> when (val fetchResult = eventRepository.fetchMostRecentEventId()) {
-                        is Either.Right -> fetchResult.value
-                        is Either.Left -> return@withContext BackupCryptoDBResult.Failure(fetchResult.value)
-                    }
-                    else -> return@withContext BackupCryptoDBResult.Failure(result.value)
-                }
-            }
             val metadataPath = createMetadataFile(
                 mlsExportData = mlsExportData,
                 proteusExportData = proteusExportData,
@@ -118,7 +112,9 @@ internal class BackupCryptoDBUseCaseImpl(
         }
     }
 
-    private suspend fun createMLSBackup(mlsBackupPath: Path): Either<CoreFailure, Pair<CryptoBackupMetadata, ByteArray>> =
+    private suspend fun createMLSBackup(
+        mlsBackupPath: Path
+    ): Either<CoreFailure, Triple<CryptoBackupMetadata, ByteArray, String>> =
         cryptoTransactionProvider.mlsTransaction("backup_read_mls") { _ ->
             cryptoTransactionProvider.mlsClientProvider
                 .exportCryptoDB(mlsBackupPath.toString())
@@ -132,7 +128,18 @@ internal class BackupCryptoDBUseCaseImpl(
                             val bytes = kaliumFileSystem.source(exportData.dbPath.toPath()).use {
                                 it.buffer().readByteArray()
                             }
-                            Either.Right(exportData to bytes)
+                            // Capture anchor within transaction for consistency with MLS export
+                            val lastProcessedEventId = when (val result = eventRepository.lastSavedEventId()) {
+                                is Either.Right -> result.value
+                                is Either.Left -> when (result.value) {
+                                    is StorageFailure.DataNotFound -> when (val fetchResult = eventRepository.fetchMostRecentEventId()) {
+                                        is Either.Right -> fetchResult.value
+                                        is Either.Left -> return@fold Either.Left(fetchResult.value)
+                                    }
+                                    else -> return@fold Either.Left(result.value)
+                                }
+                            }
+                            Either.Right(Triple(exportData, bytes, lastProcessedEventId))
                         } catch (e: Exception) {
                             Either.Left(StorageFailure.Generic(e))
                         }
@@ -140,7 +147,9 @@ internal class BackupCryptoDBUseCaseImpl(
                 )
         }
 
-    private suspend fun createProteusBackup(proteusBackupPath: Path): Either<CoreFailure, Pair<CryptoBackupMetadata, ByteArray>> =
+    private suspend fun createProteusBackup(
+        proteusBackupPath: Path
+    ): Either<CoreFailure, Triple<CryptoBackupMetadata, ByteArray, String>> =
         cryptoTransactionProvider.proteusTransaction("backup_read_proteus") { _ ->
             cryptoTransactionProvider.proteusClientProvider
                 .exportCryptoDB(proteusBackupPath.toString())
@@ -151,7 +160,18 @@ internal class BackupCryptoDBUseCaseImpl(
                             val bytes = kaliumFileSystem.source(exportData.dbPath.toPath()).use {
                                 it.buffer().readByteArray()
                             }
-                            Either.Right(exportData to bytes)
+                            // Capture anchor within transaction for consistency with crypto export
+                            val lastProcessedEventId = when (val result = eventRepository.lastSavedEventId()) {
+                                is Either.Right -> result.value
+                                is Either.Left -> when (result.value) {
+                                    is StorageFailure.DataNotFound -> when (val fetchResult = eventRepository.fetchMostRecentEventId()) {
+                                        is Either.Right -> fetchResult.value
+                                        is Either.Left -> return@fold Either.Left(fetchResult.value)
+                                    }
+                                    else -> return@fold Either.Left(result.value)
+                                }
+                            }
+                            Either.Right(Triple(exportData, bytes, lastProcessedEventId))
                         } catch (e: Exception) {
                             Either.Left(StorageFailure.Generic(e))
                         }
