@@ -17,6 +17,9 @@
  */
 package com.wire.kalium.logic.feature.conversation.mls
 
+import com.wire.kalium.logic.data.conversation.mls.OneOnOneResolutionPendingAction
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
+import com.wire.kalium.logic.data.conversation.mls.PersistentPendingActionsRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity

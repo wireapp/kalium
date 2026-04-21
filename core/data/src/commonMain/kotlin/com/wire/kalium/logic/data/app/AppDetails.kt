@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,24 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.service
+package com.wire.kalium.logic.data.app
 
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserAssetId
 
-data class ServiceDetails(
-    val id: ServiceId,
+data class AppDetails(
+    val id: QualifiedID,
     val name: String,
     val description: String,
-    val category: String? = null,
+    val category: String?,
     val creator: String? = null,
-    val summary: String,
-    val enabled: Boolean,
-    val tags: List<String>,
     val previewAssetId: UserAssetId?,
     val completeAssetId: UserAssetId?
-)
-
-data class ServiceId(
-    val id: String,
-    val provider: String
 )
