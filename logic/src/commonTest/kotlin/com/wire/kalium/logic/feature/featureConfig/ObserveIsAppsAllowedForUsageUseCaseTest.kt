@@ -25,11 +25,12 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.framework.TestTeam
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -42,6 +43,8 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
     fun givenAnErrorWhileGettingUserDoesBelongToTeam_whenObservingAppsEnabledConfig_thenReturnFalse() = runTest {
         val (arrangement, observeAppsEnabledConfigUseCase) = Arrangement()
             .withObserveAppsEnabledResult(flowOf(Either.Right(true)))
+            .withDefaultProtocol(Either.Right(SupportedProtocol.MLS))
+            .withSupportedProtocols(Either.Right(setOf(SupportedProtocol.MLS)))
             .withSelfTeamIdProviderResult(StorageFailure.DataNotFound.left())
             .arrange()
 
@@ -49,13 +52,13 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
 
         result.test {
             val item = awaitItem()
-            assertEquals(false, item)
+            assertEquals(AppsAllowedResult.Disabled, item)
 
             cancelAndIgnoreRemainingEvents()
 
-            coVerify {
+            verifySuspend {
                 arrangement.userConfigRepository.observeAppsEnabled()
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -63,6 +66,8 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
     fun givenUserDoesNotBelongToTeam_whenObservingAppsEnabledConfig_thenReturnFalse() = runTest {
         val (arrangement, observeAppsEnabledConfigUseCase) = Arrangement()
             .withObserveAppsEnabledResult(flowOf(Either.Right(true)))
+            .withDefaultProtocol(Either.Right(SupportedProtocol.MLS))
+            .withSupportedProtocols(Either.Right(setOf(SupportedProtocol.MLS)))
             .withSelfTeamIdProviderResult(null.right())
             .arrange()
 
@@ -70,13 +75,13 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
 
         result.test {
             val item = awaitItem()
-            assertEquals(false, item)
+            assertEquals(AppsAllowedResult.Disabled, item)
 
             cancelAndIgnoreRemainingEvents()
 
-            coVerify {
+            verifySuspend {
                 arrangement.userConfigRepository.observeAppsEnabled()
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -84,6 +89,8 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
     fun givenUserConfigRepositoryFailureOrNotPresent_whenObservingAppsEnabledConfig_thenReturnFalse() = runTest {
         val (arrangement, observeAppsEnabledConfigUseCase) = Arrangement()
             .withObserveAppsEnabledResult(flowOf(StorageFailure.DataNotFound.left()))
+            .withDefaultProtocol(Either.Right(SupportedProtocol.MLS))
+            .withSupportedProtocols(Either.Right(setOf(SupportedProtocol.MLS)))
             .withSelfTeamIdProviderResult(TestTeam.TEAM_ID.right())
             .arrange()
 
@@ -91,13 +98,13 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
 
         result.test {
             val item = awaitItem()
-            assertEquals(false, item)
+            assertEquals(AppsAllowedResult.Disabled, item)
 
             cancelAndIgnoreRemainingEvents()
 
-            coVerify {
+            verifySuspend {
                 arrangement.userConfigRepository.observeAppsEnabled()
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -105,6 +112,8 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
     fun givenUserConfigRepositorySuccess_whenObservingAppsEnabledConfig_thenReturnTrue() = runTest {
         val (arrangement, observeAppsEnabledConfigUseCase) = Arrangement()
             .withObserveAppsEnabledResult(flowOf(Either.Right(true)))
+            .withDefaultProtocol(Either.Right(SupportedProtocol.MLS))
+            .withSupportedProtocols(Either.Right(setOf(SupportedProtocol.MLS)))
             .withSelfTeamIdProviderResult(TestTeam.TEAM_ID.right())
             .arrange()
 
@@ -112,31 +121,131 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
 
         result.test {
             val item = awaitItem()
-            assertEquals(true, item)
+            assertEquals(AppsAllowedResult.Enabled(AppsAllowedProtocol.MLS), item)
 
             cancelAndIgnoreRemainingEvents()
 
-            coVerify {
+            verifySuspend {
                 arrangement.userConfigRepository.observeAppsEnabled()
-            }.wasInvoked(exactly = once)
+            }
+        }
+    }
+
+    private val testCases = listOf(
+        AppsAllowedResultTestCase(
+            description = "Proteus Default Protocol, Proteus Supported Protocol, Apps Disabled",
+            appsEnabled = false.right(),
+            defaultProtocol = SupportedProtocol.PROTEUS.right(),
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS).right(),
+            selfTeamId = TestTeam.TEAM_ID.right(),
+            expectedResult = AppsAllowedResult.Enabled(AppsAllowedProtocol.PROTEUS)
+        ),
+        AppsAllowedResultTestCase(
+            description = "Proteus Default Protocol, Proteus Supported Protocol, Apps Enabled",
+            appsEnabled = true.right(),
+            defaultProtocol = SupportedProtocol.PROTEUS.right(),
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS).right(),
+            selfTeamId = TestTeam.TEAM_ID.right(),
+            expectedResult = AppsAllowedResult.Enabled(AppsAllowedProtocol.PROTEUS)
+        ),
+        AppsAllowedResultTestCase(
+            description = "Proteus Default Protocol, Mixed Supported Protocol, Apps Disabled",
+            appsEnabled = false.right(),
+            defaultProtocol = SupportedProtocol.PROTEUS.right(),
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS).right(),
+            selfTeamId = TestTeam.TEAM_ID.right(),
+            expectedResult = AppsAllowedResult.Enabled(AppsAllowedProtocol.MIXED(SupportedProtocol.PROTEUS))
+        ),
+        AppsAllowedResultTestCase(
+            description = "Proteus Default Protocol, Mixed Supported Protocol, Apps Enabled",
+            appsEnabled = true.right(),
+            defaultProtocol = SupportedProtocol.PROTEUS.right(),
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS).right(),
+            selfTeamId = TestTeam.TEAM_ID.right(),
+            expectedResult = AppsAllowedResult.Enabled(AppsAllowedProtocol.MIXED(SupportedProtocol.MLS))
+        ),
+        AppsAllowedResultTestCase(
+            description = "MLS Default Protocol, MLS Supported Protocol, Apps Disabled",
+            appsEnabled = false.right(),
+            defaultProtocol = SupportedProtocol.MLS.right(),
+            supportedProtocols = setOf(SupportedProtocol.MLS).right(),
+            selfTeamId = TestTeam.TEAM_ID.right(),
+            expectedResult = AppsAllowedResult.Disabled
+        ),
+        AppsAllowedResultTestCase(
+            description = "MLS Default Protocol, Mixed Supported Protocol, Apps Disabled",
+            appsEnabled = false.right(),
+            defaultProtocol = SupportedProtocol.MLS.right(),
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS).right(),
+            selfTeamId = TestTeam.TEAM_ID.right(),
+            expectedResult = AppsAllowedResult.Disabled
+        ),
+        AppsAllowedResultTestCase(
+            description = "MLS Default Protocol, MLS Supported Protocol, Apps Enabled",
+            appsEnabled = true.right(),
+            defaultProtocol = SupportedProtocol.MLS.right(),
+            supportedProtocols = setOf(SupportedProtocol.MLS).right(),
+            selfTeamId = TestTeam.TEAM_ID.right(),
+            expectedResult = AppsAllowedResult.Enabled(AppsAllowedProtocol.MLS)
+        ),
+        AppsAllowedResultTestCase(
+            description = "MLS Default Protocol, Mixed Supported Protocol, Apps Enabled",
+            appsEnabled = true.right(),
+            defaultProtocol = SupportedProtocol.MLS.right(),
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS).right(),
+            selfTeamId = TestTeam.TEAM_ID.right(),
+            expectedResult = AppsAllowedResult.Enabled(AppsAllowedProtocol.MIXED(SupportedProtocol.MLS))
+        ),
+    )
+
+    @Test
+    fun givenDifferentConfigs_whenObservingAppsEnabled_thenReturnExpectedResult() = runTest {
+        testCases.forEach { case ->
+            val (_, useCase) = Arrangement()
+                .withObserveAppsEnabledResult(flowOf(case.appsEnabled))
+                .withDefaultProtocol(case.defaultProtocol)
+                .withSupportedProtocols(case.supportedProtocols)
+                .withSelfTeamIdProviderResult(case.selfTeamId)
+                .arrange()
+
+            useCase().test {
+                assertEquals(case.expectedResult, awaitItem(), "Failed for: ${case.description}")
+                cancelAndIgnoreRemainingEvents()
+            }
         }
     }
 
     private class Arrangement {
-        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
+        val userConfigRepository: UserConfigRepository = mock<UserConfigRepository>()
+        val selfTeamIdProvider: SelfTeamIdProvider = mock<SelfTeamIdProvider>()
 
         suspend fun withObserveAppsEnabledResult(result: Flow<Either<StorageFailure, Boolean>>) = apply {
-            coEvery { userConfigRepository.observeAppsEnabled() } returns result
+            everySuspend { userConfigRepository.observeAppsEnabled() } returns result
         }
 
         suspend fun withSelfTeamIdProviderResult(result: Either<StorageFailure, TeamId?>) = apply {
-            coEvery { selfTeamIdProvider() } returns result
+            everySuspend { selfTeamIdProvider() } returns result
+        }
+
+        suspend fun withDefaultProtocol(result: Either<StorageFailure, SupportedProtocol>) = apply {
+            everySuspend { userConfigRepository.getDefaultProtocol() } returns result
+        }
+
+        suspend fun withSupportedProtocols(result: Either<StorageFailure, Set<SupportedProtocol>>) = apply {
+            everySuspend { userConfigRepository.getSupportedProtocols() } returns result
         }
 
         fun arrange(): Pair<Arrangement, ObserveIsAppsAllowedForUsageUseCase> {
             return this to ObserveIsAppsAllowedForUsageUseCaseImpl(userConfigRepository, selfTeamIdProvider)
         }
     }
-
 }
+
+data class AppsAllowedResultTestCase(
+    val description: String,
+    val appsEnabled: Either<StorageFailure, Boolean>,
+    val defaultProtocol: Either<StorageFailure, SupportedProtocol>,
+    val supportedProtocols: Either<StorageFailure, Set<SupportedProtocol>>,
+    val selfTeamId: Either<StorageFailure, TeamId?>,
+    val expectedResult: AppsAllowedResult
+)
