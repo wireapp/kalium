@@ -129,6 +129,12 @@ internal interface MLSConversationRepository : MLSMemberAdder {
         groupID: GroupID
     ): Either<CoreFailure, List<DecryptedMessageBundle>>
 
+    suspend fun encryptMessage(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID,
+        content: ByteArray
+    ): Either<CoreFailure, ByteArray>
+
     /**
      * Establishes an MLS (Messaging Layer Security) group with the specified group ID and members.
      *
@@ -352,6 +358,17 @@ internal class MLSConversationDataSource(
                         it.toModel(groupID)
                     }
                 }
+        }
+    }
+
+    override suspend fun encryptMessage(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID,
+        content: ByteArray
+    ): Either<CoreFailure, ByteArray> {
+        logger.d("Encrypting message for group ${groupID.toLogString()}")
+        return wrapMLSRequest {
+            mlsContext.encryptMessage(idMapper.toCryptoModel(groupID), content)
         }
     }
 
