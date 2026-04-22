@@ -40,6 +40,8 @@ class SupportOpenHelperFactory(
             }
 
             override fun onConfigure(db: SQLiteDatabase) {
+                // SQLCipher 4.6+ enables WARN/ERROR logs by default; suppress noisy internal logs in logcat.
+                db.execSQL("PRAGMA cipher_log_level = ERROR;")
                 configuration.callback.onConfigure(db)
             }
         }
