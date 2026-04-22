@@ -54,7 +54,8 @@ data class UserProfileDTO(
     @SerialName("service") override val service: ServiceDTO?,
     @SerialName("supported_protocols") override val supportedProtocols: List<SupportedProtocolDTO>?,
     @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusDTO,
-    @SerialName("type") val type: UserTypeDTO?
+    @SerialName("type") val type: UserTypeDTO?,
+    @SerialName("app") val app: AppDTO?
 ) : UserDTO()
 
 fun UserProfileDTO.isLegacyBot() = this.service != null
@@ -147,3 +148,9 @@ enum class UserTypeDTO {
         return this.name.lowercase()
     }
 }
+
+@Serializable
+data class AppDTO(
+    @SerialName("description") val description: String,
+    @SerialName("category") val category: String?
+)

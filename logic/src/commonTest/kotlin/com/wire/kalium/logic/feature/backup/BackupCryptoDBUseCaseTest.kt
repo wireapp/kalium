@@ -56,6 +56,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.Json
 import okio.buffer
+import okio.Path.Companion.toPath
 import okio.use
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
@@ -160,7 +161,10 @@ class BackupCryptoDBUseCaseTest {
 
         assertIs<BackupCryptoDBResult.Failure>(result)
         assertTrue(result.error is StorageFailure.DataNotFound)
-        verifySuspend(VerifyMode.atMost(1)) {
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.proteusClientProvider.exportCryptoDB(any())
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsClientProvider.exportCryptoDB(any())
         }
     }
@@ -178,7 +182,10 @@ class BackupCryptoDBUseCaseTest {
 
         assertIs<BackupCryptoDBResult.Failure>(result)
         assertIs<StorageFailure.Generic>(result.error)
-        verifySuspend(VerifyMode.atMost(1)) {
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.proteusClientProvider.exportCryptoDB(any())
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsClientProvider.exportCryptoDB(any())
         }
     }
@@ -204,6 +211,84 @@ class BackupCryptoDBUseCaseTest {
         assertTrue(fakeFileSystem.exists(result.backupFilePath))
     }
 
+    @Test
+    fun givenStaleProteusExportFile_whenBackingUpCryptoDb_thenDeletesBeforeProteusExport() = runTest(dispatcher.default) {
+        val staleProteusExportPath = fakeFileSystem.tempFilePath(BackupCryptoDBUseCaseImpl.TEMP_CRYPTO_BACKUP_DIR)
+            .resolve(BackupCryptoDBUseCaseImpl.PROTEUS_KEYSTORE_NAME)
+        val (arrangement, useCase) = Arrangement()
+            .withClientId(TestClient.CLIENT_ID)
+            .withLastProcessedEventId("event-123")
+            .withMlsExportedCryptoDB("keystore_export", byteArrayOf(0x1), ByteArray(32) { 0xAB.toByte() }, TestClient.CLIENT_ID)
+            .withMlsTransactionSuccess()
+            .withProteusTransactionSuccess()
+            .arrange()
+
+        with(fakeFileSystem) {
+            createDirectories(staleProteusExportPath.parent!!)
+            sink(staleProteusExportPath).buffer().use { it.writeUtf8("stale-proteus-db") }
+        }
+
+        everySuspend { arrangement.proteusClientProvider.exportCryptoDB(any()) }.calls { invocation ->
+            val exportPath = (invocation.args[0] as String).toPath()
+            if (fakeFileSystem.exists(exportPath)) {
+                return@calls Either.Left(StorageFailure.DataNotFound)
+            }
+            with(fakeFileSystem) {
+                sink(exportPath).buffer().use { it.writeUtf8("proteus-db") }
+            }
+            com.wire.kalium.logic.data.client.CryptoBackupMetadata(
+                dbPath = exportPath.toString(),
+                passphrase = ByteArray(32) { 0xBC.toByte() },
+                clientId = TestClient.CLIENT_ID
+            ).right()
+        }
+
+        val result = useCase()
+        advanceUntilIdle()
+
+        assertIs<BackupCryptoDBResult.Success>(result)
+    }
+
+    @OptIn(ExperimentalEncodingApi::class)
+    @Test
+    fun givenAnchorChangesAfterMlsExport_whenBackingUpCryptoDb_thenMetadataUsesMlsTransactionAnchorAndReadsAnchorOnce() =
+        runTest(dispatcher.default) {
+            val dbData: ByteArray = Base64.decode("c29tZS1jYy1kYi1ieXRlcw==")
+            val proteusDbData: ByteArray = Base64.decode("cHJvdGV1cy1kYi1ieXRlcw==")
+            val passphrase = ByteArray(32) { 0xAB.toByte() }
+            val proteusPassphrase = ByteArray(32) { 0xBC.toByte() }
+            val anchorCapturedWithMlsExport = "event-old-123"
+            val anchorAfterMlsExport = "event-new-456"
+            val (arrangement, useCase) = Arrangement()
+                .withClientId(TestClient.CLIENT_ID)
+                .withLastProcessedEventIds(anchorCapturedWithMlsExport, anchorAfterMlsExport)
+                .withMlsExportedCryptoDB("keystore_export", dbData, passphrase, TestClient.CLIENT_ID)
+                .withProteusExportedCryptoDB("keystore_export_proteus", proteusDbData, proteusPassphrase, TestClient.CLIENT_ID)
+                .withMlsTransactionSuccess()
+                .withProteusTransactionSuccess()
+                .arrange()
+
+            val result = useCase()
+            advanceUntilIdle()
+
+            assertIs<BackupCryptoDBResult.Success>(result)
+
+            with(fakeFileSystem) {
+                val extractedFilesPath = tempFilePath()
+                createDirectory(extractedFilesPath)
+                extractCompressedFile(source(result.backupFilePath), extractedFilesPath, ExtractFilesParam.All, fakeFileSystem)
+
+                val metadataPath = listDirectories(extractedFilesPath).firstOrNull {
+                    it.name == BackupConstants.BACKUP_METADATA_FILE_NAME
+                }
+                assertTrue(metadataPath != null)
+                val metadataJson = source(metadataPath!!).buffer().use { it.readUtf8() }
+                val metadata = Json.decodeFromString<CryptoStateBackupMetadata>(metadataJson)
+                // Metadata must use the anchor captured during MLS export, even if the repository advances later.
+                assertEquals(metadata.lastProcessedEventId, anchorCapturedWithMlsExport)
+            }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.eventRepository.lastSavedEventId() }
+        }
     private inner class Arrangement {
         private val defaultLastProcessedEventId = "event-default"
         val clientIdProvider = mock<CurrentClientIdProvider>()
@@ -230,6 +315,16 @@ class BackupCryptoDBUseCaseTest {
 
         fun withLastProcessedEventId(lastProcessedEventId: String) = apply {
             everySuspend { eventRepository.lastSavedEventId() }.returns(Either.Right(lastProcessedEventId))
+        }
+
+        fun withLastProcessedEventIds(vararg eventIds: String) = apply {
+            require(eventIds.isNotEmpty())
+            var index = 0
+            everySuspend { eventRepository.lastSavedEventId() }.calls {
+                val current = eventIds.getOrElse(index) { eventIds.last() }
+                index += 1
+                Either.Right(current)
+            }
         }
 
         fun withMissingLastProcessedEventId() = apply {
