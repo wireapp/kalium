@@ -137,7 +137,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION)
                 .withGetConversationMembersSuccessful(members)
-                .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
+                .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet(), emptySet()))
                 .arrange()
 
             joinExistingMLSConversationsUseCase(
@@ -163,7 +163,7 @@ class JoinExistingMLSConversationUseCaseTest {
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
             .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION)
-            .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
+            .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet(), emptySet()))
             .arrange()
 
         // WHEN
@@ -192,7 +192,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION)
                 .withGetConversationMembersSuccessful(members)
-                .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
+                .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet(), emptySet()))
                 .arrange()
 
             joinExistingMLSConversationsUseCase(

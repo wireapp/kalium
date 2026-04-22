@@ -135,7 +135,7 @@ class ObservableMLSConversationRepositoryTest {
         suspend fun withEstablishSuccess() = apply {
             everySuspend {
                 delegate.establishMLSGroup(any(), any(), any(), any(), any())
-            } returns Either.Right(MLSAdditionResult(emptySet(), emptySet()))
+            } returns Either.Right(MLSAdditionResult(emptySet(), emptySet(), emptySet()))
         }
 
         suspend fun withEstablishFailure() = apply {

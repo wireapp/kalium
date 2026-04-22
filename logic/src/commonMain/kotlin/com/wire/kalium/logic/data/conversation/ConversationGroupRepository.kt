@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.message.MessageContent.MemberChange.FailedToAdd
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.service.ServiceId
@@ -185,7 +186,7 @@ internal class ConversationGroupRepositoryImpl(
             )
         }.flatMap {
             when (protocol) {
-                is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
+                is Conversation.ProtocolInfo.Proteus -> Either.Right(MLSAdditionResult.Empty)
                 is Conversation.ProtocolInfo.MLSCapable ->
                     transactionProvider.mlsTransaction("handleGroupConversationCreated") { mlsContext ->
                         mlsConversationRepository.establishMLSGroup(
@@ -194,22 +195,32 @@ internal class ConversationGroupRepositoryImpl(
                             members = usersList + selfUserId,
                             publicKeys = mlsPublicKeys,
                             allowSkippingUsersWithoutKeyPackages = true,
-                        ).map { it.notAddedUsers }
+                        )
                     }
             }
-        }.flatMap { protocolSpecificAdditionFailures ->
+        }.flatMap { additionResult ->
             newConversationMembersRepository.persistMembersAdditionToTheConversation(
                 conversationEntity.id,
                 conversationResponse
             ).flatMap {
-                if (protocolSpecificAdditionFailures.isEmpty()) {
-                    Either.Right(Unit)
-                } else {
+                if (additionResult.usersWithoutKeyPackages.isNotEmpty()) {
                     newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
                         conversationId = conversationEntity.id.toModel(),
-                        userIdList = protocolSpecificAdditionFailures.toList(),
+                        userIdList = additionResult.usersWithoutKeyPackages.toList(),
                         type = FailedToAdd.Type.MissingKeyPackages
                     )
+                } else {
+                    Either.Right(Unit)
+                }
+            }.flatMap {
+                if (additionResult.usersWithUnreachableBackend.isNotEmpty()) {
+                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                        conversationId = conversationEntity.id.toModel(),
+                        userIdList = additionResult.usersWithUnreachableBackend.toList(),
+                        type = FailedToAdd.Type.Federation
+                    )
+                } else {
+                    Either.Right(Unit)
                 }
             }.flatMap {
                 when (lastUsersAttempt) {
@@ -399,7 +410,8 @@ internal class ConversationGroupRepositoryImpl(
                     type = when {
                         this.isMissingLegalHoldConsentError -> FailedToAdd.Type.LegalHold
                         this is CoreFailure.MissingKeyPackages -> FailedToAdd.Type.MissingKeyPackages
-                        else -> FailedToAdd.Type.Federation
+                        this is NetworkFailure.FederatedBackendFailure -> FailedToAdd.Type.Federation
+                        else -> FailedToAdd.Type.Unknown
                     }
                 ).flatMap {
                     Either.Left(this)
