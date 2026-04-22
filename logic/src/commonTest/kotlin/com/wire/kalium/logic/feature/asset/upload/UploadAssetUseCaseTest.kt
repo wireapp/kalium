@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.asset.upload
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -91,6 +92,38 @@ class UploadAssetUseCaseTest {
         coVerify {
             arrangement.assetDataSource.deleteAssetLocally(any())
         }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenPersistingUpdatedMessageFails_whenUploadSucceeds_thenLocalFileIsNotRemoved() = runTest(testDispatcher.default) {
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadSuccess()
+            withPersistMessageFailure()
+        }
+
+        uploadAsset(assetMessage(), uploadMetadata)
+
+        coVerify {
+            arrangement.assetDataSource.deleteAssetLocally(any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenPersistingUpdatedMessageFails_whenUploadSucceeds_thenUploadedStatusIsNotSet() = runTest(testDispatcher.default) {
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadSuccess()
+            withPersistMessageFailure()
+        }
+
+        uploadAsset(assetMessage(), uploadMetadata)
+
+        coVerify {
+            arrangement.updateAssetMessageTransferStatus(
+                transferStatus = eq(AssetTransferStatus.UPLOADED),
+                conversationId = any(),
+                messageId = any()
+            )
+        }.wasNotInvoked()
     }
 
     @Test
@@ -180,12 +213,17 @@ class UploadAssetUseCaseTest {
             audioNormalizedLoudnessBuilder.every(filePath, result)
         }
 
+        fun withPersistMessageFailure() = apply {
+            persistMessageResult = CoreFailure.Unknown(null).left()
+        }
+
         val assetDataSource: AssetRepository = mock(AssetRepository::class)
         val messageSender: MessageSender = mock(MessageSender::class)
         val messageSendFailureHandler: MessageSendFailureHandler = mock(MessageSendFailureHandler::class)
         val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase = mock(UpdateAssetMessageTransferStatusUseCase::class)
         val persistMessage: PersistMessageUseCase = mock(PersistMessageUseCase::class)
         val audioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderMock()
+        var persistMessageResult: Either<CoreFailure, Unit> = Unit.right()
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, UploadAssetUseCaseImpl> {
             block()
@@ -200,7 +238,7 @@ class UploadAssetUseCaseTest {
 
             coEvery {
                 persistMessage(any())
-            }.returns(Unit.right())
+            }.returns(persistMessageResult)
 
             coEvery {
                 messageSender.sendMessage(any(), any())
