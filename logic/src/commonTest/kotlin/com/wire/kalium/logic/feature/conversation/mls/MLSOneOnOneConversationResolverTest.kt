@@ -136,6 +136,29 @@ class MLSOneOnOneConversationResolverTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenExternalCommitJoinDisabled_whenFetchingOneOnOneConversation_thenShouldForwardFlagToJoinUseCase() = runTest {
+        val (arrangement, getOrEstablishMlsOneToOneUseCase) = arrange {
+            withConversationsForUserIdReturning(
+                Either.Right(
+                    ALL_CONVERSATIONS - CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED
+                )
+            )
+            withFetchMLSOneToOneConversation(Either.Right(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED))
+            withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
+        }
+
+        getOrEstablishMlsOneToOneUseCase(
+            arrangement.transactionContext,
+            userId,
+            allowJoinByExternalCommit = false
+        ).shouldSucceed()
+
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(false))
+        }.wasInvoked(exactly = once)
+    }
+
     private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(

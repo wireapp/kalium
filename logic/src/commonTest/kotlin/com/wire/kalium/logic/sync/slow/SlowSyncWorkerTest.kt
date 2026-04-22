@@ -39,7 +39,7 @@ import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl
 import com.wire.kalium.logic.util.stubs.FailureSyncMigration
@@ -62,6 +62,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
@@ -85,7 +86,7 @@ class SlowSyncWorkerTest {
 
         worker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        assertUseCases(arrangement, SlowSyncStep.entries.toTypedArray().toHashSet())
+        assertUseCases(arrangement, stepsWithNomadDisabled())
     }
 
     @Test
@@ -124,7 +125,52 @@ class SlowSyncWorkerTest {
 
         worker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        assertUseCases(arrangement, SlowSyncStep.entries.toTypedArray().toHashSet())
+        assertUseCases(arrangement, stepsWithNomadDisabled())
+    }
+
+    @Test
+    fun givenNomadIsEnabled_whenPerformingSlowSync_thenSyncNomadMessagesAfterContacts() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withSyncNomadAllMessagesSuccess()
+            .withJoinMLSConversationsSuccess()
+            .withResolveOneOnOneConversationsSuccess()
+            .withNomadEnabled()
+            .arrange()
+
+        val emittedSteps = mutableListOf<SlowSyncStep>()
+
+        worker.slowSyncStepsFlow(successfullyMigration).collect {
+            emittedSteps += it
+        }
+
+        assertEquals(
+            listOf(
+                SlowSyncStep.MIGRATION,
+                SlowSyncStep.SELF_USER,
+                SlowSyncStep.USER_PROPERTIES,
+                SlowSyncStep.FEATURE_FLAGS,
+                SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
+                SlowSyncStep.CONVERSATIONS,
+                SlowSyncStep.CONNECTIONS,
+                SlowSyncStep.SELF_TEAM,
+                SlowSyncStep.LEGAL_HOLD,
+                SlowSyncStep.CONTACTS,
+                SlowSyncStep.NOMAD_MESSAGES,
+                SlowSyncStep.JOINING_MLS_CONVERSATIONS,
+                SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS
+            ),
+            emittedSteps
+        )
+
+        assertUseCases(arrangement, SlowSyncStep.entries.toHashSet())
     }
 
     @Test
@@ -338,6 +384,45 @@ class SlowSyncWorkerTest {
     }
 
     @Test
+    fun givenNomadMessagesSyncFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
+        val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
+            SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
+            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
+            SlowSyncStep.FEATURE_FLAGS,
+            SlowSyncStep.CONVERSATIONS,
+            SlowSyncStep.CONNECTIONS,
+            SlowSyncStep.SELF_TEAM,
+            SlowSyncStep.LEGAL_HOLD,
+            SlowSyncStep.CONTACTS,
+            SlowSyncStep.NOMAD_MESSAGES,
+        )
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withSyncNomadAllMessagesFailure()
+            .withNomadEnabled()
+            .arrange()
+
+        assertFailsWith<KaliumSyncException> {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
+                assertTrue {
+                    it in steps
+                }
+            }
+        }
+
+        assertUseCases(arrangement, steps)
+    }
+
+    @Test
     fun givenJoinMLSConversationsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
@@ -461,8 +546,8 @@ class SlowSyncWorkerTest {
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
-            .withJoinMLSConversationsSuccess()
-            .withResolveOneOnOneConversationsSuccess()
+            .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = true)
+            .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = true)
             .withFetchLegalHoldStatusSuccess()
             .arrange()
 
@@ -470,6 +555,104 @@ class SlowSyncWorkerTest {
 
         coVerify {
             arrangement.eventRepository.updateLastSavedEventId(eq(fetchedEventId))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAlreadyExistingLastProcessedId_whenJoiningMlsConversations_thenSkipExternalCommitJoins() = runTest {
+        val (arrangement, slowSyncWorker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = false)
+            .withResolveOneOnOneConversationsSuccess()
+            .arrange()
+
+        slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
+
+        coVerify {
+            arrangement.joinMLSConversations.invoke(eq(true), eq(false))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNoExistingLastProcessedId_whenJoiningMlsConversations_thenAllowExternalCommitJoins() = runTest {
+        val fetchedEventId = "aTestEventId"
+        val (arrangement, slowSyncWorker) = Arrangement().apply {
+            withLastSavedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+            withFetchMostRecentEventReturning(Either.Right(fetchedEventId))
+            withUpdateLastSavedEventIdReturning(Either.Right(Unit))
+        }
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = true)
+            .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = true)
+            .arrange()
+
+        slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
+
+        coVerify {
+            arrangement.joinMLSConversations.invoke(eq(true), eq(true))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAlreadyExistingLastProcessedId_whenResolvingOneOnOnes_thenSkipExternalCommitJoins() = runTest {
+        val (arrangement, slowSyncWorker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = false)
+            .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = false)
+            .arrange()
+
+        slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
+
+        coVerify {
+            arrangement.oneOnOneResolver.resolveAllOneOnOneConversations(any(), eq(false), eq(false))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNoExistingLastProcessedId_whenResolvingOneOnOnes_thenAllowExternalCommitJoins() = runTest {
+        val fetchedEventId = "aTestEventId"
+        val (arrangement, slowSyncWorker) = Arrangement().apply {
+            withLastSavedEventIdReturning(Either.Left(StorageFailure.DataNotFound))
+            withFetchMostRecentEventReturning(Either.Right(fetchedEventId))
+            withUpdateLastSavedEventIdReturning(Either.Right(Unit))
+        }
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = true)
+            .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = true)
+            .arrange()
+
+        slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
+
+        coVerify {
+            arrangement.oneOnOneResolver.resolveAllOneOnOneConversations(any(), eq(false), eq(true))
         }.wasInvoked(exactly = once)
     }
 
@@ -534,8 +717,13 @@ class SlowSyncWorkerTest {
             arrangement.syncContacts.invoke()
         }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONTACTS)) once else 0.times)
 
+        assertEquals(
+            if (steps.contains(SlowSyncStep.NOMAD_MESSAGES)) 1 else 0,
+            arrangement.syncNomadMessagesDuringSlowSync.invocations
+        )
+
         coVerify {
-            arrangement.joinMLSConversations.invoke(any())
+            arrangement.joinMLSConversations.invoke(any(), any())
         }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.JOINING_MLS_CONVERSATIONS)) once else 0.times)
 
         coVerify {
@@ -544,7 +732,7 @@ class SlowSyncWorkerTest {
     }
 
     private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val syncSelfUser: SyncSelfUserUseCase = mock(SyncSelfUserUseCase::class)
         val syncUserProperties: SyncUserPropertiesUseCase = mokkeryMock<SyncUserPropertiesUseCase>()
         val syncFeatureConfigs: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
@@ -557,6 +745,7 @@ class SlowSyncWorkerTest {
         val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
         val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
+        val syncNomadMessagesDuringSlowSync = FakeSyncNomadMessagesDuringSlowSyncUseCase()
 
         init {
             runBlocking {
@@ -581,7 +770,8 @@ class SlowSyncWorkerTest {
             fetchLegalHoldForSelfUserFromRemoteUseCase = fetchLegalHoldForSelfUserFromRemoteUseCase,
             oneOnOneResolver = oneOnOneResolver,
             isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
-            transactionProvider = cryptoTransactionProvider
+            transactionProvider = cryptoTransactionProvider,
+            syncNomadMessagesDuringSlowSync = syncNomadMessagesDuringSlowSync
         )
 
         suspend fun withSyncSelfUserFailure() = apply {
@@ -680,15 +870,21 @@ class SlowSyncWorkerTest {
             }.returns(success)
         }
 
-        suspend fun withJoinMLSConversationsFailure(keepRetryingOnFailure: Boolean = true) = apply {
+        suspend fun withJoinMLSConversationsFailure(
+            keepRetryingOnFailure: Boolean = true,
+            allowJoinByExternalCommit: Boolean = false,
+        ) = apply {
             coEvery {
-                joinMLSConversations.invoke(eq(keepRetryingOnFailure))
+                joinMLSConversations.invoke(eq(keepRetryingOnFailure), eq(allowJoinByExternalCommit))
             }.returns(failure)
         }
 
-        suspend fun withJoinMLSConversationsSuccess(keepRetryingOnFailure: Boolean = true) = apply {
+        suspend fun withJoinMLSConversationsSuccess(
+            keepRetryingOnFailure: Boolean = true,
+            allowJoinByExternalCommit: Boolean = false,
+        ) = apply {
             coEvery {
-                joinMLSConversations.invoke(eq(keepRetryingOnFailure))
+                joinMLSConversations.invoke(eq(keepRetryingOnFailure), eq(allowJoinByExternalCommit))
             }.returns(success)
         }
 
@@ -704,9 +900,11 @@ class SlowSyncWorkerTest {
             }.returns(Either.Right(status))
         }
 
-        suspend fun withResolveOneOnOneConversationsSuccess() = apply {
+        suspend fun withResolveOneOnOneConversationsSuccess(
+            allowJoinByExternalCommit: Boolean = false,
+        ) = apply {
             coEvery {
-                oneOnOneResolver.resolveAllOneOnOneConversations(any(), any())
+                oneOnOneResolver.resolveAllOneOnOneConversations(any(), any(), eq(allowJoinByExternalCommit))
             }.returns(success)
         }
 
@@ -714,6 +912,31 @@ class SlowSyncWorkerTest {
             every {
                 isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
             }.returns(value)
+        }
+
+        fun withNomadEnabled() = apply {
+            syncNomadMessagesDuringSlowSync.enabled = true
+        }
+
+        fun withSyncNomadAllMessagesSuccess() = apply {
+            syncNomadMessagesDuringSlowSync.result = success
+        }
+
+        fun withSyncNomadAllMessagesFailure() = apply {
+            syncNomadMessagesDuringSlowSync.result = failure
+        }
+
+        class FakeSyncNomadMessagesDuringSlowSyncUseCase : SyncNomadMessagesDuringSlowSyncUseCase {
+            var enabled: Boolean = false
+            var invocations: Int = 0
+            var result: Either<CoreFailure, Unit> = Either.Right(Unit)
+
+            override fun isEnabled(): Boolean = enabled
+
+            override suspend fun invoke(): Either<CoreFailure, Unit> {
+                invocations += 1
+                return result
+            }
         }
     }
 
@@ -732,5 +955,8 @@ class SlowSyncWorkerTest {
             FailureSyncMigration(2),
             MigrationCrashStep(3, "this step should never be executed"),
         )
+
+        fun stepsWithNomadDisabled(): HashSet<SlowSyncStep> =
+            SlowSyncStep.entries.filterNot { it == SlowSyncStep.NOMAD_MESSAGES }.toHashSet()
     }
 }
