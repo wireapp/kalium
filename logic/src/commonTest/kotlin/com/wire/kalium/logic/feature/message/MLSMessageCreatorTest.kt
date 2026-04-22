@@ -67,7 +67,7 @@ class MLSMessageCreatorTest {
             .shouldSucceed {}
 
         coVerify {
-            arrangement.mlsContext.encryptMessage(eq(CRYPTO_GROUP_ID), eq(plainData))
+            arrangement.mlsConversationRepository.encryptMessage(eq(arrangement.mlsContext), eq(GROUP_ID), eq(plainData))
         }.wasInvoked(once)
 
         coVerify {
@@ -105,7 +105,7 @@ class MLSMessageCreatorTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsContext.encryptMessage(eq(CRYPTO_GROUP_ID), eq(plainData))
+            arrangement.mlsConversationRepository.encryptMessage(eq(arrangement.mlsContext), eq(GROUP_ID), eq(plainData))
         }.wasInvoked(once)
 
         coVerify {
@@ -156,8 +156,8 @@ class MLSMessageCreatorTest {
         }
 
         suspend fun withMLSEncryptMessage(data: ByteArray) = apply {
-            coEvery { mlsContext.encryptMessage(any(), any()) }
-                .returns(data)
+            coEvery { mlsConversationRepository.encryptMessage(any(), any(), any()) }
+                .returns(Either.Right(data))
         }
 
         suspend fun withCommitPendingProposals(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {

@@ -54,6 +54,14 @@ internal class ObservableMLSConversationRepository(
         delegate.decryptMessage(mlsContext, message, groupID)
             .onSuccess { hookNotifier.onCryptoStateChanged(userId) }
 
+    override suspend fun encryptMessage(
+        mlsContext: MlsCoreCryptoContext,
+        groupID: GroupID,
+        content: ByteArray
+    ): Either<CoreFailure, ByteArray> =
+        delegate.encryptMessage(mlsContext, groupID, content)
+            .onSuccess { hookNotifier.onCryptoStateChanged(userId) }
+
     override suspend fun establishMLSGroup(
         mlsContext: MlsCoreCryptoContext,
         groupID: GroupID,
