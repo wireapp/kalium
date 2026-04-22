@@ -217,7 +217,7 @@ class MLSConversationRepositoryTest {
             allowSkippingUsersWithoutKeyPackages = true
         )
         result.shouldSucceed {
-            assertEquals(usersMissingKeyPackages, it.notAddedUsers)
+            assertEquals(usersMissingKeyPackages, it.usersWithoutKeyPackages)
             assertEquals(usersWithKeyPackages, it.successfullyAddedUsers)
         }
 
@@ -1570,7 +1570,7 @@ class MLSConversationRepositoryTest {
         ) = apply {
             coEvery {
                 keyPackageRepository.claimKeyPackages(any(), any())
-            }.returns(Either.Right(KeyPackageClaimResult(keyPackages, usersWithoutKeyPackages)))
+            }.returns(Either.Right(KeyPackageClaimResult(keyPackages, usersWithoutKeyPackages, emptySet())))
         }
 
         fun withKeyPackageLimits(refillAmount: Int) = apply {

@@ -50,9 +50,10 @@ internal interface KeyPackageRepository {
      *
      * @param userIds The list of user IDs for which to claim key packages.
      * @return An [Either] instance representing the result of the operation. If the operation is successful, it will be [Either.Right]
-     * with a [KeyPackageClaimResult] object containing the successfully fetched key packages and the user IDs without key packages
-     * available. If the operation fails, it will be [Either.Left] with a [CoreFailure] object indicating the reason for the failure.
-     * If **no** KeyPackages are available, [CoreFailure.MissingKeyPackages] will be the cause.
+     * with a [KeyPackageClaimResult] object containing the successfully fetched key packages,
+     * the user IDs that genuinely have no key packages ([KeyPackageClaimResult.usersWithoutKeyPackages]),
+     * and the user IDs whose backend was unreachable during claiming ([KeyPackageClaimResult.usersWithUnreachableBackend]).
+     * If the operation fails entirely (e.g. self client ID unavailable), it will be [Either.Left] with a [CoreFailure].
      */
     suspend fun claimKeyPackages(
         userIds: List<UserId>,
@@ -87,10 +88,11 @@ internal class KeyPackageDataSource(
         userIds: List<UserId>,
         cipherSuite: CipherSuite
     ): Either<CoreFailure, KeyPackageClaimResult> =
-        currentClientIdProvider().map { selfClientId ->
-            val failedUsers = mutableSetOf<UserId>()
+        currentClientIdProvider().flatMap { selfClientId ->
+            val noKeyPackageUsers = mutableSetOf<UserId>()
+            val federationFailedUsers = mutableSetOf<UserId>()
             val claimedKeyPackages = mutableListOf<KeyPackageDTO>()
-            userIds.forEach { userId ->
+            for (userId in userIds) {
                 wrapApiRequest {
                     keyPackageApi.claimKeyPackages(
                         KeyPackageApi.Param.SkipOwnClient(
@@ -99,16 +101,23 @@ internal class KeyPackageDataSource(
                             cipherSuite = cipherSuite.tag
                         )
                     )
-                }.fold({ failedUsers.add(userId) }) {
+                }.fold({ failure ->
+                    when (failure) {
+                        is NetworkFailure.NoNetworkConnection,
+                        is NetworkFailure.ProxyError -> return@flatMap Either.Left(failure)
+                        is NetworkFailure.FederatedBackendFailure -> federationFailedUsers.add(userId)
+                        else -> federationFailedUsers.add(userId)
+                    }
+                }) {
                     if (it.keyPackages.isEmpty() && userId != selfUserId) {
-                        failedUsers.add(userId)
+                        noKeyPackageUsers.add(userId)
                     } else {
                         claimedKeyPackages.addAll(it.keyPackages)
                     }
                 }
             }
 
-            KeyPackageClaimResult(claimedKeyPackages, failedUsers)
+            Either.Right(KeyPackageClaimResult(claimedKeyPackages, noKeyPackageUsers, federationFailedUsers))
         }
 
     override suspend fun uploadNewKeyPackages(
