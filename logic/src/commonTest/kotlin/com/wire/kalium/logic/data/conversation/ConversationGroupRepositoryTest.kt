@@ -982,6 +982,7 @@ class ConversationGroupRepositoryTest {
         coVerify {
             arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
+
     }
 
     @Test
@@ -1011,6 +1012,7 @@ class ConversationGroupRepositoryTest {
         coVerify {
             arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
+
     }
 
     @Test
@@ -1884,7 +1886,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withJoinExistingMlsConversationSucceeds() = apply {
             coEvery {
-                joinExistingMLSConversation.invoke(any(), any(), any())
+                joinExistingMLSConversation.invoke(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 

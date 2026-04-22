@@ -110,10 +110,9 @@ internal class SlowSyncWorkerImpl(
         }
 
         logger.d("Starting SlowSync")
-        val lastSavedEventIdToSaveOnSuccess = when (isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()) {
-            false -> getLastSavedEventIdToSaveOnSuccess()
-            true -> null
-        }
+        val lastSavedEventIdState = getLastSavedEventIdState(
+            isClientAsyncNotificationsCapable = isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
+        )
 
         val timeTaken = measureTime {
             performStep(SlowSyncStep.MIGRATION) {
@@ -141,14 +140,21 @@ internal class SlowSyncWorkerImpl(
                     SlowSyncStep.NOMAD_MESSAGES,
                     syncNomadMessagesDuringSlowSync::invoke
                 )
-                .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
+                .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS) {
+                    // If a last saved event ID already exists, pending events may still contain the
+                    // commit that establishes this MLS group, so slow sync must not force an
+                    // external-commit join here.
+                    joinMLSConversations(
+                        allowJoinByExternalCommit = !lastSavedEventIdState.hasExistingLastSavedEventId
+                    )
+                }
                 .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS) {
                     transactionProvider.transaction(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS.name) {
                         oneOnOneResolver.resolveAllOneOnOneConversations(it)
                     }
                 }
                 .flatMap {
-                    saveLastSavedEventIdIfNeeded(lastSavedEventIdToSaveOnSuccess)
+                    saveLastSavedEventIdIfNeeded(lastSavedEventIdState.lastSavedEventIdToSaveOnSuccess)
                 }
                 .onFailure {
                     throw KaliumSyncException("Failure during SlowSync", it)
@@ -166,10 +172,15 @@ internal class SlowSyncWorkerImpl(
             Either.Right(Unit)
         }
 
-    private suspend fun getLastSavedEventIdToSaveOnSuccess(): String? {
+    private suspend fun getLastSavedEventIdState(
+        isClientAsyncNotificationsCapable: Boolean
+    ): LastSavedEventIdState {
         val hasLastEventId = eventRepository.lastSavedEventId().isRight()
         val lastSavedEventIdToSaveOnSuccess = if (hasLastEventId) {
             logger.i("Last saved event ID already exists, skipping fetch")
+            null
+        } else if (isClientAsyncNotificationsCapable) {
+            logger.i("Last saved event ID does not exist, but async notifications are enabled, skipping fetch")
             null
         } else {
             logger.i("Last saved event ID does not exist, fetching most recent event ID from remote")
@@ -177,7 +188,10 @@ internal class SlowSyncWorkerImpl(
                 throw KaliumSyncException("Failure during SlowSync. Unable to fetch most recent event ID", it)
             }.nullableFold({ null }, { it })
         }
-        return lastSavedEventIdToSaveOnSuccess
+        return LastSavedEventIdState(
+            hasExistingLastSavedEventId = hasLastEventId,
+            lastSavedEventIdToSaveOnSuccess = lastSavedEventIdToSaveOnSuccess
+        )
     }
 
     private suspend fun FlowCollector<SlowSyncStep>.performStep(
@@ -193,4 +207,9 @@ internal class SlowSyncWorkerImpl(
         logger.i("SlowSync step '$slowSyncStep' took $duration")
         value
     }
+
+    private data class LastSavedEventIdState(
+        val hasExistingLastSavedEventId: Boolean,
+        val lastSavedEventIdToSaveOnSuccess: String?,
+    )
 }
