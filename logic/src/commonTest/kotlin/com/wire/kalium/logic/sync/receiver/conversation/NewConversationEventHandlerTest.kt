@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
+import com.wire.kalium.logic.data.conversation.toConversationType
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -190,7 +191,8 @@ class NewConversationEventHandlerTest {
                 eq(event.id),
                 eq(event.conversation.id.toModel()),
                 eq(event.conversation.hasAppsAccessEnabled()),
-                eq(event.senderUserId)
+                eq(event.senderUserId),
+                eq(event.conversation.toConversationType(teamId))
             )
         }.wasInvoked(exactly = once)
     }
@@ -396,7 +398,13 @@ class NewConversationEventHandlerTest {
 
         suspend fun withConversationAppsAccessIfEnabled() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(any(), any(), any(), any())
+                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any<ConversationResponse.Type>()
+                )
             }.returns(Unit.right())
         }
 

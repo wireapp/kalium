@@ -215,7 +215,13 @@ class ConversationGroupRepositoryTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(any(), any(), any(), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
+                any(),
+                any(),
+                any(),
+                any(),
+                any<ConversationEntity.Type>()
+            )
         }.wasInvoked(once)
     }
 
@@ -950,15 +956,13 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenMLSConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
+    fun givenMLSConversation_whenJoiningConversationSuccessWithChanged_thenEmitsLocalEventOnly() = runTest {
         val code = "code"
         val key = "key"
         val uri: String? = null
         val password: String? = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withJoinConversationAPIResponse(
                 code,
                 key,
@@ -966,8 +970,6 @@ class ConversationGroupRepositoryTest {
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
             .withEmitLocalEvent()
-            .withJoinExistingMlsConversationSucceeds()
-            .withSuccessfulAddMemberToMLSGroup()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
@@ -1001,15 +1003,13 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenMixedConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
+    fun givenMixedConversation_whenJoiningConversationSuccessWithChanged_thenEmitsLocalEventOnly() = runTest {
         val code = "code"
         val key = "key"
         val uri: String? = null
         val password: String? = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withProtocolInfoById(MIXED_PROTOCOL_INFO)
             .withJoinConversationAPIResponse(
                 code,
                 key,
@@ -1017,8 +1017,6 @@ class ConversationGroupRepositoryTest {
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
             .withEmitLocalEvent()
-            .withJoinExistingMlsConversationSucceeds()
-            .withSuccessfulAddMemberToMLSGroup()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
@@ -1860,7 +1858,6 @@ class ConversationGroupRepositoryTest {
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
                 mlsConversationRepository,
-                joinExistingMLSConversation,
                 localEventRepository,
                 conversationMessageTimerEventHandler,
                 conversationDAO,
@@ -2132,7 +2129,13 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withConversationAppsAccessIfEnabled() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(any(), any(), any(), any())
+                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any<ConversationEntity.Type>()
+                )
             }.returns(Unit.right())
         }
 

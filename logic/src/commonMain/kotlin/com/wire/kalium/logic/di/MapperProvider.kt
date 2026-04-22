@@ -22,6 +22,8 @@ import com.wire.kalium.logic.configuration.server.ApiVersionMapper
 import com.wire.kalium.logic.configuration.server.ApiVersionMapperImpl
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
+import com.wire.kalium.logic.data.app.AppMapper
+import com.wire.kalium.logic.data.app.AppMapperImpl
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMapperImpl
 import com.wire.kalium.logic.data.auth.DomainRegistrationMapper
@@ -121,6 +123,7 @@ internal object MapperProvider {
     )
 
     fun memberMapper(): MemberMapper = MemberMapperImpl(idMapper(), conversationRoleMapper())
+    fun appMapper(): AppMapper = AppMapperImpl()
     fun conversationMapper(selfUserId: UserId): ConversationMapper =
         ConversationMapperImpl(
             selfUserId,

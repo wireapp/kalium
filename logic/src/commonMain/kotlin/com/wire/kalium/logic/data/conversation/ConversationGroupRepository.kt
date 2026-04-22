@@ -100,7 +100,6 @@ internal interface ConversationGroupRepository {
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class ConversationGroupRepositoryImpl(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     private val localEventRepository: LocalEventRepository,
     private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler,
     private val conversationDAO: ConversationDAO,
@@ -182,6 +181,7 @@ internal class ConversationGroupRepositoryImpl(
                 conversationId = conversationEntity.id.toModel(),
                 hasAppsAccessEnabled = conversationResponse.hasAppsAccessEnabled(),
                 creatorId = selfUserId,
+                type = conversationEntity.type
             )
         }.flatMap {
             when (protocol) {
@@ -553,35 +553,11 @@ internal class ConversationGroupRepositoryImpl(
         conversationApi.joinConversation(code, key, uri, password)
     }.onSuccess { response ->
         if (response is ConversationMemberAddedResponse.Changed) {
-            val conversationId = response.event.qualifiedConversation.toModel()
             val event = eventMapper.fromEventContentDTO(
                 LocalId.generate(),
                 response.event
             )
             localEventRepository.emitLocalEvent(event)
-
-            wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
-                .flatMap { protocol ->
-                    when (protocol) {
-                        is ConversationEntity.ProtocolInfo.Proteus ->
-                            Either.Right(Unit)
-
-                        is ConversationEntity.ProtocolInfo.MLSCapable -> {
-                            transactionProvider.transaction("joinViaInviteCode") { transactionContext ->
-                                joinExistingMLSConversation(transactionContext, conversationId).flatMap {
-                                    transactionContext.wrapInMLSContext { mlsContext ->
-                                        mlsConversationRepository.addMemberToMLSGroup(
-                                            mlsContext,
-                                            GroupID(protocol.groupId),
-                                            listOf(selfUserId),
-                                            CipherSuite.fromTag(protocol.cipherSuite.cipherSuiteTag)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
         }
     }
 

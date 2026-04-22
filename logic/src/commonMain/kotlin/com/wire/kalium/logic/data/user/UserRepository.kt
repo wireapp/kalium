@@ -38,6 +38,7 @@ import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.app.AppMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MemberMapper
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -77,6 +78,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.network.api.model.isLegacyBot
 import com.wire.kalium.network.api.model.isTeamMember
+import com.wire.kalium.persistence.dao.AppDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -174,6 +176,7 @@ internal class UserDataSource internal constructor(
     private val userDAO: UserDAO,
     private val clientDAO: ClientDAO,
     private val memberDAO: MemberDAO,
+    private val appDAO: AppDAO,
     private val selfApi: SelfApi,
     private val userDetailsApi: UserDetailsApi,
     private val upgradePersonalToTeamApi: UpgradePersonalToTeamApi,
@@ -188,6 +191,7 @@ internal class UserDataSource internal constructor(
     private val availabilityStatusMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val userTypeEntityMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
+    private val appMapper: AppMapper = MapperProvider.appMapper()
 ) : UserRepository {
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
@@ -379,6 +383,13 @@ internal class UserDataSource internal constructor(
                     selfTeamId = selfTeamId
                 )
             }
+        val appTeamMembers = listUserProfileDTO
+            .filter { userProfileDTO ->
+                mapTeamMemberDTO.containsKey(userProfileDTO.id.value)
+                        && userProfileDTO.type == UserTypeDTO.APP
+            }
+            .map(appMapper::fromUserProfileToAppEntity)
+
         return listUserProfileDTO
             .map {
                 legalHoldHandler.handleUserFetch(it.id.toModel(), it.legalHoldStatus == LegalHoldStatusDTO.ENABLED)
@@ -392,6 +403,9 @@ internal class UserDataSource internal constructor(
                     }
                     if (otherUsers.isNotEmpty()) {
                         userDAO.upsertUsers(otherUsers)
+                    }
+                    if (appTeamMembers.isNotEmpty()) {
+                        appDAO.upsertApps(appTeamMembers)
                     }
                 }
             }
