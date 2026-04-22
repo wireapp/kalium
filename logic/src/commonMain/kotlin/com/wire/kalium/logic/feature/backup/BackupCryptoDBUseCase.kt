@@ -61,7 +61,7 @@ internal class BackupCryptoDBUseCaseImpl(
     override suspend fun invoke(): BackupCryptoDBResult = withContext(dispatchers.default) {
         val backupRunId = createBackupRunId()
 
-        val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories()
+        val (cryptoBackupRootPath, mlsBackupPath, proteusBackupPath) = createBackupDirectories(backupRunId)
 
         try {
             val backupName = createBackupFileName(backupRunId)
