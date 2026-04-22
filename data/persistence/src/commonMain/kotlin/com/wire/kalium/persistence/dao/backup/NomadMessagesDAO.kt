@@ -77,6 +77,17 @@ internal class NomadMessagesDAOImpl internal constructor(
     private val writeDispatcher: WriteDispatcher,
 ) : NomadMessagesDAO {
 
+    private val contentWriter = NomadMessageContentWriter(
+        messagesQueries = messagesQueries,
+        messageAttachmentsQueries = messageAttachmentsQueries,
+    )
+
+    private val unreadEventWriter = NomadUnreadEventWriter(
+        messagesQueries = messagesQueries,
+        unreadEventsQueries = unreadEventsQueries,
+        selfUserId = selfUserId,
+    )
+
     override suspend fun storeMessages(
         messages: List<NomadMessageToInsert>,
         batchSize: Int,
@@ -91,7 +102,7 @@ internal class NomadMessagesDAOImpl internal constructor(
                 messagesQueries.transaction {
                     insertPlaceholderUsers(batch)
                     insertPlaceholderConversations(batch)
-                    val lastReadDatesByConversation = batch.lastReadDatesByConversation()
+                    val lastReadDatesByConversation = batch.lastReadDatesByConversation(conversationsQueries)
                     insertedMessages += insertMessages(batch, lastReadDatesByConversation)
                 }
                 batches += 1
@@ -154,13 +165,13 @@ internal class NomadMessagesDAOImpl internal constructor(
             return false
         }
 
-        val insertedContent = insertRegularContent(message)
+        val insertedContent = contentWriter.insertRegularContent(message)
         check(insertedContent) {
             "Nomad import inserted base message '${message.id}' without its content row."
         }
         insertReactions(message)
         insertReadReceipts(message)
-        insertUnreadEvent(message, lastReadDatesByConversation)
+        unreadEventWriter.insertUnreadEvent(message, lastReadDatesByConversation)
         return true
     }
 
@@ -190,7 +201,30 @@ internal class NomadMessagesDAOImpl internal constructor(
         }
     }
 
-    private fun insertUnreadEvent(
+    private companion object {
+        const val MIN_BATCH_SIZE = 1
+        const val RECEIPT_TYPE_READ = "READ"
+    }
+}
+
+private fun List<NomadMessageToInsert>.lastReadDatesByConversation(
+    conversationsQueries: ConversationsQueries,
+): Map<QualifiedIDEntity, Instant> =
+    asSequence()
+        .map { it.conversationId }
+        .distinct()
+        .associateWith { conversationId ->
+            conversationsQueries.getConversationLastReadDate(conversationId).executeAsOneOrNull()
+                ?: Instant.DISTANT_PAST
+        }
+
+private class NomadUnreadEventWriter(
+    private val messagesQueries: MessagesQueries,
+    private val unreadEventsQueries: UnreadEventsQueries,
+    private val selfUserId: UserIDEntity,
+) {
+
+    fun insertUnreadEvent(
         message: NomadMessageToInsert,
         lastReadDatesByConversation: Map<QualifiedIDEntity, Instant>,
     ) {
@@ -250,17 +284,14 @@ internal class NomadMessagesDAOImpl internal constructor(
             message.date
         )
     }
+}
 
-    private fun List<NomadMessageToInsert>.lastReadDatesByConversation(): Map<QualifiedIDEntity, Instant> =
-        asSequence()
-            .map { it.conversationId }
-            .distinct()
-            .associateWith { conversationId ->
-                conversationsQueries.getConversationLastReadDate(conversationId).executeAsOneOrNull()
-                    ?: Instant.DISTANT_PAST
-            }
+private class NomadMessageContentWriter(
+    private val messagesQueries: MessagesQueries,
+    private val messageAttachmentsQueries: MessageAttachmentsQueries,
+) {
 
-    private fun insertRegularContent(message: NomadMessageToInsert): Boolean {
+    fun insertRegularContent(message: NomadMessageToInsert): Boolean {
         val content = message.payload
         return when (content) {
             is SyncableMessagePayloadEntity.Text -> insertTextContent(message, content)
@@ -413,10 +444,5 @@ internal class NomadMessagesDAOImpl internal constructor(
             unknown_type_name = typeName,
         )
         return messagesQueries.selectChanges().executeAsOne() > 0
-    }
-
-    private companion object {
-        const val MIN_BATCH_SIZE = 1
-        const val RECEIPT_TYPE_READ = "READ"
     }
 }
