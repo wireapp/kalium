@@ -211,7 +211,7 @@ class OneOnOneResolverTest {
         }
 
         coEvery {
-            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.last()))
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.last()), any())
         }.returns(Either.Left(CoreFailure.Unknown(null)))
 
         // when then
@@ -231,7 +231,26 @@ class OneOnOneResolverTest {
 
         // then
         coVerify {
-            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(OTHER_USER))
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(OTHER_USER), eq(true))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenExternalCommitJoinDisabled_whenResolveAllOneOnOneConversations_thenForwardFlagToMigrateToMls() = runTest {
+        val oneOnOneUsers = listOf(TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID))
+        val (arrangement, resolver) = arrange {
+            withGetUsersWithOneOnOneConversationReturning(oneOnOneUsers)
+            withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
+            withMigrateToMLSReturns(Either.Right(TestConversation.ID))
+        }
+
+        resolver.resolveAllOneOnOneConversations(
+            transactionContext = arrangement.transactionContext,
+            allowJoinByExternalCommit = false
+        ).shouldSucceed()
+
+        coVerify {
+            arrangement.oneOnOneMigrator.migrateToMLS(any(), eq(oneOnOneUsers.first()), eq(false))
         }.wasInvoked(exactly = once)
     }
 

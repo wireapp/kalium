@@ -61,11 +61,10 @@ internal class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
 
     override suspend fun withResolveAllOneOnOneConversationsReturning(result: Either<CoreFailure, Unit>) {
         coEvery {
-            oneOnOneResolver.resolveAllOneOnOneConversations(any(), any())
+            oneOnOneResolver.resolveAllOneOnOneConversations(any(), any(), any())
         }.returns(result)
     }
 
 }
-
 
 

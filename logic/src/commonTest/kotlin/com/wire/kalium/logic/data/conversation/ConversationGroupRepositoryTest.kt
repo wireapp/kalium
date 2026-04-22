@@ -1041,7 +1041,6 @@ class ConversationGroupRepositoryTest {
         coVerify {
             arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
-
     }
 
     @Test
@@ -1071,7 +1070,6 @@ class ConversationGroupRepositoryTest {
         coVerify {
             arrangement.localEventRepository.emitLocalEvent(any())
         }.wasInvoked(exactly = once)
-
     }
 
     @Test

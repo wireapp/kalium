@@ -151,6 +151,29 @@ class OneOnOneMigratorTest {
     }
 
     @Test
+    fun givenExternalCommitJoinDisabled_whenMigratingToMls_thenShouldForwardFlagToResolver() = runTest {
+        val user = TestUser.OTHER.copy(
+            activeOneOnOneConversationId = null
+        )
+
+        val (arrangement, oneOneMigrator) = arrange {
+            withResolveConversationReturning(Either.Right(TestConversation.ID))
+            withGetOneOnOneConversationsWithOtherUserReturning(Either.Right(emptyList()))
+            withUpdateOneOnOneConversationReturning(Either.Right(Unit))
+        }
+
+        oneOneMigrator.migrateToMLS(
+            transactionContext = arrangement.transactionContext,
+            user = user,
+            allowJoinByExternalCommit = false
+        ).shouldSucceed()
+
+        coVerify {
+            arrangement.mlsOneOnOneConversationResolver.invoke(any(), eq(user.id), eq(false))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenResolvingMLSConversationFails_whenMigratingToMLS_thenShouldPropagateFailure() = runTest {
         val user = TestUser.OTHER.copy(
             activeOneOnOneConversationId = null
