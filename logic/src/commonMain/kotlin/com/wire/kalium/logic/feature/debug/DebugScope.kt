@@ -158,6 +158,12 @@ public class DebugScope internal constructor(
             eventProcessor = eventProcessor
         )
 
+    public val getConversationEpochFromCC: GetConversationEpochFromCCUseCase
+        get() = GetConversationEpochFromCCUseCaseImpl(
+            conversationRepository = conversationRepository,
+            transactionProvider = transactionProvider
+        )
+
     public val synchronizeExternalData: SynchronizeExternalDataUseCase
         get() = SynchronizeExternalDataUseCaseImpl(
             eventRepository = eventRepository,

@@ -207,12 +207,15 @@ data class Conversation(
     val supportsUnreadMessageCount
         get() = type is Type.OneOnOne || type is Type.Group
 
+    @Serializable
     sealed interface ProtocolInfo {
+        @Serializable
         data object Proteus : ProtocolInfo {
             override fun name() = "Proteus"
             override fun toLogMap() = mapOf("name" to name())
         }
 
+        @Serializable
         data class MLS(
             override val groupId: GroupID,
             override val groupState: MLSCapable.GroupState,
@@ -232,6 +235,7 @@ data class Conversation(
             )
         }
 
+        @Serializable
         data class Mixed(
             override val groupId: GroupID,
             override val groupState: MLSCapable.GroupState,
