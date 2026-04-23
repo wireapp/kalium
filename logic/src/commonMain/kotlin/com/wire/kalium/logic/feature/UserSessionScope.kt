@@ -1935,7 +1935,8 @@ public class UserSessionScope internal constructor(
             revocationListChecker = checkRevocationList,
             certificateRevocationListRepository = certificateRevocationListRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
-            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase
+            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase,
+            mlsConversationRepository = mlsConversationRepository
         )
 
     private val renamedConversationHandler: RenamedConversationEventHandler

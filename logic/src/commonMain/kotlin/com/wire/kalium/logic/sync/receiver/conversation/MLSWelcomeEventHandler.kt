@@ -40,6 +40,7 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
@@ -50,6 +51,7 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlin.io.encoding.Base64
@@ -67,6 +69,7 @@ internal class MLSWelcomeEventHandlerImpl(
     private val revocationListChecker: RevocationListChecker,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val certificateRevocationListRepository: CertificateRevocationListRepository
 ) : MLSWelcomeEventHandler {
     override suspend fun handle(
@@ -90,8 +93,15 @@ internal class MLSWelcomeEventHandlerImpl(
                     kaliumLogger.d("$TAG: checking revocation list")
                     checkRevocationList(mlsContext, it)
                 }
-                kaliumLogger.d("$TAG: Marking conversation as established ${welcomeBundle.groupId.obfuscateId()}")
-                markConversationAsEstablished(GroupID(welcomeBundle.groupId))
+                kaliumLogger.d(
+                    "$TAG: Syncing local MLS metadata for ${event.conversationId.toLogString()} " +
+                        "with group ${welcomeBundle.groupId.obfuscateId()}"
+                )
+                syncConversationMetadata(
+                    mlsContext = mlsContext,
+                    conversationId = event.conversationId,
+                    groupID = GroupID(welcomeBundle.groupId)
+                )
             }.flatMap {
                 kaliumLogger.d("$TAG: Resolving conversation if one-on-one ${event.conversationId.toLogString()}")
                 resolveConversationIfOneOnOne(transactionContext, event.conversationId)
@@ -191,8 +201,19 @@ internal class MLSWelcomeEventHandlerImpl(
                 }
             }
 
-    private suspend fun markConversationAsEstablished(groupID: GroupID): Either<CoreFailure, Unit> =
-        conversationRepository.updateConversationGroupState(groupID, Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
+    private suspend fun syncConversationMetadata(
+        mlsContext: MlsCoreCryptoContext,
+        conversationId: ConversationId,
+        groupID: GroupID
+    ): Either<CoreFailure, Unit> =
+        mlsConversationRepository.getLocalGroupEpoch(mlsContext, groupID).flatMap { localEpoch ->
+            mlsConversationRepository.updateGroupIdAndState(
+                conversationId = conversationId,
+                newGroupId = groupID,
+                newEpoch = localEpoch.toLong(),
+                groupState = ConversationEntity.GroupState.ESTABLISHED
+            )
+        }
 
     private suspend fun checkRevocationList(mlsContext: MlsCoreCryptoContext, crlNewDistributionPoints: List<String>) {
         crlNewDistributionPoints.forEach { url ->

@@ -131,13 +131,17 @@ internal class MemberJoinEventHandlerImpl(
      * - Only group conversations (not 1:1 or self): 1:1 MLS establishment is handled separately.
      * - Only PENDING_JOIN state: ESTABLISHED means a Welcome was already processed; firing an
      *   external commit would create a conflicting epoch.
+     * - Only self-initiated joins (`addedBy == selfUserId`): when another user adds us, a Welcome
+     *   is expected and should establish the local MLS state without preemptive external commits.
      */
     private suspend fun joinMLSGroupIfSelfJoinedPendingGroup(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.MemberJoin,
         conversation: Conversation
     ) {
-        if (event.members.any { it.id == selfUserId } && conversation.protocol.isPendingJoin()) {
+        val selfWasAdded = event.members.any { it.id == selfUserId }
+        val isSelfJoinFlow = event.addedBy == selfUserId
+        if (selfWasAdded && isSelfJoinFlow && conversation.protocol.isPendingJoin()) {
             joinExistingMLSConversation(transactionContext, event.conversationId)
                 .onFailure { logger.w("Failed to join MLS group after MemberJoin event: $it") }
         }

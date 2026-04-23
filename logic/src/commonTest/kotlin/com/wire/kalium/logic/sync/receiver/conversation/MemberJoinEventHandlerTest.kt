@@ -302,7 +302,10 @@ class MemberJoinEventHandlerTest {
     fun givenSelfMemberJoinEventInMLSConversation_whenHandlingIt_thenShouldJoinMLSGroup() = runTest {
         val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member))
         val mlsConversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO)
-        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = mlsConversation.id)
+        val event = TestEvent.memberJoin(members = newMembers).copy(
+            conversationId = mlsConversation.id,
+            addedBy = TEST_SELF_USER_ID
+        )
 
         val (arrangement, eventHandler) = arrange {
             withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
@@ -396,7 +399,10 @@ class MemberJoinEventHandlerTest {
     fun givenSelfMemberJoinEventInMLSConversationAndJoinFails_whenHandlingIt_thenShouldStillSucceed() = runTest {
         val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member))
         val mlsConversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO)
-        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = mlsConversation.id)
+        val event = TestEvent.memberJoin(members = newMembers).copy(
+            conversationId = mlsConversation.id,
+            addedBy = TEST_SELF_USER_ID
+        )
 
         val (arrangement, eventHandler) = arrange {
             withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
@@ -410,6 +416,27 @@ class MemberJoinEventHandlerTest {
         coVerify {
             arrangement.legalHoldHandler.handleConversationMembersChanged(eq(event.conversationId))
         }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSelfAddedByAnotherUserInPendingMLSConversation_whenHandlingIt_thenShouldNotJoinMLSGroup() = runTest {
+        val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member))
+        val mlsConversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO)
+        val event = TestEvent.memberJoin(members = newMembers).copy(
+            conversationId = mlsConversation.id,
+            addedBy = TestUser.OTHER_USER_ID
+        )
+
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withConversationDetailsByIdReturning(mlsConversation.right())
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(true))
+        }.wasNotInvoked()
     }
 
     private class Arrangement(

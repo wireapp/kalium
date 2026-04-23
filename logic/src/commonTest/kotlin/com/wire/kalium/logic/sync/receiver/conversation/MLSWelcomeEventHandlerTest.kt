@@ -43,10 +43,13 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.ktor.util.encodeBase64
 import io.mockative.any
 import io.mockative.coEvery
@@ -73,7 +76,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldFail()
 
         coVerify {
-            arrangement.conversationRepository.updateConversationGroupState(any(), any())
+            arrangement.mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -88,7 +91,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldFail()
 
         coVerify {
-            arrangement.conversationRepository.updateConversationGroupState(any(), any())
+            arrangement.mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -98,7 +101,7 @@ class MLSWelcomeEventHandlerTest {
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(Either.Right(Unit))
+            withSyncConversationMetadataReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
         }
 
@@ -115,16 +118,18 @@ class MLSWelcomeEventHandlerTest {
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(Either.Right(Unit))
+            withSyncConversationMetadataReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
         }
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         coVerify {
-            arrangement.conversationRepository.updateConversationGroupState(
+            arrangement.mlsConversationRepository.updateGroupIdAndState(
+                eq(CONVERSATION_ID),
                 eq(GroupID(MLS_GROUP_ID)),
-                eq(Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
+                eq(LOCAL_EPOCH.toLong()),
+                eq(ConversationEntity.GroupState.ESTABLISHED)
             )
         }.wasInvoked(exactly = once)
     }
@@ -135,7 +140,7 @@ class MLSWelcomeEventHandlerTest {
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(Either.Right(Unit))
+            withSyncConversationMetadataReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_ONE_ONE))
             withResolveOneOnOneConversationWithUserReturning(Either.Right(CONVERSATION_ID))
         }
@@ -153,7 +158,7 @@ class MLSWelcomeEventHandlerTest {
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(Either.Right(Unit))
+            withSyncConversationMetadataReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
         }
 
@@ -165,13 +170,13 @@ class MLSWelcomeEventHandlerTest {
     }
 
     @Test
-    fun givenUpdateGroupStateFails_thenShouldPropagateError() = runTest {
+    fun givenSyncConversationMetadataFails_thenShouldPropagateError() = runTest {
 
         val failure = Either.Left(StorageFailure.DataNotFound)
         val (arrangement, mlsWelcomeEventHandler) = arrange {
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(failure)
+            withSyncConversationMetadataReturning(failure)
         }
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldFail {
@@ -186,7 +191,7 @@ class MLSWelcomeEventHandlerTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(Either.Right(Unit))
+            withSyncConversationMetadataReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_ONE_ONE))
             withResolveOneOnOneConversationWithUserReturning(failure)
         }
@@ -202,7 +207,7 @@ class MLSWelcomeEventHandlerTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(Either.Right(Unit))
+            withSyncConversationMetadataReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_ONE_ONE))
             withResolveOneOnOneConversationWithUserReturning(failure)
         }
@@ -220,7 +225,7 @@ class MLSWelcomeEventHandlerTest {
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
             withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
-            withUpdateGroupStateReturning(Either.Right(Unit))
+            withSyncConversationMetadataReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
         }
 
@@ -240,7 +245,7 @@ class MLSWelcomeEventHandlerTest {
             )
             withFetchConversationIfUnknownSucceeding()
             withCheckRevocationListResult()
-            withUpdateGroupStateReturning(failure)
+            withSyncConversationMetadataReturning(failure)
         }
 
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT)
@@ -265,7 +270,7 @@ class MLSWelcomeEventHandlerTest {
             withFetchConversationIfUnknownSucceeding()
             withConversationProtocolInfo(Either.Right(MockConversation.MLS_PROTOCOL_INFO))
             withWipeConversationReturningSuccessfully()
-            withUpdateGroupStateReturning(Either.Right(Unit))
+            withSyncConversationMetadataReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
         }
@@ -308,7 +313,7 @@ class MLSWelcomeEventHandlerTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.conversationRepository.updateConversationGroupState(any(), any())
+            arrangement.mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -341,6 +346,7 @@ class MLSWelcomeEventHandlerTest {
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         FetchConversationIfUnknownUseCaseArrangement by FetchConversationIfUnknownUseCaseArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
@@ -410,6 +416,20 @@ class MLSWelcomeEventHandlerTest {
             }.returns(result)
         }
 
+        suspend fun withSyncConversationMetadataReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                mlsConversationRepository.getLocalGroupEpoch(any(), eq(GroupID(MLS_GROUP_ID)))
+            }.returns(Either.Right(LOCAL_EPOCH))
+            coEvery {
+                mlsConversationRepository.updateGroupIdAndState(
+                    eq(CONVERSATION_ID),
+                    eq(GroupID(MLS_GROUP_ID)),
+                    eq(LOCAL_EPOCH.toLong()),
+                    eq(ConversationEntity.GroupState.ESTABLISHED)
+                )
+            }.returns(result)
+        }
+
         suspend fun arrange() = run {
             block()
             this@Arrangement to MLSWelcomeEventHandlerImpl(
@@ -419,7 +439,8 @@ class MLSWelcomeEventHandlerTest {
                 revocationListChecker = checkRevocationList,
                 certificateRevocationListRepository = certificateRevocationListRepository,
                 joinExistingMLSConversation = joinExistingMLSConversation,
-                fetchConversationIfUnknown = fetchConversationIfUnknown
+                fetchConversationIfUnknown = fetchConversationIfUnknown,
+                mlsConversationRepository = mlsConversationRepository
             )
         }
     }
@@ -428,6 +449,7 @@ class MLSWelcomeEventHandlerTest {
         suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         const val MLS_GROUP_ID: MLSGroupId = "test-mlsGroupId"
+        const val LOCAL_EPOCH: ULong = 1UL
         val CONVERSATION_ONE_ONE = TestConversationDetails.CONVERSATION_ONE_ONE
         val CONVERSATION_GROUP = TestConversationDetails.CONVERSATION_GROUP
         val CONVERSATION_ID = TestConversation.ID
