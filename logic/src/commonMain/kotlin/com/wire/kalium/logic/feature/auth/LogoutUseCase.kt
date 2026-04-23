@@ -35,10 +35,11 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 /**
  * Logs out the user from the current session
@@ -90,6 +91,8 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
             sessionRepository.logout(userId = userId, reason)
             logoutRepository.onLogout(reason)
             userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()
+            userConfigRepository.clearE2EISettings()
+            drainSessionScope()
 
             when (reason) {
                 LogoutReason.SELF_HARD_LOGOUT -> wipeAllData()
@@ -116,11 +119,23 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 kaliumLogger.withTextTag(TAG).d("Logout reason: $reason")
             }
 
-            userConfigRepository.clearE2EISettings()
-            userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
             logoutCallback(userId, reason)
         }.let { if (waitUntilCompletes) it.join() else it }
+    }
+
+    private suspend fun drainSessionScope() {
+        userSessionScopeProvider.get(userId)?.also { scope ->
+            scope.cancel()
+            scope.coroutineContext[Job]?.let { job ->
+                val drained = withTimeoutOrNull(SCOPE_DRAIN_TIMEOUT_MS) { job.join() }
+                if (drained == null) {
+                    kaliumLogger.withTextTag(TAG).w(
+                        "UserSessionScope did not drain within ${SCOPE_DRAIN_TIMEOUT_MS}ms; proceeding anyway"
+                    )
+                }
+            }
+        }
     }
 
     private suspend fun prepareForCoreCryptoMigrationRecovery() {
@@ -140,9 +155,6 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private suspend fun wipeAllData() {
-        // we put this delay here to avoid a race condition when
-        // receiving web socket events at the exact time of logging put
-        delay(CLEAR_DATA_DELAY)
         clearClientDataUseCase()
         clearUserDataUseCase() // this clears also current client id
     }
@@ -161,7 +173,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     companion object {
-        const val CLEAR_DATA_DELAY = 1000L
         const val TAG = "LogoutUseCase"
+        const val SCOPE_DRAIN_TIMEOUT_MS = 2_000L
     }
 }
