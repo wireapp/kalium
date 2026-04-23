@@ -79,6 +79,8 @@ internal class MLSWelcomeEventHandlerImpl(
             return Unit.right()
         }
 
+        var welcomeOutcome = OUTCOME_PROCESSED_DIRECTLY
+
         return fetchConversationIfUnknown(transactionContext, event.conversationId)
             .flatMap {
                 kaliumLogger.d("$TAG: Processing MLS welcome message")
@@ -97,8 +99,8 @@ internal class MLSWelcomeEventHandlerImpl(
                 kaliumLogger.d("$TAG: Resolving conversation if one-on-one ${event.conversationId.toLogString()}")
                 resolveConversationIfOneOnOne(transactionContext, event.conversationId)
             }
-            .flatMapLeft {
-                when (it) {
+            .flatMapLeft { failure ->
+                when (failure) {
                     is MLSFailure.ConversationAlreadyExists -> {
                         kaliumLogger.w("$TAG: Discarding welcome since the conversation already exists")
                         Either.Right(Unit)
@@ -106,24 +108,36 @@ internal class MLSWelcomeEventHandlerImpl(
 
                     is MLSFailure.OrphanWelcome -> {
                         if (isAlreadyEstablishedLocally(mlsContext, event.conversationId)) {
+                            welcomeOutcome = OUTCOME_SKIPPED_ALREADY_ESTABLISHED
                             kaliumLogger.w(
-                                "$TAG: OrphanWelcome for already established local MLS group. " +
-                                    "Treating as duplicate welcome and skipping external commit rejoin."
+                                "$TAG: OrphanWelcome for already established local MLS group; " +
+                                        "treating as duplicate welcome and skipping external commit rejoin " +
+                                        "[conversationId=${event.conversationId.toLogString()}]"
                             )
                             Unit.right()
                         } else {
-                            kaliumLogger.w("$TAG: Discarding welcome and joining existing conversation by external commit")
+                            kaliumLogger.w(
+                                "$TAG: OrphanWelcome, discarding welcome and joining existing conversation by external commit " +
+                                        "[conversationId=${event.conversationId.toLogString()}]"
+                            )
                             joinExistingMLSConversation(
                                 transactionContext = transactionContext,
                                 conversationId = event.conversationId,
-                            ).map {
-                                kaliumLogger.d("$TAG: Successfully joined existing MLS conversation")
-                            }
+                            ).onSuccess {
+                                welcomeOutcome = OUTCOME_RECOVERED_VIA_EXTERNAL_COMMIT
+                            }.onFailure { joinFailure ->
+                                welcomeOutcome = OUTCOME_EXTERNAL_COMMIT_REJOIN_FAILED
+                                kaliumLogger.w(
+                                    "$TAG: External-commit fallback for OrphanWelcome failed " +
+                                            "[conversationId=${event.conversationId.toLogString()}, cause=$joinFailure]"
+                                )
+                            }.map { }
                         }
                     }
 
                     else -> {
-                        Either.Left(it)
+                        welcomeOutcome = OUTCOME_FAILED
+                        Either.Left(failure)
                     }
                 }
             }
@@ -142,12 +156,13 @@ internal class MLSWelcomeEventHandlerImpl(
                     }
                     eventLogger.logSuccess(
                         "info" to "Established mls conversation from welcome message",
+                        "welcomeOutcome" to welcomeOutcome,
                         "didSucceedRefillingKeypackages" to didSucceedRefillingKeyPackages
                     )
                     Unit.right()
                 }
             }
-            .onFailure { eventLogger.logFailure(it) }
+            .onFailure { eventLogger.logFailure(it, "welcomeOutcome" to welcomeOutcome) }
     }
 
     private suspend fun isAlreadyEstablishedLocally(
@@ -163,6 +178,7 @@ internal class MLSWelcomeEventHandlerImpl(
             }
         }
         .fold({ false }, { it })
+
     private suspend fun markConversationAsEstablished(groupID: GroupID): Either<CoreFailure, Unit> =
         conversationRepository.updateConversationGroupState(groupID, Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
 
@@ -196,6 +212,14 @@ internal class MLSWelcomeEventHandlerImpl(
 
     companion object {
         private const val TAG = "[MLSWelcomeEventHandler]"
+
+        // Values for the structured "welcomeOutcome" field on the event log. Kept short and
+        // stable so they can be used as filters/aggregations in log-analysis tooling.
+        private const val OUTCOME_PROCESSED_DIRECTLY = "processed-directly"
+        private const val OUTCOME_RECOVERED_VIA_EXTERNAL_COMMIT = "recovered-via-external-commit"
+        private const val OUTCOME_SKIPPED_ALREADY_ESTABLISHED = "skipped-already-established"
+        private const val OUTCOME_EXTERNAL_COMMIT_REJOIN_FAILED = "external-commit-rejoin-failed"
+        private const val OUTCOME_FAILED = "failed"
     }
 
 }
