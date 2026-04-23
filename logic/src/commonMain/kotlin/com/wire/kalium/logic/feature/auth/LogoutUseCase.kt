@@ -128,6 +128,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
         userSessionScopeProvider.get(userId)?.also { scope ->
             scope.cancel()
             scope.coroutineContext[Job]?.let { job ->
+                // don't want to wait indefinitely in case of any issues with the session scope, so we use a timeout and log if it happens
                 val drained = withTimeoutOrNull(SCOPE_DRAIN_TIMEOUT_MS) { job.join() }
                 if (drained == null) {
                     kaliumLogger.withTextTag(TAG).w(
