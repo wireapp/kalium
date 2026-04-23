@@ -32,7 +32,6 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
-import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -45,7 +44,6 @@ import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
@@ -83,7 +81,9 @@ internal class MLSWelcomeEventHandlerImpl(
         return fetchConversationIfUnknown(transactionContext, event.conversationId)
             .flatMap {
                 kaliumLogger.d("$TAG: Processing MLS welcome message")
-                processWelcomeMessageWithRecovery(mlsContext, event.conversationId, event.message)
+                wrapMLSRequest {
+                    mlsContext.processWelcomeMessage(Base64.decode(event.message))
+                }
             }
             .flatMap { welcomeBundle ->
                 welcomeBundle.crlNewDistributionPoints?.let {
@@ -98,6 +98,11 @@ internal class MLSWelcomeEventHandlerImpl(
             }
             .flatMapLeft {
                 when (it) {
+                    is MLSFailure.ConversationAlreadyExists -> {
+                        kaliumLogger.w("$TAG: Discarding welcome since the conversation already exists")
+                        Either.Right(Unit)
+                    }
+
                     is MLSFailure.OrphanWelcome -> {
                         if (isAlreadyEstablishedLocally(mlsContext, event.conversationId)) {
                             kaliumLogger.w(
@@ -157,40 +162,6 @@ internal class MLSWelcomeEventHandlerImpl(
             }
         }
         .fold({ false }, { it })
-
-    private suspend fun processWelcomeMessageWithRecovery(
-        mlsContext: MlsCoreCryptoContext,
-        conversationId: ConversationId,
-        base64Message: String
-    ): Either<CoreFailure, WelcomeBundle> {
-        return wrapMLSRequest { mlsContext.processWelcomeMessage(Base64.decode(base64Message)) }
-            .flatMapLeft { failure ->
-                if (failure is MLSFailure.ConversationAlreadyExists) {
-                    kaliumLogger.w("$TAG: Welcome processing failed due to existing local group, wiping and retrying")
-                    wipeLocalConversation(mlsContext, conversationId).flatMap {
-                        wrapMLSRequest {
-                            mlsContext.processWelcomeMessage(Base64.decode(base64Message))
-                        }
-                    }
-                } else {
-                    Either.Left(failure)
-                }
-            }
-    }
-
-    private suspend fun wipeLocalConversation(
-        mlsContext: MlsCoreCryptoContext,
-        conversationId: ConversationId
-    ): Either<CoreFailure, Unit> =
-        conversationRepository.getConversationProtocolInfo(conversationId)
-            .flatMap { protocol ->
-                if (protocol is Conversation.ProtocolInfo.MLSCapable) {
-                    wrapMLSRequest { mlsContext.wipeConversation(protocol.groupId.toCrypto()) }
-                } else {
-                    Either.Left(CoreFailure.Unknown(IllegalStateException("Conversation is not MLS capable")))
-                }
-            }
-
     private suspend fun markConversationAsEstablished(groupID: GroupID): Either<CoreFailure, Unit> =
         conversationRepository.updateConversationGroupState(groupID, Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
 
