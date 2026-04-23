@@ -47,7 +47,11 @@ internal interface MLSOneOnOneConversationResolver {
      * (see [GroupState.ESTABLISHED]), it will attempt to join it, returning failure if it fails.
      * @param userId The user ID of the other participant.
      */
-    suspend operator fun invoke(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, ConversationId>
+    suspend operator fun invoke(
+        transactionContext: CryptoTransactionContext,
+        userId: UserId,
+        allowJoinByExternalCommit: Boolean = true,
+    ): Either<CoreFailure, ConversationId>
 }
 
 internal class MLSOneOnOneConversationResolverImpl(
@@ -56,7 +60,11 @@ internal class MLSOneOnOneConversationResolverImpl(
     private val fetchMLSOneToOneConversation: FetchMLSOneToOneConversationUseCase
 ) : MLSOneOnOneConversationResolver {
 
-    override suspend fun invoke(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, ConversationId> =
+    override suspend fun invoke(
+        transactionContext: CryptoTransactionContext,
+        userId: UserId,
+        allowJoinByExternalCommit: Boolean,
+    ): Either<CoreFailure, ConversationId> =
         conversationRepository.getConversationsByUserId(userId).flatMap { conversations ->
             // Look for an existing MLS-capable conversation one-on-one
             val initializedMLSOneOnOne = conversations.firstOrNull {
@@ -74,9 +82,10 @@ internal class MLSOneOnOneConversationResolverImpl(
                 kaliumLogger.d("Establishing mls group for one-on-one with ${userId.toLogString()}")
                 fetchMLSOneToOneConversation(transactionContext, userId).flatMap { conversation ->
                     joinExistingMLSConversationUseCase(
-                        transactionContext,
-                        conversation.id,
-                        conversation.mlsPublicKeys
+                        transactionContext = transactionContext,
+                        conversationId = conversation.id,
+                        mlsPublicKeys = conversation.mlsPublicKeys,
+                        allowJoinByExternalCommit = allowJoinByExternalCommit
                     ).map { conversation.id }
                 }
             }

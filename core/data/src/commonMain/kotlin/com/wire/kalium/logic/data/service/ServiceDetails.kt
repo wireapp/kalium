@@ -23,6 +23,8 @@ data class ServiceDetails(
     val id: ServiceId,
     val name: String,
     val description: String,
+    val category: String? = null,
+    val creator: String? = null,
     val summary: String,
     val enabled: Boolean,
     val tags: List<String>,

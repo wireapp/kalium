@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.call.CallModerationAction
+import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -74,6 +76,9 @@ class CallingMessageHandlerTest {
         // then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.muteCallUseCase.invoke(message.conversationId, true)
+            arrangement.callModerationActionsRepository.addAction(
+                message.conversationId, CallModerationAction(message.id, message.senderUserId, CallModerationAction.Type.MUTED)
+            )
         }
         verifySuspend(VerifyMode.exactly(0)) {
             arrangement.callManager.onCallingMessageReceived(message, content)
@@ -104,6 +109,7 @@ class CallingMessageHandlerTest {
         val currentClientIdProvider: CurrentClientIdProvider = mock(MockMode.autoUnit)
         val callManager: CallManager = mock(MockMode.autoUnit)
         val conversationRepository: ConversationRepository = mock(MockMode.autoUnit)
+        val callModerationActionsRepository: CallModerationActionsRepository = mock(MockMode.autoUnit)
         val muteCallUseCase: MuteCallUseCase = mock(MockMode.autoUnit)
         val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = mock(MockMode.autoUnit)
 
@@ -135,6 +141,7 @@ class CallingMessageHandlerTest {
             currentClientIdProvider = currentClientIdProvider,
             callManager = lazy { callManager },
             conversationRepository = conversationRepository,
+            callModerationActionsRepository = callModerationActionsRepository,
             muteCall = muteCallUseCase,
             shouldRemoteMuteChecker = shouldRemoteMuteChecker,
         )

@@ -40,7 +40,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangement
@@ -304,7 +304,7 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversation.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), eq(true))
         }.wasNotInvoked()
 
         coVerify {
@@ -335,14 +335,14 @@ class MLSWelcomeEventHandlerTest {
         mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversation.invoke(any(), eq(CONVERSATION_ID), any())
+            arrangement.joinExistingMLSConversation.invoke(any(), eq(CONVERSATION_ID), any(), eq(true))
         }.wasInvoked(exactly = once)
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         FetchConversationIfUnknownUseCaseArrangement by FetchConversationIfUnknownUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
         val refillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
         val checkRevocationList = mock(RevocationListChecker::class)
@@ -394,7 +394,7 @@ class MLSWelcomeEventHandlerTest {
 
         suspend fun withJoinExistingMLSConversationReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                joinExistingMLSConversation.invoke(any(), any(), any())
+                joinExistingMLSConversation.invoke(any(), any(), any(), eq(true))
             }.returns(result)
         }
 

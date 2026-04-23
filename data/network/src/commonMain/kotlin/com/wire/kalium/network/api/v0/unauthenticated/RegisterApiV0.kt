@@ -20,22 +20,22 @@ package com.wire.kalium.network.api.v0.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.RefreshTokenProperties
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.SessionDTO
 import com.wire.kalium.network.api.unauthenticated.register.ActivationParam
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
 import com.wire.kalium.network.api.unauthenticated.register.RequestActivationCodeParam
-import com.wire.kalium.network.auth.extractManagedRefreshToken
-import com.wire.kalium.network.auth.withBrowserCredentials
-import com.wire.kalium.network.auth.withManagedRefreshCookie
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.HttpHeaders
 
 internal open class RegisterApiV0 internal constructor(
     private val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
@@ -45,7 +45,7 @@ internal open class RegisterApiV0 internal constructor(
 
     private suspend fun getToken(refreshToken: String): NetworkResponse<AccessTokenDTO> = wrapKaliumResponse {
         httpClient.post(PATH_ACCESS) {
-            withManagedRefreshCookie(refreshToken)
+            header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
         }
     }
 
@@ -53,11 +53,10 @@ internal open class RegisterApiV0 internal constructor(
         param: RegisterParam
     ): NetworkResponse<Pair<SelfUserDTO, SessionDTO>> = wrapKaliumResponse<SelfUserDTO> {
         httpClient.post(REGISTER_PATH) {
-            withBrowserCredentials()
             setBody(param.toBody())
         }
     }.flatMap { registerResponse ->
-        extractManagedRefreshToken(registerResponse.cookies)?.let { refreshToken ->
+        registerResponse.cookies[RefreshTokenProperties.COOKIE_NAME]?.let { refreshToken ->
             getToken(refreshToken).mapSuccess { accessTokenDTO ->
                 Pair(
                     registerResponse.value,

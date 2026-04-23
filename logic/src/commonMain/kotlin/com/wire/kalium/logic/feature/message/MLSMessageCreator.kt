@@ -20,9 +20,9 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
@@ -109,8 +109,7 @@ internal class MLSMessageCreatorImpl(
                 legalHoldStatus = legalHoldStatus
             )
         )
-        return wrapMLSRequest {
-            MLSMessageApi.Message(mlsContext.encryptMessage(idMapper.toCryptoModel(groupId), content.data))
-        }
+        return mlsConversationRepository.encryptMessage(mlsContext, groupId, content.data)
+            .map { MLSMessageApi.Message(it) }
     }
 }

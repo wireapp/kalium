@@ -36,7 +36,7 @@ import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
@@ -510,7 +510,7 @@ class ConnectionRepositoryTest {
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val conversationDAO = mock(ConversationDAO::class)
         val conversationRepository = mock(ConversationRepository::class)
@@ -560,7 +560,8 @@ class ConnectionRepositoryTest {
             nonQualifiedId = "value",
             service = null,
             supportedProtocols = null,
-            type = UserTypeDTO.REGULAR
+            type = UserTypeDTO.REGULAR,
+            app = null
         )
         val stubConnectionEntity = ConnectionEntity(
             conversationId = "conversationId1",
