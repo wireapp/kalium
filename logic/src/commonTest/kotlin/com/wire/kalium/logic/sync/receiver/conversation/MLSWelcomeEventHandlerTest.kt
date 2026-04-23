@@ -358,12 +358,6 @@ class MLSWelcomeEventHandlerTest {
             }.returns(result)
         }
 
-        suspend fun withJoinExistingMLSConversationReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
-                joinExistingMLSConversation(any(), conversationId = any())
-            }.returns(result)
-        }
-
         suspend fun arrange() = run {
             block()
             this@Arrangement to MLSWelcomeEventHandlerImpl(
