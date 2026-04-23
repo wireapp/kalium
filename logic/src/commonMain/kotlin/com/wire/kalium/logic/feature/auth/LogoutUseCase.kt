@@ -175,6 +175,6 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
     companion object {
         const val TAG = "LogoutUseCase"
-        const val SCOPE_DRAIN_TIMEOUT_MS = 2_000L
+        const val SCOPE_DRAIN_TIMEOUT_MS = 3_000L
     }
 }
