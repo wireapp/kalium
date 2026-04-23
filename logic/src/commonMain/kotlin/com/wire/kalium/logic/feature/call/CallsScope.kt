@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.call.CallModerationActionsRepository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallingParticipantsOrder
 import com.wire.kalium.logic.data.call.CallingParticipantsOrderImpl
@@ -51,6 +52,8 @@ import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveAskCallFeedbackUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveCallModerationActionsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveCallModerationActionsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveCallQualityDataUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveCallQualityDataUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveConferenceCallingEnabledUseCase
@@ -119,6 +122,7 @@ public class CallsScope internal constructor(
     private val getCallConversationType: GetCallConversationTypeProvider,
     private val kaliumConfigs: KaliumConfigs,
     private val inCallReactionsRepository: InCallReactionsRepository,
+    private val callModerationActionsRepository: CallModerationActionsRepository,
     private val selfUserId: UserId,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -279,4 +283,7 @@ public class CallsScope internal constructor(
 
     public val setCallQualityInterval: SetCallQualityIntervalUseCase
         get() = SetCallQualityIntervalUseCaseImpl(callManager = callManager, dispatchers = dispatcher)
+
+    public val observeCallModerationActions: ObserveCallModerationActionsUseCase
+        get() = ObserveCallModerationActionsUseCaseImpl(callModerationActionsRepository = callModerationActionsRepository)
 }

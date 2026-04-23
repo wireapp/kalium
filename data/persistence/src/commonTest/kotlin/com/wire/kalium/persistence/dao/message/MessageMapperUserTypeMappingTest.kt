@@ -294,7 +294,6 @@ class MessageMapperUserTypeMappingTest {
         assetHeight: Int? = null,
         assetDuration: Long? = null,
         assetNormalizedLoudness: ByteArray? = null,
-        assetDataPath: String? = null,
         callerId: QualifiedIDEntity? = null,
         memberChangeList: List<QualifiedIDEntity>? = null,
         memberChangeType: MessageEntity.MemberChangeType? = null,
@@ -389,7 +388,6 @@ class MessageMapperUserTypeMappingTest {
             assetHeight,
             assetDuration,
             assetNormalizedLoudness,
-            assetDataPath,
             callerId,
             memberChangeList?.let { QualifiedIDListAdapter.encode(it) },
             memberChangeType?.name,
@@ -437,4 +435,3 @@ class MessageMapperUserTypeMappingTest {
         )
     }
 }
-

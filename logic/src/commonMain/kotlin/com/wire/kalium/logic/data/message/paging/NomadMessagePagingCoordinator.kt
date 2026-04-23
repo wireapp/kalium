@@ -50,8 +50,12 @@ internal interface NomadMessagePagingCoordinator {
         pageSize: Int,
         beforeTimestampMs: Long?,
         onInvalidate: () -> Unit
-    )
+    ): NomadMessagePagingResult
 }
+
+public data class NomadMessagePagingResult(
+    val hasMore: Boolean,
+)
 
 internal class NomadMessagePagingCoordinatorImpl(
     private val selfUserId: UserId,
@@ -76,7 +80,7 @@ internal class NomadMessagePagingCoordinatorImpl(
         pageSize: Int,
         beforeTimestampMs: Long?,
         onInvalidate: () -> Unit
-    ) {
+    ): NomadMessagePagingResult {
         kaliumLogger.d("[$TAG] Nomad paging boundary reached for conversation '${conversationId.toLogString()}'")
 
         val currentState = stateByConversation.block { map ->
@@ -85,7 +89,8 @@ internal class NomadMessagePagingCoordinatorImpl(
             )
             if (!existing.hasMore || existing.isFetching) return@block null
             if (!isNomadEnabled()) {
-                map[conversationId] = existing.copy(hasMore = false)
+                val next = existing.copy(hasMore = false, isFetching = false)
+                map[conversationId] = next
                 kaliumLogger.d("[$TAG] Nomad paging disabled for conversation '${conversationId.toLogString()}'")
                 return@block null
             }
@@ -97,7 +102,7 @@ internal class NomadMessagePagingCoordinatorImpl(
                         "with cursor=${next.nextCursor} ts=${next.nextTimestamp}"
             )
             next
-        } ?: return
+        } ?: return NomadMessagePagingResult(hasMore = stateByConversation[conversationId]?.hasMore ?: false)
 
         val responseResult = wrapApiRequest {
             nomadDeviceSyncApi.restoreMessagesBatch(
@@ -110,15 +115,17 @@ internal class NomadMessagePagingCoordinatorImpl(
             )
         }
 
-        when (responseResult) {
+        return when (responseResult) {
             is Either.Left -> {
                 stateByConversation.block { map ->
                     val state = map[conversationId] ?: currentState
-                    map.put(conversationId, state.copy(isFetching = false))
+                    val next = state.copy(isFetching = false)
+                    map.put(conversationId, next)
                 }
                 kaliumLogger.w(
                     "[$TAG] Nomad batch restore failed for '${selfUserId.toLogString()}': ${responseResult.value}"
                 )
+                NomadMessagePagingResult(hasMore = stateByConversation[conversationId]?.hasMore ?: false)
             }
 
             is Either.Right -> storeAndUpdateState(
@@ -137,7 +144,7 @@ internal class NomadMessagePagingCoordinatorImpl(
         currentState: State,
         pageSize: Int,
         onInvalidate: () -> Unit,
-    ) {
+    ): NomadMessagePagingResult {
         val mapped = mapper.map(response.toAllMessagesResponse())
         val storeResult = wrapStorageRequest {
             nomadMessagesDAO.storeMessages(
@@ -147,11 +154,14 @@ internal class NomadMessagePagingCoordinatorImpl(
         }
 
         var shouldInvalidate = false
+        var hasMore = currentState.hasMore
         stateByConversation.block { map ->
             val state = map[conversationId] ?: currentState
             when (storeResult) {
                 is Either.Left -> {
-                    map[conversationId] = state.copy(isFetching = false)
+                    val next = state.copy(isFetching = false)
+                    map[conversationId] = next
+                    hasMore = next.hasMore
                     kaliumLogger.w(
                         "[$TAG] Nomad batch restore storage failed for '${selfUserId.toLogString()}': ${storeResult.value}"
                     )
@@ -160,6 +170,7 @@ internal class NomadMessagePagingCoordinatorImpl(
                 is Either.Right -> {
                     val nextState = response.nextStateFor(conversationId, state)
                     map[conversationId] = nextState
+                    hasMore = nextState.hasMore
                     kaliumLogger.d(
                         "[$TAG] Nomad paging stored ${storeResult.value.storedMessages} messages for conversation " +
                                 "'${conversationId.toLogString()}', hasMore=${nextState.hasMore}, " +
@@ -174,6 +185,7 @@ internal class NomadMessagePagingCoordinatorImpl(
         if (shouldInvalidate) {
             onInvalidate()
         }
+        return NomadMessagePagingResult(hasMore = hasMore)
     }
 
     private fun NomadBatchRestoreResponse.toAllMessagesResponse(): NomadAllMessagesResponse =

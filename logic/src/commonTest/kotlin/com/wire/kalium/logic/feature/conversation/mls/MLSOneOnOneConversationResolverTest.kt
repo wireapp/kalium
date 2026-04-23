@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangement
@@ -77,7 +77,7 @@ class MLSOneOnOneConversationResolverTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(true))
         }.wasNotInvoked()
     }
 
@@ -132,7 +132,30 @@ class MLSOneOnOneConversationResolverTest {
         }
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(true))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenExternalCommitJoinDisabled_whenFetchingOneOnOneConversation_thenShouldForwardFlagToJoinUseCase() = runTest {
+        val (arrangement, getOrEstablishMlsOneToOneUseCase) = arrange {
+            withConversationsForUserIdReturning(
+                Either.Right(
+                    ALL_CONVERSATIONS - CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED
+                )
+            )
+            withFetchMLSOneToOneConversation(Either.Right(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED))
+            withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
+        }
+
+        getOrEstablishMlsOneToOneUseCase(
+            arrangement.transactionContext,
+            userId,
+            allowJoinByExternalCommit = false
+        ).shouldSucceed()
+
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(false))
         }.wasInvoked(exactly = once)
     }
 
@@ -142,7 +165,7 @@ class MLSOneOnOneConversationResolverTest {
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl()
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl()
     {
             val fetchMLSOneToOneConversation = mock(FetchMLSOneToOneConversationUseCase::class)
 

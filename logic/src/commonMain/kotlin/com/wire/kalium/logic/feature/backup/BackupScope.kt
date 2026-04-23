@@ -33,6 +33,7 @@ import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.util.DelicateKaliumApi
+import kotlinx.coroutines.sync.Mutex
 
 @Suppress("LongParameterList")
 public class BackupScope internal constructor(
@@ -92,13 +93,17 @@ public class BackupScope internal constructor(
         )
     }
 
-    public val backupAndUploadCryptoState: BackupAndUploadCryptoStateUseCase
-        get() = BackupAndUploadCryptoStateUseCaseImpl(
+    private val backupAndUploadCryptoStateMutex = Mutex()
+
+    public val backupAndUploadCryptoState: BackupAndUploadCryptoStateUseCase by lazy {
+        BackupAndUploadCryptoStateUseCaseImpl(
             backupCryptoDBUseCase = backupCryptoDB,
             cryptoStateBackupRemoteRepository = cryptoStateBackupRemoteRepository,
             kaliumFileSystem = kaliumFileSystem,
             currentClientIdProvider = clientIdProvider,
+            executionMutex = backupAndUploadCryptoStateMutex,
         )
+    }
 
     private val downloadCryptoState: DownloadCryptoStateUseCase
         get() = DownloadCryptoStateUseCaseImpl(

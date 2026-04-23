@@ -32,7 +32,7 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCaseImpl
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -126,7 +126,7 @@ class GetE2eiCertificateUseCaseTest {
             }.wasInvoked(once)
         }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         suspend fun arrange() = this to GetMLSClientIdentityUseCaseImpl(

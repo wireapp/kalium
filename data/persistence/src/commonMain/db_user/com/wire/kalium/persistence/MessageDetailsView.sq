@@ -60,7 +60,6 @@ AssetContent.asset_width AS assetWidth,
 AssetContent.asset_height AS assetHeight,
 AssetContent.asset_duration_ms AS assetDuration,
 AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
-AssetData.data_path AS assetDataPath,
 MissedCallContent.caller_id AS callerId,
 
 CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
@@ -181,7 +180,6 @@ FROM Message
 JOIN UserDetails ON Message.sender_user_id = UserDetails.qualified_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
-LEFT JOIN Asset AS AssetData ON AssetContent.asset_id = AssetData.key
 LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCallContent.message_id AND Message.conversation_id = MissedCallContent.conversation_id
 
 LEFT JOIN MessageSystemContent AS SystemContent ON Message.id = SystemContent.message_id AND Message.conversation_id = SystemContent.conversation_id

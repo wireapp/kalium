@@ -36,7 +36,7 @@ import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementIm
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.SubconversationRepositoryArrangement
@@ -106,7 +106,12 @@ class StaleEpochVerifierTest {
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(arrangement.transactionContext, CONVERSATION_ID, null)
+            arrangement.joinExistingMLSConversationUseCase.invoke(
+                arrangement.transactionContext,
+                CONVERSATION_ID,
+                null,
+                true
+            )
         }.wasNotInvoked()
     }
 
@@ -125,6 +130,7 @@ class StaleEpochVerifierTest {
             arrangement.joinExistingMLSConversationUseCase.invoke(
                 any(),
                 eq(CONVERSATION_ID),
+                any(),
                 any()
             )
         }.wasInvoked(once)
@@ -289,7 +295,7 @@ class StaleEpochVerifierTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         SubconversationRepositoryArrangement by SubconversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl() {
         val fetchConversationUseCase = mock(FetchConversationUseCase::class)
 

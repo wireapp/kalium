@@ -302,9 +302,6 @@ sealed class MessageEntityContent {
         val assetDurationMs: Long? = null,
         val assetNormalizedLoudness: ByteArray? = null,
 
-        // Local path
-        val assetDataPath: String? = null,
-
         ) : Regular()
 
     data class Knock(val hotKnock: Boolean) : Regular()

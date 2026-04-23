@@ -43,7 +43,7 @@ import com.wire.kalium.logic.util.arrangement.eventHandler.CodeDeletedHandlerArr
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangement
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
@@ -447,7 +447,7 @@ class ConversationEventReceiverTest {
     private class Arrangement :
         CodeUpdatedHandlerArrangement by CodeUpdatedHandlerArrangementImpl(),
         CodeDeletedHandlerArrangement by CodeDeletedHandlerArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val conversationMessageTimerEventHandler = mock(ConversationMessageTimerEventHandler::class)
         val receiptModeUpdateEventHandler = mock(ReceiptModeUpdateEventHandler::class)

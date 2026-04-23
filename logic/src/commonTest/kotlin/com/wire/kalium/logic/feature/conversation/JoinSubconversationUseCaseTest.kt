@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
@@ -177,7 +177,7 @@ class JoinSubconversationUseCaseTest {
         joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldFail()
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val conversationApi = mock(ConversationApi::class)
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val subconversationRepository = mock(SubconversationRepository::class)

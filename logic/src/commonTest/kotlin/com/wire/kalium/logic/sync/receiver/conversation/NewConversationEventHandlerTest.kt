@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationUseCase
+import com.wire.kalium.logic.data.conversation.toConversationType
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -42,7 +43,7 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
@@ -190,7 +191,8 @@ class NewConversationEventHandlerTest {
                 eq(event.id),
                 eq(event.conversation.id.toModel()),
                 eq(event.conversation.hasAppsAccessEnabled()),
-                eq(event.senderUserId)
+                eq(event.senderUserId),
+                eq(event.conversation.toConversationType(teamId))
             )
         }.wasInvoked(exactly = once)
     }
@@ -315,7 +317,7 @@ class NewConversationEventHandlerTest {
             }.wasInvoked(exactly = once)
         }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val conversationRepository = mock(ConversationRepository::class)
         val userRepository = mock(UserRepository::class)
         val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
@@ -396,7 +398,13 @@ class NewConversationEventHandlerTest {
 
         suspend fun withConversationAppsAccessIfEnabled() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(any(), any(), any(), any())
+                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any<ConversationResponse.Type>()
+                )
             }.returns(Unit.right())
         }
 

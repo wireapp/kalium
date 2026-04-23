@@ -57,7 +57,7 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
 import com.wire.kalium.network.api.base.authenticated.CallApi
@@ -1954,7 +1954,7 @@ class CallRepositoryTest {
 
     private class Arrangement(
         private val kaliumTestDispatcher: KaliumDispatcher
-    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val callApi = mock<CallApi>()
         val conversationRepository = mock<ConversationRepository>()

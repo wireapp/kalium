@@ -43,7 +43,10 @@ import kotlinx.coroutines.delay
  */
 @Mockable
 internal interface JoinExistingMLSConversationsUseCase {
-    suspend operator fun invoke(keepRetryingOnFailure: Boolean = true): Either<CoreFailure, Unit>
+    suspend operator fun invoke(
+        keepRetryingOnFailure: Boolean = true,
+        allowJoinByExternalCommit: Boolean = true,
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -64,7 +67,10 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
         require(throttleRetryDelayMs >= 0) { "throttleRetryDelayMs must not be negative" }
     }
 
-    override suspend operator fun invoke(keepRetryingOnFailure: Boolean): Either<CoreFailure, Unit> =
+    override suspend operator fun invoke(
+        keepRetryingOnFailure: Boolean,
+        allowJoinByExternalCommit: Boolean,
+    ): Either<CoreFailure, Unit> =
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
@@ -75,7 +81,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                 conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
                     kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
                     pendingConversations.chunked(maxConcurrentJoins).foldToEitherWhileRight(Unit) { batch, _ ->
-                        joinBatch(transactionContext, batch, keepRetryingOnFailure)
+                        joinBatch(transactionContext, batch, keepRetryingOnFailure, allowJoinByExternalCommit)
                     }
                 }
             }
@@ -85,10 +91,11 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
         transactionContext: CryptoTransactionContext,
         batch: List<Conversation>,
         keepRetryingOnFailure: Boolean,
+        allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, Unit> = coroutineScope {
         batch.map { conversation ->
             async {
-                joinRetrying(transactionContext, conversation, keepRetryingOnFailure)
+                joinRetrying(transactionContext, conversation, keepRetryingOnFailure, allowJoinByExternalCommit)
             }
         }
     }.foldToEitherWhileRight(Unit) { value, _ ->
@@ -99,9 +106,16 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
         transactionContext: CryptoTransactionContext,
         conversation: Conversation,
         keepRetryingOnFailure: Boolean,
+        allowJoinByExternalCommit: Boolean,
         attempt: Int = 0,
     ): Either<CoreFailure, Unit> {
-        return when (val result = joinExistingMLSConversationUseCase(transactionContext, conversation.id)) {
+        return when (
+            val result = joinExistingMLSConversationUseCase(
+                transactionContext = transactionContext,
+                conversationId = conversation.id,
+                allowJoinByExternalCommit = allowJoinByExternalCommit
+            )
+        ) {
             is Either.Left -> {
                 val failure = result.value
                 if (keepRetryingOnFailure && failure.isThrottleFailure() && attempt < maxThrottleRetries) {
@@ -112,7 +126,13 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                             "retrying ($nextAttempt/$maxThrottleRetries) in ${delayMs}ms."
                     )
                     delay(delayMs)
-                    joinRetrying(transactionContext, conversation, keepRetryingOnFailure, nextAttempt)
+                    joinRetrying(
+                        transactionContext = transactionContext,
+                        conversation = conversation,
+                        keepRetryingOnFailure = keepRetryingOnFailure,
+                        allowJoinByExternalCommit = allowJoinByExternalCommit,
+                        attempt = nextAttempt
+                    )
                 } else {
                     handleJoinFailure(failure, conversation)
                 }

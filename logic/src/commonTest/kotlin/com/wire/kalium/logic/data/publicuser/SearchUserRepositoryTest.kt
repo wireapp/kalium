@@ -493,6 +493,7 @@ class SearchUserRepositoryTest {
             SearchUserRepositoryImpl(
                 userDAO,
                 searchDAO,
+                appDAO,
                 userDetailsApi,
                 userSearchApiWrapper,
                 selfUserId = TestUser.SELF.id,

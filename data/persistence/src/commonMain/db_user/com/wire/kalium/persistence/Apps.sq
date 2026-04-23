@@ -1,0 +1,35 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+
+CREATE TABLE App (
+    id TEXT AS QualifiedIDEntity PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    category TEXT,
+    team_id TEXT,
+    preview_asset_id TEXT AS QualifiedIDEntity,
+    complete_asset_id TEXT AS QualifiedIDEntity
+);
+
+insert:
+INSERT OR REPLACE INTO App (id, name, description, category, team_id, preview_asset_id, complete_asset_id)
+VALUES (:id, :name, :description, :category, :team_id, :preview_asset_id, :complete_asset_id);
+
+byId:
+SELECT *
+FROM App
+WHERE App.id = :id;
+
+getUserIdFromMember:
+SELECT User.qualified_id
+FROM User
+JOIN Member ON Member.user = User.qualified_id AND Member.conversation = :conversation
+WHERE User.qualified_id = :id;
+
+getAll:
+SELECT *
+FROM App;
+
+searchByName:
+SELECT *
+FROM App
+WHERE name LIKE ('%' || :query || '%');
