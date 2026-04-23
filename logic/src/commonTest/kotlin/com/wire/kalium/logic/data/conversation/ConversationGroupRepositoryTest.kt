@@ -1015,13 +1015,15 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenMLSConversation_whenJoiningConversationSuccessWithChanged_thenEmitsLocalEventOnly() = runTest {
+    fun givenMLSConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
         val code = "code"
         val key = "key"
         val uri: String? = null
         val password: String? = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withJoinConversationAPIResponse(
                 code,
                 key,
@@ -1029,6 +1031,8 @@ class ConversationGroupRepositoryTest {
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
             .withEmitLocalEvent()
+            .withJoinExistingMlsConversationSucceeds()
+            .withSuccessfulAddMemberToMLSGroup()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
@@ -1040,17 +1044,37 @@ class ConversationGroupRepositoryTest {
 
         coVerify {
             arrangement.localEventRepository.emitLocalEvent(any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.joinExistingMLSConversation.invoke(
+                any(),
+                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
+                any(),
+                any()
+            )
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(),
+                eq(GroupID(MLS_PROTOCOL_INFO.groupId)),
+                eq(listOf(TestUser.SELF.id)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenMixedConversation_whenJoiningConversationSuccessWithChanged_thenEmitsLocalEventOnly() = runTest {
+    fun givenMixedConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
         val code = "code"
         val key = "key"
         val uri: String? = null
         val password: String? = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(MIXED_PROTOCOL_INFO)
             .withJoinConversationAPIResponse(
                 code,
                 key,
@@ -1058,6 +1082,8 @@ class ConversationGroupRepositoryTest {
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
             .withEmitLocalEvent()
+            .withJoinExistingMlsConversationSucceeds()
+            .withSuccessfulAddMemberToMLSGroup()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
@@ -1069,6 +1095,24 @@ class ConversationGroupRepositoryTest {
 
         coVerify {
             arrangement.localEventRepository.emitLocalEvent(any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.joinExistingMLSConversation.invoke(
+                any(),
+                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
+                any(),
+                any()
+            )
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(),
+                eq(GroupID(MIXED_PROTOCOL_INFO.groupId)),
+                eq(listOf(TestUser.SELF.id)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -1915,6 +1959,7 @@ class ConversationGroupRepositoryTest {
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
                 mlsConversationRepository,
+                joinExistingMLSConversation,
                 localEventRepository,
                 conversationMessageTimerEventHandler,
                 conversationDAO,

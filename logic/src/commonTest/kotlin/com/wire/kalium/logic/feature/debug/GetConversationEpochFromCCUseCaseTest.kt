@@ -26,6 +26,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -55,6 +56,18 @@ class GetConversationEpochFromCCUseCaseTest {
     }
 
     @Test
+    fun givenMLSConversationAndCoreCryptoThrows_whenInvoked_thenReturnGenericFailure() = runTest {
+        val (_, useCase) = Arrangement()
+            .withConversation(TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO).right())
+            .withCCEpochThrowing(IllegalStateException("Couldn't find conversation"))
+            .arrange()
+
+        val result = useCase(TestConversation.ID)
+
+        assertIs<GetConversationEpochFromCCResult.Failure.Generic>(result)
+    }
+
+    @Test
     fun givenProteusConversation_whenInvoked_thenReturnNotMlsConversationFailure() = runTest {
         val (arrangement, useCase) = Arrangement()
             .withConversation(TestConversation.GROUP(Conversation.ProtocolInfo.Proteus).right())
@@ -79,6 +92,10 @@ class GetConversationEpochFromCCUseCaseTest {
         suspend fun withCCEpoch(epoch: ULong) = apply {
             ccEpoch = epoch
             everySuspend { mlsContext.conversationEpoch(any()) } returns epoch
+        }
+
+        suspend fun withCCEpochThrowing(throwable: Throwable) = apply {
+            everySuspend { mlsContext.conversationEpoch(any()) } throws throwable
         }
 
         suspend fun arrange(): Pair<Arrangement, GetConversationEpochFromCCUseCaseImpl> {
