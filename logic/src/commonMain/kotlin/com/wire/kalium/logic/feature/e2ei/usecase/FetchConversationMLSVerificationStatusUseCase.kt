@@ -17,12 +17,10 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.common.functional.onSuccess
 
 /**
  * Trigger the checking and updating MLS Conversations Verification status.
@@ -33,21 +31,14 @@ public interface FetchConversationMLSVerificationStatusUseCase {
 
 internal class FetchConversationMLSVerificationStatusUseCaseImpl(
     private val conversationRepository: ConversationRepository,
-    private val mlsConversationRepository: MLSConversationRepository,
-    private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase,
-    private val transactionProvider: CryptoTransactionProvider
+    private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase
 ) : FetchConversationMLSVerificationStatusUseCase {
 
     override suspend fun invoke(conversationId: ConversationId) {
         conversationRepository.getConversationById(conversationId).onSuccess {
             val protocol = it.protocol
-            if (protocol is Conversation.ProtocolInfo.MLSCapable) {
-                transactionProvider.mlsTransaction { mlsContext ->
-                    mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, protocol.groupId)
-                }.onSuccess { exists ->
-                    if (exists) fetchMLSVerificationStatusUseCase(protocol.groupId)
-                }
-            }
+            if (protocol is Conversation.ProtocolInfo.MLSCapable)
+                fetchMLSVerificationStatusUseCase(protocol.groupId)
         }
     }
 }
