@@ -85,4 +85,32 @@ internal class CellConversationDataSource(
                 }
             }
         }
+
+    override suspend fun getPaginatedCellGroupConversations(
+        limit: Int,
+        offset: Int,
+        query: String,
+    ): Either<StorageFailure, List<CellConversation>> =
+        withContext(dispatchers.io) {
+            wrapStorageRequest {
+                conversationDao.getCellGroupConversationsPaged(limit, offset, query).mapNotNull { conversation ->
+                    conversation.name?.takeIf { it.isNotEmpty() }?.let { name ->
+                        CellConversation(
+                            id = ConversationId(conversation.id.value, conversation.id.domain),
+                            name = name,
+                            isChannel = conversation.isChannel,
+                            channelAccess = conversation.channelAccess?.let { access ->
+                                when (access) {
+                                    ConversationEntity.ChannelAccess.PRIVATE ->
+                                        ConversationDetails.Group.Channel.ChannelAccess.PRIVATE
+
+                                    ConversationEntity.ChannelAccess.PUBLIC ->
+                                        ConversationDetails.Group.Channel.ChannelAccess.PUBLIC
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
 }
