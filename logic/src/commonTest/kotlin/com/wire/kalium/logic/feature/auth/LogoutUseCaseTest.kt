@@ -56,6 +56,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LogoutUseCaseTest {
@@ -377,6 +378,36 @@ class LogoutUseCaseTest {
     }
 
     @Test
+    fun givenHardLogout_whenLoggingOut_thenE2EISettingsClearedBeforeWipe() = runTest {
+        var e2eiCalledBeforeWipe = false
+        var e2eiWasCalled = false
+
+        val (arrangement, logoutUseCase) = Arrangement()
+            .withLogoutResult(Either.Right(Unit))
+            .withSessionLogoutResult(Either.Right(Unit))
+            .withAllValidSessionsResult(Either.Right(listOf(Arrangement.VALID_ACCOUNT_INFO)))
+            .withDeregisterTokenResult(DeregisterTokenUseCase.Result.Success)
+            .withClearCurrentClientIdResult(Either.Right(Unit))
+            .withClearRetainedClientIdResult(Either.Right(Unit))
+            .withUserSessionScopeGetResult(null)
+            .withFirebaseTokenUpdate()
+            .withNoOngoingCalls()
+            .arrange()
+
+        coEvery { arrangement.userConfigRepository.clearE2EISettings() }.invokes { _ ->
+            e2eiWasCalled = true
+        }
+        coEvery { arrangement.clearUserDataUseCase.invoke() }.invokes { _ ->
+            e2eiCalledBeforeWipe = e2eiWasCalled
+        }
+
+        logoutUseCase.invoke(LogoutReason.SELF_HARD_LOGOUT)
+        arrangement.globalTestScope.advanceUntilIdle()
+
+        assertTrue(e2eiCalledBeforeWipe, "clearE2EISettings must be called before clearUserDataUseCase (wipe)")
+    }
+
+    @Test
     fun givenAMigrationFailedLogout_whenLoggingOut_thenExecuteAllRequiredActions() = runTest {
         val reason = LogoutReason.MIGRATION_TO_CC_FAILED
         val (arrangement, logoutUseCase) = Arrangement()
@@ -542,6 +573,22 @@ class LogoutUseCaseTest {
 
             coEvery {
                 userConfigRepository.clearE2EISettings()
+            }.returns(Unit)
+
+            coEvery {
+                userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()
+            }.returns(Unit)
+
+            coEvery {
+                logoutRepository.onLogout(any())
+            }.returns(Unit)
+
+            coEvery {
+                logoutCallback(any(), any())
+            }.returns(Unit)
+
+            coEvery {
+                userSessionScopeProvider.delete(any())
             }.returns(Unit)
         }
 
