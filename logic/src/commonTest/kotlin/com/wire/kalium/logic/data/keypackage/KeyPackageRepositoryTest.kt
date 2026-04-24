@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.keypackage
 
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
@@ -35,6 +37,9 @@ import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageRef
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
+import com.wire.kalium.network.api.model.FederationErrorResponse
+import com.wire.kalium.network.exceptions.FederationError
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.util.encodeBase64
 import io.mockative.any
@@ -110,7 +115,7 @@ internal class KeyPackageRepositoryTest {
             )
             assertEquals(
                 setOf(userWithout),
-                keyPackageResult.usersWithoutKeyPackagesAvailable
+                keyPackageResult.usersWithoutKeyPackages
             )
         }
     }
@@ -134,7 +139,7 @@ internal class KeyPackageRepositoryTest {
 
             result.shouldSucceed { keyPackages ->
                 assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
-                assertEquals(usersWithout, keyPackages.usersWithoutKeyPackagesAvailable)
+                assertEquals(usersWithout, keyPackages.usersWithoutKeyPackages)
             }
         }
 
@@ -150,7 +155,45 @@ internal class KeyPackageRepositoryTest {
 
         result.shouldSucceed { keyPackages ->
             assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
-            assertEquals(setOf(Arrangement.USER_ID), keyPackages.usersWithoutKeyPackagesAvailable)
+            assertEquals(setOf(Arrangement.USER_ID), keyPackages.usersWithoutKeyPackages)
+        }
+    }
+
+    @Test
+    fun givenFederationBackendUnreachable_whenClaimingKeyPackages_thenUserIsInUnreachableBackendSetNotMissingKeyPackagesSet() = runTest {
+        val federatedUser = UserId("alice", "federated.com")
+        val (_, keyPackageRepository) = Arrangement()
+            .withCurrentClientId()
+            .withClaimKeyPackagesFederationError(federatedUser)
+            .arrange()
+
+        val result = keyPackageRepository.claimKeyPackages(listOf(federatedUser), CIPHER_SUITE)
+
+        result.shouldSucceed { keyPackageResult ->
+            assertEquals(emptyList(), keyPackageResult.successfullyFetchedKeyPackages)
+            assertEquals(emptySet(), keyPackageResult.usersWithoutKeyPackages)
+            assertEquals(setOf(federatedUser), keyPackageResult.usersWithUnreachableBackend)
+        }
+    }
+
+    @Test
+    fun givenMixedFailures_whenClaimingKeyPackages_thenUsersAreSeparatedByFailureType() = runTest {
+        val userWithNoKP = Arrangement.USER_ID.copy(value = "noKP")
+        val userFedFailed = UserId("bob", "unreachable.com")
+        val userSuccess = Arrangement.USER_ID
+        val (_, keyPackageRepository) = Arrangement()
+            .withCurrentClientId()
+            .withClaimKeyPackagesSuccessful(userSuccess)
+            .withClaimKeyPackagesSuccessfulWithEmptyResponse(userWithNoKP)
+            .withClaimKeyPackagesFederationError(userFedFailed)
+            .arrange()
+
+        val result = keyPackageRepository.claimKeyPackages(listOf(userSuccess, userWithNoKP, userFedFailed), CIPHER_SUITE)
+
+        result.shouldSucceed { keyPackageResult ->
+            assertEquals(listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]), keyPackageResult.successfullyFetchedKeyPackages)
+            assertEquals(setOf(userWithNoKP), keyPackageResult.usersWithoutKeyPackages)
+            assertEquals(setOf(userFedFailed), keyPackageResult.usersWithUnreachableBackend)
         }
     }
 
@@ -166,6 +209,42 @@ internal class KeyPackageRepositoryTest {
 
         result.shouldSucceed { keyPackages ->
             assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
+        }
+    }
+
+    @Test
+    fun givenNoNetworkConnection_whenClaimingKeyPackages_thenOperationIsAbortedWithFailure() = runTest {
+        val user1 = Arrangement.USER_ID.copy(value = "user1")
+        val user2 = Arrangement.USER_ID.copy(value = "user2")
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withCurrentClientId()
+            .withClaimKeyPackagesNoNetworkError(user1)
+            .arrange()
+
+        val result = keyPackageRepository.claimKeyPackages(listOf(user1, user2), CIPHER_SUITE)
+
+        result.shouldFail { assertIs<NetworkFailure.NoNetworkConnection>(it) }
+        coVerify {
+            arrangement.keyPackageApi.claimKeyPackages(
+                eq(KeyPackageApi.Param.SkipOwnClient(user2.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+            )
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenServerError_whenClaimingKeyPackages_thenUserIsInUnreachableBackendSetNotMissingKeyPackagesSet() = runTest {
+        val failingUser = Arrangement.USER_ID.copy(value = "serverErrorUser")
+        val (_, keyPackageRepository) = Arrangement()
+            .withCurrentClientId()
+            .withClaimKeyPackagesServerError(failingUser)
+            .arrange()
+
+        val result = keyPackageRepository.claimKeyPackages(listOf(failingUser), CIPHER_SUITE)
+
+        result.shouldSucceed { keyPackageResult ->
+            assertEquals(emptyList(), keyPackageResult.successfullyFetchedKeyPackages)
+            assertEquals(emptySet(), keyPackageResult.usersWithoutKeyPackages)
+            assertEquals(setOf(failingUser), keyPackageResult.usersWithUnreachableBackend)
         }
     }
 
@@ -217,6 +296,40 @@ internal class KeyPackageRepositoryTest {
                     )
                 )
             }.returns(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
+        }
+
+        suspend fun withClaimKeyPackagesFederationError(userId: UserId) = apply {
+            coEvery {
+                keyPackageApi.claimKeyPackages(
+                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                )
+            }.returns(
+                NetworkResponse.Error(
+                    FederationError(FederationErrorResponse.Unreachable(listOf(userId.domain)))
+                )
+            )
+        }
+
+        suspend fun withClaimKeyPackagesNoNetworkError(userId: UserId) = apply {
+            coEvery {
+                keyPackageApi.claimKeyPackages(
+                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                )
+            }.returns(NetworkResponse.Error(KaliumException.NoNetwork()))
+        }
+
+        suspend fun withClaimKeyPackagesServerError(userId: UserId) = apply {
+            coEvery {
+                keyPackageApi.claimKeyPackages(
+                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                )
+            }.returns(
+                NetworkResponse.Error(
+                    KaliumException.ServerError(
+                        com.wire.kalium.network.api.model.ErrorResponse(500, "internal server error", "server-error")
+                    )
+                )
+            )
         }
 
         fun arrange() = this to KeyPackageDataSource(currentClientIdProvider, keyPackageApi, SELF_USER_ID)

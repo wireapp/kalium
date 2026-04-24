@@ -125,6 +125,24 @@ class ObservableMLSConversationRepositoryTest {
         assertEquals(emptyList(), arrangement.hook.calls)
     }
 
+    @Test
+    fun givenDelegateSucceeds_whenEncryptingMessage_thenHookIsNotified() = runTest {
+        val arrangement = Arrangement().withEncryptMessageSuccess().arrange()
+
+        arrangement.repository.encryptMessage(arrangement.context, GROUP_ID, byteArrayOf())
+
+        assertEquals(listOf(USER_ID), arrangement.hook.calls)
+    }
+
+    @Test
+    fun givenDelegateFails_whenEncryptingMessage_thenHookIsNotNotified() = runTest {
+        val arrangement = Arrangement().withEncryptMessageFailure().arrange()
+
+        arrangement.repository.encryptMessage(arrangement.context, GROUP_ID, byteArrayOf())
+
+        assertEquals(emptyList(), arrangement.hook.calls)
+    }
+
     private class Arrangement {
         private val delegate: MLSConversationRepository = mock(mode = MockMode.autoUnit)
         private val hook = RecordingHookNotifier()
@@ -135,7 +153,7 @@ class ObservableMLSConversationRepositoryTest {
         suspend fun withEstablishSuccess() = apply {
             everySuspend {
                 delegate.establishMLSGroup(any(), any(), any(), any(), any())
-            } returns Either.Right(MLSAdditionResult(emptySet(), emptySet()))
+            } returns Either.Right(MLSAdditionResult(emptySet(), emptySet(), emptySet()))
         }
 
         suspend fun withEstablishFailure() = apply {
@@ -176,6 +194,17 @@ class ObservableMLSConversationRepositoryTest {
             } returns CoreFailure.Unknown(null).left()
         }
 
+        suspend fun withEncryptMessageSuccess() = apply {
+            everySuspend {
+                delegate.encryptMessage(any(), any(), any())
+            } returns Either.Right(byteArrayOf())
+        }
+
+        suspend fun withEncryptMessageFailure() = apply {
+            everySuspend {
+                delegate.encryptMessage(any(), any(), any())
+            } returns CoreFailure.Unknown(null).left()
+        }
 
         fun arrange(): ArrangementResult = ArrangementResult(repository, hook, context, e2eiClient)
     }

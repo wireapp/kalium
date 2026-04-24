@@ -18,11 +18,9 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.message.Message
@@ -44,8 +42,6 @@ import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknown
 import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import io.mockative.any
@@ -298,120 +294,6 @@ class MemberJoinEventHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
-    @Test
-    fun givenSelfMemberJoinEventInMLSConversation_whenHandlingIt_thenShouldJoinMLSGroup() = runTest {
-        val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member))
-        val mlsConversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO)
-        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = mlsConversation.id)
-
-        val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
-            withConversationDetailsByIdReturning(mlsConversation.right())
-        }
-
-        eventHandler.handle(arrangement.transactionContext, event)
-
-        coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(mlsConversation.id), any())
-        }.wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenOtherMemberJoinEventInMLSConversation_whenHandlingIt_thenShouldNotJoinMLSGroup() = runTest {
-        val newMembers = listOf(Member(TestUser.OTHER_USER_ID, Member.Role.Member))
-        val mlsConversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO)
-        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = mlsConversation.id)
-
-        val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
-            withConversationDetailsByIdReturning(mlsConversation.right())
-        }
-
-        eventHandler.handle(arrangement.transactionContext, event)
-
-        coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenSelfMemberJoinEventInProteusConversation_whenHandlingIt_thenShouldNotJoinMLSGroup() = runTest {
-        val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member))
-        val proteusConversation = TestConversation.GROUP(TestConversation.PROTEUS_PROTOCOL_INFO)
-        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = proteusConversation.id)
-
-        val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
-            withConversationDetailsByIdReturning(proteusConversation.right())
-        }
-
-        eventHandler.handle(arrangement.transactionContext, event)
-
-        coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenSelfMemberJoinEventInEstablishedMLSGroup_whenHandlingIt_thenShouldNotJoinMLSGroup() = runTest {
-        val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member))
-        val establishedProtocol = TestConversation.MLS_PROTOCOL_INFO.copy(
-            groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED
-        )
-        val mlsConversation = TestConversation.GROUP(establishedProtocol)
-        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = mlsConversation.id)
-
-        val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
-            withConversationDetailsByIdReturning(mlsConversation.right())
-        }
-
-        eventHandler.handle(arrangement.transactionContext, event)
-
-        coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenSelfMemberJoinEventInMLS1on1Conversation_whenHandlingIt_thenShouldNotJoinMLSGroup() = runTest {
-        val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member))
-        val mlsOneOnOne = TestConversation.ONE_ON_ONE(TestConversation.MLS_PROTOCOL_INFO)
-        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = mlsOneOnOne.id)
-
-        val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
-            withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
-            withConversationDetailsByIdReturning(mlsOneOnOne.right())
-        }
-
-        eventHandler.handle(arrangement.transactionContext, event)
-
-        coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenSelfMemberJoinEventInMLSConversationAndJoinFails_whenHandlingIt_thenShouldStillSucceed() = runTest {
-        val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Member))
-        val mlsConversation = TestConversation.GROUP(TestConversation.MLS_PROTOCOL_INFO)
-        val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = mlsConversation.id)
-
-        val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
-            withConversationDetailsByIdReturning(mlsConversation.right())
-            withJoinExistingMLSConversationUseCaseReturning(Either.Left(CoreFailure.Unknown(null)))
-        }
-
-        eventHandler.handle(arrangement.transactionContext, event)
-
-        // MLS join failure is logged but does not fail the event processing
-        coVerify {
-            arrangement.legalHoldHandler.handleConversationMembersChanged(eq(event.conversationId))
-        }.wasInvoked(exactly = once)
-    }
-
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
@@ -420,7 +302,6 @@ class MemberJoinEventHandlerTest {
         LegalHoldHandlerArrangement by LegalHoldHandlerArrangementImpl(),
         FetchConversationIfUnknownUseCaseArrangement by FetchConversationIfUnknownUseCaseArrangementImpl(),
         FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
-        JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
         NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
 
@@ -432,7 +313,6 @@ class MemberJoinEventHandlerTest {
             withPersistMembers(Unit.right())
             withHandleConversationMembersChanged(Unit.right())
             withPersistUnverifiedWarningMessageSuccess()
-            withJoinExistingMLSConversationUseCaseReturning(Either.Right(Unit))
 
             this to MemberJoinEventHandlerImpl(
                 conversationRepository = conversationRepository,
@@ -441,8 +321,7 @@ class MemberJoinEventHandlerTest {
                 legalHoldHandler = legalHoldHandler,
                 newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
                 selfUserId = TEST_SELF_USER_ID,
-                fetchConversation = fetchConversation,
-                joinExistingMLSConversation = joinExistingMLSConversationUseCase
+                fetchConversation
             )
         }
     }

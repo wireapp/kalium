@@ -22,10 +22,16 @@ import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 
 internal data class KeyPackageClaimResult(
     val successfullyFetchedKeyPackages: List<KeyPackageDTO>,
-    val usersWithoutKeyPackagesAvailable: Set<UserId>
+    val usersWithoutKeyPackages: Set<UserId>,
+    val usersWithUnreachableBackend: Set<UserId>
 )
 
 internal data class MLSAdditionResult(
     val successfullyAddedUsers: Set<UserId>,
-    val notAddedUsers: Set<UserId>
-)
+    val usersWithoutKeyPackages: Set<UserId>,
+    val usersWithUnreachableBackend: Set<UserId>
+) {
+    companion object {
+        val Empty = MLSAdditionResult(emptySet(), emptySet(), emptySet())
+    }
+}

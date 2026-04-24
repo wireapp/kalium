@@ -32,10 +32,15 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import okio.blackholeSink
 import okio.buffer
 import okio.use
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class BackupAndUploadCryptoStateUseCaseTest {
@@ -115,5 +120,68 @@ class BackupAndUploadCryptoStateUseCaseTest {
         val result = useCase.invoke()
 
         assertIs<BackupAndUploadCryptoStateResult.Failure>(result)
+    }
+
+    @Test
+    fun givenConcurrentInvocations_whenFirstUploadIsStillRunning_thenSecondBackupWaits() = runTest {
+        val fileSystem = FakeKaliumFileSystem()
+        var backupInvocationCount = 0
+        var uploadInvocationCount = 0
+        val firstUploadStarted = CompletableDeferred<Unit>()
+        val allowFirstUploadToFinish = CompletableDeferred<Unit>()
+
+        val backupUseCase = object : BackupCryptoDBUseCase {
+            override suspend fun invoke(): BackupCryptoDBResult {
+                backupInvocationCount += 1
+                val backupPath = fileSystem.tempFilePath("crypto_state_$backupInvocationCount.zip")
+                fileSystem.sink(backupPath, mustCreate = true).buffer().use { it.writeUtf8("data-$backupInvocationCount") }
+                return BackupCryptoDBResult.Success(backupPath, backupPath.name)
+            }
+        }
+        val remoteRepository = object : CryptoStateBackupRemoteRepository {
+            override suspend fun uploadCryptoState(
+                clientId: String,
+                sourceProvider: () -> okio.Source,
+                size: Long
+            ): Either<NetworkFailure, Unit> {
+                uploadInvocationCount += 1
+                if (uploadInvocationCount == 1) {
+                    firstUploadStarted.complete(Unit)
+                    allowFirstUploadToFinish.await()
+                }
+                sourceProvider().use { source ->
+                    source.buffer().readAll(blackholeSink())
+                }
+                return Either.Right(Unit)
+            }
+
+            override suspend fun downloadCryptoState(tempBackupFileSink: okio.Sink): Either<CoreFailure, Unit> =
+                error("not used in this test")
+
+            override suspend fun setLastDeviceId(deviceId: String): Either<NetworkFailure, Unit> =
+                error("not used in this test")
+        }
+        val useCase = BackupAndUploadCryptoStateUseCaseImpl(
+            backupCryptoDBUseCase = backupUseCase,
+            cryptoStateBackupRemoteRepository = remoteRepository,
+            kaliumFileSystem = fileSystem,
+            currentClientIdProvider = CurrentClientIdProvider { Either.Right(ClientId("client-id")) }
+        )
+
+        val firstInvocation = async { useCase.invoke() }
+        firstUploadStarted.await()
+
+        val secondInvocation = async { useCase.invoke() }
+        runCurrent()
+
+        assertEquals(1, backupInvocationCount)
+        assertEquals(1, uploadInvocationCount)
+
+        allowFirstUploadToFinish.complete(Unit)
+
+        assertIs<BackupAndUploadCryptoStateResult.Success>(firstInvocation.await())
+        assertIs<BackupAndUploadCryptoStateResult.Success>(secondInvocation.await())
+        assertEquals(2, backupInvocationCount)
+        assertEquals(2, uploadInvocationCount)
     }
 }

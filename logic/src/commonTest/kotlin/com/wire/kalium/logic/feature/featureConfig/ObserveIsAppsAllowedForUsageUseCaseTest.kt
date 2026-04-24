@@ -178,7 +178,7 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
             defaultProtocol = SupportedProtocol.MLS.right(),
             supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS).right(),
             selfTeamId = TestTeam.TEAM_ID.right(),
-            expectedResult = AppsAllowedResult.Disabled
+            expectedResult = AppsAllowedResult.Enabled(AppsAllowedProtocol.MIXED(SupportedProtocol.PROTEUS))
         ),
         AppsAllowedResultTestCase(
             description = "MLS Default Protocol, MLS Supported Protocol, Apps Enabled",

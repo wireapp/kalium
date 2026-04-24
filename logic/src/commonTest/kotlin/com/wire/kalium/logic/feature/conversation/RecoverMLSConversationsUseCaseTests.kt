@@ -20,9 +20,10 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -31,7 +32,6 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.util.DateTimeUtil
@@ -67,7 +67,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasInvoked(conversations.size)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(conversations.size)
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -91,7 +91,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasInvoked(conversations.size)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(conversations.size)
 
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
@@ -115,7 +115,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasNotInvoked()
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -139,7 +139,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasInvoked(twice)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(once)
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -174,7 +174,7 @@ class RecoverMLSConversationsUseCaseTests {
 
         // Only the second group should be joined (first was marked pending due to ConversationNotFound)
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(Arrangement.MLS_CONVERSATION2.id), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(Arrangement.MLS_CONVERSATION2.id), any(), any())
         }.wasInvoked(once)
 
         // Overall result should be Success since ConversationNotFound is non-fatal
@@ -205,7 +205,7 @@ class RecoverMLSConversationsUseCaseTests {
 
         // No groups should be joined since all were marked pending
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasNotInvoked()
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -230,7 +230,7 @@ class RecoverMLSConversationsUseCaseTests {
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val featureSupport = mock(FeatureSupport::class)
         val joinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
@@ -265,7 +265,7 @@ class RecoverMLSConversationsUseCaseTests {
 
         suspend fun withJoinExistingMLSConversationUseCaseSuccessful() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+                joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -298,10 +298,10 @@ class RecoverMLSConversationsUseCaseTests {
 
         suspend fun withJoinExistingMLSConversationUseCaseFailsFor(failedGroupId: ConversationId) = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), eq(failedGroupId), any())
+                joinExistingMLSConversationUseCase.invoke(any(), eq(failedGroupId), any(), any())
             }.returns(Either.Left(StorageFailure.DataNotFound))
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), matches { it != failedGroupId }, any())
+                joinExistingMLSConversationUseCase.invoke(any(), matches { it != failedGroupId }, any(), any())
             }.returns(Either.Right(Unit))
         }
 
