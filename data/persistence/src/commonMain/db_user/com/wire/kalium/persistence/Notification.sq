@@ -1,65 +1,50 @@
 getNotificationsMessages:
-WITH NumberedMessages AS (
+-- Seed from UnreadEvent (tiny, indexed by conversation_id+creation_date). The CTE is
+-- deliberately kept to a single table with no joins or filters so SQLite *cannot* flatten
+-- it into the outer query and reorder the joins. Without ANALYZE stats the planner tends
+-- to pick Message (hundreds of thousands of rows) as the driving table; keeping the CTE
+-- isolated + using CROSS JOIN on the outer keeps UnreadEvent as the outer loop.
+WITH UnreadCandidates AS (
     SELECT
-        m.id,
-        m.conversation_id AS conversationId,
-        m.content_type AS contentType,
-        m.creation_date AS date,
-        m.sender_user_id AS senderUserId,
-        (m.expire_after_millis IS NOT NULL) AS isSelfDelete,
-        u.name AS senderName,
-        u.preview_asset_id AS senderPreviewAssetId,
-        c.name AS conversationName,
-        tc.text_body AS text,
-        tc.is_quoting_self AS isQuotingSelf,
-        ac.asset_mime_type AS assetMimeType,
-        c.muted_status AS mutedStatus,
-        c.type AS conversationType,
-        c.degraded_conversation_notified AS degradedConversationNotified,
-        c.legal_hold_status AS legalHoldStatus,
-        IFNULL(lhs.legal_hold_status_change_notified, 1) == 1 AS legalHoldStatusChangeNotified,
-        ROW_NUMBER() OVER (PARTITION BY m.conversation_id ORDER BY m.creation_date DESC) AS row_num
-    FROM
-        Message m
-    JOIN
-        User u ON m.sender_user_id = u.qualified_id
-    JOIN
-        Conversation c ON m.conversation_id = c.qualified_id
-    LEFT JOIN
-        ConversationLegalHoldStatusChangeNotified AS lhs ON m.conversation_id == lhs.conversation_id AND (m.creation_date > IFNULL(c.last_notified_date, 0))
-    LEFT JOIN
-        MessageAssetContent ac ON m.id = ac.message_id AND m.conversation_id = ac.conversation_id
-    LEFT JOIN
-        MessageTextContent tc ON m.id = tc.message_id AND m.conversation_id = tc.conversation_id
-    WHERE
-        m.visibility = 'VISIBLE' AND
-        m.content_type IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION') AND
-        m.creation_date > COALESCE(c.last_notified_date, 0) AND
-        NOT EXISTS (SELECT 1 FROM SelfUser WHERE id = m.sender_user_id) AND
-        c.muted_status != 'ALL_MUTED' AND
-        c.archived = 0
+        ue.id AS messageId,
+        ue.conversation_id AS messageConversationId,
+        ue.creation_date AS unreadCreationDate,
+        ROW_NUMBER() OVER (PARTITION BY ue.conversation_id ORDER BY ue.creation_date DESC) AS row_num
+    FROM UnreadEvent ue
 )
 SELECT
-    id,
-    conversationId,
-    contentType,
-    date,
-    senderUserId,
-    isSelfDelete,
-    senderName,
-    senderPreviewAssetId,
-    conversationName,
-    text,
-    isQuotingSelf,
-    assetMimeType,
-    mutedStatus,
-    conversationType,
-    degradedConversationNotified,
-    legalHoldStatus,
-    legalHoldStatusChangeNotified
-FROM
-    NumberedMessages
+    m.id AS id,
+    m.conversation_id AS conversationId,
+    m.content_type AS contentType,
+    m.creation_date AS date,
+    m.sender_user_id AS senderUserId,
+    (m.expire_after_millis IS NOT NULL) AS isSelfDelete,
+    u.name AS senderName,
+    u.preview_asset_id AS senderPreviewAssetId,
+    c.name AS conversationName,
+    tc.text_body AS text,
+    tc.is_quoting_self AS isQuotingSelf,
+    ac.asset_mime_type AS assetMimeType,
+    c.muted_status AS mutedStatus,
+    c.type AS conversationType,
+    c.degraded_conversation_notified AS degradedConversationNotified,
+    c.legal_hold_status AS legalHoldStatus,
+    IFNULL(lhs.legal_hold_status_change_notified, 1) == 1 AS legalHoldStatusChangeNotified
+FROM UnreadCandidates uc
+CROSS JOIN Message m ON m.id = uc.messageId AND m.conversation_id = uc.messageConversationId
+CROSS JOIN Conversation c ON c.qualified_id = uc.messageConversationId
+CROSS JOIN User u ON u.qualified_id = m.sender_user_id
+LEFT JOIN ConversationLegalHoldStatusChangeNotified AS lhs
+    ON lhs.conversation_id = uc.messageConversationId
+LEFT JOIN MessageAssetContent ac
+    ON ac.message_id = uc.messageId AND ac.conversation_id = uc.messageConversationId
+LEFT JOIN MessageTextContent tc
+    ON tc.message_id = uc.messageId AND tc.conversation_id = uc.messageConversationId
 WHERE
-    row_num <= 10 -- there is a bug in sqldelight where you can't use a parameter here
-ORDER BY
-    date DESC;
+    uc.row_num <= 10 -- there is a bug in sqldelight where you can't use a parameter here
+    AND c.muted_status != 'ALL_MUTED'
+    AND c.archived = 0
+    AND uc.unreadCreationDate > COALESCE(c.last_notified_date, 0)
+    AND m.visibility = 'VISIBLE'
+    AND m.content_type IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION')
+ORDER BY m.creation_date DESC;
