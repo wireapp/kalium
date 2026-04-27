@@ -19,18 +19,23 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
+import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
@@ -39,14 +44,10 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.any
 import io.mockative.coEvery
@@ -77,8 +78,7 @@ internal class MemberLeaveEventHandlerTest {
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
                     memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
-                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
-                withGetConversationsDeleteQueue(emptyList())
+                withGetConversationProtocolInfo(Either.Right(Conversation.ProtocolInfo.Proteus))
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
@@ -109,7 +109,6 @@ internal class MemberLeaveEventHandlerTest {
                 )
                 withPersistingMessage(Either.Left(failure))
                 withDeleteMembersByQualifiedIDThrows(throws = IllegalArgumentException())
-                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
@@ -140,7 +139,6 @@ internal class MemberLeaveEventHandlerTest {
                 withPersistingMessage(Either.Right(Unit), messageMatcher = EqualsMatcher(message))
                 withTeamId(Either.Right(TeamId("teamId")))
                 withIsAtLeastOneUserATeamMember(Either.Right(true))
-                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
@@ -172,7 +170,6 @@ internal class MemberLeaveEventHandlerTest {
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
                 withTeamId(Either.Right(null))
                 withPersistingMessage(Either.Right(Unit))
-                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
@@ -217,7 +214,6 @@ internal class MemberLeaveEventHandlerTest {
                     memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
                 withIsAtLeastOneUserATeamMember(Either.Right(false))
-                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
@@ -256,8 +252,7 @@ internal class MemberLeaveEventHandlerTest {
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
                     memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
-                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
-                withGetConversationsDeleteQueue(emptyList())
+                withGetConversationProtocolInfo(Either.Right(Conversation.ProtocolInfo.Proteus))
             }
         // when
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
@@ -268,7 +263,7 @@ internal class MemberLeaveEventHandlerTest {
     }
 
     @Test
-    fun givenDaoReturnsSuccessAndConversationInDeleteQueue_whenDeletingSelfMember_thenConversationDeleted() = runTest {
+    fun givenSelfUserLeftMLSConversation_whenHandlingMemberLeave_thenLeaveGroupCalled() = runTest {
         val event = memberLeaveEvent(reason = MemberLeaveReason.Left).copy(removedList = listOf(selfUserId), removedBy = selfUserId)
 
         val (arrangement, memberLeaveEventHandler) = Arrangement()
@@ -281,23 +276,19 @@ internal class MemberLeaveEventHandlerTest {
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
                 withTeamId(Either.Right(null))
                 withPersistingMessage(Either.Right(Unit))
-                withGetConversationsDeleteQueue(listOf(event.conversationId))
-                withDeletingConversationSucceeding(EqualsMatcher(event.conversationId))
-                withGetConversationProtocolInfoReturns(ConversationEntity.ProtocolInfo.Proteus)
+                withGetConversationProtocolInfo(Either.Right(MLS_DOMAIN_PROTOCOL_INFO))
+                coEvery { mlsConversationRepository.leaveGroup(any(), any()) }.returns(Either.Right(Unit))
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
         coVerify {
-            arrangement.updateConversationClientsForCurrentCall.invoke(eq(event.conversationId))
-        }.wasInvoked(exactly = once)
-        coVerify { arrangement.conversationRepository.getConversationsDeleteQueue() }.wasInvoked(once)
-        coVerify { arrangement.deleteConversation(any(), eq(event.conversationId)) }.wasInvoked(once)
-        coVerify { arrangement.conversationRepository.removeConversationFromDeleteQueue(event.conversationId) }.wasInvoked(once)
+            arrangement.mlsConversationRepository.leaveGroup(any(), eq(MLS_GROUP_ID))
+        }.wasInvoked(once)
     }
 
     @Test
-    fun givenOtherUsersRemainInMLSGroup_whenHandlingMemberLeaveEvent_thenDoNotWipeConversation() = runTest {
+    fun givenOtherUsersRemovedFromConversation_whenHandlingMemberLeave_thenLeaveGroupNotCalled() = runTest {
         val event = memberLeaveEvent(reason = MemberLeaveReason.Removed).copy(
             removedList = listOf(UserId("userId1", "domain"), UserId("userId2", "domain"))
         )
@@ -312,14 +303,11 @@ internal class MemberLeaveEventHandlerTest {
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
                     memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
-                withGetConversationsDeleteQueue(listOf(event.conversationId))
-                withDeletingConversationSucceeding(EqualsMatcher(event.conversationId))
-                withGetConversationProtocolInfoReturns(mlsProtocolInfo1)
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify { arrangement.mlsContext.wipeConversation(any()) }.wasNotInvoked()
+        coVerify { arrangement.mlsConversationRepository.leaveGroup(any(), any()) }.wasNotInvoked()
     }
 
     @Test
@@ -337,7 +325,6 @@ internal class MemberLeaveEventHandlerTest {
                     memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
                 withPersistingMessage(Either.Right(Unit))
-                withGetConversationProtocolInfoReturns(null)
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event).shouldSucceed()
@@ -360,30 +347,19 @@ internal class MemberLeaveEventHandlerTest {
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
         MemberDAOArrangement by MemberDAOArrangementImpl(),
         SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),
-        DeleteConversationArrangement by DeleteConversationArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
+        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
 
         val updateConversationClientsForCurrentCall = mock(UpdateConversationClientsForCurrentCallUseCase::class)
         val legalHoldHandler = mock(LegalHoldHandler::class)
-        val conversationDAO = mock(ConversationDAO::class)
 
         private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
-
-        suspend fun withGetConversationProtocolInfoReturns(protocolInfo: ConversationEntity.ProtocolInfo?) = apply {
-            coEvery {
-                conversationDAO.getConversationProtocolInfo(any())
-            }.returns(protocolInfo)
-        }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, MemberLeaveEventHandler> = run {
             coEvery {
                 legalHoldHandler.handleConversationMembersChanged(any())
             }.returns(Either.Right(Unit))
-            withRemoveConversationToDeleteQueue()
-            coEvery {
-                mlsContext.wipeConversation(any())
-            }.returns(Unit)
             coEvery {
                 updateConversationClientsForCurrentCall.invoke(any())
             }.returns(Unit)
@@ -397,7 +373,7 @@ internal class MemberLeaveEventHandlerTest {
                 legalHoldHandler = legalHoldHandler,
                 selfTeamIdProvider = selfTeamIdProvider,
                 selfUserId = selfUserId,
-                deleteConversation = deleteConversation
+                mlsConversationRepository = mlsConversationRepository
             )
             this to memberLeaveEventHandler
         }
@@ -411,12 +387,13 @@ internal class MemberLeaveEventHandlerTest {
 
         val conversationId = ConversationId("conversationId", "domain")
 
-        val mlsProtocolInfo1 = ConversationEntity.ProtocolInfo.MLS(
-            "group2",
-            ConversationEntity.GroupState.ESTABLISHED,
-            0UL,
-            Instant.parse("2021-03-30T15:36:00.000Z"),
-            cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        val MLS_GROUP_ID = GroupID("group2")
+        val MLS_DOMAIN_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
+            groupId = MLS_GROUP_ID,
+            groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+            epoch = 0UL,
+            keyingMaterialLastUpdate = Instant.parse("2021-03-30T15:36:00.000Z"),
+            cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         )
 
         fun memberLeaveEvent(reason: MemberLeaveReason) = Event.Conversation.MemberLeave(
