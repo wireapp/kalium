@@ -27,10 +27,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.Message
@@ -59,8 +57,7 @@ internal class MemberJoinEventHandlerImpl(
     private val legalHoldHandler: LegalHoldHandler,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val selfUserId: UserId,
-    private val fetchConversation: FetchConversationUseCase,
-    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase
+    private val fetchConversation: FetchConversationUseCase
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
@@ -104,7 +101,6 @@ internal class MemberJoinEventHandlerImpl(
                         is Conversation.Type.Group -> {
                             addUnverifiedWarningSystemMessageIfNeeded(event)
                             addMemberAddedSystemMessage(event)
-                            joinMLSGroupIfSelfJoinedPendingGroup(transactionContext, event, conversation)
                         }
 
                         Conversation.Type.Self,
@@ -119,28 +115,6 @@ internal class MemberJoinEventHandlerImpl(
             }.onFailure {
                 eventLogger.logFailure(it)
             }
-    }
-
-    /**
-     * Sends an MLS external commit so the local device actually joins the MLS group at the
-     * cryptographic layer. This is needed when the self user joins a group conversation that
-     * already has an established MLS epoch (e.g. via a guest link), because in that case no
-     * Welcome message is delivered — the device must commit itself into the group explicitly.
-     *
-     * The check is intentionally narrow:
-     * - Only group conversations (not 1:1 or self): 1:1 MLS establishment is handled separately.
-     * - Only PENDING_JOIN state: ESTABLISHED means a Welcome was already processed; firing an
-     *   external commit would create a conflicting epoch.
-     */
-    private suspend fun joinMLSGroupIfSelfJoinedPendingGroup(
-        transactionContext: CryptoTransactionContext,
-        event: Event.Conversation.MemberJoin,
-        conversation: Conversation
-    ) {
-        if (event.members.any { it.id == selfUserId } && conversation.protocol.isPendingJoin()) {
-            joinExistingMLSConversation(transactionContext, event.conversationId)
-                .onFailure { logger.w("Failed to join MLS group after MemberJoin event: $it") }
-        }
     }
 
     private suspend fun addUnverifiedWarningSystemMessageIfNeeded(event: Event.Conversation.MemberJoin) {
@@ -163,7 +137,4 @@ internal class MemberJoinEventHandlerImpl(
         )
         persistMessage(message)
     }
-
-    private fun Conversation.ProtocolInfo.isPendingJoin() =
-        this is Conversation.ProtocolInfo.MLSCapable && groupState == PENDING_JOIN
 }

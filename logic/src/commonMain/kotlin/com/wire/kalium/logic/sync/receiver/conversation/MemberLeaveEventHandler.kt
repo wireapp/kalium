@@ -24,11 +24,15 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.getOrNull
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
@@ -40,7 +44,6 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
-import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.member.MemberDAO
@@ -63,7 +66,7 @@ internal class MemberLeaveEventHandlerImpl(
     private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>,
     private val legalHoldHandler: LegalHoldHandler,
     private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val deleteConversation: DeleteConversationUseCase,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val selfUserId: UserId,
 ) : MemberLeaveEventHandler {
 
@@ -80,7 +83,7 @@ internal class MemberLeaveEventHandlerImpl(
                 updateConversationClientsForCurrentCall.value(event.conversationId)
             }
             .onSuccess {
-                deleteConversationIfNeeded(transactionContext, event)
+                wipeMLSConversationIfNeeded(transactionContext, event)
             }
             .onSuccess {
                 // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
@@ -138,16 +141,20 @@ internal class MemberLeaveEventHandlerImpl(
         }
     }
 
-    private suspend fun deleteConversationIfNeeded(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberLeave) {
+    private suspend fun wipeMLSConversationIfNeeded(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberLeave) {
         val isSelfUserLeftConversation = event.removedList == listOf(selfUserId) && event.reason == MemberLeaveReason.Left
         if (!isSelfUserLeftConversation) return
 
-        if (!conversationRepository.getConversationsDeleteQueue().contains(event.conversationId)) return
+        conversationRepository.getConversationProtocolInfo(event.conversationId).flatMap { protocolInfo ->
+            if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
+                transactionContext.wrapInMLSContext {
+                    mlsConversationRepository.leaveGroup(it, protocolInfo.groupId)
+                }.map { Unit }
+            } else {
+                Either.Right(Unit)
+            }
+        }
 
-        // User wanted to delete conversation fully, but MessageContent.Cleared event came before and we couldn't delete it then.
-        // Now, when user left the conversation, we can delete it.
-        deleteConversation(transactionContext, event.conversationId)
-        conversationRepository.removeConversationFromDeleteQueue(event.conversationId)
     }
 
     private suspend fun deleteMembers(

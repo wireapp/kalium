@@ -149,38 +149,11 @@ class ClearConversationContentHandlerTest {
     }
 
     @Test
-    fun givenSelfSenderAndMessageInSelfConversation_whenNeedToRemoveAndConversationIsNotLeftYet_thenContentCleared() = runTest {
+    fun givenSelfSenderAndNeedToRemoveLocally_whenMessageInSelfConversation_thenConversationDeleted() = runTest {
         // given
         val (arrangement, handler) = Arrangement()
             .arrange {
                 withMessageSentInSelfConversation(true)
-                withGetConversationMembers(listOf(TestUser.USER_ID))
-            }
-
-        // when
-        handler.handle(
-            message = OWN_MESSAGE,
-            messageContent = MessageContent.Cleared(
-                conversationId = CONVERSATION_ID,
-                time = Instant.DISTANT_PAST,
-                needToRemoveLocally = true
-            ),
-            transactionContext = arrangement.transactionContext
-        )
-
-        // then
-        coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
-        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.conversationRepository.addConversationToDeleteQueue(any()) }.wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenSelfSenderAndMessageInSelfConversation_whenNeedToRemoveAndLeftConversation_thenContentAndConversationRemoved() = runTest {
-        // given
-        val (arrangement, handler) = Arrangement()
-            .arrange {
-                withMessageSentInSelfConversation(true)
-                withGetConversationMembers(listOf())
             }
 
         // when
@@ -197,7 +170,6 @@ class ClearConversationContentHandlerTest {
         // then
         coVerify { arrangement.deleteConversation(any(), any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.conversationRepository.addConversationToDeleteQueue(any()) }.wasNotInvoked()
     }
 
     @Test
