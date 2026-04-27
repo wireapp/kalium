@@ -772,4 +772,14 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun getCellGroupConversations(): List<ConversationEntity> = withContext(readDispatcher.value) {
         conversationQueries.selectCellGroupConversations(conversationMapper::toConversationEntity).executeAsList()
     }
+
+    override suspend fun getCellGroupConversationsPaged(limit: Int, offset: Int, query: String): List<ConversationEntity> =
+        withContext(readDispatcher.value) {
+            conversationQueries.selectCellGroupConversationsPaged(
+                limit = limit.toLong(),
+                offset = offset.toLong(),
+                query = query,
+                mapper = conversationMapper::toConversationEntity
+            ).executeAsList()
+        }
 }
