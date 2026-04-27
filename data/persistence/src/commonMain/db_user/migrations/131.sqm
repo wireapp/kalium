@@ -1,0 +1,1 @@
+DELETE FROM Metadata WHERE key = 'conversations_to_delete';
