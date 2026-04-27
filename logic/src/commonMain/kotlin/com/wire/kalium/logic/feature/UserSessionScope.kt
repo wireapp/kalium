@@ -924,7 +924,6 @@ public class UserSessionScope internal constructor(
             userStorage.database.clientDAO,
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO,
-            userStorage.database.metadataDAO,
         )
 
     private val conversationMetaDataRepository: ConversationMetaDataRepository
@@ -1918,7 +1917,7 @@ public class UserSessionScope internal constructor(
             updateConversationClientsForCurrentCall = updateConversationClientsForCurrentCall,
             legalHoldHandler = legalHoldHandler,
             selfTeamIdProvider = selfTeamId,
-            deleteConversation = deleteConversationUseCase,
+            mlsConversationRepository = mlsConversationRepository,
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler

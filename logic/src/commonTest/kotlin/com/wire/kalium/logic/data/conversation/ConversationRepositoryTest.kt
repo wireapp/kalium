@@ -1184,7 +1184,6 @@ class ConversationRepositoryTest {
                 clientDao,
                 clientApi,
                 conversationMetaDataDAO,
-                metadataDAO
             )
 
         suspend fun withSelfUserFlow(selfUserFlow: Flow<SelfUser>) = apply {

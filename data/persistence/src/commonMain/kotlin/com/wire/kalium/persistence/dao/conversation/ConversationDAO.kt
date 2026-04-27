@@ -187,6 +187,7 @@ interface ConversationDAO {
     suspend fun updateReadDatesAndGetHasUnreadEvents(conversationDates: Map<QualifiedIDEntity, Instant>): Map<QualifiedIDEntity, Boolean>
     suspend fun getMLSConversationsByDomain(domain: String): List<ConversationEntity>
     suspend fun getCellGroupConversations(): List<ConversationEntity>
+    suspend fun getCellGroupConversationsPaged(limit: Int, offset: Int, query: String = ""): List<ConversationEntity>
 }
 
 data class NameAndHandleEntity(
