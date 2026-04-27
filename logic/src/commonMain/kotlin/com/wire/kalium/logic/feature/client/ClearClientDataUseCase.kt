@@ -52,10 +52,10 @@ internal class ClearClientDataUseCaseImpl internal constructor(
         withContext(dispatchers.io) {
             clearCrypto()
                 .onSuccess {
-                    kaliumLogger.e("Did not clear crypto storage")
+                    kaliumLogger.d("Crypto storage cleared successfully")
                 }
                 .onFailure {
-                    kaliumLogger.e("Error clearing crypto storage: $it")
+                    kaliumLogger.e("Did not clear crypto storage: $it")
                 }
         }
     }

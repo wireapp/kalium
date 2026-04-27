@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -63,24 +62,8 @@ internal class ClearConversationContentHandlerImpl(
         clearConversation(messageContent.conversationId)
 
         if (messageContent.needToRemoveLocally && isSelfSender) {
-            tryToRemoveConversation(transactionContext, messageContent.conversationId)
+            deleteConversation(transactionContext, messageContent.conversationId)
         }
-    }
-
-    private suspend fun tryToRemoveConversation(
-        transactionContext: CryptoTransactionContext,
-        conversationId: ConversationId
-    ) {
-        conversationRepository.getConversationMembers(conversationId).fold({ false }, { it.contains(selfUserId) })
-            .let { isMember ->
-                if (isMember) {
-                    // Sometimes MessageContent.Cleared event may come before User Left conversation event.
-                    // In that case we couldn't delete it and should wait for user leave and delete after that.
-                    conversationRepository.addConversationToDeleteQueue(conversationId)
-                } else {
-                    deleteConversation(transactionContext, conversationId)
-                }
-            }
     }
 
     private suspend fun clearConversation(conversationId: ConversationId) {

@@ -924,7 +924,6 @@ public class UserSessionScope internal constructor(
             userStorage.database.clientDAO,
             authenticatedNetworkContainer.clientApi,
             userStorage.database.conversationMetaDataDAO,
-            userStorage.database.metadataDAO,
         )
 
     private val conversationMetaDataRepository: ConversationMetaDataRepository
@@ -942,6 +941,7 @@ public class UserSessionScope internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository
         get() = ConversationGroupRepositoryImpl(
             mlsConversationRepository,
+            joinExistingMLSConversationUseCase,
             localEventRepository,
             conversationMessageTimerEventHandler,
             userStorage.database.conversationDAO,
@@ -1906,8 +1906,7 @@ public class UserSessionScope internal constructor(
             legalHoldHandler = legalHoldHandler,
             newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator,
             selfUserId = userId,
-            fetchConversation = fetchConversationUseCase,
-            joinExistingMLSConversation = joinExistingMLSConversationUseCase,
+            fetchConversationUseCase
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
@@ -1918,7 +1917,7 @@ public class UserSessionScope internal constructor(
             updateConversationClientsForCurrentCall = updateConversationClientsForCurrentCall,
             legalHoldHandler = legalHoldHandler,
             selfTeamIdProvider = selfTeamId,
-            deleteConversation = deleteConversationUseCase,
+            mlsConversationRepository = mlsConversationRepository,
             selfUserId = userId
         )
     private val memberChangeHandler: MemberChangeEventHandler
@@ -2716,9 +2715,7 @@ public class UserSessionScope internal constructor(
     public val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
         get() = FetchConversationMLSVerificationStatusUseCaseImpl(
             conversationRepository,
-            mlsConversationRepository,
-            fetchMLSVerificationStatusUseCase,
-            cryptoTransactionProvider
+            fetchMLSVerificationStatusUseCase
         )
 
     public val kaliumFileSystem: KaliumFileSystem by lazy {
