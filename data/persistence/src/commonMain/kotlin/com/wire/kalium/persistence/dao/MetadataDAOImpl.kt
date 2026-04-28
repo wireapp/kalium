@@ -26,12 +26,15 @@ import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
@@ -91,6 +94,8 @@ class MetadataDAOImpl internal constructor(
 
     override fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> {
         // TODO: Cache
+        val sharingJob = SupervisorJob(databaseScope.coroutineContext[Job])
+        val sharingScope = CoroutineScope(databaseScope.coroutineContext + sharingJob)
         return metadataQueries.selectValueByKey(key)
             .asFlow()
             .mapToOneOrNull()
@@ -100,6 +105,11 @@ class MetadataDAOImpl internal constructor(
                 }
             }
             .distinctUntilChanged()
-            .shareIn(databaseScope, SharingStarted.Lazily, 1)
+            .onCompletion { sharingJob.cancel() }
+            .shareIn(sharingScope, SharingStarted.WhileSubscribed(SHARING_TIMEOUT_MS), 1)
+    }
+
+    companion object {
+        private const val SHARING_TIMEOUT_MS = 5_000L
     }
 }
