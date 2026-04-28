@@ -235,7 +235,7 @@ internal interface ConversationRepository {
     )
     suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Boolean>
 
-    suspend fun markConversationAsDeletedLocally(conversationId: ConversationId): Either<CoreFailure, Boolean>
+    suspend fun setConversationDeletedLocally(conversationId: ConversationId, deletedLocally: Boolean): Either<CoreFailure, Unit>
 
     suspend fun updateChannelAddPermissionLocally(
         conversationId: ConversationId,
@@ -794,8 +794,8 @@ internal class ConversationDataSource internal constructor(
         conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
     }
 
-    override suspend fun markConversationAsDeletedLocally(conversationId: ConversationId) = wrapStorageRequest {
-        conversationDAO.markConversationAsDeletedLocally(conversationId.toDao())
+    override suspend fun setConversationDeletedLocally(conversationId: ConversationId, deletedLocally: Boolean) = wrapStorageRequest {
+        conversationDAO.setConversationDeletedLocally(conversationId.toDao(), deletedLocally)
     }
 
     override suspend fun clearContent(conversationId: ConversationId): Either<StorageFailure, Unit> =
