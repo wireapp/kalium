@@ -59,7 +59,6 @@ class ConversationRepositoryIntegrationTest {
         clientDAO = database.builder.clientDAO,
         clientApi = clientApi,
         conversationMetaDataDAO = database.builder.conversationMetaDataDAO,
-        metadataDAO = database.builder.metadataDAO,
     )
 
     @Test

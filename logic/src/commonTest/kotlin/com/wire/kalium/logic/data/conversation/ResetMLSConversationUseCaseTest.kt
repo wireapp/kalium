@@ -509,7 +509,7 @@ class ResetMLSConversationUseCaseTest {
 
             everySuspend {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-            } returns MLSAdditionResult(emptySet(), emptySet()).right()
+            } returns MLSAdditionResult(emptySet(), emptySet(), emptySet()).right()
 
             everySuspend {
                 fetchConversationUseCase(any(), any(), reason = eq(ConversationSyncReason.ConversationReset))

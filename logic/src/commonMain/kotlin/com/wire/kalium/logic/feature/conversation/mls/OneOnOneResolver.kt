@@ -58,7 +58,8 @@ import kotlin.time.Duration
 internal interface OneOnOneResolver {
     suspend fun resolveAllOneOnOneConversations(
         transactionContext: CryptoTransactionContext,
-        synchronizeUsers: Boolean = false
+        synchronizeUsers: Boolean = false,
+        allowJoinByExternalCommit: Boolean = true,
     ): Either<CoreFailure, Unit>
 
     suspend fun scheduleResolveOneOnOneConversationWithUserId(
@@ -116,13 +117,14 @@ internal class OneOnOneResolverImpl(
 
     override suspend fun resolveAllOneOnOneConversations(
         transactionContext: CryptoTransactionContext,
-        synchronizeUsers: Boolean
+        synchronizeUsers: Boolean,
+        allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, Unit> = coroutineScope {
         fetchAllOtherUsersIfNeeded(synchronizeUsers).flatMap {
             val usersWithOneOnOne = userRepository.getUsersWithOneOnOneConversation()
             kaliumLogger.i("Resolving one-on-one protocol for ${usersWithOneOnOne.size} user(s)")
             usersWithOneOnOne.chunked(maxConcurrentResolutions).foldToEitherWhileRight(Unit) { batch, _ ->
-                resolveBatch(transactionContext, batch)
+                resolveBatch(transactionContext, batch, allowJoinByExternalCommit)
             }
         }
     }
@@ -130,9 +132,10 @@ internal class OneOnOneResolverImpl(
     private suspend fun resolveBatch(
         transactionContext: CryptoTransactionContext,
         batch: List<OtherUser>,
+        allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, Unit> = coroutineScope {
         batch.map { user ->
-            async { resolveWithRetry(transactionContext, user) }
+            async { resolveWithRetry(transactionContext, user, allowJoinByExternalCommit = allowJoinByExternalCommit) }
         }
     }.foldToEitherWhileRight(Unit) { item, _ ->
         item.await()
@@ -141,12 +144,14 @@ internal class OneOnOneResolverImpl(
     private suspend fun resolveWithRetry(
         transactionContext: CryptoTransactionContext,
         user: OtherUser,
+        allowJoinByExternalCommit: Boolean,
         attempt: Int = 0,
     ): Either<CoreFailure, Unit> {
-        return resolveOneOnOneConversationWithUser(
+        return resolveOneOnOneConversationWithUserInternal(
             transactionContext = transactionContext,
             user = user,
-            invalidateCurrentKnownProtocols = false
+            invalidateCurrentKnownProtocols = false,
+            allowJoinByExternalCommit = allowJoinByExternalCommit
         ).map { }.flatMapLeft { failure ->
             if (failure.isThrottleFailure() && attempt < maxThrottleRetries) {
                 val nextAttempt = attempt + 1
@@ -156,7 +161,12 @@ internal class OneOnOneResolverImpl(
                         "retrying ($nextAttempt/$maxThrottleRetries) in ${delayMs}ms."
                 )
                 delay(delayMs)
-                resolveWithRetry(transactionContext, user, nextAttempt)
+                resolveWithRetry(
+                    transactionContext = transactionContext,
+                    user = user,
+                    allowJoinByExternalCommit = allowJoinByExternalCommit,
+                    attempt = nextAttempt
+                )
             } else {
                 handleBatchEntryFailure(user, failure)
             }
@@ -264,6 +274,19 @@ internal class OneOnOneResolverImpl(
         transactionContext: CryptoTransactionContext,
         user: OtherUser,
         invalidateCurrentKnownProtocols: Boolean,
+    ): Either<CoreFailure, ConversationId> =
+        resolveOneOnOneConversationWithUserInternal(
+            transactionContext = transactionContext,
+            user = user,
+            invalidateCurrentKnownProtocols = invalidateCurrentKnownProtocols,
+            allowJoinByExternalCommit = true
+        )
+
+    private suspend fun resolveOneOnOneConversationWithUserInternal(
+        transactionContext: CryptoTransactionContext,
+        user: OtherUser,
+        invalidateCurrentKnownProtocols: Boolean,
+        allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, ConversationId> {
         kaliumLogger.i("Resolving one-on-one protocol for ${user.id.toLogString()}")
         if (invalidateCurrentKnownProtocols) {
@@ -279,7 +302,11 @@ internal class OneOnOneResolverImpl(
         }, { supportedProtocol ->
             when (supportedProtocol) {
                 SupportedProtocol.PROTEUS -> oneOnOneMigrator.migrateToProteus(user)
-                SupportedProtocol.MLS -> oneOnOneMigrator.migrateToMLS(transactionContext, user)
+                SupportedProtocol.MLS -> oneOnOneMigrator.migrateToMLS(
+                    transactionContext = transactionContext,
+                    user = user,
+                    allowJoinByExternalCommit = allowJoinByExternalCommit
+                )
             }
         })
     }

@@ -52,7 +52,11 @@ internal interface OneOnOneMigrator {
     /**
      * Perform migration of Proteus to MLS keeping history and marking the new conversation as active.
      */
-    suspend fun migrateToMLS(transactionContext: CryptoTransactionContext, user: OtherUser): Either<CoreFailure, ConversationId>
+    suspend fun migrateToMLS(
+        transactionContext: CryptoTransactionContext,
+        user: OtherUser,
+        allowJoinByExternalCommit: Boolean = true
+    ): Either<CoreFailure, ConversationId>
 }
 
 @Suppress("LongParameterList")
@@ -89,8 +93,16 @@ internal class OneOnOneMigratorImpl(
             Either.Right(conversationId)
         }
 
-    override suspend fun migrateToMLS(transactionContext: CryptoTransactionContext, user: OtherUser): Either<CoreFailure, ConversationId> {
-        return getResolvedMLSOneOnOne(transactionContext, user.id)
+    override suspend fun migrateToMLS(
+        transactionContext: CryptoTransactionContext,
+        user: OtherUser,
+        allowJoinByExternalCommit: Boolean
+    ): Either<CoreFailure, ConversationId> {
+        return getResolvedMLSOneOnOne(
+            transactionContext = transactionContext,
+            userId = user.id,
+            allowJoinByExternalCommit = allowJoinByExternalCommit
+        )
             .flatMap { mlsConversation ->
                 if (user.activeOneOnOneConversationId == mlsConversation) {
                     kaliumLogger.d(

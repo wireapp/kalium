@@ -63,10 +63,7 @@ internal class ObserveIsAppsAllowedForUsageUseCaseImpl(
         val isMixed = supportedProtocols.containsAll(listOf(SupportedProtocol.MLS, SupportedProtocol.PROTEUS))
 
         return when {
-            isMixed && isMLSDefault && appsEnabled ->
-                AppsAllowedResult.Enabled(AppsAllowedProtocol.MIXED(SupportedProtocol.MLS))
-
-            isMixed && isProteusDefault ->
+            isMixed ->
                 AppsAllowedResult.Enabled(
                     AppsAllowedProtocol.MIXED(if (appsEnabled) SupportedProtocol.MLS else SupportedProtocol.PROTEUS)
                 )

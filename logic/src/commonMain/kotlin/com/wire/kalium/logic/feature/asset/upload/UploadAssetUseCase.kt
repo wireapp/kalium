@@ -79,10 +79,6 @@ internal class UploadAssetUseCaseImpl(
         ).onFailure {
             updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
             messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, message.conversationId, message.id, TYPE)
-        }.onSuccess {
-            updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
-            // We delete asset added temporarily that was used to show the loading
-            assetDataSource.deleteAssetLocally(metadata.assetId.key)
         }.flatMap { (assetId, sha256) ->
             // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload,
             // we also update the generated audio normalized loudness if applicable,
@@ -104,6 +100,9 @@ internal class UploadAssetUseCaseImpl(
                         "There was an error when trying to persist the updated asset message with the information returned by the backend"
                     )
                 }.onSuccess {
+                    updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
+                    // Keep the temporary asset around until the message points at the uploaded asset id.
+                    assetDataSource.deleteAssetLocally(metadata.assetId.key)
                     // Finally we try to send the Asset Message to the recipients of the given conversation
                     messageSender.sendMessage(updatedMessage).onFailure {
                         messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, message.conversationId, message.id, TYPE)

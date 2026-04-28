@@ -29,6 +29,8 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import okio.blackholeSink
 import okio.buffer
 import okio.use
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Creates a crypto state backup and uploads it to the remote endpoint.
@@ -45,41 +47,44 @@ internal class BackupAndUploadCryptoStateUseCaseImpl(
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository,
     private val kaliumFileSystem: KaliumFileSystem,
     private val currentClientIdProvider: CurrentClientIdProvider,
+    private val executionMutex: Mutex = Mutex(),
 ) : BackupAndUploadCryptoStateUseCase {
     override suspend fun invoke(): BackupAndUploadCryptoStateResult =
-        when (val backupResult = backupCryptoDBUseCase.invoke()) {
-            is BackupCryptoDBResult.Success -> {
-                val clientId = when (val clientResult = currentClientIdProvider.invoke()) {
-                    is Either.Left -> {
-                        kaliumLogger.e("Failed to read current client id")
-                        return BackupAndUploadCryptoStateResult.Failure(clientResult.value)
+        executionMutex.withLock {
+            when (val backupResult = backupCryptoDBUseCase.invoke()) {
+                is BackupCryptoDBResult.Success -> {
+                    val clientId = when (val clientResult = currentClientIdProvider.invoke()) {
+                        is Either.Left -> {
+                            kaliumLogger.e("Failed to read current client id")
+                            return@withLock BackupAndUploadCryptoStateResult.Failure(clientResult.value)
+                        }
+
+                        is Either.Right -> clientResult.value
                     }
+                    val backupSize = kaliumFileSystem.source(backupResult.backupFilePath).use { source ->
+                        source.buffer().readAll(blackholeSink())
+                    }
+                    val uploadResult = cryptoStateBackupRemoteRepository.uploadCryptoState(
+                        clientId = clientId.value,
+                        sourceProvider = { kaliumFileSystem.source(backupResult.backupFilePath) },
+                        size = backupSize
+                    ).mapLeft { error ->
+                        kaliumLogger.e("Failed to upload crypto state backup")
+                        error
+                    }
+                    when (uploadResult) {
+                        is Either.Left ->
+                            BackupAndUploadCryptoStateResult.Failure(uploadResult.value)
 
-                    is Either.Right -> clientResult.value
+                        is Either.Right ->
+                            BackupAndUploadCryptoStateResult.Success
+                    }
                 }
-                val backupSize = kaliumFileSystem.source(backupResult.backupFilePath).use { source ->
-                    source.buffer().readAll(blackholeSink())
-                }
-                val uploadResult = cryptoStateBackupRemoteRepository.uploadCryptoState(
-                    clientId = clientId.value,
-                    sourceProvider = { kaliumFileSystem.source(backupResult.backupFilePath) },
-                    size = backupSize
-                ).mapLeft { error ->
-                    kaliumLogger.e("Failed to upload crypto state backup")
-                    error
-                }
-                when (uploadResult) {
-                    is Either.Left ->
-                        BackupAndUploadCryptoStateResult.Failure(uploadResult.value)
 
-                    is Either.Right ->
-                        BackupAndUploadCryptoStateResult.Success
+                is BackupCryptoDBResult.Failure -> {
+                    kaliumLogger.e("Failed to create crypto state backup ${backupResult.error}")
+                    BackupAndUploadCryptoStateResult.Failure(backupResult.error)
                 }
-            }
-
-            is BackupCryptoDBResult.Failure -> {
-                kaliumLogger.e("Failed to create crypto state backup ${backupResult.error}")
-                BackupAndUploadCryptoStateResult.Failure(backupResult.error)
             }
         }
 }

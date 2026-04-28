@@ -1,0 +1,9 @@
+CREATE TABLE PendingActions (
+    action_type TEXT AS PendingActionType NOT NULL,
+    action_key TEXT NOT NULL,
+    payload TEXT,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (action_type, action_key)
+);
+
+CREATE INDEX PendingActions_type_created_at_idx ON PendingActions(action_type, created_at);

@@ -18,14 +18,20 @@
 
 package com.wire.kalium.nomaddevice
 
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 /**
  * Nomad implementation of [CryptoStateChangeHookNotifier] that debounces calls to [backupForUser] when crypto state changes for a user.
@@ -39,18 +45,126 @@ internal class NomadCryptoStateChangeHookNotifier(
 ) : CryptoStateChangeHookNotifier {
 
     private val mutex = Mutex()
-    private val debounceJobs = mutableMapOf<UserId, Job>()
+    private val userStates = mutableMapOf<UserId, UserBackupState>()
 
     override suspend fun onCryptoStateChanged(userId: UserId) {
         mutex.withLock {
-            debounceJobs[userId]?.cancel()
-            debounceJobs[userId] = scope.launch {
-                delay(debounceMs)
+            val state = userStates.getOrPut(userId) { UserBackupState() }
+            state.hasPendingChange = true
+            if (state.isRunning) return
+
+            state.workerJob?.cancel()
+            state.workerJob = launchDebouncedWorker(userId)
+        }
+    }
+
+    private fun launchDebouncedWorker(userId: UserId): Job = scope.launch {
+        try {
+            delay(debounceMs)
+            drainPendingBackups(userId, coroutineContext.job)
+        } catch (exception: CancellationException) {
+            // Scope is shutting down (e.g. logout): flush any pending change before stopping.
+            if (!scope.isActive) {
+                withContext(NonCancellable) { flushIfPending(userId) }
+            }
+            throw exception
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun flushIfPending(userId: UserId) {
+        val shouldBackup = mutex.withLock {
+            val state = userStates[userId] ?: return
+
+            val pending = state.hasPendingChange
+            if (!pending) {
+                userStates.remove(userId)
+                return
+            }
+
+            userStates.remove(userId)
+            pending
+        }
+        if (shouldBackup) {
+            try {
                 repository.backupAndUpload(userId)
-                mutex.withLock {
-                    debounceJobs.remove(userId)
+            } catch (exception: Exception) {
+                kaliumLogger.w("Multi-user crypto state change hook execution failed", exception)
+            }
+        }
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun drainPendingBackups(userId: UserId, workerJob: Job) {
+        var shouldContinue = true
+        while (shouldContinue) {
+            val shouldRun = mutex.withLock {
+                preparePendingBackupRun(userId, workerJob)
+            }
+
+            if (shouldRun) {
+                try {
+                    withContext(NonCancellable) {
+                        repository.backupAndUpload(userId)
+                    }
+                } catch (exception: Exception) {
+                    kaliumLogger.w("Multi-user crypto state change hook execution failed", exception)
+                }
+            }
+
+            shouldContinue = shouldRun && mutex.withLock {
+                finishPendingBackupRun(userId, workerJob)
+            }
+        }
+    }
+
+    private fun preparePendingBackupRun(userId: UserId, workerJob: Job): Boolean {
+        val state = userStates[userId]
+        return when {
+            state == null -> false
+            !state.isOwnedBy(workerJob) -> false
+            !state.hasPendingChange -> {
+                userStates.remove(userId)
+                false
+            }
+            else -> {
+                state.hasPendingChange = false
+                state.isRunning = true
+                true
+            }
+        }
+    }
+
+    private fun finishPendingBackupRun(userId: UserId, workerJob: Job): Boolean {
+        val state = userStates[userId]
+        return when {
+            state == null -> false
+            !state.isOwnedBy(workerJob) -> false
+            else -> {
+                state.isRunning = false
+                if (state.hasPendingChange) {
+                    true
+                } else {
+                    cleanupUserStateIfIdle(userId, workerJob)
+                    false
                 }
             }
         }
+    }
+
+    private fun cleanupUserStateIfIdle(userId: UserId, workerJob: Job) {
+        if (userStates[userId]?.canBeRemovedFor(workerJob) == true) {
+            userStates.remove(userId)
+        }
+    }
+
+    private class UserBackupState(
+        var workerJob: Job? = null,
+        var isRunning: Boolean = false,
+        var hasPendingChange: Boolean = false,
+    ) {
+        fun isOwnedBy(workerJob: Job): Boolean = this.workerJob == workerJob
+
+        fun canBeRemovedFor(workerJob: Job): Boolean = isOwnedBy(workerJob) && !isRunning && !hasPendingChange
     }
 }

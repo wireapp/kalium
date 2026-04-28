@@ -329,7 +329,7 @@ class MLSMigratorTest {
                 ErrorResponse(409, "", "mls-stale-message")
             )
             val MEMBERS = listOf(TestUser.USER_ID)
-            val SUCCESSFUL_ADDITION_RESULT = MLSAdditionResult(MEMBERS.toSet(), emptySet())
+            val SUCCESSFUL_ADDITION_RESULT = MLSAdditionResult(MEMBERS.toSet(), emptySet(), emptySet())
             val MIXED_PROTOCOL_INFO = Conversation.ProtocolInfo.Mixed(
                 TestConversation.GROUP_ID,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,

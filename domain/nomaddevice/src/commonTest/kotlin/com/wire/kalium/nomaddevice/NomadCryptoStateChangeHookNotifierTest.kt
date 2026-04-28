@@ -19,6 +19,7 @@
 package com.wire.kalium.nomaddevice
 
 import com.wire.kalium.logic.data.user.UserId
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -105,6 +106,169 @@ class NomadCryptoStateChangeHookNotifierTest {
         scheduler.runCurrent()
 
         assertEquals(listOf(USER_ID), calls)
+    }
+
+    @Test
+    fun givenBackupAlreadyRunning_whenNewSignalArrives_thenSecondExecutionRunsAfterFirstCompletes() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<UserId>()
+        val firstBackupStarted = CompletableDeferred<Unit>()
+        val allowFirstBackupToFinish = CompletableDeferred<Unit>()
+        val notifier = NomadCryptoStateChangeHookNotifier(
+            scope = scope,
+            repository = object : NomadCryptoStateBackupRepository {
+                override suspend fun backupAndUpload(userId: UserId) {
+                    calls += userId
+                    if (calls.size == 1) {
+                        firstBackupStarted.complete(Unit)
+                        allowFirstBackupToFinish.await()
+                    }
+                }
+            },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+        firstBackupStarted.await()
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.runCurrent()
+
+        assertEquals(listOf(USER_ID), calls)
+
+        allowFirstBackupToFinish.complete(Unit)
+        scheduler.runCurrent()
+
+        assertEquals(listOf(USER_ID, USER_ID), calls)
+    }
+
+    @Test
+    fun givenBackupAlreadyRunning_whenMultipleSignalsArrive_thenQueuedSignalsCollapseIntoOneExecution() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<UserId>()
+        val firstBackupStarted = CompletableDeferred<Unit>()
+        val allowFirstBackupToFinish = CompletableDeferred<Unit>()
+        val notifier = NomadCryptoStateChangeHookNotifier(
+            scope = scope,
+            repository = object : NomadCryptoStateBackupRepository {
+                override suspend fun backupAndUpload(userId: UserId) {
+                    calls += userId
+                    if (calls.size == 1) {
+                        firstBackupStarted.complete(Unit)
+                        allowFirstBackupToFinish.await()
+                    }
+                }
+            },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+        firstBackupStarted.await()
+
+        notifier.onCryptoStateChanged(USER_ID)
+        notifier.onCryptoStateChanged(USER_ID)
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS * 3)
+        scheduler.runCurrent()
+
+        assertEquals(listOf(USER_ID), calls)
+
+        allowFirstBackupToFinish.complete(Unit)
+        scheduler.runCurrent()
+
+        assertEquals(listOf(USER_ID, USER_ID), calls)
+    }
+
+    @Test
+    fun givenMultiUserFactory_whenScopeCancelledDuringDebounce_thenPendingBackupIsFlushed() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<UserId>()
+        val notifier = createNomadCryptoStateChangeHookNotifier(
+            scope = scope,
+            backupForUser = { calls += it },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS / 2)
+        scope.cancel()
+        scheduler.runCurrent()
+
+        assertEquals(listOf(USER_ID), calls)
+    }
+
+    @Test
+    fun givenMultiUserFactory_whenBackupThrows_thenExceptionIsSwallowed() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val notifier = createNomadCryptoStateChangeHookNotifier(
+            scope = scope,
+            backupForUser = { throw IllegalStateException("boom") },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+    }
+
+    @Test
+    fun givenMultiUserFactory_whenBackupFails_thenNextTriggerRetriesBackup() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<UserId>()
+        var shouldFail = true
+        val notifier = createNomadCryptoStateChangeHookNotifier(
+            scope = scope,
+            backupForUser = {
+                if (shouldFail) throw IllegalStateException("boom")
+                calls += it
+            },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+        assertEquals(emptyList(), calls)
+
+        shouldFail = false
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+
+        assertEquals(listOf(USER_ID), calls)
+    }
+
+    @Test
+    fun givenBurstSignalsForManyUsers_whenDebounceCompletes_thenEachUserBackedUpOnce() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<UserId>()
+        val users = (1..25).map { UserId("user-$it", "domain") }
+        val notifier = createNomadCryptoStateChangeHookNotifier(
+            scope = scope,
+            backupForUser = { calls += it },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        repeat(20) {
+            users.forEach { userId ->
+                notifier.onCryptoStateChanged(userId)
+            }
+        }
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+
+        assertEquals(users.size, calls.size)
+        assertEquals(users.toSet(), calls.toSet())
     }
 
     @Test
@@ -214,6 +378,120 @@ class NomadCryptoStateChangeHookNotifierTest {
         scheduler.runCurrent()
 
         assertEquals(listOf("backup"), calls)
+    }
+
+    @Test
+    fun givenUserScopedFactory_whenBackupRunningAndNewSignalArrives_thenSecondExecutionRunsAfterFirstCompletes() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<String>()
+        val firstBackupStarted = CompletableDeferred<Unit>()
+        val allowFirstBackupToFinish = CompletableDeferred<Unit>()
+        val notifier = createUserScopedNomadCryptoStateChangeHookNotifier(
+            selfUserId = USER_ID,
+            scope = scope,
+            backup = {
+                calls += "backup"
+                if (calls.size == 1) {
+                    firstBackupStarted.complete(Unit)
+                    allowFirstBackupToFinish.await()
+                }
+            },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+        firstBackupStarted.await()
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.runCurrent()
+
+        assertEquals(listOf("backup"), calls)
+
+        allowFirstBackupToFinish.complete(Unit)
+        scheduler.runCurrent()
+
+        assertEquals(listOf("backup", "backup"), calls)
+    }
+
+    @Test
+    fun givenUserScopedFactory_whenLargeBurstArrivesDuringRunningBackup_thenSignalsCollapseIntoSingleFollowUpExecution() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<String>()
+        val firstBackupStarted = CompletableDeferred<Unit>()
+        val allowFirstBackupToFinish = CompletableDeferred<Unit>()
+        val notifier = createUserScopedNomadCryptoStateChangeHookNotifier(
+            selfUserId = USER_ID,
+            scope = scope,
+            backup = {
+                calls += "backup"
+                if (calls.size == 1) {
+                    firstBackupStarted.complete(Unit)
+                    allowFirstBackupToFinish.await()
+                }
+            },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+        firstBackupStarted.await()
+
+        repeat(100) {
+            notifier.onCryptoStateChanged(USER_ID)
+        }
+        scheduler.advanceTimeBy(DEBOUNCE_MS * 5)
+        scheduler.runCurrent()
+
+        assertEquals(listOf("backup"), calls)
+
+        allowFirstBackupToFinish.complete(Unit)
+        scheduler.runCurrent()
+
+        assertEquals(listOf("backup", "backup"), calls)
+    }
+
+    @Test
+    fun givenUserScopedFactory_whenMultipleSignalsArriveDuringRunningBackup_thenQueuedSignalsCollapseIntoOneExecution() = runTest {
+        val scheduler = TestCoroutineScheduler()
+        val scope = TestScope(scheduler)
+        val calls = mutableListOf<String>()
+        val firstBackupStarted = CompletableDeferred<Unit>()
+        val allowFirstBackupToFinish = CompletableDeferred<Unit>()
+        val notifier = createUserScopedNomadCryptoStateChangeHookNotifier(
+            selfUserId = USER_ID,
+            scope = scope,
+            backup = {
+                calls += "backup"
+                if (calls.size == 1) {
+                    firstBackupStarted.complete(Unit)
+                    allowFirstBackupToFinish.await()
+                }
+            },
+            debounceMs = DEBOUNCE_MS
+        )
+
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS + 1)
+        scheduler.runCurrent()
+        firstBackupStarted.await()
+
+        notifier.onCryptoStateChanged(USER_ID)
+        notifier.onCryptoStateChanged(USER_ID)
+        notifier.onCryptoStateChanged(USER_ID)
+        scheduler.advanceTimeBy(DEBOUNCE_MS * 3)
+        scheduler.runCurrent()
+
+        assertEquals(listOf("backup"), calls)
+
+        allowFirstBackupToFinish.complete(Unit)
+        scheduler.runCurrent()
+
+        assertEquals(listOf("backup", "backup"), calls)
     }
 
     private class FakeRepository(
