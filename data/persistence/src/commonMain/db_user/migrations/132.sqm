@@ -7,3 +7,22 @@ CREATE TABLE PendingActions (
 );
 
 CREATE INDEX PendingActions_type_created_at_idx ON PendingActions(action_type, created_at);
+
+INSERT INTO PendingActions(action_type, action_key, payload, created_at)
+SELECT 'join_mls_group_conversation', qualified_id, NULL, last_modified_date
+FROM Conversation
+WHERE type = 'GROUP'
+  AND protocol IN ('MLS', 'MIXED')
+  AND mls_group_state = 'PENDING_JOIN'
+  AND deleted_locally = 0;
+
+INSERT INTO PendingActions(action_type, action_key, payload, created_at)
+SELECT 'resolve_one_on_one_conversation', Member.user, NULL, MIN(Conversation.last_modified_date)
+FROM Conversation
+JOIN Member ON Member.conversation = Conversation.qualified_id
+WHERE Conversation.type = 'ONE_ON_ONE'
+  AND Conversation.protocol IN ('MLS', 'MIXED')
+  AND Conversation.mls_group_state = 'PENDING_JOIN'
+  AND Conversation.deleted_locally = 0
+  AND Member.user != (SELECT id FROM SelfUser)
+GROUP BY Member.user;
