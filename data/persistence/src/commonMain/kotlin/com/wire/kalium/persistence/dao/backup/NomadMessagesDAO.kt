@@ -230,7 +230,8 @@ private class NomadUnreadEventWriter(
         lastReadDatesByConversation: Map<QualifiedIDEntity, Instant>,
     ) {
         val lastRead = lastReadDatesByConversation[message.conversationId]
-        if (lastRead == null || lastRead == Instant.DISTANT_PAST || lastRead <= Instant.UNIX_FIRST_DATE) {
+        val olderMessageDate = lastRead == null || lastRead <= Instant.UNIX_FIRST_DATE || message.date > lastRead
+        if (message.payload.senderUserId == selfUserId || olderMessageDate) {
             return
         }
 
