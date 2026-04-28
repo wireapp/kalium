@@ -307,6 +307,12 @@ public class DebugScope internal constructor(
         )
     }
 
+    public val getConversationCryptoStats: GetConversationCryptoStatsUseCase
+        get() = GetConversationCryptoStatsUseCaseImpl(
+            conversationRepository = conversationRepository,
+            transactionProvider = transactionProvider
+        )
+
     /**
      * Refills MLS key packages on the backend.
      * This is a debug utility that wraps the internal crypto transaction logic.
