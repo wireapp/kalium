@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.db.WriteDispatcher
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
@@ -228,8 +229,8 @@ private class NomadUnreadEventWriter(
         message: NomadMessageToInsert,
         lastReadDatesByConversation: Map<QualifiedIDEntity, Instant>,
     ) {
-        val lastRead = lastReadDatesByConversation[message.conversationId] ?: Instant.DISTANT_PAST
-        if (message.payload.senderUserId == selfUserId || message.date <= lastRead) {
+        val lastRead = lastReadDatesByConversation[message.conversationId]
+        if (lastRead == null || lastRead == Instant.DISTANT_PAST || lastRead <= Instant.UNIX_FIRST_DATE) {
             return
         }
 
