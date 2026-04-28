@@ -263,6 +263,17 @@ tasks.register("aggregateTestResults") {
     }
 }
 
+tasks.register<org.gradle.api.tasks.testing.TestReport>("aggregateIosSimulatorArm64TestReport") {
+    description = "Aggregates iOS Simulator ARM64 test binary results into a single HTML report."
+
+    destinationDirectory.set(layout.buildDirectory.dir("reports/tests/iosSimulatorArm64Test"))
+    testResults.from(
+        subprojects.map { subproject ->
+            subproject.layout.buildDirectory.dir("test-results/iosSimulatorArm64Test/binary")
+        }
+    )
+}
+
 tasks.wrapper {
     distributionType = Wrapper.DistributionType.ALL
 }
