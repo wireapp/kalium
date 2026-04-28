@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
+import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingMLSGroupJoinsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCase
 import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
@@ -64,6 +65,7 @@ internal class ForegroundActionsUseCaseTest {
             mlsClientManager()
             mlsMigrationManager()
             keyingMaterialsManager()
+            recoverPendingMLSGroupJoinsUseCase()
             recoverPendingOneOnOneResolutionsUseCase()
         }.wasInvoked(exactly = times)
     }
@@ -76,6 +78,7 @@ internal class ForegroundActionsUseCaseTest {
         val mlsClientManager = mock(MLSClientManager::class)
         val mlsMigrationManager = mock(MLSMigrationManager::class)
         val keyingMaterialsManager = mock(KeyingMaterialsManager::class)
+        val recoverPendingMLSGroupJoinsUseCase = mock(RecoverPendingMLSGroupJoinsUseCase::class)
         val recoverPendingOneOnOneResolutionsUseCase = mock(RecoverPendingOneOnOneResolutionsUseCase::class)
 
         suspend fun arrange(): Pair<Arrangement, ForegroundActionsUseCase> = run {
@@ -89,6 +92,7 @@ internal class ForegroundActionsUseCaseTest {
                 mlsClientManager = mlsClientManager,
                 mlsMigrationManager = mlsMigrationManager,
                 keyingMaterialsManager = keyingMaterialsManager,
+                recoverPendingMLSGroupJoinsUseCase = recoverPendingMLSGroupJoinsUseCase,
                 recoverPendingOneOnOneResolutionsUseCase = recoverPendingOneOnOneResolutionsUseCase,
                 dispatchers = dispatchers,
             )
@@ -102,6 +106,7 @@ internal class ForegroundActionsUseCaseTest {
             coEvery { mlsClientManager() }.returns(Unit)
             coEvery { mlsMigrationManager() }.returns(Unit)
             coEvery { keyingMaterialsManager() }.returns(Unit)
+            coEvery { recoverPendingMLSGroupJoinsUseCase() }.returns(Unit)
             coEvery { recoverPendingOneOnOneResolutionsUseCase() }.returns(Unit)
         }
     }

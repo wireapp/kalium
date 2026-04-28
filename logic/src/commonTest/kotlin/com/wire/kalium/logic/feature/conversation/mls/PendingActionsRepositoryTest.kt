@@ -17,9 +17,11 @@
  */
 package com.wire.kalium.logic.feature.conversation.mls
 
+import com.wire.kalium.logic.data.conversation.mls.MLSGroupJoinPendingAction
 import com.wire.kalium.logic.data.conversation.mls.OneOnOneResolutionPendingAction
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.conversation.mls.PersistentPendingActionsRepository
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
@@ -104,6 +106,64 @@ class PendingActionsRepositoryTest {
         }.wasNotInvoked()
     }
 
+    @Test
+    fun givenConversationId_whenEnqueuePendingMLSGroupJoin_thenUpsertIsCalledWithGroupJoinActionData() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+
+        repository.enqueuePendingMLSGroupJoin(TestConversation.ID)
+
+        coVerify {
+            arrangement.pendingActionDAO.upsert(
+                actionType = eq(MLSGroupJoinPendingAction.actionType),
+                actionKey = eq(MLSGroupJoinPendingAction.actionKey(TestConversation.ID)),
+                payload = eq(MLSGroupJoinPendingAction.payload(TestConversation.ID)),
+                createdAt = any()
+            )
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenPendingRows_whenGettingPendingMLSGroupJoins_thenReturnsConversationsParsedFromActionKey() = runTest {
+        val conversation1 = TestConversation.ID
+        val conversation2 = TestConversation.id(2)
+        val (arrangement, repository) = Arrangement()
+            .withPendingGroupRows(
+                PendingActionEntity(MLSGroupJoinPendingAction.actionKey(conversation1), "not-json", 1L),
+                PendingActionEntity("invalid-action-key", MLSGroupJoinPendingAction.payload(conversation1), 2L),
+                PendingActionEntity(MLSGroupJoinPendingAction.actionKey(conversation2), null, 3L),
+            )
+            .arrange()
+
+        val result = repository.getPendingMLSGroupJoins()
+
+        assertEquals(listOf(conversation1, conversation2), result)
+        coVerify {
+            arrangement.pendingActionDAO.getByActionType(eq(MLSGroupJoinPendingAction.actionType))
+        }.wasInvoked(once)
+        coVerify { arrangement.pendingActionDAO.deleteByActionTypeAndKeys(any(), any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenPendingConversationIds_whenAcknowledgingGroupJoins_thenDeletesByActionTypeAndMappedDistinctKeys() = runTest {
+        val (arrangement, repository) = Arrangement().arrange()
+        val conversation1 = TestConversation.ID
+        val conversation2 = TestConversation.id(2)
+
+        repository.acknowledgePendingMLSGroupJoins(listOf(conversation1, conversation1, conversation2))
+
+        coVerify {
+            arrangement.pendingActionDAO.deleteByActionTypeAndKeys(
+                actionType = eq(MLSGroupJoinPendingAction.actionType),
+                actionKeys = eq(
+                    listOf(
+                        MLSGroupJoinPendingAction.actionKey(conversation1),
+                        MLSGroupJoinPendingAction.actionKey(conversation2)
+                    )
+                )
+            )
+        }.wasInvoked(once)
+    }
+
     private class Arrangement {
         val pendingActionDAO = mock(PendingActionDAO::class)
         private val repository = PersistentPendingActionsRepository(pendingActionDAO)
@@ -111,6 +171,12 @@ class PendingActionsRepositoryTest {
         suspend fun withPendingRows(vararg rows: PendingActionEntity) = apply {
             coEvery {
                 pendingActionDAO.getByActionType(eq(OneOnOneResolutionPendingAction.actionType))
+            }.returns(rows.toList())
+        }
+
+        suspend fun withPendingGroupRows(vararg rows: PendingActionEntity) = apply {
+            coEvery {
+                pendingActionDAO.getByActionType(eq(MLSGroupJoinPendingAction.actionType))
             }.returns(rows.toList())
         }
 

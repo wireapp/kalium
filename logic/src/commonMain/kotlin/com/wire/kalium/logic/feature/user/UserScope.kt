@@ -65,6 +65,7 @@ import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
+import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingMLSGroupJoinsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCase
 import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCaseImpl
@@ -145,6 +146,7 @@ public class UserScope internal constructor(
     private val mlsClientManager: MLSClientManager,
     private val mlsMigrationManager: MLSMigrationManager,
     private val keyingMaterialsManager: KeyingMaterialsManager,
+    private val recoverPendingMLSGroupJoinsUseCase: RecoverPendingMLSGroupJoinsUseCase,
     private val recoverPendingOneOnOneResolutionsUseCase: RecoverPendingOneOnOneResolutionsUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val userCoroutineScope: CoroutineScope,
@@ -289,6 +291,7 @@ public class UserScope internal constructor(
             mlsClientManager = mlsClientManager,
             mlsMigrationManager = mlsMigrationManager,
             keyingMaterialsManager = keyingMaterialsManager,
+            recoverPendingMLSGroupJoinsUseCase = recoverPendingMLSGroupJoinsUseCase,
             recoverPendingOneOnOneResolutionsUseCase = recoverPendingOneOnOneResolutionsUseCase,
         )
 

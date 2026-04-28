@@ -38,3 +38,20 @@ internal object OneOnOneResolutionPendingAction {
     fun payload(userId: UserId): String =
         KtxSerializer.json.encodeToString(QualifiedID.serializer(), userId)
 }
+
+internal object MLSGroupJoinPendingAction {
+    val actionType = PendingActionType.JOIN_MLS_GROUP_CONVERSATION
+
+    fun actionKey(conversationId: QualifiedID): String = "${conversationId.value}@${conversationId.domain}"
+
+    fun conversationIdFromActionKey(actionKey: String): QualifiedID? {
+        val separatorIndex = actionKey.indexOf('@')
+        if (separatorIndex <= 0 || separatorIndex == actionKey.lastIndex) return null
+        val value = actionKey.substring(0, separatorIndex)
+        val domain = actionKey.substring(separatorIndex + 1)
+        return QualifiedID(value = value, domain = domain)
+    }
+
+    fun payload(conversationId: QualifiedID): String =
+        KtxSerializer.json.encodeToString(QualifiedID.serializer(), conversationId)
+}

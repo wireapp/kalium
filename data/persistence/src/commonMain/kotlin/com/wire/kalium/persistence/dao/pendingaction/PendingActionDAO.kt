@@ -20,7 +20,8 @@ package com.wire.kalium.persistence.dao.pendingaction
 import io.mockative.Mockable
 
 enum class PendingActionType(val dbValue: String) {
-    RESOLVE_ONE_ON_ONE_CONVERSATION("resolve_one_on_one_conversation")
+    RESOLVE_ONE_ON_ONE_CONVERSATION("resolve_one_on_one_conversation"),
+    JOIN_MLS_GROUP_CONVERSATION("join_mls_group_conversation")
 }
 
 data class PendingActionEntity(

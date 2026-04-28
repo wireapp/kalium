@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.logic.data.conversation.mls
 
-import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.coroutines.sync.Mutex
@@ -29,6 +30,9 @@ internal interface PendingActionsRepository {
     suspend fun enqueuePendingOneOnOneResolution(userId: UserId)
     suspend fun getPendingOneOnOneResolutions(): List<UserId>
     suspend fun acknowledgePendingOneOnOneResolutions(userIds: List<UserId>)
+    suspend fun enqueuePendingMLSGroupJoin(conversationId: ConversationId)
+    suspend fun getPendingMLSGroupJoins(): List<ConversationId>
+    suspend fun acknowledgePendingMLSGroupJoins(conversationIds: List<ConversationId>)
 }
 
 internal class PersistentPendingActionsRepository(
@@ -59,6 +63,34 @@ internal class PersistentPendingActionsRepository(
         mutex.withLock {
             pendingActionDAO.deleteByActionTypeAndKeys(
                 actionType = OneOnOneResolutionPendingAction.actionType,
+                actionKeys = actionKeys
+            )
+        }
+    }
+
+    override suspend fun enqueuePendingMLSGroupJoin(conversationId: ConversationId) {
+        mutex.withLock {
+            pendingActionDAO.upsert(
+                actionType = MLSGroupJoinPendingAction.actionType,
+                actionKey = MLSGroupJoinPendingAction.actionKey(conversationId),
+                payload = MLSGroupJoinPendingAction.payload(conversationId),
+                createdAt = Clock.System.now().toEpochMilliseconds()
+            )
+        }
+    }
+
+    override suspend fun getPendingMLSGroupJoins(): List<ConversationId> = mutex.withLock {
+        pendingActionDAO
+            .getByActionType(MLSGroupJoinPendingAction.actionType)
+            .mapNotNull { MLSGroupJoinPendingAction.conversationIdFromActionKey(it.actionKey) }
+    }
+
+    override suspend fun acknowledgePendingMLSGroupJoins(conversationIds: List<ConversationId>) {
+        val actionKeys = conversationIds.distinct().map(MLSGroupJoinPendingAction::actionKey)
+        if (actionKeys.isEmpty()) return
+        mutex.withLock {
+            pendingActionDAO.deleteByActionTypeAndKeys(
+                actionType = MLSGroupJoinPendingAction.actionType,
                 actionKeys = actionKeys
             )
         }
