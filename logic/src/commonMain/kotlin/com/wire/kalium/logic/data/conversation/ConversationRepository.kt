@@ -59,8 +59,6 @@ import com.wire.kalium.network.api.authenticated.conversation.model.Conversation
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
@@ -81,7 +79,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
-import kotlinx.serialization.builtins.SetSerializer
 
 @Suppress("TooManyFunctions")
 @Mockable
@@ -348,9 +345,6 @@ internal interface ConversationRepository {
 
     suspend fun getGroupStatusMembersNamesAndHandles(groupID: GroupID): Either<StorageFailure, EpochChangesData>
     suspend fun selectMembersNameAndHandle(conversationId: ConversationId): Either<StorageFailure, Map<UserId, NameAndHandle>>
-    suspend fun addConversationToDeleteQueue(conversationId: ConversationId)
-    suspend fun removeConversationFromDeleteQueue(conversationId: ConversationId)
-    suspend fun getConversationsDeleteQueue(): List<ConversationId>
     suspend fun observeOneToOneConversationDetailsWithOtherUser(
         otherUserId: UserId
     ): Flow<Either<StorageFailure, ConversationDetails.OneOne>>
@@ -381,7 +375,6 @@ internal class ConversationDataSource internal constructor(
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
     private val conversationMetaDataDAO: ConversationMetaDataDAO,
-    private val metadataDAO: MetadataDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -1098,36 +1091,6 @@ internal class ConversationDataSource internal constructor(
                 .mapKeys { it.key.toModel() }
         }
 
-    override suspend fun addConversationToDeleteQueue(conversationId: ConversationId) {
-        val queue = metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
-            ?.toMutableSet()
-            ?.plus(conversationId.toDao())
-            ?: setOf(conversationId.toDao())
-
-        metadataDAO.putSerializable(
-            CONVERSATIONS_TO_DELETE_KEY,
-            queue,
-            SetSerializer(QualifiedIDEntity.serializer())
-        )
-    }
-
-    override suspend fun removeConversationFromDeleteQueue(conversationId: ConversationId) {
-        val queue = metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
-            ?.toMutableSet()
-            ?.minus(conversationId.toDao())
-            ?: return
-
-        metadataDAO.putSerializable(
-            CONVERSATIONS_TO_DELETE_KEY,
-            queue,
-            SetSerializer(QualifiedIDEntity.serializer())
-        )
-    }
-
-    override suspend fun getConversationsDeleteQueue(): List<ConversationId> =
-        metadataDAO.getSerializable(CONVERSATIONS_TO_DELETE_KEY, SetSerializer(QualifiedIDEntity.serializer()))
-            ?.map { it.toModel() } ?: listOf()
-
     override suspend fun updateChannelAddPermission(
         conversationId: ConversationId,
         channelAddPermission: ChannelAddPermission
@@ -1150,6 +1113,5 @@ internal class ConversationDataSource internal constructor(
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
-        private const val CONVERSATIONS_TO_DELETE_KEY = "conversations_to_delete"
     }
 }
