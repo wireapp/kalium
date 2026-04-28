@@ -19,31 +19,28 @@ package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class RecoverPendingOneOnOneResolutionsUseCaseTest {
     @Test
-    fun givenIncrementalSyncIsNotLive_whenInvoked_thenSkipsRecovery() = runTest {
+    fun givenSyncDoesNotReachLive_whenInvoked_thenSkipsRecovery() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withIncrementalSyncState(IncrementalSyncStatus.FetchingPendingEvents)
+            .withSyncWaitResult(Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
             .arrange()
 
         useCase()
@@ -56,7 +53,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
     fun givenRecoverySucceeds_whenInvoked_thenAcknowledgesRecoveredUsers() = runTest {
         val pendingUserIds = listOf(TestUser.OTHER_USER_ID, TestUser.OTHER_USER_ID_2)
         val (arrangement, useCase) = Arrangement()
-            .withIncrementalSyncState(IncrementalSyncStatus.Live)
+            .withSyncWaitResult(Either.Right(Unit))
             .withPendingUserIds(pendingUserIds)
             .withResolveResult(Either.Right(TestConversation.ID))
             .arrange()
@@ -72,7 +69,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
     fun givenRecoveryFails_whenInvoked_thenDoesNotAcknowledgePendingUsers() = runTest {
         val pendingUserIds = listOf(TestUser.OTHER_USER_ID)
         val (arrangement, useCase) = Arrangement()
-            .withIncrementalSyncState(IncrementalSyncStatus.Live)
+            .withSyncWaitResult(Either.Right(Unit))
             .withPendingUserIds(pendingUserIds)
             .withResolveResult(Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
             .arrange()
@@ -88,7 +85,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
         val successfulUserId = TestUser.OTHER_USER_ID_2
         val pendingUserIds = listOf(failedUserId, successfulUserId)
         val (arrangement, useCase) = Arrangement()
-            .withIncrementalSyncState(IncrementalSyncStatus.Live)
+            .withSyncWaitResult(Either.Right(Unit))
             .withPendingUserIds(pendingUserIds)
             .withResolveResult(Either.Right(TestConversation.ID))
             .withResolveResultForUser(failedUserId, Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
@@ -105,11 +102,11 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val pendingActionsRepository = mock(PendingActionsRepository::class)
-        val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
+        val syncStateObserver = mock(SyncStateObserver::class)
         val oneOnOneResolver = mock(OneOnOneResolver::class)
 
-        suspend fun withIncrementalSyncState(state: IncrementalSyncStatus) = apply {
-            every { incrementalSyncRepository.incrementalSyncState }.returns(flowOf(state))
+        suspend fun withSyncWaitResult(result: Either<CoreFailure, Unit>) = apply {
+            coEvery { syncStateObserver.waitUntilLiveOrFailure() }.returns(result)
         }
 
         suspend fun withPendingUserIds(userIds: List<UserId>) = apply {
@@ -141,7 +138,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
         suspend fun arrange(): Pair<Arrangement, RecoverPendingOneOnOneResolutionsUseCase> = this to
             RecoverPendingOneOnOneResolutionsUseCaseImpl(
                 pendingActionsRepository = pendingActionsRepository,
-                incrementalSyncRepository = incrementalSyncRepository,
+                syncStateObserver = syncStateObserver,
                 transactionProvider = cryptoTransactionProvider,
                 oneOnOneResolver = oneOnOneResolver
             )

@@ -25,10 +25,8 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.sync.SyncStateObserver
 import io.mockative.Mockable
-import kotlinx.coroutines.flow.first
 
 @Mockable
 internal interface RecoverPendingMLSGroupJoinsUseCase {
@@ -37,13 +35,13 @@ internal interface RecoverPendingMLSGroupJoinsUseCase {
 
 internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
     private val pendingActionsRepository: PendingActionsRepository,
-    private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val syncStateObserver: SyncStateObserver,
     private val transactionProvider: CryptoTransactionProvider,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
 ) : RecoverPendingMLSGroupJoinsUseCase {
 
     override suspend fun invoke() {
-        if (incrementalSyncRepository.incrementalSyncState.first() !is IncrementalSyncStatus.Live) {
+        syncStateObserver.waitUntilLiveOrFailure().onFailure {
             return
         }
 

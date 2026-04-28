@@ -22,27 +22,24 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class RecoverPendingMLSGroupJoinsUseCaseTest {
     @Test
-    fun givenIncrementalSyncIsNotLive_whenInvoked_thenSkipsRecovery() = runTest {
+    fun givenSyncDoesNotReachLive_whenInvoked_thenSkipsRecovery() = runTest {
         val (arrangement, useCase) = Arrangement()
-            .withIncrementalSyncState(IncrementalSyncStatus.FetchingPendingEvents)
+            .withSyncWaitResult(Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
             .arrange()
 
         useCase()
@@ -55,7 +52,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
     fun givenRecoverySucceeds_whenInvoked_thenAcknowledgesRecoveredConversations() = runTest {
         val pendingConversationIds = listOf(TestConversation.ID, TestConversation.id(2))
         val (arrangement, useCase) = Arrangement()
-            .withIncrementalSyncState(IncrementalSyncStatus.Live)
+            .withSyncWaitResult(Either.Right(Unit))
             .withPendingConversationIds(pendingConversationIds)
             .withJoinResult(Either.Right(Unit))
             .arrange()
@@ -71,7 +68,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
     fun givenRecoveryFails_whenInvoked_thenDoesNotAcknowledgePendingConversations() = runTest {
         val pendingConversationIds = listOf(TestConversation.ID)
         val (arrangement, useCase) = Arrangement()
-            .withIncrementalSyncState(IncrementalSyncStatus.Live)
+            .withSyncWaitResult(Either.Right(Unit))
             .withPendingConversationIds(pendingConversationIds)
             .withJoinResult(Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
             .arrange()
@@ -87,7 +84,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         val successfulConversationId = TestConversation.id(2)
         val pendingConversationIds = listOf(failedConversationId, successfulConversationId)
         val (arrangement, useCase) = Arrangement()
-            .withIncrementalSyncState(IncrementalSyncStatus.Live)
+            .withSyncWaitResult(Either.Right(Unit))
             .withPendingConversationIds(pendingConversationIds)
             .withJoinResult(Either.Right(Unit))
             .withJoinResultForConversation(failedConversationId, Either.Left(CoreFailure.Unknown(RuntimeException("boom"))))
@@ -104,11 +101,11 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
         val pendingActionsRepository = mock(PendingActionsRepository::class)
-        val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
+        val syncStateObserver = mock(SyncStateObserver::class)
         val joinExistingMLSConversation = mock(JoinExistingMLSConversationUseCase::class)
 
-        suspend fun withIncrementalSyncState(state: IncrementalSyncStatus) = apply {
-            every { incrementalSyncRepository.incrementalSyncState }.returns(flowOf(state))
+        suspend fun withSyncWaitResult(result: Either<CoreFailure, Unit>) = apply {
+            coEvery { syncStateObserver.waitUntilLiveOrFailure() }.returns(result)
         }
 
         suspend fun withPendingConversationIds(conversationIds: List<ConversationId>) = apply {
@@ -142,7 +139,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
         suspend fun arrange(): Pair<Arrangement, RecoverPendingMLSGroupJoinsUseCase> = this to
             RecoverPendingMLSGroupJoinsUseCaseImpl(
                 pendingActionsRepository = pendingActionsRepository,
-                incrementalSyncRepository = incrementalSyncRepository,
+                syncStateObserver = syncStateObserver,
                 transactionProvider = cryptoTransactionProvider,
                 joinExistingMLSConversation = joinExistingMLSConversation
             )

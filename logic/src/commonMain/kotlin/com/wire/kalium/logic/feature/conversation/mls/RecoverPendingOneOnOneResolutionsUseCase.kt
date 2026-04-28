@@ -24,10 +24,8 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.sync.SyncStateObserver
 import io.mockative.Mockable
-import kotlinx.coroutines.flow.first
 
 @Mockable
 internal interface RecoverPendingOneOnOneResolutionsUseCase {
@@ -36,13 +34,13 @@ internal interface RecoverPendingOneOnOneResolutionsUseCase {
 
 internal class RecoverPendingOneOnOneResolutionsUseCaseImpl(
     private val pendingActionsRepository: PendingActionsRepository,
-    private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val syncStateObserver: SyncStateObserver,
     private val transactionProvider: CryptoTransactionProvider,
     private val oneOnOneResolver: OneOnOneResolver,
 ) : RecoverPendingOneOnOneResolutionsUseCase {
 
     override suspend fun invoke() {
-        if (incrementalSyncRepository.incrementalSyncState.first() !is IncrementalSyncStatus.Live) {
+        syncStateObserver.waitUntilLiveOrFailure().onFailure {
             return
         }
 

@@ -1417,7 +1417,7 @@ public class UserSessionScope internal constructor(
     private val recoverPendingOneOnOneResolutionsUseCase: RecoverPendingOneOnOneResolutionsUseCase
         get() = RecoverPendingOneOnOneResolutionsUseCaseImpl(
             pendingActionsRepository = pendingActionsRepository,
-            incrementalSyncRepository = incrementalSyncRepository,
+            syncStateObserver = syncStateObserver.value,
             transactionProvider = cryptoTransactionProvider,
             oneOnOneResolver = oneOnOneResolver
         )
@@ -1425,7 +1425,7 @@ public class UserSessionScope internal constructor(
     private val recoverPendingMLSGroupJoinsUseCase: RecoverPendingMLSGroupJoinsUseCase
         get() = RecoverPendingMLSGroupJoinsUseCaseImpl(
             pendingActionsRepository = pendingActionsRepository,
-            incrementalSyncRepository = incrementalSyncRepository,
+            syncStateObserver = syncStateObserver.value,
             transactionProvider = cryptoTransactionProvider,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase
         )
