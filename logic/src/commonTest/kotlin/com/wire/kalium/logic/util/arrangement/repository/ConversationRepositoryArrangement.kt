@@ -55,8 +55,8 @@ internal interface ConversationRepositoryArrangement {
         domain: Matcher<String> = AnyMatcher(valueOf())
     )
 
-    suspend fun withMarkConversationAsDeletedLocallySucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
-    suspend fun withMarkConversationAsDeletedLocallyFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
+    suspend fun withSetConversationDeletedLocallySucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
+    suspend fun withSetConversationDeletedLocallyFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
     suspend fun withDeletingConversationLocallySucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
     suspend fun withDeletingConversationLocallyFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
     suspend fun withGetConversationByIdReturning(conversation: Conversation? = TestConversation.CONVERSATION)
@@ -102,9 +102,6 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
     suspend fun withPersistMembers(result: Either<StorageFailure, Unit>)
     suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>)
-    suspend fun withAddConversationToDeleteQueue()
-    suspend fun withRemoveConversationToDeleteQueue()
-    suspend fun withGetConversationsDeleteQueue(result: List<ConversationId>)
     suspend fun withClearContentSucceeding()
     suspend fun withGetConversationMembers(result: List<UserId>)
 }
@@ -138,15 +135,15 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         }.returns(result)
     }
 
-    override suspend fun withMarkConversationAsDeletedLocallySucceeding(conversationId: Matcher<ConversationId>) {
+    override suspend fun withSetConversationDeletedLocallySucceeding(conversationId: Matcher<ConversationId>) {
         coEvery {
-            conversationRepository.markConversationAsDeletedLocally(matches { conversationId.matches(it) })
-        }.returns(Either.Right(true))
+            conversationRepository.setConversationDeletedLocally(matches { conversationId.matches(it) }, any())
+        }.returns(Either.Right(Unit))
     }
 
-    override suspend fun withMarkConversationAsDeletedLocallyFailing(conversationId: Matcher<ConversationId>) {
+    override suspend fun withSetConversationDeletedLocallyFailing(conversationId: Matcher<ConversationId>) {
         coEvery {
-            conversationRepository.markConversationAsDeletedLocally(matches { conversationId.matches(it) })
+            conversationRepository.setConversationDeletedLocally(matches { conversationId.matches(it) }, any())
         }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
     }
 
@@ -273,18 +270,6 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
 
     override suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>) {
         coEvery { conversationRepository.selectMembersNameAndHandle(any()) }.returns(result)
-    }
-
-    override suspend fun withAddConversationToDeleteQueue() {
-        coEvery { conversationRepository.addConversationToDeleteQueue(any()) }.returns(Unit)
-    }
-
-    override suspend fun withRemoveConversationToDeleteQueue() {
-        coEvery { conversationRepository.removeConversationFromDeleteQueue(any()) }.returns(Unit)
-    }
-
-    override suspend fun withGetConversationsDeleteQueue(result: List<ConversationId>) {
-        coEvery { conversationRepository.getConversationsDeleteQueue() }.returns(result)
     }
 
     override suspend fun withClearContentSucceeding() {

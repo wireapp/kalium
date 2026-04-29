@@ -36,6 +36,7 @@ import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangem
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.any
 import io.mockative.coEvery
@@ -149,38 +150,11 @@ class ClearConversationContentHandlerTest {
     }
 
     @Test
-    fun givenSelfSenderAndMessageInSelfConversation_whenNeedToRemoveAndConversationIsNotLeftYet_thenContentCleared() = runTest {
+    fun givenSelfSenderAndNeedToRemoveLocally_whenMessageInSelfConversation_thenConversationDeleted() = runTest {
         // given
         val (arrangement, handler) = Arrangement()
             .arrange {
                 withMessageSentInSelfConversation(true)
-                withGetConversationMembers(listOf(TestUser.USER_ID))
-            }
-
-        // when
-        handler.handle(
-            message = OWN_MESSAGE,
-            messageContent = MessageContent.Cleared(
-                conversationId = CONVERSATION_ID,
-                time = Instant.DISTANT_PAST,
-                needToRemoveLocally = true
-            ),
-            transactionContext = arrangement.transactionContext
-        )
-
-        // then
-        coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
-        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.conversationRepository.addConversationToDeleteQueue(any()) }.wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenSelfSenderAndMessageInSelfConversation_whenNeedToRemoveAndLeftConversation_thenContentAndConversationRemoved() = runTest {
-        // given
-        val (arrangement, handler) = Arrangement()
-            .arrange {
-                withMessageSentInSelfConversation(true)
-                withGetConversationMembers(listOf())
             }
 
         // when
@@ -197,7 +171,6 @@ class ClearConversationContentHandlerTest {
         // then
         coVerify { arrangement.deleteConversation(any(), any()) }.wasInvoked(exactly = once)
         coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.conversationRepository.addConversationToDeleteQueue(any()) }.wasNotInvoked()
     }
 
     @Test
@@ -290,6 +263,11 @@ class ClearConversationContentHandlerTest {
         override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
             conversationClearCalls += data to selfUserId
         }
+
+        override suspend fun onConversationLastReadPersisted(
+            data: ConversationLastReadEventData,
+            selfUserId: UserId
+        ) = Unit
     }
 
     companion object {

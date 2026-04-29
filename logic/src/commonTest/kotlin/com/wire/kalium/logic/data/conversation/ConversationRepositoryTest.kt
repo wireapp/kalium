@@ -411,15 +411,15 @@ class ConversationRepositoryTest {
     fun givenProteusConversation_WhenMarkingAsDeletedLocally_ThenShouldCallProperUseCaseAndSucceed() = runTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withGetConversationProtocolInfoReturns(PROTEUS_PROTOCOL_INFO)
-            .withSuccessfulMarkAsDeletedLocally()
+            .withSuccessfulSetConversationDeletedLocally()
             .arrange()
         val conversationId = ConversationId("conv_id", "conv_domain")
 
-        conversationRepository.markConversationAsDeletedLocally(conversationId).shouldSucceed()
+        conversationRepository.setConversationDeletedLocally(conversationId, true).shouldSucceed()
 
         with(arrangement) {
             coVerify {
-                conversationDAO.markConversationAsDeletedLocally(eq(conversationId.toDao()))
+                conversationDAO.setConversationDeletedLocally(eq(conversationId.toDao()), eq(true))
             }.wasInvoked(once)
         }
     }
@@ -1184,7 +1184,6 @@ class ConversationRepositoryTest {
                 clientDao,
                 clientApi,
                 conversationMetaDataDAO,
-                metadataDAO
             )
 
         suspend fun withSelfUserFlow(selfUserFlow: Flow<SelfUser>) = apply {
@@ -1318,10 +1317,10 @@ class ConversationRepositoryTest {
             }.returns(true)
         }
 
-        suspend fun withSuccessfulMarkAsDeletedLocally() = apply {
+        suspend fun withSuccessfulSetConversationDeletedLocally() = apply {
             coEvery {
-                conversationDAO.markConversationAsDeletedLocally(any())
-            }.returns(true)
+                conversationDAO.setConversationDeletedLocally(any(), any())
+            }.returns(Unit)
         }
 
         suspend fun withExpectedIsUserMemberFlow(expectedIsUserMember: Flow<Boolean>) = apply {

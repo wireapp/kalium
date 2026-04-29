@@ -111,6 +111,17 @@ internal class RemoteBackupChangeLogDAOImpl(
         )
     }
 
+    override suspend fun logConversationMetadataSync(
+        conversationId: QualifiedIDEntity,
+        timestampMs: Long
+    ): Unit = withContext(writeDispatcher.value) {
+        queries.insertConversationMetadataSync(
+            conversationId = conversationId,
+            eventType = ChangeLogEventType.CONVERSATION_METADATA_SYNC,
+            timestampMs = timestampMs
+        )
+    }
+
     override suspend fun getPendingChanges(): List<ChangeLogEntry> =
         withContext(readDispatcher.value) {
             queries.getPendingChanges(mapper = mapper::toChangeLogEntry).executeAsList()
