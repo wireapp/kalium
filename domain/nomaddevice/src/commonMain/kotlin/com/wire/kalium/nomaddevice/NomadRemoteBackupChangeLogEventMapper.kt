@@ -82,6 +82,7 @@ internal class NomadRemoteBackupChangeLogEventMapper {
             wipeMetaData = false
         )
 
+        // metadata is always included as a separate event as part of the batch, so we can skip the sync event itself
         is ChangeLogSyncEvent.ConversationMetadataSync -> null
     }
 
@@ -89,7 +90,7 @@ internal class NomadRemoteBackupChangeLogEventMapper {
         val payloadModel = message?.toNomadDevicePayloadOrNull() ?: run {
             nomadLogger.w(
                 "Skipping MESSAGE_UPSERT for conversation '${conversationId.toLogString()}' and message '$messageId': " +
-                    "missing syncable message payload."
+                        "missing syncable message payload."
             )
             return null
         }
