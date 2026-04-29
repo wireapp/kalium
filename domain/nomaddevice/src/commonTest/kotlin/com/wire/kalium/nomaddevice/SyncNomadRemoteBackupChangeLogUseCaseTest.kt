@@ -131,7 +131,8 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
 
         val metadataEvent = assertIs<NomadMessageEvent.ConversationMetadataEvent>(request.events.last())
         assertEquals(1, metadataEvent.conversationMetadata.size)
-        assertEquals(CONVERSATION_ID.toString(), metadataEvent.conversationMetadata.first().conversationId)
+        assertEquals(CONVERSATION_ID.value, metadataEvent.conversationMetadata.first().conversation.id)
+        assertEquals(CONVERSATION_ID.domain, metadataEvent.conversationMetadata.first().conversation.domain)
         assertEquals(1772014500000, metadataEvent.conversationMetadata.first().lastReadTimestamp)
         assertEquals(1772014560000, metadataEvent.conversationMetadata.first().lastModifiedTimestamp)
     }

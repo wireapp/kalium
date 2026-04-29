@@ -42,7 +42,7 @@ internal class NomadRemoteBackupChangeLogEventMapper {
         val events = batch.events.mapNotNull { it.toApiEventOrNull() }.toMutableList()
         val metadataEntries = batch.conversationMetadata.map {
             ConversationMetadataEntry(
-                conversationId = it.conversationId.value, // todo. bug change this to qualified
+                conversation = it.conversationId.toApiConversation(),
                 lastReadTimestamp = it.lastReadDate.toEpochMilliseconds(),
                 lastModifiedTimestamp = it.lastModifiedDate.toEpochMilliseconds()
             )
