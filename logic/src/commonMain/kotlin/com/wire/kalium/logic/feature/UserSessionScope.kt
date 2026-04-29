@@ -544,6 +544,7 @@ import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistedMessageData
@@ -675,6 +676,13 @@ public class UserSessionScope internal constructor(
 
         override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
             persistenceEventHookNotifier?.onConversationCleared(data, selfUserId)
+        }
+
+        override suspend fun onConversationLastReadPersisted(
+            data: ConversationLastReadEventData,
+            selfUserId: UserId
+        ) {
+            persistenceEventHookNotifier?.onConversationLastReadPersisted(data, selfUserId)
         }
     }
     private val currentCryptoStateChangeHookNotifier = CryptoStateChangeHookNotifier { changedUserId ->

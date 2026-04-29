@@ -81,6 +81,8 @@ internal class NomadRemoteBackupChangeLogEventMapper {
             conversation = change.conversationId.toApiConversation(),
             wipeMetaData = false
         )
+
+        is ChangeLogSyncEvent.ConversationMetadataSync -> null
     }
 
     private fun ChangeLogSyncEvent.MessageUpsert.toUpsertEventOrNull(): NomadMessageEvent.UpsertMessageEvent? {

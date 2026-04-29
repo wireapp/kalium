@@ -206,6 +206,7 @@ internal object RemoteBackupChangeLogMapper {
 
         ChangeLogEventType.CONVERSATION_DELETE -> ChangeLogSyncEvent.ConversationDelete(change = context.change)
         ChangeLogEventType.CONVERSATION_CLEAR -> ChangeLogSyncEvent.ConversationClear(change = context.change)
+        ChangeLogEventType.CONVERSATION_METADATA_SYNC -> ChangeLogSyncEvent.ConversationMetadataSync(change = context.change)
     }
 
     @Suppress("LongMethod")

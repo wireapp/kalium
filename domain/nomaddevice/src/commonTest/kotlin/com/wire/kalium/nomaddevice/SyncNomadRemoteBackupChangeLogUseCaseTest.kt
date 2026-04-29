@@ -468,6 +468,8 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
 
         override suspend fun logConversationClear(conversationId: QualifiedIDEntity, timestampMs: Long) = Unit
 
+        override suspend fun logConversationMetadataSync(conversationId: QualifiedIDEntity, timestampMs: Long) = Unit
+
         override suspend fun getPendingChanges(): List<ChangeLogEntry> = batch.events.map { it.change }
         override suspend fun getLastPendingChangesBatch(limit: Long): ChangeLogSyncBatch = batch
 

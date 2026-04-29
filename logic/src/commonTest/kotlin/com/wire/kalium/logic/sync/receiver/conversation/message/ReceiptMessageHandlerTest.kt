@@ -35,6 +35,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReadReceiptEventData
 import com.wire.kalium.persistence.TestUserDatabase
@@ -311,6 +312,11 @@ class ReceiptMessageHandlerTest {
         override suspend fun onReadReceiptPersisted(data: ReadReceiptEventData, selfUserId: UserId) {
             readReceiptCalls += data to selfUserId
         }
+
+        override suspend fun onConversationLastReadPersisted(
+            data: ConversationLastReadEventData,
+            selfUserId: UserId
+        ) = Unit
     }
 
     private companion object {

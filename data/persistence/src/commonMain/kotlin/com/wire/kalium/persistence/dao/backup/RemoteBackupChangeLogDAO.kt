@@ -86,6 +86,14 @@ interface RemoteBackupChangeLogDAO {
     )
 
     /**
+     * Log a conversation metadata sync event (last-read).
+     */
+    suspend fun logConversationMetadataSync(
+        conversationId: QualifiedIDEntity,
+        timestampMs: Long
+    )
+
+    /**
      * Get all pending changes ordered deterministically for replay.
      */
     suspend fun getPendingChanges(): List<ChangeLogEntry>
