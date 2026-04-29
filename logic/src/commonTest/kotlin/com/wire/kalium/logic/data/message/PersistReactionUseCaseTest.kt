@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReactionEventData
 import com.wire.kalium.common.error.StorageFailure
@@ -135,5 +136,10 @@ class PersistReactionUseCaseTest {
         override suspend fun onReactionPersisted(data: ReactionEventData, selfUserId: UserId) {
             reactionCalls += data to selfUserId
         }
+
+        override suspend fun onConversationLastReadPersisted(
+            data: ConversationLastReadEventData,
+            selfUserId: UserId
+        ) = Unit
     }
 }
