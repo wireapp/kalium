@@ -969,6 +969,8 @@ class ConversationGroupRepositoryTest {
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
             .withEmitLocalEvent()
+            .withFetchConversationDetails(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel())
+            .withPersistConversations()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
@@ -1031,6 +1033,8 @@ class ConversationGroupRepositoryTest {
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
             .withEmitLocalEvent()
+            .withFetchConversationDetails(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel())
+            .withPersistConversations()
             .withJoinExistingMlsConversationSucceeds()
             .withSuccessfulAddMemberToMLSGroup()
             .arrange()
@@ -1066,6 +1070,45 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
+    fun givenMLSConversation_whenJoiningViaCode_thenPersistJoinedConversationBeforeMLSSetup() = runTest {
+        val code = "code"
+        val key = "key"
+        val uri: String? = null
+        val password: String? = null
+        val conversationId = ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withJoinConversationAPIResponse(
+                code,
+                key,
+                uri,
+                NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
+            )
+            .withEmitLocalEvent()
+            .withFetchConversationDetails(conversationId)
+            .withPersistConversations()
+            .withProtocolInfoByIdAfterJoinedConversationPersisted(MLS_PROTOCOL_INFO)
+            .withJoinExistingMlsConversationSucceeds()
+            .withSuccessfulAddMemberToMLSGroup()
+            .arrange()
+
+        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
+            .shouldSucceed()
+
+        coVerify {
+            arrangement.conversationApi.fetchConversationDetails(eq(conversationId.toApi()))
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.persistConversations.invoke(any(), any(), eq(true), eq(ConversationSyncReason.Event))
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.joinExistingMLSConversation.invoke(any(), eq(conversationId), any(), any())
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenMixedConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
         val code = "code"
         val key = "key"
@@ -1082,6 +1125,8 @@ class ConversationGroupRepositoryTest {
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
             .withEmitLocalEvent()
+            .withFetchConversationDetails(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel())
+            .withPersistConversations()
             .withJoinExistingMlsConversationSucceeds()
             .withSuccessfulAddMemberToMLSGroup()
             .arrange()
@@ -1955,6 +2000,8 @@ class ConversationGroupRepositoryTest {
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
         val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
         val localEventRepository = mock(LocalEventRepository::class)
+        val persistConversations = mock(PersistConversationsUseCase::class)
+        private var joinedConversationPersisted = false
 
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
@@ -1965,6 +2012,7 @@ class ConversationGroupRepositoryTest {
                 conversationDAO,
                 conversationApi,
                 newConversationMembersRepository,
+                persistConversations,
                 userRepository,
                 lazy { newGroupConversationSystemMessagesCreator },
                 TestUser.SELF.id,
@@ -2020,6 +2068,24 @@ class ConversationGroupRepositoryTest {
             }.returns(result)
         }
 
+        suspend fun withFetchConversationDetails(
+            conversationId: ConversationId,
+            result: NetworkResponse<ConversationResponse> = NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 200)
+        ): Arrangement = apply {
+            coEvery {
+                conversationApi.fetchConversationDetails(eq(conversationId.toApi()))
+            }.returns(result)
+        }
+
+        suspend fun withPersistConversations(result: Either<CoreFailure, Unit> = Either.Right(Unit)): Arrangement = apply {
+            coEvery {
+                persistConversations.invoke(any(), any(), eq(true), eq(ConversationSyncReason.Event))
+            }.invokes {
+                joinedConversationPersisted = result is Either.Right
+                result
+            }
+        }
+
         suspend fun withJoinExistingMlsConversationSucceeds() = apply {
             coEvery {
                 joinExistingMLSConversation.invoke(any(), any(), any(), any())
@@ -2048,6 +2114,15 @@ class ConversationGroupRepositoryTest {
             coEvery {
                 conversationDAO.getConversationProtocolInfo(any())
             }.returns(result)
+        }
+
+        suspend fun withProtocolInfoByIdAfterJoinedConversationPersisted(result: ConversationEntity.ProtocolInfo) = apply {
+            coEvery {
+                conversationDAO.getConversationProtocolInfo(any())
+            }.invokes {
+                require(joinedConversationPersisted) { "Joined conversation must be persisted before MLS setup" }
+                result
+            }
         }
 
         suspend fun withAddMemberAPISucceedChanged() = apply {

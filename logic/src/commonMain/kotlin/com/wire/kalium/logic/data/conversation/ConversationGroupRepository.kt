@@ -107,6 +107,7 @@ internal class ConversationGroupRepositoryImpl(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val newConversationMembersRepository: NewConversationMembersRepository,
+    private val persistConversations: PersistConversationsUseCase,
     private val userRepository: UserRepository,
     private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
     private val selfUserId: UserId,
@@ -573,30 +574,37 @@ internal class ConversationGroupRepositoryImpl(
             )
             localEventRepository.emitLocalEvent(event)
 
-            wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
-                .flatMap { protocol ->
-                    when (protocol) {
-                        is ConversationEntity.ProtocolInfo.Proteus ->
-                            Either.Right(Unit)
-
-                        is ConversationEntity.ProtocolInfo.MLSCapable -> {
-                            transactionProvider.transaction("joinViaInviteCode") { transactionContext ->
-                                joinExistingMLSConversation(transactionContext, conversationId).flatMap {
-                                    transactionContext.wrapInMLSContext { mlsContext ->
-                                        mlsConversationRepository.addMemberToMLSGroup(
-                                            mlsContext,
-                                            GroupID(protocol.groupId),
-                                            listOf(selfUserId),
-                                            CipherSuite.fromTag(protocol.cipherSuite.cipherSuiteTag)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            prepareJoinedConversationForMLS(conversationId)
         }
     }
+
+    private suspend fun prepareJoinedConversationForMLS(conversationId: ConversationId): Either<CoreFailure, Unit> =
+        transactionProvider.transaction("joinViaInviteCode") { transactionContext ->
+            wrapApiRequest {
+                conversationApi.fetchConversationDetails(conversationId.toApi())
+            }.flatMap { conversationResponse ->
+                persistConversations(transactionContext, listOf(conversationResponse), true, ConversationSyncReason.Event)
+            }.flatMap {
+                wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
+            }.flatMap { protocol ->
+                when (protocol) {
+                    is ConversationEntity.ProtocolInfo.Proteus ->
+                        Either.Right(Unit)
+
+                    is ConversationEntity.ProtocolInfo.MLSCapable ->
+                        joinExistingMLSConversation(transactionContext, conversationId).flatMap {
+                            transactionContext.wrapInMLSContext { mlsContext ->
+                                mlsConversationRepository.addMemberToMLSGroup(
+                                    mlsContext,
+                                    GroupID(protocol.groupId),
+                                    listOf(selfUserId),
+                                    CipherSuite.fromTag(protocol.cipherSuite.cipherSuiteTag)
+                                )
+                            }
+                        }
+                }
+            }
+        }
 
     override suspend fun fetchLimitedInfoViaInviteCode(
         code: String,

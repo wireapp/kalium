@@ -947,6 +947,7 @@ public class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
+            persistConversationsUseCase,
             userRepository,
             lazy { newGroupConversationSystemMessagesCreator },
             userId,
