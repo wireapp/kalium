@@ -32,7 +32,7 @@ class MarkConversationAsDeletedLocallyUseCaseTest {
     fun givenSuccess_whenInvoking_thenSuccessResultIsPropagated() = runTest {
         // given
         val (arrangement, useCase) = Arrangement().arrange {
-            withMarkConversationAsDeletedLocallySucceeding()
+            withSetConversationDeletedLocallySucceeding()
         }
 
         // when
@@ -40,14 +40,14 @@ class MarkConversationAsDeletedLocallyUseCaseTest {
 
         // then
         assertIs<MarkConversationAsDeletedResult.Success>(result)
-        coVerify { arrangement.conversationRepository.markConversationAsDeletedLocally(eq(CONVERSATION_ID)) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.conversationRepository.setConversationDeletedLocally(eq(CONVERSATION_ID), eq(true)) }.wasInvoked(exactly = 1)
     }
 
     @Test
     fun givenFailure_whenInvoking_thenErrorResultIsPropagated() = runTest {
         // given
         val (arrangement, useCase) = Arrangement().arrange {
-            withMarkConversationAsDeletedLocallyFailing()
+            withSetConversationDeletedLocallyFailing()
         }
 
         // when
@@ -55,7 +55,7 @@ class MarkConversationAsDeletedLocallyUseCaseTest {
 
         // then
         assertIs<MarkConversationAsDeletedResult.Failure>(result)
-        coVerify { arrangement.conversationRepository.markConversationAsDeletedLocally(eq(CONVERSATION_ID)) }.wasInvoked(exactly = 1)
+        coVerify { arrangement.conversationRepository.setConversationDeletedLocally(eq(CONVERSATION_ID), eq(true)) }.wasInvoked(exactly = 1)
     }
 
     private class Arrangement : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
