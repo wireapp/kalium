@@ -18,6 +18,7 @@
 package com.wire.kalium.persistence.dao.pendingaction
 
 import com.wire.kalium.persistence.PendingActionsQueries
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.withContext
@@ -28,12 +29,11 @@ internal class PendingActionDAOImpl(
     private val writeDispatcher: WriteDispatcher,
 ) : PendingActionDAO {
 
-    override suspend fun upsert(actionType: PendingActionType, actionKey: String, payload: String?, createdAt: Long) {
+    override suspend fun upsert(actionType: PendingActionType, qualifiedId: QualifiedIDEntity, createdAt: Long) {
         withContext(writeDispatcher.value) {
             pendingActionsQueries.upsert(
                 action_type = actionType,
-                action_key = actionKey,
-                payload = payload,
+                qualified_id = qualifiedId,
                 created_at = createdAt
             )
         }
@@ -46,12 +46,12 @@ internal class PendingActionDAOImpl(
         ).executeAsList()
     }
 
-    override suspend fun deleteByActionTypeAndKeys(actionType: PendingActionType, actionKeys: List<String>) {
-        if (actionKeys.isEmpty()) return
+    override suspend fun deleteByActionTypeAndIds(actionType: PendingActionType, qualifiedIds: List<QualifiedIDEntity>) {
+        if (qualifiedIds.isEmpty()) return
         withContext(writeDispatcher.value) {
-            pendingActionsQueries.deleteByActionTypeAndKeys(
+            pendingActionsQueries.deleteByActionTypeAndIds(
                 action_type = actionType,
-                action_key = actionKeys
+                qualified_id = qualifiedIds
             )
         }
     }

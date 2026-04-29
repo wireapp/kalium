@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao.pendingaction
 
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -31,6 +32,8 @@ class PendingActionDAOTest : BaseDatabaseTest() {
     private lateinit var pendingActionDAO: PendingActionDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
     private val actionType = PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION
+    private val user1 = QualifiedIDEntity("user-1", "wire.com")
+    private val user2 = QualifiedIDEntity("user-2", "wire.com")
 
     @BeforeTest
     fun setUp() {
@@ -47,25 +50,22 @@ class PendingActionDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenSameTypeAndKey_whenUpsertingTwice_thenKeepLatestValues() = runTest(dispatcher) {
+    fun givenSameTypeAndId_whenUpsertingTwice_thenKeepLatestValues() = runTest(dispatcher) {
         pendingActionDAO.upsert(
             actionType = actionType,
-            actionKey = "user-1@wire.com",
-            payload = """{"value":1}""",
+            qualifiedId = user1,
             createdAt = 10L
         )
         pendingActionDAO.upsert(
             actionType = actionType,
-            actionKey = "user-1@wire.com",
-            payload = """{"value":2}""",
+            qualifiedId = user1,
             createdAt = 20L
         )
 
         val result = pendingActionDAO.getByActionType(actionType)
 
         assertEquals(1, result.size)
-        assertEquals("user-1@wire.com", result.first().actionKey)
-        assertEquals("""{"value":2}""", result.first().payload)
+        assertEquals(user1, result.first().qualifiedId)
         assertEquals(20L, result.first().createdAt)
     }
 
@@ -73,55 +73,49 @@ class PendingActionDAOTest : BaseDatabaseTest() {
     fun givenMultiplePendingActions_whenGettingByType_thenReturnOrderedByCreatedAt() = runTest(dispatcher) {
         pendingActionDAO.upsert(
             actionType = actionType,
-            actionKey = "user-2@wire.com",
-            payload = """{"value":2}""",
+            qualifiedId = user2,
             createdAt = 200L
         )
         pendingActionDAO.upsert(
             actionType = actionType,
-            actionKey = "user-1@wire.com",
-            payload = """{"value":1}""",
+            qualifiedId = user1,
             createdAt = 100L
         )
 
         val result = pendingActionDAO.getByActionType(actionType)
 
-        assertEquals(listOf("user-1@wire.com", "user-2@wire.com"), result.map { it.actionKey })
+        assertEquals(listOf(user1, user2), result.map { it.qualifiedId })
     }
 
     @Test
-    fun givenExistingPendingActions_whenDeletingSubset_thenDeleteOnlyMatchingKeys() = runTest(dispatcher) {
+    fun givenExistingPendingActions_whenDeletingSubset_thenDeleteOnlyMatchingIds() = runTest(dispatcher) {
         pendingActionDAO.upsert(
             actionType = actionType,
-            actionKey = "user-1@wire.com",
-            payload = null,
+            qualifiedId = user1,
             createdAt = 1L
         )
         pendingActionDAO.upsert(
             actionType = actionType,
-            actionKey = "user-2@wire.com",
-            payload = null,
+            qualifiedId = user2,
             createdAt = 2L
         )
 
-        pendingActionDAO.deleteByActionTypeAndKeys(actionType, listOf("user-1@wire.com"))
+        pendingActionDAO.deleteByActionTypeAndIds(actionType, listOf(user1))
 
         val result = pendingActionDAO.getByActionType(actionType)
-        assertEquals(listOf("user-2@wire.com"), result.map { it.actionKey })
+        assertEquals(listOf(user2), result.map { it.qualifiedId })
     }
 
     @Test
     fun givenExistingPendingActions_whenDeletingByType_thenDeleteAll() = runTest(dispatcher) {
         pendingActionDAO.upsert(
             actionType = actionType,
-            actionKey = "user-1@wire.com",
-            payload = null,
+            qualifiedId = user1,
             createdAt = 1L
         )
         pendingActionDAO.upsert(
             actionType = actionType,
-            actionKey = "user-2@wire.com",
-            payload = null,
+            qualifiedId = user2,
             createdAt = 2L
         )
 

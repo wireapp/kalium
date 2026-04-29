@@ -280,6 +280,7 @@ internal object TableMapper {
     )
 
     val pendingActionsAdapter = PendingActions.Adapter(
-        action_typeAdapter = PendingActionTypeAdapter
+        action_typeAdapter = PendingActionTypeAdapter,
+        qualified_idAdapter = QualifiedIDAdapter
     )
 }

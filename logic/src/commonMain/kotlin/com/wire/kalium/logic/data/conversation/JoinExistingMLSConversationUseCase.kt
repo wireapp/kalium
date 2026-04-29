@@ -93,7 +93,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             logger.d("Skip re-join existing MLS conversation, since MLS is not supported.")
             Either.Right(Unit)
         } else {
-            conversationRepository.getConversationById(conversationId).fold({
+            conversationRepository.getNonDeletedConversationById(conversationId).fold({
                 Either.Left(StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
@@ -140,7 +140,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             else -> {
                 logger.d("Refreshing conversation metadata before rejoining ${conversation.id.toLogString()}")
                 fetchConversation(transactionContext, conversation.id).flatMap {
-                    conversationRepository.getConversationById(conversation.id).map { refreshedConversation ->
+                    conversationRepository.getNonDeletedConversationById(conversation.id).map { refreshedConversation ->
                         RefreshedConversation(
                             conversation = refreshedConversation,
                             publicKeys = currentPublicKeys
@@ -188,7 +188,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         } else {
                             fetchConversation(transactionContext, conversation.id)
                         }.flatMap {
-                            conversationRepository.getConversationById(conversation.id).flatMap { conversation ->
+                            conversationRepository.getNonDeletedConversationById(conversation.id).flatMap { conversation ->
                                 joinOrEstablishMLSGroup(
                                     transactionContext = transactionContext,
                                     conversation = conversation,

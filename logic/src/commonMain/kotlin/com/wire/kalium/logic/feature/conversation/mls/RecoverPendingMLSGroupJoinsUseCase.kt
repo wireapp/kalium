@@ -17,8 +17,11 @@
  */
 package com.wire.kalium.logic.feature.conversation.mls
 
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
@@ -26,6 +29,8 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCas
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.sync.SyncStateObserver
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isNotFound
 import io.mockative.Mockable
 
 @Mockable
@@ -68,18 +73,25 @@ internal class RecoverPendingMLSGroupJoinsUseCaseImpl(
     ): List<ConversationId> {
         val successfulConversationIds = mutableListOf<ConversationId>()
         pendingConversationIds.forEach { conversationId ->
-            when (
-                joinExistingMLSConversation(
-                    transactionContext = transactionContext,
-                    conversationId = conversationId,
-                    allowJoinByExternalCommit = true
-                ).onFailure {
+            joinExistingMLSConversation(
+                transactionContext = transactionContext,
+                conversationId = conversationId,
+                allowJoinByExternalCommit = true
+            )
+                .onFailure {
                     kaliumLogger.w("Failed to recover pending MLS group join for ${conversationId.toLogString()}: $it")
+                    if (it is NetworkFailure.ServerMiscommunication &&
+                        it.kaliumException is KaliumException.InvalidRequestError &&
+                        (it.kaliumException as KaliumException.InvalidRequestError).isNotFound()
+                    ) {
+                        successfulConversationIds.add(conversationId)
+                    } else if (it is StorageFailure.DataNotFound) {
+                        successfulConversationIds.add(conversationId)
+                    }
                 }
-            ) {
-                is Either.Left -> Unit
-                is Either.Right -> successfulConversationIds.add(conversationId)
-            }
+                .onSuccess {
+                    successfulConversationIds.add(conversationId)
+                }
         }
         return successfulConversationIds
     }

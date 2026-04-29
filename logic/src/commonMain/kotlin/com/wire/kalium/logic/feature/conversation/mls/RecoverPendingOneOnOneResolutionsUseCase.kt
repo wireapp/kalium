@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.logic.feature.conversation.mls
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
@@ -67,18 +69,21 @@ internal class RecoverPendingOneOnOneResolutionsUseCaseImpl(
     ): List<UserId> {
         val successfulUserIds = mutableListOf<UserId>()
         pendingUserIds.forEach { userId ->
-            when (
-                oneOnOneResolver.resolveOneOnOneConversationWithUserId(
-                    transactionContext = transactionContext,
-                    userId = userId,
-                    invalidateCurrentKnownProtocols = true
-                ).onFailure {
+            oneOnOneResolver.resolveOneOnOneConversationWithUserId(
+                transactionContext = transactionContext,
+                userId = userId,
+                invalidateCurrentKnownProtocols = true
+            )
+                .onFailure {
                     kaliumLogger.w("Failed to recover pending one-on-one resolution for ${userId.toLogString()}: $it")
+                    if (it is StorageFailure.DataNotFound) {
+                        successfulUserIds.add(userId)
+                    }
                 }
-            ) {
-                is Either.Left -> Unit
-                is Either.Right -> successfulUserIds.add(userId)
-            }
+                .onSuccess {
+                    successfulUserIds.add(userId)
+                }
+
         }
         return successfulUserIds
     }

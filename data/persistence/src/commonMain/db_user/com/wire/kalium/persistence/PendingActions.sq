@@ -1,32 +1,31 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType;
 
 CREATE TABLE PendingActions (
     action_type TEXT AS PendingActionType NOT NULL,
-    action_key TEXT NOT NULL,
-    payload TEXT,
+    qualified_id TEXT AS QualifiedIDEntity NOT NULL,
     created_at INTEGER NOT NULL,
-    PRIMARY KEY (action_type, action_key)
+    PRIMARY KEY (action_type, qualified_id)
 );
 
 CREATE INDEX PendingActions_type_created_at_idx ON PendingActions(action_type, created_at);
 
 upsert:
-INSERT INTO PendingActions(action_type, action_key, payload, created_at)
-VALUES (?, ?, ?, ?)
-ON CONFLICT(action_type, action_key) DO UPDATE SET
-    payload = excluded.payload,
+INSERT INTO PendingActions(action_type, qualified_id, created_at)
+VALUES (?, ?, ?)
+ON CONFLICT(action_type, qualified_id) DO UPDATE SET
     created_at = excluded.created_at;
 
 selectByActionType:
-SELECT action_key, payload, created_at
+SELECT qualified_id, created_at
 FROM PendingActions
 WHERE action_type = ?
 ORDER BY created_at;
 
-deleteByActionTypeAndKeys:
+deleteByActionTypeAndIds:
 DELETE FROM PendingActions
 WHERE action_type = ?
-  AND action_key IN ?;
+  AND qualified_id IN ?;
 
 deleteByActionType:
 DELETE FROM PendingActions

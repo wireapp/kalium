@@ -18,8 +18,11 @@
 package com.wire.kalium.logic.data.conversation.mls
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.coroutines.sync.Mutex
@@ -43,9 +46,8 @@ internal class PersistentPendingActionsRepository(
     override suspend fun enqueuePendingOneOnOneResolution(userId: UserId) {
         mutex.withLock {
             pendingActionDAO.upsert(
-                actionType = OneOnOneResolutionPendingAction.actionType,
-                actionKey = OneOnOneResolutionPendingAction.actionKey(userId),
-                payload = OneOnOneResolutionPendingAction.payload(userId),
+                actionType = ONE_ON_ONE_RESOLUTION_ACTION_TYPE,
+                qualifiedId = userId.toDao(),
                 createdAt = Clock.System.now().toEpochMilliseconds()
             )
         }
@@ -53,17 +55,17 @@ internal class PersistentPendingActionsRepository(
 
     override suspend fun getPendingOneOnOneResolutions(): List<UserId> = mutex.withLock {
         pendingActionDAO
-            .getByActionType(OneOnOneResolutionPendingAction.actionType)
-            .mapNotNull { OneOnOneResolutionPendingAction.userIdFromActionKey(it.actionKey) }
+            .getByActionType(ONE_ON_ONE_RESOLUTION_ACTION_TYPE)
+            .map { it.qualifiedId.toModel() }
     }
 
     override suspend fun acknowledgePendingOneOnOneResolutions(userIds: List<UserId>) {
-        val actionKeys = userIds.distinct().map(OneOnOneResolutionPendingAction::actionKey)
-        if (actionKeys.isEmpty()) return
+        val qualifiedIds = userIds.distinct().map { it.toDao() }
+        if (qualifiedIds.isEmpty()) return
         mutex.withLock {
-            pendingActionDAO.deleteByActionTypeAndKeys(
-                actionType = OneOnOneResolutionPendingAction.actionType,
-                actionKeys = actionKeys
+            pendingActionDAO.deleteByActionTypeAndIds(
+                actionType = ONE_ON_ONE_RESOLUTION_ACTION_TYPE,
+                qualifiedIds = qualifiedIds
             )
         }
     }
@@ -71,9 +73,8 @@ internal class PersistentPendingActionsRepository(
     override suspend fun enqueuePendingMLSGroupJoin(conversationId: ConversationId) {
         mutex.withLock {
             pendingActionDAO.upsert(
-                actionType = MLSGroupJoinPendingAction.actionType,
-                actionKey = MLSGroupJoinPendingAction.actionKey(conversationId),
-                payload = MLSGroupJoinPendingAction.payload(conversationId),
+                actionType = MLS_GROUP_JOIN_ACTION_TYPE,
+                qualifiedId = conversationId.toDao(),
                 createdAt = Clock.System.now().toEpochMilliseconds()
             )
         }
@@ -81,18 +82,23 @@ internal class PersistentPendingActionsRepository(
 
     override suspend fun getPendingMLSGroupJoins(): List<ConversationId> = mutex.withLock {
         pendingActionDAO
-            .getByActionType(MLSGroupJoinPendingAction.actionType)
-            .mapNotNull { MLSGroupJoinPendingAction.conversationIdFromActionKey(it.actionKey) }
+            .getByActionType(MLS_GROUP_JOIN_ACTION_TYPE)
+            .map { it.qualifiedId.toModel() }
     }
 
     override suspend fun acknowledgePendingMLSGroupJoins(conversationIds: List<ConversationId>) {
-        val actionKeys = conversationIds.distinct().map(MLSGroupJoinPendingAction::actionKey)
-        if (actionKeys.isEmpty()) return
+        val qualifiedIds = conversationIds.distinct().map { it.toDao() }
+        if (qualifiedIds.isEmpty()) return
         mutex.withLock {
-            pendingActionDAO.deleteByActionTypeAndKeys(
-                actionType = MLSGroupJoinPendingAction.actionType,
-                actionKeys = actionKeys
+            pendingActionDAO.deleteByActionTypeAndIds(
+                actionType = MLS_GROUP_JOIN_ACTION_TYPE,
+                qualifiedIds = qualifiedIds
             )
         }
+    }
+
+    private companion object {
+        val ONE_ON_ONE_RESOLUTION_ACTION_TYPE = PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION
+        val MLS_GROUP_JOIN_ACTION_TYPE = PendingActionType.JOIN_MLS_GROUP_CONVERSATION
     }
 }

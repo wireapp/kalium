@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.pendingaction
 
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mockable
 
 enum class PendingActionType(val dbValue: String) {
@@ -25,15 +26,14 @@ enum class PendingActionType(val dbValue: String) {
 }
 
 data class PendingActionEntity(
-    val actionKey: String,
-    val payload: String?,
+    val qualifiedId: QualifiedIDEntity,
     val createdAt: Long,
 )
 
 @Mockable
 interface PendingActionDAO {
-    suspend fun upsert(actionType: PendingActionType, actionKey: String, payload: String?, createdAt: Long)
+    suspend fun upsert(actionType: PendingActionType, qualifiedId: QualifiedIDEntity, createdAt: Long)
     suspend fun getByActionType(actionType: PendingActionType): List<PendingActionEntity>
-    suspend fun deleteByActionTypeAndKeys(actionType: PendingActionType, actionKeys: List<String>)
+    suspend fun deleteByActionTypeAndIds(actionType: PendingActionType, qualifiedIds: List<QualifiedIDEntity>)
     suspend fun deleteByActionType(actionType: PendingActionType)
 }
