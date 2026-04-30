@@ -42,8 +42,11 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
@@ -103,10 +106,16 @@ public class UpdateConversationReadDateUseCase internal constructor(
                     // Skipping, as current lastRead is already newer than the scheduled one
                     return@onSuccess
                 }
-                launch {
-                    sendConfirmation(conversationId, conversation.lastReadDate, time)
+
+                val shouldRunOptionalSideEffects = currentCoroutineContext()[kotlinx.coroutines.Job] != NonCancellable
+
+                if (shouldRunOptionalSideEffects) {
+                    launch {
+                        sendConfirmation(conversationId, conversation.lastReadDate, time)
+                    }
                 }
-                launch {
+
+                withContext(NonCancellable) {
                     val updateResult = conversationRepository.updateConversationReadDate(conversationId, time)
                     updateResult.onSuccess {
                         logger.d("Persisted last-read for '${conversationId.toLogString()}' at $time")
@@ -116,10 +125,12 @@ public class UpdateConversationReadDateUseCase internal constructor(
                         )
                     }
                 }
-                launch {
-                    selfConversationIdProvider().flatMap { selfConversationIds ->
-                        selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                            sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
+                if (shouldRunOptionalSideEffects) {
+                    launch {
+                        selfConversationIdProvider().flatMap { selfConversationIds ->
+                            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                                sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
+                            }
                         }
                     }
                 }
