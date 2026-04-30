@@ -2419,6 +2419,7 @@ public class UserSessionScope internal constructor(
             userStorage,
             mlsMissingUsersRejectionHandlerProvider,
             updateSelfClientCapabilityToConsumableNotifications,
+            e2EIClientProvider,
             users.serverLinks,
             fetchConversationUseCase,
             resetMlsConversation,

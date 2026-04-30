@@ -26,6 +26,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
@@ -117,6 +118,7 @@ public class DebugScope internal constructor(
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
     private val updateSelfClientCapabilityToConsumableNotifications:
     UpdateSelfClientCapabilityToConsumableNotificationsUseCase,
+    private val e2EIClientProvider: E2EIClientProvider,
     private val selfServerConfig: SelfServerConfigUseCase,
     private val fetchConversationUseCase: FetchConversationUseCase,
     private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
@@ -289,6 +291,12 @@ public class DebugScope internal constructor(
 
     public val getFeatureConfig: GetFeatureConfigUseCase
         get() = GetFeatureConfigUseCaseImpl(featureConfigRepository)
+
+    public val getDebugE2EICertificateExpiration: GetDebugE2EICertificateExpirationUseCase
+        get() = GetDebugE2EICertificateExpirationUseCaseImpl(e2EIClientProvider)
+
+    public val setDebugE2EICertificateExpiration: SetDebugE2EICertificateExpirationUseCase
+        get() = SetDebugE2EICertificateExpirationUseCaseImpl(e2EIClientProvider)
 
     public val repairFaultyRemovalKeysUseCase: RepairFaultyRemovalKeysUseCase by lazy {
         RepairFaultyRemovalKeysUseCaseImpl(

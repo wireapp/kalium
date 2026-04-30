@@ -43,11 +43,15 @@ import io.mockative.Mockable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 @Mockable
 internal interface E2EIClientProvider {
     suspend fun getE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<E2EIFailure, E2EIClient>
+    suspend fun setDebugCertificateExpirationOverride(seconds: Long?)
+    suspend fun getDebugCertificateExpirationOverride(): Long?
     suspend fun nuke()
 }
 
@@ -62,6 +66,7 @@ internal class EI2EIClientProviderImpl(
 
     private var e2EIClient: E2EIClient? = null
     private val defaultE2EIExpiry = 90.days
+    private var debugE2EIExpiryOverride = null as Duration?
 
     private val mutex = Mutex()
 
@@ -101,7 +106,7 @@ internal class EI2EIClientProviderImpl(
                         selfUser.name,
                         selfUser.handle,
                         selfUser.teamId?.value,
-                        defaultE2EIExpiry
+                        currentE2EIExpiry()
                     )
                 } else {
                     kaliumLogger.w("initial E2EI client for MLS client without E2EI")
@@ -109,7 +114,7 @@ internal class EI2EIClientProviderImpl(
                         selfUser.name!!,
                         selfUser.handle!!,
                         selfUser.teamId?.value,
-                        defaultE2EIExpiry
+                        currentE2EIExpiry()
                     )
                 }
             }
@@ -140,7 +145,7 @@ internal class EI2EIClientProviderImpl(
                 displayName = selfUser.name!!,
                 handle = selfUser.handle!!,
                 teamId = selfUser.teamId?.value,
-                expiry = defaultE2EIExpiry,
+                expiry = currentE2EIExpiry(),
                 defaultCipherSuite = defaultCipherSuite.toCrypto()
             )
             cryptoStateChangeHookNotifier.onCryptoStateChanged(selfUserId)
@@ -148,6 +153,13 @@ internal class EI2EIClientProviderImpl(
             Either.Right(newE2EIClient)
         })
     }
+
+    override suspend fun setDebugCertificateExpirationOverride(seconds: Long?) {
+        debugE2EIExpiryOverride = seconds?.seconds
+    }
+
+    override suspend fun getDebugCertificateExpirationOverride(): Long? =
+        debugE2EIExpiryOverride?.inWholeSeconds
 
     private suspend fun getSelfUserInfo(): Either<E2EIFailure, SelfUser> {
         return userRepository.getSelfUser()
@@ -163,4 +175,6 @@ internal class EI2EIClientProviderImpl(
     override suspend fun nuke() {
         e2EIClient = null
     }
+
+    private fun currentE2EIExpiry() = debugE2EIExpiryOverride ?: defaultE2EIExpiry
 }
