@@ -36,6 +36,7 @@ actual abstract class GlobalDBBaseTest {
         .URLForDirectory(NSCachesDirectory, NSUserDomainMask, null, true, null)!!
         .path!!
         .let { "$it/kalium-global-test-${NSUUID.UUID().UUIDString}" }
+        .also { NSFileManager.defaultManager.createDirectoryAtPath(it, true, null, null) }
 
     actual fun deleteDatabase() {
         deleteDatabase(FileNameUtil.globalDBName(), storePath)

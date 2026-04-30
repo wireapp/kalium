@@ -43,6 +43,7 @@ actual open class BaseDatabaseTest actual constructor() {
         .URLForDirectory(NSCachesDirectory, NSUserDomainMask, null, true, null)!!
         .path!!
         .let { "$it/kalium-test-${NSUUID.UUID().UUIDString}" }
+        .also { NSFileManager.defaultManager.createDirectoryAtPath(it, true, null, null) }
 
     actual fun databasePath(
         userId: UserIDEntity
