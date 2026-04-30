@@ -96,7 +96,10 @@ public class UpdateConversationReadDateUseCase internal constructor(
                 logger.w("Failed to update conversation read date; StorageFailure $it")
             }.onSuccess { conversation ->
                 if (conversation.lastReadDate >= time) {
-                    logger.d("Skipping last-read update for '${conversationId.toLogString()}': stored=${conversation.lastReadDate} >= requested=$time")
+                    logger.d(
+                        "Skipping last-read update for '${conversationId.toLogString()}': " +
+                            "stored=${conversation.lastReadDate} >= requested=$time"
+                    )
                     // Skipping, as current lastRead is already newer than the scheduled one
                     return@onSuccess
                 }
