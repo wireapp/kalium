@@ -27,11 +27,15 @@ import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.StandardTestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSUUID
 import platform.Foundation.NSUserDomainMask
 
 actual abstract class GlobalDBBaseTest {
 
-    private var storePath = NSFileManager.defaultManager.URLForDirectory(NSCachesDirectory, NSUserDomainMask, null, true, null)!!.path!!
+    private var storePath = NSFileManager.defaultManager
+        .URLForDirectory(NSCachesDirectory, NSUserDomainMask, null, true, null)!!
+        .path!!
+        .let { "$it/kalium-global-test-${NSUUID.UUID().UUIDString}" }
 
     actual fun deleteDatabase() {
         deleteDatabase(FileNameUtil.globalDBName(), storePath)

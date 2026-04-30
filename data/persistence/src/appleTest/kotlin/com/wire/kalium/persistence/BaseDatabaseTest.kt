@@ -31,6 +31,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSUUID
 import platform.Foundation.NSUserDomainMask
 
 actual open class BaseDatabaseTest actual constructor() {
@@ -38,7 +39,10 @@ actual open class BaseDatabaseTest actual constructor() {
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
     actual val encryptedDBSecret = UserDBSecret(ByteArray(0))
 
-    private var storePath = NSFileManager.defaultManager.URLForDirectory(NSCachesDirectory, NSUserDomainMask, null, true, null)!!.path!!
+    private var storePath = NSFileManager.defaultManager
+        .URLForDirectory(NSCachesDirectory, NSUserDomainMask, null, true, null)!!
+        .path!!
+        .let { "$it/kalium-test-${NSUUID.UUID().UUIDString}" }
 
     actual fun databasePath(
         userId: UserIDEntity
