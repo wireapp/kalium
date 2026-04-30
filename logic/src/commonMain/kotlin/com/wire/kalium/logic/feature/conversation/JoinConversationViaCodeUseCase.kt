@@ -21,13 +21,19 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isWrongConversationPassword
+import com.wire.kalium.persistence.dao.message.LocalId
 
 /**
  * Use case for joining a conversation via a code invite code.
@@ -39,7 +45,10 @@ import com.wire.kalium.network.exceptions.isWrongConversationPassword
 // todo(interface). extract interface for use case
 public class JoinConversationViaCodeUseCase internal constructor(
     private val conversionsGroupRepository: ConversationGroupRepository,
-    private val selfUserId: UserId
+    private val memberJoinEventHandler: MemberJoinEventHandler,
+    private val transactionProvider: CryptoTransactionProvider,
+    private val selfUserId: UserId,
+    private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
 ) {
     public suspend operator fun invoke(
         code: String,
@@ -64,6 +73,17 @@ public class JoinConversationViaCodeUseCase internal constructor(
                 }
             })
 
+    private suspend fun onConversationChanged(response: ConversationMemberAddedResponse.Changed): Result {
+        val event = eventMapper.fromEventContentDTO(
+            LocalId.generate(),
+            response.event
+        ) as Event.Conversation.MemberJoin
+        transactionProvider.transaction("joinViaInviteCode") { transactionContext ->
+            memberJoinEventHandler.handle(transactionContext, event)
+        }
+        return Result.Success.Changed(response.event.qualifiedConversation.toModel())
+    }
+
     private fun onError(networkFailure: NetworkFailure): Result.Failure = when (networkFailure) {
         is NetworkFailure.ServerMiscommunication -> {
             if (networkFailure.kaliumException is KaliumException.InvalidRequestError &&
@@ -77,9 +97,6 @@ public class JoinConversationViaCodeUseCase internal constructor(
 
         else -> Result.Failure.Generic(networkFailure)
     }
-
-    private fun onConversationChanged(response: ConversationMemberAddedResponse.Changed): Result =
-        Result.Success.Changed(response.event.qualifiedConversation.toModel())
 
     private suspend fun onConversationUnChanged(
         code: String,

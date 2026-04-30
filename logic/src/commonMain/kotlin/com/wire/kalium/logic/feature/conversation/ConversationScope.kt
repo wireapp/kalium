@@ -101,6 +101,7 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
 import com.wire.kalium.messaging.sending.MessageSender
@@ -145,6 +146,7 @@ public class ConversationScope internal constructor(
     private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     private val systemMessageInserter: SystemMessageInserter,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
+    private val memberJoinEventHandler: MemberJoinEventHandler,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -328,7 +330,12 @@ public class ConversationScope internal constructor(
         get() = DeleteConversationLocallyUseCaseImpl(clearConversationContent)
 
     public val joinConversationViaCode: JoinConversationViaCodeUseCase
-        get() = JoinConversationViaCodeUseCase(conversationGroupRepository, selfUserId)
+        get() = JoinConversationViaCodeUseCase(
+            conversationGroupRepository,
+            memberJoinEventHandler,
+            transactionProvider,
+            selfUserId
+        )
 
     public val checkIConversationInviteCode: CheckConversationInviteCodeUseCase
         get() = CheckConversationInviteCodeUseCase(
