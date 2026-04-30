@@ -57,6 +57,11 @@ public data class ConversationClearEventData(
     val conversationId: ConversationId
 )
 
+public data class ConversationLastReadEventData(
+    val conversationId: ConversationId,
+    val date: Instant
+)
+
 public interface PersistenceEventHookNotifier {
     public suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {}
     public suspend fun onMessageDeleted(data: MessageDeleteEventData, selfUserId: UserId) {}
@@ -64,6 +69,7 @@ public interface PersistenceEventHookNotifier {
     public suspend fun onReadReceiptPersisted(data: ReadReceiptEventData, selfUserId: UserId) {}
     public suspend fun onConversationDeleted(data: ConversationDeleteEventData, selfUserId: UserId) {}
     public suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {}
+    public suspend fun onConversationLastReadPersisted(data: ConversationLastReadEventData, selfUserId: UserId) {}
 }
 
 public object NoOpPersistenceEventHookNotifier : PersistenceEventHookNotifier

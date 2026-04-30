@@ -94,8 +94,8 @@ sealed interface NomadMessageEvent {
 
 @Serializable
 data class ConversationMetadataEntry(
-    @SerialName("conversation_id")
-    val conversationId: String,
+    @SerialName("conversation")
+    val conversation: Conversation,
     @SerialName("last_read")
     val lastReadTimestamp: Long,
     @SerialName("last_modified")

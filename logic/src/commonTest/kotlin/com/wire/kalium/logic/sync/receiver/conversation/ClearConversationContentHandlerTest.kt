@@ -36,6 +36,7 @@ import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangem
 import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.any
 import io.mockative.coEvery
@@ -262,6 +263,11 @@ class ClearConversationContentHandlerTest {
         override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
             conversationClearCalls += data to selfUserId
         }
+
+        override suspend fun onConversationLastReadPersisted(
+            data: ConversationLastReadEventData,
+            selfUserId: UserId
+        ) = Unit
     }
 
     companion object {
