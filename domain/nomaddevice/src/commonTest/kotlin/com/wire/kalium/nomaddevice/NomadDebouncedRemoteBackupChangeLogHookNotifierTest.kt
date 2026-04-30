@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
@@ -298,6 +299,10 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         )
         notifier.onConversationDeleted(ConversationDeleteEventData(conversationId), USER_A)
         notifier.onConversationCleared(ConversationClearEventData(conversationId), USER_A)
+        notifier.onConversationLastReadPersisted(
+            ConversationLastReadEventData(conversationId, Instant.fromEpochMilliseconds(0)),
+            USER_A
+        )
 
         assertEquals(1, delegate.persistedCount)
         assertEquals(1, delegate.messageDeletedCount)
@@ -305,7 +310,8 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         assertEquals(1, delegate.readReceiptCount)
         assertEquals(1, delegate.conversationDeletedCount)
         assertEquals(1, delegate.conversationClearedCount)
-        assertEquals(6, triggeredUsers.size)
+        assertEquals(1, delegate.conversationLastReadCount)
+        assertEquals(7, triggeredUsers.size)
         assertTrue(triggeredUsers.all { it == USER_A })
     }
 
@@ -332,6 +338,7 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
         var readReceiptCount = 0
         var conversationDeletedCount = 0
         var conversationClearedCount = 0
+        var conversationLastReadCount = 0
 
         override suspend fun onMessagePersisted(message: PersistedMessageData, selfUserId: UserId) {
             persistedCount += 1
@@ -355,6 +362,10 @@ class NomadDebouncedRemoteBackupChangeLogHookNotifierTest {
 
         override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
             conversationClearedCount += 1
+        }
+
+        override suspend fun onConversationLastReadPersisted(data: ConversationLastReadEventData, selfUserId: UserId) {
+            conversationLastReadCount += 1
         }
     }
 

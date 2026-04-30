@@ -18,16 +18,50 @@
 
 package com.wire.kalium.util
 
+import kotlinx.coroutines.await
+import kotlin.js.Promise
+
 actual object FileUtil {
     actual fun mkDirs(path: String): Boolean {
-        TODO("Not yet implemented")
+        // Web targets do not expose a host filesystem here; crypto persistence is handled elsewhere.
+        return path.isNotBlank()
     }
 
     actual fun deleteDirectory(path: String): Boolean {
-        TODO("Not yet implemented")
+        return path.isNotBlank()
+    }
+
+    actual suspend fun deletePersistentDirectory(path: String): Boolean {
+        val indexedDb = js("window.indexedDB")
+        return when {
+            path.isBlank() -> false
+            indexedDb == null -> false
+            js("typeof indexedDb.databases !== 'function'") as Boolean -> deleteIndexedDb(indexedDb, path).await()
+            else -> {
+                val databases = indexedDb.databases().unsafeCast<Promise<Array<dynamic>>>().await()
+                val matchingNames = databases
+                    .mapNotNull { it?.name as? String }
+                    .filter { name -> name == path || name.startsWith("$path/") }
+
+                matchingNames.isEmpty() || matchingNames.map { deleteIndexedDb(indexedDb, it).await() }.all { it }
+            }
+        }
     }
 
     actual fun isDirectoryNonEmpty(path: String): Boolean {
-        TODO("Not yet implemented")
+        return false
+    }
+}
+
+private fun deleteIndexedDb(indexedDb: dynamic, name: String): Promise<Boolean> = Promise { resolve, _ ->
+    val request = indexedDb.deleteDatabase(name)
+    request.onsuccess = {
+        resolve(true)
+    }
+    request.onerror = {
+        resolve(false)
+    }
+    request.onblocked = {
+        resolve(false)
     }
 }
