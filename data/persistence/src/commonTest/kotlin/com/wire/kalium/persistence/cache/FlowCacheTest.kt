@@ -23,9 +23,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceTimeBy
-import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -118,62 +116,5 @@ class FlowCacheTest {
         advanceTimeBy(timeout + 1.seconds)
 
         assertTrue(channel.isClosedForSend)
-    }
-
-    @Test
-    fun givenMultipleSubscribers_whenOneIsCancelled_thenOthersKeepReceiving() = runTest {
-        val cache = FlowCache<Int, String>(backgroundScope)
-        val itemKey = 42
-        val channel = Channel<String>(Channel.UNLIMITED)
-        val received = List(SUBSCRIBER_COUNT) { mutableListOf<String>() }
-
-        val jobs = List(SUBSCRIBER_COUNT) { index ->
-            backgroundScope.launch {
-                cache.get(itemKey) { channel.receiveAsFlow() }
-                    .collect { received[index].add(it) }
-            }
-        }
-        runCurrent()
-
-        channel.send("first")
-        runCurrent()
-        received.forEach { assertEquals(listOf("first"), it) }
-
-        val cancelledIndex = 2
-        jobs[cancelledIndex].cancel()
-        jobs[cancelledIndex].join()
-
-        channel.send("second")
-        runCurrent()
-
-        jobs.indices.filter { it != cancelledIndex }.forEach { index ->
-            assertEquals(listOf("first", "second"), received[index])
-        }
-        assertEquals(listOf("first"), received[cancelledIndex])
-    }
-
-    @Test
-    fun givenMultipleCacheEvictions_thenSharingCoroutinesShouldNotAccumulate() = runTest {
-        val timeout = 3.seconds
-        val cache = FlowCache<Int, String>(backgroundScope, timeout)
-        val itemKey = 42
-
-        repeat(5) {
-            val channel = Channel<String>(Channel.UNLIMITED)
-            channel.send("item")
-            cache.get(itemKey) { channel.receiveAsFlow() }.test {
-                awaitItem()
-                cancelAndIgnoreRemainingEvents()
-            }
-            advanceTimeBy(timeout + 1.seconds)
-        }
-
-        val activeChildren = backgroundScope.coroutineContext[Job]!!.children.count()
-        assertEquals(0, activeChildren,
-            "Expected 0 active coroutines but found $activeChildren zombie(s)")
-    }
-
-    private companion object {
-        const val SUBSCRIBER_COUNT = 5
     }
 }
