@@ -38,48 +38,17 @@ import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedC
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
-import com.wire.kalium.logic.util.PlatformRotation
-import com.wire.kalium.logic.util.PlatformView
+import com.wire.kalium.logic.util.PlatformContext
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.flowOf
 
 internal actual class GlobalCallManager(
     scope: CoroutineScope,
     networkStateObserver: NetworkStateObserver
 ) : CallNetworkChangeManager(scope, networkStateObserver) {
-    private val flowManagerService = object : FlowManagerService {
-        override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
-            kaliumLogger.w("Calls not supported on iOS: setVideoPreview ignored")
-        }
-        override suspend fun flipToFrontCamera(conversationId: ConversationId) {
-            kaliumLogger.w("Calls not supported on iOS: flipToFrontCamera ignored")
-        }
-        override suspend fun flipToBackCamera(conversationId: ConversationId) {
-            kaliumLogger.w("Calls not supported on iOS: flipToBackCamera ignored")
-        }
-        override suspend fun setUIRotation(rotation: PlatformRotation) {
-            kaliumLogger.w("Calls not supported on iOS: setUIRotation ignored")
-        }
-        override suspend fun startFlowManager() {
-            kaliumLogger.w("Calls not supported on iOS: startFlowManager ignored")
-        }
-    }
-
-    private val mediaManagerService = object : MediaManagerService {
-        override suspend fun turnLoudSpeakerOn() {
-            kaliumLogger.w("Calls not supported on iOS: turnLoudSpeakerOn ignored")
-        }
-        override suspend fun turnLoudSpeakerOff() {
-            kaliumLogger.w("Calls not supported on iOS: turnLoudSpeakerOff ignored")
-        }
-        override fun observeSpeaker() = flowOf(false)
-        override suspend fun startMediaManager() {
-            kaliumLogger.w("Calls not supported on iOS: startMediaManager ignored")
-        }
-    }
+    private val flowManagerService by lazy { FlowManagerServiceImpl(PlatformContext()) }
+    private val mediaManagerService by lazy { MediaManagerServiceImpl(PlatformContext()) }
 
     @Suppress("LongParameterList")
     internal actual fun getCallManagerForClient(
@@ -101,7 +70,26 @@ internal actual class GlobalCallManager(
         kaliumConfigs: KaliumConfigs,
         createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
     ): CallManager {
-        return CallManagerImpl()
+        return CallManagerImpl(
+            callRepository = callRepository,
+            currentClientIdProvider = currentClientIdProvider,
+            selfConversationIdProvider = selfConversationIdProvider,
+            messageSender = messageSender,
+            callMapper = callMapper,
+            federatedIdMapper = federatedIdMapper,
+            qualifiedIdMapper = qualifiedIdMapper,
+            videoStateChecker = videoStateChecker,
+            conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+            epochInfoUpdater = epochInfoUpdater,
+            networkStateObserver = networkStateObserver,
+            getCallConversationType = getCallConversationType,
+            userConfigRepository = userConfigRepository,
+            kaliumConfigs = kaliumConfigs,
+            mediaManagerService = mediaManagerService,
+            flowManagerService = flowManagerService,
+            createAndPersistRecentlyEndedCallMetadata = createAndPersistRecentlyEndedCallMetadata,
+            selfUserId = userId
+        )
     }
 
     actual suspend fun removeInMemoryCallingManagerForUser(userId: UserId) {
@@ -117,6 +105,8 @@ internal actual class GlobalCallManager(
     }
 
     actual override fun networkChanged() {
-        kaliumLogger.w("Calls not supported on iOS: networkChanged ignored")
+        if (!AppleAvsInterop.notifyNetworkChangedIfAvailable()) {
+            kaliumLogger.w("AVS iOS smoke: networkChanged ignored because AVS is unavailable")
+        }
     }
 }

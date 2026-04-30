@@ -18,4 +18,8 @@
 
 package com.wire.kalium.logic.util
 
-public actual class PlatformView
+import platform.UIKit.UIView
+
+public actual class PlatformView(
+    public val view: UIView?
+)
