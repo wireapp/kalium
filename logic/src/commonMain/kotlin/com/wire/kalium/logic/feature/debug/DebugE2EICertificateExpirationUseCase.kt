@@ -58,5 +58,5 @@ internal class SetDebugE2EICertificateExpirationUseCaseImpl(
     }
 }
 
-internal const val MIN_DEBUG_E2EI_CERTIFICATE_EXPIRATION_SECONDS: Long = 360L
+public const val MIN_DEBUG_E2EI_CERTIFICATE_EXPIRATION_SECONDS: Long = 360L
 internal val DEFAULT_E2EI_CERTIFICATE_EXPIRATION_SECONDS = 90.days.inWholeSeconds
