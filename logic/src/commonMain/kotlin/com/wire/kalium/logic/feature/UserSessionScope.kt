@@ -2372,6 +2372,7 @@ public class UserSessionScope internal constructor(
             systemMessageInserter,
             currentPersistenceEventHookNotifier,
             memberJoinHandler,
+            joinExistingMLSConversationUseCase,
         )
     }
 

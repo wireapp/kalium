@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
@@ -147,6 +148,7 @@ public class ConversationScope internal constructor(
     private val systemMessageInserter: SystemMessageInserter,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val memberJoinEventHandler: MemberJoinEventHandler,
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -332,7 +334,10 @@ public class ConversationScope internal constructor(
     public val joinConversationViaCode: JoinConversationViaCodeUseCase
         get() = JoinConversationViaCodeUseCase(
             conversationGroupRepository,
+            conversationRepository,
             memberJoinEventHandler,
+            joinExistingMLSConversation,
+            mlsConversationRepository,
             transactionProvider,
             selfUserId
         )

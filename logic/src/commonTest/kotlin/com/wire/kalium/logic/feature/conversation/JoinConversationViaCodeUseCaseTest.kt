@@ -20,8 +20,12 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
@@ -33,6 +37,7 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationMember
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isWrongConversationPassword
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -48,7 +53,7 @@ import kotlin.test.assertIs
 class JoinConversationViaCodeUseCaseTest {
 
     @Test
-    fun givenConversationJoined_thenReturnSuccessAndHandlerIsInvoked() = runTest {
+    fun givenConversationJoinedWithProteusProtocol_thenReturnSuccessAndHandlerIsInvokedButNotMLSJoining() = runTest {
         val code = "code"
         val key = "key"
         val domain = "domain"
@@ -63,6 +68,7 @@ class JoinConversationViaCodeUseCaseTest {
                 Either.Right(TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
             )
             .withMemberJoinHandler()
+            .withProtocolInfo(Either.Right(TestConversation.PROTEUS_PROTOCOL_INFO))
             .arrange()
 
         useCase(code, key, domain, password).also {
@@ -82,8 +88,46 @@ class JoinConversationViaCodeUseCaseTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+            arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), any())
         }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenConversationJoinedWithMLSProtocol_thenHandlerAndMLSJoiningAreInvoked() = runTest {
+        val code = "code"
+        val key = "key"
+        val domain = "domain"
+        val password: String? = null
+
+        val (useCase, arrangement) = Arrangement()
+            .withJoinViaInviteCodeReturns(
+                code,
+                key,
+                null,
+                password,
+                Either.Right(TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
+            )
+            .withMemberJoinHandler()
+            .withProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
+            .withJoinExistingMLSConversationSucceeds()
+            .withAddMemberToMLSGroupSucceeds()
+            .arrange()
+
+        useCase(code, key, domain, password).also {
+            assertIs<JoinConversationViaCodeUseCase.Result.Success.Changed>(it)
+        }
+
+        coVerify {
+            arrangement.memberJoinEventHandler.handle(any(), any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), any(), eq(listOf(selfUserId)), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -230,11 +274,17 @@ class JoinConversationViaCodeUseCaseTest {
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
+        val conversationRepository = mock(ConversationRepository::class)
         val memberJoinEventHandler = mock(MemberJoinEventHandler::class)
+        val joinExistingMLSConversation = mock(JoinExistingMLSConversationUseCase::class)
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
         private val useCase: JoinConversationViaCodeUseCase =
             JoinConversationViaCodeUseCase(
                 conversationGroupRepository,
+                conversationRepository,
                 memberJoinEventHandler,
+                joinExistingMLSConversation,
+                mlsConversationRepository,
                 cryptoTransactionProvider,
                 selfUserId,
             )
@@ -266,6 +316,24 @@ class JoinConversationViaCodeUseCaseTest {
                 memberJoinEventHandler.handle(any(), any())
             }.returns(result)
             withTransactionReturning(result)
+        }
+
+        suspend fun withProtocolInfo(result: Either<StorageFailure, com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo>): Arrangement = apply {
+            coEvery {
+                conversationRepository.getConversationProtocolInfo(any())
+            }.returns(result)
+        }
+
+        suspend fun withJoinExistingMLSConversationSucceeds(): Arrangement = apply {
+            coEvery {
+                joinExistingMLSConversation.invoke(any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
+        }
+
+        suspend fun withAddMemberToMLSGroupSucceeds(): Arrangement = apply {
+            coEvery {
+                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
 
         fun arrange() = useCase to this

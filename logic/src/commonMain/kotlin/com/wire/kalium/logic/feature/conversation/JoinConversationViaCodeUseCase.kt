@@ -19,10 +19,18 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
@@ -45,7 +53,10 @@ import com.wire.kalium.persistence.dao.message.LocalId
 // todo(interface). extract interface for use case
 public class JoinConversationViaCodeUseCase internal constructor(
     private val conversionsGroupRepository: ConversationGroupRepository,
+    private val conversationRepository: ConversationRepository,
     private val memberJoinEventHandler: MemberJoinEventHandler,
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val transactionProvider: CryptoTransactionProvider,
     private val selfUserId: UserId,
     private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
@@ -78,11 +89,36 @@ public class JoinConversationViaCodeUseCase internal constructor(
             LocalId.generate(),
             response.event
         ) as Event.Conversation.MemberJoin
+        val conversationId = response.event.qualifiedConversation.toModel()
         transactionProvider.transaction("joinViaInviteCode") { transactionContext ->
             memberJoinEventHandler.handle(transactionContext, event)
+            joinMLSGroupIfNeeded(transactionContext, conversationId)
         }
-        return Result.Success.Changed(response.event.qualifiedConversation.toModel())
+        return Result.Success.Changed(conversationId)
     }
+
+    private suspend fun joinMLSGroupIfNeeded(
+        transactionContext: com.wire.kalium.cryptography.CryptoTransactionContext,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> =
+        conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocol ->
+            when (protocol) {
+                is Conversation.ProtocolInfo.MLSCapable ->
+                    joinExistingMLSConversation(transactionContext, conversationId).flatMap {
+                        transactionContext.wrapInMLSContext { mlsContext ->
+                            mlsConversationRepository.addMemberToMLSGroup(
+                                mlsContext,
+                                protocol.groupId,
+                                listOf(selfUserId),
+                                protocol.cipherSuite
+                            )
+                        }
+                    }
+
+                is Conversation.ProtocolInfo.Proteus ->
+                    Either.Right(Unit)
+            }
+        }
 
     private fun onError(networkFailure: NetworkFailure): Result.Failure = when (networkFailure) {
         is NetworkFailure.ServerMiscommunication -> {
