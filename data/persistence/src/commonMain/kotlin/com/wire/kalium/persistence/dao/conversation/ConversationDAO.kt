@@ -103,7 +103,7 @@ interface ConversationDAO {
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Boolean
-    suspend fun markConversationAsDeletedLocally(qualifiedID: QualifiedIDEntity): Boolean
+    suspend fun setConversationDeletedLocally(qualifiedID: QualifiedIDEntity, deletedLocally: Boolean)
 
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
@@ -187,6 +187,7 @@ interface ConversationDAO {
     suspend fun updateReadDatesAndGetHasUnreadEvents(conversationDates: Map<QualifiedIDEntity, Instant>): Map<QualifiedIDEntity, Boolean>
     suspend fun getMLSConversationsByDomain(domain: String): List<ConversationEntity>
     suspend fun getCellGroupConversations(): List<ConversationEntity>
+    suspend fun getCellGroupConversationsPaged(limit: Int, offset: Int, query: String = ""): List<ConversationEntity>
 }
 
 data class NameAndHandleEntity(

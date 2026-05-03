@@ -272,6 +272,7 @@ public class ConversationScope internal constructor(
             selfConversationIdProvider,
             sendConfirmation,
             conversationWorkQueue,
+            persistenceEventHookNotifier,
             kaliumLogger
         )
 

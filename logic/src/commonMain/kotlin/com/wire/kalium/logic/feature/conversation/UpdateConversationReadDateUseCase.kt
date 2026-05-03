@@ -39,6 +39,8 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -61,6 +63,7 @@ public class UpdateConversationReadDateUseCase internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
     private val workQueue: ConversationWorkQueue,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val logger: KaliumLogger = kaliumLogger
 ) {
 
@@ -100,7 +103,13 @@ public class UpdateConversationReadDateUseCase internal constructor(
                     sendConfirmation(conversationId, conversation.lastReadDate, time)
                 }
                 launch {
-                    conversationRepository.updateConversationReadDate(conversationId, time)
+                    val updateResult = conversationRepository.updateConversationReadDate(conversationId, time)
+                    updateResult.onSuccess {
+                        persistenceEventHookNotifier.onConversationLastReadPersisted(
+                            ConversationLastReadEventData(conversationId, time),
+                            selfUserId
+                        )
+                    }
                 }
                 launch {
                     selfConversationIdProvider().flatMap { selfConversationIds ->

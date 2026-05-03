@@ -37,7 +37,8 @@ enum class ChangeLogEventType(val code: Int) {
 
     // Conversation-level (message_nonce = "")
     CONVERSATION_DELETE(500), // Conversation deleted
-    CONVERSATION_CLEAR(501); // Conversation history cleared
+    CONVERSATION_CLEAR(501), // Conversation history cleared
+    CONVERSATION_METADATA_SYNC(502); // Conversation metadata sync (last-read)
 
     companion object {
         fun fromCode(code: Int): ChangeLogEventType? = entries.find { it.code == code }

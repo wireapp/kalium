@@ -25,6 +25,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
@@ -150,6 +151,11 @@ internal class DebouncedNomadRemoteBackupChangeLogHookNotifier(
 
     override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
         delegate.onConversationCleared(data, selfUserId)
+        onHookTriggered(selfUserId)
+    }
+
+    override suspend fun onConversationLastReadPersisted(data: ConversationLastReadEventData, selfUserId: UserId) {
+        delegate.onConversationLastReadPersisted(data, selfUserId)
         onHookTriggered(selfUserId)
     }
 }

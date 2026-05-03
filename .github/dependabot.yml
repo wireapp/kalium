@@ -9,20 +9,14 @@ updates:
     open-pull-requests-limit: 5
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "weekly"
     cooldown:
-      default-days: 7
+      default-days: 14
       exclude:
         - "com.wire:avs"
         - "com.wire:core-crypto-android"
         - "com.wire:core-crypto-jvm"
         - "io.github.mohamadjaara:core-crypto-kmp"
-    groups:
-      native-priority-dependencies:
-        patterns:
-          - "com.wire:avs"
-          - "com.wire:core-crypto-*"
-          - "io.github.mohamadjaara:core-crypto-kmp"
     commit-message:
       prefix: "chore(deps): [WPB-9777] "
 

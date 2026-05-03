@@ -420,12 +420,10 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun markConversationAsDeletedLocally(qualifiedID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
-        conversationQueries.transactionWithResult {
-            conversationQueries.markAsDeletedLocally(qualifiedID)
-            conversationQueries.selectChanges().executeAsOne() > 0
+    override suspend fun setConversationDeletedLocally(qualifiedID: QualifiedIDEntity, deletedLocally: Boolean): Unit =
+        withContext(writeDispatcher.value) {
+            conversationQueries.setDeletedLocally(deletedLocally = deletedLocally, qualifiedId = qualifiedID)
         }
-    }
 
     override suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,
@@ -772,4 +770,14 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun getCellGroupConversations(): List<ConversationEntity> = withContext(readDispatcher.value) {
         conversationQueries.selectCellGroupConversations(conversationMapper::toConversationEntity).executeAsList()
     }
+
+    override suspend fun getCellGroupConversationsPaged(limit: Int, offset: Int, query: String): List<ConversationEntity> =
+        withContext(readDispatcher.value) {
+            conversationQueries.selectCellGroupConversationsPaged(
+                limit = limit.toLong(),
+                offset = offset.toLong(),
+                query = query,
+                mapper = conversationMapper::toConversationEntity
+            ).executeAsList()
+        }
 }
