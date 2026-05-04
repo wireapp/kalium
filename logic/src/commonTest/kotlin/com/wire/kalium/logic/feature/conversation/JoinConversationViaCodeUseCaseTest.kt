@@ -237,6 +237,74 @@ class JoinConversationViaCodeUseCaseTest {
     }
 
     @Test
+    fun givenMemberJoinHandlerFails_whenJoiningViaCode_thenReturnGenericFailure() = runTest {
+        val code = "code"
+        val key = "key"
+        val domain = "domain"
+        val password: String? = null
+        val storageFailure = StorageFailure.Generic(RuntimeException("db error"))
+
+        val (useCase, arrangement) = Arrangement()
+            .withJoinViaInviteCodeReturns(
+                code,
+                key,
+                null,
+                password,
+                Either.Right(TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
+            )
+            .withMemberJoinHandler(Either.Left(storageFailure))
+            .arrange()
+
+        useCase(code, key, domain, password).also {
+            assertIs<JoinConversationViaCodeUseCase.Result.Failure.Generic>(it)
+            assertEquals(storageFailure, it.failure)
+        }
+
+        coVerify {
+            arrangement.memberJoinEventHandler.handle(any(), any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenMLSJoinFails_whenJoiningViaCode_thenReturnGenericFailure() = runTest {
+        val code = "code"
+        val key = "key"
+        val domain = "domain"
+        val password: String? = null
+        val mlsFailure = NetworkFailure.NoNetworkConnection(RuntimeException("no network"))
+
+        val (useCase, arrangement) = Arrangement()
+            .withJoinViaInviteCodeReturns(
+                code,
+                key,
+                null,
+                password,
+                Either.Right(TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE)
+            )
+            .withMemberJoinHandler()
+            .withProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
+            .also { arr ->
+                coEvery {
+                    arr.joinExistingMLSConversation.invoke(any(), any(), any(), any())
+                }.returns(Either.Left(mlsFailure))
+            }
+            .arrange()
+
+        useCase(code, key, domain, password).also {
+            assertIs<JoinConversationViaCodeUseCase.Result.Failure.Generic>(it)
+            assertEquals(mlsFailure, it.failure)
+        }
+
+        coVerify {
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
     fun givenWrongPasswordError_whenJoiningViaCode_thenWrongPasswordIsReturned() = runTest {
         val code = "code"
         val key = "key"

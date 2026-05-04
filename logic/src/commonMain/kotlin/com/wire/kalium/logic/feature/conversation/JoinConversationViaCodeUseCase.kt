@@ -90,11 +90,13 @@ public class JoinConversationViaCodeUseCase internal constructor(
             response.event
         ) as Event.Conversation.MemberJoin
         val conversationId = response.event.qualifiedConversation.toModel()
-        transactionProvider.transaction("joinViaInviteCode") { transactionContext ->
+        return transactionProvider.transaction("joinViaInviteCode") { transactionContext ->
             memberJoinEventHandler.handle(transactionContext, event)
-            joinMLSGroupIfNeeded(transactionContext, conversationId)
-        }
-        return Result.Success.Changed(conversationId)
+                .flatMap { joinMLSGroupIfNeeded(transactionContext, conversationId) }
+        }.fold(
+            { Result.Failure.Generic(it) },
+            { Result.Success.Changed(conversationId) }
+        )
     }
 
     private suspend fun joinMLSGroupIfNeeded(
@@ -165,7 +167,7 @@ public class JoinConversationViaCodeUseCase internal constructor(
 
             public data object IncorrectPassword : Failure
             public data class Generic(
-                val failure: NetworkFailure
+                val failure: CoreFailure
             ) : Failure
         }
     }
