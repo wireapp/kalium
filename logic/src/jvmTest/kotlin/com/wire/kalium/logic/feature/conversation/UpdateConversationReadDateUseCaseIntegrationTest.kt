@@ -68,6 +68,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertNotNull
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -86,7 +87,7 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
     }
 
     @Test
-    fun givenQueuedLastRead_whenSessionScopeCancelledDuringDebounce_thenLastReadAndNomadChangeLogArePersisted() = runTest {
+    fun givenQueuedLastRead_whenSessionScopeCancelledDuringDebounce_thenLastReadIsNotPersisted() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val persistedLastRead = stableNow()
         val newLastRead = persistedLastRead + 1.seconds
@@ -100,8 +101,8 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
         runCurrent()
         advanceUntilIdle()
 
-        assertPersisted(arrangement.database, newLastRead)
-        assertNomadChangeLogPersisted(arrangement.database)
+        assertPersisted(arrangement.database, persistedLastRead)
+        assertNomadChangeLogNotPersisted(arrangement.database)
     }
 
     @Test
@@ -225,6 +226,12 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
         val metadataChange = pendingChanges.singleOrNull { it.eventType == ChangeLogEventType.CONVERSATION_METADATA_SYNC }
         assertNotNull(metadataChange)
         assertEquals(TestConversation.ENTITY_GROUP.id, metadataChange.conversationId)
+    }
+
+    private suspend fun assertNomadChangeLogNotPersisted(database: TestUserDatabase) {
+        val pendingChanges = database.builder.remoteBackupChangeLogDAO.getPendingChanges()
+        val metadataChange = pendingChanges.singleOrNull { it.eventType == ChangeLogEventType.CONVERSATION_METADATA_SYNC }
+        assertNull(metadataChange)
     }
 
     private data class Arrangement(
