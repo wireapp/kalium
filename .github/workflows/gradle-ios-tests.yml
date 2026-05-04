@@ -41,12 +41,18 @@ jobs:
             GITHUB_USER: ${{ github.actor }}
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Generate aggregated iOS test report
+        if: always()
+        run: ./gradlew aggregateIosSimulatorArm64TestReport
+
       - name: Archive Test Reports
         if: always()
         uses: actions/upload-artifact@v7
         with:
             name: test-reports
-            path: ./**/build/reports/tests/**
+            path: |
+              build/reports/tests/iosSimulatorArm64Test/**
+              ./**/build/reports/tests/**
 
       - name: Archive Test Results
         if: always()
@@ -56,6 +62,7 @@ jobs:
             path: |
               ./**/build/test-results/testDebugUnitTest/**/*.xml
               ./**/build/test-results/**/*.xml
+              ./**/build/test-results/iosSimulatorArm64Test/**
 
       - name: Publish Unit Test Results
         uses: EnricoMi/publish-unit-test-result-action/macos@v2
@@ -86,7 +93,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v8.0.0
+        uses: actions/download-artifact@v8.0.1
         continue-on-error: true
         with:
             name: test-results

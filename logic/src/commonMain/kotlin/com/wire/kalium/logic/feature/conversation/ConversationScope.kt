@@ -276,11 +276,16 @@ public class ConversationScope internal constructor(
             selfConversationIdProvider,
             sendConfirmation,
             conversationWorkQueue,
+            persistenceEventHookNotifier,
             kaliumLogger
         )
 
     public val markConversationAsReadLocally: MarkConversationAsReadLocallyUseCase
-        get() = MarkConversationAsReadLocallyUseCaseImpl(conversationRepository)
+        get() = MarkConversationAsReadLocallyUseCaseImpl(
+            conversationRepository,
+            persistenceEventHookNotifier,
+            selfUserId
+        )
 
     public val updateConversationAccess: UpdateConversationAccessRoleUseCase
         get() = UpdateConversationAccessRoleUseCaseImpl(conversationRepository, conversationGroupRepository, syncManager)

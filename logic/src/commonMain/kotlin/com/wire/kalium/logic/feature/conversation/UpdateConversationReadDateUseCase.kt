@@ -39,9 +39,14 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
@@ -61,6 +66,7 @@ public class UpdateConversationReadDateUseCase internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
     private val workQueue: ConversationWorkQueue,
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val logger: KaliumLogger = kaliumLogger
 ) {
 
@@ -93,19 +99,38 @@ public class UpdateConversationReadDateUseCase internal constructor(
                 logger.w("Failed to update conversation read date; StorageFailure $it")
             }.onSuccess { conversation ->
                 if (conversation.lastReadDate >= time) {
+                    logger.d(
+                        "Skipping last-read update for '${conversationId.toLogString()}': " +
+                            "stored=${conversation.lastReadDate} >= requested=$time"
+                    )
                     // Skipping, as current lastRead is already newer than the scheduled one
                     return@onSuccess
                 }
-                launch {
-                    sendConfirmation(conversationId, conversation.lastReadDate, time)
+
+                val shouldRunOptionalSideEffects = currentCoroutineContext()[kotlinx.coroutines.Job] != NonCancellable
+
+                if (shouldRunOptionalSideEffects) {
+                    launch {
+                        sendConfirmation(conversationId, conversation.lastReadDate, time)
+                    }
                 }
-                launch {
-                    conversationRepository.updateConversationReadDate(conversationId, time)
+
+                withContext(NonCancellable) {
+                    val updateResult = conversationRepository.updateConversationReadDate(conversationId, time)
+                    updateResult.onSuccess {
+                        logger.d("Persisted last-read for '${conversationId.toLogString()}' at $time")
+                        persistenceEventHookNotifier.onConversationLastReadPersisted(
+                            ConversationLastReadEventData(conversationId, time),
+                            selfUserId
+                        )
+                    }
                 }
-                launch {
-                    selfConversationIdProvider().flatMap { selfConversationIds ->
-                        selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                            sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
+                if (shouldRunOptionalSideEffects) {
+                    launch {
+                        selfConversationIdProvider().flatMap { selfConversationIds ->
+                            selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                                sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
+                            }
                         }
                     }
                 }
