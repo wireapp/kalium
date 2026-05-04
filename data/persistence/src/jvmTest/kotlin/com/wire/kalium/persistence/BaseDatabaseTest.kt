@@ -24,20 +24,37 @@ import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.userDatabaseBuilder
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
 import java.io.File
 import java.nio.file.Files
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
 
+@OptIn(ExperimentalCoroutinesApi::class)
 actual open class BaseDatabaseTest actual constructor() {
 
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
     actual val encryptedDBSecret = UserDBSecret("db_secret".toByteArray())
 
+    private val storageDirectory = Files.createTempDirectory("test-storage").toFile()
+
     private val UserIDEntity.databaseFile
-        get() = Files.createTempDirectory("test-storage").toFile().resolve("test-$domain-$value.db")
+        get() = storageDirectory.resolve("test-$domain-$value.db")
+
+    @BeforeTest
+    fun setMainDispatcher() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @AfterTest
+    fun resetMainDispatcher() {
+        Dispatchers.resetMain()
+    }
 
     actual fun databasePath(
         userId: UserIDEntity

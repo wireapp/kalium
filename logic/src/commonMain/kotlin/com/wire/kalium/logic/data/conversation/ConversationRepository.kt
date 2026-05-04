@@ -90,6 +90,7 @@ internal interface ConversationRepository {
     suspend fun observeConversationById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
+    suspend fun getNonDeletedConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
 
     // endregion
 
@@ -200,6 +201,7 @@ internal interface ConversationRepository {
         conversationId: ConversationId,
         groupState: GroupState
     ): Either<StorageFailure, Unit>
+
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedID, date: Instant? = null): Either<StorageFailure, Unit>
     suspend fun updateAllConversationsNotificationDate(): Either<StorageFailure, Unit>
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
@@ -207,6 +209,7 @@ internal interface ConversationRepository {
         targetId: ConversationId,
         sourceIds: Collection<ConversationId>
     ): Either<StorageFailure, Unit>
+
     suspend fun updateConversationReadDate(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Unit>
     suspend fun updateAccessInfo(
         conversationID: ConversationId,
@@ -235,7 +238,7 @@ internal interface ConversationRepository {
     )
     suspend fun deleteConversationLocally(conversationId: ConversationId): Either<CoreFailure, Boolean>
 
-    suspend fun markConversationAsDeletedLocally(conversationId: ConversationId): Either<CoreFailure, Boolean>
+    suspend fun setConversationDeletedLocally(conversationId: ConversationId, deletedLocally: Boolean): Either<CoreFailure, Unit>
 
     suspend fun updateChannelAddPermissionLocally(
         conversationId: ConversationId,
@@ -399,7 +402,17 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>> =
+    override suspend fun getNonDeletedConversationById(
+        conversationId: ConversationId
+    ): Either<StorageFailure, Conversation> = wrapStorageRequest {
+        conversationDAO.getNonDeletedConversationById(conversationId.toDao())?.let {
+            conversationMapper.fromDaoModel(it)
+        }
+    }
+
+    override suspend fun observeConversationDetailsById(
+        conversationID: ConversationId
+    ): Flow<Either<StorageFailure, ConversationDetails>> =
         conversationDAO.observeConversationDetailsById(conversationID.toDao())
             .wrapStorageRequest()
             .map { eitherConversationView ->
@@ -794,8 +807,8 @@ internal class ConversationDataSource internal constructor(
         conversationDAO.deleteConversationByQualifiedID(conversationId.toDao())
     }
 
-    override suspend fun markConversationAsDeletedLocally(conversationId: ConversationId) = wrapStorageRequest {
-        conversationDAO.markConversationAsDeletedLocally(conversationId.toDao())
+    override suspend fun setConversationDeletedLocally(conversationId: ConversationId, deletedLocally: Boolean) = wrapStorageRequest {
+        conversationDAO.setConversationDeletedLocally(conversationId.toDao(), deletedLocally)
     }
 
     override suspend fun clearContent(conversationId: ConversationId): Either<StorageFailure, Unit> =

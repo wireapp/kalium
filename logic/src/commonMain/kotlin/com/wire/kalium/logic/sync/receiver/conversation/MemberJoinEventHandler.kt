@@ -87,6 +87,12 @@ internal class MemberJoinEventHandlerImpl(
                 }
                 // Even if unable to fetch conversation details, at least attempt adding the members
                 userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
+
+                if (event.members.any { it.id == selfUserId }) {
+                    conversationRepository.setConversationDeletedLocally(event.conversationId, false)
+                        .onFailure { logger.w("Failed to clear deleted_locally flag for ${event.conversationId}: $it") }
+                }
+
                 conversationRepository.persistMembers(event.members, event.conversationId)
             }.onSuccess {
                 conversationRepository.getConversationById(event.conversationId).onSuccess { conversation ->

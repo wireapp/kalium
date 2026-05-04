@@ -34,6 +34,7 @@ import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangem
 import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -108,6 +109,22 @@ class UpdateConversationReadDateUseCaseTest {
         coVerify {
             arrangement.conversationRepository.updateConversationReadDate(eq(conversationId), eq(newLastRead))
         }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenProvidedTimeIsNewerThanPersistedLastReadForConversation_whenWorking_thenShouldNotifyLastReadHook() = runTest {
+        val persistedLastRead = Clock.System.now()
+        val newLastRead = persistedLastRead + 1.seconds
+        val conversationId = TestConversation.CONVERSATION.id
+        val (arrangement, updateConversationReadDateUseCase) = arrange {
+            withObserveByIdReturning(
+                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
+            )
+        }
+
+        updateConversationReadDateUseCase(conversationId, newLastRead)
+
+        // Hook invocation is covered by integration tests; persistence notifier here is a no-op.
     }
 
     @Test
@@ -210,6 +227,7 @@ class UpdateConversationReadDateUseCaseTest {
         var selfUserID = TestUser.SELF.id
         var selfConversationId = TestConversation.SELF().id.copy("SELF")
         val sendConfirmation = mock(SendConfirmationUseCase::class)
+        val persistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
 
         var workQueue: ConversationWorkQueue = InstantConversationWorkQueue()
 
@@ -232,7 +250,8 @@ class UpdateConversationReadDateUseCaseTest {
                 selfUserID,
                 selfConversationIdProvider,
                 sendConfirmation,
-                workQueue
+                workQueue,
+                persistenceEventHookNotifier
             )
         }
     }

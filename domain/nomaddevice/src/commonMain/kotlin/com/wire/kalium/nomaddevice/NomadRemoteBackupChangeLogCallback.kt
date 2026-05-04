@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
@@ -209,6 +210,25 @@ internal class NomadRemoteBackupChangeLogDataSource(
         }
     }
 
+    override suspend fun logSyncableConversationLastRead(
+        data: ConversationLastReadEventData,
+        selfUserId: UserId
+    ): Either<StorageFailure, Unit> {
+        val dao = resolveDaoForUser(selfUserId, "CONVERSATION_METADATA_SYNC") ?: return Unit.right()
+        return wrapStorageRequest {
+            dao.logConversationMetadataSync(
+                conversationId = data.conversationId.toDao(),
+                timestampMs = eventTimestampMsProvider()
+            )
+        }.onFailure { _ ->
+            nomadLogger.e(
+                "Failed to write CONVERSATION_METADATA_SYNC changelog for conversation " +
+                    "'${data.conversationId.toLogString()}'.",
+                RuntimeException("CONVERSATION_METADATA_SYNC failed")
+            )
+        }
+    }
+
     private fun resolveDaoForUser(selfUserId: UserId, eventTag: String): RemoteBackupChangeLogDAO? {
         return remoteBackupChangeLogDAOProvider(selfUserId).also { dao ->
             if (dao == null) {
@@ -273,6 +293,12 @@ internal class UserScopedNomadPersistenceEventHookNotifier(
     override suspend fun onConversationCleared(data: ConversationClearEventData, selfUserId: UserId) {
         if (selfUserId == this.selfUserId) {
             safeInvoke("ConversationClear") { it.onConversationCleared(data, this.selfUserId) }
+        }
+    }
+
+    override suspend fun onConversationLastReadPersisted(data: ConversationLastReadEventData, selfUserId: UserId) {
+        if (selfUserId == this.selfUserId) {
+            safeInvoke("ConversationLastRead") { it.onConversationLastReadPersisted(data, this.selfUserId) }
         }
     }
 
