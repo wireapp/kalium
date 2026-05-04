@@ -84,6 +84,12 @@ internal class ConversationDAOImpl internal constructor(
         qualifiedID: QualifiedIDEntity
     ): ConversationEntity? = observeConversationById(qualifiedID).first()
 
+    override suspend fun getNonDeletedConversationById(
+        qualifiedID: QualifiedIDEntity
+    ): ConversationEntity? = withContext(readDispatcher.value) {
+        conversationQueries.selectByQualifiedId(qualifiedID, conversationMapper::fromViewToModel).executeAsOneOrNull()
+    }
+
     override suspend fun observeConversationDetailsById(
         conversationId: QualifiedIDEntity
     ): Flow<ConversationViewEntity?> = conversationDetailsCache.get(conversationId) {
