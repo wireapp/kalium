@@ -50,7 +50,8 @@ import com.wire.kalium.persistence.dao.message.LocalId
  * @param key The key of the conversation to join.
  * @param domain optional domain of the conversation to join.
  */
-// todo(interface). extract interface for use case
+
+@Suppress("LongParameterList")
 public class JoinConversationViaCodeUseCase internal constructor(
     private val conversionsGroupRepository: ConversationGroupRepository,
     private val conversationRepository: ConversationRepository,
