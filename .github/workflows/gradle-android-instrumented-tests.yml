@@ -103,7 +103,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-reports
-          path: ./**/build/reports/tests/**
+          path: |
+            ./**/build/reports/tests/**
+            ./**/build/reports/androidTests/**
 
       - name: Archive Test Results
         if: always()

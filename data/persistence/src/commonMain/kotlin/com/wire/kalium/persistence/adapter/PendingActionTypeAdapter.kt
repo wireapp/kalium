@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,15 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.adapter
 
-package com.wire.kalium.util
+import app.cash.sqldelight.ColumnAdapter
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
 
-expect object FileUtil {
-    fun mkDirs(path: String): Boolean
+internal object PendingActionTypeAdapter : ColumnAdapter<PendingActionType, String> {
+    override fun decode(databaseValue: String): PendingActionType =
+        PendingActionType.entries.firstOrNull { it.dbValue == databaseValue }
+            ?: error("Unknown PendingActionType db value: $databaseValue")
 
-    fun deleteDirectory(path: String): Boolean
-
-    suspend fun deletePersistentDirectory(path: String): Boolean
-
-    fun isDirectoryNonEmpty(path: String): Boolean
+    override fun encode(value: PendingActionType): String = value.dbValue
 }
