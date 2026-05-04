@@ -36,6 +36,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +46,8 @@ import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -173,6 +176,41 @@ class E2EIClientProviderTest {
 
         verifySuspend {
             arrangement.coreCryptoCentral.newAcmeEnrollment(any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenDebugExpirationNotSet_whenGettingE2EIClient_usesDefault90Days() = runTest {
+        val (arrangement, e2eiClientProvider) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .arrange {
+                withGetMLSClientSuccessful()
+                withE2EINewActivationEnrollmentSuccessful()
+                withSelfUser(TestUser.SELF.right())
+                withE2EIEnabled(false)
+            }
+
+        e2eiClientProvider.getE2EIClient(TestClient.CLIENT_ID).shouldSucceed()
+
+        verifySuspend {
+            arrangement.mlsContext.e2eiNewActivationEnrollment(any(), any(), any(), eq(90.days))
+        }
+    }
+
+    @Test
+    fun givenDebugExpirationSet_whenGettingE2EIClient_usesOverrideExpiration() = runTest {
+        val (arrangement, e2eiClientProvider) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .arrange {
+                withGetMLSClientSuccessful()
+                withE2EINewActivationEnrollmentSuccessful()
+                withSelfUser(TestUser.SELF.right())
+                withE2EIEnabled(false)
+            }
+
+        e2eiClientProvider.setDebugCertificateExpirationOverride(360)
+        e2eiClientProvider.getE2EIClient(TestClient.CLIENT_ID).shouldSucceed()
+
+        verifySuspend {
+            arrangement.mlsContext.e2eiNewActivationEnrollment(any(), any(), any(), eq(360.seconds))
         }
     }
 

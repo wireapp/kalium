@@ -17,14 +17,31 @@
  */
 package com.wire.kalium.cryptography
 
+// CoreCrypto web persists its own state in IndexedDB. These filesystem helpers are only
+// relevant for native file-based storage/migration paths and should stay inert on JS.
 internal actual fun createDirectory(path: String): Boolean {
-    TODO("Not yet implemented")
+    logJsFilesystemShimUsageOnce("createDirectory", path)
+    return true
 }
 
 internal actual fun fileExists(path: String): Boolean {
-    TODO("Not yet implemented")
+    logJsFilesystemShimUsageOnce("fileExists", path)
+    return false
 }
 
 internal actual fun deleteFile(path: String): Boolean {
-    TODO("Not yet implemented")
+    logJsFilesystemShimUsageOnce("deleteFile", path)
+    return false
+}
+
+private var hasLoggedJsFilesystemShimUsage = false
+
+private fun logJsFilesystemShimUsageOnce(operation: String, path: String) {
+    if (hasLoggedJsFilesystemShimUsage) return
+
+    hasLoggedJsFilesystemShimUsage = true
+    kaliumLogger.w(
+        "JS filesystem shim invoked via '$operation' for path '$path'. " +
+            "CoreCrypto web uses IndexedDB-backed persistence, so file-based helpers stay inert on JS."
+    )
 }

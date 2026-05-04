@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -126,6 +127,27 @@ class JoinExistingMLSConversationUseCaseTest {
                 any(), eq((conversation.protocol as Conversation.ProtocolInfo.MLS).groupId), any()
             )
         }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenConversationIsDeletedLocally_whenInvokingUseCase_thenDoNotJoinConversation() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetNonDeletedConversationByIdFailure(StorageFailure.DataNotFound)
+            .arrange()
+
+        joinExistingMLSConversationsUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldFail()
+
+        coVerify {
+            arrangement.conversationApi.fetchGroupInfo(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -344,14 +366,20 @@ class JoinExistingMLSConversationUseCaseTest {
         suspend fun withGetConversationsByIdSuccessful(conversation: Conversation = MLS_CONVERSATION1) =
             apply {
                 coEvery {
-                    conversationRepository.getConversationById(any())
+                    conversationRepository.getNonDeletedConversationById(any())
                 }.returns(Either.Right(conversation))
             }
 
         suspend fun withGetConversationsByIdSequentially(vararg conversations: Conversation) = apply {
             coEvery {
-                conversationRepository.getConversationById(any())
+                conversationRepository.getNonDeletedConversationById(any())
             }.thenReturnSequentially(*conversations.map { Either.Right(it) }.toTypedArray())
+        }
+
+        suspend fun withGetNonDeletedConversationByIdFailure(failure: StorageFailure) = apply {
+            coEvery {
+                conversationRepository.getNonDeletedConversationById(any())
+            }.returns(Either.Left(failure))
         }
 
         suspend fun withFetchConversationSuccessful() = apply {

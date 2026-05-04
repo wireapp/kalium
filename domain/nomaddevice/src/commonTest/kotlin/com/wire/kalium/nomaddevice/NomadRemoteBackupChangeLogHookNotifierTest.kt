@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistedMessageData
@@ -272,6 +273,25 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
 
     // endregion
 
+    // region CONVERSATION_METADATA tests
+
+    @Test
+    fun givenConversationLastReadEvent_whenNotifierInvoked_thenLogConversationMetadataSyncIsCalled() = runTest {
+        val dao = RecordingRemoteBackupChangeLogDAO()
+        val notifier = createNotifier(daoProvider = { dao })
+
+        notifier.onConversationLastReadPersisted(
+            ConversationLastReadEventData(CONVERSATION_ID_MODEL, Instant.fromEpochMilliseconds(42)),
+            SELF_USER_ID
+        )
+
+        assertEquals(1, dao.conversationMetadataSyncCalls.size)
+        assertEquals(CONVERSATION_ID_MODEL.toQualifiedIDEntity(), dao.conversationMetadataSyncCalls[0].conversationId)
+        assertEquals(EVENT_TIMESTAMP_MS, dao.conversationMetadataSyncCalls[0].timestampMs)
+    }
+
+    // endregion
+
     private fun createNotifier(
         daoProvider: (UserId) -> RemoteBackupChangeLogDAO?,
     ): PersistenceEventHookNotifier =
@@ -323,6 +343,7 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
         private val throwOnReadReceiptsSync: Throwable? = null,
         private val throwOnConversationDelete: Throwable? = null,
         private val throwOnConversationClear: Throwable? = null,
+        private val throwOnConversationMetadataSync: Throwable? = null,
     ) : RemoteBackupChangeLogDAO {
 
         data class MessageUpsertCall(
@@ -360,12 +381,18 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
             val timestampMs: Long,
         )
 
+        data class ConversationMetadataSyncCall(
+            val conversationId: QualifiedIDEntity,
+            val timestampMs: Long,
+        )
+
         val messageUpsertCalls = mutableListOf<MessageUpsertCall>()
         val messageDeleteCalls = mutableListOf<MessageDeleteCall>()
         val reactionsSyncCalls = mutableListOf<ReactionsSyncCall>()
         val readReceiptsSyncCalls = mutableListOf<ReadReceiptsSyncCall>()
         val conversationDeleteCalls = mutableListOf<ConversationDeleteCall>()
         val conversationClearCalls = mutableListOf<ConversationClearCall>()
+        val conversationMetadataSyncCalls = mutableListOf<ConversationMetadataSyncCall>()
 
         override suspend fun logMessageUpsert(
             conversationId: QualifiedIDEntity,
@@ -400,6 +427,11 @@ class NomadRemoteBackupChangeLogHookNotifierTest {
         override suspend fun logConversationClear(conversationId: QualifiedIDEntity, timestampMs: Long) {
             throwOnConversationClear?.let { throw it }
             conversationClearCalls.add(ConversationClearCall(conversationId, timestampMs))
+        }
+
+        override suspend fun logConversationMetadataSync(conversationId: QualifiedIDEntity, timestampMs: Long) {
+            throwOnConversationMetadataSync?.let { throw it }
+            conversationMetadataSyncCalls.add(ConversationMetadataSyncCall(conversationId, timestampMs))
         }
 
         override suspend fun getPendingChanges(): List<ChangeLogEntry> = emptyList()

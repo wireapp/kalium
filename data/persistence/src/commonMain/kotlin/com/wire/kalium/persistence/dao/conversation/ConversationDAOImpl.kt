@@ -84,6 +84,12 @@ internal class ConversationDAOImpl internal constructor(
         qualifiedID: QualifiedIDEntity
     ): ConversationEntity? = observeConversationById(qualifiedID).first()
 
+    override suspend fun getNonDeletedConversationById(
+        qualifiedID: QualifiedIDEntity
+    ): ConversationEntity? = withContext(readDispatcher.value) {
+        conversationQueries.selectByQualifiedId(qualifiedID, conversationMapper::fromViewToModel).executeAsOneOrNull()
+    }
+
     override suspend fun observeConversationDetailsById(
         conversationId: QualifiedIDEntity
     ): Flow<ConversationViewEntity?> = conversationDetailsCache.get(conversationId) {
@@ -420,12 +426,10 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun markConversationAsDeletedLocally(qualifiedID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
-        conversationQueries.transactionWithResult {
-            conversationQueries.markAsDeletedLocally(qualifiedID)
-            conversationQueries.selectChanges().executeAsOne() > 0
+    override suspend fun setConversationDeletedLocally(qualifiedID: QualifiedIDEntity, deletedLocally: Boolean): Unit =
+        withContext(writeDispatcher.value) {
+            conversationQueries.setDeletedLocally(deletedLocally = deletedLocally, qualifiedId = qualifiedID)
         }
-    }
 
     override suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,

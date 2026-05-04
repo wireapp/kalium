@@ -1,6 +1,4 @@
 
-<img src="/.idea/icon.png" alt="Kalium Logo" style="max-width:100%;">
-
 # Kalium
 [![JVM & JS Tests](https://github.com/wireapp/kalium/actions/workflows/gradle-jvm-tests.yml/badge.svg)](https://github.com/wireapp/kalium/actions/workflows/gradle-jvm-tests.yml)
 [![codecov](https://codecov.io/gh/wireapp/kalium/branch/develop/graph/badge.svg?token=UWQ1P7DY7I)](https://codecov.io/gh/wireapp/kalium)
@@ -342,6 +340,3 @@ class :test:mocks kotlin-multiplatform
 class :core:libsodium kotlin-multiplatform
 
 ```
-#### Logo
-
-The logo is adapted from [OpenMoji](https://openmoji.org/) – the open-source emoji and icon project. License: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)

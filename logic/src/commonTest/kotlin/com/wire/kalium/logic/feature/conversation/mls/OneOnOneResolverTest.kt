@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation.mls
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
@@ -44,6 +45,7 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.`in`
+import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import kotlinx.coroutines.flow.flowOf
@@ -357,13 +359,18 @@ class OneOnOneResolverTest {
         OneOnOneMigratorArrangement by OneOnOneMigratorArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
         IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl() {
+        val pendingActionsRepository = mock(PendingActionsRepository::class)
         fun arrange() = run {
+            runBlocking {
+                coEvery { pendingActionsRepository.enqueuePendingOneOnOneResolution(any()) }.returns(Unit)
+            }
             runBlocking { block() }
             this@Arrangement to OneOnOneResolverImpl(
                 userRepository = userRepository,
                 oneOnOneProtocolSelector = oneOnOneProtocolSelector,
                 oneOnOneMigrator = oneOnOneMigrator,
                 incrementalSyncRepository = incrementalSyncRepository,
+                pendingActionsRepository = pendingActionsRepository,
                 maxConcurrentResolutions = maxConcurrentResolutions,
                 maxThrottleRetries = maxThrottleRetries,
                 throttleRetryDelayMs = throttleRetryDelayMs,

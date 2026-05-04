@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistedMessageData
 import com.wire.kalium.messaging.hooks.ReactionEventData
@@ -38,4 +39,5 @@ internal interface NomadRemoteBackupChangeLogRepository {
     suspend fun logSyncableReadReceipt(data: ReadReceiptEventData, selfUserId: UserId): Either<StorageFailure, Unit>
     suspend fun logSyncableConversationDelete(data: ConversationDeleteEventData, selfUserId: UserId): Either<StorageFailure, Unit>
     suspend fun logSyncableConversationClear(data: ConversationClearEventData, selfUserId: UserId): Either<StorageFailure, Unit>
+    suspend fun logSyncableConversationLastRead(data: ConversationLastReadEventData, selfUserId: UserId): Either<StorageFailure, Unit>
 }

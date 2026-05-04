@@ -51,6 +51,11 @@ insertConversationClear {
     ) VALUES (:conversationId, NULL, :eventType, :timestampMs, :timestampMs);
 }
 
+insertConversationMetadataSync:
+INSERT OR REPLACE INTO RemotebackupChangeLog(
+    conversation_id, message_id, event_type, timestamp_ms, message_timestamp_ms
+) VALUES (:conversationId, NULL, :eventType, :timestampMs, :timestampMs);
+
 getPendingChanges:
 SELECT * FROM RemotebackupChangeLog ORDER BY timestamp_ms ASC, message_timestamp_ms ASC, conversation_id ASC, message_id ASC, event_type ASC;
 
