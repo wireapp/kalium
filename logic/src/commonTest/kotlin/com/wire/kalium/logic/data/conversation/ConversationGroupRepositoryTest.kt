@@ -953,22 +953,19 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenProteusConversation_whenJoiningConversationSuccessWithChanged_thenResponseIsHandled() = runTest {
+    fun givenJoiningConversationSuccessWithChanged_thenApiIsCalled() = runTest {
         val code = "code"
         val key = "key"
         val uri: String? = null
         val password: String? = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withJoinConversationAPIResponse(
                 code,
                 key,
                 uri,
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
-            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
@@ -977,29 +974,22 @@ class ConversationGroupRepositoryTest {
         coVerify {
             arrangement.conversationApi.joinConversation(eq(code), eq(key), eq(uri), eq(password))
         }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenProteusConversation_whenJoiningConversationSuccessWithUnchanged_thenMemberJoinEventHandlerIsNotInvoked() = runTest {
+    fun givenJoiningConversationSuccessWithUnchanged_thenApiIsCalled() = runTest {
         val code = "code"
         val key = "key"
         val uri: String? = null
         val password: String? = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withJoinConversationAPIResponse(
                 code,
                 key,
                 uri,
                 NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, emptyMap(), 204)
             )
-            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
@@ -1007,112 +997,6 @@ class ConversationGroupRepositoryTest {
 
         coVerify {
             arrangement.conversationApi.joinConversation(eq(code), eq(key), eq(uri), eq(password))
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenMLSConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
-        val code = "code"
-        val key = "key"
-        val uri: String? = null
-        val password: String? = null
-
-        val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withProtocolInfoById(MLS_PROTOCOL_INFO)
-            .withJoinConversationAPIResponse(
-                code,
-                key,
-                uri,
-                NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
-            )
-            .withEmitLocalEvent()
-            .withJoinExistingMlsConversationSucceeds()
-            .withSuccessfulAddMemberToMLSGroup()
-            .arrange()
-
-        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
-            .shouldSucceed()
-
-        coVerify {
-            arrangement.conversationApi.joinConversation(eq(code), eq(key), eq(uri), eq(password))
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.joinExistingMLSConversation.invoke(
-                any(),
-                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
-                any(),
-                any()
-            )
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(),
-                eq(GroupID(MLS_PROTOCOL_INFO.groupId)),
-                eq(listOf(TestUser.SELF.id)),
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
-            )
-        }.wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenMixedConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
-        val code = "code"
-        val key = "key"
-        val uri: String? = null
-        val password: String? = null
-
-        val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withProtocolInfoById(MIXED_PROTOCOL_INFO)
-            .withJoinConversationAPIResponse(
-                code,
-                key,
-                uri,
-                NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
-            )
-            .withEmitLocalEvent()
-            .withJoinExistingMlsConversationSucceeds()
-            .withSuccessfulAddMemberToMLSGroup()
-            .arrange()
-
-        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
-            .shouldSucceed()
-
-        coVerify {
-            arrangement.conversationApi.joinConversation(eq(code), eq(key), eq(uri), eq(password))
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.joinExistingMLSConversation.invoke(
-                any(),
-                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
-                any(),
-                any()
-            )
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(),
-                eq(GroupID(MIXED_PROTOCOL_INFO.groupId)),
-                eq(listOf(TestUser.SELF.id)),
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
-            )
         }.wasInvoked(exactly = once)
     }
 
@@ -1952,14 +1836,12 @@ class ConversationGroupRepositoryTest {
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
         val newConversationMembersRepository = mock(NewConversationMembersRepository::class)
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
-        val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
         val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
         val localEventRepository = mock(LocalEventRepository::class)
 
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
                 mlsConversationRepository,
-                joinExistingMLSConversation,
                 localEventRepository,
                 conversationMessageTimerEventHandler,
                 conversationDAO,
@@ -2018,12 +1900,6 @@ class ConversationGroupRepositoryTest {
             coEvery {
                 conversationApi.joinConversation(eq(code), eq(key), eq(uri), any())
             }.returns(result)
-        }
-
-        suspend fun withJoinExistingMlsConversationSucceeds() = apply {
-            coEvery {
-                joinExistingMLSConversation.invoke(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
         }
 
         suspend fun withConversationDetailsById(conversation: Conversation) = apply {
