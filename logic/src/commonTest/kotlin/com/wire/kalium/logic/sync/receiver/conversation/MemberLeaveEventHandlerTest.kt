@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
@@ -288,6 +289,58 @@ internal class MemberLeaveEventHandlerTest {
     }
 
     @Test
+    fun givenSelfUserRemovedFromMLSConversation_whenHandlingMemberLeave_thenLeaveGroupCalled() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.Removed).copy(removedList = listOf(selfUserId))
+
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withDeleteMembersByQualifiedID(
+                    result = event.removedList.size.toLong(),
+                    conversationId = EqualsMatcher(event.conversationId.toDao()),
+                    memberIdList = EqualsMatcher(event.removedList.map { QualifiedIDEntity(it.value, it.domain) })
+                )
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
+                withTeamId(Either.Right(null))
+                withPersistingMessage(Either.Right(Unit))
+                withGetConversationProtocolInfo(Either.Right(MLS_DOMAIN_PROTOCOL_INFO))
+                coEvery { mlsConversationRepository.leaveGroup(any(), any()) }.returns(Either.Right(Unit))
+            }
+
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event)
+
+        coVerify {
+            arrangement.mlsConversationRepository.leaveGroup(any(), eq(MLS_GROUP_ID))
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenSelfUserRemovedWithOtherUsersFromMLSConversation_whenHandlingMemberLeave_thenLeaveGroupCalled() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.Removed).copy(
+            removedList = listOf(selfUserId, userId)
+        )
+
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withDeleteMembersByQualifiedID(
+                    result = event.removedList.size.toLong(),
+                    conversationId = EqualsMatcher(event.conversationId.toDao()),
+                    memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
+                )
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
+                withTeamId(Either.Right(null))
+                withPersistingMessage(Either.Right(Unit))
+                withGetConversationProtocolInfo(Either.Right(MLS_DOMAIN_PROTOCOL_INFO))
+                coEvery { mlsConversationRepository.leaveGroup(any(), any()) }.returns(Either.Right(Unit))
+            }
+
+        memberLeaveEventHandler.handle(arrangement.transactionContext, event)
+
+        coVerify {
+            arrangement.mlsConversationRepository.leaveGroup(any(), eq(MLS_GROUP_ID))
+        }.wasInvoked(once)
+    }
+
+    @Test
     fun givenOtherUsersRemovedFromConversation_whenHandlingMemberLeave_thenLeaveGroupNotCalled() = runTest {
         val event = memberLeaveEvent(reason = MemberLeaveReason.Removed).copy(
             removedList = listOf(UserId("userId1", "domain"), UserId("userId2", "domain"))
@@ -324,6 +377,7 @@ internal class MemberLeaveEventHandlerTest {
                     conversationId = EqualsMatcher(event.conversationId.toDao()),
                     memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
+                withGetConversationProtocolInfo(Either.Left(StorageFailure.DataNotFound))
                 withPersistingMessage(Either.Right(Unit))
             }
 

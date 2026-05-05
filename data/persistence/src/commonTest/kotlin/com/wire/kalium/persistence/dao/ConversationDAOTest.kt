@@ -657,10 +657,39 @@ class ConversationDAOTest : BaseDatabaseTest() {
             val outdatedDate2 = Instant.DISTANT_PAST
             val outdatedGroupId2 = (outDatedConversation2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
             conversationDAO.insertConversation(outDatedConversation2)
+            insertSelfMember(outDatedConversation2.id)
             conversationDAO.updateKeyingMaterial(outdatedGroupId2, outdatedDate2)
 
             // then
             assertEquals(listOf(outdatedGroupId2), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
+        }
+
+    @Test
+    fun givenMLSConversationNeedsKeyingMaterialUpdateButSelfUserIsNotMember_whenGettingConversationsByKeyingMaterialUpdate_thenItIsNotReturned() =
+        runTest {
+            // given
+            val conversation = conversationEntity4
+            val groupId = (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+            conversationDAO.insertConversation(conversation)
+            conversationDAO.updateKeyingMaterial(groupId, Instant.DISTANT_PAST)
+
+            // then
+            assertEquals(emptyList(), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
+        }
+
+    @Test
+    fun givenDeletedMLSConversationNeedsKeyingMaterialUpdateAndSelfUserIsMember_whenGettingConversationsByKeyingMaterialUpdate_thenItIsNotReturned() =
+        runTest {
+            // given
+            val conversation = conversationEntity4
+            val groupId = (conversation.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+            conversationDAO.insertConversation(conversation)
+            insertSelfMember(conversation.id)
+            conversationDAO.setConversationDeletedLocally(conversation.id, true)
+            conversationDAO.updateKeyingMaterial(groupId, Instant.DISTANT_PAST)
+
+            // then
+            assertEquals(emptyList(), conversationDAO.getConversationsByKeyingMaterialUpdate(90.days))
         }
 
     @Test
@@ -800,6 +829,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenConversation_whenUpdatingProposalTimer_thenItIsUpdated() = runTest {
         // given
         conversationDAO.insertConversation(conversationEntity2)
+        insertSelfMember(conversationEntity2.id)
 
         // when
         conversationDAO.setProposalTimer(proposalTimer2)
@@ -815,6 +845,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val updatedFiringDate = Instant.DISTANT_PAST
         val groupID = (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
         conversationDAO.insertConversation(conversationEntity2)
+        insertSelfMember(conversationEntity2.id)
         conversationDAO.setProposalTimer(ProposalTimerEntity(groupID, initialFiringDate))
 
         // when
@@ -828,6 +859,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenConversationWithExistingProposalTimer_whenClearingProposalTimer_thenItIsUpdated() = runTest {
         // given
         conversationDAO.insertConversation(conversationEntity2)
+        insertSelfMember(conversationEntity2.id)
         conversationDAO.setProposalTimer(proposalTimer2)
 
         // when
@@ -843,11 +875,35 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.insertConversation(conversationEntity3)
+        insertSelfMember(conversationEntity2.id)
+        insertSelfMember(conversationEntity3.id)
         conversationDAO.setProposalTimer(proposalTimer2)
         conversationDAO.setProposalTimer(proposalTimer3)
 
         // then
         assertEquals(listOf(proposalTimer2, proposalTimer3), conversationDAO.getProposalTimers().first())
+    }
+
+    @Test
+    fun givenConversationWithProposalTimerButSelfUserIsNotMember_whenGettingProposalTimers_thenItIsNotReturned() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.setProposalTimer(proposalTimer2)
+
+        // then
+        assertEquals(emptyList(), conversationDAO.getProposalTimers().first())
+    }
+
+    @Test
+    fun givenDeletedConversationWithProposalTimerAndSelfUserIsMember_whenGettingProposalTimers_thenItIsNotReturned() = runTest {
+        // given
+        conversationDAO.insertConversation(conversationEntity2)
+        insertSelfMember(conversationEntity2.id)
+        conversationDAO.setProposalTimer(proposalTimer2)
+        conversationDAO.setConversationDeletedLocally(conversationEntity2.id, true)
+
+        // then
+        assertEquals(emptyList(), conversationDAO.getProposalTimers().first())
     }
 
     @Test
@@ -2183,6 +2239,10 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ),
             conversationId
         )
+    }
+
+    private suspend fun insertSelfMember(conversationId: QualifiedIDEntity) {
+        memberDAO.insertMember(MemberEntity(selfUserId, MemberEntity.Role.Member), conversationId)
     }
 
     @Test

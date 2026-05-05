@@ -26,10 +26,14 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.common.functional.distinct
 import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isConversationNotFound
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -102,7 +106,7 @@ internal class PendingProposalSchedulerImpl(
             }
                 .onFailure {
                     kaliumLogger.e("Failed to commit pending proposals in ${groupID.toLogString()}: $it")
-                    if (it is MLSFailure.ConversationNotFound || it is MLSFailure.StaleProposal) {
+                    if (it.isUnrecoverableProposalFailure()) {
                         kaliumLogger.w(
                             "Clearing stale proposal timer for ${groupID.toLogString()} due to unrecoverable failure"
                         )
@@ -140,3 +144,11 @@ internal class PendingProposalSchedulerImpl(
     }
 
 }
+
+private fun Throwable?.isConversationNotFoundError() =
+    this is KaliumException.InvalidRequestError && isConversationNotFound()
+
+private fun CoreFailure.isUnrecoverableProposalFailure() =
+    this is MLSFailure.ConversationNotFound ||
+        this is MLSFailure.StaleProposal ||
+        this is NetworkFailure.ServerMiscommunication && kaliumException.isConversationNotFoundError()

@@ -24,15 +24,18 @@ import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatten
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
-import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.logic.data.MockConversation
+import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -44,6 +47,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
@@ -54,12 +59,15 @@ import kotlin.time.Duration.Companion.seconds
 @OptIn(ExperimentalCoroutinesApi::class)
 class PendingProposalSchedulerTest {
 
+    private fun TestScope.testDispatcher(): KaliumDispatcher =
+        StandardTestDispatcher(testScheduler).testKaliumDispatcher()
+
     @Test
     fun givenConversation_onScheduleCommit_thenProposalTimerIsScheduled() = runTest {
         val (arrangement, pendingProposalsScheduler) = Arrangement()
             .withSubconversationRepositoryDoesNotContainGroup()
             .withScheduleProposalTimerSuccessful()
-            .arrange()
+            .arrange(testDispatcher())
 
         pendingProposalsScheduler.scheduleCommit(Arrangement.PROPOSAL_TIMER.groupID, Arrangement.PROPOSAL_TIMER.timestamp)
 
@@ -73,7 +81,7 @@ class PendingProposalSchedulerTest {
         val (arrangement, pendingProposalsScheduler) = Arrangement()
             .withSubconversationRepositoryContainsGroup(Arrangement.PROPOSAL_TIMER.groupID)
             .withScheduleProposalTimerSuccessful()
-            .arrange()
+            .arrange(testDispatcher())
 
         pendingProposalsScheduler.scheduleCommit(Arrangement.PROPOSAL_TIMER.groupID, Arrangement.PROPOSAL_TIMER.timestamp)
 
@@ -83,142 +91,163 @@ class PendingProposalSchedulerTest {
     }
 
     @Test
-    fun givenExpiredProposalTimer_whenSyncFinishes_thenPendingProposalsIsCommitted() = runTest(TestKaliumDispatcher.default) {
+    fun givenExpiredProposalTimer_whenSyncFinishes_thenPendingProposalsIsCommitted() = runTest {
         val (arrangement, _) = Arrangement()
-            .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
+            .withScheduledProposalTimers(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
             .withCommitPendingProposalsSuccessful()
-            .arrange()
+            .arrange(testDispatcher())
 
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
         }.wasInvoked(once)
     }
 
     @Test
-    fun givenNonExpiredProposalTimer_whenSyncFinishes_thenPendingProposalIsNotCommitted() = runTest(TestKaliumDispatcher.default) {
+    fun givenNonExpiredProposalTimer_whenSyncFinishes_thenPendingProposalIsNotCommitted() = runTest {
         val (arrangement, _) = Arrangement()
-            .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_NEAR_FUTURE)))
+            .withScheduledProposalTimers(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_NEAR_FUTURE)))
             .withCommitPendingProposalsSuccessful()
-            .arrange()
+            .arrange(testDispatcher())
 
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
         }.wasNotInvoked()
     }
 
     @Test
-    fun givenNonExpiredProposalTimer_whenSyncFinishesAndWeWait_thenPendingProposalIsCommitted() = runTest(TestKaliumDispatcher.default) {
+    fun givenNonExpiredProposalTimer_whenSyncFinishesAndWeWait_thenPendingProposalIsCommitted() = runTest {
         val (arrangement, _) = Arrangement()
-            .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_NEAR_FUTURE)))
+            .withScheduledProposalTimers(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_NEAR_FUTURE)))
             .withCommitPendingProposalsSuccessful()
-            .arrange()
+            .arrange(testDispatcher())
 
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
         advanceUntilIdle()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
         }.wasInvoked(once)
     }
 
     @Test
-    fun givenExpiredProposalTimer_whenSyncIsLive_thenPendingProposalIsCommitted() = runTest(TestKaliumDispatcher.default) {
+    fun givenExpiredProposalTimer_whenSyncIsLive_thenPendingProposalIsCommitted() = runTest {
         val proposalChannel = Channel<List<ProposalTimer>>(Channel.UNLIMITED)
         val (arrangement, _) = Arrangement()
             .withScheduledProposalTimersFlow(proposalChannel.consumeAsFlow())
             .withCommitPendingProposalsSuccessful()
-            .arrange()
+            .arrange(testDispatcher())
 
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         advanceUntilIdle()
-        proposalChannel.trySend(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_NEAR_FUTURE)))
+        proposalChannel.trySend(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_NEAR_FUTURE)))
         advanceUntilIdle()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
         }.wasInvoked(once)
     }
 
     @Test
-    fun givenExpiredProposalTimer_whenSyncIsPending_thenPendingProposalIsNotCommitted() = runTest(TestKaliumDispatcher.default) {
+    fun givenExpiredProposalTimer_whenSyncIsPending_thenPendingProposalIsNotCommitted() = runTest {
         val proposalChannel = Channel<List<ProposalTimer>>(Channel.UNLIMITED)
         val (arrangement, _) = Arrangement()
             .withScheduledProposalTimersFlow(proposalChannel.consumeAsFlow())
             .withCommitPendingProposalsSuccessful()
-            .arrange()
+            .arrange(testDispatcher())
 
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         advanceUntilIdle()
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
         advanceUntilIdle()
-        proposalChannel.trySend(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
+        proposalChannel.trySend(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
         advanceUntilIdle()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
         }.wasNotInvoked()
     }
 
     @Test
-    fun givenExpiredProposalTimer_whenCommitFailsWithConversationNotFound_thenTimerIsCleared() = runTest(TestKaliumDispatcher.default) {
+    fun givenExpiredProposalTimer_whenCommitFailsWithConversationNotFound_thenTimerIsCleared() = runTest {
         val (arrangement, _) = Arrangement()
-            .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
+            .withScheduledProposalTimers(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
             .withCommitPendingProposalsFailing(MLSFailure.ConversationNotFound)
             .withClearProposalTimerSuccessful()
-            .arrange()
+            .arrange(testDispatcher())
 
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.clearProposalTimer(eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.clearProposalTimer(eq(MockConversation.GROUP_ID))
         }.wasInvoked(once)
     }
 
     @Test
-    fun givenExpiredProposalTimer_whenCommitFailsWithStaleProposal_thenTimerIsCleared() = runTest(TestKaliumDispatcher.default) {
+    fun givenExpiredProposalTimer_whenCommitFailsWithServerConversationNotFound_thenTimerIsCleared() =
+        runTest {
+            val (arrangement, _) = Arrangement()
+                .withScheduledProposalTimers(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
+                .withCommitPendingProposalsFailing(NetworkFailure.ServerMiscommunication(TestNetworkException.noConversation))
+                .withClearProposalTimerSuccessful()
+                .arrange(testDispatcher())
+
+            arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
+            yield()
+
+            coVerify {
+                arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
+            }.wasInvoked(once)
+
+            coVerify {
+                arrangement.mlsConversationRepository.clearProposalTimer(eq(MockConversation.GROUP_ID))
+            }.wasInvoked(once)
+        }
+
+    @Test
+    fun givenExpiredProposalTimer_whenCommitFailsWithStaleProposal_thenTimerIsCleared() = runTest {
         val (arrangement, _) = Arrangement()
-            .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
+            .withScheduledProposalTimers(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
             .withCommitPendingProposalsFailing(MLSFailure.StaleProposal)
             .withClearProposalTimerSuccessful()
-            .arrange()
+            .arrange(testDispatcher())
 
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.mlsConversationRepository.clearProposalTimer(eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.clearProposalTimer(eq(MockConversation.GROUP_ID))
         }.wasInvoked(once)
     }
 
     @Test
-    fun givenExpiredProposalTimer_whenCommitFailsWithOtherError_thenTimerIsNotCleared() = runTest(TestKaliumDispatcher.default) {
+    fun givenExpiredProposalTimer_whenCommitFailsWithOtherError_thenTimerIsNotCleared() = runTest {
         val (arrangement, _) = Arrangement()
-            .withScheduledProposalTimers(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
+            .withScheduledProposalTimers(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
             .withCommitPendingProposalsFailing(CoreFailure.Unknown(null))
             .withClearProposalTimerSuccessful()
-            .arrange()
+            .arrange(testDispatcher())
 
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
         coVerify {
-            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(TestConversation.GROUP_ID))
+            arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
         }.wasInvoked(once)
 
         coVerify {
@@ -232,15 +261,13 @@ class PendingProposalSchedulerTest {
         val mlsConversationRepository = mock(MLSConversationRepository::class)
         val subconversationRepository = mock(SubconversationRepository::class)
 
-        val pendingProposalScheduler = PendingProposalSchedulerImpl(
+        suspend fun arrange(testDispatcher: KaliumDispatcher) = this to PendingProposalSchedulerImpl(
             incrementalSyncRepository,
             lazy { mlsConversationRepository },
             lazy { subconversationRepository },
             cryptoTransactionProvider,
-            TestKaliumDispatcher
-        )
-
-        suspend fun arrange() = this to pendingProposalScheduler.also {
+            testDispatcher
+        ).also {
             withTransactionReturning(Either.Right(Unit))
         }
 
@@ -296,7 +323,7 @@ class PendingProposalSchedulerTest {
             val INSTANT_PAST = Instant.DISTANT_PAST
             val INSTANT_NEAR_FUTURE = DateTimeUtil.currentInstant().plus(5.seconds)
             val INSTANT_FUTURE = Instant.DISTANT_FUTURE
-            val PROPOSAL_TIMER = ProposalTimer(TestConversation.GROUP_ID, INSTANT_FUTURE)
+            val PROPOSAL_TIMER = ProposalTimer(MockConversation.GROUP_ID, INSTANT_FUTURE)
         }
     }
 }
