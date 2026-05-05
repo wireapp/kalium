@@ -46,6 +46,7 @@ internal interface SSOLoginRepository {
     suspend fun metaData(): Either<NetworkFailure, String>
 
     suspend fun settings(): Either<NetworkFailure, SSOSettingsResponse>
+    suspend fun getByEmail(email: String): Either<NetworkFailure, String?>
     suspend fun domainLookup(domain: String): Either<NetworkFailure, DomainLookupResult>
 }
 
@@ -81,6 +82,12 @@ internal class SSOLoginRepositoryImpl(
 
     override suspend fun settings(): Either<NetworkFailure, SSOSettingsResponse> = wrapApiRequest {
         ssoLogin.settings()
+    }
+
+    override suspend fun getByEmail(email: String): Either<NetworkFailure, String?> = wrapApiRequest {
+        ssoLogin.getByEmail(email)
+    }.map {
+        it.ssoCode
     }
 
      override suspend fun domainLookup(domain: String): Either<NetworkFailure, DomainLookupResult> = wrapApiRequest {

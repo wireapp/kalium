@@ -26,6 +26,7 @@ import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.toSessionDto
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
+import com.wire.kalium.network.api.unauthenticated.sso.SSOCodeResponse
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.CustomErrors.MISSING_REFRESH_TOKEN
@@ -117,12 +118,18 @@ internal open class SSOLoginApiV0 internal constructor(
         httpClient.get("$PATH_SSO/$PATH_SETTINGS")
     }
 
+    override suspend fun getByEmail(email: String): NetworkResponse<SSOCodeResponse> =
+        NetworkResponse.Error(
+            APINotSupported("${this::class.simpleName}: ${::getByEmail.name} is only available on API V15")
+        )
+
     protected companion object {
         const val PATH_SSO = "sso"
         const val PATH_INITIATE = "initiate-login"
         const val PATH_FINALIZE = "finalize-login"
         const val PATH_METADATA = "metadata"
         const val PATH_SETTINGS = "settings"
+        const val PATH_GET_BY_EMAIL = "get-by-email"
         const val PATH_ACCESS = "access"
         const val PATH_SELF = "self"
         const val QUERY_SUCCESS_REDIRECT = "success_redirect"
