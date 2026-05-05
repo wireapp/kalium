@@ -38,6 +38,7 @@ interface ConversationDAO {
 
     suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
+    suspend fun getNonDeletedConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
     suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean
@@ -103,7 +104,7 @@ interface ConversationDAO {
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Boolean
-    suspend fun markConversationAsDeletedLocally(qualifiedID: QualifiedIDEntity): Boolean
+    suspend fun setConversationDeletedLocally(qualifiedID: QualifiedIDEntity, deletedLocally: Boolean)
 
     suspend fun updateConversationMutedStatus(
         conversationId: QualifiedIDEntity,

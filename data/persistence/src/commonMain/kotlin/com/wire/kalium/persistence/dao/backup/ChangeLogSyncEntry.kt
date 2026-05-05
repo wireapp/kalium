@@ -66,6 +66,10 @@ sealed interface ChangeLogSyncEvent {
     data class ConversationClear(
         override val change: ChangeLogEntry,
     ) : ChangeLogSyncEvent
+
+    data class ConversationMetadataSync(
+        override val change: ChangeLogEntry,
+    ) : ChangeLogSyncEvent
 }
 
 /**

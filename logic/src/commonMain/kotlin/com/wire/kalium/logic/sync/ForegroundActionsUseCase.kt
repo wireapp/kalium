@@ -19,6 +19,8 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
+import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingMLSGroupJoinsUseCase
+import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCase
 import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
@@ -49,6 +51,8 @@ internal class ForegroundActionsUseCaseImpl(
     private val mlsClientManager: MLSClientManager,
     private val mlsMigrationManager: MLSMigrationManager,
     private val keyingMaterialsManager: KeyingMaterialsManager,
+    private val recoverPendingMLSGroupJoinsUseCase: RecoverPendingMLSGroupJoinsUseCase,
+    private val recoverPendingOneOnOneResolutionsUseCase: RecoverPendingOneOnOneResolutionsUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : ForegroundActionsUseCase {
 
@@ -60,6 +64,8 @@ internal class ForegroundActionsUseCaseImpl(
         { mlsClientManager() },
         { mlsMigrationManager() },
         { keyingMaterialsManager() },
+        { recoverPendingMLSGroupJoinsUseCase() },
+        { recoverPendingOneOnOneResolutionsUseCase() },
     )
 
     override suspend operator fun invoke() = withContext(dispatchers.io) {

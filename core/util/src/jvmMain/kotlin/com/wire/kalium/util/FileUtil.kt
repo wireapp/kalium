@@ -27,6 +27,8 @@ actual object FileUtil {
         return File(path).deleteRecursively()
     }
 
+    actual suspend fun deletePersistentDirectory(path: String): Boolean = deleteDirectory(path)
+
     actual fun isDirectoryNonEmpty(path: String): Boolean {
         return File(path).listFiles()?.isNotEmpty() ?: false
     }

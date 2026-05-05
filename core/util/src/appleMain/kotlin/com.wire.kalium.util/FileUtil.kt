@@ -36,6 +36,8 @@ actual object FileUtil {
         return NSFileManager.defaultManager.removeItemAtPath(path, error.ptr)
     }
 
+    actual suspend fun deletePersistentDirectory(path: String): Boolean = deleteDirectory(path)
+
     actual fun isDirectoryNonEmpty(path: String): Boolean = memScoped {
         val error = alloc<ObjCObjectVar<NSError?>>()
         NSFileManager.defaultManager.contentsOfDirectoryAtPath(path, error.ptr)?.isNotEmpty() ?: false

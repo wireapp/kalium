@@ -23,5 +23,7 @@ expect object FileUtil {
 
     fun deleteDirectory(path: String): Boolean
 
+    suspend fun deletePersistentDirectory(path: String): Boolean
+
     fun isDirectoryNonEmpty(path: String): Boolean
 }

@@ -22,6 +22,7 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.api.json.model.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.authenticated.nomaddevice.Conversation
 import com.wire.kalium.network.api.authenticated.nomaddevice.ConversationMetadataEntry
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadBatchRestoreRequest
 import com.wire.kalium.network.api.authenticated.nomaddevice.NomadMessageEvent
@@ -663,12 +664,12 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
                 NomadMessageEvent.ConversationMetadataEvent(
                     conversationMetadata = listOf(
                         ConversationMetadataEntry(
-                            conversationId = "conv_1",
+                            conversation = Conversation(id = "conv_1", domain = "example.com"),
                             lastReadTimestamp = 1772014500000,
                             lastModifiedTimestamp = 1772014600000
                         ),
                         ConversationMetadataEntry(
-                            conversationId = "conv_2",
+                            conversation = Conversation(id = "conv_2", domain = "example.com"),
                             lastReadTimestamp = 1772014800000,
                             lastModifiedTimestamp = 1772014900000
                         )
@@ -685,12 +686,18 @@ internal class NomadDeviceSyncApiV0Test : ApiTest() {
                   "type": "CONVERSATION_METADATA",
                   "conversation_metadata": [
                     {
-                      "conversation_id": "conv_1",
+                      "conversation": {
+                        "id": "conv_1",
+                        "domain": "example.com"
+                      },
                       "last_read": 1772014500000,
                       "last_modified": 1772014600000
                     },
                     {
-                      "conversation_id": "conv_2",
+                      "conversation": {
+                        "id": "conv_2",
+                        "domain": "example.com"
+                      },
                       "last_read": 1772014800000,
                       "last_modified": 1772014900000
                     }

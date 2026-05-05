@@ -31,6 +31,7 @@ import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificatio
 import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
+import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.common.error.StorageFailure
 import io.mockative.any
@@ -329,5 +330,10 @@ class DeleteMessageHandlerTest {
         override suspend fun onMessageDeleted(data: MessageDeleteEventData, selfUserId: UserId) {
             deleteMessageCalls += data to selfUserId
         }
+
+        override suspend fun onConversationLastReadPersisted(
+            data: ConversationLastReadEventData,
+            selfUserId: UserId
+        ) = Unit
     }
 }

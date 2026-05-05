@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
@@ -101,6 +102,7 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
 import com.wire.kalium.messaging.sending.MessageSender
@@ -145,6 +147,8 @@ public class ConversationScope internal constructor(
     private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     private val systemMessageInserter: SystemMessageInserter,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
+    private val memberJoinEventHandler: MemberJoinEventHandler,
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
@@ -272,11 +276,16 @@ public class ConversationScope internal constructor(
             selfConversationIdProvider,
             sendConfirmation,
             conversationWorkQueue,
+            persistenceEventHookNotifier,
             kaliumLogger
         )
 
     public val markConversationAsReadLocally: MarkConversationAsReadLocallyUseCase
-        get() = MarkConversationAsReadLocallyUseCaseImpl(conversationRepository)
+        get() = MarkConversationAsReadLocallyUseCaseImpl(
+            conversationRepository,
+            persistenceEventHookNotifier,
+            selfUserId
+        )
 
     public val updateConversationAccess: UpdateConversationAccessRoleUseCase
         get() = UpdateConversationAccessRoleUseCaseImpl(conversationRepository, conversationGroupRepository, syncManager)
@@ -328,7 +337,15 @@ public class ConversationScope internal constructor(
         get() = DeleteConversationLocallyUseCaseImpl(clearConversationContent)
 
     public val joinConversationViaCode: JoinConversationViaCodeUseCase
-        get() = JoinConversationViaCodeUseCase(conversationGroupRepository, selfUserId)
+        get() = JoinConversationViaCodeUseCase(
+            conversationGroupRepository,
+            conversationRepository,
+            memberJoinEventHandler,
+            joinExistingMLSConversation,
+            mlsConversationRepository,
+            transactionProvider,
+            selfUserId
+        )
 
     public val checkIConversationInviteCode: CheckConversationInviteCodeUseCase
         get() = CheckConversationInviteCodeUseCase(

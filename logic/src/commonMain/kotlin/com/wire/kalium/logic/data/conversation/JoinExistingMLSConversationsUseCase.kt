@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -29,6 +30,8 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
+import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isTooManyRequests
@@ -56,6 +59,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
+    private val pendingActionsRepository: PendingActionsRepository,
     private val maxConcurrentJoins: Int = DEFAULT_MAX_CONCURRENT_JOINS,
     private val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
     private val throttleRetryDelayMs: Long = DEFAULT_THROTTLE_RETRY_DELAY_MS,
@@ -142,7 +146,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
         }
     }
 
-    private fun handleJoinFailure(failure: CoreFailure, conversation: Conversation): Either<CoreFailure, Unit> =
+    private suspend fun handleJoinFailure(failure: CoreFailure, conversation: Conversation): Either<CoreFailure, Unit> =
         when (failure) {
             is NetworkFailure -> {
                 if (failure.isThrottleFailure()) {
@@ -159,6 +163,15 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                             "due to invalid request error, skipping."
                     )
                     Either.Right(Unit)
+                } else if (failure is NetworkFailure.FederatedBackendFailure.RetryableFailure) {
+                    enqueueForForegroundRecovery(conversation.id, failure)
+                    Either.Right(Unit)
+                } else if (failure is NetworkFailure.FederatedBackendFailure) {
+                    kaliumLogger.w(
+                        "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                            "due to federated backend failure, skipping."
+                    )
+                    Either.Right(Unit)
                 } else {
                     kaliumLogger.w(
                         "Failed to establish mls group for ${conversation.id.toLogString()} due to network failure"
@@ -168,10 +181,18 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
             }
 
             is CoreFailure.MissingKeyPackages -> {
-                kaliumLogger.w(
-                    "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                        "since some participants are out of key packages, skipping."
-                )
+                enqueueForForegroundRecovery(conversation.id, failure)
+                Either.Right(Unit)
+            }
+
+            is MLSFailure.MessageRejected -> {
+                if (failure.cause == NetworkFailure.MlsMessageRejectedFailure.StaleMessage) {
+                    enqueueForForegroundRecovery(conversation.id, failure)
+                } else {
+                    kaliumLogger.w(
+                        "Failed to establish mls group for ${conversation.id.toLogString()} due to $failure, skipping.."
+                    )
+                }
                 Either.Right(Unit)
             }
 
@@ -186,6 +207,14 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
     private fun CoreFailure.isThrottleFailure(): Boolean =
         this is NetworkFailure.ServerMiscommunication &&
             (kaliumException as? KaliumException.InvalidRequestError)?.isTooManyRequests() == true
+
+    private suspend fun enqueueForForegroundRecovery(conversationId: ConversationId, failure: CoreFailure) {
+        kaliumLogger.w(
+            "Failed to establish mls group for ${conversationId.toLogString()} due to $failure, " +
+                "adding retry for next foreground action."
+        )
+        pendingActionsRepository.enqueuePendingMLSGroupJoin(conversationId)
+    }
 
     private companion object {
         const val DEFAULT_MAX_CONCURRENT_JOINS = 4
