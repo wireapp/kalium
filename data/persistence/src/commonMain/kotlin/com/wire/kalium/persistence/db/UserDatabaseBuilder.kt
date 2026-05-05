@@ -88,6 +88,8 @@ import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
 import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
 import com.wire.kalium.persistence.dao.backup.NomadMessagesDAOImpl
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
+import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAOImpl
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDaoImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -201,7 +203,8 @@ class UserDatabaseBuilder internal constructor(
         HistoryClientAdapter = TableMapper.historyClientAdapter,
         MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
         RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter,
-        AppAdapter = TableMapper.appAdapter
+        AppAdapter = TableMapper.appAdapter,
+        PendingActionsAdapter = TableMapper.pendingActionsAdapter
     )
 
     init {
@@ -299,6 +302,9 @@ class UserDatabaseBuilder internal constructor(
 
     val newClientDAO: NewClientDAO
         get() = NewClientDAOImpl(database.newClientQueries, readDispatcher, writeDispatcher)
+
+    val pendingActionDAO: PendingActionDAO
+        get() = PendingActionDAOImpl(database.pendingActionsQueries, readDispatcher, writeDispatcher)
 
     val databaseImporter: DatabaseImporter
         get() = DatabaseImporterImpl(

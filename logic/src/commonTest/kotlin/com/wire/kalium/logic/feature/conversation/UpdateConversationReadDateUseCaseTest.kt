@@ -17,24 +17,26 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.messaging.sending.MessageTarget
+import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.InstantConversationWorkQueue
+import com.wire.kalium.logic.feature.message.receipt.ParallelConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import com.wire.kalium.messaging.sending.MessageTarget
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -42,12 +44,17 @@ import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
 class UpdateConversationReadDateUseCaseTest {
@@ -217,6 +224,33 @@ class UpdateConversationReadDateUseCaseTest {
         assertEquals(expectedTime, enqueuedInstant)
     }
 
+    @Test
+    fun givenCallerCancelledAfterEnqueue_whenQueued_thenWorkStillExecutes() = runTest {
+        val persistedLastRead = Clock.System.now()
+        val newLastRead = persistedLastRead + 1.seconds
+        val conversationId = TestConversation.CONVERSATION.id
+        val workQueue = ParallelConversationWorkQueue(backgroundScope, kaliumLogger, StandardTestDispatcher(testScheduler))
+        val (arrangement, updateConversationReadDateUseCase) = arrange {
+            withObserveByIdReturning(
+                TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
+            )
+            this.workQueue = workQueue
+        }
+
+        val job = launch {
+            updateConversationReadDateUseCase(conversationId, newLastRead)
+        }
+        runCurrent()
+        job.cancel()
+
+        advanceTimeBy(3.seconds + 1.milliseconds)
+        runCurrent()
+
+        coVerify {
+            arrangement.conversationRepository.updateConversationReadDate(eq(conversationId), eq(newLastRead))
+        }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement(
         private val configure: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
@@ -251,7 +285,8 @@ class UpdateConversationReadDateUseCaseTest {
                 selfConversationIdProvider,
                 sendConfirmation,
                 workQueue,
-                persistenceEventHookNotifier
+                persistenceEventHookNotifier,
+                kaliumLogger
             )
         }
     }
