@@ -47,4 +47,5 @@ WHERE
     AND uc.unreadCreationDate > COALESCE(c.last_notified_date, 0)
     AND m.visibility = 'VISIBLE'
     AND m.content_type IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION')
+    AND NOT EXISTS (SELECT 1 FROM SelfUser WHERE id = m.sender_user_id)
 ORDER BY m.creation_date DESC;
