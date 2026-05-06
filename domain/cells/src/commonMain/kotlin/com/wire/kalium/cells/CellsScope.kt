@@ -123,11 +123,19 @@ import com.wire.kalium.cells.domain.usecase.versioning.GetNodeVersionsUseCase
 import com.wire.kalium.cells.domain.usecase.versioning.GetNodeVersionsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCase
 import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.offline.DeleteOfflineFileUseCase
+import com.wire.kalium.cells.domain.usecase.offline.DeleteOfflineFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCase
+import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesUseCase
+import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCase
+import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.cellfile.CellFileDao
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
@@ -157,7 +165,7 @@ public class CellsScope(
         val attachmentDraftDao: MessageAttachmentDraftDao,
         val conversationsDao: ConversationDAO,
         val attachmentsDao: MessageAttachmentsDao,
-        val assetsDao: AssetDAO,
+        val cellFileDao: CellFileDao,
         val userDao: UserDAO,
         val memberDao: MemberDAO,
         val publicLinkDao: PublicLinkDao,
@@ -224,7 +232,7 @@ public class CellsScope(
     }
 
     private val cellAttachmentsRepository: CellAttachmentsRepository by lazy {
-        CellAttachmentsDataSource(dao.attachmentsDao, dao.assetsDao)
+        CellAttachmentsDataSource(dao.attachmentsDao, dao.cellFileDao)
     }
 
     public val messageAttachmentsDraftRepository: MessageAttachmentDraftRepository by lazy {
@@ -403,5 +411,21 @@ public class CellsScope(
 
     public val getCellConfig: GetWireCellConfigurationUseCase by lazy {
         GetWireCellConfigurationUseCaseImpl(cellConfigRepository)
+    }
+
+    public val saveOfflineFile: SaveOfflineFileUseCase by lazy {
+        SaveOfflineFileUseCaseImpl(dao.cellFileDao)
+    }
+
+    public val deleteOfflineFile: DeleteOfflineFileUseCase by lazy {
+        DeleteOfflineFileUseCaseImpl(dao.cellFileDao)
+    }
+
+    public val observeOfflineFiles: ObserveOfflineFilesUseCase by lazy {
+        ObserveOfflineFilesUseCaseImpl(dao.cellFileDao)
+    }
+
+    public val getOfflineFile: GetOfflineFileUseCase by lazy {
+        GetOfflineFileUseCaseImpl(dao.cellFileDao)
     }
 }

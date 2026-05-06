@@ -26,8 +26,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.asset.AssetDAO
-import com.wire.kalium.persistence.dao.asset.AssetEntity
+import com.wire.kalium.persistence.dao.cellfile.CellFileDao
+import com.wire.kalium.persistence.dao.cellfile.CellFileEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.util.DateTimeUtil
@@ -37,7 +37,7 @@ import kotlinx.coroutines.withContext
 
 internal class CellAttachmentsDataSource(
     private val messageAttachments: MessageAttachmentsDao,
-    private val assetsDao: AssetDAO,
+    private val cellFileDao: CellFileDao,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : CellAttachmentsRepository {
 
@@ -102,15 +102,23 @@ internal class CellAttachmentsDataSource(
         }
     }
 
-    override suspend fun saveStandaloneAssetPath(assetId: String, path: String, size: Long) = withContext(dispatchers.io) {
+    override suspend fun saveStandaloneAssetPath(
+        assetId: String,
+        path: String,
+        size: Long,
+        name: String?,
+        ownerId: String?,
+    ) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            assetsDao.insertAsset(
-                AssetEntity(
-                    key = assetId,
-                    domain = "wire.cell",
-                    dataPath = path,
-                    dataSize = size,
-                    downloadedDate = DateTimeUtil.currentInstant().toEpochMilliseconds(),
+            cellFileDao.upsert(
+                CellFileEntity(
+                    uuid = assetId,
+                    name = name,
+                    owner = ownerId,
+                    localPath = path,
+                    size = size,
+                    downloadedAt = DateTimeUtil.currentInstant().toEpochMilliseconds(),
+                    isOffline = false,
                 )
             )
         }
@@ -118,15 +126,13 @@ internal class CellAttachmentsDataSource(
 
     override suspend fun deleteStandaloneAsset(assetId: String) = withContext(dispatchers.io) {
         wrapStorageRequest {
-            assetsDao.deleteAsset(assetId)
+            cellFileDao.delete(assetId)
         }
     }
 
     override suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<Pair<String, String>>> = withContext(dispatchers.io) {
         wrapStorageRequest {
-            assetsDao.getAssets().map {
-                it.key to it.dataPath
-            }
+            cellFileDao.getAllWithLocalPath()
         }
     }
 
@@ -135,6 +141,7 @@ internal class CellAttachmentsDataSource(
             messageAttachments.getAttachments().mapNotNull { it.toModel() }
         }
     }
+
 }
 
 // TODO: Where to host the mapper (currently part of logic module)?

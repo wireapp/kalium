@@ -55,7 +55,7 @@ class DownloadNodeFileUseCaseTest {
             .withDownloadSuccess()
             .arrange()
 
-        useCase(assetId, outFilePath, assetSize, remoteFilePath, progressListener)
+        useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
         coVerify {
             arrangement.cellsRepository.downloadFile(outFilePath, remoteFilePath, progressListener)
@@ -69,7 +69,7 @@ class DownloadNodeFileUseCaseTest {
             .withDownloadSuccess()
             .arrange()
 
-        useCase(assetId, outFilePath, assetSize, remoteFilePath, progressListener)
+        useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
         coVerify {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
@@ -83,7 +83,7 @@ class DownloadNodeFileUseCaseTest {
             .withDownloadSuccess()
             .arrange()
 
-        useCase(assetId, outFilePath, assetSize, remoteFilePath, progressListener)
+        useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
         coVerify {
             arrangement.cellsRepository.downloadFile(outFilePath, remoteFilePath, progressListener)
@@ -97,7 +97,7 @@ class DownloadNodeFileUseCaseTest {
             .withDownloadSuccess()
             .arrange()
 
-        val result = useCase(assetId, outFilePath, assetSize, null, progressListener)
+        val result = useCase(assetId, outFilePath, assetSize, null, onProgressUpdate = progressListener)
 
         assertTrue { result.isLeft() }
     }
@@ -109,7 +109,7 @@ class DownloadNodeFileUseCaseTest {
             .withDownloadSuccess()
             .arrange()
 
-        useCase(assetId, outFilePath, assetSize, remoteFilePath, progressListener)
+        useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
         coVerify {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
@@ -123,7 +123,7 @@ class DownloadNodeFileUseCaseTest {
             .withDownloadSuccess()
             .arrange()
 
-        useCase(assetId, outFilePath, assetSize, remoteFilePath, progressListener)
+        useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
         coVerify {
             arrangement.attachmentsRepository.saveLocalPath(assetId, outFilePath.toString())
@@ -137,7 +137,7 @@ class DownloadNodeFileUseCaseTest {
             .withDownloadFailure()
             .arrange()
 
-        useCase(assetId, outFilePath, assetSize, remoteFilePath, progressListener)
+        useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
         coVerify {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
@@ -151,7 +151,7 @@ class DownloadNodeFileUseCaseTest {
             .withDownloadSuccess()
             .arrange()
 
-        useCase(assetId, outFilePath, assetSize, remoteFilePath, progressListener)
+        useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
         coVerify {
             arrangement.cellsRepository.downloadFile(outFilePath, remoteFilePath, progressListener)
@@ -165,7 +165,7 @@ class DownloadNodeFileUseCaseTest {
             .withDownloadSuccess()
             .arrange()
 
-        val result = useCase(assetId, outFilePath, assetSize, null, progressListener)
+        val result = useCase(assetId, outFilePath, assetSize, null, onProgressUpdate = progressListener)
 
         assertTrue { result.isLeft() }
     }
@@ -177,10 +177,10 @@ class DownloadNodeFileUseCaseTest {
             .withDownloadSuccess()
             .arrange()
 
-        useCase(assetId, outFilePath, assetSize, remoteFilePath, progressListener)
+        useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
         coVerify {
-            arrangement.attachmentsRepository.saveStandaloneAssetPath(assetId, outFilePath.toString(), assetSize)
+            arrangement.attachmentsRepository.saveStandaloneAssetPath(assetId, outFilePath.toString(), assetSize, null, null)
         }.wasInvoked(once)
     }
 
@@ -215,7 +215,7 @@ class DownloadNodeFileUseCaseTest {
 
             coEvery { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
             coEvery { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
-            coEvery { attachmentsRepository.saveStandaloneAssetPath(any(), any(), any()) }.returns(Unit.right())
+            coEvery { attachmentsRepository.saveStandaloneAssetPath(any(), any(), any(), any(), any()) }.returns(Unit.right())
 
             return this to DownloadCellFileUseCaseImpl(
                 cellsRepository = cellsRepository,
