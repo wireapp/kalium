@@ -34,6 +34,9 @@ import io.mockative.matchers.Matcher
 import io.mockative.matches
 import io.mockative.mock
 
+private val MOCKATIVE_USER_ID = UserId("mockative-user", "mockative.test")
+private val MOCKATIVE_CLIENT_ID = ClientId("mockative-client")
+
 internal interface ClientRepositoryArrangement {
     val clientRepository: ClientRepository
 
@@ -46,7 +49,7 @@ internal interface ClientRepositoryArrangement {
 
     suspend fun withStoreUserClientIdList(
         result: Either<StorageFailure, Unit>,
-        userId: Matcher<UserId> = AnyMatcher(valueOf()),
+        userId: Matcher<UserId> = AnyMatcher(MOCKATIVE_USER_ID),
         clientIds: Matcher<List<ClientId>> = AnyMatcher(valueOf())
     )
 
@@ -69,13 +72,13 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
 
     override suspend fun withUpdateClientProteusVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
         coEvery {
-            clientRepository.updateClientProteusVerificationStatus(any(), any(), any())
+            clientRepository.updateClientProteusVerificationStatus(any(MOCKATIVE_USER_ID), any(MOCKATIVE_CLIENT_ID), any())
         }.returns(result)
     }
 
     override suspend fun withClientsByUserId(result: Either<StorageFailure, List<OtherUserClient>>) = apply {
         coEvery {
-            clientRepository.getClientsByUserId(any())
+            clientRepository.getClientsByUserId(any(MOCKATIVE_USER_ID))
         }.returns(result)
     }
 
@@ -94,7 +97,10 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
         clientIds: Matcher<List<ClientId>>
     ) {
         coEvery {
-            clientRepository.storeUserClientIdList(any(), any())
+            clientRepository.storeUserClientIdList(
+                matches(MOCKATIVE_USER_ID) { userId.matches(it) },
+                matches(emptyList()) { clientIds.matches(it) }
+            )
         }.returns(result)
     }
 
@@ -112,7 +118,7 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
         clients: Matcher<List<InsertClientParam>>
     ) {
         coEvery {
-            clientRepository.storeUserClientListAndRemoveRedundantClients(any())
+            clientRepository.storeUserClientListAndRemoveRedundantClients(matches(emptyList()) { clients.matches(it) })
         }.returns(result)
     }
 
