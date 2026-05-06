@@ -1176,6 +1176,120 @@ sending APIs.</li>
                 </div>
             </div>
             
+            <div class="panel panel-default">
+                <div class="panel-heading adr-pending">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse8">8. androidx.benchmark for on-device DAO benchmarks</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-hourglass-half"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse8" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>8. androidx.benchmark for on-device DAO benchmarks</h1>
+<p>Date: 2026-04-23</p>
+<h2>Status</h2>
+<p>Proposed</p>
+<h2>Context</h2>
+<p>Kalium currently has two complementary benchmark surfaces for the persistence layer and they leave
+a gap that matters in practice:</p>
+<ol>
+<li><p><code>:test:benchmarks</code> — JMH-based JVM benchmarks (<code>MessagesNoPragmaTuneBenchmark</code>,
+<code>MessageReadBenchmark</code>). These run on the JVM with <code>userDatabaseBuilder(..., passphrase = null, ...)</code>,
+i.e. plain SQLite. They give us a JVM baseline but they do not exercise the SQLCipher code path
+that production Android clients actually hit.</p>
+</li>
+<li><p><code>:data:persistence</code> <code>MessageDAOBenchmarkTest</code> (in <code>commonTest</code>, <code>@Ignore</code>d). On Android it does
+go through the encrypted path (<code>BaseDatabaseTest.encryptedDBSecret</code> → <code>SupportOpenHelperFactory</code>
+→ libsqlcipher), but it measures with <code>measureTime { ... }</code> and lives alongside correctness
+tests. There is no warmup, no iteration control, no output stability check, and no JSON report.
+It is effectively a developer-only affordance you have to un-ignore by hand.</p>
+</li>
+</ol>
+<p>The question we cannot answer today is: <em>what is the real cost of message insert/select on a device
+with production-equivalent encryption enabled?</em> We have a regression-prone piece of code
+(<code>MessageDAO</code> on SQLCipher) and no repeatable measurement for it.</p>
+<h2>Decision</h2>
+<p>Introduce <code>androidx.benchmark</code> (microbenchmark, JUnit4 variant) as the measurement framework for
+on-device DAO benchmarks, and add a dedicated module <code>:test:android-benchmarks</code> to host those
+benchmarks. The first two scenarios ported are message insert and message query by conversation —
+the ones already covered by <code>MessagesNoPragmaTuneBenchmark</code> on JVM — so we have a direct
+JVM-plain vs Android-encrypted comparison.</p>
+<p>Key shape:</p>
+<ul>
+<li><p><strong>New module <code>:test:android-benchmarks</code></strong>, a plain <code>com.android.library</code> module (not KMP). Our
+existing <code>kalium.library</code> convention plugin is KMP-Android, which isn't a great fit for
+<code>androidx.benchmark</code> today; keeping this module classic keeps the benchmark plugin happy and
+confines the non-standard build settings.</p>
+</li>
+<li><p><strong>Release-only instrumented tests</strong>: <code>testBuildType = &quot;release&quot;</code>, <code>debuggable = false</code>,
+<code>minifyEnabled = false</code>. This is a hard requirement of <code>androidx.benchmark</code> — debuggable builds
+are refused (or produce meaningless numbers).</p>
+</li>
+<li><p><strong>Runner</strong>: <code>androidx.benchmark.junit4.AndroidBenchmarkRunner</code> (replaces the default
+<code>AndroidJUnitRunner</code> for this module only).</p>
+</li>
+<li><p><strong>Encryption path</strong>: benchmarks build the user DB via <code>userDatabaseBuilder</code> with a non-null
+<code>UserDBSecret</code>, matching what <code>BaseDatabaseTest</code> does on Android today. libsqlcipher is loaded
+and <code>SupportOpenHelperFactory</code> drives the connection — this is the production path.</p>
+</li>
+<li><p><strong>Storage</strong>: file-backed DB under <code>context.cacheDir</code>; deleted per-class to keep runs clean.</p>
+</li>
+<li><p><strong>Scenarios (first cut)</strong>:</p>
+<ul>
+<li><code>MessageInsertBenchmark</code>: pre-seed 1 000 messages; measure <code>insertOrIgnoreMessages(5 000)</code>.</li>
+<li><code>MessageSelectBenchmark</code>: pre-seed 5 000 messages; measure
+<code>getMessagesByConversationAndVisibility(limit = 1 000).first()</code>.</li>
+</ul>
+</li>
+<li><p><strong>Dependencies added</strong> (to <code>gradle/libs.versions.toml</code>):</p>
+<ul>
+<li><code>androidx-benchmark = &quot;1.5.0-alpha05&quot;</code> (new version key; alpha is required because the 1.4.x
+line targets the old AGP <code>TestedExtension</code> DSL and is incompatible with AGP 9.0)</li>
+<li><code>androidx.benchmark:benchmark-junit4</code> library</li>
+<li><code>androidx.benchmark</code> Gradle plugin</li>
+<li><code>androidx.test.ext:junit</code> (adds <code>AndroidJUnit4</code> runner; not previously in the catalog)</li>
+</ul>
+</li>
+<li><p><strong>Run command</strong>:</p>
+<pre><code>./gradlew :test:android-benchmarks:connectedReleaseAndroidTest
+</code></pre>
+<p>Results land in <code>build/outputs/connected_android_test_additional_output/.../benchmarkData.json</code>.</p>
+</li>
+<li><p><strong>Out of scope for this ADR</strong>: CI integration, MessageRead/paging scenarios, iOS/XCTest
+measurement, fold into <code>:test:benchmarks</code> as a KMP target. Any of those come as separate ADRs
+once this module proves its worth.</p>
+</li>
+</ul>
+<p><strong>Module dependency direction:</strong> <code>:test:android-benchmarks</code> depends on <code>:data:persistence</code>. It is a
+leaf test module — nothing depends on it. It does not violate the existing layering rules.</p>
+<h2>Consequences</h2>
+<p><strong>Easier:</strong></p>
+<ul>
+<li>Repeatable on-device measurement of the real SQLCipher path for message insert/select, with
+proper warmup, iteration control, and JSON output.</li>
+<li>A direct JVM-plain (JMH) ↔ Android-encrypted (androidx.benchmark) comparison for the same two
+scenarios, which previously required reading two different test files and squinting.</li>
+<li>A home for future on-device DAO benchmarks that doesn't pollute <code>:data:persistence</code>'s
+instrumented test run (which is meant for correctness and should stay debug-build).</li>
+</ul>
+<p><strong>More difficult:</strong></p>
+<ul>
+<li>Two benchmark frameworks in the repo (<code>org.jetbrains.kotlinx.benchmark</code> for JMH,
+<code>androidx.benchmark</code> for on-device). Developers need to know which one to use for which surface.
+Guidance: JVM-level → JMH; Android-device → androidx.benchmark.</li>
+<li>New module means new <code>build.gradle.kts</code> to maintain, and libsqlcipher/libsodium packaging rules
+have to be mirrored here.</li>
+<li>Requires a physical device or emulator with stable CPU governor to produce usable numbers; this
+is not something we'll run in default CI without more work.</li>
+<li>One more dependency to keep updated.</li>
+</ul>
+</div>
+                </div>
+            </div>
+            
         </div>
         <footer>
             Generated with &lt;3 using ADR Viewer
