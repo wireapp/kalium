@@ -119,7 +119,10 @@ internal class CryptoTransactionProviderArrangementMockativeImpl : CryptoTransac
 
     override suspend fun <R> withTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
         coEvery {
-            cryptoTransactionProvider.transaction<R>(any(), any())
+            cryptoTransactionProvider.transaction<R>(
+                any(null),
+                any<suspend (CryptoTransactionContext) -> Either<CoreFailure, R>> { result }
+            )
         }.invokes { args ->
             @Suppress("UNCHECKED_CAST")
             val block = args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
@@ -131,7 +134,10 @@ internal class CryptoTransactionProviderArrangementMockativeImpl : CryptoTransac
         result: Either<CoreFailure, R>
     ): CryptoTransactionProviderArrangement = apply {
         coEvery {
-            cryptoTransactionProvider.proteusTransaction<R>(any(), any())
+            cryptoTransactionProvider.proteusTransaction<R>(
+                any(null),
+                any<suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, R>> { result }
+            )
         }.invokes { args ->
             @Suppress("UNCHECKED_CAST")
             val block = args[1] as suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, R>
@@ -143,13 +149,19 @@ internal class CryptoTransactionProviderArrangementMockativeImpl : CryptoTransac
         result: Either<CoreFailure, R>
     ): CryptoTransactionProviderArrangement = apply {
         coEvery {
-            cryptoTransactionProvider.proteusTransaction<R>(any(), any())
+            cryptoTransactionProvider.proteusTransaction<R>(
+                any(null),
+                any<suspend (ProteusCoreCryptoContext) -> Either<CoreFailure, R>> { result }
+            )
         }.returns(result)
     }
 
     override suspend fun <R> withMLSTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
         coEvery {
-            cryptoTransactionProvider.mlsTransaction<R>(any(), any())
+            cryptoTransactionProvider.mlsTransaction<R>(
+                any(null),
+                any<suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>> { result }
+            )
         }.invokes { args ->
             @Suppress("UNCHECKED_CAST")
             val block = args[1] as suspend (MlsCoreCryptoContext) -> Either<CoreFailure, R>
