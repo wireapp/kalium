@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import com.wire.kalium.logic.feature.debug.OptimizeDatabaseResult
+import com.wire.kalium.logic.feature.debug.OptimizeDatabaseUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
@@ -39,25 +41,20 @@ import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementMokkeryImpl
 import com.wire.kalium.logic.util.stubs.FailureSyncMigration
 import com.wire.kalium.logic.util.stubs.MigrationCrashStep
 import com.wire.kalium.logic.util.stubs.SuccessSyncMigration
 import dev.mokkery.answering.returns
+import dev.mokkery.every
 import dev.mokkery.everySuspend
-import dev.mokkery.mock as mokkeryMock
-import dev.mokkery.verify.VerifyMode as MokkeryVerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.times
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -165,7 +162,8 @@ class SlowSyncWorkerTest {
                 SlowSyncStep.CONTACTS,
                 SlowSyncStep.NOMAD_MESSAGES,
                 SlowSyncStep.JOINING_MLS_CONVERSATIONS,
-                SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS
+                SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS,
+                SlowSyncStep.OPTIMIZE_DB
             ),
             emittedSteps
         )
@@ -472,9 +470,9 @@ class SlowSyncWorkerTest {
             slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.eventRepository.fetchMostRecentEventId()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -489,9 +487,9 @@ class SlowSyncWorkerTest {
             slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.eventRepository.fetchMostRecentEventId()
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -505,13 +503,13 @@ class SlowSyncWorkerTest {
             slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.eventRepository.fetchMostRecentEventId()
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.eventRepository.updateLastSavedEventId(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -526,9 +524,9 @@ class SlowSyncWorkerTest {
             slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.eventRepository.updateLastSavedEventId(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -553,9 +551,9 @@ class SlowSyncWorkerTest {
 
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.eventRepository.updateLastSavedEventId(eq(fetchedEventId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -575,9 +573,9 @@ class SlowSyncWorkerTest {
 
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinMLSConversations.invoke(eq(true), eq(false))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -602,9 +600,9 @@ class SlowSyncWorkerTest {
 
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinMLSConversations.invoke(eq(true), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -624,9 +622,9 @@ class SlowSyncWorkerTest {
 
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.oneOnOneResolver.resolveAllOneOnOneConversations(any(), eq(false), eq(false))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -651,9 +649,9 @@ class SlowSyncWorkerTest {
 
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.oneOnOneResolver.resolveAllOneOnOneConversations(any(), eq(false), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -671,81 +669,86 @@ class SlowSyncWorkerTest {
             }
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.syncSelfUser.invoke()
-        }.wasNotInvoked()
+        }
 
-        verifySuspend(MokkeryVerifyMode.not) {
+        verifySuspend(VerifyMode.not) {
             arrangement.syncUserProperties.invoke()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.syncFeatureConfigs.invoke()
-        }.wasNotInvoked()
+        }
     }
 
     private suspend fun assertUseCases(arrangement: Arrangement, steps: HashSet<SlowSyncStep>) {
-        coVerify {
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.SELF_USER)) 1 else 0)) {
             arrangement.syncSelfUser.invoke()
-        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_USER)) once else 0.times)
+        }
 
-        verifySuspend(MokkeryVerifyMode.exactly(if (steps.contains(SlowSyncStep.USER_PROPERTIES)) 1 else 0)) {
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.USER_PROPERTIES)) 1 else 0)) {
             arrangement.syncUserProperties.invoke()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.FEATURE_FLAGS)) 1 else 0)) {
             arrangement.syncFeatureConfigs.invoke()
-        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.FEATURE_FLAGS)) once else 0.times)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS)) 1 else 0)) {
             arrangement.updateSupportedProtocols.invoke()
-        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS)) once else 0.times)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.CONVERSATIONS)) 1 else 0)) {
             arrangement.syncConversations.invoke()
-        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONVERSATIONS)) once else 0.times)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.CONNECTIONS)) 1 else 0)) {
             arrangement.syncConnections.invoke()
-        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONNECTIONS)) once else 0.times)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.SELF_TEAM)) 1 else 0)) {
             arrangement.syncSelfTeam.invoke()
-        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_TEAM)) once else 0.times)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.CONTACTS)) 1 else 0)) {
             arrangement.syncContacts.invoke()
-        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONTACTS)) once else 0.times)
+        }
 
         assertEquals(
             if (steps.contains(SlowSyncStep.NOMAD_MESSAGES)) 1 else 0,
             arrangement.syncNomadMessagesDuringSlowSync.invocations
         )
 
-        coVerify {
-            arrangement.joinMLSConversations.invoke(any(), any())
-        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.JOINING_MLS_CONVERSATIONS)) once else 0.times)
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.OPTIMIZE_DB)) 1 else 0)) {
+            arrangement.optimizeDatabase.invoke()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.JOINING_MLS_CONVERSATIONS)) 1 else 0)) {
+            arrangement.joinMLSConversations.invoke(any(), any())
+        }
+
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.LEGAL_HOLD)) 1 else 0)) {
             arrangement.fetchLegalHoldForSelfUserFromRemoteUseCase.invoke()
-        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.LEGAL_HOLD)) once else 0.times)
+        }
     }
 
-    private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val syncSelfUser: SyncSelfUserUseCase = mock(SyncSelfUserUseCase::class)
-        val syncUserProperties: SyncUserPropertiesUseCase = mokkeryMock<SyncUserPropertiesUseCase>()
-        val syncFeatureConfigs: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
-        val syncConversations: SyncConversationsUseCase = mock(SyncConversationsUseCase::class)
-        val syncConnections: SyncConnectionsUseCase = mock(SyncConnectionsUseCase::class)
-        val syncSelfTeam: SyncSelfTeamUseCase = mock(SyncSelfTeamUseCase::class)
-        val syncContacts: SyncContactsUseCase = mock(SyncContactsUseCase::class)
-        val joinMLSConversations: JoinExistingMLSConversationsUseCase = mock(JoinExistingMLSConversationsUseCase::class)
-        val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase = mock(UpdateSelfUserSupportedProtocolsUseCase::class)
-        val oneOnOneResolver: OneOnOneResolver = mock(OneOnOneResolver::class)
-        val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
-        val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
+    private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementMokkeryImpl(),
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val syncSelfUser: SyncSelfUserUseCase = mock()
+        val syncUserProperties: SyncUserPropertiesUseCase = mock()
+        val syncFeatureConfigs: SyncFeatureConfigsUseCase = mock()
+        val syncConversations: SyncConversationsUseCase = mock()
+        val syncConnections: SyncConnectionsUseCase = mock()
+        val syncSelfTeam: SyncSelfTeamUseCase = mock()
+        val syncContacts: SyncContactsUseCase = mock()
+        val joinMLSConversations: JoinExistingMLSConversationsUseCase = mock()
+        val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase = mock()
+        val oneOnOneResolver: OneOnOneResolver = mock()
+        val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase = mock()
+        val isClientAsyncNotificationsCapableProvider: IsClientAsyncNotificationsCapableProvider = mock()
         val syncNomadMessagesDuringSlowSync = FakeSyncNomadMessagesDuringSlowSyncUseCase()
+        val optimizeDatabase: OptimizeDatabaseUseCase = mock()
 
         init {
             runBlocking {
@@ -753,6 +756,7 @@ class SlowSyncWorkerTest {
                 withIsClientAsyncNotificationsCapableReturning(false)
                 withTransactionReturning(Either.Right(Unit))
                 withSyncUserPropertiesSuccess()
+                withOptimizeDatabaseSuccess()
             }
         }
 
@@ -771,147 +775,154 @@ class SlowSyncWorkerTest {
             oneOnOneResolver = oneOnOneResolver,
             isClientAsyncNotificationsCapableProvider = isClientAsyncNotificationsCapableProvider,
             transactionProvider = cryptoTransactionProvider,
-            syncNomadMessagesDuringSlowSync = syncNomadMessagesDuringSlowSync
+            syncNomadMessagesDuringSlowSync = syncNomadMessagesDuringSlowSync,
+            optimizer = optimizeDatabase
         )
 
-        suspend fun withSyncSelfUserFailure() = apply {
-            coEvery {
+        fun withSyncSelfUserFailure() = apply {
+            everySuspend {
                 syncSelfUser.invoke()
-            }.returns(failure)
+            } returns failure
         }
 
-        suspend fun withSyncSelfUserSuccess() = apply {
-            coEvery {
+        fun withSyncSelfUserSuccess() = apply {
+            everySuspend {
                 syncSelfUser.invoke()
-            }.returns(success)
+            } returns success
         }
 
-        suspend fun withSyncUserPropertiesFailure() = apply {
+        fun withSyncUserPropertiesFailure() = apply {
             everySuspend {
                 syncUserProperties.invoke()
             } returns failure
         }
 
-        suspend fun withSyncUserPropertiesSuccess() = apply {
+        fun withSyncUserPropertiesSuccess() = apply {
             everySuspend {
                 syncUserProperties.invoke()
             } returns success
         }
 
-        suspend fun withSyncFeatureConfigsFailure() = apply {
-            coEvery {
+        fun withSyncFeatureConfigsFailure() = apply {
+            everySuspend {
                 syncFeatureConfigs.invoke()
-            }.returns(failure)
+            } returns failure
         }
 
-        suspend fun withSyncFeatureConfigsSuccess() = apply {
-            coEvery {
+        fun withSyncFeatureConfigsSuccess() = apply {
+            everySuspend {
                 syncFeatureConfigs.invoke()
-            }.returns(success)
+            } returns success
         }
 
-        suspend fun withUpdateSupportedProtocolsSuccess() = apply {
-            coEvery {
+        fun withUpdateSupportedProtocolsSuccess() = apply {
+            everySuspend {
                 updateSupportedProtocols.invoke()
-            }.returns(UpdateSelfUserSupportedProtocolsResult.Updated)
+            } returns UpdateSelfUserSupportedProtocolsResult.Updated
         }
 
-        suspend fun withUpdateSupportedProtocolsFailure() = apply {
-            coEvery {
+        fun withUpdateSupportedProtocolsFailure() = apply {
+            everySuspend {
                 updateSupportedProtocols.invoke()
-            }.returns(UpdateSelfUserSupportedProtocolsResult.Failure(failure.value))
+            } returns UpdateSelfUserSupportedProtocolsResult.Failure(failure.value)
         }
 
-        suspend fun withSyncConversationsFailure() = apply {
-            coEvery {
+        fun withSyncConversationsFailure() = apply {
+            everySuspend {
                 syncConversations.invoke()
-            }.returns(failure)
+            } returns failure
         }
 
-        suspend fun withSyncConversationsSuccess() = apply {
-            coEvery {
+        fun withSyncConversationsSuccess() = apply {
+            everySuspend {
                 syncConversations.invoke()
-            }.returns(success)
+            } returns success
         }
 
-        suspend fun withSyncConnectionsFailure() = apply {
-            coEvery {
+        fun withSyncConnectionsFailure() = apply {
+            everySuspend {
                 syncConnections.invoke()
-            }.returns(failure)
+            } returns failure
         }
 
-        suspend fun withSyncConnectionsSuccess() = apply {
-            coEvery {
+        fun withSyncConnectionsSuccess() = apply {
+            everySuspend {
                 syncConnections.invoke()
-            }.returns(success)
+            } returns success
         }
 
-        suspend fun withSyncSelfTeamFailure() = apply {
-            coEvery {
+        fun withSyncSelfTeamFailure() = apply {
+            everySuspend {
                 syncSelfTeam.invoke()
-            }.returns(failure)
+            } returns failure
         }
 
-        suspend fun withSyncSelfTeamSuccess() = apply {
-            coEvery {
+        fun withSyncSelfTeamSuccess() = apply {
+            everySuspend {
                 syncSelfTeam.invoke()
-            }.returns(success)
+            } returns success
         }
 
-        suspend fun withSyncContactsFailure() = apply {
-            coEvery {
+        fun withSyncContactsFailure() = apply {
+            everySuspend {
                 syncContacts.invoke()
-            }.returns(failure)
+            } returns failure
         }
 
-        suspend fun withSyncContactsSuccess() = apply {
-            coEvery {
+        fun withSyncContactsSuccess() = apply {
+            everySuspend {
                 syncContacts.invoke()
-            }.returns(success)
+            } returns success
         }
 
-        suspend fun withJoinMLSConversationsFailure(
+        fun withJoinMLSConversationsFailure(
             keepRetryingOnFailure: Boolean = true,
             allowJoinByExternalCommit: Boolean = false,
         ) = apply {
-            coEvery {
+            everySuspend {
                 joinMLSConversations.invoke(eq(keepRetryingOnFailure), eq(allowJoinByExternalCommit))
-            }.returns(failure)
+            } returns failure
         }
 
-        suspend fun withJoinMLSConversationsSuccess(
+        fun withJoinMLSConversationsSuccess(
             keepRetryingOnFailure: Boolean = true,
             allowJoinByExternalCommit: Boolean = false,
         ) = apply {
-            coEvery {
+            everySuspend {
                 joinMLSConversations.invoke(eq(keepRetryingOnFailure), eq(allowJoinByExternalCommit))
-            }.returns(success)
+            } returns success
         }
 
-        suspend fun withFetchLegalHoldStatusFailure() = apply {
-            coEvery {
+        fun withFetchLegalHoldStatusFailure() = apply {
+            everySuspend {
                 fetchLegalHoldForSelfUserFromRemoteUseCase.invoke()
-            }.returns(failure)
+            } returns failure
         }
 
-        suspend fun withFetchLegalHoldStatusSuccess(status: LegalHoldStatus = LegalHoldStatus.NO_CONSENT) = apply {
-            coEvery {
+        fun withFetchLegalHoldStatusSuccess(status: LegalHoldStatus = LegalHoldStatus.NO_CONSENT) = apply {
+            everySuspend {
                 fetchLegalHoldForSelfUserFromRemoteUseCase.invoke()
-            }.returns(Either.Right(status))
+            } returns Either.Right(status)
         }
 
-        suspend fun withResolveOneOnOneConversationsSuccess(
+        fun withResolveOneOnOneConversationsSuccess(
             allowJoinByExternalCommit: Boolean = false,
         ) = apply {
-            coEvery {
+            everySuspend {
                 oneOnOneResolver.resolveAllOneOnOneConversations(any(), any(), eq(allowJoinByExternalCommit))
-            }.returns(success)
+            } returns success
+        }
+
+        fun withOptimizeDatabaseSuccess() = apply {
+            everySuspend {
+                optimizeDatabase.invoke()
+            } returns OptimizeDatabaseResult.Success
         }
 
         fun withIsClientAsyncNotificationsCapableReturning(value: Boolean) = apply {
             every {
                 isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
-            }.returns(value)
+            } returns value
         }
 
         fun withNomadEnabled() = apply {
