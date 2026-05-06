@@ -142,8 +142,7 @@ internal class MemberLeaveEventHandlerImpl(
     }
 
     private suspend fun wipeMLSConversationIfNeeded(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberLeave) {
-        val isSelfUserNoLongerMember = selfUserId in event.removedList &&
-                (event.reason == MemberLeaveReason.Left || event.reason == MemberLeaveReason.Removed)
+        val isSelfUserNoLongerMember = selfUserId in event.removedList
         if (!isSelfUserNoLongerMember) return
 
         conversationRepository.getConversationProtocolInfo(event.conversationId).flatMap { protocolInfo ->
