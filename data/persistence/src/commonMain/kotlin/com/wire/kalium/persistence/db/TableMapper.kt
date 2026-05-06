@@ -48,7 +48,6 @@ import com.wire.kalium.persistence.MessageSystemContent
 import com.wire.kalium.persistence.MessageTextContent
 import com.wire.kalium.persistence.MessageUnknownContent
 import com.wire.kalium.persistence.NewClient
-import com.wire.kalium.persistence.PendingActions
 import com.wire.kalium.persistence.Reaction
 import com.wire.kalium.persistence.Receipt
 import com.wire.kalium.persistence.RemotebackupChangeLog
@@ -65,7 +64,6 @@ import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.adapter.MLSPublicKeysAdapter
 import com.wire.kalium.persistence.adapter.MemberRoleAdapter
 import com.wire.kalium.persistence.adapter.MentionListAdapter
-import com.wire.kalium.persistence.adapter.PendingActionTypeAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
@@ -277,10 +275,5 @@ internal object TableMapper {
         idAdapter = QualifiedIDAdapter,
         preview_asset_idAdapter = QualifiedIDAdapter,
         complete_asset_idAdapter = QualifiedIDAdapter
-    )
-
-    val pendingActionsAdapter = PendingActions.Adapter(
-        action_typeAdapter = PendingActionTypeAdapter,
-        qualified_idAdapter = QualifiedIDAdapter
     )
 }

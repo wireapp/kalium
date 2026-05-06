@@ -30,7 +30,6 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
@@ -103,7 +102,6 @@ internal class OneOnOneResolverImpl(
     private val oneOnOneProtocolSelector: OneOnOneProtocolSelector,
     private val oneOnOneMigrator: OneOnOneMigrator,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val pendingActionsRepository: PendingActionsRepository,
     private val maxConcurrentResolutions: Int = DEFAULT_MAX_CONCURRENT_RESOLUTIONS,
     private val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
     private val throttleRetryDelayMs: Long = DEFAULT_THROTTLE_RETRY_DELAY_MS,
@@ -168,71 +166,30 @@ internal class OneOnOneResolverImpl(
                     attempt = nextAttempt
                 )
             } else {
-                handleBatchEntryFailure(user, failure)
+                handleBatchEntryFailure(failure)
             }
         }
     }
 
-    private suspend fun handleBatchEntryFailure(
-        user: OtherUser,
-        failure: CoreFailure
-    ) = when {
+    private fun handleBatchEntryFailure(failure: CoreFailure) = when {
         failure.isThrottleFailure() -> {
             kaliumLogger.w("Resolving one-on-one failed due to throttling, propagating failure.")
             Either.Left(failure)
         }
 
-        failure is CoreFailure.MissingKeyPackages -> {
-            enqueueForForegroundRecovery(user.id, failure)
-            Either.Right(Unit)
-        }
-
-        failure is CoreFailure.NoCommonProtocolFound -> {
+        failure is CoreFailure.MissingKeyPackages ||
+        failure is NetworkFailure.ServerMiscommunication ||
+        failure is NetworkFailure.FederatedBackendFailure ||
+        failure is CoreFailure.NoCommonProtocolFound ||
+        failure is MLSFailure -> {
             kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
-            Either.Right(Unit)
-        }
-
-        failure is NetworkFailure.FederatedBackendFailure.RetryableFailure -> {
-            enqueueForForegroundRecovery(user.id, failure)
-            Either.Right(Unit)
-        }
-
-        failure is NetworkFailure.FederatedBackendFailure -> {
-            kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
-            Either.Right(Unit)
-        }
-
-        failure is NetworkFailure.ServerMiscommunication -> {
-            if (failure.kaliumException is KaliumException.InvalidRequestError) {
-                kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
-                Either.Right(Unit)
-            } else {
-                kaliumLogger.e("Resolving one-on-one failed $failure, propagating failure for retry")
-                Either.Left(failure)
-            }
-        }
-
-        failure is MLSFailure.MessageRejected -> {
-            if (failure.cause == NetworkFailure.MlsMessageRejectedFailure.StaleMessage) {
-                enqueueForForegroundRecovery(user.id, failure)
-            } else {
-                kaliumLogger.e("Resolving one-on-one failed $failure, skipping")
-            }
             Either.Right(Unit)
         }
 
         else -> {
-            kaliumLogger.e("Resolving one-on-one failed $failure, propagating failure for retry")
+            kaliumLogger.e("Resolving one-on-one failed $failure, retrying")
             Either.Left(failure)
         }
-    }
-
-    private suspend fun enqueueForForegroundRecovery(userId: UserId, failure: CoreFailure) {
-        kaliumLogger.w(
-            "Resolving one-on-one failed $failure for ${userId.toLogString()}, " +
-                "adding retry for next foreground action"
-        )
-        pendingActionsRepository.enqueuePendingOneOnOneResolution(userId)
     }
 
     private fun CoreFailure.isThrottleFailure(): Boolean =

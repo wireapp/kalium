@@ -124,8 +124,6 @@ import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCaseImpl
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderDataSource
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
-import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
-import com.wire.kalium.logic.data.conversation.mls.PersistentPendingActionsRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
@@ -293,10 +291,6 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
-import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingMLSGroupJoinsUseCase
-import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingMLSGroupJoinsUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCase
-import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCaseImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCaseImpl
@@ -1371,8 +1365,7 @@ public class UserSessionScope internal constructor(
             clientRepository,
             conversationRepository,
             joinExistingMLSConversationUseCase,
-            cryptoTransactionProvider,
-            pendingActionsRepository
+            cryptoTransactionProvider
         )
 
     private val joinSubconversationUseCase: JoinSubconversationUseCase
@@ -1407,34 +1400,12 @@ public class UserSessionScope internal constructor(
             userRepository,
             systemMessageInserter
         )
-    private val pendingActionsRepository: PendingActionsRepository by lazy {
-        PersistentPendingActionsRepository(
-            pendingActionDAO = userStorage.database.pendingActionDAO
-        )
-    }
     private val oneOnOneResolver: OneOnOneResolver
         get() = OneOnOneResolverImpl(
             userRepository,
             oneOnOneProtocolSelector,
             oneOnOneMigrator,
-            incrementalSyncRepository,
-            pendingActionsRepository
-        )
-
-    private val recoverPendingOneOnOneResolutionsUseCase: RecoverPendingOneOnOneResolutionsUseCase
-        get() = RecoverPendingOneOnOneResolutionsUseCaseImpl(
-            pendingActionsRepository = pendingActionsRepository,
-            syncStateObserver = syncStateObserver.value,
-            transactionProvider = cryptoTransactionProvider,
-            oneOnOneResolver = oneOnOneResolver
-        )
-
-    private val recoverPendingMLSGroupJoinsUseCase: RecoverPendingMLSGroupJoinsUseCase
-        get() = RecoverPendingMLSGroupJoinsUseCaseImpl(
-            pendingActionsRepository = pendingActionsRepository,
-            syncStateObserver = syncStateObserver.value,
-            transactionProvider = cryptoTransactionProvider,
-            joinExistingMLSConversation = joinExistingMLSConversationUseCase
+            incrementalSyncRepository
         )
 
     private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase
@@ -2542,8 +2513,6 @@ public class UserSessionScope internal constructor(
             mlsClientManager,
             mlsMigrationManager,
             keyingMaterialsManager,
-            recoverPendingMLSGroupJoinsUseCase,
-            recoverPendingOneOnOneResolutionsUseCase,
             cryptoTransactionProvider,
             this,
         )

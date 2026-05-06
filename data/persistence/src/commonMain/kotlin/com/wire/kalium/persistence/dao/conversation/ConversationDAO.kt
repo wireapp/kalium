@@ -38,7 +38,6 @@ interface ConversationDAO {
 
     suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
-    suspend fun getNonDeletedConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
     suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean
