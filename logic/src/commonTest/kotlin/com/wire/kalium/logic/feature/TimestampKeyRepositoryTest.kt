@@ -21,12 +21,14 @@ package com.wire.kalium.logic.feature
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -78,9 +80,9 @@ class TimestampKeyRepositoryTest {
 
         result.shouldSucceed()
 
-        coVerify {
-            arrangement.metadataDAO.insertValue(any(), eq(key.name))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.metadataDAO.insertValue(any<String>(), eq(key.name))
+        }
     }
 
     @Test
@@ -96,23 +98,23 @@ class TimestampKeyRepositoryTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.metadataDAO.insertValue(eq(timestamp.toIsoDateTimeString()), eq(key.name))
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
-                val metadataDAO = mock(MetadataDAO::class)
+        val metadataDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
 
         suspend fun withMetaDataDaoValueReturns(timestamp: Instant?) = apply {
-            coEvery {
+            everySuspend {
                 metadataDAO.valueByKeyFlow(any())
             }.returns(flowOf(timestamp?.toIsoDateTimeString()))
         }
 
         suspend fun withMetaDataDaoInsertValue() = apply {
-            coEvery {
-                metadataDAO.insertValue(any(), any())
+            everySuspend {
+                metadataDAO.insertValue(any<String>(), any<String>())
             }.returns(Unit)
         }
 
