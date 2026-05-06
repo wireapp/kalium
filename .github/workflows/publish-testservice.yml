@@ -78,7 +78,7 @@ jobs:
       contents: write
     steps:
       - name: Download testservice fatjar
-        uses: actions/download-artifact@v8.0.0
+        uses: actions/download-artifact@v8.0.1
         with:
           name: testservice-fatjar
           path: release-artifacts
@@ -96,7 +96,7 @@ jobs:
           EOF
 
       - name: Publish GitHub release and upload fatjar
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
           make_latest: false

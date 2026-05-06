@@ -51,6 +51,8 @@ import com.wire.kalium.cells.domain.usecase.GetCellFileUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCase
 import com.wire.kalium.cells.domain.usecase.GetCellFilesPagedUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetCellConversationsPagedUseCase
+import com.wire.kalium.cells.domain.usecase.GetCellConversationsPagedUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetCellGroupConversationsUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCase
 import com.wire.kalium.cells.domain.usecase.GetEditorUrlUseCaseImpl
@@ -354,6 +356,10 @@ public class CellsScope(
 
     public val getCellGroupConversationsUseCase: GetCellGroupConversationsUseCase by lazy {
         GetCellGroupConversationsUseCaseImpl(cellsConversationRepository)
+    }
+
+    public val getCellConversationsPagedUseCase: GetCellConversationsPagedUseCase by lazy {
+        GetCellConversationsPagedUseCaseImpl(cellsConversationRepository)
     }
 
     public val getMessageAttachmentsUseCase: GetMessageAttachmentsUseCase by lazy {

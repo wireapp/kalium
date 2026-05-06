@@ -48,7 +48,7 @@ jobs:
           echo "package_tgz=$package_tgz" >> "$GITHUB_OUTPUT"
 
       - name: Upload JS/TS package (GH Releases)
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.logic-release.outputs.logic_tag }}
           fail_on_unmatched_files: true

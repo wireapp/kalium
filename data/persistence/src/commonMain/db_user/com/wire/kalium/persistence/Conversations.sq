@@ -81,10 +81,10 @@ DELETE FROM Conversation;
 deleteConversation:
 DELETE FROM Conversation WHERE qualified_id = ?;
 
-markAsDeletedLocally:
+setDeletedLocally:
 UPDATE Conversation
-SET deleted_locally = 1
-WHERE qualified_id = ?;
+SET deleted_locally = :deletedLocally
+WHERE qualified_id = :qualifiedId;
 
 insertConversation:
 INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time, is_channel, channel_access, channel_add_permission, wire_cell, history_sharing_retention_seconds)
@@ -471,6 +471,15 @@ SELECT * FROM Conversation
 WHERE type = 'GROUP'
 AND wire_cell IS NOT NULL
 AND deleted_locally = 0;
+
+selectCellGroupConversationsPaged:
+SELECT * FROM Conversation
+WHERE type = 'GROUP'
+AND wire_cell IS NOT NULL
+AND deleted_locally = 0
+AND (:query = '' OR (name IS NOT NULL AND LOWER(name) LIKE '%' || LOWER(:query) || '%'))
+ORDER BY name COLLATE NOCASE ASC
+LIMIT :limit OFFSET :offset;
 
 insertConversationOrUpdateLastModifiedDate:
 INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time, is_channel, channel_access, channel_add_permission, wire_cell)

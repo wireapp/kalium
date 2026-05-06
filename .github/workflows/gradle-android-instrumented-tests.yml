@@ -103,7 +103,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: test-reports
-          path: ./**/build/reports/tests/**
+          path: |
+            ./**/build/reports/tests/**
+            ./**/build/reports/androidTests/**
 
       - name: Archive Test Results
         if: always()
@@ -136,7 +138,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v8.0.0
+        uses: actions/download-artifact@v8.0.1
         continue-on-error: true
         with:
           name: test-results

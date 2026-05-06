@@ -563,14 +563,6 @@ internal class ConversationGroupRepositoryImpl(
         password: String?
     ): Either<NetworkFailure, ConversationMemberAddedResponse> = wrapApiRequest {
         conversationApi.joinConversation(code, key, uri, password)
-    }.onSuccess { response ->
-        if (response is ConversationMemberAddedResponse.Changed) {
-            val event = eventMapper.fromEventContentDTO(
-                LocalId.generate(),
-                response.event
-            )
-            localEventRepository.emitLocalEvent(event)
-        }
     }
 
     override suspend fun fetchLimitedInfoViaInviteCode(

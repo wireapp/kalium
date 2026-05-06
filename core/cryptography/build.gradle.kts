@@ -111,7 +111,11 @@ kotlin {
         }
 
         val jsMain by getting
-        val jsTest by getting
+        val jsTest by getting {
+            dependencies {
+                implementation(devNpm("fake-indexeddb", "6.2.5"))
+            }
+        }
     }
 }
 

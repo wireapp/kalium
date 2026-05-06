@@ -40,7 +40,7 @@ jobs:
     steps:
       - name: Download artifacts
         if: matrix.target.artifacts != ''
-        uses: actions/download-artifact@v8.0.0
+        uses: actions/download-artifact@v8.0.1
         with:
           pattern: ${{ matrix.target.artifacts }}
           path: release-artifacts/
@@ -48,7 +48,7 @@ jobs:
 
       - name: Deploy to GitHub Release
         if: matrix.target.type == 'github-release'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ inputs.tag-name }}
           name: ${{ inputs.release-name }}

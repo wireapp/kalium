@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -47,7 +47,7 @@ internal class GetConversationEpochFromCCUseCaseImpl(
                     GetConversationEpochFromCCResult.Failure.NotMlsConversation
                 } else {
                     transactionProvider.mlsTransaction("GetConversationEpochFromCC") { mlsContext ->
-                        mlsContext.conversationEpoch(protocol.groupId.value).right()
+                        wrapMLSRequest { mlsContext.conversationEpoch(protocol.groupId.value) }
                     }.fold(
                         fnL = { GetConversationEpochFromCCResult.Failure.Generic(it) },
                         fnR = { GetConversationEpochFromCCResult.Success(it) }
