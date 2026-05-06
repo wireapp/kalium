@@ -140,6 +140,7 @@ internal class MemberLeaveEventHandlerTest {
                 withPersistingMessage(Either.Right(Unit), messageMatcher = EqualsMatcher(message))
                 withTeamId(Either.Right(TeamId("teamId")))
                 withIsAtLeastOneUserATeamMember(Either.Right(true))
+                withGetConversationProtocolInfo(Either.Right(Conversation.ProtocolInfo.Proteus))
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
@@ -171,6 +172,7 @@ internal class MemberLeaveEventHandlerTest {
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
                 withTeamId(Either.Right(null))
                 withPersistingMessage(Either.Right(Unit))
+                withGetConversationProtocolInfo(Either.Right(Conversation.ProtocolInfo.Proteus))
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
@@ -215,6 +217,7 @@ internal class MemberLeaveEventHandlerTest {
                     memberIdList = EqualsMatcher(event.removedList.map { it.toDao() })
                 )
                 withIsAtLeastOneUserATeamMember(Either.Right(false))
+                withGetConversationProtocolInfo(Either.Right(Conversation.ProtocolInfo.Proteus))
             }
 
         memberLeaveEventHandler.handle(arrangement.transactionContext, event)
