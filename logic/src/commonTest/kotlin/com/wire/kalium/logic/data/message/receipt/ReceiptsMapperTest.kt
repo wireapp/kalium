@@ -35,12 +35,14 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.receipt.DetailedReceiptEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.test.runTest
 
 class ReceiptsMapperTest {
 
@@ -182,9 +184,9 @@ class ReceiptsMapperTest {
     }
 
     private class Arrangement {
-        val availabilityStatusMapper = mock(AvailabilityStatusMapper::class)
-        val connectionStateMapper = mock(ConnectionStateMapper::class)
-        val domainUserTypeMapper = mock(DomainUserTypeMapper::class)
+        val availabilityStatusMapper = mock<AvailabilityStatusMapper>(mode = MockMode.autoUnit)
+        val connectionStateMapper = mock<ConnectionStateMapper>(mode = MockMode.autoUnit)
+        val domainUserTypeMapper = mock<DomainUserTypeMapper>(mode = MockMode.autoUnit)
 
         fun withDomainUserTypeStandard() = apply {
             every {

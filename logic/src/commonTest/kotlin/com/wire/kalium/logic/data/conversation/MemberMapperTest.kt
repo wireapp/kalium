@@ -23,21 +23,23 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 class MemberMapperTest {
 
     val idMapper = IdMapper()
 
-    private val roleMapper: ConversationRoleMapper = mock(ConversationRoleMapper::class)
+    private val roleMapper: ConversationRoleMapper = mock<ConversationRoleMapper>(mode = MockMode.autoUnit)
 
     private lateinit var memberMapper: MemberMapper
 
@@ -59,9 +61,9 @@ class MemberMapperTest {
         val membersResponse = MEMBERS_RESPONSE
         memberMapper.fromApiModel(membersResponse)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             roleMapper.fromApi(OTHER_MEMBER_RESPONSE.conversationRole)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test

@@ -29,16 +29,23 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
 import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.any
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
 import io.mockative.once
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
+import io.mockative.any as mockativeAny
+import io.mockative.eq as mockativeEq
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 
 @OptIn(ConversationPersistenceApi::class)
 class FetchConversationsUseCaseTest {
@@ -60,14 +67,14 @@ class FetchConversationsUseCaseTest {
 
         assertTrue(result.isRight())
         coVerify { arrangement.conversationRepository.fetchConversations(null) }.wasInvoked(once)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistConversations(
                 any(),
                 eq(batch.response.conversationsFound),
                 eq(true),
                 any()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -85,9 +92,9 @@ class FetchConversationsUseCaseTest {
         assertTrue(result.isRight())
         coVerify { arrangement.conversationRepository.fetchConversations(null) }.wasInvoked(once)
         coVerify { arrangement.conversationRepository.fetchConversations("s1") }.wasInvoked(once)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.persistConversations(any(), any(), eq(true), any())
-        }.wasInvoked(2)
+        }
     }
 
     @Test
@@ -99,7 +106,7 @@ class FetchConversationsUseCaseTest {
         val result = useCase(arrangement.transactionContext)
 
         assertTrue(result is Either.Left)
-        coVerify { arrangement.persistConversations(any(), any(), any(), any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.persistConversations(any(), any(), any(), any()) }
     }
 
     @Test
@@ -126,7 +133,7 @@ class FetchConversationsUseCaseTest {
         useCase(arrangement.transactionContext)
 
         coVerify {
-            arrangement.conversationRepository.persistIncompleteConversations(eq(failed))
+            arrangement.conversationRepository.persistIncompleteConversations(mockativeEq(failed))
         }.wasInvoked(once)
     }
 
@@ -142,7 +149,7 @@ class FetchConversationsUseCaseTest {
         val result = useCase(arrangement.transactionContext)
 
         assertTrue(result.isRight())
-        coVerify { arrangement.persistConversations(any(), eq(emptyList()),eq( true), eq(ConversationSyncReason.Other)) }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistConversations(any(), eq(emptyList()),eq( true), eq(ConversationSyncReason.Other)) }
     }
 
     @Test
@@ -158,9 +165,8 @@ class FetchConversationsUseCaseTest {
         val result = useCase(arrangement.transactionContext)
 
         assertTrue(result.isRight())
-        coVerify { arrangement.persistConversations(any(), eq(emptyList()), eq(true), eq(ConversationSyncReason.Other)) }.wasInvoked(once)
-        coVerify { arrangement.persistConversations(any(), eq(batch2.response.conversationsFound), eq(true), eq(ConversationSyncReason.Other)) }
-            .wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistConversations(any(), eq(emptyList()), eq(true), eq(ConversationSyncReason.Other)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistConversations(any(), eq(batch2.response.conversationsFound), eq(true), eq(ConversationSyncReason.Other)) }
     }
 
 
@@ -189,33 +195,33 @@ class FetchConversationsUseCaseTest {
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
     CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(){
 
-        val persistConversations = mock(PersistConversationsUseCase::class)
+        val persistConversations = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withFetchConversations(result: ConversationBatch) = apply {
-            coEvery { conversationRepository.fetchConversations(any()) } returns Either.Right(result)
+            coEvery { conversationRepository.fetchConversations(mockativeAny()) } returns Either.Right(result)
         }
 
         suspend fun withFetchConversationsSequence(results: List<ConversationBatch>) = apply {
             results.forEachIndexed { index, result ->
                 val param = if (index == 0) null else results[index - 1].lastPagingState
-                coEvery { conversationRepository.fetchConversations(eq(param)) } returns Either.Right(result)
+                coEvery { conversationRepository.fetchConversations(mockativeEq(param)) } returns Either.Right(result)
             }
         }
 
         suspend fun withFetchConversationsFails() = apply {
-            coEvery { conversationRepository.fetchConversations(any()) } returns Either.Left(CoreFailure.Unknown(null))
+            coEvery { conversationRepository.fetchConversations(mockativeAny()) } returns Either.Left(CoreFailure.Unknown(null))
         }
 
         suspend fun withPersistConversationsSuccess() = apply {
-            coEvery { persistConversations(any(), any(), eq(true), any()) } returns Either.Right(Unit)
+            everySuspend { persistConversations(any(), any(), eq(true), any()) } returns Either.Right(Unit)
         }
 
         suspend fun withPersistIncompleteConversations() = apply {
-            coEvery { conversationRepository.persistIncompleteConversations(any()) } returns Either.Right(Unit)
+            coEvery { conversationRepository.persistIncompleteConversations(mockativeAny()) } returns Either.Right(Unit)
         }
 
         suspend fun withPersistConversationsFails() = apply {
-            coEvery {
+            everySuspend {
                 persistConversations(any(), any(), eq(true), eq(ConversationSyncReason.Other))
             } returns Either.Left(CoreFailure.Unknown(null))
         }
