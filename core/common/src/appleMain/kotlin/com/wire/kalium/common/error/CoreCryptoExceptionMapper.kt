@@ -17,9 +17,49 @@
  */
 package com.wire.kalium.common.error
 
-actual fun commonizeMLSException(
-    exception: Exception
-): CommonizedMLSException = CommonizedMLSException(
-    failure = MLSFailure.Generic(exception),
-    cause = NotImplementedError("CoreCrypto(Apple) exception mapping was not implemented")
-)
+import com.wire.crypto.CoreCryptoException
+import com.wire.crypto.MlsException
+
+@Suppress("CyclomaticComplexMethod")
+actual fun commonizeMLSException(exception: Exception): CommonizedMLSException {
+    return if (exception is CoreCryptoException.Mls) {
+        when (val mlsError = exception.mlsError) {
+            is MlsException.WrongEpoch -> MLSFailure.WrongEpoch
+            is MlsException.DuplicateMessage -> MLSFailure.DuplicateMessage
+            is MlsException.BufferedFutureMessage -> MLSFailure.BufferedFutureMessage
+            is MlsException.SelfCommitIgnored -> MLSFailure.SelfCommitIgnored
+            is MlsException.UnmergedPendingGroup -> MLSFailure.UnmergedPendingGroup
+            is MlsException.StaleProposal -> MLSFailure.StaleProposal
+            is MlsException.StaleCommit -> MLSFailure.StaleCommit
+            is MlsException.ConversationAlreadyExists -> MLSFailure.ConversationAlreadyExists
+            is MlsException.MessageEpochTooOld -> MLSFailure.MessageEpochTooOld
+
+            is MlsException.Other -> {
+                val otherError = mlsError.msg
+                if (otherError.startsWith(COMMIT_FOR_MISSING_PROPOSAL)) {
+                    MLSFailure.CommitForMissingProposal
+                } else if (otherError.startsWith(CONVERSATION_NOT_FOUND)) {
+                    MLSFailure.ConversationNotFound
+                } else if (otherError.startsWith(INVALID_GROUP_ID)) {
+                    MLSFailure.InvalidGroupId
+                } else {
+                    MLSFailure.Other(mlsError.msg)
+                }
+            }
+
+            is MlsException.OrphanWelcome -> MLSFailure.OrphanWelcome
+            is MlsException.BufferedCommit -> MLSFailure.BufferedCommit
+            is MlsException.MessageRejected -> mapMessageRejected(mlsError)
+        }
+    } else {
+        MLSFailure.Generic(exception)
+    }.run { CommonizedMLSException(this, exception) }
+}
+
+private fun mapMessageRejected(mlsError: MlsException.MessageRejected): MLSFailure {
+    return MLSTransportFailureSerialization.parseString(mlsError.reason)
+}
+
+private const val COMMIT_FOR_MISSING_PROPOSAL = "Incoming message is a commit for which we have not yet received all the proposals"
+private const val CONVERSATION_NOT_FOUND = "Couldn't find conversation"
+private const val INVALID_GROUP_ID = "Message group ID differs from the group's group ID"
