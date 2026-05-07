@@ -26,12 +26,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -53,9 +54,13 @@ class UpdateAssetMessageTransferStatusUseCaseTest {
 
         // Then
         assertTrue(result is UpdateTransferStatusResult.Success)
-        coVerify {
-            arrangement.messageRepository.updateAssetMessageTransferStatus(eq(newDownloadStatus), eq(dummyConvId), eq(dummyMessageId))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateAssetMessageTransferStatus(
+                newDownloadStatus,
+                dummyConvId,
+                dummyMessageId
+            )
+        }
     }
 
     @Test
@@ -73,25 +78,29 @@ class UpdateAssetMessageTransferStatusUseCaseTest {
 
         // Then
         assertTrue(result is UpdateTransferStatusResult.Failure)
-        coVerify {
-            arrangement.messageRepository.updateAssetMessageTransferStatus(eq(newDownloadStatus), eq(dummyConvId), eq(dummyMessageId))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateAssetMessageTransferStatus(
+                newDownloadStatus,
+                dummyConvId,
+                dummyMessageId
+            )
+        }
     }
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-                val messageRepository = mock(MessageRepository::class)
+        val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
 
         suspend fun withSuccessfulResponse(): Arrangement {
-            coEvery {
+            everySuspend {
                 messageRepository.updateAssetMessageTransferStatus(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
             return this
         }
 
         suspend fun withErrorResponse(): Arrangement {
-            coEvery {
+            everySuspend {
                 messageRepository.updateAssetMessageTransferStatus(any(), any(), any())
-            }.returns(Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException())))
+            } returns Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException()))
             return this
         }
 

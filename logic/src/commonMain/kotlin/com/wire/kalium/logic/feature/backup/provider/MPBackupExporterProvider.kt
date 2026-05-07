@@ -26,11 +26,9 @@ import com.wire.backup.dump.BackupExportResult
 import com.wire.backup.dump.FileZipper
 import com.wire.backup.dump.MPBackupExporter
 import com.wire.backup.logger.BackupLogger
-import io.mockative.Mockable
 import okio.FileSystem
 import okio.SYSTEM
 
-@Mockable
 internal interface BackupExporter {
     fun add(user: BackupUser)
     fun add(conversation: BackupConversation)
@@ -39,7 +37,6 @@ internal interface BackupExporter {
     suspend fun finalize(password: String): BackupExportResult
 }
 
-@Mockable
 internal interface MPBackupExporterProvider {
     fun provideExporter(
         selfUserId: BackupQualifiedId,

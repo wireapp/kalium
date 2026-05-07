@@ -17,10 +17,13 @@
  */
 package com.wire.kalium.logic.feature.analytics
 
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
-import io.mockative.coVerify
-import io.mockative.once
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -40,22 +43,32 @@ class GetCurrentAnalyticsTrackingIdentifierUseCaseTest {
 
         // then
         assertEquals(CURRENT_IDENTIFIER, result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.getCurrentTrackingIdentifier()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private companion object {
         const val CURRENT_IDENTIFIER = "efgh-5678"
     }
 
-    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
+    private class Arrangement {
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
-        private val useCase: GetCurrentAnalyticsTrackingIdentifierUseCase = GetCurrentAnalyticsTrackingIdentifierUseCase(
-            userConfigRepository = userConfigRepository
-        )
+        private val useCase: GetCurrentAnalyticsTrackingIdentifierUseCase =
+            GetCurrentAnalyticsTrackingIdentifierUseCase(
+                userConfigRepository = userConfigRepository
+            )
 
-        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, GetCurrentAnalyticsTrackingIdentifierUseCase> {
+        suspend fun withGetTrackingIdentifier(result: String?) = apply {
+            everySuspend {
+                userConfigRepository.getCurrentTrackingIdentifier()
+            } returns result
+        }
+
+        fun arrange(
+            block: suspend Arrangement.() -> Unit
+        ): Pair<Arrangement, GetCurrentAnalyticsTrackingIdentifierUseCase> {
             runBlocking { block() }
             return this to useCase
         }

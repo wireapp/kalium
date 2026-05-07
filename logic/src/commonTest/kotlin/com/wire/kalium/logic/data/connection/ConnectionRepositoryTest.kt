@@ -20,7 +20,9 @@ package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
@@ -31,24 +33,23 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.authenticated.connection.ConnectionResponse
 import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.QualifiedID
+import com.wire.kalium.network.api.model.UserId as NetworkUserId
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.network.exceptions.FederationError
@@ -63,26 +64,31 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.ConversationPersistenceApi
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.any
-import io.mockative.coEvery
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.mockative.coVerify
-import io.mockative.eq
 import io.mockative.fake.valueOf
+import io.mockative.any as mockativeAny
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.EqualsMatcher
 import io.mockative.matchers.Matcher
 import io.mockative.matchers.PredicateMatcher
-import io.mockative.matches
-import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import com.wire.kalium.network.api.model.UserId as NetworkUserId
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 
 @OptIn(ConversationPersistenceApi::class)
 class ConnectionRepositoryTest {
@@ -101,7 +107,7 @@ class ConnectionRepositoryTest {
 
         // then
         coVerify {
-            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(mockativeAny(), mockativeAny())
         }.wasInvoked(exactly = twice)
 
         // Verifies that when fetching connections, it succeeded
@@ -122,7 +128,7 @@ class ConnectionRepositoryTest {
 
         // then
         coVerify {
-            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(mockativeAny(), mockativeAny())
         }.wasInvoked(exactly = twice)
 
         // Verifies that when fetching connections, it succeeded
@@ -149,9 +155,9 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionApi.createConnection(eq(userId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -170,15 +176,15 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldFail()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionApi.createConnection(eq(userId))
-        }.wasInvoked(once)
+        }
         coVerify {
-            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(mockativeAny(), mockativeAny())
         }.wasNotInvoked()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.conversationRepository.fetchConversation(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -204,12 +210,12 @@ class ConnectionRepositoryTest {
         val result = connectionRepository.sendUserConnection(arrangement.transactionContext, UserId(userId.value, userId.domain))
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionApi.createConnection(eq(userId))
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionDAO.insertConnection(any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -228,11 +234,11 @@ class ConnectionRepositoryTest {
         result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
-        }.wasInvoked(once)
+        }
         coVerify {
-            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(mockativeAny(), mockativeAny())
         }.wasInvoked(exactly = once)
     }
 
@@ -248,11 +254,11 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldFail {}
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
-        }.wasNotInvoked()
+        }
         coVerify {
-            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(mockativeAny(), mockativeAny())
         }.wasNotInvoked()
     }
 
@@ -268,11 +274,11 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldFail {}
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
-        }.wasInvoked(once)
+        }
         coVerify {
-            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(mockativeAny(), mockativeAny())
         }.wasNotInvoked()
     }
 
@@ -288,11 +294,11 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldFail {}
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.PENDING))
-        }.wasNotInvoked()
+        }
         coVerify {
-            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(mockativeAny(), mockativeAny())
         }.wasNotInvoked()
     }
 
@@ -312,12 +318,12 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionDAO.deleteConnectionDataAndConversation(eq(conversationId.toDao()))
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.upsertConnectionStatuses(eq(mapOf(connection.qualifiedToId.toDao() to ConnectionEntity.State.CANCELLED)))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -332,9 +338,9 @@ class ConnectionRepositoryTest {
         result.shouldSucceed {
             assertEquals(connection.qualifiedConversationId.toModel(), it.conversationId)
         }
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionDAO.getConnection(eq(connection.qualifiedConversationId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -351,9 +357,9 @@ class ConnectionRepositoryTest {
         result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.IGNORED)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -371,14 +377,20 @@ class ConnectionRepositoryTest {
         result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionDAO.insertConnection(
-                arrangement.stubConnectionEntity.copy(
-                    lastUpdateDate = any(),
-                    status = ConnectionEntity.State.IGNORED
-                )
+                matching {
+                    it.conversationId == arrangement.connectionEntity.conversationId &&
+                            it.from == arrangement.connectionEntity.from &&
+                            it.qualifiedConversationId == arrangement.connectionEntity.qualifiedConversationId &&
+                            it.qualifiedToId == arrangement.connectionEntity.qualifiedToId &&
+                            it.status == ConnectionEntity.State.IGNORED &&
+                            it.toId == arrangement.connectionEntity.toId &&
+                            it.shouldNotify == arrangement.connectionEntity.shouldNotify &&
+                            it.otherUser == arrangement.connectionEntity.otherUser
+                }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -393,9 +405,9 @@ class ConnectionRepositoryTest {
         result.shouldFail {
             assertIs<StorageFailure.DataNotFound>(it)
         }
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionDAO.getConnection(eq(connection.qualifiedConversationId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -416,9 +428,9 @@ class ConnectionRepositoryTest {
         result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.IGNORED)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -439,14 +451,20 @@ class ConnectionRepositoryTest {
         result.shouldSucceed { Arrangement.stubConnectionOne }
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionDAO.insertConnection(
-                arrangement.stubConnectionEntity.copy(
-                    lastUpdateDate = any(),
-                    status = ConnectionEntity.State.IGNORED
-                )
+                matches {
+                    it.conversationId == arrangement.connectionEntity.conversationId &&
+                            it.from == arrangement.connectionEntity.from &&
+                            it.qualifiedConversationId == arrangement.connectionEntity.qualifiedConversationId &&
+                            it.qualifiedToId == arrangement.connectionEntity.qualifiedToId &&
+                            it.status == ConnectionEntity.State.IGNORED &&
+                            it.toId == arrangement.connectionEntity.toId &&
+                            it.shouldNotify == arrangement.connectionEntity.shouldNotify &&
+                            it.otherUser == arrangement.connectionEntity.otherUser
+                }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -464,13 +482,13 @@ class ConnectionRepositoryTest {
             result.shouldFail { Arrangement.stubConnectionOne }
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.connectionDAO.insertConnection(
                     arrangement.stubConnectionEntity.copy(
                         status = ConnectionEntity.State.IGNORED
                     )
                 )
-            }.wasInvoked(exactly = 0)
+            }
         }
 
     @Test
@@ -503,23 +521,23 @@ class ConnectionRepositoryTest {
 
         connectionRepository.updateRemoteConnectionStatus(arrangement.transactionContext, userId, ConnectionState.ACCEPTED)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionDAO.insertConnection(ConnectionMapperImpl().fromApiToDao(expectedRecoveryResponse))
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
-        val conversationDAO = mock(ConversationDAO::class)
-        val conversationRepository = mock(ConversationRepository::class)
-        val connectionDAO = mock(ConnectionDAO::class)
-        val connectionApi = mock(ConnectionApi::class)
-        val userDetailsApi = mock(UserDetailsApi::class)
-        val userDAO = mock(UserDAO::class)
-        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val persistConversations = mock(PersistConversationsUseCase::class)
+        val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val connectionDAO = mock<ConnectionDAO>(mode = MockMode.autoUnit)
+        val connectionApi = mock<ConnectionApi>(mode = MockMode.autoUnit)
+        val userDetailsApi = mock<UserDetailsApi>(mode = MockMode.autoUnit)
+        val userDAO = mock<UserDAO>(mode = MockMode.autoUnit)
+        val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
+        val persistConversations = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
 
         val connectionRepository = ConnectionDataSource(
             conversationDAO = conversationDAO,
@@ -587,21 +605,21 @@ class ConnectionRepositoryTest {
         )
 
         suspend fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>): Arrangement {
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider.invoke()
             }.returns(either)
             return this
         }
 
         suspend fun withFetchConversationSucceed(): Arrangement {
-            coEvery {
+            everySuspend {
                 conversationRepository.fetchConversation(any())
             }.returns(Either.Right(TestConversation.CONVERSATION_RESPONSE))
             return this
         }
 
         suspend fun withPersistConversationsSucceed(): Arrangement {
-            coEvery {
+            everySuspend {
                 persistConversations(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
             return this
@@ -611,7 +629,7 @@ class ConnectionRepositoryTest {
             result: ConnectionDTO = stubConnectionOne,
             userId: Matcher<NetworkUserId>
         ): Arrangement {
-            coEvery {
+            everySuspend {
                 connectionApi.createConnection(matches { userId.matches(it) })
             }.returns(NetworkResponse.Success(result, mapOf(), 200))
 
@@ -619,7 +637,7 @@ class ConnectionRepositoryTest {
         }
 
         suspend fun withSuccessfulGetConversationById(conversationId: QualifiedIDEntity): Arrangement {
-            coEvery {
+            everySuspend {
                 conversationDAO.observeConversationDetailsById(eq(conversationId))
             }.returns(flowOf(TestConversation.VIEW_ENTITY))
 
@@ -636,7 +654,7 @@ class ConnectionRepositoryTest {
         }
 
         suspend fun withErrorOnCreateConnectionResponse(userId: NetworkUserId): Arrangement {
-            coEvery {
+            everySuspend {
                 connectionApi.createConnection(eq(userId))
             }.returns(NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))))
 
@@ -656,7 +674,7 @@ class ConnectionRepositoryTest {
         }
 
         suspend fun withSuccessfulUpdateConnectionStatusResponse(userId: NetworkUserId): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 connectionApi.updateConnection(eq(userId), any())
             }.returns(NetworkResponse.Success(stubConnectionOne, mapOf(), 200))
 
@@ -673,7 +691,7 @@ class ConnectionRepositoryTest {
             userId: NetworkUserId,
             exception: KaliumException = KaliumException.GenericError(RuntimeException("An error the server threw!"))
         ): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 connectionApi.updateConnection(eq(userId), any())
             }.returns(NetworkResponse.Error(exception))
         }
@@ -682,7 +700,7 @@ class ConnectionRepositoryTest {
             result: NetworkResponse<ConnectionDTO>,
             userId: Matcher<com.wire.kalium.network.api.model.UserId>
         ) = apply {
-            coEvery {
+            everySuspend {
                 connectionApi.userConnectionInfo(
                     matches { userId.matches(it) }
                 )
@@ -690,18 +708,18 @@ class ConnectionRepositoryTest {
         }
 
         suspend fun withDeleteConnectionDataAndConversation(conversationId: QualifiedIDEntity): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 connectionDAO.deleteConnectionDataAndConversation(eq(conversationId))
             }.returns(Unit)
         }
 
         suspend fun withConnectionEntityByUser(): Arrangement = apply {
-            coEvery { connectionDAO.getConnectionByUser(any()) }
+            everySuspend { connectionDAO.getConnectionByUser(any()) }
                 .returns(connectionEntity)
         }
 
         suspend fun withSuccessfulFetchSelfUserConnectionsResponse(stubUserProfileDTO: UserProfileDTO): Arrangement {
-            coEvery { connectionApi.fetchSelfUserConnections(null) }
+            everySuspend { connectionApi.fetchSelfUserConnections(null) }
                 .returns(
                     NetworkResponse.Success(
                         stubConnectionResponse,
@@ -709,17 +727,17 @@ class ConnectionRepositoryTest {
                         200
                     )
                 )
-            coEvery {
+            everySuspend {
                 userDetailsApi.getUserInfo(any())
             }.returns(NetworkResponse.Success(stubUserProfileDTO, mapOf(), 200))
 
             withUpdateOrInsertOneOnOneMemberSuccess()
 
-            coEvery {
+            everySuspend {
                 userDAO.observeUserDetailsByQualifiedID(any())
             }.returns(flowOf(stubUserEntity))
 
-            coEvery {
+            everySuspend {
                 userDAO.upsertUser(any())
             }.returns(Unit)
 
@@ -727,7 +745,7 @@ class ConnectionRepositoryTest {
         }
 
         suspend fun withSuccessfulGetUserById(id: QualifiedIDEntity): Arrangement {
-            coEvery {
+            everySuspend {
                 userDAO.observeUserDetailsByQualifiedID(eq(id))
             }.returns(flowOf(stubUserEntity))
 
@@ -735,13 +753,13 @@ class ConnectionRepositoryTest {
         }
 
         suspend fun withGetConnection(connection: ConnectionEntity?): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 connectionDAO.getConnection(any())
             }.returns(connection)
         }
 
         suspend fun withGetConnectionByUser(): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 connectionDAO.getConnectionByUser(any())
             }.returns(connectionEntity)
         }

@@ -28,10 +28,10 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 
 class MessageMetadataRepositoryTest {
 

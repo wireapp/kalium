@@ -26,16 +26,18 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 
 class AnalyticsRepositoryTest {
 
@@ -50,9 +52,9 @@ class AnalyticsRepositoryTest {
             val result = userRepository.getContactsAmountCached()
             // then
             result.shouldFail()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.metadataDAO.valueByKey(AnalyticsDataSource.CONTACTS_AMOUNT_KEY)
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -66,9 +68,9 @@ class AnalyticsRepositoryTest {
             val result = userRepository.getContactsAmountCached()
             // then
             result.shouldSucceed { assertEquals(12, it) }
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.metadataDAO.valueByKey(AnalyticsDataSource.CONTACTS_AMOUNT_KEY)
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -81,9 +83,9 @@ class AnalyticsRepositoryTest {
         val result = userRepository.getTeamMembersAmountCached()
         // then
         result.shouldFail()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.metadataDAO.valueByKey(AnalyticsDataSource.TEAM_MEMBERS_AMOUNT_KEY)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -96,9 +98,9 @@ class AnalyticsRepositoryTest {
         val result = userRepository.getTeamMembersAmountCached()
         // then
         result.shouldSucceed { assertEquals(12, it) }
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.metadataDAO.valueByKey(AnalyticsDataSource.TEAM_MEMBERS_AMOUNT_KEY)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -112,9 +114,9 @@ class AnalyticsRepositoryTest {
             val result = userRepository.countContactsAmount()
             // then
             result.shouldSucceed { assertEquals(12, it) }
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userDAO.countContactsAmount(any())
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -127,16 +129,16 @@ class AnalyticsRepositoryTest {
         val result = userRepository.countTeamMembersAmount(TeamId("teamId"))
         // then
         result.shouldSucceed { assertEquals(12, it) }
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.countTeamMembersAmount(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        
-        val userDAO = mock(UserDAO::class)
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val metadataDAO: MetadataDAO = mock(MetadataDAO::class)
+
+        val userDAO = mock<UserDAO>(mode = MockMode.autoUnit)
+        val selfTeamIdProvider: SelfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
+        val metadataDAO: MetadataDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
 
         val analyticsRepository: AnalyticsRepository by lazy {
             AnalyticsDataSource(
@@ -147,26 +149,26 @@ class AnalyticsRepositoryTest {
         }
 
         suspend fun withGetMetaDataDaoValue(key: String, result: String?) = apply {
-            coEvery { metadataDAO.valueByKey(eq(key)) }.returns(result)
+            everySuspend { metadataDAO.valueByKey(eq(key)) }.returns(result)
         }
 
         suspend fun withCountContactsAmountResult(result: Int) = apply {
-            coEvery { userDAO.countContactsAmount(any()) }.returns(result)
+            everySuspend { userDAO.countContactsAmount(any()) }.returns(result)
         }
 
         suspend fun withCountTeamMembersAmount(result: Int) = apply {
-            coEvery { userDAO.countTeamMembersAmount(any()) }.returns(result)
+            everySuspend { userDAO.countTeamMembersAmount(any()) }.returns(result)
         }
 
         suspend inline fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, AnalyticsRepository> {
-            coEvery {
+            everySuspend {
                 userDAO.observeUserDetailsByQualifiedID(any())
             }.returns(flowOf(TestUser.DETAILS_ENTITY))
 
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider()
             }.returns(Either.Right(TestTeam.TEAM_ID))
-            coEvery { metadataDAO.insertValue(any(), any()) }.returns(Unit)
+            everySuspend { metadataDAO.insertValue(any(), any()) }.returns(Unit)
             apply(block)
             return this to analyticsRepository
         }

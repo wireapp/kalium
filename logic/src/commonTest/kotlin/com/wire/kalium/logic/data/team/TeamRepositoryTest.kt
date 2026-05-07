@@ -20,21 +20,21 @@ package com.wire.kalium.logic.data.team
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.authenticated.client.ClientIdDTO
 import com.wire.kalium.network.api.authenticated.keypackage.LastPreKeyDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListPaginated
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.LegalHoldStatusResponse
@@ -46,21 +46,22 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.TeamDAO
 import com.wire.kalium.persistence.dao.TeamEntity
-import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserConfigDAO
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.persistence.dao.UserDAO
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.mockative.oneOf
-import io.mockative.twice
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 
 class TeamRepositoryTest {
     @Test
@@ -72,9 +73,9 @@ class TeamRepositoryTest {
         val result = teamRepository.fetchTeamById(teamId = TeamId(TestTeam.TEAM_ID.value))
 
         // Verifies that teamDAO insertTeam was called with the correct mapped values
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamDAO.insertTeam(oneOf(TestTeam.TEAM_ENTITY))
-        }.wasInvoked(exactly = once)
+        }
 
         // Verifies that when fetching team by id, it succeeded
         result.shouldSucceed { returnTeam ->
@@ -86,7 +87,7 @@ class TeamRepositoryTest {
     fun givenTeamApiFails_whenFetchingTeamInfo_thenTheFailureIsPropagated() = runTest {
         val (arrangement, teamRepository) = Arrangement().arrange()
 
-        coEvery {
+        everySuspend {
             arrangement.teamsApi.getTeamInfo(any())
         }.returns(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
@@ -117,9 +118,9 @@ class TeamRepositoryTest {
         val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain", null)
 
         // Verifies that userDAO insertUsers was called with the correct mapped values
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.upsertTeamMemberUserTypes(any())
-        }.wasInvoked(exactly = once)
+        }
 
         // Verifies that when fetching members by team id, it succeeded
         result.shouldSucceed()
@@ -129,7 +130,7 @@ class TeamRepositoryTest {
     fun givenTeamApiFails_whenFetchingTeamMembers_thenTheFailureIsPropagated() = runTest {
         val (arrangement, teamRepository) = Arrangement().arrange()
 
-        coEvery {
+        everySuspend {
             arrangement.teamsApi.getTeamMembers(any(), any(), any())
         }.returns(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
@@ -148,9 +149,9 @@ class TeamRepositoryTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.teamsApi.getTeamMembers(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -177,9 +178,9 @@ class TeamRepositoryTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.teamsApi.getTeamMembers(any(), any(), any())
-        }.wasInvoked(exactly = twice)
+        }
     }
 
     @Test
@@ -189,7 +190,7 @@ class TeamRepositoryTest {
 
         val (arrangement, teamRepository) = Arrangement().arrange()
 
-        coEvery {
+        everySuspend {
             arrangement.teamDAO.getTeamById(oneOf("teamId"))
         }.returns(flowOf(teamEntity))
 
@@ -203,7 +204,7 @@ class TeamRepositoryTest {
     fun givenSelfUserDoesNotExist_whenGettingTeamById_thenNullShouldBePassed() = runTest {
         val (arrangement, teamRepository) = Arrangement().arrange()
 
-        coEvery {
+        everySuspend {
             arrangement.teamDAO.getTeamById(oneOf("teamId"))
         }.returns(flowOf(null))
 
@@ -217,32 +218,32 @@ class TeamRepositoryTest {
     fun givenAConversationId_whenDeletingATeamConversation_thenShouldCallToApiLayerSucceed() = runTest {
         val (arrangement, teamRepository) = Arrangement().arrange()
 
-        coEvery {
+        everySuspend {
             arrangement.teamsApi.deleteConversation(any(), any())
         }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
 
         val result = teamRepository.deleteConversation(TestConversation.ID, TeamId("aTeamId"))
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamsApi.deleteConversation(eq("valueConvo"), eq("aTeamId"))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
     fun givenAConversationId_whenDeletingATeamConversationAndErrorFromApi_thenShouldFail() = runTest {
         val (arrangement, teamRepository) = Arrangement().arrange()
 
-        coEvery {
+        everySuspend {
             arrangement.teamsApi.deleteConversation(any(), any())
         }.returns(NetworkResponse.Error(KaliumException.GenericError(RuntimeException("Some error happened"))))
 
         val result = teamRepository.deleteConversation(TestConversation.ID, TeamId("aTeamId"))
 
         result.shouldFail()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamsApi.deleteConversation(eq("valueConvo"), eq("aTeamId"))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -256,9 +257,9 @@ class TeamRepositoryTest {
         result.shouldSucceed()
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serviceDAO.insertMultiple(any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -269,12 +270,12 @@ class TeamRepositoryTest {
         val result = teamRepository.approveLegalHoldRequest(teamId = TeamId(value = "teamId"), password = "password")
         // then
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.clearLegalHoldRequest()
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.legalHoldHandler.handleEnable(matches { it.userId == TestUser.USER_ID })
-        }.wasInvoked(once)
+        }
     }
 
     private inline fun testFetchingLegalHoldStatus(
@@ -297,15 +298,15 @@ class TeamRepositoryTest {
         response = LegalHoldStatusResponse(LegalHoldStatusDTO.NO_CONSENT, null, null),
         expected = LegalHoldStatus.NO_CONSENT,
     ) { arrangement ->
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.legalHoldHandler.handleEnable(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.legalHoldHandler.handleDisable(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.legalHoldRequestHandler.handle(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -316,19 +317,19 @@ class TeamRepositoryTest {
             response = LegalHoldStatusResponse(LegalHoldStatusDTO.PENDING, ClientIdDTO("clientId"), LastPreKeyDTO(1, "key")),
             expected = LegalHoldStatus.PENDING,
         ) { arrangement ->
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.legalHoldHandler.handleEnable(any())
-            }.wasNotInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.legalHoldHandler.handleDisable(any())
-            }.wasNotInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.atLeast(1)) {
                 arrangement.legalHoldRequestHandler.handle(
                     matches {
                         it.clientId.value == clientId.clientId && it.lastPreKey.id == lastPreKey.id && it.lastPreKey.key == lastPreKey.key
                     }
                 )
-            }.wasInvoked()
+            }
         }
     }
 
@@ -338,15 +339,15 @@ class TeamRepositoryTest {
             response = LegalHoldStatusResponse(LegalHoldStatusDTO.ENABLED, null, null),
             expected = LegalHoldStatus.ENABLED,
         ) { arrangement ->
-            coVerify {
+            verifySuspend(VerifyMode.atLeast(1)) {
                 arrangement.legalHoldHandler.handleEnable(any())
-            }.wasInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.legalHoldHandler.handleDisable(any())
-            }.wasNotInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.legalHoldRequestHandler.handle(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -355,15 +356,15 @@ class TeamRepositoryTest {
             response = LegalHoldStatusResponse(LegalHoldStatusDTO.DISABLED, null, null),
             expected = LegalHoldStatus.DISABLED,
         ) { arrangement ->
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.legalHoldHandler.handleEnable(any())
-            }.wasNotInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.atLeast(1)) {
                 arrangement.legalHoldHandler.handleDisable(any())
-            }.wasInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.legalHoldRequestHandler.handle(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -376,24 +377,24 @@ class TeamRepositoryTest {
 
         // then
         result.shouldSucceed { returnTeam -> assertEquals(TestTeam.TEAM, returnTeam) }
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamsApi.getTeamInfo(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamDAO.updateTeam(eq(TestTeam.TEAM_ENTITY))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-                val teamDAO = mock(TeamDAO::class)
-        val userDAO = mock(UserDAO::class)
+                val teamDAO = mock<TeamDAO>(mode = MockMode.autoUnit)
+        val userDAO = mock<UserDAO>(mode = MockMode.autoUnit)
 
         val teamMapper = MapperProvider.teamMapper()
-        val userConfigDAO = mock(UserConfigDAO::class)
-        val teamsApi = mock(TeamsApi::class)
-        val serviceDAO = mock(ServiceDAO::class)
-        val legalHoldHandler = mock(LegalHoldHandler::class)
-        val legalHoldRequestHandler = mock(LegalHoldRequestHandler::class)
+        val userConfigDAO = mock<UserConfigDAO>(mode = MockMode.autoUnit)
+        val teamsApi = mock<TeamsApi>(mode = MockMode.autoUnit)
+        val serviceDAO = mock<ServiceDAO>(mode = MockMode.autoUnit)
+        val legalHoldHandler = mock<LegalHoldHandler>(mode = MockMode.autoUnit)
+        val legalHoldRequestHandler = mock<LegalHoldRequestHandler>(mode = MockMode.autoUnit)
 
         val teamRepository: TeamRepository = TeamDataSource(
             teamDAO = teamDAO,
@@ -409,43 +410,43 @@ class TeamRepositoryTest {
         )
 
         suspend fun withApiGetTeamInfoSuccess(teamDTO: TeamDTO) = apply {
-            coEvery {
+            everySuspend {
                 teamsApi.getTeamInfo(oneOf(teamDTO.id))
             }.returns(NetworkResponse.Success(value = teamDTO, headers = mapOf(), httpCode = 200))
         }
 
         suspend fun withFetchWhiteListedServicesSuccess() = apply {
-            coEvery {
+            everySuspend {
                 teamsApi.whiteListedServices(any(), any())
             }.returns(NetworkResponse.Success(value = SERVICE_DETAILS_RESPONSE, headers = mapOf(), httpCode = 200))
         }
 
         suspend fun withApiApproveLegalHoldSuccess() = apply {
-            coEvery {
+            everySuspend {
                 teamsApi.approveLegalHoldRequest(any(), any(), any())
             }.returns(NetworkResponse.Success(value = Unit, headers = mapOf(), httpCode = 200))
         }
 
         suspend fun withApiFetchLegalHoldStatusSuccess(result: LegalHoldStatusResponse) = apply {
-            coEvery {
+            everySuspend {
                 teamsApi.fetchLegalHoldStatus(any(), any())
             }.returns(NetworkResponse.Success(value = result, headers = mapOf(), httpCode = 200))
         }
 
         suspend fun withHandleLegalHoldSuccesses() = apply {
-            coEvery {
+            everySuspend {
                 legalHoldHandler.handleEnable(any())
             }.returns(Either.Right(Unit))
-            coEvery {
+            everySuspend {
                 legalHoldHandler.handleDisable(any())
             }.returns(Either.Right(Unit))
-            coEvery {
+            everySuspend {
                 legalHoldRequestHandler.handle(any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withGetTeamMembers(result: NetworkResponse<TeamMemberListPaginated>) = apply {
-            coEvery {
+            everySuspend {
                 teamsApi.getTeamMembers(any(), any(), any())
             }.returns(result)
         }

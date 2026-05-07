@@ -18,18 +18,20 @@
 package com.wire.kalium.logic.feature.analytics
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.analytics.AnalyticsRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.util.arrangement.repository.AnalyticsRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.AnalyticsRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -63,17 +65,17 @@ class GetAnalyticsContactsDataUseCaseTest {
         val (arrangement, useCase) = Arrangement().arrange {
             withContactsAmountCached(contactsCachedCount.right())
             withLastContactsDateUpdateDate(lastUpdateDate.right())
-            coEvery { selfTeamIdProvider.invoke() }.returns((null as TeamId?).right())
+            withSelfTeamId(null)
             withContactsAmountCached(expected.contactsSize!!.right())
         }
 
         val result = useCase(currentTime)
 
         assertEquals(expected, result)
-        coVerify { arrangement.analyticsRepository.getContactsAmountCached() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.getContactsAmountCached() }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countContactsAmount() }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.getTeamMembersAmountCached() }
     }
 
     @Test
@@ -90,7 +92,7 @@ class GetAnalyticsContactsDataUseCaseTest {
         )
         val (arrangement, useCase) = Arrangement().arrange {
             withLastContactsDateUpdateDate(lastUpdateDate.right())
-            coEvery { selfTeamIdProvider.invoke() }.returns((null as TeamId?).right())
+            withSelfTeamId(null)
             withContactsAmountCached(StorageFailure.DataNotFound.left())
             withCountContactsAmount(expected.contactsSize!!.right())
         }
@@ -98,9 +100,9 @@ class GetAnalyticsContactsDataUseCaseTest {
         val result = useCase(currentTime)
 
         assertEquals(expected, result)
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.countContactsAmount() }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.getTeamMembersAmountCached() }
     }
 
     @Test
@@ -117,7 +119,7 @@ class GetAnalyticsContactsDataUseCaseTest {
         )
         val (arrangement, useCase) = Arrangement().arrange {
             withLastContactsDateUpdateDate(lastUpdateDate.right())
-            coEvery { selfTeamIdProvider.invoke() }.returns(SELF_TEAM_ID.right())
+            withSelfTeamId(SELF_TEAM_ID)
             withTeamMembersAmountCached(expected.teamSize!!.right())
             withConferenceCallingEnabled(expected.isEnterprise!!)
         }
@@ -125,11 +127,10 @@ class GetAnalyticsContactsDataUseCaseTest {
         val result = useCase(currentTime)
 
         assertEquals(expected, result)
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }
-            .wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countContactsAmount() }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countContactsAmount() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.getTeamMembersAmountCached() }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
     }
 
     @Test
@@ -146,7 +147,7 @@ class GetAnalyticsContactsDataUseCaseTest {
         )
         val (arrangement, useCase) = Arrangement().arrange {
             withLastContactsDateUpdateDate(lastUpdateDate.right())
-            coEvery { selfTeamIdProvider.invoke() }.returns(SELF_TEAM_ID.right())
+            withSelfTeamId(SELF_TEAM_ID)
             withTeamMembersAmountCached(StorageFailure.DataNotFound.left())
             withCountTeamMembersAmount(expected.teamSize!!.right())
             withConferenceCallingEnabled(expected.isEnterprise!!)
@@ -155,12 +156,10 @@ class GetAnalyticsContactsDataUseCaseTest {
         val result = useCase(currentTime)
 
         assertEquals(expected, result)
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.getContactsAmountCached() }.wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }
-            .wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
-            .wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countContactsAmount() }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.getContactsAmountCached() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.getTeamMembersAmountCached() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
     }
 
     @Test
@@ -178,7 +177,7 @@ class GetAnalyticsContactsDataUseCaseTest {
 
         val (arrangement, useCase) = Arrangement().arrange {
             withLastContactsDateUpdateDate(lastUpdateDate.right())
-            coEvery { selfTeamIdProvider.invoke() }.returns(SELF_TEAM_ID.right())
+            withSelfTeamId(SELF_TEAM_ID)
             withTeamMembersAmountCached(5.right())
             withConferenceCallingEnabled(expected.isEnterprise!!)
         }
@@ -186,14 +185,10 @@ class GetAnalyticsContactsDataUseCaseTest {
         val result = useCase(currentTime)
 
         assertEquals(expected, result)
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }
-            .wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }
-            .wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.getTeamMembersAmountCached() }
-            .wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
-            .wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countContactsAmount() }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countContactsAmount() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.getTeamMembersAmountCached() }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
     }
 
     @Test
@@ -202,7 +197,7 @@ class GetAnalyticsContactsDataUseCaseTest {
         val lastUpdateDate = StorageFailure.DataNotFound.left()
 
         val (arrangement, useCase) = Arrangement().arrange {
-            coEvery { selfTeamIdProvider.invoke() }.returns(SELF_TEAM_ID.right())
+            withSelfTeamId(SELF_TEAM_ID)
             withLastContactsDateUpdateDate(lastUpdateDate)
             withConferenceCallingEnabled(false)
             withCountContactsAmount(112.right())
@@ -212,16 +207,11 @@ class GetAnalyticsContactsDataUseCaseTest {
 
         useCase.invoke(currentTime)
 
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }
-            .wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
-            .wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }
-            .wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
-            .wasInvoked(exactly = 1)
-        coVerify { arrangement.analyticsRepository.setLastContactsDateUpdateDate(any()) }
-            .wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countContactsAmount() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.setContactsAmountCached(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.setLastContactsDateUpdateDate(any()) }
     }
 
     @Test
@@ -234,7 +224,7 @@ class GetAnalyticsContactsDataUseCaseTest {
                 withTeamMembersAmountCached(3.right())
                 withConferenceCallingEnabled(false)
                 withLastContactsDateUpdateDate(lastUpdateDate.right())
-                coEvery { selfTeamIdProvider.invoke() }.returns(SELF_TEAM_ID.right())
+                withSelfTeamId(SELF_TEAM_ID)
                 withCountContactsAmount(112.right())
                 withCountTeamMembersAmount(12.right())
             }
@@ -242,16 +232,13 @@ class GetAnalyticsContactsDataUseCaseTest {
             useCase.invoke(currentTime)
             advanceUntilIdle()
 
-            coVerify { arrangement.analyticsRepository.countContactsAmount() }
-                .wasNotInvoked()
-            coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
-                .wasInvoked(exactly = 1)
-            coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }
-                .wasNotInvoked()
-            coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
-                .wasInvoked(exactly = 1)
-            coVerify { arrangement.analyticsRepository.setLastContactsDateUpdateDate(any()) }
-                .wasInvoked(exactly = 1)
+            verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countContactsAmount() }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+            verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.setContactsAmountCached(any()) }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.analyticsRepository.setLastContactsDateUpdateDate(any())
+            }
         }
 
     @Test
@@ -264,7 +251,7 @@ class GetAnalyticsContactsDataUseCaseTest {
             val (arrangement, useCase) = Arrangement().arrange {
                 withContactsAmountCached(contactsCachedCount.right())
                 withLastContactsDateUpdateDate(lastUpdateDate.right())
-                coEvery { selfTeamIdProvider.invoke() }.returns(null.right())
+                withSelfTeamId(null)
                 withCountContactsAmount(112.right())
                 withCountTeamMembersAmount(12.right())
             }
@@ -272,16 +259,13 @@ class GetAnalyticsContactsDataUseCaseTest {
             useCase.invoke(currentTime)
             coroutineScope.advanceUntilIdle()
 
-            coVerify { arrangement.analyticsRepository.countContactsAmount() }
-                .wasInvoked(exactly = 1)
-            coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
-                .wasNotInvoked()
-            coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }
-                .wasInvoked(exactly = 1)
-            coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
-                .wasNotInvoked()
-            coVerify { arrangement.analyticsRepository.setLastContactsDateUpdateDate(any()) }
-                .wasInvoked(exactly = 1)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.countContactsAmount() }
+            verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.analyticsRepository.setContactsAmountCached(any()) }
+            verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.analyticsRepository.setLastContactsDateUpdateDate(any())
+            }
         }
 
     @Test
@@ -293,7 +277,7 @@ class GetAnalyticsContactsDataUseCaseTest {
             withTeamMembersAmountCached(3.right())
             withLastContactsDateUpdateDate(lastUpdateDate.right())
             withConferenceCallingEnabled(true)
-            coEvery { selfTeamIdProvider.invoke() }.returns(SELF_TEAM_ID.right())
+            withSelfTeamId(SELF_TEAM_ID)
             withCountContactsAmount(112.right())
             withCountTeamMembersAmount(12.right())
         }
@@ -301,16 +285,11 @@ class GetAnalyticsContactsDataUseCaseTest {
         useCase(currentTime)
         advanceUntilIdle()
 
-        coVerify { arrangement.analyticsRepository.countContactsAmount() }
-            .wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
-            .wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.setContactsAmountCached(any()) }
-            .wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
-            .wasNotInvoked()
-        coVerify { arrangement.analyticsRepository.setLastContactsDateUpdateDate(any()) }
-            .wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countContactsAmount() }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.countTeamMembersAmount(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.setContactsAmountCached(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.setTeamMembersAmountCached(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.analyticsRepository.setLastContactsDateUpdateDate(any()) }
     }
 
     companion object {
@@ -318,10 +297,10 @@ class GetAnalyticsContactsDataUseCaseTest {
         lateinit var coroutineScope: TestScope
     }
 
-    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
-        AnalyticsRepositoryArrangement by AnalyticsRepositoryArrangementImpl() {
-
-        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
+    private class Arrangement {
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+        val analyticsRepository = mock<AnalyticsRepository>(mode = MockMode.autoUnit)
+        val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
 
         private val useCase: GetAnalyticsContactsDataUseCase = GetAnalyticsContactsDataUseCase(
             selfTeamIdProvider = selfTeamIdProvider,
@@ -330,6 +309,48 @@ class GetAnalyticsContactsDataUseCaseTest {
             coroutineScope = coroutineScope
 
         )
+
+        suspend fun withSelfTeamId(teamId: TeamId?) = apply {
+            everySuspend {
+                selfTeamIdProvider.invoke()
+            } returns teamId.right()
+        }
+
+        suspend fun withContactsAmountCached(result: Either<StorageFailure, Int>) = apply {
+            everySuspend {
+                analyticsRepository.getContactsAmountCached()
+            } returns result
+        }
+
+        suspend fun withCountContactsAmount(result: Either<StorageFailure, Int>) = apply {
+            everySuspend {
+                analyticsRepository.countContactsAmount()
+            } returns result
+        }
+
+        suspend fun withTeamMembersAmountCached(result: Either<StorageFailure, Int>) = apply {
+            everySuspend {
+                analyticsRepository.getTeamMembersAmountCached()
+            } returns result
+        }
+
+        suspend fun withCountTeamMembersAmount(result: Either<StorageFailure, Int>) = apply {
+            everySuspend {
+                analyticsRepository.countTeamMembersAmount(any())
+            } returns result
+        }
+
+        suspend fun withLastContactsDateUpdateDate(result: Either<StorageFailure, Instant>) = apply {
+            everySuspend {
+                analyticsRepository.getLastContactsDateUpdateDate()
+            } returns result
+        }
+
+        suspend fun withConferenceCallingEnabled(result: Boolean) = apply {
+            everySuspend {
+                userConfigRepository.isConferenceCallingEnabled()
+            } returns result.right()
+        }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, GetAnalyticsContactsDataUseCase> {
             block()

@@ -45,11 +45,14 @@ import com.wire.kalium.logic.feature.backup.provider.MPBackupExporterProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -90,10 +93,10 @@ class CreateMPBackupUseCaseTest {
         val result = useCase("test_password") {}
 
         assertTrue(result is CreateBackupResult.Success)
-        coVerify { arrangement.exporter.add(testUser.toBackupUser()) }.wasInvoked(1)
-        coVerify { arrangement.exporter.add(TestConversation.CONVERSATION.toBackupConversation()) }.wasInvoked(1)
-        coVerify { arrangement.exporter.add(TEXT_MESSAGE.toBackupMessage()!!) }.wasInvoked(1)
-        coVerify { arrangement.exporter.add(testReaction.toBackupReaction()) }.wasInvoked(1)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(testUser.toBackupUser()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(TestConversation.CONVERSATION.toBackupConversation()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(TEXT_MESSAGE.toBackupMessage()!!) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.exporter.add(testReaction.toBackupReaction()) }
     }
 
     @Test
@@ -111,9 +114,9 @@ class CreateMPBackupUseCaseTest {
 
     private inner class Arrangement {
 
-        val userRepository = mock(UserRepository::class)
-        val exporter = mock(BackupExporter::class)
-        val exporterProvider = mock(MPBackupExporterProvider::class)
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val exporter = mock<BackupExporter>(mode = MockMode.autoUnit)
+        val exporterProvider = mock<MPBackupExporterProvider>(mode = MockMode.autoUnit)
 
         var backupMessages: List<Message.Standalone> = emptyList()
         var backupReactions: List<MessageReactions> = emptyList()
@@ -156,7 +159,7 @@ class CreateMPBackupUseCaseTest {
 
         suspend fun withExporter() = apply {
 
-            coEvery { exporter.finalize(any()) }.returns(BackupExportResult.Success("testPath/backupFile.zip"))
+            everySuspend { exporter.finalize(any()) } returns (BackupExportResult.Success("testPath/backupFile.zip"))
 
             every {
                 exporterProvider.provideExporter(
@@ -166,12 +169,12 @@ class CreateMPBackupUseCaseTest {
                     fileZipper = any(),
                     logger = any(),
                 )
-            }.returns(exporter)
+            } returns (exporter)
         }
 
         suspend fun withErrorExporter() = apply {
 
-            coEvery { exporter.finalize(any()) }.returns(BackupExportResult.Failure.ZipError("Zip failure"))
+            everySuspend { exporter.finalize(any()) } returns (BackupExportResult.Failure.ZipError("Zip failure"))
 
             every {
                 exporterProvider.provideExporter(
@@ -181,12 +184,12 @@ class CreateMPBackupUseCaseTest {
                     fileZipper = any(),
                     logger = any(),
                 )
-            }.returns(exporter)
+            } returns (exporter)
         }
 
         suspend fun arrange(): Pair<Arrangement, CreateMPBackupUseCase> {
 
-            coEvery { userRepository.getSelfUser() }.returns(selfUser.right())
+            everySuspend { userRepository.getSelfUser() } returns (selfUser.right())
 
             return this to CreateMPBackupUseCaseImpl(
                 backupRepository = backupRepository,

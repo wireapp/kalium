@@ -25,9 +25,11 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -90,12 +92,12 @@ class ObserveAssetStatusesUseCaseTest {
     }
 
     private class Arrangement {
-        val messageRepository = mock(MessageRepository::class)
+        val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
 
         suspend fun withAssetStatuses(result: Either<StorageFailure, List<MessageAssetStatus>>) = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.observeAssetStatuses(any())
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
 
         fun arrange() = this to ObserveAssetStatusesUseCaseImpl(messageRepository, testDispatcher)

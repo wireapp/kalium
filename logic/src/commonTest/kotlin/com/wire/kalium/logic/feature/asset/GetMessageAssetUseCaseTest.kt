@@ -42,13 +42,14 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -137,13 +138,13 @@ class GetMessageAssetUseCaseTest {
             assertEquals(result.coreFailure::class, connectionFailure::class)
             assertEquals(true, result.isRetryNeeded)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.updateAssetMessageTransferStatus.invoke(
-                    matches { it == AssetTransferStatus.FAILED_DOWNLOAD },
-                    eq(someConversationId),
-                    eq(someMessageId)
+                    AssetTransferStatus.FAILED_DOWNLOAD,
+                    someConversationId,
+                    someMessageId
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -175,17 +176,17 @@ class GetMessageAssetUseCaseTest {
             assertEquals(result.coreFailure::class, notFoundFailure::class)
             assertEquals(false, result.isRetryNeeded)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.updateAssetMessageTransferStatus.invoke(
-                    matches { it == AssetTransferStatus.NOT_FOUND },
-                    eq(someConversationId),
-                    eq(someMessageId)
+                    AssetTransferStatus.NOT_FOUND,
+                    someConversationId,
+                    someMessageId
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userRepository.removeUserBrokenAsset(any())
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -209,17 +210,17 @@ class GetMessageAssetUseCaseTest {
             assertEquals(result.coreFailure::class, federatedBackendFailure::class)
             assertEquals(false, result.isRetryNeeded)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.updateAssetMessageTransferStatus.invoke(
-                    matches { it == AssetTransferStatus.FAILED_DOWNLOAD },
-                    eq(someConversationId),
-                    eq(someMessageId)
+                    AssetTransferStatus.FAILED_DOWNLOAD,
+                    someConversationId,
+                    someMessageId
                 )
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.userRepository.removeUserBrokenAsset(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -235,25 +236,25 @@ class GetMessageAssetUseCaseTest {
         getMessageAsset(someConversationId, someMessageId).await()
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetDataSource.fetchPrivateDecodedAsset(
-                eq(arrangement.mockedImageContent.remoteData.assetId),
+                arrangement.mockedImageContent.remoteData.assetId,
                 any(),
                 any(),
                 any(),
                 any(),
                 any(),
                 any(),
-                eq(true)
+                true
             )
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateAssetMessageTransferStatus.invoke(
-                matches { it == AssetTransferStatus.SAVED_INTERNALLY },
-                eq(someConversationId),
-                eq(someMessageId)
+                AssetTransferStatus.SAVED_INTERNALLY,
+                someConversationId,
+                someMessageId
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -269,9 +270,9 @@ class GetMessageAssetUseCaseTest {
         getMessageAsset(someConversationId, someMessageId).await()
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.assetDataSource.fetchPrivateDecodedAsset(
-                eq(arrangement.mockedImageContent.remoteData.assetId),
+                arrangement.mockedImageContent.remoteData.assetId,
                 any(),
                 any(),
                 any(),
@@ -280,7 +281,7 @@ class GetMessageAssetUseCaseTest {
                 any(),
                 any()
             )
-        }.wasNotInvoked()
+        }
     }
 
     private fun testBuildingAudioNormalizedLoudness(
@@ -333,10 +334,10 @@ class GetMessageAssetUseCaseTest {
         )
 
     private class Arrangement {
-                val messageRepository = mock(MessageRepository::class)
-        val userRepository = mock(UserRepository::class)
-        val assetDataSource = mock(AssetRepository::class)
-        val updateAssetMessageTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
+        val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val assetDataSource = mock<AssetRepository>(mode = MockMode.autoUnit)
+        val updateAssetMessageTransferStatus = mock<UpdateAssetMessageTransferStatusUseCase>(mode = MockMode.autoUnit)
 
         private val testScope = TestScope(testDispatcher.default)
 
@@ -414,10 +415,10 @@ class GetMessageAssetUseCaseTest {
             msgId = messageId
             encryptionKey = secretKey
             metadata = assetMetadata
-            coEvery {
+            everySuspend {
                 messageRepository.getMessageById(any(), any())
-            }.returns(Either.Right(mockedImageMessage.copy(content = MessageContent.Asset(mockedImageContent))))
-            coEvery {
+            } returns Either.Right(mockedImageMessage.copy(content = MessageContent.Asset(mockedImageContent)))
+            everySuspend {
                 assetDataSource.fetchPrivateDecodedAsset(
                     any(),
                     any(),
@@ -428,29 +429,29 @@ class GetMessageAssetUseCaseTest {
                     any(),
                     any()
                 )
-            }.returns(Either.Right(FetchedAssetData(encodedPath, justDownloaded)))
-            coEvery {
-                updateAssetMessageTransferStatus.invoke(any(), matches { it == conversationId }, matches { it == messageId })
-            }.returns(UpdateTransferStatusResult.Success)
+            } returns Either.Right(FetchedAssetData(encodedPath, justDownloaded))
+            everySuspend {
+                updateAssetMessageTransferStatus.invoke(any(), conversationId, messageId)
+            } returns UpdateTransferStatusResult.Success
             return this
         }
 
         suspend fun withSuccessfulDownloadStatusUpdate(): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 updateAssetMessageTransferStatus.invoke(any(), any(), any())
-            }.returns(UpdateTransferStatusResult.Success)
+            } returns UpdateTransferStatusResult.Success
         }
 
         suspend fun withSuccessfulDeleteUserAsset(): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 userRepository.removeUserBrokenAsset(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withGetMessageErrorResponse(): Arrangement {
-            coEvery {
+            everySuspend {
                 messageRepository.getMessageById(any(), any())
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            } returns Either.Left(StorageFailure.DataNotFound)
             return this
         }
 
@@ -458,28 +459,28 @@ class GetMessageAssetUseCaseTest {
             convId = ConversationId("", "")
             encryptionKey = AES256Key(ByteArray(0))
             msgId = ""
-            coEvery {
+            everySuspend {
                 messageRepository.getMessageById(any(), any())
-            }.returns(Either.Right(mockedImageMessage))
-            coEvery {
+            } returns Either.Right(mockedImageMessage)
+            everySuspend {
                 assetDataSource.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
-            }.returns(Either.Left(noNetworkConnection))
-            coEvery {
+            } returns Either.Left(noNetworkConnection)
+            everySuspend {
                 assetDataSource.fetchDecodedAsset(any())
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            } returns Either.Left(StorageFailure.DataNotFound)
             return this
         }
 
         suspend fun withFetchDecodedAsset(result: Either<CoreFailure, Path>) = apply {
-            coEvery {
+            everySuspend {
                 assetDataSource.fetchDecodedAsset(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun arrange() = this to getMessageAssetUseCase.also {
-            coEvery {
+            everySuspend {
                 updateAssetMessageTransferStatus.invoke(any(), any(), any())
-            }.returns(UpdateTransferStatusResult.Success)
+            } returns UpdateTransferStatusResult.Success
         }
     }
 

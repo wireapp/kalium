@@ -42,19 +42,21 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import io.ktor.util.reflect.instanceOf
-import io.mockative.any
 import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
 import io.mockative.once
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 
 class MLSClientProviderTest {
 
@@ -191,9 +193,9 @@ class MLSClientProviderTest {
 
         val rootKeyStorePath: String = "rootKeyStorePath"
         val userId: UserId = UserId("userId", "domain")
-        val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
-        val mlsTransportProvider: MLSTransportProvider = mock(MLSTransportProvider::class)
-        val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
+        val passphraseStorage = mock<PassphraseStorage>(mode = MockMode.autoUnit)
+        val mlsTransportProvider = mock<MLSTransportProvider>(mode = MockMode.autoUnit)
+        val epochChangesObserver = mock<EpochChangesObserver>(mode = MockMode.autoUnit)
 
         fun withCoreCryptoDatabaseDoesNotExists() {
             val clientId = TestClient.CLIENT_ID

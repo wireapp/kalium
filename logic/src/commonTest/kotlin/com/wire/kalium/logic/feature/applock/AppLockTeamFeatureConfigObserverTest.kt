@@ -23,10 +23,12 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.common.functional.Either
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -47,9 +49,9 @@ internal class AppLockTeamFeatureConfigObserverTest {
 
             val result = observer.invoke()
 
-            verify {
+            verify(VerifyMode.exactly(1)) {
                 arrangement.userConfigRepository.observeAppLockConfig()
-            }.wasInvoked(exactly = once)
+            }
             assertNull(result.first())
         }
 
@@ -67,27 +69,27 @@ internal class AppLockTeamFeatureConfigObserverTest {
 
             val result = observer.invoke()
 
-            verify {
+            verify(VerifyMode.exactly(1)) {
                 arrangement.userConfigRepository.observeAppLockConfig()
-            }.wasInvoked(exactly = once)
+            }
             assertEquals(expectedAppLockValue, result.first())
         }
     }
 
     private class Arrangement {
 
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
         fun withFailure(): Arrangement = apply {
             every {
                 userConfigRepository.observeAppLockConfig()
-            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
+            } returns flowOf(Either.Left(StorageFailure.DataNotFound))
         }
 
         fun withSuccess(): Arrangement = apply {
             every {
                 userConfigRepository.observeAppLockConfig()
-            }.returns(flowOf(Either.Right(appLockTeamConfig)))
+            } returns flowOf(Either.Right(appLockTeamConfig))
         }
 
         fun arrange() = this to AppLockTeamFeatureConfigObserverImpl(

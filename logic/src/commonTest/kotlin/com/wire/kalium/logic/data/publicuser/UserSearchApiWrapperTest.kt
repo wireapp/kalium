@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.publicuser
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -25,27 +26,28 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.network.api.authenticated.search.ContactDTO
 import com.wire.kalium.network.api.authenticated.search.SearchPolicyDTO
-import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.authenticated.search.UserSearchResponse
+import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import com.wire.kalium.network.api.model.UserId as UserIdDTO
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 
 class UserSearchApiWrapperTest {
 
@@ -317,7 +319,7 @@ class UserSearchApiWrapperTest {
     private class Arrangement : MemberDAOArrangement by MemberDAOArrangementImpl() {
 
         lateinit var selfUserId: UserId
-        private val userSearchApi: UserSearchApi = mock(UserSearchApi::class)
+        private val userSearchApi: UserSearchApi = mock<UserSearchApi>(mode = MockMode.autoUnit)
 
         fun withSelfUserId(selfUserId: UserId) = apply {
             this.selfUserId = selfUserId
@@ -330,7 +332,7 @@ class UserSearchApiWrapperTest {
 
             withObserveConversationMembers(flowOf(conversationMembers))
 
-            coEvery {
+            everySuspend {
                 userSearchApi.search(any())
             }.returns(
                     NetworkResponse.Success(
@@ -347,7 +349,7 @@ class UserSearchApiWrapperTest {
             searchApiUsers: List<ContactDTO>,
         ): Arrangement {
 
-            coEvery {
+            everySuspend {
                 userSearchApi.search(any())
             }.returns(
                     NetworkResponse.Success(

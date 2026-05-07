@@ -23,10 +23,12 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
@@ -47,9 +49,9 @@ class FetchSSOSettingsUseCaseTest {
             assertEquals("c2c2c2c2-c2c2-c2c2-c2c2-c2c2c2c2c2c2", result.defaultSSOCode)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.ssoLoginRepository.settings()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -62,9 +64,9 @@ class FetchSSOSettingsUseCaseTest {
             assertIs<FetchSSOSettingsUseCase.Result.Failure>(result)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.ssoLoginRepository.settings()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -86,22 +88,23 @@ class FetchSSOSettingsUseCaseTest {
             assertNull(result.defaultSSOCode)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.ssoLoginRepository.settings()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val ssoLoginRepository: SSOLoginRepository = mock(SSOLoginRepository::class)
+        val ssoLoginRepository: SSOLoginRepository = mock(mode = MockMode.autoUnit)
 
         private val useCase: FetchSSOSettingsUseCase = FetchSSOSettingsUseCase(ssoLoginRepository)
 
         suspend fun withSSOSettings(result: Either<NetworkFailure, SSOSettingsResponse>) = apply {
-            coEvery {
+            everySuspend {
                 ssoLoginRepository.settings()
-            }.returns(result)
+            } returns result
         }
+
         fun arrange() = this to useCase
     }
 }

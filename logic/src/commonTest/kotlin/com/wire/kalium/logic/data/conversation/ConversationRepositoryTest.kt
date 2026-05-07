@@ -71,12 +71,14 @@ import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.model.ConversationId as APIConversationId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
@@ -93,24 +95,27 @@ import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DateTimeUtil
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
-import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.eq
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.EqualsMatcher
 import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
 import io.mockative.once
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
+import io.mockative.any as mockativeAny
+import io.mockative.eq as mockativeEq
+import io.mockative.matches as mockativeMatches
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -118,8 +123,12 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import com.wire.kalium.network.api.model.ConversationId as APIConversationId
-import com.wire.kalium.persistence.dao.client.Client as ClientEntity
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 @Suppress("LargeClass")
 class ConversationRepositoryTest {
@@ -224,13 +233,13 @@ class ConversationRepositoryTest {
             DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.updateConversationMemberState(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.conversationDAO.updateConversationMutedStatus(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -246,13 +255,13 @@ class ConversationRepositoryTest {
             DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.updateConversationMemberState(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.conversationDAO.updateConversationArchivedStatus(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -267,13 +276,13 @@ class ConversationRepositoryTest {
             DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationDAO.updateConversationMutedStatus(any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.conversationApi.updateConversationMemberState(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Suppress("LongMethod")
@@ -328,7 +337,7 @@ class ConversationRepositoryTest {
             ).shouldSucceed()
 
             with(arrange) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     conversationApi.updateAccess(
                         conversationIdDTO,
                         UpdateConversationAccessRequest(
@@ -336,9 +345,9 @@ class ConversationRepositoryTest {
                             newAccessInfoDTO.accessRole
                         )
                     )
-                }.wasInvoked(exactly = once)
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     conversationDAO.updateAccess(
                         ConversationIDEntity(conversationIdDTO.value, conversationIdDTO.domain),
                         accessList = listOf(
@@ -354,7 +363,7 @@ class ConversationRepositoryTest {
                             ConversationEntity.AccessRole.GUEST
                         )
                     )
-                }.wasInvoked(exactly = once)
+                }
             }
         }
 
@@ -372,21 +381,21 @@ class ConversationRepositoryTest {
             conversationRepository.updateConversationMemberRole(conversationId, userId, newRole).shouldSucceed()
 
             with(arrange) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     conversationApi.updateConversationMemberRole(
                         conversationId.toApi(),
                         userId.toApi(),
                         ConversationMemberRoleDTO(MapperProvider.conversationRoleMapper().toApi(newRole))
                     )
-                }.wasInvoked(exactly = once)
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     memberDAO.updateConversationMemberRole(
                         conversationId.toDao(),
                         userId.toDao(),
                         MapperProvider.conversationRoleMapper().toDAO(newRole)
                     )
-                }.wasInvoked(exactly = once)
+                }
             }
         }
 
@@ -401,9 +410,9 @@ class ConversationRepositoryTest {
         conversationRepository.deleteConversationLocally(conversationId).shouldSucceed()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDAO.deleteConversationByQualifiedID(eq(conversationId.toDao()))
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -418,9 +427,9 @@ class ConversationRepositoryTest {
         conversationRepository.setConversationDeletedLocally(conversationId, true).shouldSucceed()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDAO.setConversationDeletedLocally(eq(conversationId.toDao()), eq(true))
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -614,9 +623,9 @@ class ConversationRepositoryTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationDAO.updateConversationReadDate(any(), any())
-        }.wasInvoked(exactly = once)
+        }
         assertIs<Either.Left<StorageFailure>>(result)
     }
 
@@ -638,8 +647,8 @@ class ConversationRepositoryTest {
             assertEquals(isMemberResponse.value, isMember)
 
             coVerify {
-                arrangement.memberDAO.observeIsUserMember(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
-            }.wasInvoked(exactly = once)
+                arrangement.memberDAO.observeIsUserMember(mockativeEq(CONVERSATION_ENTITY_ID), mockativeEq(USER_ENTITY_ID))
+            }.wasInvoked(once)
 
             awaitComplete()
         }
@@ -662,8 +671,8 @@ class ConversationRepositoryTest {
             assertEquals(isMemberResponse.value, isMember)
 
             coVerify {
-                arrangement.memberDAO.observeIsUserMember(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
-            }.wasInvoked(exactly = once)
+                arrangement.memberDAO.observeIsUserMember(mockativeEq(CONVERSATION_ENTITY_ID), mockativeEq(USER_ENTITY_ID))
+            }.wasInvoked(once)
 
             awaitComplete()
         }
@@ -681,9 +690,9 @@ class ConversationRepositoryTest {
 
         with(arrange) {
             result.shouldSucceed {}
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDAO.whoDeletedMeInConversation(any(), any())
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -721,9 +730,9 @@ class ConversationRepositoryTest {
         val result = conversationRepository.getConversationsByUserId(userId)
         with(result) {
             shouldSucceed()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrange.conversationDAO.getConversationsByUserId(any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -748,9 +757,9 @@ class ConversationRepositoryTest {
         val result = conversationRepository.getConversationRecipients(CONVERSATION_ID)
         with(result) {
             shouldSucceed()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrange.clientDao.conversationRecipient(any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -770,9 +779,9 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldSucceed()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrange.conversationDAO.updateConversationReceiptMode(any(), any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -811,9 +820,9 @@ class ConversationRepositoryTest {
             assertEquals(listOf(expected), it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientDao.recipientsIfTheyArePartOfConversation(eq(conversationId), eq(setOf(user)))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -859,8 +868,8 @@ class ConversationRepositoryTest {
         }
 
         coVerify {
-            arrangement.memberDAO.getGroupConversationWithUserIdsWithBothDomains(any(), any())
-        }.wasInvoked(exactly = once)
+            arrangement.memberDAO.getGroupConversationWithUserIdsWithBothDomains(mockativeAny(), mockativeAny())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -895,14 +904,14 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldSucceed()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
                     eq(CONVERSATION_ID.toDao()),
                     eq(conversationResponse.value.groupId),
                     eq(protocol.toDao()),
                     eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -928,9 +937,9 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldSucceed()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.fetchConversationDetails(eq(CONVERSATION_ID.toApi()))
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -956,14 +965,14 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldSucceed()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
                     eq(CONVERSATION_ID.toDao()),
                     eq(conversationResponse.value.groupId),
                     eq(protocol.toDao()),
                     eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -988,14 +997,14 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldSucceed()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
                     eq(CONVERSATION_ID.toDao()),
                     eq(conversationResponse.value.groupId),
                     eq(protocol.toDao()),
                     eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -1014,8 +1023,7 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldFail()
-            coVerify { arrange.conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
-                .wasNotInvoked()
+            verifySuspend(VerifyMode.exactly(0)) { arrange.conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
         }
     }
 
@@ -1029,9 +1037,9 @@ class ConversationRepositoryTest {
         // when
         conversationRepository.updateLegalHoldStatus(CONVERSATION_ID, Conversation.LegalHoldStatus.ENABLED)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.conversationDAO.updateLegalHoldStatus(eq(CONVERSATION_ID.toDao()), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1044,9 +1052,9 @@ class ConversationRepositoryTest {
         // when
         conversationRepository.updateLegalHoldStatus(CONVERSATION_ID, Conversation.LegalHoldStatus.ENABLED)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.conversationDAO.updateLegalHoldStatusChangeNotified(eq(CONVERSATION_ID.toDao()), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1059,9 +1067,9 @@ class ConversationRepositoryTest {
         // when
         conversationRepository.updateLegalHoldStatus(CONVERSATION_ID, Conversation.LegalHoldStatus.ENABLED)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrange.conversationDAO.updateLegalHoldStatusChangeNotified(eq(CONVERSATION_ID.toDao()), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -1072,9 +1080,9 @@ class ConversationRepositoryTest {
 
         conversationRepository.observeLegalHoldStatus(CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.conversationDAO.observeLegalHoldStatus(eq(CONVERSATION_ID.toDao()))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1085,9 +1093,9 @@ class ConversationRepositoryTest {
 
         conversationRepository.observeLegalHoldStatusChangeNotified(CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.conversationDAO.observeLegalHoldStatusChangeNotified(eq(CONVERSATION_ID.toDao()))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1103,9 +1111,9 @@ class ConversationRepositoryTest {
             ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrange.conversationDAO.updateChannelAddPermission(any(), any())
-        }.wasNotInvoked()
+        }
         assertTrue { result.isLeft() }
     }
 
@@ -1123,9 +1131,9 @@ class ConversationRepositoryTest {
             ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrange.conversationDAO.updateChannelAddPermission(any(), any())
-        }.wasNotInvoked()
+        }
         assertTrue { result.isRight() }
     }
 
@@ -1153,25 +1161,25 @@ class ConversationRepositoryTest {
             ConversationDetails.Group.Channel.ChannelAddPermission.ADMINS
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.conversationDAO.updateChannelAddPermission(any(), any())
-        }.wasInvoked(exactly = once)
+        }
         assertTrue { result.isRight() }
     }
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
-        val userRepository: UserRepository = mock(UserRepository::class)
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
-        val conversationApi: ConversationApi = mock(ConversationApi::class)
-        val clientDao: ClientDAO = mock(ClientDAO::class)
-        private val clientApi = mock(ClientApi::class)
-        private val messageDAO = mock(MessageDAO::class)
-        private val messageDraftDAO = mock(MessageDraftDAO::class)
-        val conversationMetaDataDAO: ConversationMetaDataDAO = mock(ConversationMetaDataDAO::class)
-        val metadataDAO: MetadataDAO = mock(MetadataDAO::class)
+        val userRepository: UserRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val selfTeamIdProvider: SelfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
+        val conversationDAO: ConversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
+        val conversationApi: ConversationApi = mock<ConversationApi>(mode = MockMode.autoUnit)
+        val clientDao: ClientDAO = mock<ClientDAO>(mode = MockMode.autoUnit)
+        private val clientApi = mock<ClientApi>(mode = MockMode.autoUnit)
+        private val messageDAO = mock<MessageDAO>(mode = MockMode.autoUnit)
+        private val messageDraftDAO = mock<MessageDraftDAO>(mode = MockMode.autoUnit)
+        val conversationMetaDataDAO: ConversationMetaDataDAO = mock<ConversationMetaDataDAO>(mode = MockMode.autoUnit)
+        val metadataDAO: MetadataDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
 
         val conversationRepository =
             ConversationDataSource(
@@ -1187,31 +1195,31 @@ class ConversationRepositoryTest {
             )
 
         suspend fun withSelfUserFlow(selfUserFlow: Flow<SelfUser>) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.observeSelfUser()
             }.returns(selfUserFlow)
         }
 
         suspend fun withExpectedOtherKnownUser(user: OtherUser) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.getKnownUser(any())
             }.returns(flowOf(user))
         }
 
         suspend fun withSelfUser(selfUser: SelfUser) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.getSelfUser()
             }.returns(selfUser.right())
         }
 
         suspend fun withFetchConversationsDetails(response: NetworkResponse<ConversationResponse>) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.fetchConversationDetails(any())
             }.returns(response)
         }
 
         suspend fun withFetchConversationsIds(response: NetworkResponse<ConversationPagingResponse>) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.fetchConversationsIds(null)
             }.returns(response)
         }
@@ -1220,89 +1228,89 @@ class ConversationRepositoryTest {
             predicate: (List<APIConversationId>) -> Boolean,
             response: NetworkResponse<ConversationResponseDTO>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.fetchConversationsListDetails(matches { predicate(it) })
             }.returns(response)
         }
 
         suspend fun withExpectedConversationWithOtherUser(conversation: ConversationEntity?) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.observeOneOnOneConversationWithOtherUser(any())
             }.returns(flowOf(conversation))
         }
 
         suspend fun withExpectedConversationDetailsWithOtherUser(conversation: ConversationViewEntity?) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.observeOneOnOneConversationDetailsWithOtherUser(any())
             }.returns(flowOf(conversation))
         }
 
         suspend fun withUpdateConversationMemberStateResult(response: NetworkResponse<Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.updateConversationMemberState(any(), any())
             }.returns(response)
         }
 
         suspend fun withConversationUnreadEvents(unreadEvents: List<ConversationUnreadEventEntity>) = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.observeConversationsUnreadEvents()
             }.returns(flowOf(unreadEvents))
         }
 
         suspend fun withUnreadArchivedConversationsCount(unreadCount: Long) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.observeUnreadArchivedConversationsCount()
             }.returns(flowOf(unreadCount))
         }
 
         suspend fun withUnreadMessageCounter(unreadCounter: Map<ConversationIDEntity, Int>) = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.observeUnreadMessageCounter()
             }.returns(flowOf(unreadCounter))
         }
 
         suspend fun withConversations(conversations: List<ConversationViewEntity>) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.getAllConversationDetails(any(), any(), any())
             }.returns(flowOf(conversations))
         }
 
         suspend fun withLastMessages(messages: List<MessagePreviewEntity>) = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.observeLastMessages()
             }.returns(flowOf(messages))
         }
 
         suspend fun withMessageDrafts(messageDrafts: List<MessageDraftEntity>) = apply {
-            coEvery {
+            everySuspend {
                 messageDraftDAO.observeMessageDrafts()
             }.returns(flowOf(messageDrafts))
         }
 
         suspend fun withUpdateConversationReadDateException(exception: Throwable) = apply {
-            coEvery { conversationDAO.updateConversationReadDate(any(), any()) }
+            everySuspend { conversationDAO.updateConversationReadDate(any(), any()) }
                 .throws(exception)
         }
 
         suspend fun withApiUpdateAccessRoleReturns(response: NetworkResponse<UpdateConversationAccessResponse>) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.updateAccess(any(), any())
             }.returns(response)
         }
 
         suspend fun withDaoUpdateProtocolSuccess() = apply {
-            coEvery { conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
+            everySuspend { conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
                 .returns(true)
         }
 
         suspend fun withGetConversationProtocolInfoReturns(result: ConversationEntity.ProtocolInfo) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.getConversationProtocolInfo(any())
             }.returns(result)
         }
 
         suspend fun withApiUpdateConversationMemberRoleReturns(response: NetworkResponse<Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.updateConversationMemberRole(any(), any(), any())
             }.returns(response)
         }
@@ -1312,13 +1320,13 @@ class ConversationRepositoryTest {
         }
 
         suspend fun withSuccessfulConversationDeletion() = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.deleteConversationByQualifiedID(any())
             }.returns(true)
         }
 
         suspend fun withSuccessfulSetConversationDeletedLocally() = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.setConversationDeletedLocally(any(), any())
             }.returns(Unit)
         }
@@ -1328,37 +1336,37 @@ class ConversationRepositoryTest {
         }
 
         suspend fun withExpectedObservableConversationDetails(conversationEntity: ConversationViewEntity? = null) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.observeConversationDetailsById(any())
             }.returns(flowOf(conversationEntity))
         }
 
         suspend fun withExpectedObservableConversation(conversationEntity: ConversationEntity? = null) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.observeConversationById(any())
             }.returns(flowOf(conversationEntity))
         }
 
         suspend fun withConversationRecipientByUserSuccess(result: Map<UserIDEntity, List<ClientEntity>>) = apply {
-            coEvery {
+            everySuspend {
                 clientDao.recipientsIfTheyArePartOfConversation(any(), any())
             }.returns(result)
         }
 
         suspend fun withExpectedConversation(conversationEntity: ConversationViewEntity?) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.getConversationDetailsById(any())
             }.returns(conversationEntity)
         }
 
         suspend fun withExpectedConversationView(conversationEntity: ConversationViewEntity?) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.observeConversationDetailsById(any())
             }.returns(flowOf(conversationEntity))
         }
 
         suspend fun withExpectedConversationBase(conversationEntity: ConversationEntity?) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.getConversationById(any())
             }.returns(conversationEntity)
         }
@@ -1367,32 +1375,32 @@ class ConversationRepositoryTest {
             response: NetworkResponse<ConversationResponse>,
             idMatcher: Matcher<APIConversationId> = AnyMatcher(valueOf())
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.fetchConversationDetails(matches { idMatcher.matches(it) })
             }.returns(response)
         }
 
         suspend fun withWhoDeletedMe(deletionAuthor: UserId?) = apply {
             val author = deletionAuthor?.let { it.toDao() }
-            coEvery {
+            everySuspend {
                 conversationDAO.whoDeletedMeInConversation(any(), any())
             }.returns(author)
         }
 
         suspend fun withConversationsByUserId(conversations: List<ConversationEntity>) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.getConversationsByUserId(any())
             }.returns(conversations)
         }
 
         suspend fun withConversationRenameCall(newName: String = "newName") = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.updateConversationName(any(), eq(newName), any())
             }.returns(Unit)
         }
 
         suspend fun withConversationRenameApiCall(newName: String = "newName") = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.updateConversationName(any(), eq(newName))
             }.returns(NetworkResponse.Success(CONVERSATION_RENAME_RESPONSE, emptyMap(), HttpStatusCode.OK.value))
         }
@@ -1402,13 +1410,13 @@ class ConversationRepositoryTest {
             result: Map<QualifiedIDEntity, List<ClientEntity>>
         ) =
             apply {
-                coEvery {
+                everySuspend {
                     clientDao.conversationRecipient(conversationIDEntity)
                 }.returns(result)
             }
 
         suspend fun withUpdateReceiptModeSuccess(receiptMode: ReceiptMode) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.updateReceiptMode(any(), eq(ConversationReceiptModeDTO(receiptMode)))
             }.returns(
                 NetworkResponse.Success(
@@ -1426,80 +1434,80 @@ class ConversationRepositoryTest {
         }
 
         suspend fun withConversationsWithoutMetadataId(result: List<QualifiedIDEntity>) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.getConversationsWithoutMetadata()
             }.returns(result)
         }
 
         suspend fun withGetGroupConversationWithUserIdsWithBothDomains(
             result: Map<ConversationIDEntity, List<UserIDEntity>>,
-            firstDomain: Matcher<String> = any(),
-            secondDomain: Matcher<String> = any()
+            firstDomain: Matcher<String> = AnyMatcher(valueOf()),
+            secondDomain: Matcher<String> = AnyMatcher(valueOf())
         ) = apply {
             coEvery {
                 memberDAO.getGroupConversationWithUserIdsWithBothDomains(
-                    matches { firstDomain.matches(it) },
-                    matches { secondDomain.matches(it) }
+                    mockativeMatches { firstDomain.matches(it) },
+                    mockativeMatches { secondDomain.matches(it) }
                 )
             }.returns(result)
         }
 
         suspend fun withGetOneOnOneConversationWithFederatedUserId(
             result: Map<ConversationIDEntity, UserIDEntity>,
-            domain: Matcher<String> = any()
+            domain: Matcher<String> = AnyMatcher(valueOf())
         ) = apply {
             coEvery {
-                memberDAO.getOneOneConversationWithFederatedMembers(matches { domain.matches(it) })
+                memberDAO.getOneOneConversationWithFederatedMembers(mockativeMatches { domain.matches(it) })
             }.returns(result)
         }
 
         suspend fun withUpdateProtocolResponse(response: NetworkResponse<UpdateConversationProtocolResponse>) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.updateProtocol(any(), any())
             }.returns(response)
         }
 
         suspend fun withObserveLegalHoldStatus() = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.observeLegalHoldStatus(any())
             }.returns(flowOf(ConversationEntity.LegalHoldStatus.ENABLED))
         }
 
         suspend fun withObserveLegalHoldStatusChangeNotified() = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.observeLegalHoldStatusChangeNotified(any())
             }.returns(flowOf(true))
         }
 
         suspend fun withUpdateChannelAddPermissionRemotelyReturning(result: NetworkResponse<UpdateChannelAddPermissionResponse>) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.updateChannelAddPermission(any(), any())
             }.returns(result)
         }
 
         suspend fun withUpdateLegalHoldStatus(updated: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.updateLegalHoldStatus(any(), any())
             }.returns(updated)
         }
 
         suspend fun withUpdateLegalHoldStatusChangeNotified(updated: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.updateLegalHoldStatusChangeNotified(any(), any())
             }.returns(updated)
         }
 
         suspend fun arrange() = this to conversationRepository.also {
-            coEvery { conversationDAO.insertConversations(any()) }
+            everySuspend { conversationDAO.insertConversations(any()) }
                 .returns(Unit)
 
             withInsertMemberWithConversationIdSuccess()
 
-            coEvery {
+            everySuspend {
                 conversationDAO.updateConversationMutedStatus(any(), any(), any())
             }.returns(Unit)
 
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider.invoke()
             }.returns(Either.Right(TestTeam.TEAM_ID))
         }

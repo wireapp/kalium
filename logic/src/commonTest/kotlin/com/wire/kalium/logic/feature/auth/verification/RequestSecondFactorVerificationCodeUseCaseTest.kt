@@ -24,9 +24,11 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -84,12 +86,12 @@ class RequestSecondFactorVerificationCodeUseCaseTest {
     }
 
     private class Arrangement {
-        val secondFactorVerificationRepository = mock(SecondFactorVerificationRepository::class)
+        val secondFactorVerificationRepository = mock<SecondFactorVerificationRepository>(mode = MockMode.autoUnit)
 
         suspend fun withRepositoryReturning(result: Either<NetworkFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 secondFactorVerificationRepository.requestVerificationCode(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to RequestSecondFactorVerificationCodeUseCase(

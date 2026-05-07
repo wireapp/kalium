@@ -19,25 +19,27 @@
 package com.wire.kalium.logic.data.id
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.every
-import io.mockative.mock
-import kotlinx.coroutines.test.runTest
-import okio.IOException
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.test.runTest
+import okio.IOException
 
 class FederatedIdMapperTest {
 
     private lateinit var federatedIdMapper: FederatedIdMapper
 
-    private val sessionRepository = mock(SessionRepository::class)
-    private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
+    private val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
+    private val qualifiedIdMapper = mock<QualifiedIdMapper>(mode = MockMode.autoUnit)
 
     private val qualifiedId = "aaa-bbb-ccc@wire.com"
 
@@ -53,7 +55,7 @@ class FederatedIdMapperTest {
 
     @Test
     fun givenAUserId_whenCurrentEnvironmentIsFederated_thenShouldMapTheValueWithDomain() = runTest {
-        coEvery {
+        everySuspend {
             sessionRepository.isFederated(any())
         }.returns(Either.Right(true))
 
@@ -64,7 +66,7 @@ class FederatedIdMapperTest {
 
     @Test
     fun givenAUserId_whenCurrentEnvironmentIsNotFederated_thenShouldMapTheValueWithoutDomain() = runTest {
-        coEvery {
+        everySuspend {
             sessionRepository.isFederated(any())
         }.returns(Either.Right(false))
 
@@ -75,7 +77,7 @@ class FederatedIdMapperTest {
 
     @Test
     fun givenError_whenGettingUserFederationStatus_thenShouldMapTheValueWithoutDomain() = runTest {
-        coEvery {
+        everySuspend {
             sessionRepository.isFederated(any())
         }.returns(Either.Left(StorageFailure.Generic(IOException("why are we still here just to suffer!"))))
 
