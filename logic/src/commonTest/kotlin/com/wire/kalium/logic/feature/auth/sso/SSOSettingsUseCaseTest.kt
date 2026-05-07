@@ -23,8 +23,10 @@ import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -35,7 +37,7 @@ import kotlin.test.assertIs
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class SSOSettingsUseCaseTest {
 
-        val ssoLoginRepository = mock(SSOLoginRepository::class)
+    val ssoLoginRepository = mock<SSOLoginRepository>(mode = MockMode.autoUnit)
     lateinit var ssoSettingsUseCase: SSOSettingsUseCase
 
     @BeforeTest
@@ -47,9 +49,9 @@ internal class SSOSettingsUseCaseTest {
     fun givenApiReturnsGenericError_whenRequestingMetaData_thenReturnGenericFailure() =
         runTest {
             val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
-            coEvery {
-                ssoLoginRepository.settings() 
-            }.returns(Either.Left(expected))
+            everySuspend {
+                ssoLoginRepository.settings()
+            } returns Either.Left(expected)
             val result = ssoSettingsUseCase()
             assertIs<SSOSettingsResult.Failure.Generic>(result)
             assertEquals(expected, result.genericFailure)
@@ -58,9 +60,9 @@ internal class SSOSettingsUseCaseTest {
     @Test
     fun givenApiReturnsSuccess_whenRequestingMetaData_thenReturnSuccess() =
         runTest {
-            coEvery {
-                ssoLoginRepository.settings() 
-            }.returns(Either.Right(TEST_RESPONSE))
+            everySuspend {
+                ssoLoginRepository.settings()
+            } returns Either.Right(TEST_RESPONSE)
             val result = ssoSettingsUseCase()
             assertEquals(result, SSOSettingsResult.Success(TEST_RESPONSE))
         }

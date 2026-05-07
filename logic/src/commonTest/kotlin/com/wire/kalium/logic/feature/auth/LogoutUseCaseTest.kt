@@ -42,14 +42,16 @@ import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.time
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
@@ -81,31 +83,31 @@ class LogoutUseCaseTest {
             logoutUseCase.invoke(reason)
             arrangement.globalTestScope.advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.sessionRepository.logout(any(), eq(reason))
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.not) {
                 arrangement.sessionRepository.updateCurrentSession(any())
-            }.wasNotInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userSessionScopeProvider.delete(any())
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userConfigRepository.clearE2EISettings()
-            }.wasInvoked(exactly = once)
+            }
 
             if (reason == LogoutReason.SELF_HARD_LOGOUT) {
-                coVerify {
+                verifySuspend(VerifyMode.not) {
                     arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
-                }.wasNotInvoked()
+                }
             } else {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
-                }.wasInvoked(exactly = once)
+                }
             }
-            coVerify {
+            verifySuspend {
                 arrangement.logoutCallback(any<UserId>(), eq(reason))
-            }.wasInvoked()
+            }
         }
     }
 
@@ -127,12 +129,12 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearClientDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearUserDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -154,12 +156,12 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearClientDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearUserDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -181,12 +183,12 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearClientDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearUserDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -208,19 +210,19 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.deregisterTokenUseCase.invoke()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.logoutRepository.logout()
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearClientDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearUserDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -243,19 +245,19 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.deregisterTokenUseCase.invoke()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.logoutRepository.logout()
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearClientDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearUserDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -277,26 +279,26 @@ class LogoutUseCaseTest {
             logoutUseCase.invoke(reason)
             arrangement.globalTestScope.advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.deregisterTokenUseCase.invoke()
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.logoutRepository.logout()
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.clearClientDataUseCase.invoke()
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.clearUserDataUseCase.invoke()
-            }.wasNotInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.clientRepository.clearCurrentClientId()
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.clientRepository.clearHasRegisteredMLSClient()
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -318,25 +320,25 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.deregisterTokenUseCase.invoke()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.logoutRepository.logout()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.clearClientDataUseCase.invoke()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.clearUserDataUseCase.invoke()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.clearCurrentClientId()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.clientRepository.clearHasRegisteredMLSClient()
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -361,20 +363,20 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.deregisterTokenUseCase.invoke()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.logoutRepository.logout()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.observeEstablishedCallsUseCase.invoke()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(calls.size)) {
             arrangement.endCall.invoke(any())
-        }.wasInvoked(exactly = calls.size.time)
+        }
     }
 
     @Test
@@ -394,10 +396,10 @@ class LogoutUseCaseTest {
             .withNoOngoingCalls()
             .arrange()
 
-        coEvery { arrangement.userConfigRepository.clearE2EISettings() }.invokes { _ ->
+        everySuspend { arrangement.userConfigRepository.clearE2EISettings() } calls {
             e2eiWasCalled = true
         }
-        coEvery { arrangement.clearUserDataUseCase.invoke() }.invokes { _ ->
+        everySuspend { arrangement.clearUserDataUseCase.invoke() } calls {
             e2eiCalledBeforeWipe = e2eiWasCalled
         }
 
@@ -426,106 +428,106 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearClientDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.logoutRepository.clearClientRelatedLocalMetadata()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.clearRetainedClientId()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private data class Arrangement(
-        val logoutRepository: LogoutRepository = mock(LogoutRepository::class),
-        val sessionRepository: SessionRepository = mock(SessionRepository::class),
-        val clientRepository: ClientRepository = mock(ClientRepository::class),
-        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class),
-        val deregisterTokenUseCase: DeregisterTokenUseCase = mock(DeregisterTokenUseCase::class),
-        val clearClientDataUseCase: ClearClientDataUseCase = mock(ClearClientDataUseCase::class),
-        val clearUserDataUseCase: ClearUserDataUseCase = mock(ClearUserDataUseCase::class),
-        val userSessionScopeProvider: UserSessionScopeProvider = mock(UserSessionScopeProvider::class),
-        val pushTokenRepository: PushTokenRepository = mock(PushTokenRepository::class),
-        val userSessionWorkScheduler: UserSessionWorkScheduler = mock(UserSessionWorkScheduler::class),
-        val observeEstablishedCallsUseCase: ObserveEstablishedCallsUseCase = mock(ObserveEstablishedCallsUseCase::class),
-        val endCall: EndCallUseCase = mock(EndCallUseCase::class),
-        val logoutCallback: LogoutCallback = mock(LogoutCallback::class),
+        val logoutRepository: LogoutRepository = mock<LogoutRepository>(mode = MockMode.autoUnit),
+        val sessionRepository: SessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit),
+        val clientRepository: ClientRepository = mock<ClientRepository>(mode = MockMode.autoUnit),
+        val userConfigRepository: UserConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit),
+        val deregisterTokenUseCase: DeregisterTokenUseCase = mock<DeregisterTokenUseCase>(mode = MockMode.autoUnit),
+        val clearClientDataUseCase: ClearClientDataUseCase = mock<ClearClientDataUseCase>(mode = MockMode.autoUnit),
+        val clearUserDataUseCase: ClearUserDataUseCase = mock<ClearUserDataUseCase>(mode = MockMode.autoUnit),
+        val userSessionScopeProvider: UserSessionScopeProvider = mock<UserSessionScopeProvider>(mode = MockMode.autoUnit),
+        val pushTokenRepository: PushTokenRepository = mock<PushTokenRepository>(mode = MockMode.autoUnit),
+        val userSessionWorkScheduler: UserSessionWorkScheduler = mock<UserSessionWorkScheduler>(mode = MockMode.autoUnit),
+        val observeEstablishedCallsUseCase: ObserveEstablishedCallsUseCase = mock<ObserveEstablishedCallsUseCase>(mode = MockMode.autoUnit),
+        val endCall: EndCallUseCase = mock<EndCallUseCase>(mode = MockMode.autoUnit),
+        val logoutCallback: LogoutCallback = mock<LogoutCallback>(mode = MockMode.autoUnit),
         val isNomadEnabled: () -> Boolean = { false },
         var kaliumConfigs: KaliumConfigs = KaliumConfigs(),
         val globalTestScope: TestScope = TestScope()
     ) {
         suspend fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {
-            coEvery {
+            everySuspend {
                 deregisterTokenUseCase.invoke()
-            }.returns(result)
+            } returns (result)
             return this
         }
 
         suspend fun withLogoutResult(result: Either<CoreFailure, Unit>): Arrangement {
-            coEvery {
+            everySuspend {
                 logoutRepository.logout()
-            }.returns(result)
+            } returns (result)
             return this
         }
 
         suspend fun withSessionLogoutResult(result: Either<StorageFailure, Unit>): Arrangement {
-            coEvery {
+            everySuspend {
                 sessionRepository.logout(any(), any())
-            }.returns(result)
+            } returns (result)
             return this
         }
 
         suspend fun withAllValidSessionsResult(result: Either<StorageFailure, List<AccountInfo.Valid>>): Arrangement {
-            coEvery {
+            everySuspend {
                 sessionRepository.allValidSessions()
-            }.returns(result)
+            } returns (result)
             return this
         }
 
         suspend fun withClearCurrentClientIdResult(result: Either<StorageFailure, Unit>): Arrangement {
-            coEvery {
+            everySuspend {
                 clientRepository.clearCurrentClientId()
-            }.returns(result)
+            } returns (result)
             return this
         }
 
         suspend fun withClearRetainedClientIdResult(result: Either<StorageFailure, Unit>): Arrangement {
-            coEvery {
+            everySuspend {
                 clientRepository.clearRetainedClientId()
-            }.returns(result)
+            } returns (result)
             return this
         }
 
         suspend fun withClearHasRegisteredMLSClientResult(result: Either<StorageFailure, Unit>): Arrangement {
-            coEvery {
+            everySuspend {
                 clientRepository.clearHasRegisteredMLSClient()
-            }.returns(result)
+            } returns (result)
             return this
         }
 
         suspend fun withClearHasConsumableNotifications(result: Either<StorageFailure, Unit>): Arrangement {
-            coEvery {
+            everySuspend {
                 clientRepository.clearClientHasConsumableNotifications()
-            }.returns(result)
+            } returns (result)
             return this
         }
 
         fun withUserSessionScopeGetResult(result: UserSessionScope?): Arrangement {
             every {
                 userSessionScopeProvider.get(any())
-            }.returns(result)
+            } returns (result)
             return this
         }
 
         suspend fun withFirebaseTokenUpdate() = apply {
-            coEvery {
+            everySuspend {
                 pushTokenRepository.setUpdateFirebaseTokenFlag(any())
-            }.returns(Either.Right(Unit))
+            } returns (Either.Right(Unit))
         }
 
         fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
@@ -533,15 +535,15 @@ class LogoutUseCaseTest {
         }
 
         suspend fun withOngoingCalls(ongoingCalls: List<Call>) = apply {
-            coEvery {
+            everySuspend {
                 observeEstablishedCallsUseCase.invoke()
-            }.returns(flowOf(ongoingCalls))
+            } returns (flowOf(ongoingCalls))
         }
 
         suspend fun withNoOngoingCalls() = apply {
-            coEvery {
+            everySuspend {
                 observeEstablishedCallsUseCase.invoke()
-            }.returns(flowOf(emptyList()))
+            } returns (flowOf(emptyList()))
         }
 
         fun withIsNomadEnabled(isEnabled: Boolean): Arrangement {
@@ -567,29 +569,29 @@ class LogoutUseCaseTest {
             kaliumConfigs = kaliumConfigs,
             isNomadEnabled = isNomadEnabled
         ).also {
-            coEvery {
+            everySuspend {
                 endCall.invoke(any())
-            }.returns(Unit)
+            } returns (Unit)
 
-            coEvery {
+            everySuspend {
                 userConfigRepository.clearE2EISettings()
-            }.returns(Unit)
+            } returns (Unit)
 
-            coEvery {
+            everySuspend {
                 userSessionWorkScheduler.cancelScheduledSendingOfPendingMessages()
-            }.returns(Unit)
+            } returns (Unit)
 
-            coEvery {
+            everySuspend {
                 logoutRepository.onLogout(any())
-            }.returns(Unit)
+            } returns (Unit)
 
-            coEvery {
+            everySuspend {
                 logoutCallback(any(), any())
-            }.returns(Unit)
+            } returns (Unit)
 
-            coEvery {
+            everySuspend {
                 userSessionScopeProvider.delete(any())
-            }.returns(Unit)
+            } returns (Unit)
         }
 
         companion object {

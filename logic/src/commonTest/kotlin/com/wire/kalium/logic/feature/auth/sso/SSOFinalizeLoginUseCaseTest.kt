@@ -22,8 +22,10 @@ import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
 import io.ktor.http.HttpStatusCode
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -34,7 +36,7 @@ import kotlin.test.assertIs
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class SSOFinalizeLoginUseCaseTest {
 
-        val ssoLoginRepository = mock(SSOLoginRepository::class)
+    val ssoLoginRepository = mock<SSOLoginRepository>(mode = MockMode.autoUnit)
     lateinit var ssoFinalizeLoginUseCase: SSOFinalizeLoginUseCase
 
     @BeforeTest
@@ -45,9 +47,9 @@ internal class SSOFinalizeLoginUseCaseTest {
     @Test
     fun givenApiReturnsInvalidCookie_whenFinalizing_thenReturnInvalidCookie() =
         runTest {
-            coEvery {
-                ssoLoginRepository.finalize(TEST_COOKIE) 
-            }.returns(Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.BadRequest.value)))
+            everySuspend {
+                ssoLoginRepository.finalize(TEST_COOKIE)
+            } returns Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.BadRequest.value))
             val result = ssoFinalizeLoginUseCase(TEST_COOKIE)
             assertEquals(result, SSOFinalizeLoginResult.Failure.InvalidCookie)
         }
@@ -56,9 +58,9 @@ internal class SSOFinalizeLoginUseCaseTest {
     fun givenApiReturnsGenericError_whenFinalizing_thenReturnGenericFailure() =
         runTest {
             val expected = serverMiscommunicationFailure(code = HttpStatusCode.Forbidden.value)
-            coEvery {
-                ssoLoginRepository.finalize(TEST_COOKIE) 
-            }.returns(Either.Left(expected))
+            everySuspend {
+                ssoLoginRepository.finalize(TEST_COOKIE)
+            } returns Either.Left(expected)
             val result = ssoFinalizeLoginUseCase(TEST_COOKIE)
             assertIs<SSOFinalizeLoginResult.Failure.Generic>(result)
             assertEquals(expected, result.genericFailure)
@@ -67,9 +69,9 @@ internal class SSOFinalizeLoginUseCaseTest {
     @Test
     fun givenApiReturnsSuccess_whenFinalizing_thenReturnSuccess() =
         runTest {
-            coEvery {
-                ssoLoginRepository.finalize(TEST_COOKIE) 
-            }.returns(Either.Right(TEST_RESPONSE))
+            everySuspend {
+                ssoLoginRepository.finalize(TEST_COOKIE)
+            } returns Either.Right(TEST_RESPONSE)
             val result = ssoFinalizeLoginUseCase(TEST_COOKIE)
             assertEquals(result, SSOFinalizeLoginResult.Success(TEST_RESPONSE))
         }

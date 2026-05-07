@@ -22,11 +22,12 @@ import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.eq
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import okio.Path.Companion.toPath
@@ -70,13 +71,13 @@ class GetAssetMessagesForConversationUseCaseTest {
         assertContains(result, assetMessage)
 
         // Then
-        coVerify {
-            arrangement.messageRepository.getImageAssetMessagesByConversationId(eq(someConversationId), eq(limit), eq(offset))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.getImageAssetMessagesByConversationId(someConversationId, limit, offset)
+        }
     }
 
     private class Arrangement {
-                val messageRepository = mock(MessageRepository::class)
+        val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
 
         val getAssetMessagesByConversationUseCase = GetImageAssetMessagesForConversationUseCaseImpl(
             testDispatcher,
@@ -89,9 +90,9 @@ class GetAssetMessagesForConversationUseCaseTest {
             limit: Int,
             offset: Int
         ): Arrangement = apply {
-            coEvery {
-                messageRepository.getImageAssetMessagesByConversationId(eq(conversationId), eq(limit), eq(offset))
-            }.returns(assetList)
+            everySuspend {
+                messageRepository.getImageAssetMessagesByConversationId(conversationId, limit, offset)
+            } returns assetList
         }
 
         fun arrange() = this to getAssetMessagesByConversationUseCase

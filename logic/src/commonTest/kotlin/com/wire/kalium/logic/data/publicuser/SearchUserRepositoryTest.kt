@@ -57,8 +57,6 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import io.mockative.coVerify
-import io.mockative.once
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -67,8 +65,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
-import io.mockative.any as mockativeAny
-import io.mockative.eq as mockativeEq
 
 class SearchUserRepositoryTest {
 
@@ -320,9 +316,9 @@ class SearchUserRepositoryTest {
         }
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchDAO.getKnownContacts()
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -365,9 +361,9 @@ class SearchUserRepositoryTest {
         }
 
         // then
-        coVerify {
-            arrangement.searchDAO.getKnownContactsExcludingAConversation(mockativeEq(conversationId.toDao()))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchDAO.getKnownContactsExcludingAConversation(conversationId.toDao())
+        }
     }
 
     //     -------
@@ -409,9 +405,9 @@ class SearchUserRepositoryTest {
         }
 
         // then
-        coVerify {
-            arrangement.searchDAO.searchList(mockativeEq("name"))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchDAO.searchList("name")
+        }
     }
 
     @Test
@@ -454,9 +450,9 @@ class SearchUserRepositoryTest {
         }
 
         // then
-        coVerify {
-            arrangement.searchDAO.searchListExcludingAConversation(mockativeEq(conversationId.toDao()), mockativeAny())
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchDAO.searchListExcludingAConversation(conversationId.toDao(), any())
+        }
     }
 
     @Test
@@ -468,9 +464,9 @@ class SearchUserRepositoryTest {
 
         searchUserRepository.searchLocalByHandle("handle", null).shouldSucceed()
 
-        coVerify {
-            arrangement.searchDAO.handleSearch(mockativeEq("handle"))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchDAO.handleSearch("handle")
+        }
     }
 
     @Test
@@ -483,9 +479,9 @@ class SearchUserRepositoryTest {
 
         searchUserRepository.searchLocalByHandle("handle", conversationId).shouldSucceed()
 
-        coVerify {
-            arrangement.searchDAO.handleSearchExcludingAConversation(mockativeEq("handle"), mockativeEq(conversationId.toDao()))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchDAO.handleSearchExcludingAConversation("handle", conversationId.toDao())
+        }
     }
 
     internal class Arrangement : SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),

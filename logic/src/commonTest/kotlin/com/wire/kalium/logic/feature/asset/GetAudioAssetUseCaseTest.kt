@@ -26,11 +26,13 @@ import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
@@ -82,7 +84,7 @@ class GetAudioAssetUseCaseTest {
         useCase.invoke(conversationId, "messageId", "assetId").await()
 
         // Then
-        coVerify { arrangement.getMessageAsset(any(), any()) }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.getMessageAsset(any(), any()) }
     }
 
     @Test
@@ -98,17 +100,17 @@ class GetAudioAssetUseCaseTest {
         useCase.invoke(conversationId, "messageId", "assetId").await()
 
         // Then
-        coVerify { arrangement.getMessageAsset(conversationId, "messageId") }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.getMessageAsset(conversationId, "messageId") }
     }
 
     private class Arrangement {
 
-        val isWireCellsEnabledForConversation = mock(IsWireCellsEnabledForConversationUseCase::class)
-        val getMessageAsset = mock(GetMessageAssetUseCase::class)
-        val getMessageAttachment = mock(GetMessageAttachmentUseCase::class)
+        val isWireCellsEnabledForConversation = mock<IsWireCellsEnabledForConversationUseCase>(mode = MockMode.autoUnit)
+        val getMessageAsset = mock<GetMessageAssetUseCase>(mode = MockMode.autoUnit)
+        val getMessageAttachment = mock<GetMessageAttachmentUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withCellMessageAttachmentResult() = apply {
-            coEvery { getMessageAttachment(any()) } returns Either.Right(
+            everySuspend { getMessageAttachment(any()) } returns Either.Right(
                 CellAssetContent(
                     id = "asset-id",
                     versionId = "version-id",
@@ -126,7 +128,7 @@ class GetAudioAssetUseCaseTest {
         }
 
         suspend fun withAssetStorageAttachmentResult() = apply {
-            coEvery { getMessageAttachment(any()) } returns Either.Right(
+            everySuspend { getMessageAttachment(any()) } returns Either.Right(
                 AssetContent(
                     0L,
                     "name",
@@ -145,24 +147,28 @@ class GetAudioAssetUseCaseTest {
         }
 
         suspend fun withMessageAttachmentFailure() = apply {
-            coEvery { getMessageAttachment(any()) } returns Either.Left(StorageFailure.DataNotFound)
+            everySuspend { getMessageAttachment(any()) } returns Either.Left(StorageFailure.DataNotFound)
         }
 
         suspend fun withCellsEnabled() = apply {
-            coEvery { isWireCellsEnabledForConversation(any()) } returns true
+            everySuspend { isWireCellsEnabledForConversation(any()) } returns true
         }
 
         suspend fun withCellsDisabled() = apply {
-            coEvery { isWireCellsEnabledForConversation(conversationId) } returns false
+            everySuspend { isWireCellsEnabledForConversation(conversationId) } returns false
         }
 
         suspend fun withGetMessageAssetUseCaseReturning() = apply {
-            coEvery {
+            everySuspend {
                 getMessageAsset(conversationId, "messageId")
             } returns CompletableDeferred(MessageAssetResult.Success("path".toPath(), 123, "name"))
         }
 
-        fun arrange() = this to GetAudioAssetUseCaseImpl(isWireCellsEnabledForConversation, getMessageAsset, getMessageAttachment)
+        fun arrange() = this to GetAudioAssetUseCaseImpl(
+            isWireCellsEnabledForConversation,
+            getMessageAsset,
+            getMessageAttachment
+        )
     }
 
     companion object {

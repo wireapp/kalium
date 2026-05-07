@@ -31,13 +31,15 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newTestServer
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.every
+import dev.mokkery.mock
+import dev.mokkery.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -65,21 +67,21 @@ class LoginUseCaseTest {
             AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, null, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
         )
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateEmailUseCase.invoke(cleanEmail)
-        }.wasInvoked(exactly = once)
+        }
 
-        verify {
+        verify(VerifyMode.not) {
             arrangement.validateUserHandleUseCase.invoke(cleanEmail)
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithEmail(cleanEmail, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT, TEST_2FA_CODE)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -98,19 +100,19 @@ class LoginUseCaseTest {
             AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, null, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
         )
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateEmailUseCase.invoke(cleanHandle)
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateUserHandleUseCase.invoke(cleanHandle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithHandle(cleanHandle, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -124,20 +126,20 @@ class LoginUseCaseTest {
             AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, null, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
         )
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateEmailUseCase.invoke(TEST_EMAIL)
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.not) {
             arrangement.validateUserHandleUseCase.invoke(
                 any()
             )
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT, TEST_2FA_CODE)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -153,18 +155,18 @@ class LoginUseCaseTest {
             AuthenticationResult.Success(TEST_AUTH_TOKENS, TEST_SSO_ID, null, TEST_SERVER_CONFIG.id, PROXY_CREDENTIALS)
         )
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateEmailUseCase.invoke(TEST_HANDLE)
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateUserHandleUseCase.invoke(TEST_HANDLE)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, true)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -225,12 +227,12 @@ class LoginUseCaseTest {
 
         assertEquals(AuthenticationResult.Failure.InvalidUserIdentifier, loginUserCaseResult)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateEmailUseCase.invoke(TEST_EMAIL)
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateUserHandleUseCase.invoke(TEST_EMAIL)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -250,18 +252,18 @@ class LoginUseCaseTest {
             loginEmailResult
         )
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateEmailUseCase.invoke(TEST_EMAIL)
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.not) {
             arrangement.validateUserHandleUseCase.invoke(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
 
         // user handle
         val loginHandleResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
@@ -270,18 +272,18 @@ class LoginUseCaseTest {
             loginHandleResult
         )
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateEmailUseCase.invoke(TEST_HANDLE)
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateUserHandleUseCase.invoke(TEST_HANDLE)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -300,18 +302,18 @@ class LoginUseCaseTest {
             loginEmailResult
         )
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateEmailUseCase.invoke(TEST_EMAIL)
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.not) {
             arrangement.validateUserHandleUseCase.invoke(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
 
         // user handle
         val loginHandleResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
@@ -320,18 +322,18 @@ class LoginUseCaseTest {
             AuthenticationResult.Failure.InvalidCredentials.InvalidPasswordIdentityCombination
         )
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateEmailUseCase.invoke(TEST_HANDLE)
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateUserHandleUseCase.invoke(TEST_HANDLE)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -352,12 +354,12 @@ class LoginUseCaseTest {
             loginEmailResult
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
 
         // user handle
         val loginHandleResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
@@ -366,12 +368,12 @@ class LoginUseCaseTest {
             loginHandleResult
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -392,12 +394,12 @@ class LoginUseCaseTest {
             loginEmailResult
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
 
         // user handle
         val loginHandleResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
@@ -406,12 +408,12 @@ class LoginUseCaseTest {
             loginHandleResult
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -443,19 +445,19 @@ class LoginUseCaseTest {
             loginUserCaseResult
         )
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateEmailUseCase.invoke(handle)
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateUserHandleUseCase.invoke(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithHandle(handle, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -484,18 +486,18 @@ class LoginUseCaseTest {
 
         assertEquals(AuthenticationResult.Failure.InvalidUserIdentifier, loginUserCaseResult)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateEmailUseCase.invoke(handle)
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateUserHandleUseCase.invoke(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -511,23 +513,23 @@ class LoginUseCaseTest {
         val loginEmailResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
         assertEquals(AuthenticationResult.Failure.AccountSuspended, loginEmailResult)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
 
         // user handle
         val loginHandleResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
         assertEquals(AuthenticationResult.Failure.AccountSuspended, loginHandleResult)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -543,29 +545,29 @@ class LoginUseCaseTest {
         val loginEmailResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
         assertEquals(AuthenticationResult.Failure.AccountPendingActivation, loginEmailResult)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithEmail(TEST_EMAIL, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithHandle(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
 
         // user handle
         val loginHandleResult = loginUseCase(TEST_HANDLE, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL)
         assertEquals(AuthenticationResult.Failure.AccountPendingActivation, loginHandleResult)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginRepository.loginWithHandle(TEST_HANDLE, TEST_PASSWORD, TEST_LABEL, TEST_PERSIST_CLIENT)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.loginRepository.loginWithEmail(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement {
-        val loginRepository = mock(LoginRepository::class)
-        val validateEmailUseCase = mock(ValidateEmailUseCase::class)
-        val validateUserHandleUseCase = mock(ValidateUserHandleUseCase::class)
+        val loginRepository = mock<LoginRepository>(mode = MockMode.autoUnit)
+        val validateEmailUseCase = mock<ValidateEmailUseCase>(mode = MockMode.autoUnit)
+        val validateUserHandleUseCase = mock<ValidateUserHandleUseCase>(mode = MockMode.autoUnit)
 
         val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()
 
@@ -600,7 +602,7 @@ class LoginUseCaseTest {
         ) = apply {
             every {
                 validateEmailUseCase.invoke(email)
-            }.returns(isSucceeding)
+            } returns (isSucceeding)
         }
 
         fun withHandleValidationReturning(
@@ -609,19 +611,19 @@ class LoginUseCaseTest {
         ) = apply {
             every {
                 validateUserHandleUseCase.invoke(handle)
-            }.returns(handleValidationResult)
+            } returns (handleValidationResult)
         }
 
         suspend fun withLoginUsingEmailResulting(result: Either<NetworkFailure, com.wire.kalium.logic.data.auth.AuthenticationResult>) = apply {
-            coEvery {
+            everySuspend {
                 loginRepository.loginWithEmail(any(), any(), any(), any(), any())
-            }.returns(result)
+            } returns (result)
         }
 
         suspend fun withLoginUsingHandleResulting(result: Either<NetworkFailure, com.wire.kalium.logic.data.auth.AuthenticationResult>) = apply {
-            coEvery {
+            everySuspend {
                 loginRepository.loginWithHandle(any(), any(), any(), any())
-            }.returns(result)
+            } returns (result)
         }
 
         inline fun arrange(): Pair<Arrangement, LoginUseCase> = this to LoginUseCaseImpl(

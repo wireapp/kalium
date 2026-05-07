@@ -26,12 +26,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
@@ -48,9 +49,9 @@ class DomainLookupUseCaseTest {
             .arrange()
         useCases(userEmail)
 
-        coVerify {
-            arrangement.ssoLoginRepository.domainLookup(eq("wire.com"))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.ssoLoginRepository.domainLookup("wire.com")
+        }
     }
 
     @Test
@@ -61,9 +62,9 @@ class DomainLookupUseCaseTest {
             .arrange()
         useCases(userEmail)
 
-        coVerify {
-            arrangement.ssoLoginRepository.domainLookup(eq("wire.com"))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.ssoLoginRepository.domainLookup("wire.com")
+        }
     }
 
     @Test
@@ -76,9 +77,9 @@ class DomainLookupUseCaseTest {
             .arrange()
         useCases(userEmail)
 
-        coVerify {
-            arrangement.customServerConfigRepository.fetchRemoteConfig(eq("https://wire.com"))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.customServerConfigRepository.fetchRemoteConfig("https://wire.com")
+        }
     }
 
     @Test
@@ -96,19 +97,19 @@ class DomainLookupUseCaseTest {
             assertEquals(expectedServerLinks, it.serverLinks)
         }
 
-        coVerify {
-            arrangement.ssoLoginRepository.domainLookup(eq("wire.com"))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.ssoLoginRepository.domainLookup("wire.com")
+        }
 
-        coVerify {
-            arrangement.customServerConfigRepository.fetchRemoteConfig(eq("https://wire.com"))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.customServerConfigRepository.fetchRemoteConfig("https://wire.com")
+        }
     }
 
     private class Arrangement {
 
-        val ssoLoginRepository: SSOLoginRepository = mock(SSOLoginRepository::class)
-        val customServerConfigRepository: CustomServerConfigRepository = mock(CustomServerConfigRepository::class)
+        val ssoLoginRepository: SSOLoginRepository = mock(mode = MockMode.autoUnit)
+        val customServerConfigRepository: CustomServerConfigRepository = mock(mode = MockMode.autoUnit)
 
         private val useCases = DomainLookupUseCase(
             customServerConfigRepository,
@@ -116,15 +117,15 @@ class DomainLookupUseCaseTest {
         )
 
         suspend fun withDomainLookupResult(result: Either<NetworkFailure, DomainLookupResult>) = apply {
-            coEvery {
+            everySuspend {
                 ssoLoginRepository.domainLookup(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withFetchServerConfigResult(result: Either<NetworkFailure, ServerConfig.Links>) = apply {
-            coEvery {
+            everySuspend {
                 customServerConfigRepository.fetchRemoteConfig(any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to useCases
