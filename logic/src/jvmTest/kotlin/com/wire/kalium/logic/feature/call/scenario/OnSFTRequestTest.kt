@@ -30,14 +30,17 @@ import com.wire.kalium.logic.feature.call.AvsSFTError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.every
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,7 +72,7 @@ class OnSFTRequestTest {
         onSFTRequest.onSFTRequest(ctx = null, url = url, data = memory.share(0), length = Size_t(memory.size()), arg = null)
         advanceTimeBy(1.seconds)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_sft_resp(
                 inst = eq(arrangement.handle),
                 error = eq(AvsSFTError.NONE.value),
@@ -77,7 +80,7 @@ class OnSFTRequestTest {
                 length = eq(result.size),
                 ctx = any()
             )
-        }.wasInvoked(1)
+        }
     }
 
     @Test
@@ -96,7 +99,7 @@ class OnSFTRequestTest {
         onSFTRequest.onSFTRequest(ctx = null, url = url, data = memory.share(0), length = Size_t(memory.size()), arg = null)
         advanceTimeBy(1.seconds)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_sft_resp(
                 inst = eq(arrangement.handle),
                 error = eq(AvsSFTError.NO_RESPONSE_DATA.value),
@@ -104,7 +107,7 @@ class OnSFTRequestTest {
                 length = eq(0),
                 ctx = any()
             )
-        }.wasInvoked(1)
+        }
     }
 
     @Test
@@ -127,10 +130,10 @@ class OnSFTRequestTest {
         networkStateFlow.value = NetworkState.ConnectedWithInternet
         advanceTimeBy(1.seconds)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.connectToSFT(url = url, data = content)
-        }.wasInvoked(1)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_sft_resp(
                 inst = eq(arrangement.handle),
                 error = eq(AvsSFTError.NONE.value),
@@ -138,7 +141,7 @@ class OnSFTRequestTest {
                 length = eq(result.size),
                 ctx = any()
             )
-        }.wasInvoked(1)
+        }
     }
 
     @Test
@@ -162,10 +165,10 @@ class OnSFTRequestTest {
         )
         advanceTimeBy(arrangement.timeout + 1.seconds)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.callRepository.connectToSFT(url = url, data = content)
-        }.wasInvoked(0)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_sft_resp(
                 inst = eq(arrangement.handle),
                 error = eq(AvsSFTError.NO_RESPONSE_DATA.value),
@@ -173,13 +176,13 @@ class OnSFTRequestTest {
                 length = eq(0),
                 ctx = any()
             )
-        }.wasInvoked(1)
+        }
     }
 
     private class Arrangement(val testScope: TestScope) {
-        val calling = mock(Calling::class)
-        val callRepository: CallRepository = mock(CallRepository::class)
-        val networkStateObserver = mock(NetworkStateObserver::class)
+        val calling = mock<Calling>(mode = MockMode.autoUnit)
+        val callRepository: CallRepository = mock<CallRepository>(mode = MockMode.autoUnit)
+        val networkStateObserver = mock<NetworkStateObserver>(mode = MockMode.autoUnit)
         val handle = Handle(42)
         val timeout = 15.seconds
 
@@ -199,13 +202,13 @@ class OnSFTRequestTest {
         fun withNetworkStateFlow(networkStateFlow: StateFlow<NetworkState>): Arrangement = apply {
             every {
                 networkStateObserver.observeNetworkState()
-            }.returns(networkStateFlow)
+            } returns (networkStateFlow)
         }
 
         suspend fun withConnectToSFTResult(result: Either<CoreFailure, ByteArray>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 callRepository.connectToSFT(url = any(), data = any())
-            }.returns(result)
+            } returns (result)
         }
     }
 }

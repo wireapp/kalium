@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
@@ -35,7 +34,6 @@ import kotlinx.datetime.Instant
 /**
  * This use case is responsible for ending a call.
  */
-@Mockable
 public interface EndCallUseCase {
 
     /**

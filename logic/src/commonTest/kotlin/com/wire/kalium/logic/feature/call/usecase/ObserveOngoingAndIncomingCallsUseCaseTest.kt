@@ -23,8 +23,11 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseTest.Companion.conversationId
 import com.wire.kalium.logic.framework.TestCall
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -34,7 +37,7 @@ import kotlin.test.assertEquals
 
 internal class ObserveOngoingAndIncomingCallsUseCaseTest {
 
-    val callRepository = mock(CallRepository::class)
+    val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
     private lateinit var observeOngoingAndIncomingCalls: ObserveOngoingAndIncomingCallsUseCase
 
@@ -48,9 +51,9 @@ internal class ObserveOngoingAndIncomingCallsUseCaseTest {
     @Test
     fun givenCallsWithDifferentStatuses_whenInvokeIsCalled_thenItFiltersIncomingAndOngoingCalls() = runTest {
 
-        coEvery {
+        everySuspend {
             callRepository.callsFlow()
-        }.returns(
+        } returns (
             flowOf(
                 listOf(
                     call.copy(status = CallStatus.STARTED),

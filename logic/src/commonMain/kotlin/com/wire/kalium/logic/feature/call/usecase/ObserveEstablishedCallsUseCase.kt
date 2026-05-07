@@ -20,13 +20,11 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.Call
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
 /**
  * This use case is responsible for observing the established calls.
  */
-@Mockable
 public interface ObserveEstablishedCallsUseCase {
     /**
      * That Flow emits everytime when the list is changed
