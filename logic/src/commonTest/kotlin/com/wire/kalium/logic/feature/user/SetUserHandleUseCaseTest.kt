@@ -26,13 +26,14 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -40,11 +41,11 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class SetUserHandleUseCaseTest {
-        private val validateHandleUseCase = mock(ValidateUserHandleUseCase::class)
+    private val validateHandleUseCase = mock<ValidateUserHandleUseCase>()
 
-        private val accountRepository = mock(AccountRepository::class)
+    private val accountRepository = mock<AccountRepository>()
 
-        private val syncManager = mock(SyncManager::class)
+    private val syncManager = mock<SyncManager>()
 
     private lateinit var setUserHandleUseCase: SetUserHandleUseCase
 
@@ -58,33 +59,33 @@ class SetUserHandleUseCaseTest {
         val handle = "user_handle"
         every {
             validateHandleUseCase.invoke(any())
-        }.returns(ValidateUserHandleResult.Valid(handle))
-        coEvery {
+        } returns ValidateUserHandleResult.Valid(handle)
+        everySuspend {
             accountRepository.updateSelfHandle(handle)
-        }.returns(Either.Right(Unit))
-        coEvery {
+        } returns Either.Right(Unit)
+        everySuspend {
             accountRepository.updateLocalSelfUserHandle(handle)
-        }.returns(Either.Right(Unit))
-        coEvery {
+        } returns Either.Right(Unit)
+        everySuspend {
             syncManager.isSlowSyncOngoing()
-        }.returns(false)
-        coEvery {
+        } returns false
+        everySuspend {
             syncManager.isSlowSyncCompleted()
-        }.returns(true)
+        } returns true
 
         val actual = setUserHandleUseCase(handle)
 
         assertIs<SetUserHandleResult.Success>(actual)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             validateHandleUseCase.invoke(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             accountRepository.updateSelfHandle(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             accountRepository.updateLocalSelfUserHandle(handle)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -92,36 +93,39 @@ class SetUserHandleUseCaseTest {
         val handle = "user_handle"
         every {
             validateHandleUseCase.invoke(any())
-        }.returns(ValidateUserHandleResult.Valid(handle))
-        coEvery {
+        } returns ValidateUserHandleResult.Valid(handle)
+        everySuspend {
             accountRepository.updateSelfHandle(handle)
-        }.returns(Either.Right(Unit))
-        coEvery {
+        } returns Either.Right(Unit)
+        everySuspend {
             accountRepository.updateLocalSelfUserHandle(handle)
-        }.returns(Either.Right(Unit))
-        coEvery {
+        } returns Either.Right(Unit)
+        everySuspend {
             syncManager.isSlowSyncOngoing()
-        }.returns(true)
-        coEvery {
+        } returns true
+        everySuspend {
             syncManager.isSlowSyncCompleted()
-        }.returns(true)
+        } returns true
+        everySuspend {
+            syncManager.waitUntilLive()
+        } returns Unit
 
         val actual = setUserHandleUseCase(handle)
 
         assertIs<SetUserHandleResult.Success>(actual)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             validateHandleUseCase.invoke(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             accountRepository.updateSelfHandle(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             accountRepository.updateLocalSelfUserHandle(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             syncManager.waitUntilLive()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -129,30 +133,30 @@ class SetUserHandleUseCaseTest {
         val handle = "user_handle"
         every {
             validateHandleUseCase.invoke(any())
-        }.returns(ValidateUserHandleResult.Valid(handle))
-        coEvery {
+        } returns ValidateUserHandleResult.Valid(handle)
+        everySuspend {
             accountRepository.updateSelfHandle(handle)
-        }.returns(Either.Right(Unit))
-        coEvery {
+        } returns Either.Right(Unit)
+        everySuspend {
             syncManager.isSlowSyncOngoing()
-        }.returns(false)
-        coEvery {
+        } returns false
+        everySuspend {
             syncManager.isSlowSyncCompleted()
-        }.returns(false)
+        } returns false
 
         val actual = setUserHandleUseCase(handle)
 
         assertIs<SetUserHandleResult.Success>(actual)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             validateHandleUseCase.invoke(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             accountRepository.updateSelfHandle(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             accountRepository.updateLocalSelfUserHandle(handle)
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -163,21 +167,21 @@ class SetUserHandleUseCaseTest {
 
             validateHandleUseCase.invoke(any())
 
-        }.returns(ValidateUserHandleResult.Invalid.InvalidCharacters("", listOf()))
-        coEvery {
+        } returns ValidateUserHandleResult.Invalid.InvalidCharacters("", listOf())
+        everySuspend {
             syncManager.isSlowSyncOngoing()
-        }.returns(false)
+        } returns false
 
         val actual = setUserHandleUseCase(handle)
 
         assertIs<SetUserHandleResult.Failure.InvalidHandle>(actual)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             validateHandleUseCase.invoke(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             accountRepository.updateSelfHandle(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -186,13 +190,13 @@ class SetUserHandleUseCaseTest {
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
         every {
             validateHandleUseCase.invoke(any())
-        }.returns(ValidateUserHandleResult.Valid(handle))
-        coEvery {
+        } returns ValidateUserHandleResult.Valid(handle)
+        everySuspend {
             accountRepository.updateSelfHandle(handle)
-        }.returns(Either.Left(expected))
-        coEvery {
+        } returns Either.Left(expected)
+        everySuspend {
             syncManager.isSlowSyncOngoing()
-        }.returns(false)
+        } returns false
 
         val actual = setUserHandleUseCase(handle)
 
@@ -200,12 +204,12 @@ class SetUserHandleUseCaseTest {
         assertIs<NetworkFailure.ServerMiscommunication>(actual.error)
         assertEquals(expected.kaliumException, (actual.error as NetworkFailure.ServerMiscommunication).kaliumException)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             validateHandleUseCase.invoke(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             accountRepository.updateSelfHandle(handle)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -221,25 +225,25 @@ class SetUserHandleUseCaseTest {
         val error = NetworkFailure.ServerMiscommunication(kaliumException)
         every {
             validateHandleUseCase.invoke(any())
-        }.returns(ValidateUserHandleResult.Valid(handle))
-        coEvery {
+        } returns ValidateUserHandleResult.Valid(handle)
+        everySuspend {
             accountRepository.updateSelfHandle(handle)
-        }.returns(Either.Left(error))
-        coEvery {
+        } returns Either.Left(error)
+        everySuspend {
             syncManager.isSlowSyncOngoing()
-        }.returns(false)
+        } returns false
 
         val actual = setUserHandleUseCase(handle)
 
         assertIs<SetUserHandleResult.Failure>(actual)
         assertEquals(expectedError, actual)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             validateHandleUseCase.invoke(handle)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             accountRepository.updateSelfHandle(handle)
-        }.wasInvoked(exactly = once)
+        }
     }
 
 }

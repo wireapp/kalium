@@ -21,8 +21,9 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -73,28 +74,28 @@ class GetDefaultProtocolUseCaseTest {
 
     internal class GetDefaultProtocolUseCaseTestArrangement {
 
-        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository: UserConfigRepository = mock()
 
         val useCase = GetDefaultProtocolUseCaseImpl(
             userConfigRepository = userConfigRepository
         )
 
         suspend fun withReturningSuccessProteusProtocol() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getDefaultProtocol()
-            }.returns(Either.Right(SupportedProtocol.PROTEUS))
+            } returns Either.Right(SupportedProtocol.PROTEUS)
         }
 
         suspend fun withReturningSuccessMLSProtocol() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getDefaultProtocol()
-            }.returns(Either.Right(SupportedProtocol.MLS))
+            } returns Either.Right(SupportedProtocol.MLS)
         }
 
         suspend fun withReturningError() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getDefaultProtocol()
-            }.returns(Either.Left(StorageFailure.Generic(Throwable())))
+            } returns Either.Left(StorageFailure.Generic(Throwable()))
         }
 
         fun arrange() = this to useCase

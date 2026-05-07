@@ -26,10 +26,11 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -45,18 +46,18 @@ class RefreshUsersWithoutMetadataUseCaseTest {
 
         refreshUsersWithoutMetadata()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.syncUsersWithoutMetadata()
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-                val userRepository = mock(UserRepository::class)
+                val userRepository = mock<UserRepository>()
 
         suspend fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.syncUsersWithoutMetadata()
-            }.returns(result)
+            } returns result
         }
 
         fun arrange(): Pair<Arrangement, RefreshUsersWithoutMetadataUseCase> =

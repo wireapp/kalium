@@ -99,6 +99,7 @@ everySuspend { repository.syncPropertiesStatuses() } returns Either.Right(Unit)
 Mockative:
 
 ```kotlin
+coVerify { repository.syncPropertiesStatuses() }.wasInvoked(once)
 coVerify { repository.syncPropertiesStatuses() }.wasInvoked(exactly = once)
 coVerify { repository.syncPropertiesStatuses() }.wasNotInvoked()
 ```
@@ -106,13 +107,14 @@ coVerify { repository.syncPropertiesStatuses() }.wasNotInvoked()
 Mokkery:
 
 ```kotlin
-verifySuspend { repository.syncPropertiesStatuses() }
-verifySuspend(VerifyMode.not) { repository.syncPropertiesStatuses() }
-verifySuspend(VerifyMode.exactly(0)) { repository.syncPropertiesStatuses() }
 verifySuspend(VerifyMode.exactly(1)) { repository.syncPropertiesStatuses() }
+verifySuspend(VerifyMode.exactly(1)) { repository.syncPropertiesStatuses() }
+verifySuspend(VerifyMode.not) { repository.syncPropertiesStatuses() }
 ```
 
-For non-suspend methods, use `verify { ... }` with the same `VerifyMode` patterns.
+**Important:** Always use explicit `VerifyMode.exactly(1)` when converting `wasInvoked(once)` or `wasInvoked(exactly = once)`. Do NOT use bare `verifySuspend { ... }` (which also defaults to exactly(1)) — the explicit form is required for clarity and consistency across the codebase.
+
+For non-suspend methods, use `verify(VerifyMode.exactly(1)) { ... }` and `verify(VerifyMode.not) { ... }` with the same `VerifyMode` patterns.
 
 ## 6. Mixed-framework test files
 
