@@ -22,19 +22,20 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 internal class MarkGuestLinkFeatureFlagAsNotChangedUseCaseTest {
 
-    val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+    val userConfigRepository: UserConfigRepository = mock<UserConfigRepository>()
 
     lateinit var markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
 
@@ -45,38 +46,38 @@ internal class MarkGuestLinkFeatureFlagAsNotChangedUseCaseTest {
 
     @Test
     fun givenRepositoryReturnsFailure_whenInvokingUseCase_thenDoNotUpdateGuestStatus() = runTest {
-        coEvery {
+        everySuspend {
             userConfigRepository.getGuestRoomLinkStatus()
-        }.returns(Either.Left(StorageFailure.DataNotFound))
+        } returns Either.Left(StorageFailure.DataNotFound)
 
         markGuestLinkFeatureFlagAsNotChanged()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             userConfigRepository.getGuestRoomLinkStatus()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             userConfigRepository.setGuestRoomStatus(any(), eq(false))
-        }.wasNotInvoked()
+        }
     }
 
     @Test
     fun givenRepositoryReturnsSuccess_whenInvokingUseCase_thenUpdateGuestStatus() = runTest {
-        coEvery {
+        everySuspend {
             userConfigRepository.getGuestRoomLinkStatus()
-        }.returns(Either.Right(GuestRoomLinkStatus(isGuestRoomLinkEnabled = true, isStatusChanged = false)))
-        coEvery {
+        } returns Either.Right(GuestRoomLinkStatus(isGuestRoomLinkEnabled = true, isStatusChanged = false))
+        everySuspend {
             userConfigRepository.setGuestRoomStatus(status = false, isStatusChanged = false)
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
 
         markGuestLinkFeatureFlagAsNotChanged()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             userConfigRepository.getGuestRoomLinkStatus()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             userConfigRepository.setGuestRoomStatus(any(), eq(false))
-        }.wasInvoked(once)
+        }
 
     }
 }

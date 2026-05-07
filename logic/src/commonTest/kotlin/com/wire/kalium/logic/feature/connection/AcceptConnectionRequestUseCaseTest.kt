@@ -30,7 +30,7 @@ import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageC
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -147,7 +147,7 @@ class AcceptConnectionRequestUseCaseTest {
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
         FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
         NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         suspend fun arrange() = run {
             block()
             withTransactionReturning(Either.Right(Unit))
