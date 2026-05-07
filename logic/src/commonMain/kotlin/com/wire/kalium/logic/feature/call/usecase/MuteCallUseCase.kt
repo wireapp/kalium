@@ -21,12 +21,10 @@ package com.wire.kalium.logic.feature.call.usecase
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
-import io.mockative.Mockable
 
 /**
  * This use case is responsible for muting a call.
  */
-@Mockable
 public interface MuteCallUseCase {
     public suspend operator fun invoke(
         conversationId: ConversationId,

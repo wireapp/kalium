@@ -19,25 +19,26 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCase
 import com.wire.kalium.logic.feature.user.ShouldAskCallFeedbackUseCaseResult
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.repository.CallManagerArrangement
-import com.wire.kalium.logic.util.arrangement.repository.CallManagerArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.doesNothing
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
+import dev.mokkery.verifySuspend
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -56,23 +57,23 @@ class EndCallUseCaseTest {
 
         endCall.invoke(conversationId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callManager.endCall(eq(conversationId))
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCallResultListener.onCallEndedAskForFeedback(
                 eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -89,23 +90,23 @@ class EndCallUseCaseTest {
 
         endCall.invoke(conversationId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callManager.endCall(eq(conversationId))
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCallResultListener.onCallEndedAskForFeedback(
                 eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -122,23 +123,23 @@ class EndCallUseCaseTest {
 
         endCall.invoke(conversationId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callManager.endCall(eq(conversationId))
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCallResultListener.onCallEndedAskForFeedback(
                 eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -155,23 +156,23 @@ class EndCallUseCaseTest {
 
         endCall.invoke(conversationId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callManager.endCall(eq(conversationId))
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCallResultListener.onCallEndedAskForFeedback(
                 eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -187,30 +188,30 @@ class EndCallUseCaseTest {
 
         endCall.invoke(conversationId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callManager.endCall(eq(conversationId))
-        }.wasInvoked(once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.callRepository.updateCallStatusById(any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCallResultListener.onCallEndedAskForFeedback(
                 eq(ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100))
             )
-        }.wasInvoked(once)
+        }
     }
 
-    private class Arrangement : CallRepositoryArrangement by CallRepositoryArrangementImpl(),
-        CallManagerArrangement by CallManagerArrangementImpl() {
-
-        val endCallResultListener = mock(EndCallResultListener::class)
-        val shouldAskCallFeedback = mock(ShouldAskCallFeedbackUseCase::class)
+    private class Arrangement {
+        val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
+        val callManager = mock<CallManager>(mode = MockMode.autoUnit)
+        val endCallResultListener = mock<EndCallResultListener>(mode = MockMode.autoUnit)
+        val shouldAskCallFeedback = mock<ShouldAskCallFeedbackUseCase>(mode = MockMode.autoUnit)
 
         fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, EndCallUseCase> {
             runBlocking {
@@ -227,14 +228,26 @@ class EndCallUseCaseTest {
             )
         }
 
+        suspend fun withEndCall() {
+            everySuspend { callManager.endCall(any()) } returns (Unit)
+        }
+
+        suspend fun withCallsFlow(flow: Flow<List<Call>>) {
+            everySuspend { callRepository.callsFlow() } returns (flow)
+        }
+
+        fun withUpdateIsCameraOnById() {
+            every { callRepository.updateIsCameraOnById(any(), any()) } returns (Unit)
+        }
+
         suspend fun withShouldAskCallFeedback(
             result: ShouldAskCallFeedbackUseCaseResult = ShouldAskCallFeedbackUseCaseResult.ShouldAskCallFeedback(100)
         ) {
-            coEvery { shouldAskCallFeedback.invoke(any(), any()) }.returns(result)
+            everySuspend { shouldAskCallFeedback.invoke(any(), any()) } returns (result)
         }
 
         suspend fun withOnCallEndedAskForFeedback() {
-            coEvery { endCallResultListener.onCallEndedAskForFeedback(any()) }.doesNothing()
+            everySuspend { endCallResultListener.onCallEndedAskForFeedback(any()) } returns (Unit)
         }
     }
 

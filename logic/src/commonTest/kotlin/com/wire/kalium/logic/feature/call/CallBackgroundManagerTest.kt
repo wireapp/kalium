@@ -21,9 +21,12 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncStateObserver
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,8 +46,8 @@ class CallBackgroundManagerTest {
 
         launch { callBackgroundManager.startProcessing() }.run {
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(expected) }.wasInvoked(exactly = 1)
-            coVerify { arrangement.callManager.setBackground(!expected) }.wasNotInvoked()
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(expected) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(!expected) }
             cancel()
         }
     }
@@ -97,14 +100,14 @@ class CallBackgroundManagerTest {
 
         launch { callBackgroundManager.startProcessing() }.run {
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 1)
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
 
             // Change to background
             callBackgroundManager.setBackground(true)
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 0)
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 1)
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(true) }
 
             cancel()
         }
@@ -118,14 +121,14 @@ class CallBackgroundManagerTest {
 
         launch { callBackgroundManager.startProcessing() }.run {
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 1)
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
 
             // Change to background
             callBackgroundManager.setBackground(true)
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 0) // distinctUntilChanged so no new call
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
 
             cancel()
         }
@@ -139,14 +142,14 @@ class CallBackgroundManagerTest {
 
         launch { callBackgroundManager.startProcessing() }.run {
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 1)
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(true) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(false) }
 
             // Change to background
             callBackgroundManager.setBackground(false)
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 1)
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(false) }
 
             cancel()
         }
@@ -160,14 +163,14 @@ class CallBackgroundManagerTest {
 
         launch { callBackgroundManager.startProcessing() }.run {
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 1)
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
 
             // Change to background
             callBackgroundManager.setBackground(false)
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 0) // distinctUntilChanged so no new call
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
 
             cancel()
         }
@@ -182,14 +185,14 @@ class CallBackgroundManagerTest {
 
         launch { callBackgroundManager.startProcessing() }.run {
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 1)
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(true) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(false) }
 
             // Sync starts running which means connection is up when in background
             syncStateFlow.value = SyncState.GatheringPendingEvents
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 1)
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(false) }
 
             cancel()
         }
@@ -204,14 +207,14 @@ class CallBackgroundManagerTest {
 
         launch { callBackgroundManager.startProcessing() }.run {
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 1)
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
 
             // Sync stops running which means connection is down when in background
             syncStateFlow.value = SyncStateFailedNoNetwork
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 0)
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 1)
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(true) }
 
             cancel()
         }
@@ -226,14 +229,14 @@ class CallBackgroundManagerTest {
 
         launch { callBackgroundManager.startProcessing() }.run {
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 1)
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
 
             // Sync starts running which means connection is up when in foreground
             syncStateFlow.value = SyncState.GatheringPendingEvents
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 0) // distinctUntilChanged so no new call
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
 
             cancel()
         }
@@ -248,22 +251,22 @@ class CallBackgroundManagerTest {
 
         launch { callBackgroundManager.startProcessing() }.run {
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 1)
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
 
             // Sync stops running which means connection is down when in foreground
             syncStateFlow.value = SyncStateFailedNoNetwork
             advanceUntilIdle()
-            coVerify { arrangement.callManager.setBackground(false) }.wasInvoked(exactly = 0) // distinctUntilChanged so no new call
-            coVerify { arrangement.callManager.setBackground(true) }.wasInvoked(exactly = 0)
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(false) }
+            verifySuspend(VerifyMode.not) { arrangement.callManager.setBackground(true) }
 
             cancel()
         }
     }
 
     inner class Arrangement() {
-        internal val callManager = mock(CallManager::class)
-        val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
+        internal val callManager = mock<CallManager>(mode = MockMode.autoUnit)
+        val syncStateObserver: SyncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
 
         internal fun withSyncStateFlow(syncStateFlow: StateFlow<SyncState>) = apply {
             every { syncStateObserver.syncState } returns syncStateFlow

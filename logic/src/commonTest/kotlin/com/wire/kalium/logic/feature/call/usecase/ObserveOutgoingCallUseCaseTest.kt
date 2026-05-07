@@ -23,8 +23,11 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestCall
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -46,16 +49,16 @@ class ObserveOutgoingCallUseCaseTest {
     }
 
     private class Arrangement {
-        val callRepository = mock(CallRepository::class)
+        val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
         val observeOutgoingCall = ObserveOutgoingCallUseCaseImpl(callRepository)
 
         fun arrange() = this to observeOutgoingCall
 
         suspend fun withCallRepositoryEmitsValues() = apply {
-            coEvery {
+            everySuspend {
                 callRepository.outgoingCallsFlow()
-            }.returns(flowOf(listOf(outgoingCall)))
+            } returns (flowOf(listOf(outgoingCall)))
         }
     }
 

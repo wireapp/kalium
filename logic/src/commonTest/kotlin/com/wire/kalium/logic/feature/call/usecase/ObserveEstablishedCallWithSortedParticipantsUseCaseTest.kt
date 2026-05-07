@@ -26,8 +26,11 @@ import com.wire.kalium.logic.data.call.CallingParticipantsOrder
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -36,9 +39,9 @@ import kotlin.test.assertEquals
 
 class ObserveEstablishedCallWithSortedParticipantsUseCaseTest {
 
-        private val callRepository = mock(CallRepository::class)
+        private val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
-        private val callingParticipantsOrder = mock(CallingParticipantsOrder::class)
+        private val callingParticipantsOrder = mock<CallingParticipantsOrder>(mode = MockMode.autoUnit)
 
     private lateinit var observeEstablishedCallWithSortedParticipantsUseCase: ObserveEstablishedCallWithSortedParticipantsUseCase
 
@@ -54,13 +57,13 @@ class ObserveEstablishedCallWithSortedParticipantsUseCaseTest {
     fun givenCallFlowEmitsANewValue_whenUseCaseIsRunning_thenAssertThatTheUseCaseIsEmittingTheRightCalls() = runTest {
         val calls = listOf(establishedCall)
 
-        coEvery {
+        everySuspend {
             callingParticipantsOrder.reorderItems(calls.first().participants)
-        }.returns(calls.first().participants)
+        } returns (calls.first().participants)
 
-        coEvery {
+        everySuspend {
             callRepository.establishedCallsFlow()
-        }.returns(flowOf(calls))
+        } returns (flowOf(calls))
 
         val result = observeEstablishedCallWithSortedParticipantsUseCase()
 

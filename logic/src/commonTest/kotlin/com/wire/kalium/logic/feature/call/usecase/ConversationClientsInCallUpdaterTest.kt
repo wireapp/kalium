@@ -27,21 +27,23 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class ConversationClientsInCallUpdaterTest {
 
-    private val callManager = mock(CallManager::class)
-    private val conversationRepository = mock(ConversationRepository::class)
-    private val federatedIdMapper = mock(FederatedIdMapper::class)
+    private val callManager = mock<CallManager>(mode = MockMode.autoUnit)
+    private val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+    private val federatedIdMapper = mock<FederatedIdMapper>(mode = MockMode.autoUnit)
 
     private lateinit var conversationClientsInCallUpdater: ConversationClientsInCallUpdater
 
@@ -58,33 +60,33 @@ class ConversationClientsInCallUpdaterTest {
     @Test
     fun givenConversationRepositoryReturnsFailure_whenGettingConversationRecipients_thenDoNothing() =
         runTest(TestKaliumDispatcher.main) {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationRecipientsForCalling(eq(conversationId))
-            }.returns(Either.Left(CoreFailure.MissingClientRegistration))
+            } returns (Either.Left(CoreFailure.MissingClientRegistration))
 
             conversationClientsInCallUpdater(conversationId)
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 callManager.updateConversationClients(any(), any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
     fun givenConversationRepositoryReturnsValidValues_whenGettingConversationRecipients_thenUpdateConversationClients() =
         runTest(TestKaliumDispatcher.main) {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationRecipientsForCalling(eq(conversationId))
-            }.returns(Either.Right(recipients))
+            } returns (Either.Right(recipients))
 
-            coEvery {
+            everySuspend {
                 federatedIdMapper.parseToFederatedId(userId)
-            }.returns(userIdString)
+            } returns (userIdString)
 
             conversationClientsInCallUpdater(conversationId)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 callManager.updateConversationClients(any(), any())
-            }.wasInvoked(once)
+            }
         }
 
     companion object {

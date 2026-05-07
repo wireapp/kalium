@@ -24,8 +24,11 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -34,7 +37,7 @@ import kotlin.test.assertEquals
 
 class IsCallRunningUseCaseTest {
 
-        private val callRepository = mock(CallRepository::class)
+        private val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
     private lateinit var isCallRunningUseCase: IsCallRunningUseCase
 
@@ -47,9 +50,9 @@ class IsCallRunningUseCaseTest {
 
     @Test
     fun givenAFlowWithEmptyValues_whenInvokingUseCase_thenReturnsFalse() = runTest {
-        coEvery {
+        everySuspend {
             callRepository.callsFlow()
-        }.returns(flowOf(listOf()))
+        } returns (flowOf(listOf()))
 
         val result = isCallRunningUseCase()
 
@@ -58,9 +61,9 @@ class IsCallRunningUseCaseTest {
 
     @Test
     fun givenAFlowThatDoesNotContainIncomingOrOutgoingOrOngoingCall_whenInvokingUseCase_thenReturnsFalse() = runTest {
-        coEvery {
+        everySuspend {
             callRepository.callsFlow()
-        }.returns(flowOf(listOf(call2)))
+        } returns (flowOf(listOf(call2)))
 
         val result = isCallRunningUseCase()
 
@@ -69,9 +72,9 @@ class IsCallRunningUseCaseTest {
 
     @Test
     fun givenAFlowContainingAnIncomingCall_whenInvokingUseCase_thenReturnsTrue() = runTest {
-        coEvery {
+        everySuspend {
             callRepository.callsFlow()
-        }.returns(flowOf(listOf(call1, call2)))
+        } returns (flowOf(listOf(call1, call2)))
 
         val result = isCallRunningUseCase()
 

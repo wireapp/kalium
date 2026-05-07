@@ -27,12 +27,10 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationMetaDataRepository
-import io.mockative.Mockable
 
 /**
  * This class is responsible for providing the conversation type for a call.
  */
-@Mockable
 internal interface GetCallConversationTypeProvider {
     suspend operator fun invoke(conversationId: ConversationId): ConversationTypeCalling
 }
