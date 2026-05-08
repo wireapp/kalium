@@ -24,11 +24,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -44,9 +45,9 @@ class IsReadOnlyAccountUseCaseTest {
 
         val result = isReadOnlyAccountUseCase()
         assertTrue(result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.isAccountReadOnly(arrangement.selfUserId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -57,20 +58,20 @@ class IsReadOnlyAccountUseCaseTest {
 
         val result = isReadOnlyAccountUseCase()
         assertTrue(result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.isAccountReadOnly(arrangement.selfUserId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        val sessionRepository: SessionRepository = mock(SessionRepository::class)
+        val sessionRepository: SessionRepository = mock()
 
         val selfUserId = UserId("user_id", "domain")
 
         suspend fun withIsReadOnlyAccountRepository(isReadOnlyResult: Either<StorageFailure, Boolean>) = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.isAccountReadOnly(any())
-            }.returns(isReadOnlyResult)
+            } returns isReadOnlyResult
         }
 
         fun arrange() = this to IsReadOnlyAccountUseCaseImpl(selfUserId, sessionRepository, testDispatchers)

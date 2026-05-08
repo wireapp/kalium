@@ -104,7 +104,10 @@ class SearchAppsByNameUseCaseTest {
             appRepository = appRepository
         )
 
-        suspend fun withSearchAppsByName(query: String, result: Flow<Either<StorageFailure, List<AppDetails>>>) = apply {
+        suspend fun withSearchAppsByName(
+            query: String,
+            result: Flow<Either<StorageFailure, List<AppDetails>>>
+        ) = apply {
             everySuspend {
                 appRepository.searchAppsByName(query)
             } returns result

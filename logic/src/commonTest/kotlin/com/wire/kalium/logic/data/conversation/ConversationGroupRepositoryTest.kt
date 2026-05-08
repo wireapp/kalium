@@ -31,7 +31,6 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
 import com.wire.kalium.logic.data.legalhold.ids
 import com.wire.kalium.logic.data.message.MessageContent
@@ -45,13 +44,10 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
-import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MLS
@@ -78,15 +74,17 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.sequentiallyReturns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -122,13 +120,13 @@ class ConversationGroupRepositoryTest {
         result.shouldSucceed()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDAO.insertConversation(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -155,13 +153,13 @@ class ConversationGroupRepositoryTest {
         result.shouldSucceed()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDAO.insertConversation(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -187,9 +185,9 @@ class ConversationGroupRepositoryTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.legalHoldHandler.handleConversationMembersChanged(any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -214,7 +212,7 @@ class ConversationGroupRepositoryTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
                 any(),
                 any(),
@@ -222,7 +220,7 @@ class ConversationGroupRepositoryTest {
                 any(),
                 any<ConversationEntity.Type>()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -255,29 +253,29 @@ class ConversationGroupRepositoryTest {
         result.shouldSucceed()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationApi.createNewConversation(matches { it.qualifiedUsers?.size == 2 })
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationApi.createNewConversation(matches { it.qualifiedUsers?.size == 1 })
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDAO.insertConversation(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     any(),
                     eq(listOf(unreachableUserId)),
                     eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
                 )
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -307,21 +305,21 @@ class ConversationGroupRepositoryTest {
         result.shouldFail()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(2)) {
                 conversationApi.createNewConversation(any())
-            }.wasInvoked(twice)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 conversationDAO.insertConversation(any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(any(), any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -346,21 +344,21 @@ class ConversationGroupRepositoryTest {
         result.shouldFail()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationApi.createNewConversation(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 conversationDAO.insertConversation(any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(any(), any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -399,29 +397,29 @@ class ConversationGroupRepositoryTest {
         result.shouldSucceed()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationApi.createNewConversation(matches { it.qualifiedUsers?.size == 5 })
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationApi.createNewConversation(matches { it.qualifiedUsers?.size == 2 })
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDAO.insertConversation(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     any(),
                     userIdList = eq(usersWithConsentFromOtherTeams.ids() + usersWithoutConsent + usersFailed),
                     eq(MessageContent.MemberChange.FailedToAdd.Type.LegalHold)
                 )
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -454,21 +452,21 @@ class ConversationGroupRepositoryTest {
         result.shouldFail()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(2)) {
                 conversationApi.createNewConversation(any())
-            }.wasInvoked(twice)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 conversationDAO.insertConversation(any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(any(), any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -497,17 +495,17 @@ class ConversationGroupRepositoryTest {
         result.shouldSucceed()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDAO.insertConversation(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), eq(true))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -547,21 +545,21 @@ class ConversationGroupRepositoryTest {
             result.shouldSucceed()
 
             with(arrangement) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                         any(),
                         matches { it.containsAll(usersWithNoKeyPackages) },
                         eq(MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages)
                     )
-                }.wasInvoked(once)
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.exactly(0)) {
                     arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                         any(),
                         any(),
                         eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
                     )
-                }.wasNotInvoked()
+                }
             }
         }
 
@@ -604,21 +602,21 @@ class ConversationGroupRepositoryTest {
             result.shouldSucceed()
 
             with(arrangement) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                         any(),
                         matches { it.containsAll(usersOnUnreachableBackend) },
                         eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
                     )
-                }.wasInvoked(once)
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.exactly(0)) {
                     arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                         any(),
                         any(),
                         eq(MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages)
                     )
-                }.wasNotInvoked()
+                }
             }
         }
 
@@ -635,13 +633,13 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.addMember(any(), eq(TestConversation.ID.toApi()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -660,13 +658,13 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.addService(serviceID, TestConversation.ID)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.addService(eq(addServiceRequest), eq(TestConversation.ID.toApi()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -681,9 +679,9 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -698,9 +696,9 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
             .shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -718,13 +716,13 @@ class ConversationGroupRepositoryTest {
                 assertIs<UnsupportedOperationException>(it.rootCause)
             }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.conversationApi.addService(any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -739,9 +737,9 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -757,17 +755,17 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID)
             .shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                 conversationId = any(),
                 userIdList = matches { it.containsAll(expectedInitialUsers) },
                 type = any()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -784,18 +782,18 @@ class ConversationGroupRepositoryTest {
             .shouldSucceed()
 
         // this is called in the mlsRepo
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
                 eq(GROUP_ID),
                 eq(listOf(TestConversation.USER_1)),
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -811,22 +809,22 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.addMember(any(), eq(TestConversation.ID.toApi()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
                 eq(GROUP_ID),
                 eq(listOf(TestConversation.USER_1)),
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -841,13 +839,13 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.removeMember(eq(TestConversation.USER_1.toApi()), eq(TestConversation.ID.toApi()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -861,9 +859,9 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -877,9 +875,9 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
             .shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -895,15 +893,15 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.deleteMember(TestUser.SELF.id, TestConversation.ID)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -918,12 +916,12 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -939,181 +937,65 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.deleteMember(TestConversation.USER_1, TestConversation.ID)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.removeMember(eq(TestConversation.USER_1.toApi()), eq(TestConversation.ID.toApi()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.removeMembersFromMLSGroup(any(), eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
-    fun givenProteusConversation_whenJoiningConversationSuccessWithChanged_thenResponseIsHandled() = runTest {
+    fun givenJoiningConversationSuccessWithChanged_thenApiIsCalled() = runTest {
         val code = "code"
         val key = "key"
         val uri: String? = null
         val password: String? = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
             .withJoinConversationAPIResponse(
                 code,
                 key,
                 uri,
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
-            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.joinConversation(eq(code), eq(key), eq(uri), eq(password))
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
-    fun givenProteusConversation_whenJoiningConversationSuccessWithUnchanged_thenMemberJoinEventHandlerIsNotInvoked() = runTest {
+    fun givenJoiningConversationSuccessWithUnchanged_thenApiIsCalled() = runTest {
         val code = "code"
         val key = "key"
         val uri: String? = null
         val password: String? = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withJoinConversationAPIResponse(
                 code,
                 key,
                 uri,
                 NetworkResponse.Success(ConversationMemberAddedResponse.Unchanged, emptyMap(), 204)
             )
-            .withEmitLocalEvent()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.joinConversation(eq(code), eq(key), eq(uri), eq(password))
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasNotInvoked()
-    }
-
-    @Test
-    fun givenMLSConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
-        val code = "code"
-        val key = "key"
-        val uri: String? = null
-        val password: String? = null
-
-        val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withProtocolInfoById(MLS_PROTOCOL_INFO)
-            .withJoinConversationAPIResponse(
-                code,
-                key,
-                uri,
-                NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
-            )
-            .withEmitLocalEvent()
-            .withJoinExistingMlsConversationSucceeds()
-            .withSuccessfulAddMemberToMLSGroup()
-            .arrange()
-
-        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
-            .shouldSucceed()
-
-        coVerify {
-            arrangement.conversationApi.joinConversation(eq(code), eq(key), eq(uri), eq(password))
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.joinExistingMLSConversation.invoke(
-                any(),
-                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
-                any(),
-                any()
-            )
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(),
-                eq(GroupID(MLS_PROTOCOL_INFO.groupId)),
-                eq(listOf(TestUser.SELF.id)),
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
-            )
-        }.wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenMixedConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
-        val code = "code"
-        val key = "key"
-        val uri: String? = null
-        val password: String? = null
-
-        val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.CONVERSATION)
-            .withProtocolInfoById(MIXED_PROTOCOL_INFO)
-            .withJoinConversationAPIResponse(
-                code,
-                key,
-                uri,
-                NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
-            )
-            .withEmitLocalEvent()
-            .withJoinExistingMlsConversationSucceeds()
-            .withSuccessfulAddMemberToMLSGroup()
-            .arrange()
-
-        conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
-            .shouldSucceed()
-
-        coVerify {
-            arrangement.conversationApi.joinConversation(eq(code), eq(key), eq(uri), eq(password))
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.localEventRepository.emitLocalEvent(any())
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.joinExistingMLSConversation.invoke(
-                any(),
-                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
-                any(),
-                any()
-            )
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(),
-                eq(GroupID(MIXED_PROTOCOL_INFO.groupId)),
-                eq(listOf(TestUser.SELF.id)),
-                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
-            )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1131,9 +1013,9 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key)
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.fetchLimitedInformationViaCode(eq(code), eq(key))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1159,13 +1041,13 @@ class ConversationGroupRepositoryTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.generateGuestRoomLink(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.conversationDAO.updateGuestRoomLink(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -1179,13 +1061,13 @@ class ConversationGroupRepositoryTest {
 
         result.shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.generateGuestRoomLink(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.conversationDAO.updateGuestRoomLink(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -1213,13 +1095,13 @@ class ConversationGroupRepositoryTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.generateGuestRoomLink(any(), eq(expectedPassword))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.conversationDAO.updateGuestRoomLink(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -1234,13 +1116,13 @@ class ConversationGroupRepositoryTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.revokeGuestRoomLink(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationDAO.deleteGuestRoomLink(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1254,13 +1136,13 @@ class ConversationGroupRepositoryTest {
 
         result.shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.revokeGuestRoomLink(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.conversationDAO.updateGuestRoomLink(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -1278,9 +1160,9 @@ class ConversationGroupRepositoryTest {
 
         val result = conversationGroupRepository.observeGuestRoomLink(conversationId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationDAO.observeGuestRoomLinkByConversationId(any())
-        }.wasInvoked(exactly = once)
+        }
         result.first().shouldSucceed {
             assertEquals(expected.link, it?.link)
             assertEquals(expected.isPasswordProtected, it?.isPasswordProtected)
@@ -1312,9 +1194,9 @@ class ConversationGroupRepositoryTest {
         // then
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationMessageTimerEventHandler.handle(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1336,9 +1218,9 @@ class ConversationGroupRepositoryTest {
         // then
         result.shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.conversationMessageTimerEventHandler.handle(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -1366,31 +1248,31 @@ class ConversationGroupRepositoryTest {
             // then
             val expectedFullUserIdsForRequestCount = 2
             val expectedValidUsersCount = 1
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.addMember(matches {
                     it.users.size == expectedFullUserIdsForRequestCount
                 }, any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.addMember(
                     matches {
                         it.users.size == expectedValidUsersCount && it.users.first().domain != failedDomain
                     }, any()
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.localEventRepository.emitLocalEvent(any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     any(),
                     matches { it.size == expectedValidUsersCount },
                     any()
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -1414,15 +1296,15 @@ class ConversationGroupRepositoryTest {
             conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(2)) {
                 arrangement.conversationApi.addMember(any(), any())
-            }.wasInvoked(exactly = twice)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.localEventRepository.emitLocalEvent(any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     conversationId = any(),
                     userIdList = matches {
@@ -1430,7 +1312,7 @@ class ConversationGroupRepositoryTest {
                     },
                     type = any()
                 )
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -1457,21 +1339,21 @@ class ConversationGroupRepositoryTest {
             conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.addMember(any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.localEventRepository.emitLocalEvent(any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     conversationId = conversation.id,
                     userIdList = expectedInitialUsers,
                     type = MessageContent.MemberChange.FailedToAdd.Type.Federation
                 )
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -1495,21 +1377,21 @@ class ConversationGroupRepositoryTest {
             conversationGroupRepository.addMembers(expectedInitialUsersNotFromUnreachableInformed, TestConversation.ID).shouldFail()
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.addMember(any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.localEventRepository.emitLocalEvent(any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     conversationId = conversation.id,
                     userIdList = expectedInitialUsersNotFromUnreachableInformed,
                     type = MessageContent.MemberChange.FailedToAdd.Type.Federation
                 )
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -1530,15 +1412,15 @@ class ConversationGroupRepositoryTest {
             conversationGroupRepository.addMembers(expectedInitialUsersNotFromUnreachableInformed, TestConversation.ID).shouldFail()
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.addMember(any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.localEventRepository.emitLocalEvent(any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     conversationId = any(),
                     userIdList = matches {
@@ -1546,7 +1428,7 @@ class ConversationGroupRepositoryTest {
                     },
                     type = eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
                 )
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -1572,13 +1454,13 @@ class ConversationGroupRepositoryTest {
         result.shouldSucceed()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDAO.insertConversation(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -1604,7 +1486,7 @@ class ConversationGroupRepositoryTest {
         // then
         val expectedFullUserIdsForRequestCount = 2
         val expectedValidUsersWithKeyPackagesCount = 1
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
                 any(),
@@ -1613,9 +1495,9 @@ class ConversationGroupRepositoryTest {
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
                 any(),
@@ -1624,15 +1506,15 @@ class ConversationGroupRepositoryTest {
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                 conversationId = any(),
                 userIdList = matches { it.size == 1 },
                 type = any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1657,7 +1539,7 @@ class ConversationGroupRepositoryTest {
         // then
         val expectedFullUserIdsForRequestCount = 2
         val expectedValidUsersWithKeyPackagesCount = 1
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
                 any(),
@@ -1666,9 +1548,9 @@ class ConversationGroupRepositoryTest {
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
                 any(),
@@ -1677,15 +1559,15 @@ class ConversationGroupRepositoryTest {
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                 conversationId = any(),
                 userIdList = matches { it.size == 1 },
                 type = any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1708,7 +1590,7 @@ class ConversationGroupRepositoryTest {
 
         // then
         val initialCountUsers = expectedInitialUsers.size
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
                 any(),
@@ -1717,9 +1599,9 @@ class ConversationGroupRepositoryTest {
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
                 any(),
@@ -1728,9 +1610,9 @@ class ConversationGroupRepositoryTest {
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 any(),
                 any(),
@@ -1739,15 +1621,15 @@ class ConversationGroupRepositoryTest {
                 },
                 eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                 conversationId = any(),
                 userIdList = matches { it.size == 3 },
                 type = any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1767,21 +1649,21 @@ class ConversationGroupRepositoryTest {
         conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                 conversationId = any(),
                 userIdList = any(),
                 type = eq(MessageContent.MemberChange.FailedToAdd.Type.Unknown)
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                 conversationId = any(),
                 userIdList = any(),
                 type = eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
             )
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -1810,25 +1692,25 @@ class ConversationGroupRepositoryTest {
             // when
             conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.addMember(
                     addParticipantRequest = matches { it.users == expectedInitialUsers.map { it.toApi() } },
                     conversationId = any()
                 )
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.addMember(matches { it.users == validUsers.ids().map { it.toApi() } }, any())
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.localEventRepository.emitLocalEvent(any())
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     conversationId = any(),
                     userIdList = eq(usersWithConsentFromOtherTeams.ids() + usersWithoutConsent + usersFailed),
                     type = any()
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -1859,19 +1741,19 @@ class ConversationGroupRepositoryTest {
             // when
             conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(2)) {
                 arrangement.conversationApi.addMember(any(), any())
-            }.wasInvoked(exactly = twice)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.localEventRepository.emitLocalEvent(any())
-            }.wasNotInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     conversationId = any(),
                     userIdList = eq(expectedInitialUsers),
                     type = any()
                 )
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -1898,13 +1780,13 @@ class ConversationGroupRepositoryTest {
 
         conversationGroupRepository.updateGuestRoomLink(conversationId, accountUrl)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.guestLinkInfo(eq(conversationId.toApi()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationDAO.updateGuestRoomLink(eq(conversationId.toDao()), eq("uri"), eq(expected.value.hasPassword))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -1930,36 +1812,33 @@ class ConversationGroupRepositoryTest {
         result.shouldSucceed()
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDAO.insertConversation(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 newGroupConversationSystemMessagesCreator.conversationCellStatus(any())
-            }.wasInvoked(once)
+            }
         }
     }
 
     private class Arrangement :
-        MemberDAOArrangement by MemberDAOArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val conversationMessageTimerEventHandler = mock(ConversationMessageTimerEventHandler::class)
-        val userRepository: UserRepository = mock(UserRepository::class)
-        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-        val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
-        val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
-        val conversationApi: ConversationApi = mock(ConversationApi::class)
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val newConversationMembersRepository = mock(NewConversationMembersRepository::class)
-        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
-        val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
-        val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
-        val localEventRepository = mock(LocalEventRepository::class)
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler = mock(mode = MockMode.autoUnit)
+        val userRepository: UserRepository = mock(mode = MockMode.autoUnit)
+        val conversationRepository: ConversationRepository = mock(mode = MockMode.autoUnit)
+        val mlsConversationRepository: MLSConversationRepository = mock(mode = MockMode.autoUnit)
+        val conversationDAO: ConversationDAO = mock(mode = MockMode.autoUnit)
+        val conversationApi: ConversationApi = mock(mode = MockMode.autoUnit)
+        val selfTeamIdProvider: SelfTeamIdProvider = mock(mode = MockMode.autoUnit)
+        val newConversationMembersRepository: NewConversationMembersRepository = mock(mode = MockMode.autoUnit)
+        val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator = mock(mode = MockMode.autoUnit)
+        val legalHoldHandler: LegalHoldHandler = mock(mode = MockMode.autoUnit)
+        val localEventRepository: LocalEventRepository = mock(mode = MockMode.autoUnit)
 
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
                 mlsConversationRepository,
-                joinExistingMLSConversation,
                 localEventRepository,
                 conversationMessageTimerEventHandler,
                 conversationDAO,
@@ -1974,7 +1853,7 @@ class ConversationGroupRepositoryTest {
             )
 
         suspend fun withMlsConversationEstablished(additionResult: MLSAdditionResult): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
             }.returns(Either.Right(additionResult))
         }
@@ -1983,18 +1862,18 @@ class ConversationGroupRepositoryTest {
          * Mocks a sequence of [NetworkResponse]s for [ConversationApi.createNewConversation].
          */
         suspend fun withCreateNewConversationAPIResponses(result: Array<NetworkResponse<ConversationResponse>>): Arrangement = apply {
-            coEvery { conversationApi.createNewConversation(any()) }
-                .thenReturnSequentially(*result)
+            everySuspend { conversationApi.createNewConversation(any()) }
+                .sequentiallyReturns(result.asList())
         }
 
         suspend fun withSelfTeamId(result: Either<StorageFailure, TeamId?>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider.invoke()
             }.returns(result)
         }
 
         suspend fun withInsertConversationSuccess(): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.insertConversation(any())
             }.returns(Unit)
         }
@@ -2004,7 +1883,7 @@ class ConversationGroupRepositoryTest {
             key: String,
             result: NetworkResponse<ConversationCodeInfo>
         ): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.fetchLimitedInformationViaCode(eq(code), eq(key))
             }.returns(result)
         }
@@ -2015,43 +1894,37 @@ class ConversationGroupRepositoryTest {
             uri: String?,
             result: NetworkResponse<ConversationMemberAddedResponse>
         ): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.joinConversation(eq(code), eq(key), eq(uri), any())
             }.returns(result)
         }
 
-        suspend fun withJoinExistingMlsConversationSucceeds() = apply {
-            coEvery {
-                joinExistingMLSConversation.invoke(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
-        }
-
         suspend fun withConversationDetailsById(conversation: Conversation) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationById(any())
             }.returns(Either.Right(conversation))
         }
 
         suspend fun withConversationDetailsById(result: ConversationViewEntity?) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.getConversationDetailsById(any())
             }.returns(result)
         }
 
         suspend fun withConversationById(result: ConversationEntity?) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.getConversationById(any())
             }.returns(result)
         }
 
         suspend fun withProtocolInfoById(result: ConversationEntity.ProtocolInfo) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.getConversationProtocolInfo(any())
             }.returns(result)
         }
 
         suspend fun withAddMemberAPISucceedChanged() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.addMember(any(), any())
             }.returns(
                 NetworkResponse.Success(
@@ -2063,7 +1936,7 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withAddServiceAPISucceedChanged() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.addService(any(), any())
             }.returns(
                 NetworkResponse.Success(
@@ -2075,7 +1948,7 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withAddMemberAPISucceedUnchanged() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.addMember(any(), any())
             }.returns(
                 NetworkResponse.Success(
@@ -2087,7 +1960,7 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withAddMemberAPIFailed() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.addMember(any(), any())
             }.returns(
                 NetworkResponse.Error(
@@ -2097,7 +1970,7 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withDeleteMemberAPISucceedChanged() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.removeMember(any(), any())
             }.returns(
                 NetworkResponse.Success(
@@ -2109,7 +1982,7 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withDeleteMemberAPISucceedUnchanged() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.removeMember(any(), any())
             }.returns(
                 NetworkResponse.Success(
@@ -2121,7 +1994,7 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withDeleteMemberAPIFailed() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.removeMember(any(), any())
             }.returns(
                 NetworkResponse.Error(
@@ -2131,25 +2004,25 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withFetchUsersIfUnknownByIdsSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 userRepository.fetchUsersIfUnknownByIds(any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withEmitLocalEvent() = apply {
-            coEvery {
+            everySuspend {
                 localEventRepository.emitLocalEvent(any())
             }.returns(Unit)
         }
 
         suspend fun withSuccessfulLeaveMLSGroup() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.leaveGroup(any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withSuccessfulAddMemberToMLSGroup() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
@@ -2158,13 +2031,13 @@ class ConversationGroupRepositoryTest {
          * Mocks sequentially responses from [MLSConversationRepository] with [result].
          */
         suspend fun withAddingMemberToMlsGroupResults(vararg results: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
-            }.thenReturnSequentially(*results)
+            } sequentiallyReturns results.asList()
         }
 
         suspend fun withSuccessfulRemoveMemberFromMLSGroup() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.removeMembersFromMLSGroup(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
@@ -2172,7 +2045,7 @@ class ConversationGroupRepositoryTest {
         suspend fun withSuccessfulCallToGenerateGuestRoomLinkApi(
             result: EventContentDTO.Conversation.CodeUpdated
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.generateGuestRoomLink(any(), any())
             }.returns(
                 NetworkResponse.Success(
@@ -2184,7 +2057,7 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withFailedCallToGenerateGuestRoomLinkApi() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.generateGuestRoomLink(any(), any())
             }.returns(
                 NetworkResponse.Error(
@@ -2194,13 +2067,13 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withDeleteGuestLink() = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.deleteGuestRoomLink(any())
             }.returns(Unit)
         }
 
         suspend fun withSuccessfulCallToRevokeGuestRoomLinkApi() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.revokeGuestRoomLink(any())
             }.returns(
                 NetworkResponse.Success(
@@ -2212,7 +2085,7 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withFailedCallToRevokeGuestRoomLinkApi() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.revokeGuestRoomLink(any())
             }.returns(
                 NetworkResponse.Error(
@@ -2224,13 +2097,13 @@ class ConversationGroupRepositoryTest {
         suspend fun withSuccessfulFetchOfGuestRoomLink(
             result: Flow<ConversationGuestLinkEntity?>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.observeGuestRoomLinkByConversationId(any())
             }.returns(result)
         }
 
         suspend fun withConversationAppsAccessIfEnabled() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
                     any(),
                     any(),
@@ -2242,22 +2115,22 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withSuccessfulNewConversationGroupStartedHandled() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationStarted(any(), any(), any())
             }.returns(Either.Right(Unit))
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationStarted(any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withSuccessfulNewConversationMemberHandled() = apply {
-            coEvery {
+            everySuspend {
                 newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withUpdateMessageTimerAPISuccess(event: EventContentDTO.Conversation.MessageTimerUpdate): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.updateMessageTimer(any(), any())
             }.returns(
                 NetworkResponse.Success(
@@ -2269,7 +2142,7 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withUpdateMessageTimerAPIFailed() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.updateMessageTimer(any(), any())
             }.returns(
                 NetworkResponse.Error(
@@ -2279,25 +2152,25 @@ class ConversationGroupRepositoryTest {
         }
 
         suspend fun withSuccessfulHandleMessageTimerUpdateEvent() = apply {
-            coEvery {
+            everySuspend {
                 conversationMessageTimerEventHandler.handle(any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withInsertFailedToAddSystemMessageSuccess(): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withAddMemberAPIFailsFirstWithUnreachableThenSucceed(networkResponses: Array<NetworkResponse<ConversationMemberAddedResponse>>) =
             apply {
-                coEvery { conversationApi.addMember(any(), any()) }
-                    .thenReturnSequentially(*networkResponses)
+                everySuspend { conversationApi.addMember(any(), any()) }
+                    .sequentiallyReturns(networkResponses.asList())
             }
 
         suspend fun withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
             }.returns(Either.Right(Unit))
         }
@@ -2305,25 +2178,25 @@ class ConversationGroupRepositoryTest {
         suspend fun withRemoteFetchCode(
             result: NetworkResponse<ConversationInviteLinkResponse>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.guestLinkInfo(any())
             }.returns(result)
         }
 
         suspend fun withSuccessfulFetchUsersLegalHoldConsent(result: ListUsersLegalHoldConsent) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.fetchUsersLegalHoldConsent(any())
             }.returns(Either.Right(result))
         }
 
         suspend fun withSuccessfulLegalHoldHandleConversationMembersChanged() = apply {
-            coEvery {
+            everySuspend {
                 legalHoldHandler.handleConversationMembersChanged(any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withCellSystemMessages() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationCellStatus(any())
             }.returns(Either.Right(Unit))
         }

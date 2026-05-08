@@ -4,6 +4,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -16,6 +17,7 @@ object MockConversation {
 
     val ID = ConversationId(conversationValue, conversationDomain)
     val ENTITY_ID = QualifiedIDEntity(conversationValue, conversationDomain)
+    val GROUP_ID = GroupID("mlsGroupId")
 
     fun id(suffix: Int = 0) = ConversationId("${conversationValue}_$suffix", conversationDomain)
 

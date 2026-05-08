@@ -25,11 +25,12 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.model.SsoIdEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -51,9 +52,9 @@ class IsPasswordRequiredUseCaseTest {
             assertTrue(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.ssoId(arrangement.selfUserId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -66,9 +67,9 @@ class IsPasswordRequiredUseCaseTest {
             assertFalse(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.ssoId(arrangement.selfUserId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -81,9 +82,9 @@ class IsPasswordRequiredUseCaseTest {
             assertTrue(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.ssoId(arrangement.selfUserId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -98,22 +99,22 @@ class IsPasswordRequiredUseCaseTest {
 
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.ssoId(arrangement.selfUserId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        val sessionRepository: SessionRepository = mock(SessionRepository::class)
+        val sessionRepository: SessionRepository = mock()
 
         val selfUserId = UserId("user_id", "domain")
 
         val isPasswordRequired = IsPasswordRequiredUseCase(selfUserId, sessionRepository)
 
         suspend fun withSelfSsoId(ssoId: Either<StorageFailure, SsoIdEntity?>) = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.ssoId(any())
-            }.returns(ssoId)
+            } returns ssoId
         }
 
         fun arrange(): Pair<Arrangement, IsPasswordRequiredUseCase> = this to isPasswordRequired

@@ -248,6 +248,8 @@ class UpdateConversationReadDateUseCaseIntegrationTest {
     ) : UserStorageProvider() {
 
         init {
+            // Drop any stale shared-cache entry left by another test run for the same user id.
+            remove(userId)
             getOrCreate(
                 userId = userId,
                 platformUserStorageProperties = PlatformUserStorageProperties(

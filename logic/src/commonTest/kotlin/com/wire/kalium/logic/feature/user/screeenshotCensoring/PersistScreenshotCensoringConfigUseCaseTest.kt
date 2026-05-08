@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.Either
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -40,7 +41,7 @@ class PersistScreenshotCensoringConfigUseCaseTest {
             .arrange()
         val actual = persistScreenshotCensoringConfig(true)
 
-        verifySuspend {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertyRepository.setScreenshotCensoringEnabled()
         }
         assertTrue(actual is PersistScreenshotCensoringConfigResult.Success)
@@ -53,7 +54,7 @@ class PersistScreenshotCensoringConfigUseCaseTest {
             .arrange()
         val actual = persistScreenshotCensoringConfig(false)
 
-        verifySuspend {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertyRepository.deleteScreenshotCensoringProperty()
         }
 
@@ -67,7 +68,7 @@ class PersistScreenshotCensoringConfigUseCaseTest {
             .arrange()
         val actual = persistScreenshotCensoringConfig(true)
 
-        verifySuspend {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertyRepository.setScreenshotCensoringEnabled()
         }
 
@@ -81,7 +82,7 @@ class PersistScreenshotCensoringConfigUseCaseTest {
             .arrange()
         val actual = persistScreenshotCensoringConfig(false)
 
-        verifySuspend {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertyRepository.deleteScreenshotCensoringProperty()
         }
 

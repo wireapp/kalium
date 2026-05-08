@@ -23,20 +23,22 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class RejectCallUseCaseTest {
 
-        private val callManager = mock(CallManager::class)
+        private val callManager = mock<CallManager>(mode = MockMode.autoUnit)
 
-        private val callRepository = mock(CallRepository::class)
+        private val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
     private lateinit var rejectCallUseCase: RejectCallUseCase
 
@@ -49,23 +51,23 @@ class RejectCallUseCaseTest {
     fun givenCallingParams_whenRunningUseCase_thenInvokeRejectCallOnce() = runTest(TestKaliumDispatcher.main) {
         val conversationId = ConversationId("someone", "wire.com")
 
-        coEvery {
+        everySuspend {
             callManager.rejectCall(eq(conversationId))
-        }.returns(Unit)
+        } returns (Unit)
 
-        coEvery {
+        everySuspend {
             callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.REJECTED))
-        }.returns(Unit)
+        } returns (Unit)
 
         rejectCallUseCase.invoke(conversationId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             callManager.rejectCall(eq(conversationId))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.REJECTED))
-        }.wasInvoked(once)
+        }
     }
 
 }

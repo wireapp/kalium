@@ -23,14 +23,12 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
 /**
  * This use case is responsible for answering a call.
  */
-@Mockable
 public interface AnswerCallUseCase {
     public suspend operator fun invoke(
         conversationId: ConversationId

@@ -20,9 +20,11 @@ package com.wire.kalium.logic.feature.call.usecase
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
@@ -34,15 +36,15 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -57,9 +59,9 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCall.invoke(eq(conversationId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -70,9 +72,9 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCall.invoke(eq(conversationId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -83,9 +85,9 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCall.invoke(eq(conversationId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -107,9 +109,9 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCall.invoke(eq(conversationId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -131,9 +133,9 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.endCall.invoke(eq(conversationId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -148,17 +150,16 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.endCall.invoke(eq(conversationId))
-        }.wasNotInvoked()
+        }
     }
 
-    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        CallRepositoryArrangement by CallRepositoryArrangementImpl(),
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
-
-        val endCall = mock(EndCallUseCase::class)
-        val endCallDialogManager = mock(EndCallResultListener::class)
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) {
+        val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val endCall = mock<EndCallUseCase>(mode = MockMode.autoUnit)
+        val endCallDialogManager = mock<EndCallResultListener>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = run {
             block()
@@ -169,14 +170,22 @@ class EndCallOnConversationChangeUseCaseTest {
                 endCallListener = endCallDialogManager
             )
         }.also {
-            coEvery {
+            everySuspend {
                 endCall.invoke(eq(conversationId))
-            }.returns(Unit)
-            coEvery {
+            } returns (Unit)
+            everySuspend {
                 endCallDialogManager.onCallEndedBecauseOfVerificationDegraded()
-            }.returns(Unit)
+            } returns (Unit)
 
             withEstablishedCallsFlow(listOf(call))
+        }
+
+        suspend fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>) {
+            everySuspend { conversationRepository.observeConversationDetailsById(any()) } returns (flowOf(*results))
+        }
+
+        suspend fun withEstablishedCallsFlow(calls: List<Call>) {
+            everySuspend { callRepository.establishedCallsFlow() } returns (flowOf(calls))
         }
     }
 

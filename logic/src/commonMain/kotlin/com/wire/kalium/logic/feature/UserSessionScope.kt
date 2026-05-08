@@ -955,7 +955,6 @@ public class UserSessionScope internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository
         get() = ConversationGroupRepositoryImpl(
             mlsConversationRepository,
-            joinExistingMLSConversationUseCase,
             localEventRepository,
             conversationMessageTimerEventHandler,
             userStorage.database.conversationDAO,
@@ -2409,6 +2408,8 @@ public class UserSessionScope internal constructor(
             resetMlsConversation,
             systemMessageInserter,
             currentPersistenceEventHookNotifier,
+            memberJoinHandler,
+            joinExistingMLSConversationUseCase,
         )
     }
 

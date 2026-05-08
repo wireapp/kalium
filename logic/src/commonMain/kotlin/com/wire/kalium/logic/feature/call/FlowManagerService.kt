@@ -21,9 +21,7 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.util.PlatformRotation
 import com.wire.kalium.logic.util.PlatformView
-import io.mockative.Mockable
 
-@Mockable
 internal interface FlowManagerService {
     suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
     suspend fun flipToFrontCamera(conversationId: ConversationId)

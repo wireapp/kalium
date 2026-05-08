@@ -19,18 +19,20 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.FlowManagerService
-import io.mockative.eq
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.eq
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class FlipToBackCameraUseCaseTest {
 
-    private val flowManagerService = mock(FlowManagerService::class)
+    private val flowManagerService = mock<FlowManagerService>(mode = MockMode.autoUnit)
 
     private lateinit var flipToBackCamera: FlipToBackCameraUseCase
 
@@ -41,15 +43,15 @@ class FlipToBackCameraUseCaseTest {
 
     @Test
     fun givenFlowManagerService_whenUseCaseCaseIsInvoked_thenInvokeFlipToBackCameraOnce() = runTest {
-        coEvery {
+        everySuspend {
             flowManagerService.flipToBackCamera(eq(conversationId))
-        }.returns(Unit)
+        } returns (Unit)
 
         flipToBackCamera(conversationId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             flowManagerService.flipToBackCamera(eq(conversationId))
-        }.wasInvoked(once)
+        }
     }
 
     companion object {

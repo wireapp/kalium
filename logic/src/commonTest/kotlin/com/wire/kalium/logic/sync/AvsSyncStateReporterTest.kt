@@ -22,10 +22,12 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.common.logger.kaliumLogger
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -42,9 +44,9 @@ class AvsSyncStateReporterTest {
 
             avsSyncStateReporter.execute()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 avsSyncStateReporter.callManager.value.reportProcessNotifications(true)
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -56,9 +58,9 @@ class AvsSyncStateReporterTest {
 
             avsSyncStateReporter.execute()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 avsSyncStateReporter.callManager.value.reportProcessNotifications(false)
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -70,9 +72,9 @@ class AvsSyncStateReporterTest {
 
             avsSyncStateReporter.execute()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 avsSyncStateReporter.callManager.value.reportProcessNotifications(false)
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -83,15 +85,15 @@ class AvsSyncStateReporterTest {
 
         avsSyncStateReporter.execute()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             avsSyncStateReporter.callManager.value.reportProcessNotifications(false)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val callManager: CallManager = mock(CallManager::class)
-        val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
+        val callManager: CallManager = mock<CallManager>(mode = MockMode.autoUnit)
+        val incrementalSyncRepository: IncrementalSyncRepository = mock<IncrementalSyncRepository>(mode = MockMode.autoUnit)
 
         fun arrange() = this to AvsSyncStateReporterImpl(
             callManager = lazy { callManager },
@@ -102,25 +104,25 @@ class AvsSyncStateReporterTest {
         fun withGatheringEventsIncrementalSyncState() = apply {
             every {
                 incrementalSyncRepository.incrementalSyncState
-            }.returns(flowOf(IncrementalSyncStatus.FetchingPendingEvents))
+            } returns (flowOf(IncrementalSyncStatus.FetchingPendingEvents))
         }
 
         fun withLiveIncrementalSyncState() = apply {
             every {
                 incrementalSyncRepository.incrementalSyncState
-            }.returns(flowOf(IncrementalSyncStatus.Live))
+            } returns (flowOf(IncrementalSyncStatus.Live))
         }
 
         fun withPendingIncrementalSyncState() = apply {
             every {
                 incrementalSyncRepository.incrementalSyncState
-            }.returns(flowOf(IncrementalSyncStatus.Pending))
+            } returns (flowOf(IncrementalSyncStatus.Pending))
         }
 
         fun withFailedIncrementalSyncState() = apply {
             every {
                 incrementalSyncRepository.incrementalSyncState
-            }.returns(flowOf(IncrementalSyncStatus.Failed(CoreFailure.SyncEventOrClientNotFound, Duration.ZERO)))
+            } returns (flowOf(IncrementalSyncStatus.Failed(CoreFailure.SyncEventOrClientNotFound, Duration.ZERO)))
         }
     }
 }

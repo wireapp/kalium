@@ -20,15 +20,17 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 internal class ParticipantsFilterTest {
 
-        private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
+    private val qualifiedIdMapper = mock<QualifiedIdMapper>(mode = MockMode.autoUnit)
 
     lateinit var participantsFilter: ParticipantsFilter
 

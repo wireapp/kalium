@@ -20,15 +20,17 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import kotlin.test.Test
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Test
 
 class SystemMessageInserterTest {
 
@@ -50,7 +52,7 @@ class SystemMessageInserterTest {
         )
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(
                 matches { message ->
                     message is Message.System &&
@@ -58,7 +60,7 @@ class SystemMessageInserterTest {
                             (message.content as MessageContent.ConversationAppsEnabledChanged).isEnabled
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -79,7 +81,7 @@ class SystemMessageInserterTest {
         )
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(
                 matches { message ->
                     message is Message.System &&
@@ -87,7 +89,7 @@ class SystemMessageInserterTest {
                             !(message.content as MessageContent.ConversationAppsEnabledChanged).isEnabled
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -109,13 +111,13 @@ class SystemMessageInserterTest {
         )
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(
                 matches { message ->
                     message is Message.System && message.id == eventId
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -135,13 +137,13 @@ class SystemMessageInserterTest {
         )
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(
                 matches { message ->
                     message is Message.System && message.conversationId == conversationId
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -161,13 +163,13 @@ class SystemMessageInserterTest {
         )
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(
                 matches { message ->
                     message is Message.System && message.senderUserId == senderUserId
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -187,13 +189,13 @@ class SystemMessageInserterTest {
         )
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(
                 matches { message ->
                     message is Message.System && message.visibility == Message.Visibility.VISIBLE
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -213,13 +215,13 @@ class SystemMessageInserterTest {
         )
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(
                 matches { message ->
                     message is Message.System && message.status == Message.Status.Sent
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -239,21 +241,21 @@ class SystemMessageInserterTest {
         )
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(
                 matches { message ->
                     message is Message.System && message.expirationData == null
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        val persistMessage = mock(PersistMessageUseCase::class)
+        val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
 
         init {
             runBlocking {
-                coEvery {
+                everySuspend {
                     persistMessage(any())
                 }.returns(Unit.right())
             }

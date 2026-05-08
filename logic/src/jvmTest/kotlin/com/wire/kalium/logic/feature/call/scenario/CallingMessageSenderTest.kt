@@ -31,15 +31,18 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.instanceOf
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.every
+import dev.mokkery.matcher.ofType
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -72,12 +75,12 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
                 matches { it.conversationId == Arrangement.selfConversationId },
                 matches { it is MessageTarget.Conversation },
             )
-        }.wasInvoked(exactly = once)
+        }
         processingJob.cancel()
     }
 
@@ -104,14 +107,14 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_resp(
                 eq(arrangement.handle),
                 eq(400),
                 any(),
                 eq(contextPointer),
             )
-        }.wasInvoked(exactly = once)
+        }
         processingJob.cancel()
     }
 
@@ -138,14 +141,14 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.calling.wcall_resp(
                 eq(arrangement.handle),
                 eq(200),
                 any(),
                 eq(contextPointer),
             )
-        }.wasInvoked(exactly = once)
+        }
         processingJob.cancel()
     }
 
@@ -169,12 +172,12 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
                 matches { it.conversationId == Arrangement.conversationId },
                 matches { it is MessageTarget.Conversation },
             )
-        }.wasInvoked(exactly = once)
+        }
         processingJob.cancel()
     }
 
@@ -219,43 +222,43 @@ class CallingMessageSenderTest {
         advanceUntilIdle()
 
         assertEquals(1, invokeCount)
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.messageSender.sendMessage(
                 matches {
                     val content = it.content
                     secondMessageText == (content as? MessageContent.Calling)?.value &&
                             it.conversationId == Arrangement.conversationId
                 },
-                instanceOf<MessageTarget.Conversation>()
+                ofType<MessageTarget.Conversation>()
             )
-        }.wasNotInvoked()
+        }
 
         firstMessageLock.cancel()
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
                 matches {
                     val content = it.content
                     secondMessageText == (content as? MessageContent.Calling)?.value &&
                             it.conversationId == Arrangement.conversationId
                 },
-                instanceOf<MessageTarget.Conversation>()
+                ofType<MessageTarget.Conversation>()
             )
-        }.wasInvoked(exactly = once)
+        }
         processingJob.cancel()
     }
 
     internal class Arrangement(private val testScope: CoroutineScope) {
 
-        val calling = mock(Calling::class)
-        var messageSender = mock(MessageSender::class)
-        val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
+        val calling = mock<Calling>(mode = MockMode.autoUnit)
+        var messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
+        val selfConversationIdProvider = mock<SelfConversationIdProvider>(mode = MockMode.autoUnit)
 
         val handle = Handle(42)
 
         init {
-            every { calling.wcall_resp(any(), any(), any(), any()) }.returns(0)
+            every { calling.wcall_resp(any(), any(), any(), any()) } returns (0)
         }
 
         fun arrange() = this to CallingMessageSender(
@@ -274,27 +277,27 @@ class CallingMessageSenderTest {
         }
 
         suspend fun givenSelfConversationIdProviderReturns(result: Either<StorageFailure, List<ConversationId>>) = apply {
-            coEvery {
+            everySuspend {
                 selfConversationIdProvider.invoke()
-            }.returns(result)
+            } returns (result)
         }
 
         suspend fun givenSendMessageSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns (Either.Right(Unit))
         }
 
         suspend fun givenSendMessageFails() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            } returns (Either.Left(StorageFailure.DataNotFound))
         }
 
         suspend fun givenSendMessageInvokes(block: suspend (args: Array<Any?>) -> Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.invokes(block)
+            } calls { invocation -> block(invocation.args.toTypedArray()) }
         }
     }
 }

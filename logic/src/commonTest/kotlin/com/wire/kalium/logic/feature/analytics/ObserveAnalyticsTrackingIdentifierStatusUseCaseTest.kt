@@ -19,10 +19,14 @@ package com.wire.kalium.logic.feature.analytics
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.analytics.AnalyticsIdentifierResult
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.analytics.AnalyticsIdentifierResult
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -107,13 +111,35 @@ class ObserveAnalyticsTrackingIdentifierStatusUseCaseTest {
         const val CURRENT_IDENTIFIER = "efgh-5678"
     }
 
-    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
+    private class Arrangement {
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
-        private val useCase: ObserveAnalyticsTrackingIdentifierStatusUseCase = ObserveAnalyticsTrackingIdentifierStatusUseCase(
-            userConfigRepository = userConfigRepository
-        )
+        private val useCase: ObserveAnalyticsTrackingIdentifierStatusUseCase =
+            ObserveAnalyticsTrackingIdentifierStatusUseCase(
+                userConfigRepository = userConfigRepository
+            )
 
-        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, ObserveAnalyticsTrackingIdentifierStatusUseCase> {
+        suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>) = apply {
+            everySuspend {
+                userConfigRepository.observeCurrentTrackingIdentifier()
+            } returns flowOf(result)
+        }
+
+        suspend fun withGetPreviousTrackingIdentifier(result: String?) = apply {
+            everySuspend {
+                userConfigRepository.getPreviousTrackingIdentifier()
+            } returns result
+        }
+
+        suspend fun withGetTrackingIdentifier(result: String?) = apply {
+            everySuspend {
+                userConfigRepository.getCurrentTrackingIdentifier()
+            } returns result
+        }
+
+        fun arrange(
+            block: suspend Arrangement.() -> Unit
+        ): Pair<Arrangement, ObserveAnalyticsTrackingIdentifierStatusUseCase> {
             runBlocking { block() }
             return this to useCase
         }

@@ -32,12 +32,14 @@ import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -65,17 +67,17 @@ class OnCloseCallTest {
             )
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.callRepository.persistMissedCall(eq(conversationId))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.MISSED))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.leaveMlsConference(eq(conversationId))
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -94,17 +96,17 @@ class OnCloseCallTest {
             )
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.persistMissedCall(eq(conversationId))
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.REJECTED))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.leaveMlsConference(eq(conversationId))
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -130,17 +132,17 @@ class OnCloseCallTest {
             )
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.persistMissedCall(eq(conversationId))
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.leaveMlsConference(eq(conversationId))
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -165,17 +167,17 @@ class OnCloseCallTest {
             )
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.callRepository.persistMissedCall(eq(conversationId))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.leaveMlsConference(eq(conversationId))
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -200,17 +202,17 @@ class OnCloseCallTest {
             )
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.persistMissedCall(eq(conversationId))
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.leaveMlsConference(eq(conversationId))
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -236,17 +238,17 @@ class OnCloseCallTest {
             )
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.persistMissedCall(eq(conversationId))
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.leaveMlsConference(eq(conversationId))
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -276,13 +278,13 @@ class OnCloseCallTest {
             )
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.callRepository.leaveMlsConference(eq(conversationId))
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -303,9 +305,9 @@ class OnCloseCallTest {
             )
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.callRepository.persistMissedCall(conversationId)
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -324,15 +326,15 @@ class OnCloseCallTest {
             )
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.createAndPersistRecentlyEndedCallMetadata(any(), any())
-            }.wasInvoked(once)
+            }
         }
 
     private class Arrangement(val testScope: TestScope) {
-        val callRepository: CallRepository = mock(CallRepository::class)
-        val networkStateObserver = mock(NetworkStateObserver::class)
-        val createAndPersistRecentlyEndedCallMetadata = mock(CreateAndPersistRecentlyEndedCallMetadataUseCase::class)
+        val callRepository: CallRepository = mock<CallRepository>(mode = MockMode.autoUnit)
+        val networkStateObserver = mock<NetworkStateObserver>(mode = MockMode.autoUnit)
+        val createAndPersistRecentlyEndedCallMetadata = mock<CreateAndPersistRecentlyEndedCallMetadataUseCase>(mode = MockMode.autoUnit)
         val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
 
         init {
@@ -351,13 +353,13 @@ class OnCloseCallTest {
         fun withNetworkState(networkState: NetworkState): Arrangement = apply {
             every {
                 networkStateObserver.observeNetworkState()
-            }.returns(MutableStateFlow(networkState))
+            } returns (MutableStateFlow(networkState))
         }
 
         fun withGetCallMetadata(metadata: CallMetadata): Arrangement = apply {
             every {
                 callRepository.getCallMetadata(conversationId)
-            }.returns(metadata)
+            } returns (metadata)
         }
     }
 

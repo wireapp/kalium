@@ -20,14 +20,17 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.verify
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlin.test.Test
+import kotlinx.coroutines.test.runTest
 
 class TypingIndicatorOutgoingRepositoryTest {
 
@@ -41,13 +44,13 @@ class TypingIndicatorOutgoingRepositoryTest {
 
             typingIndicatorRepository.sendTypingIndicatorStatus(conversationOne, Conversation.TypingIndicatorMode.STARTED)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userPropertyRepository.getTypingIndicatorStatus()
-            }.wasInvoked()
+            }
 
-            verify {
+            verify(VerifyMode.exactly(0)) {
                 arrangement.typingIndicatorSenderHandler.sendStartedAndEnqueueStoppingEvent(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -60,13 +63,13 @@ class TypingIndicatorOutgoingRepositoryTest {
 
             typingIndicatorRepository.sendTypingIndicatorStatus(conversationOne, Conversation.TypingIndicatorMode.STARTED)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userPropertyRepository.getTypingIndicatorStatus()
-            }.wasInvoked()
+            }
 
-            verify {
+            verify(VerifyMode.exactly(1)) {
                 arrangement.typingIndicatorSenderHandler.sendStartedAndEnqueueStoppingEvent(any())
-            }.wasInvoked()
+            }
         }
 
     @Test
@@ -79,21 +82,21 @@ class TypingIndicatorOutgoingRepositoryTest {
 
             typingIndicatorRepository.sendTypingIndicatorStatus(conversationOne, Conversation.TypingIndicatorMode.STOPPED)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userPropertyRepository.getTypingIndicatorStatus()
-            }.wasInvoked()
+            }
 
-            verify {
+            verify(VerifyMode.exactly(1)) {
                 arrangement.typingIndicatorSenderHandler.sendStoppingEvent(any())
-            }.wasInvoked()
+            }
         }
 
     private class Arrangement {
-                val userPropertyRepository: UserPropertyRepository = mock(UserPropertyRepository::class)
-        val typingIndicatorSenderHandler: TypingIndicatorSenderHandler = mock(TypingIndicatorSenderHandler::class)
+        val userPropertyRepository: UserPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
+        val typingIndicatorSenderHandler: TypingIndicatorSenderHandler = mock<TypingIndicatorSenderHandler>(mode = MockMode.autoUnit)
 
         suspend fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {
-            coEvery {
+            everySuspend {
                 userPropertyRepository.getTypingIndicatorStatus()
             }.returns(enabled)
         }

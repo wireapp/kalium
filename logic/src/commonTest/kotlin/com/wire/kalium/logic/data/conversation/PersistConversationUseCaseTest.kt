@@ -29,17 +29,21 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.any
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
+import io.mockative.any as mockativeAny
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 
 class PersistConversationUseCaseTest {
 
@@ -53,14 +57,14 @@ class PersistConversationUseCaseTest {
         val result = useCase(arrangement.transactionContext, TestConversation.CONVERSATION_RESPONSE)
 
         assertTrue(result.getOrNull() ?: false)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistConversations(
                 any(),
-                eq(listOf(TestConversation.CONVERSATION_RESPONSE)),
-                eq(false),
-                eq(ConversationSyncReason.Other),
+                listOf(TestConversation.CONVERSATION_RESPONSE),
+                false,
+                ConversationSyncReason.Other,
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -75,9 +79,9 @@ class PersistConversationUseCaseTest {
         val result = useCase(arrangement.transactionContext, TestConversation.CONVERSATION_RESPONSE)
 
         assertTrue(result.getOrNull() ?: false)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistConversations(any(), any(), eq(false), eq(ConversationSyncReason.Other))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -94,7 +98,7 @@ class PersistConversationUseCaseTest {
         val result = useCase(arrangement.transactionContext, TestConversation.CONVERSATION_RESPONSE)
 
         assertFalse(result.getOrNull() ?: true)
-        coVerify { arrangement.persistConversations(any(), any(), any(), any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.persistConversations(any(), any(), any(), any()) }
     }
 
     @Test
@@ -108,7 +112,7 @@ class PersistConversationUseCaseTest {
         val result = useCase(arrangement.transactionContext, TestConversation.CONVERSATION_RESPONSE)
 
         assertFalse(result.getOrNull() ?: true)
-        coVerify { arrangement.persistConversations(any(), any(), any(), any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.persistConversations(any(), any(), any(), any()) }
     }
 
     private suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, PersistConversationUseCase> =
@@ -119,17 +123,17 @@ class PersistConversationUseCaseTest {
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
 
-        val persistConversations = mock(PersistConversationsUseCase::class)
+        val persistConversations = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withGetConversationDetails(result: Either<StorageFailure, Conversation>) = apply {
             coEvery {
-                conversationRepository.getConversationDetails(any())
+                conversationRepository.getConversationDetails(mockativeAny())
             } returns result
         }
 
         suspend fun withPersistConversationsSuccess() = apply {
-            coEvery {
-                persistConversations(any(), eq(listOf(TestConversation.CONVERSATION_RESPONSE)), eq(false), eq(ConversationSyncReason.Other))
+            everySuspend {
+                persistConversations(any(), listOf(TestConversation.CONVERSATION_RESPONSE), eq(false), eq(ConversationSyncReason.Other))
             } returns Either.Right(Unit)
         }
 
