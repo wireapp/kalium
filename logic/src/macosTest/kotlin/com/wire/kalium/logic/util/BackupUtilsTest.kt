@@ -37,7 +37,7 @@ import kotlin.test.assertTrue
 
 /**
  * Integration tests for macOS BackupUtils implementation.
- * These tests exercise the real /usr/bin/zip and /usr/bin/unzip tools via NSTask.
+ * These tests also verify the generated ZIP can be inspected by the system unzip tool.
  */
 class BackupUtilsTest {
 
@@ -235,8 +235,7 @@ class BackupUtilsTest {
 
     /**
      * A KaliumFileSystem backed by the real filesystem for integration testing.
-     * Required because the macOS BackupUtils shells out to /usr/bin/zip and /usr/bin/unzip
-     * which operate on real files.
+     * Required because the test verifies interoperability with the system unzip tool.
      */
     private class RealKaliumFileSystem(private val rootDir: Path) : KaliumFileSystem {
         private val fs = FileSystem.SYSTEM
@@ -272,6 +271,7 @@ class BackupUtilsTest {
 
         override fun selfUserAvatarPath(): Path = providePersistentAssetPath("self_avatar.jpg")
         override suspend fun listDirectories(dir: Path): List<Path> = fs.list(dir)
+        override fun size(path: Path): Long? = fs.metadata(path).size
     }
 
     // endregion

@@ -18,31 +18,4 @@
 
 package com.wire.kalium.logic.util
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
-import okio.BufferedSource
-import okio.Path
-import okio.Sink
-import okio.Source
-
-internal actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long> =
-    TODO("Implement own iOS compression method")
-
-internal actual fun extractCompressedFile(
-    inputSource: Source,
-    outputRootPath: Path,
-    param: ExtractFilesParam,
-    fileSystem: KaliumFileSystem
-): Either<CoreFailure, Long> =
-    TODO("Implement own iOS compression method")
-
-internal actual fun checkIfCompressedFileContainsFileTypes(
-    compressedFilePath: Path,
-    fileSystem: KaliumFileSystem,
-    expectedFileExtensions: List<String>
-): Either<CoreFailure, Map<String, Boolean>> =
-    TODO("Implement own iOS decompression method")
-
-internal actual inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource): Sequence<T> =
-    TODO("Implement own iOS decodeSequence method")
+// BackupUtils actuals are implemented in appleMain for all Apple targets.
