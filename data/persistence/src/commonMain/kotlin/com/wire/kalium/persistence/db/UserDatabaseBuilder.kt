@@ -425,8 +425,6 @@ class UserDatabaseBuilder internal constructor(
 
     val cellFileDao: CellFileDao
         get() = CellFileDaoImpl(database.cellFilesQueries, readDispatcher, writeDispatcher)
-
-
     val remoteBackupChangeLogDAO: RemoteBackupChangeLogDAO
         get() = RemoteBackupChangeLogDAOImpl(database.remotebackupChangeLogQueries, readDispatcher, writeDispatcher)
 

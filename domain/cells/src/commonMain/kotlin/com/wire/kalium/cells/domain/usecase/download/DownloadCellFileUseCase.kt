@@ -45,6 +45,7 @@ public interface DownloadCellFileUseCase {
      * @param onProgressUpdate Callback to receive download progress updates.
      * @return download operation result
      */
+    @Suppress("LongParameterList")
     public suspend operator fun invoke(
         assetId: String,
         outFilePath: Path,
@@ -95,6 +96,7 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
         )
     }
 
+    @Suppress("LongParameterList")
     private suspend fun downloadFromRemotePath(
         assetId: String,
         outFilePath: Path,
