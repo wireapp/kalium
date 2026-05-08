@@ -298,6 +298,7 @@ import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingMLSGroupJoin
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCaseImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
+import com.wire.kalium.logic.feature.debug.OptimizeDatabaseUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
@@ -1475,7 +1476,8 @@ public class UserSessionScope internal constructor(
                 userStorageProvider = userStorageProvider,
                 userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
                 logger = userScopedLogger
-            )
+            ),
+            optimizer = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
         )
     }
 
