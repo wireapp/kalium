@@ -39,6 +39,8 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import com.wire.kalium.logic.feature.debug.OptimizeDatabaseResult
+import com.wire.kalium.logic.feature.debug.OptimizeDatabaseUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
@@ -85,6 +87,7 @@ internal class SlowSyncWorkerImpl(
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val transactionProvider: CryptoTransactionProvider,
+    private val optimizer: OptimizeDatabaseUseCase,
     private val syncNomadMessagesDuringSlowSync: SyncNomadMessagesDuringSlowSyncUseCase = NoOpSyncNomadMessagesDuringSlowSyncUseCase,
     logger: KaliumLogger = kaliumLogger
 ) : SlowSyncWorker {
@@ -156,6 +159,7 @@ internal class SlowSyncWorkerImpl(
                         )
                     }
                 }
+                .continueWithStep(SlowSyncStep.OPTIMIZE_DB, ::optimizeDatabase)
                 .flatMap {
                     saveLastSavedEventIdIfNeeded(lastSavedEventIdState.lastSavedEventIdToSaveOnSuccess)
                 }
@@ -210,6 +214,15 @@ internal class SlowSyncWorkerImpl(
         logger.i("SlowSync step '$slowSyncStep' took $duration")
         value
     }
+
+    private suspend fun optimizeDatabase(): Either<CoreFailure, Unit> =
+        when (val result = optimizer()) {
+            OptimizeDatabaseResult.Success -> Unit.right()
+            is OptimizeDatabaseResult.Failure -> {
+                logger.w("Database optimization failed during slow sync; continuing: ${result.error}")
+                Unit.right()
+            }
+        }
 
     private data class LastSavedEventIdState(
         val hasExistingLastSavedEventId: Boolean,

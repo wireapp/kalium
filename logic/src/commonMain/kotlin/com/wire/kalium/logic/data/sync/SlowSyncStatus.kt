@@ -45,5 +45,6 @@ internal enum class SlowSyncStep {
     NOMAD_MESSAGES,
     JOINING_MLS_CONVERSATIONS,
     RESOLVE_ONE_ON_ONE_PROTOCOLS,
-    LEGAL_HOLD
+    LEGAL_HOLD,
+    OPTIMIZE_DB,
 }
