@@ -29,7 +29,7 @@ import io.mockative.Mockable
 @Mockable
 internal interface SyncContactsUseCase {
     /**
-     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     * @return [Either] [CoreFailure] or [Unit]
      */
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
