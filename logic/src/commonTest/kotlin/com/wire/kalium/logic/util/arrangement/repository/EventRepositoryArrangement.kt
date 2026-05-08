@@ -19,8 +19,12 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.event.EventRepository
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.mock as mokkeryMock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.mock
@@ -39,6 +43,47 @@ internal interface EventRepositoryArrangement {
     suspend fun withUpdateLastSavedEventIdReturning(result: Either<StorageFailure, Unit>)
 
     suspend fun withUpdateLastProcessedEventIdReturning(result: Either<StorageFailure, Unit>)
+}
+
+internal class EventRepositoryArrangementMokkeryImpl : EventRepositoryArrangement {
+
+    override val eventRepository: EventRepository = mokkeryMock()
+
+    override suspend fun withOldestEventIdReturning(result: Either<CoreFailure, String>) {
+        everySuspend {
+            eventRepository.fetchOldestAvailableEventId()
+        } returns result
+    }
+
+    override suspend fun withClearLastEventIdReturning(result: Either<StorageFailure, Unit>) {
+        everySuspend {
+            eventRepository.clearLastSavedEventId()
+        } returns result
+    }
+
+    override suspend fun withFetchMostRecentEventReturning(result: Either<CoreFailure, String>) {
+        everySuspend {
+            eventRepository.fetchMostRecentEventId()
+        } returns result
+    }
+
+    override suspend fun withLastSavedEventIdReturning(result: Either<StorageFailure, String>) {
+        everySuspend {
+            eventRepository.lastSavedEventId()
+        } returns result
+    }
+
+    override suspend fun withUpdateLastSavedEventIdReturning(result: Either<StorageFailure, Unit>) {
+        everySuspend {
+            eventRepository.updateLastSavedEventId(mokkeryAny())
+        } returns result
+    }
+
+    override suspend fun withUpdateLastProcessedEventIdReturning(result: Either<StorageFailure, Unit>) {
+        everySuspend {
+            eventRepository.setEventAsProcessed(mokkeryAny())
+        } returns result
+    }
 }
 
 internal class EventRepositoryArrangementImpl : EventRepositoryArrangement {

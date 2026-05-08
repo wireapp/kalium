@@ -79,7 +79,7 @@ internal class RestoreBackupUseCaseImpl(
     private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val idMapper: IdMapper = MapperProvider.idMapper(),
 ) : RestoreBackupUseCase {
 
     override suspend operator fun invoke(backupFilePath: Path, password: String?): RestoreBackupResult =
