@@ -120,8 +120,8 @@ class MPBackupRealCompressionIntegrationTest {
         assertIs<RestoreBackupResult.Success>(restoreResult)
         assertEquals(listOf(TestUser.OTHER.id.value.lowercase()), restoreRepository.insertedUsers.map { it.id.value })
         assertEquals(listOf(TestConversation.CONVERSATION.id.value.lowercase()), restoreRepository.insertedConversations.map { it.id.value })
-        assertEquals(listOf(TestMessage.TEXT_MESSAGE.id.lowercase()), restoreRepository.insertedMessages.map { it.id })
-        assertEquals(listOf(testReaction.messageId.lowercase()), restoreRepository.insertedReactions.map { it.messageId })
+        assertEquals(listOf(TestMessage.TEXT_MESSAGE.id.lowercase()), restoreRepository.insertedMessages.map { it.id.lowercase() })
+        assertEquals(listOf(testReaction.messageId.lowercase()), restoreRepository.insertedReactions.map { it.messageId.lowercase() })
     }
 
     private fun restoreUseCase(backupRepository: BackupRepository) = RestoreMPBackupUseCaseImpl(
