@@ -24,28 +24,27 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface ConversationGroupRepositoryArrangement {
     val conversationGroupRepository: ConversationGroupRepository
 
     suspend fun withGenerateGuestRoomLink(
         result: Either<NetworkFailure, EventContentDTO.Conversation.CodeUpdated>,
-        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
+        conversationId: (ConversationId) -> Boolean = { true }
     ) {
-        coEvery {
-            conversationGroupRepository.generateGuestRoomLink(matches { conversationId.matches(it) }, any())
+        everySuspend {
+            conversationGroupRepository.generateGuestRoomLink(matches { conversationId(it) }, any())
         }.returns(result)
     }
 
     suspend fun withCreateGroupConversationReturning(result: Either<CoreFailure, Conversation>) {
-        coEvery {
+        everySuspend {
             conversationGroupRepository.createGroupConversation(any(), any(), any())
         }.returns(result)
     }
@@ -53,6 +52,6 @@ internal interface ConversationGroupRepositoryArrangement {
 
 internal class ConversationGroupRepositoryArrangementImpl : ConversationGroupRepositoryArrangement {
 
-    override val conversationGroupRepository = mock(ConversationGroupRepository::class)
+    override val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
 }
 

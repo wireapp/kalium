@@ -19,13 +19,12 @@ package com.wire.kalium.logic.util.arrangement.provider
 
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
-import io.mockative.any
-import io.mockative.every
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.every
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface SyncMigrationStepsProviderArrangement {
 
@@ -33,24 +32,24 @@ internal interface SyncMigrationStepsProviderArrangement {
 
     fun withSyncMigrationSteps(
         steps: List<SyncMigrationStep>,
-        fromVersion: Matcher<Int> = AnyMatcher(valueOf()),
-        toVersion: Matcher<Int> = AnyMatcher(valueOf())
+        fromVersion: (Int) -> Boolean = { true },
+        toVersion: (Int) -> Boolean = { true }
     )
 }
 
 internal class SyncMigrationStepsProviderArrangementImpl : SyncMigrationStepsProviderArrangement {
 
-        override val syncMigrationStepsProvider: SyncMigrationStepsProvider = mock(SyncMigrationStepsProvider::class)
+        override val syncMigrationStepsProvider: SyncMigrationStepsProvider = mock<SyncMigrationStepsProvider>(mode = MockMode.autoUnit)
 
     override fun withSyncMigrationSteps(
         steps: List<SyncMigrationStep>,
-        fromVersion: Matcher<Int>,
-        toVersion: Matcher<Int>
+        fromVersion: (Int) -> Boolean,
+        toVersion: (Int) -> Boolean
     ) {
         every {
             syncMigrationStepsProvider.getMigrationSteps(
-                matches { fromVersion.matches(it) },
-                matches { toVersion.matches(it) }
+                matches { fromVersion(it) },
+                matches { toVersion(it) }
             )
         }.returns(steps)
     }

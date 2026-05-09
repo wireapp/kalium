@@ -19,8 +19,10 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface E2EIRepositoryArrangement {
     val e2eiRepository: E2EIRepository
@@ -30,10 +32,10 @@ internal interface E2EIRepositoryArrangement {
 
 internal class E2EIRepositoryArrangementImpl : E2EIRepositoryArrangement {
 
-    override val e2eiRepository: E2EIRepository = mock(E2EIRepository::class)
+    override val e2eiRepository: E2EIRepository = mock<E2EIRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withFetchACMECertificates() {
-        coEvery {
+        everySuspend {
             e2eiRepository.fetchFederationCertificates()
         }.returns(Either.Right(Unit))
     }

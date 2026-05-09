@@ -33,6 +33,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -59,13 +61,10 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.persistence.dao.member.MemberDAO
-import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.ConversationPersistenceApi
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
-import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -518,7 +517,8 @@ class ConnectionRepositoryTest {
     }
 
     private class Arrangement :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl(),
+        MemberDAOArrangement by MemberDAOArrangementImpl() {
 
         val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
@@ -528,7 +528,6 @@ class ConnectionRepositoryTest {
         val userDAO = mock<UserDAO>(mode = MockMode.autoUnit)
         val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
         val persistConversations = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
-        val memberDAO = mock<MemberDAO>(mode = MockMode.autoUnit)
 
         val connectionRepository = ConnectionDataSource(
             conversationDAO = conversationDAO,
@@ -684,31 +683,6 @@ class ConnectionRepositoryTest {
             everySuspend {
                 connectionApi.userConnectionInfo(eq(userId))
             }.returns(result)
-        }
-
-        suspend fun withUpdateOrInsertOneOnOneMemberSuccess(
-            member: (MemberEntity) -> Boolean = { true },
-            conversationId: (QualifiedIDEntity) -> Boolean = { true }
-        ) = apply {
-            everySuspend {
-                memberDAO.updateOrInsertOneOnOneMember(
-                    matches { member(it) },
-                    matches { conversationId(it) }
-                )
-            }.returns(Unit)
-        }
-
-        suspend fun withUpdateOrInsertOneOnOneMemberFailure(
-            error: Throwable,
-            member: (MemberEntity) -> Boolean = { true },
-            conversationId: (QualifiedIDEntity) -> Boolean = { true }
-        ) = apply {
-            everySuspend {
-                memberDAO.updateOrInsertOneOnOneMember(
-                    matches { member(it) },
-                    matches { conversationId(it) }
-                )
-            } throws error
         }
 
         suspend fun withDeleteConnectionDataAndConversation(conversationId: QualifiedIDEntity): Arrangement = apply {

@@ -24,9 +24,11 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 
 internal interface UserConfigRepositoryArrangement {
@@ -51,99 +53,109 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withUpdateNextTimeForCallFeedback()
     suspend fun withGetNextTimeForCallFeedback(result: Either<StorageFailure, Long>)
     suspend fun withConferenceCallingEnabled(result: Boolean)
+    suspend fun withDeleteLegalHoldRequestSuccess(): UserConfigRepositoryArrangement
+    suspend fun withSetLegalHoldChangeNotifiedSuccess(): UserConfigRepositoryArrangement
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
 
-    override val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+    override val userConfigRepository: UserConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>) {
-        coEvery {
+        everySuspend {
             userConfigRepository.getSupportedProtocols()
         }.returns(result)
     }
 
     override suspend fun withSetSupportedProtocolsSuccessful() {
-        coEvery {
+        everySuspend {
             userConfigRepository.setSupportedProtocols(any())
         }.returns(Either.Right(Unit))
     }
 
     override suspend fun withSetDefaultProtocolSuccessful() {
-        coEvery {
+        everySuspend {
             userConfigRepository.setDefaultProtocol(any())
         }.returns(Either.Right(Unit))
     }
 
     override suspend fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>) {
-        coEvery { userConfigRepository.getDefaultProtocol() }.returns(result)
+        everySuspend { userConfigRepository.getDefaultProtocol() }.returns(result)
     }
 
     override suspend fun withSetMLSEnabledSuccessful() {
-        coEvery {
+        everySuspend {
             userConfigRepository.setMLSEnabled(any())
         }.returns(Either.Right(Unit))
     }
 
     override suspend fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>) {
-        coEvery {
+        everySuspend {
             userConfigRepository.isMLSEnabled()
         }.returns(result)
     }
 
     override suspend fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>) {
-        coEvery { userConfigRepository.getSupportedCipherSuite() }.returns(result)
+        everySuspend { userConfigRepository.getSupportedCipherSuite() }.returns(result)
     }
 
     override suspend fun withSetMigrationConfigurationSuccessful() {
-        coEvery {
+        everySuspend {
             userConfigRepository.setMigrationConfiguration(any())
         }.returns(Either.Right(Unit))
     }
 
     override suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>) {
-        coEvery {
+        everySuspend {
             userConfigRepository.getMigrationConfiguration()
         }.returns(result)
     }
 
     override suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>) {
-        coEvery { userConfigRepository.setSupportedCipherSuite(any()) }.returns(result)
+        everySuspend { userConfigRepository.setSupportedCipherSuite(any()) }.returns(result)
     }
 
     override suspend fun withSetTrackingIdentifier() {
-        coEvery { userConfigRepository.setCurrentTrackingIdentifier(any()) }.returns(Unit)
+        everySuspend { userConfigRepository.setCurrentTrackingIdentifier(any()) }.returns(Unit)
     }
 
     override suspend fun withGetTrackingIdentifier(result: String?) {
-        coEvery { userConfigRepository.getCurrentTrackingIdentifier() }.returns(result)
+        everySuspend { userConfigRepository.getCurrentTrackingIdentifier() }.returns(result)
     }
 
     override suspend fun withSetPreviousTrackingIdentifier() {
-        coEvery { userConfigRepository.setPreviousTrackingIdentifier(any()) }.returns(Unit)
+        everySuspend { userConfigRepository.setPreviousTrackingIdentifier(any()) }.returns(Unit)
     }
 
     override suspend fun withGetPreviousTrackingIdentifier(result: String?) {
-        coEvery { userConfigRepository.getPreviousTrackingIdentifier() }.returns(result)
+        everySuspend { userConfigRepository.getPreviousTrackingIdentifier() }.returns(result)
     }
 
     override suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>) {
-        coEvery { userConfigRepository.observeCurrentTrackingIdentifier() }.returns(flowOf(result))
+        everySuspend { userConfigRepository.observeCurrentTrackingIdentifier() }.returns(flowOf(result))
     }
 
     override suspend fun withDeletePreviousTrackingIdentifier() {
-        coEvery { userConfigRepository.deletePreviousTrackingIdentifier() }.returns(Unit)
+        everySuspend { userConfigRepository.deletePreviousTrackingIdentifier() }.returns(Unit)
     }
 
     override suspend fun withGetNextTimeForCallFeedback(result: Either<StorageFailure, Long>) {
-        coEvery { userConfigRepository.getNextTimeForCallFeedback() }.returns(result)
+        everySuspend { userConfigRepository.getNextTimeForCallFeedback() }.returns(result)
     }
 
     override suspend fun withUpdateNextTimeForCallFeedback() {
-        coEvery { userConfigRepository.updateNextTimeForCallFeedback(any()) }.returns(Unit)
+        everySuspend { userConfigRepository.updateNextTimeForCallFeedback(any()) }.returns(Unit)
     }
 
     override suspend fun withConferenceCallingEnabled(result: Boolean) {
-        coEvery { userConfigRepository.isConferenceCallingEnabled() }.returns(result.right())
+        everySuspend { userConfigRepository.isConferenceCallingEnabled() }.returns(result.right())
+    }
+
+    override suspend fun withDeleteLegalHoldRequestSuccess() = apply {
+        everySuspend { userConfigRepository.deleteLegalHoldRequest() }.returns(Either.Right(Unit))
+    }
+
+    override suspend fun withSetLegalHoldChangeNotifiedSuccess() = apply {
+        everySuspend { userConfigRepository.setLegalHoldChangeNotified(any()) }.returns(Either.Right(Unit))
     }
 }
