@@ -42,8 +42,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
-import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermissionTypeDTO
@@ -86,6 +84,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
@@ -106,16 +105,6 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.EqualsMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.once
-import io.mockative.any as mockativeAny
-import io.mockative.eq as mockativeEq
-import io.mockative.matches as mockativeMatches
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -646,9 +635,9 @@ class ConversationRepositoryTest {
             assertIs<Either.Right<Boolean>>(isMemberResponse)
             assertEquals(isMemberResponse.value, isMember)
 
-            coVerify {
-                arrangement.memberDAO.observeIsUserMember(mockativeEq(CONVERSATION_ENTITY_ID), mockativeEq(USER_ENTITY_ID))
-            }.wasInvoked(once)
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.memberDAO.observeIsUserMember(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
+            }
 
             awaitComplete()
         }
@@ -670,9 +659,9 @@ class ConversationRepositoryTest {
             assertIs<Either.Right<Boolean>>(isMemberResponse)
             assertEquals(isMemberResponse.value, isMember)
 
-            coVerify {
-                arrangement.memberDAO.observeIsUserMember(mockativeEq(CONVERSATION_ENTITY_ID), mockativeEq(USER_ENTITY_ID))
-            }.wasInvoked(once)
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.memberDAO.observeIsUserMember(eq(CONVERSATION_ENTITY_ID), eq(USER_ENTITY_ID))
+            }
 
             awaitComplete()
         }
@@ -845,12 +834,12 @@ class ConversationRepositoryTest {
         val (arrangement, conversationRepository) = Arrangement()
             .withGetGroupConversationWithUserIdsWithBothDomains(
                 mapOf(groupConversationId to userIdList),
-                EqualsMatcher(selfDomain),
-                EqualsMatcher(federatedDomain)
+                selfDomain,
+                federatedDomain
             )
             .withGetOneOnOneConversationWithFederatedUserId(
                 mapOf(oneOnOneConversationId to federatedUserId),
-                EqualsMatcher(federatedDomain)
+                federatedDomain
             )
             .arrange()
 
@@ -867,9 +856,9 @@ class ConversationRepositoryTest {
             assertEquals(federatedUserId.toModel(), it[oneOnOneConversationId.toModel()])
         }
 
-        coVerify {
-            arrangement.memberDAO.getGroupConversationWithUserIdsWithBothDomains(mockativeAny(), mockativeAny())
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.memberDAO.getGroupConversationWithUserIdsWithBothDomains(any(), any())
+        }
     }
 
     @Test
@@ -1167,8 +1156,7 @@ class ConversationRepositoryTest {
         assertTrue { result.isRight() }
     }
 
-    private class Arrangement :
-        MemberDAOArrangement by MemberDAOArrangementImpl() {
+    private class Arrangement {
 
         val userRepository: UserRepository = mock<UserRepository>(mode = MockMode.autoUnit)
         val selfTeamIdProvider: SelfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
@@ -1180,6 +1168,7 @@ class ConversationRepositoryTest {
         private val messageDraftDAO = mock<MessageDraftDAO>(mode = MockMode.autoUnit)
         val conversationMetaDataDAO: ConversationMetaDataDAO = mock<ConversationMetaDataDAO>(mode = MockMode.autoUnit)
         val metadataDAO: MetadataDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
+        val memberDAO: MemberDAO = mock<MemberDAO>(mode = MockMode.autoUnit)
 
         val conversationRepository =
             ConversationDataSource(
@@ -1319,6 +1308,12 @@ class ConversationRepositoryTest {
             withUpdateMemberRoleSuccess()
         }
 
+        suspend fun withUpdateMemberRoleSuccess() = apply {
+            everySuspend {
+                memberDAO.updateConversationMemberRole(any(), any(), any())
+            }.returns(Unit)
+        }
+
         suspend fun withSuccessfulConversationDeletion() = apply {
             everySuspend {
                 conversationDAO.deleteConversationByQualifiedID(any())
@@ -1333,6 +1328,18 @@ class ConversationRepositoryTest {
 
         suspend fun withExpectedIsUserMemberFlow(expectedIsUserMember: Flow<Boolean>) = apply {
             withObserveIsUserMember(expectedIsUserMember)
+        }
+
+        suspend fun withObserveIsUserMember(expectedIsUserMember: Flow<Boolean>) = apply {
+            everySuspend {
+                memberDAO.observeIsUserMember(any(), any())
+            }.returns(expectedIsUserMember)
+        }
+
+        suspend fun withInsertMemberWithConversationIdSuccess() = apply {
+            everySuspend {
+                memberDAO.insertMembersWithQualifiedId(any(), any())
+            }.returns(Unit)
         }
 
         suspend fun withExpectedObservableConversationDetails(conversationEntity: ConversationViewEntity? = null) = apply {
@@ -1373,10 +1380,10 @@ class ConversationRepositoryTest {
 
         suspend fun withFetchConversationDetailsResult(
             response: NetworkResponse<ConversationResponse>,
-            idMatcher: Matcher<APIConversationId> = AnyMatcher(valueOf())
+            idMatcher: (APIConversationId) -> Boolean = { true }
         ) = apply {
             everySuspend {
-                conversationApi.fetchConversationDetails(matches { idMatcher.matches(it) })
+                conversationApi.fetchConversationDetails(matches { idMatcher(it) })
             }.returns(response)
         }
 
@@ -1441,23 +1448,23 @@ class ConversationRepositoryTest {
 
         suspend fun withGetGroupConversationWithUserIdsWithBothDomains(
             result: Map<ConversationIDEntity, List<UserIDEntity>>,
-            firstDomain: Matcher<String> = AnyMatcher(valueOf()),
-            secondDomain: Matcher<String> = AnyMatcher(valueOf())
+            firstDomain: String,
+            secondDomain: String
         ) = apply {
-            coEvery {
+            everySuspend {
                 memberDAO.getGroupConversationWithUserIdsWithBothDomains(
-                    mockativeMatches { firstDomain.matches(it) },
-                    mockativeMatches { secondDomain.matches(it) }
+                    eq(firstDomain),
+                    eq(secondDomain)
                 )
             }.returns(result)
         }
 
         suspend fun withGetOneOnOneConversationWithFederatedUserId(
             result: Map<ConversationIDEntity, UserIDEntity>,
-            domain: Matcher<String> = AnyMatcher(valueOf())
+            domain: String
         ) = apply {
-            coEvery {
-                memberDAO.getOneOneConversationWithFederatedMembers(mockativeMatches { domain.matches(it) })
+            everySuspend {
+                memberDAO.getOneOneConversationWithFederatedMembers(eq(domain))
             }.returns(result)
         }
 
