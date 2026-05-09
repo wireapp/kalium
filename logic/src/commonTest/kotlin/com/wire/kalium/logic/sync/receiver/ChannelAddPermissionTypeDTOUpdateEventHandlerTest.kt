@@ -25,12 +25,13 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ChannelAddPermissionUpdateEventHandlerImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -46,9 +47,9 @@ class ChannelAddPermissionTypeDTOUpdateEventHandlerTest {
 
         val result = eventHandler.handle(event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateChannelAddPermissionLocally(eq(event.conversationId), eq(event.channelAddPermission))
-        }.wasInvoked(exactly = once)
+        }
         assertTrue { result.isRight() }
     }
 
@@ -61,24 +62,24 @@ class ChannelAddPermissionTypeDTOUpdateEventHandlerTest {
 
         val result = eventHandler.handle(event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateChannelAddPermissionLocally(eq(event.conversationId), eq(event.channelAddPermission))
-        }.wasInvoked(exactly = once)
+        }
         assertTrue { result.isLeft() }
     }
 
     private class Arrangement {
 
-        val conversationRepository = mock(ConversationRepository::class)
+        val conversationRepository = mock<ConversationRepository>()
 
         private val channelAddPermissionUpdateEventHandler: ChannelAddPermissionUpdateEventHandler by lazy {
             ChannelAddPermissionUpdateEventHandlerImpl(conversationRepository)
         }
 
         suspend fun withConversationRepositoryReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateChannelAddPermissionLocally(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to channelAddPermissionUpdateEventHandler
