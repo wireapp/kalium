@@ -20,8 +20,9 @@ package com.wire.kalium.logic.sync.periodic
 
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.sync.Result
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -31,7 +32,7 @@ import kotlin.test.assertEquals
 @OptIn(ExperimentalCoroutinesApi::class)
 class UpdateApiVersionsWorkerTest {
 
-        private val updateApiVersionsUseCase = mock(UpdateApiVersionsUseCase::class)
+    private val updateApiVersionsUseCase = mock<UpdateApiVersionsUseCase>()
 
     private lateinit var updateApiVersionsWorker: UpdateApiVersionsWorker
 
@@ -42,9 +43,9 @@ class UpdateApiVersionsWorkerTest {
 
     @Test
     fun givenUpdateCompletes_whenExecutingAWorker_thenReturnSuccess() = runTest {
-        coEvery {
+        everySuspend {
             updateApiVersionsUseCase.invoke()
-        }.returns(Unit)
+        } returns Unit
 
         val result = updateApiVersionsWorker.doWork()
 

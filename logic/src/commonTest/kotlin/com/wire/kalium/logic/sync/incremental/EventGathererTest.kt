@@ -32,12 +32,14 @@ import com.wire.kalium.logic.sync.incremental.EventGathererTest.Arrangement.Comp
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ServerTimeHandler
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.channels.Channel
@@ -171,9 +173,9 @@ class EventGathererTest {
             .arrange()
 
         eventGatherer.gatherEvents().test {
-            coVerify {
+            verify(VerifyMode.exactly(1)) {
                 arrangement.isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
-            }.wasInvoked(exactly = once)
+            }
 
             advanceUntilIdle()
 
@@ -182,17 +184,17 @@ class EventGathererTest {
 
             advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.eventRepository.liveEvents()
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.eventRepository.lastSavedEventId()
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.serverTimeHandler.computeTimeOffset(any())
-            }.wasNotInvoked()
+            }
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -246,9 +248,9 @@ class EventGathererTest {
             val testScope = TestKaliumDispatcher.main
         }
 
-        val eventRepository = mock(EventRepository::class)
-        val isClientAsyncNotificationsCapableProvider = mock(IsClientAsyncNotificationsCapableProvider::class)
-        val serverTimeHandler = mock(ServerTimeHandler::class)
+        val eventRepository = mock<EventRepository>()
+        val isClientAsyncNotificationsCapableProvider = mock<IsClientAsyncNotificationsCapableProvider>()
+        val serverTimeHandler = mock<ServerTimeHandler>()
 
         init {
             runBlocking {
@@ -259,25 +261,25 @@ class EventGathererTest {
         fun withIsClientAsyncNotificationsCapableReturning(value: Boolean) = apply {
             every {
                 isClientAsyncNotificationsCapableProvider.isClientAsyncNotificationsCapable()
-            }.returns(value)
+            } returns value
         }
 
         suspend fun withLocalEventsReturning(flow: Flow<List<EventEnvelope>>) = apply {
-            coEvery {
+            everySuspend {
                 eventRepository.observeEvents()
-            }.returns(flow)
+            } returns flow
         }
 
         suspend fun withLiveEventsReturning(either: Either<CoreFailure, Flow<IncrementalSyncPhase>>) = apply {
-            coEvery {
+            everySuspend {
                 eventRepository.liveEvents()
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withLastEventIdReturning(either: Either<StorageFailure, String>) = apply {
-            coEvery {
+            everySuspend {
                 eventRepository.lastSavedEventId()
-            }.returns(either)
+            } returns either
         }
 
         fun arrange() = this to EventGathererImpl(

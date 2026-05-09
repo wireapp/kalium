@@ -22,11 +22,12 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -41,13 +42,13 @@ class SlowSyncRecoveryHandlerTest {
         arrangement.recoverWithFailure(SelfUserDeleted)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 logoutUseCase.invoke(matches { LogoutReason.DELETED_ACCOUNT == it }, any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 onSlowSyncRetryCallback.retry()
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -62,19 +63,19 @@ class SlowSyncRecoveryHandlerTest {
         )
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 logoutUseCase.invoke(any(), any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 onSlowSyncRetryCallback.retry()
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
     private class Arrangement {
-        val onSlowSyncRetryCallback: OnSlowSyncRetryCallback = mock(OnSlowSyncRetryCallback::class)
-        val logoutUseCase = mock(LogoutUseCase::class)
+        val onSlowSyncRetryCallback: OnSlowSyncRetryCallback = mock(mode = MockMode.autoUnit)
+        val logoutUseCase = mock<LogoutUseCase>(mode = MockMode.autoUnit)
 
         private val slowSyncRecoveryHandler by lazy {
             SlowSyncRecoveryHandlerImpl(logoutUseCase)
