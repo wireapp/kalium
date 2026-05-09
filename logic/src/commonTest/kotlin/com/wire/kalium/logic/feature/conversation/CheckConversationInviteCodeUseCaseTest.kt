@@ -27,12 +27,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -64,13 +66,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.observeIsUserMember(any(), any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -96,13 +98,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.observeIsUserMember(any(), any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -123,13 +125,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 conversationRepository.observeIsUserMember(any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -150,13 +152,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 conversationRepository.observeIsUserMember(any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -177,13 +179,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 conversationRepository.observeIsUserMember(any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -204,13 +206,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 conversationRepository.observeIsUserMember(any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -231,13 +233,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 conversationRepository.observeIsUserMember(any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -247,8 +249,8 @@ class CheckConversationInviteCodeUseCaseTest {
 
     private class Arrangement {
 
-        val conversationRepository = mock(ConversationRepository::class)
-        val conversationGroupRepository = mock(ConversationGroupRepository::class)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
 
         private val useCase = CheckConversationInviteCodeUseCase(
             conversationGroupRepository = conversationGroupRepository,
@@ -261,9 +263,9 @@ class CheckConversationInviteCodeUseCaseTest {
             key: String,
             result: Either<NetworkFailure, ConversationCodeInfo>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationGroupRepository.fetchLimitedInfoViaInviteCode(eq(code), eq(key))
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withObserveIsUserMemberResult(
@@ -271,9 +273,9 @@ class CheckConversationInviteCodeUseCaseTest {
             userId: UserId,
             result: Either<CoreFailure, Boolean>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeIsUserMember(eq(conversationId), eq(userId))
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
 
         fun arrange() = this to useCase

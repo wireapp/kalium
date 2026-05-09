@@ -28,11 +28,13 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.eq
-import io.mockative.coEvery
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
@@ -47,7 +49,6 @@ internal class ObserveIsAppLockEditableUseCaseTest {
 
     @Test
     fun givenTwoAccountAllWithoutEnforcedAppLock_whenInvoked_thenEmitTrue() = runTest {
-        // given
         val appLockTeamConfig1 = AppLockTeamConfig(isEnforced = false, timeout = 1.minutes, isStatusChanged = null)
         val appLockTeamConfig2 = AppLockTeamConfig(isEnforced = false, timeout = 2.minutes, isStatusChanged = null)
         val (_, useCase) = Arrangement()
@@ -55,15 +56,12 @@ internal class ObserveIsAppLockEditableUseCaseTest {
             .withObserveAppLockConfig(TestUser.SELF.id, flowOf(Either.Right(appLockTeamConfig1)))
             .withObserveAppLockConfig(TestUser.OTHER.id, flowOf(Either.Right(appLockTeamConfig2)))
             .arrange()
-        // when
         val result = useCase().first()
-        // then
         assertEquals(true, result)
     }
 
     @Test
     fun givenTwoAccountsAtLeastOneWithEnforcedAppLock_whenInvoked_thenEmitFalse() = runTest {
-        // given
         val appLockTeamConfig1 = AppLockTeamConfig(isEnforced = false, timeout = 1.minutes, isStatusChanged = null)
         val appLockTeamConfig2 = AppLockTeamConfig(isEnforced = true, timeout = 2.minutes, isStatusChanged = null)
         val (_, useCase) = Arrangement()
@@ -71,22 +69,18 @@ internal class ObserveIsAppLockEditableUseCaseTest {
             .withObserveAppLockConfig(TestUser.SELF.id, flowOf(Either.Right(appLockTeamConfig1)))
             .withObserveAppLockConfig(TestUser.OTHER.id, flowOf(Either.Right(appLockTeamConfig2)))
             .arrange()
-        // when
         val result = useCase().first()
-        // then
         assertEquals(false, result)
     }
 
     @Test
     fun givenAccountWithEnforcedAppLock_whenInvokedAndEnforceChangesWhenObserving_thenEmitProperValues() = runTest {
-        // given
         val appLockTeamConfig = AppLockTeamConfig(isEnforced = true, timeout = 1.minutes, isStatusChanged = null)
         val appLockTeamConfigFlow = MutableStateFlow(Either.Right(appLockTeamConfig))
         val (_, useCase) = Arrangement()
             .withAllValidSessionsFlow(flowOf(listOf(AccountInfo.Valid(TestUser.SELF.id))))
             .withObserveAppLockConfig(TestUser.SELF.id, appLockTeamConfigFlow)
             .arrange()
-        // when - then
         useCase().test {
             assertEquals(false, awaitItem())
             appLockTeamConfigFlow.value = Either.Right(appLockTeamConfig.copy(isEnforced = false))
@@ -99,8 +93,8 @@ internal class ObserveIsAppLockEditableUseCaseTest {
 
     class Arrangement {
 
-        val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
-        val sessionRepository = mock(SessionRepository::class)
+        val userSessionScopeProvider = mock<UserSessionScopeProvider>(mode = MockMode.autoUnit)
+        val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
 
         private val useCase by lazy {
             ObserveIsAppLockEditableUseCaseImpl(
@@ -111,19 +105,19 @@ internal class ObserveIsAppLockEditableUseCaseTest {
 
         fun arrange() = this to useCase
         suspend fun withAllValidSessionsFlow(result: Flow<List<AccountInfo.Valid>>) = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.allValidSessionsFlow()
-            }.returns(result.map { Either.Right(it) })
+            } returns result.map { Either.Right(it) }
         }
 
         fun withObserveAppLockConfig(userId: UserId, result: Flow<Either<StorageFailure, AppLockTeamConfig>>) = apply {
-            val userConfigRepository = mock(UserConfigRepository::class)
+            val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
             every {
                 userSessionScopeProvider.getOrCreate(eq(userId), any<UserSessionScope.() -> UserConfigRepository>())
-            }.returns(userConfigRepository)
+            } returns userConfigRepository
             every {
                 userConfigRepository.observeAppLockConfig()
-            }.returns(result)
+            } returns result
         }
     }
 }

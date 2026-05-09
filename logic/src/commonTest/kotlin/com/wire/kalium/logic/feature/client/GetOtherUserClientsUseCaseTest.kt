@@ -24,11 +24,13 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -41,7 +43,6 @@ import kotlin.test.assertIs
 class ObserveClientsByUserIdUseCaseTest {
     @Test
     fun givenASuccessfulRepositoryResponse_whenInvokingTheUseCase_thenSuccessResultIsReturned() = runTest {
-        // Given
         val userId = UserId("123", "wire.com")
         val clients = listOf(
             TestClient.CLIENT.copy(
@@ -55,26 +56,25 @@ class ObserveClientsByUserIdUseCaseTest {
             .withSuccessfulResponse(clients)
             .arrange()
 
-        // When
         val result = getOtherUsersClientsUseCase(userId).first()
 
         assertIs<ObserveClientsByUserIdUseCase.Result.Success>(result)
         assertEquals(clients, result.clients)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.observeClientsByUserId(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        val clientRepository = mock(ClientRepository::class)
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
 
         val getOtherUserClientsUseCaseImpl = ObserveClientsByUserIdUseCase(clientRepository)
 
         suspend fun withSuccessfulResponse(expectedResponse: List<Client>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.observeClientsByUserId(any())
-            }.returns(flowOf(Either.Right(expectedResponse)))
+            } returns flowOf(Either.Right(expectedResponse))
         }
 
         fun arrange() = this to getOtherUserClientsUseCaseImpl

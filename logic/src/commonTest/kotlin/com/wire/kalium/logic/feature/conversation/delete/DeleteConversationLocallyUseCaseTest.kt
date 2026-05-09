@@ -21,15 +21,14 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCase
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -43,53 +42,41 @@ class DeleteConversationLocallyUseCaseTest {
 
     @Test
     fun givenDeleteLocalConversationInvoked_whenAllStepsAreSuccessful_thenSuccessResultIsPropagated() = runTest {
-        // given
         val (arrangement, useCase) = Arrangement()
             .withClearLocalAsset(true)
-            .arrange {
-                withDeletingConversationSucceeding()
-            }
+            .arrange()
 
-        // when
         val result = useCase(CONVERSATION_ID)
 
-        // then
         assertIs<ClearConversationContentUseCase.Result.Success>(result)
-        coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.clearConversationContent(any(), eq(true)) }
     }
 
     @Test
     fun givenDeleteLocalConversationInvoked_whenClearContentIsUnsuccessful_thenErrorResultIsPropagated() = runTest {
-        // given
         val (arrangement, useCase) = Arrangement()
             .withClearLocalAsset(false)
-            .arrange {
-                withDeletingConversationSucceeding()
-            }
+            .arrange()
 
-        // when
         val result = useCase(CONVERSATION_ID)
 
-        // then
         assertIs<ClearConversationContentUseCase.Result.Failure>(result)
-        coVerify { arrangement.clearConversationContent(any(), eq(true)) }.wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.clearConversationContent(any(), eq(true)) }
     }
 
-    private class Arrangement : DeleteConversationArrangement by DeleteConversationArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement {
 
-        val clearConversationContent = mock(ClearConversationContentUseCase::class)
+        val clearConversationContent = mock<ClearConversationContentUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withClearLocalAsset(isSuccess: Boolean) = apply {
-            coEvery { clearConversationContent(any(), any()) }.returns(
+            everySuspend { clearConversationContent(any(), any()) } returns (
                 if (isSuccess) ClearConversationContentUseCase.Result.Success
                 else ClearConversationContentUseCase.Result.Failure(ERROR.value)
             )
         }
 
-        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteConversationLocallyUseCase> = run {
+        fun arrange(): Pair<Arrangement, DeleteConversationLocallyUseCase> = run {
             val useCase = DeleteConversationLocallyUseCaseImpl(clearConversationContent = clearConversationContent)
-            block()
             this to useCase
         }
     }

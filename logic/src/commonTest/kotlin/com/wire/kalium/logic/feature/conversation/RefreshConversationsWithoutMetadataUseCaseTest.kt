@@ -26,14 +26,16 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE_DTO
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -54,16 +56,16 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
         useCase()
 
         // Then
-        coVerify { arrangement.conversationRepository.getConversationIdsWithoutMetadata() }.wasInvoked(once)
-        coVerify { arrangement.conversationRepository.fetchConversationListDetails(any()) }.wasInvoked(once)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.getConversationIdsWithoutMetadata() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.fetchConversationListDetails(any()) }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistConversations(
                 any(),
                 eq(CONVERSATION_RESPONSE_DTO.conversationsFound),
                 eq(false),
                 any()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -77,31 +79,31 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
         useCase()
 
         // Then
-        coVerify { arrangement.conversationRepository.fetchConversationListDetails(any()) }.wasNotInvoked()
-        coVerify { arrangement.persistConversations(any(), any(), any(), any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.fetchConversationListDetails(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.persistConversations(any(), any(), any(), any()) }
     }
 
     private class Arrangement(private val dispatcher: KaliumDispatcher) :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val conversationRepository = mock(ConversationRepository::class)
-        val persistConversations = mock(PersistConversationsUseCase::class)
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val persistConversations = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withConversationIdsWithoutMetadata(ids: List<QualifiedID>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationIdsWithoutMetadata()
-            }.returns(Either.Right(ids))
+            } returns Either.Right(ids)
         }
 
         suspend fun withFetchConversationListDetailsSuccess() = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.fetchConversationListDetails(any())
-            }.returns(Either.Right(CONVERSATION_RESPONSE_DTO))
+            } returns Either.Right(CONVERSATION_RESPONSE_DTO)
         }
 
         suspend fun withPersistConversationsSuccess() = apply {
-            coEvery {
+            everySuspend {
                 persistConversations(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun arrange(): Pair<Arrangement, RefreshConversationsWithoutMetadataUseCase> =

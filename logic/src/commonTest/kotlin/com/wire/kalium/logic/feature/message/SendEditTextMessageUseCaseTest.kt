@@ -33,13 +33,14 @@ import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runTest
@@ -67,18 +68,18 @@ class SendEditTextMessageUseCaseTest {
 
         // Then
         assertIs<MessageOperationResult.Success>(result)
-        coVerify {
-            arrangement.messageRepository.updateTextMessage(any(), any(), eq(originalMessageId), any())
-        }.wasInvoked(once)
-        coVerify {
-            arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.PENDING), any(), any())
-        }.wasInvoked(once)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateTextMessage(any(), any(), originalMessageId, any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.PENDING, any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -100,65 +101,65 @@ class SendEditTextMessageUseCaseTest {
 
         // Then
         assertIs<MessageOperationResult.Failure>(result)
-        coVerify {
-            arrangement.messageRepository.updateTextMessage(any(), any(), eq(originalMessageId), any())
-        }.wasInvoked(once)
-        coVerify {
-            arrangement.messageRepository.updateTextMessage(any(), any(), eq(editedMessageId), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.PENDING), any(), any())
-        }.wasInvoked(once)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateTextMessage(any(), any(), originalMessageId, any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageRepository.updateTextMessage(any(), any(), editedMessageId, any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.PENDING, any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-        val messageRepository = mock(MessageRepository::class)
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val slowSyncRepository = mock(SlowSyncRepository::class)
-        val messageSender = mock(MessageSender::class)
-        val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
+        val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
+        val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
+        val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
+        val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
 
         suspend fun withSendMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSendMessageFailure() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
         fun withSlowSyncStatusComplete() = apply {
             val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
             every {
                 slowSyncRepository.slowSyncStatus
-            }.returns(stateFlow)
+            } returns stateFlow
         }
 
         suspend fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(Either.Right(clientId))
+            } returns Either.Right(clientId)
         }
 
         suspend fun withUpdateTextMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.updateTextMessage(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withUpdateMessageStatusSuccess() = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.updateMessageStatus(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         fun arrange() = this to SendEditTextMessageUseCase(

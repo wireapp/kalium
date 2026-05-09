@@ -28,12 +28,13 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -57,9 +58,9 @@ internal class ApiMigrationV3Test {
 
         migration.invoke().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.upgradeCurrentSessionUseCase.invoke(eq(TestClient.CLIENT_ID))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -74,19 +75,19 @@ internal class ApiMigrationV3Test {
 
     class Arrangement {
 
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val upgradeCurrentSessionUseCase = mock(UpgradeCurrentSessionUseCase::class)
+        val currentClientIdProvider = mock<CurrentClientIdProvider>()
+        val upgradeCurrentSessionUseCase = mock<UpgradeCurrentSessionUseCase>()
 
         suspend fun withClientId(clientId: ClientId?) = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(clientId?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound))
+            } returns (clientId?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound))
         }
 
         suspend fun withUpgradeCurrentSessionReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 upgradeCurrentSessionUseCase.invoke(any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to ApiMigrationV3(currentClientIdProvider, upgradeCurrentSessionUseCase)

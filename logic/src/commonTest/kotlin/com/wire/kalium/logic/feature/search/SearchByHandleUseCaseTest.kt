@@ -17,9 +17,13 @@
  */
 package com.wire.kalium.logic.feature.search
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -30,13 +34,15 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matchers.EqualsMatcher
-import io.mockative.once
+import com.wire.kalium.common.functional.Either
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -66,13 +72,13 @@ class SearchByHandleUseCaseTest {
             expected = emptyList<UserSearchDetails>(),
             actual = result.notConnected
         )
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.searchUserRepository.getKnownContacts(null)
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -96,13 +102,13 @@ class SearchByHandleUseCaseTest {
             actual = result.notConnected
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.searchUserRepository.getKnownContacts(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -126,9 +132,9 @@ class SearchByHandleUseCaseTest {
             expected = emptyList<UserSearchDetails>(),
             actual = result.connected
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(eq("searchquery"), any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -159,11 +165,11 @@ class SearchByHandleUseCaseTest {
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchUserRemoteDirectory(
                 result = UserSearchResult(remoteSearchResult).right(),
-                searchQuery = EqualsMatcher("searchquery"),
+                searchQuery = "searchquery",
             )
             withSearchByHandle(
                 result = localSearchResult.right(),
-                searchQuery = EqualsMatcher("searchquery"),
+                searchQuery = "searchquery",
             )
         }
 
@@ -177,12 +183,12 @@ class SearchByHandleUseCaseTest {
             expected = expected,
             actual = result
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(eq("searchquery"), any(), any(), any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchLocalByHandle(eq("searchquery"), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -192,11 +198,11 @@ class SearchByHandleUseCaseTest {
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchUserRemoteDirectory(
                 result = UserSearchResult(emptyList()).right(),
-                searchQuery = EqualsMatcher(cleanQuery),
+                searchQuery = cleanQuery,
             )
             withSearchByHandle(
                 result = emptyList<UserSearchDetails>().right(),
-                searchQuery = EqualsMatcher(cleanQuery),
+                searchQuery = cleanQuery,
             )
         }
 
@@ -210,12 +216,12 @@ class SearchByHandleUseCaseTest {
             expected = emptyList<UserSearchDetails>(),
             actual = result.connected
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(eq(cleanQuery), any(), any(), any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchLocalByHandle(eq(cleanQuery), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private companion object {
@@ -252,7 +258,8 @@ class SearchByHandleUseCaseTest {
         )
     }
 
-    private class Arrangement : SearchRepositoryArrangement by SearchRepositoryArrangementImpl() {
+    private class Arrangement {
+        val searchUserRepository = mock<SearchUserRepository>(mode = MockMode.autoUnit)
         private val useCase: SearchByHandleUseCase by lazy {
             SearchByHandleUseCase(
                 searchUserRepository = searchUserRepository,
@@ -264,6 +271,33 @@ class SearchByHandleUseCaseTest {
         suspend fun arrange(block: suspend Arrangement.() -> Unit) = let {
             block()
             this to useCase
+        }
+
+        suspend fun withSearchUserRemoteDirectory(
+            result: Either<CoreFailure, UserSearchResult>,
+            searchQuery: String? = null
+        ) {
+            everySuspend {
+                searchUserRepository.searchUserRemoteDirectory(
+                    if (searchQuery == null) any() else eq(searchQuery),
+                    any(),
+                    any(),
+                    any()
+                )
+            } returns result
+        }
+
+        suspend fun withGetKnownContacts(result: Either<StorageFailure, List<UserSearchDetails>>) {
+            everySuspend { searchUserRepository.getKnownContacts(any()) } returns result
+        }
+
+        suspend fun withSearchByHandle(
+            result: Either<StorageFailure, List<UserSearchDetails>>,
+            searchQuery: String? = null
+        ) {
+            everySuspend {
+                searchUserRepository.searchLocalByHandle(if (searchQuery == null) any() else eq(searchQuery), any())
+            } returns result
         }
     }
 }

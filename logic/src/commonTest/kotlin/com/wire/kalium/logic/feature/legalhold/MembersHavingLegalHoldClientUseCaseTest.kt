@@ -27,9 +27,10 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
@@ -77,13 +78,13 @@ class MembersHavingLegalHoldClientUseCaseTest {
     }
 
     internal class Arrangement {
-                private val clientRepository = mock(ClientRepository::class)
+                private val clientRepository: ClientRepository = mock()
         private val useCase by lazy { MembersHavingLegalHoldClientUseCaseImpl(clientRepository) }
         fun arrange() = this to useCase
         suspend fun withGetClientsOfConversation(result: Either<StorageFailure, Map<UserId, List<Client>>>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.getClientsByConversationId(any())
-            }.returns(result)
+            } returns result
         }
     }
 }

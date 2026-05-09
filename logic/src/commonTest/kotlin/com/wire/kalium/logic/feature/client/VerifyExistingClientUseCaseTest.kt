@@ -19,22 +19,22 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.logic.data.client.Client
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.IsAllowedToRegisterMLSClientUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.IsAllowedToRegisterMLSClientUseCaseArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.RegisterMLSClientUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.RegisterMLSClientUseCaseArrangementImpl
 import com.wire.kalium.util.DelicateKaliumApi
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -93,9 +93,9 @@ class VerifyExistingClientUseCaseTest {
             }
             val result = useCase.invoke(clientId)
             assertIs<VerifyExistingClientResult.Success>(result)
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.registerMLSClientUseCase(any())
-            }.wasNotInvoked()
+            }
             assertEquals(client, result.client)
         }
 
@@ -121,24 +121,24 @@ class VerifyExistingClientUseCaseTest {
         }
         val result = useCase.invoke(clientId)
         assertIs<VerifyExistingClientResult.Failure.ClientNotRegistered>(result)
-        coVerify { arrangement.clientRepository.persistClientId(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.clientRepository.persistClientId(any()) }
     }
 
     private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     @OptIn(DelicateKaliumApi::class)
-    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        RegisterMLSClientUseCaseArrangement by RegisterMLSClientUseCaseArrangementImpl(),
-        ClientRepositoryArrangement by ClientRepositoryArrangementImpl(),
-        IsAllowedToRegisterMLSClientUseCaseArrangement by IsAllowedToRegisterMLSClientUseCaseArrangementImpl() {
-        val slowSyncRepository = mock(SlowSyncRepository::class)
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) {
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val isAllowedToRegisterMLSClientUseCase = mock<IsAllowedToRegisterMLSClientUseCase>(mode = MockMode.autoUnit)
+        val registerMLSClientUseCase = mock<RegisterMLSClientUseCase>(mode = MockMode.autoUnit)
+        val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
 
         fun arrange() = run {
             runBlocking { block() }
             runBlocking {
-                coEvery {
+                everySuspend {
                     slowSyncRepository.clearLastSlowSyncCompletionInstant()
-                }.returns(Unit)
+                } returns Unit
             }
 
             this@Arrangement to VerifyExistingClientUseCaseImpl(
@@ -148,6 +148,24 @@ class VerifyExistingClientUseCaseTest {
                 registerMLSClientUseCase,
                 slowSyncRepository
             )
+        }
+
+        suspend fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>) {
+            everySuspend {
+                clientRepository.selfListOfClients()
+            } returns result
+        }
+
+        suspend fun withIsAllowedToRegisterMLSClient(result: Boolean) {
+            everySuspend {
+                isAllowedToRegisterMLSClientUseCase.invoke()
+            } returns result
+        }
+
+        suspend fun withRegisterMLSClient(result: Either<CoreFailure, RegisterMLSClientResult>) {
+            everySuspend {
+                registerMLSClientUseCase.invoke(any())
+            } returns result
         }
     }
 }

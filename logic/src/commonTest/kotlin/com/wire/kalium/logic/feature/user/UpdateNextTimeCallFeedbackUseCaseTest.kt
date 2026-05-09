@@ -17,13 +17,13 @@
  */
 package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.MockMode
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.days
@@ -33,35 +33,31 @@ class UpdateNextTimeCallFeedbackUseCaseTest {
 
     @Test
     fun givenNeverAskAgainIsTrue_whenInvoked_thenNextTimeSetToNegative() = runTest {
-        val (arrangement, useCase) = Arrangement().arrange {
-            withUpdateNextTimeForCallFeedback()
-        }
+        val (arrangement, useCase) = Arrangement().arrange()
 
         useCase(true)
 
-        coVerify { arrangement.userConfigRepository.updateNextTimeForCallFeedback(eq(-1L)) }
-            .wasInvoked()
+        verifySuspend { arrangement.userConfigRepository.updateNextTimeForCallFeedback(eq(-1L)) }
     }
 
     @Test
     fun givenNeverAskAgainIsFalse_whenInvoked_thenNextTimeSetToNegative() = runTest {
-        val (arrangement, useCase) = Arrangement().arrange {
-            withUpdateNextTimeForCallFeedback()
-        }
+        val (arrangement, useCase) = Arrangement().arrange()
         val expectedMin = DateTimeUtil.currentInstant().plus(3.days).toEpochMilliseconds()
         val expectedMax = DateTimeUtil.currentInstant().plus(3.days).plus(10.minutes).toEpochMilliseconds()
 
         useCase(false)
 
-        coVerify { arrangement.userConfigRepository.updateNextTimeForCallFeedback(matches { it in expectedMin..<expectedMax }) }
-            .wasInvoked()
+        verifySuspend {
+            arrangement.userConfigRepository.updateNextTimeForCallFeedback(matching { it in expectedMin..<expectedMax })
+        }
     }
 
 
-    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
+    private class Arrangement {
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
-        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, UpdateNextTimeCallFeedbackUseCase> {
-            runBlocking { block() }
+        suspend fun arrange(): Pair<Arrangement, UpdateNextTimeCallFeedbackUseCase> {
             return this to UpdateNextTimeCallFeedbackUseCase(userConfigRepository)
         }
     }

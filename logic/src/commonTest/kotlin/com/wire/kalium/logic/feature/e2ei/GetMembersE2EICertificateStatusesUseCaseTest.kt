@@ -22,18 +22,18 @@ import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCaseImpl
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -118,10 +118,9 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
             assertEquals(true, result[userId2])
         }
 
-    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
-
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) {
+        val mlsConversationRepository: MLSConversationRepository = mock(mode = MockMode.autoUnit)
+        val conversationRepository: ConversationRepository = mock(mode = MockMode.autoUnit)
         val mlsClientProvider: MLSClientProvider = mock(mode = MockMode.autoUnit)
         val mlsClient: MLSClient = mock(mode = MockMode.autoUnit)
 
@@ -137,6 +136,14 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
                 mlsConversationRepository = mlsConversationRepository,
                 conversationRepository = conversationRepository
             )
+        }
+
+        suspend fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>) {
+            everySuspend { mlsConversationRepository.getMembersIdentities(any(), any(), any()) } returns result
+        }
+
+        suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>) {
+            everySuspend { conversationRepository.selectMembersNameAndHandle(any()) } returns result
         }
     }
 

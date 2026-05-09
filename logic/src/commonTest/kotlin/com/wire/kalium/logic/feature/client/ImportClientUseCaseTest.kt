@@ -23,12 +23,14 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.framework.TestClient
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -46,13 +48,13 @@ class ImportClientUseCaseTest {
 
         assertIs<RegisterClientResult.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.persistRetainedClientId(eq(TestClient.CLIENT_ID))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.getOrRegisterClientUseCase.invoke(eq(Arrangement.REGISTER_CLIENT_PARAM))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -68,19 +70,19 @@ class ImportClientUseCaseTest {
 
     private class Arrangement {
 
-        val clientRepository = mock(ClientRepository::class)
-        val getOrRegisterClientUseCase = mock(GetOrRegisterClientUseCase::class)
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val getOrRegisterClientUseCase = mock<GetOrRegisterClientUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withGetOrRegisterClientResult(result: RegisterClientResult): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 getOrRegisterClientUseCase.invoke(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withPersistRetainedClientResult(result: Either<CoreFailure, Unit>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.persistRetainedClientId(any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to ImportClientUseCaseImpl(clientRepository, getOrRegisterClientUseCase)
