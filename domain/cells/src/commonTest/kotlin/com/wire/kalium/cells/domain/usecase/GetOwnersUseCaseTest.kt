@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.error.StorageFailure
@@ -29,9 +31,9 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -227,7 +229,7 @@ class GetOwnersUseCaseTest {
     }
 
     private class Arrangement {
-        private val usersRepository = mock(CellUsersRepository::class)
+        private val usersRepository = mock<CellUsersRepository>(mode = MockMode.autoUnit)
 
         private var conversationMembersResult: Either<StorageFailure, List<UserDetailsEntity>> = Either.Right(emptyList())
         private var allUsersResult: Either<StorageFailure, List<UserDetailsEntity>> = Either.Right(emptyList())
@@ -249,11 +251,11 @@ class GetOwnersUseCaseTest {
         }
 
         suspend fun arrange(): Pair<Arrangement, GetOwnersUseCase> {
-            coEvery {
+            everySuspend {
                 usersRepository.getConversationMemberDetails(any())
             }.returns(conversationMembersResult)
 
-            coEvery {
+            everySuspend {
                 usersRepository.getUsers()
             }.returns(allUsersResult)
 

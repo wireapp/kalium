@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.error.StorageFailure
@@ -25,8 +27,8 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -138,7 +140,7 @@ class GetCellGroupConversationsUseCaseTest {
     }
 
     private class Arrangement {
-        private val conversationRepository = mock(CellConversationRepository::class)
+        private val conversationRepository = mock<CellConversationRepository>(mode = MockMode.autoUnit)
 
         private var conversationDetailsResult: Either<StorageFailure, List<CellConversation>> = listOf<CellConversation>().right()
 
@@ -151,7 +153,7 @@ class GetCellGroupConversationsUseCaseTest {
         }
 
         suspend fun arrange(): Pair<Arrangement, GetCellGroupConversationsUseCase> {
-            coEvery {
+            everySuspend {
                 conversationRepository.getCellGroupConversations()
             }.returns(conversationDetailsResult)
 
