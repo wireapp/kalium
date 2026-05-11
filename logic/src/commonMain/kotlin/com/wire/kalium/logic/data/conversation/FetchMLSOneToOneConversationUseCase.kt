@@ -28,9 +28,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
-import io.mockative.Mockable
 
-@Mockable
 internal interface FetchMLSOneToOneConversationUseCase {
     suspend operator fun invoke(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Conversation>
 }

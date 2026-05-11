@@ -99,5 +99,3 @@ internal open class CryptoTransactionProviderArrangementMokkeryImpl : CryptoTran
 }
 
 internal class CryptoTransactionProviderArrangementImpl : CryptoTransactionProviderArrangementMokkeryImpl()
-
-internal class CryptoTransactionProviderArrangementMockativeImpl : CryptoTransactionProviderArrangementMokkeryImpl()

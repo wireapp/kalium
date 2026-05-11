@@ -47,12 +47,10 @@ import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
-@Mockable
 internal interface ClientRepository {
     suspend fun setHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun registerClient(param: RegisterClientParameters): Either<NetworkFailure, Client>

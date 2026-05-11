@@ -37,7 +37,6 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangement
-import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed

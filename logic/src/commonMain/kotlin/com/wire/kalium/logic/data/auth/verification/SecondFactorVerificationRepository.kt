@@ -22,9 +22,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
-import io.mockative.Mockable
 
-@Mockable
 internal interface SecondFactorVerificationRepository {
 
     suspend fun requestVerificationCode(

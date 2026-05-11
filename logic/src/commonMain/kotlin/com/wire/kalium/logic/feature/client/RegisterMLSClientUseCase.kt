@@ -36,7 +36,6 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
-import io.mockative.Mockable
 
 internal sealed class RegisterMLSClientResult {
     internal data object Success : RegisterMLSClientResult()
@@ -47,7 +46,6 @@ internal sealed class RegisterMLSClientResult {
 /**
  * Register an MLS client with an existing client already registered on the backend.
  */
-@Mockable
 internal interface RegisterMLSClientUseCase {
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult>
 }

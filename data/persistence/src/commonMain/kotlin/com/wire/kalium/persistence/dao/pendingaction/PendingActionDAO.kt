@@ -18,7 +18,6 @@
 package com.wire.kalium.persistence.dao.pendingaction
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import io.mockative.Mockable
 
 enum class PendingActionType(val dbValue: String) {
     RESOLVE_ONE_ON_ONE_CONVERSATION("resolve_one_on_one_conversation"),
@@ -30,7 +29,6 @@ data class PendingActionEntity(
     val createdAt: Long,
 )
 
-@Mockable
 interface PendingActionDAO {
     suspend fun upsert(actionType: PendingActionType, qualifiedId: QualifiedIDEntity, createdAt: Long)
     suspend fun getByActionType(actionType: PendingActionType): List<PendingActionEntity>

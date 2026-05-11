@@ -30,13 +30,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.AppDAO
 import com.wire.kalium.persistence.dao.TeamDAO
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlin.collections.map
 
-@Mockable
 internal interface AppRepository {
     suspend fun observeAllApps(): Flow<Either<StorageFailure, List<AppDetails>>>
     suspend fun searchAppsByName(name: String): Flow<Either<StorageFailure, List<AppDetails>>>

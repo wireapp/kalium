@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.Mockable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -31,7 +30,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 
-@Mockable
 internal interface CallModerationActionsRepository {
     suspend fun addAction(conversationId: ConversationId, callModerationAction: CallModerationAction)
     fun observeActions(conversationId: ConversationId): Flow<CallModerationAction>

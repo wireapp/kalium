@@ -36,7 +36,6 @@ import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker.Companion.NAME
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker.Companion.TIMEOUT
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -52,7 +51,6 @@ import kotlin.time.Duration.Companion.seconds
  *
  *  API version is also part of the user config, but it is updated by [UpdateApiVersionsWorker] and not here.
  */
-@Mockable
 internal interface UserConfigSyncWorker : DefaultWorker {
     override suspend fun doWork(): Result
 

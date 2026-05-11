@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -124,7 +123,6 @@ internal object ServerConfigMapper {
 }
 
 @Suppress("TooManyFunctions")
-@Mockable
 interface ServerConfigurationDAO {
     suspend fun deleteById(id: String)
     suspend fun insert(insertData: InsertData)

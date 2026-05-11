@@ -50,10 +50,8 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
-import io.mockative.Mockable
 import kotlinx.serialization.json.Json
 
-@Mockable
 internal interface E2EIRepository {
     suspend fun initFreshE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<E2EIFailure, Unit>
     suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit>

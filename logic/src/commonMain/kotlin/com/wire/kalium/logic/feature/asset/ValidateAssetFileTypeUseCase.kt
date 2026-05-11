@@ -18,14 +18,12 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.common.logger.kaliumLogger
-import io.mockative.Mockable
 
 /**
  * Returns true if the file extension is present in file name and is allowed and false otherwise.
  * @param fileName the file name (with extension) to validate.
  * @param allowedExtension the list of allowed extension.
  */
-@Mockable
 internal interface ValidateAssetFileTypeUseCase {
     operator fun invoke(
         fileName: String?,

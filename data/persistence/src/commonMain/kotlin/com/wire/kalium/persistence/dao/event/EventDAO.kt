@@ -17,10 +17,8 @@
  */
 package com.wire.kalium.persistence.dao.event
 
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
-@Mockable
 interface EventDAO {
     companion object {
         const val DEFAULT_UNPROCESSED_EVENTS_LIMIT = 500L
