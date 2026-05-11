@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.paging
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import app.cash.paging.PagingSourceLoadParamsAppend
 import app.cash.paging.PagingSourceLoadParamsRefresh
 import app.cash.paging.PagingSourceLoadResultError
@@ -27,9 +29,9 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -149,8 +151,8 @@ class ConversationPagingSourceTest {
 
     @Test
     fun givenPageSizeTwenty_whenLoad_thenRepositoryCalledWithLimit20() = runTest {
-        val repo: CellConversationRepository = mock(CellConversationRepository::class)
-        coEvery {
+        val repo: CellConversationRepository = mock<CellConversationRepository>(mode = MockMode.autoUnit)
+        everySuspend {
             repo.getPaginatedCellGroupConversations(20, 0, "")
         }.returns(listOf(CONVERSATION_1).right())
 
@@ -178,16 +180,16 @@ class ConversationPagingSourceTest {
     }
 
     private inner class Arrangement {
-        val repository: CellConversationRepository = mock(CellConversationRepository::class)
+        val repository: CellConversationRepository = mock<CellConversationRepository>(mode = MockMode.autoUnit)
 
         suspend fun withPaginatedConversations(offset: Int, result: List<CellConversation>) = apply {
-            coEvery {
+            everySuspend {
                 repository.getPaginatedCellGroupConversations(PAGE_SIZE, offset, "")
             }.returns(result.right())
         }
 
         suspend fun withPaginatedConversationsError(failure: StorageFailure) = apply {
-            coEvery {
+            everySuspend {
                 repository.getPaginatedCellGroupConversations(any(), any(), any())
             }.returns(failure.left())
         }
