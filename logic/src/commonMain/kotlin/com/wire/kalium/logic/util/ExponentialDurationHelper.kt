@@ -17,10 +17,8 @@
  */
 package com.wire.kalium.logic.util
 
-import io.mockative.Mockable
 import kotlin.time.Duration
 
-@Mockable
 public interface ExponentialDurationHelper {
     public fun reset()
     public fun next(): Duration

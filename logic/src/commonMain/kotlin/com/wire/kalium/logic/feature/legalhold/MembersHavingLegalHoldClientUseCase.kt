@@ -24,12 +24,10 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.Mockable
 
 /**
  * Returns list of ids of conversation members having a legal hold client.
  */
-@Mockable
 internal interface MembersHavingLegalHoldClientUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, List<UserId>>
 }

@@ -37,7 +37,6 @@ import com.wire.kalium.network.exceptions.isConversationNotFound
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -56,7 +55,6 @@ import kotlinx.datetime.Instant
  * on committing pending proposals, and we want to avoid the scenario of everyone
  * committing pending proposals at same time.
  */
-@Mockable
 internal interface PendingProposalScheduler {
 
     /**

@@ -87,13 +87,11 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import io.ktor.http.HttpStatusCode
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
-@Mockable
 internal interface UserRepository : SelfUserObservationProvider {
     suspend fun fetchSelfUser(): Either<CoreFailure, Unit>
     suspend fun insertSelfIncompleteUserWithOnlyEmail(email: String): Either<CoreFailure, Unit>

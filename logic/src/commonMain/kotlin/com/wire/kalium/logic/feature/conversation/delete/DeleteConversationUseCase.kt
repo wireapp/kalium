@@ -31,7 +31,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import io.mockative.Mockable
 
 /**
  * Use case responsible for deleting a conversation, handling both Proteus and MLS protocols.
@@ -40,7 +39,6 @@ import io.mockative.Mockable
  * - For **MLS** conversations, this deletes the local conversation and also wipes it from the MLS client.
  */
 
-@Mockable
 internal interface DeleteConversationUseCase {
     suspend operator fun invoke(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit>
 }

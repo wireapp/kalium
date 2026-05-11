@@ -23,9 +23,7 @@ import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep_10_11
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep_6_7
 import com.wire.kalium.persistence.config.UserConfigStorage
-import io.mockative.Mockable
 
-@Mockable
 internal interface SyncMigrationStepsProvider {
     fun getMigrationSteps(fromVersion: Int, toVersion: Int): List<SyncMigrationStep>
 }

@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CellAssetContent
-import io.mockative.Mockable
 import kotlinx.coroutines.CancellationException
 import okio.FileSystem
 import okio.Path.Companion.toPath
@@ -37,7 +36,6 @@ import okio.SYSTEM
  * - Removes files from Wire Cell storage.
  * - Removes local files from the device.
  */
-@Mockable
 public interface DeleteMessageAttachmentsUseCase {
     public suspend operator fun invoke(messageId: String, conversationId: ConversationId): Either<CoreFailure, Unit>
 }

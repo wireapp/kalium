@@ -32,14 +32,12 @@ import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 @Suppress("TooManyFunctions")
-@Mockable
 interface MemberDAO {
     suspend fun insertMember(member: MemberEntity, conversationID: QualifiedIDEntity)
     suspend fun updateMemberRole(userId: UserIDEntity, conversationID: QualifiedIDEntity, newRole: MemberEntity.Role)

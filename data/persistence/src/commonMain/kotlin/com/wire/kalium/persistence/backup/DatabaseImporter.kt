@@ -25,10 +25,8 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.checkFKViolations
 import com.wire.kalium.persistence.db.migrate
 import com.wire.kalium.persistence.db.userDatabaseDriverByPath
-import io.mockative.Mockable
 import kotlin.coroutines.cancellation.CancellationException
 
-@Mockable
 interface DatabaseImporter {
     suspend fun importFromFile(filePath: String, fromOtherClient: Boolean)
 }

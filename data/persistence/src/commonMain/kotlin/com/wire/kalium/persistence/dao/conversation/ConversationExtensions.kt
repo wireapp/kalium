@@ -24,9 +24,7 @@ import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.db.ReadDispatcher
-import io.mockative.Mockable
 
-@Mockable
 interface ConversationExtensions {
     fun getPagerForConversationDetailsWithEventsSearch(
         queryConfig: QueryConfig,

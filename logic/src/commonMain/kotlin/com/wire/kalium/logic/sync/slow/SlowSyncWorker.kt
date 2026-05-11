@@ -51,7 +51,6 @@ import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCas
 import com.wire.kalium.logic.feature.user.toEither
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
-import io.mockative.Mockable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
@@ -61,7 +60,6 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 import kotlin.time.measureTimedValue
 
-@Mockable
 internal interface SlowSyncWorker {
 
     /**

@@ -41,13 +41,13 @@ import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-private val MOCKATIVE_USER_ID = UserId("mockative-user", "mockative.test")
-private val MOCKATIVE_CONVERSATION_ID = ConversationId("mockative-conversation", "mockative.test")
-private val MOCKATIVE_CLIENT_ID = ClientId("mockative-client")
-private val MOCKATIVE_TEAM_ID = TeamId("mockative-team")
-private val MOCKATIVE_USER_UPDATE_EVENT = Event.User.Update(
-    id = "mockative-event",
-    userId = MOCKATIVE_USER_ID,
+private val MOKKERY_USER_ID = UserId("mokkery-user", "mokkery.test")
+private val MOKKERY_CONVERSATION_ID = ConversationId("mokkery-conversation", "mokkery.test")
+private val MOKKERY_CLIENT_ID = ClientId("mokkery-client")
+private val MOKKERY_TEAM_ID = TeamId("mokkery-team")
+private val MOKKERY_USER_UPDATE_EVENT = Event.User.Update(
+    id = "mokkery-event",
+    userId = MOKKERY_USER_ID,
     accentId = null,
     ssoIdDeleted = null,
     name = null,

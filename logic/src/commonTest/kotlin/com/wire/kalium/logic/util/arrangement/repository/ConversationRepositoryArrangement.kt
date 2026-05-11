@@ -43,10 +43,10 @@ import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Instant
 
-private val MOCKATIVE_CONVERSATION_ID = ConversationId("mockative-conversation", "mockative.test")
-private val MOCKATIVE_USER_ID = UserId("mockative-user", "mockative.test")
-private val MOCKATIVE_GROUP_ID = GroupID("mockative-group")
-private val MOCKATIVE_INSTANT = Instant.fromEpochMilliseconds(0)
+private val MOKKERY_CONVERSATION_ID = ConversationId("mokkery-conversation", "mokkery.test")
+private val MOKKERY_USER_ID = UserId("mokkery-user", "mokkery.test")
+private val MOKKERY_GROUP_ID = GroupID("mokkery-group")
+private val MOKKERY_INSTANT = Instant.fromEpochMilliseconds(0)
 
 internal interface ConversationRepositoryArrangement {
     val conversationRepository: ConversationRepository

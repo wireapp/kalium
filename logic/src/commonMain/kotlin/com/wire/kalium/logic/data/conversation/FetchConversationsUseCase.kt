@@ -26,7 +26,6 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.Mockable
 
 /**
  * Use case responsible for fetching all available conversations from the backend,
@@ -35,7 +34,6 @@ import io.mockative.Mockable
  * Also handles partially failed or not found conversations by updating the local
  * state accordingly.
  */
-@Mockable
 internal interface FetchConversationsUseCase {
     suspend operator fun invoke(transactionContext: CryptoTransactionContext): Either<CoreFailure, Unit>
 }

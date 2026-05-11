@@ -32,14 +32,12 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.messaging.sending.MessageSender
-import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlin.uuid.Uuid
 
 /**
  * Use case for sending a delivery confirmation signal for a list of messages in a conversation.
  */
-@Mockable
 internal interface SendDeliverSignalUseCase {
     suspend operator fun invoke(conversation: Conversation, messages: List<MessageId>): MessageOperationResult
 }

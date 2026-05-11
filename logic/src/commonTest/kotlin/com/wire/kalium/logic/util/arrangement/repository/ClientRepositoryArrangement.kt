@@ -33,8 +33,8 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.mock
 
-private val MOCKATIVE_USER_ID = UserId("mockative-user", "mockative.test")
-private val MOCKATIVE_CLIENT_ID = ClientId("mockative-client")
+private val MOKKERY_USER_ID = UserId("mokkery-user", "mokkery.test")
+private val MOKKERY_CLIENT_ID = ClientId("mokkery-client")
 
 internal interface ClientRepositoryArrangement {
     val clientRepository: ClientRepository

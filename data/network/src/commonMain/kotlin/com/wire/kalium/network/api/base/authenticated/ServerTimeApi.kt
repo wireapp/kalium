@@ -19,9 +19,7 @@ package com.wire.kalium.network.api.base.authenticated
 
 import com.wire.kalium.network.api.authenticated.time.ServerTimeDTO
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mockable
 
-@Mockable
 interface ServerTimeApi : BaseApi {
     suspend fun getServerTime(): NetworkResponse<ServerTimeDTO>
 

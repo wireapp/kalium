@@ -71,7 +71,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -121,7 +120,6 @@ internal data class DecryptedMessageBundle(
 )
 
 @Suppress("TooManyFunctions", "LongParameterList")
-@Mockable
 internal interface MLSConversationRepository : MLSMemberAdder {
     suspend fun decryptMessage(
         mlsContext: MlsCoreCryptoContext,

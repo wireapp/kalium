@@ -50,10 +50,8 @@ import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.messaging.sending.BroadcastMessage
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
-@Mockable
 internal interface MessageEnvelopeCreator {
 
     suspend fun createOutgoingEnvelope(

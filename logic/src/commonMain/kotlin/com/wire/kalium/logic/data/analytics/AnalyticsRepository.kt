@@ -26,10 +26,8 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.UserDAO
-import io.mockative.Mockable
 import kotlinx.datetime.Instant
 
-@Mockable
 internal interface AnalyticsRepository {
     suspend fun getContactsAmountCached(): Either<StorageFailure, Int>
     suspend fun getTeamMembersAmountCached(): Either<CoreFailure, Int>

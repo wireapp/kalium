@@ -18,7 +18,6 @@
 plugins {
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.mockative)
     alias(libs.plugins.mokkery)
 }
 

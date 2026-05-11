@@ -29,9 +29,7 @@ import com.wire.kalium.network.api.model.ServiceDetailResponse
 import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.api.model.TeamId
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mockable
 
-@Mockable
 interface TeamsApi {
 
     suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit>
