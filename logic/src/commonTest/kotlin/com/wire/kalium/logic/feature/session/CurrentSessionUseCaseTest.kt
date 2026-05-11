@@ -23,10 +23,12 @@ import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -35,7 +37,7 @@ import kotlin.test.assertIs
 
 internal class CurrentSessionUseCaseTest {
 
-    val sessionRepository = mock(SessionRepository::class)
+    val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
 
     lateinit var currentSessionUseCase: CurrentSessionUseCase
 
@@ -48,35 +50,35 @@ internal class CurrentSessionUseCaseTest {
     fun givenAUserID_whenCurrentSessionSuccess_thenTheSuccessIsPropagated() = runTest {
         val expected: AccountInfo = TEST_Account_INFO
 
-        coEvery {
+        everySuspend {
             sessionRepository.currentSession()
-        }.returns(Either.Right(expected))
+        } returns Either.Right(expected)
 
         val actual = currentSessionUseCase()
 
         assertIs<CurrentSessionResult.Success>(actual)
         assertEquals(expected, actual.accountInfo)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             sessionRepository.currentSession()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenAUserID_whenCurrentSessionFailWithNoSessionFound_thenTheErrorIsPropagated() = runTest {
         val expected: StorageFailure = StorageFailure.DataNotFound
 
-        coEvery {
+        everySuspend {
             sessionRepository.currentSession()
-        }.returns(Either.Left(expected))
+        } returns Either.Left(expected)
 
         val actual = currentSessionUseCase()
 
         assertIs<CurrentSessionResult.Failure.SessionNotFound>(actual)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             sessionRepository.currentSession()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private companion object {

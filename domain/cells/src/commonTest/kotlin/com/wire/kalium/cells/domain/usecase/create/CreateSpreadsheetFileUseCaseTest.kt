@@ -17,14 +17,16 @@
  */
 package com.wire.kalium.cells.domain.usecase.create
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,13 +45,13 @@ class CreateSpreadsheetFileUseCaseTest {
         useCase(path)
 
         // Then
-        coVerify {
+        verifySuspend {
             arrangement.cellsRepository.createFile(
                 folderName = path + CreateSpreadsheetFileUseCaseImpl.EXTENSION,
                 contentType = CreateSpreadsheetFileUseCaseImpl.CONTENT_TYPE,
                 templateUuid = CreateSpreadsheetFileUseCaseImpl.SPREADSHEET_TEMPLATE_UUID
             )
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -70,10 +72,10 @@ class CreateSpreadsheetFileUseCaseTest {
 
     private class Arrangement {
 
-        val cellsRepository = mock(CellsRepository::class)
+        val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
 
         suspend fun withRepositoryReturning(result: Either<NetworkFailure, List<CellNode>>) = apply {
-            coEvery {
+            everySuspend {
                 cellsRepository.createFile(
                     folderName = any(),
                     contentType = any(),

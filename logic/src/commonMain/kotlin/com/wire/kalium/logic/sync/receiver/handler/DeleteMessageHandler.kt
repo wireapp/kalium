@@ -27,9 +27,7 @@ import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import io.mockative.Mockable
 
-@Mockable
 internal interface DeleteMessageHandler {
     suspend operator fun invoke(
         content: MessageContent.DeleteMessage,

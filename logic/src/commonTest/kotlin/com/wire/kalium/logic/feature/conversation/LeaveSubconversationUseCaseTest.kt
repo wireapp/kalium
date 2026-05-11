@@ -31,17 +31,19 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -58,12 +60,12 @@ class LeaveSubconversationUseCaseTest {
 
         leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.leaveSubconversation(
                 eq(Arrangement.CONVERSATION_ID.toApi()),
                 eq(Arrangement.SUBCONVERSATION_ID.toApi())
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -75,12 +77,12 @@ class LeaveSubconversationUseCaseTest {
 
         leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationApi.leaveSubconversation(
                 eq(Arrangement.CONVERSATION_ID.toApi()),
                 eq(Arrangement.SUBCONVERSATION_ID.toApi())
             )
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -92,12 +94,12 @@ class LeaveSubconversationUseCaseTest {
 
         leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationApi.fetchSubconversationDetails(
                 eq(Arrangement.CONVERSATION_ID.toApi()),
                 eq(Arrangement.SUBCONVERSATION_ID.toApi())
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -111,19 +113,19 @@ class LeaveSubconversationUseCaseTest {
 
         leaveSubconversation(arrangement.mlsContext, Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsContext.wipeConversation(eq(Arrangement.SUBCONVERSATION_GROUP_ID.toCrypto()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.subconversationRepository.deleteSubconversation(eq(Arrangement.CONVERSATION_ID), eq(Arrangement.SUBCONVERSATION_ID))
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val conversationApi = mock(ConversationApi::class)
-        val subconversationRepository = mock(SubconversationRepository::class)
-        val selfClientIdProvider = mock(CurrentClientIdProvider::class)
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val conversationApi = mock<ConversationApi>(mode = MockMode.autoUnit)
+        val subconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
+        val selfClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = this to LeaveSubconversationUseCaseImpl(
             conversationApi,
@@ -131,39 +133,39 @@ class LeaveSubconversationUseCaseTest {
             TestUser.SELF.id,
             selfClientIdProvider
         ).also {
-            coEvery {
+            everySuspend {
                 selfClientIdProvider.invoke()
-            }.returns(Either.Right(TestClient.CLIENT_ID))
+            } returns Either.Right(TestClient.CLIENT_ID)
         }
 
         suspend fun withFetchingSubconversationDetails(response: SubconversationResponse) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.fetchSubconversationDetails(any(), any())
-            }.returns(NetworkResponse.Success(response, emptyMap(), 200))
+            } returns NetworkResponse.Success(response, emptyMap(), 200)
         }
 
         suspend fun withLeaveSubconversationSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.leaveSubconversation(any(), any())
-            }.returns(NetworkResponse.Success(Unit, emptyMap(), 200))
+            } returns NetworkResponse.Success(Unit, emptyMap(), 200)
         }
 
         suspend fun withGetSubconversationInfoReturns(groupID: GroupID?) = apply {
-            coEvery {
+            everySuspend {
                 subconversationRepository.getSubconversationInfo(any(), any())
-            }.returns(groupID)
+            } returns groupID
         }
 
         suspend fun withDeleteSubconversationSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 subconversationRepository.deleteSubconversation(any(), any())
-            }.returns(Unit)
+            } returns Unit
         }
 
         suspend fun withWipeMlsConversationSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsContext.wipeConversation(any())
-            }.returns(Unit)
+            } returns Unit
         }
 
         companion object {

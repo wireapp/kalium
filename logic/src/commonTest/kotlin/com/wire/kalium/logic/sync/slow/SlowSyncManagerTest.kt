@@ -19,29 +19,29 @@
 package com.wire.kalium.logic.sync.slow
 
 import app.cash.turbine.test
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.ExponentialDurationHelper
-import com.wire.kalium.logic.util.arrangement.provider.SyncMigrationStepsProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.SyncMigrationStepsProviderArrangementImpl
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.instanceOf
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.matcher.ofType
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -64,6 +64,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
+import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SlowSyncManagerTest {
@@ -82,13 +83,13 @@ class SlowSyncManagerTest {
         }
 
         assertTrue(isCollected)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.slowSyncWorker.slowSyncStepsFlow(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.slowSyncRepository.setSlowSyncVersion(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -104,9 +105,9 @@ class SlowSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.slowSyncWorker.slowSyncStepsFlow(any())
-        }.wasInvoked(exactly = twice)
+        }
     }
 
     @Test
@@ -121,9 +122,9 @@ class SlowSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.slowSyncWorker.slowSyncStepsFlow(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -138,9 +139,9 @@ class SlowSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.slowSyncRepository.updateSlowSyncStatus(eq(SlowSyncStatus.Complete))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -157,18 +158,18 @@ class SlowSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.slowSyncRepository.setSlowSyncVersion(any())
-        }.wasInvoked(once)
+        }
 
         val completedTime = DateTimeUtil.currentInstant()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.slowSyncRepository.setLastSlowSyncCompletionInstant(
                 matches<Instant> {
                     initialTime <= it && it <= completedTime
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -182,9 +183,9 @@ class SlowSyncManagerTest {
 
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.slowSyncRepository.setLastSlowSyncCompletionInstant(any<Instant>())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -203,9 +204,9 @@ class SlowSyncManagerTest {
                 cancelAndIgnoreRemainingEvents()
             }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.slowSyncRepository.setSlowSyncVersion(any())
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -220,9 +221,9 @@ class SlowSyncManagerTest {
 
             advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.slowSyncRepository.setSlowSyncVersion(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -240,9 +241,9 @@ class SlowSyncManagerTest {
             stepChannel.send(step)
             advanceUntilIdle()
 
-            verify {
+            verify(VerifyMode.exactly(1)) {
                 arrangement.slowSyncRepository.updateSlowSyncStatus(eq(SlowSyncStatus.Ongoing(step)))
-            }.wasInvoked(exactly = once)
+            }
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -287,9 +288,9 @@ class SlowSyncManagerTest {
         advanceUntilIdle()
 
         // Never updated to Ongoing
-        coVerify {
-            arrangement.slowSyncRepository.updateSlowSyncStatus(instanceOf<SlowSyncStatus.Ongoing>())
-        }.wasNotInvoked()
+        verify(VerifyMode.not) {
+            arrangement.slowSyncRepository.updateSlowSyncStatus(ofType<SlowSyncStatus.Ongoing>())
+        }
 
         // No collectors
         assertEquals(0, stepSharedFlow.subscriptionCount.value)
@@ -318,17 +319,17 @@ class SlowSyncManagerTest {
             advanceUntilIdle()
 
             // Not updated to Ongoing
-            coVerify {
-                arrangement.slowSyncRepository.updateSlowSyncStatus(instanceOf<SlowSyncStatus.Ongoing>())
-            }.wasNotInvoked()
+            verify(VerifyMode.not) {
+                arrangement.slowSyncRepository.updateSlowSyncStatus(ofType<SlowSyncStatus.Ongoing>())
+            }
 
             lastPerformedInstant.send(null)
             advanceUntilIdle()
 
             // Updated to Ongoing after clearing lastPerformed
-            coVerify {
+            verify(VerifyMode.exactly(1)) {
                 arrangement.slowSyncRepository.updateSlowSyncStatus(eq(SlowSyncStatus.Ongoing(step)))
-            }.wasInvoked(exactly = once)
+            }
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -362,9 +363,9 @@ class SlowSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.exponentialDurationHelper.reset()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -381,50 +382,51 @@ class SlowSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.exponentialDurationHelper.next()
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement : SyncMigrationStepsProviderArrangement by SyncMigrationStepsProviderArrangementImpl() {
-        val slowSyncCriteriaProvider: SlowSyncCriteriaProvider = mock(SlowSyncCriteriaProvider::class)
-        val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
-        val slowSyncWorker: SlowSyncWorker = mock(SlowSyncWorker::class)
-        val slowSyncRecoveryHandler: SlowSyncRecoveryHandler = mock(SlowSyncRecoveryHandler::class)
-        val networkStateObserver: NetworkStateObserver = mock(NetworkStateObserver::class)
+    private class Arrangement {
+        val slowSyncCriteriaProvider: SlowSyncCriteriaProvider = mock()
+        val slowSyncRepository: SlowSyncRepository = mock(mode = MockMode.autoUnit)
+        val slowSyncWorker: SlowSyncWorker = mock()
+        val slowSyncRecoveryHandler: SlowSyncRecoveryHandler = mock()
+        val networkStateObserver: NetworkStateObserver = mock(mode = MockMode.autoUnit)
         val exponentialDurationHelper: ExponentialDurationHelper =
-            mock(ExponentialDurationHelper::class)
+            mock(mode = MockMode.autoUnit)
+        val syncMigrationStepsProvider: SyncMigrationStepsProvider = mock()
 
 
         init {
-            every { slowSyncRepository.slowSyncStatus }.returns(MutableStateFlow(SlowSyncStatus.Pending))
+            every { slowSyncRepository.slowSyncStatus } returns MutableStateFlow(SlowSyncStatus.Pending)
         }
 
         suspend fun withCriteriaProviderReturning(criteriaFlow: Flow<SyncCriteriaResolution>) = apply {
-            coEvery {
+            everySuspend {
                 slowSyncCriteriaProvider.syncCriteriaFlow()
-            }.returns(criteriaFlow)
+            } returns criteriaFlow
         }
 
         suspend fun withLastSlowSyncPerformedAt(lasSyncFlow: Flow<Instant?>) = apply {
-            coEvery {
+            everySuspend {
                 slowSyncRepository.observeLastSlowSyncCompletionInstant()
-            }.returns(lasSyncFlow)
+            } returns lasSyncFlow
         }
 
         suspend fun withSatisfiedCriteria() = withCriteriaProviderReturning(flowOf(SyncCriteriaResolution.Ready))
 
         suspend fun withSlowSyncWorkerReturning(stepFlow: Flow<SlowSyncStep>) = apply {
-            coEvery {
+            everySuspend {
                 slowSyncWorker.slowSyncStepsFlow(any())
-            }.returns(stepFlow)
+            } returns stepFlow
         }
 
         suspend fun withRecoveringFromFailure() = apply {
-            coEvery {
+            everySuspend {
                 slowSyncRecoveryHandler.recover(any(), any())
-            }.invokes { args ->
-                val onRetryCallback = args[1] as OnSlowSyncRetryCallback
+            } calls { invocation ->
+                val onRetryCallback = invocation.args[1] as OnSlowSyncRetryCallback
                 onRetryCallback.retry()
             }
         }
@@ -432,25 +434,31 @@ class SlowSyncManagerTest {
         fun withNetworkState(networkStateFlow: StateFlow<NetworkState>) = apply {
             every {
                 networkStateObserver.observeNetworkState()
-            }.returns(networkStateFlow)
+            } returns networkStateFlow
         }
 
         fun withNextExponentialDuration(duration: Duration) = apply {
             every {
                 exponentialDurationHelper.next()
-            }.returns(duration)
+            } returns duration
         }
 
         suspend fun withLastSlowSyncPerformedOnAnOldVersion() = apply {
-            coEvery {
+            everySuspend {
                 slowSyncRepository.getSlowSyncVersion()
-            }.returns(0)
+            } returns 0
         }
 
         suspend fun withLastSlowSyncPerformedOnANewVersion() = apply {
-            coEvery {
+            everySuspend {
                 slowSyncRepository.getSlowSyncVersion()
-            }.returns(Int.MAX_VALUE)
+            } returns Int.MAX_VALUE
+        }
+
+        fun withSyncMigrationSteps(steps: List<com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep>) = apply {
+            every {
+                syncMigrationStepsProvider.getMigrationSteps(any(), any())
+            } returns steps
         }
 
         private val slowSyncManager = SlowSyncManager(
@@ -470,9 +478,9 @@ class SlowSyncManagerTest {
             withNextExponentialDuration(1.seconds)
             withLastSlowSyncPerformedOnANewVersion()
             apply {
-                coEvery {
+                everySuspend {
                     slowSyncRepository.setSlowSyncVersion(any())
-                }.returns(Unit)
+                } returns Unit
             }
             block()
             this to slowSyncManager

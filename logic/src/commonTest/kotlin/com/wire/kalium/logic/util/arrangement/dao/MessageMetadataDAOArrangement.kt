@@ -20,13 +20,13 @@ package com.wire.kalium.logic.util.arrangement.dao
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
-import io.mockative.Matchers
-import io.mockative.coEvery
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
 
 interface MessageMetadataDAOArrangement {
-        val messageMetaDataDAO: MessageMetadataDAO
+    val messageMetaDataDAO: MessageMetadataDAO
 
     suspend fun withMessageOriginalSender(
         result: UserIDEntity?,
@@ -36,18 +36,18 @@ interface MessageMetadataDAOArrangement {
 }
 
 class MessageMetadataDAOArrangementImpl : MessageMetadataDAOArrangement {
-        override val messageMetaDataDAO: MessageMetadataDAO = mock(MessageMetadataDAO::class)
+    override val messageMetaDataDAO: MessageMetadataDAO = mock<MessageMetadataDAO>()
 
     override suspend fun withMessageOriginalSender(
         result: UserIDEntity?,
         conversationId: (ConversationIDEntity) -> Boolean,
         messageId: (String) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             messageMetaDataDAO.originalSenderId(
                 matches { conversationId(it) },
                 matches { messageId(it) }
             )
-        }.returns(result)
+        } returns result
     }
 }

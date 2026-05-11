@@ -25,12 +25,15 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
@@ -48,7 +51,7 @@ class ConversationMessageTimerEventHandlerTest {
         eventHandler.handle(event)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 persistMessageUseCase.invoke(
                     eq(Message.System(
                     event.id,
@@ -62,7 +65,7 @@ class ConversationMessageTimerEventHandlerTest {
                     Message.Visibility.VISIBLE,
                     expirationData = null
                 )))
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -77,16 +80,16 @@ class ConversationMessageTimerEventHandlerTest {
         eventHandler.handle(event)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 persistMessageUseCase.invoke(any())
-            }.wasNotInvoked()
+            }
         }
     }
 
     private class Arrangement {
 
-        val conversationDAO = mock(ConversationDAO::class)
-        val persistMessageUseCase = mock(PersistMessageUseCase::class)
+        val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
+        val persistMessageUseCase = mock<PersistMessageUseCase>()
 
         private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler = ConversationMessageTimerEventHandlerImpl(
             conversationDAO,
@@ -94,21 +97,21 @@ class ConversationMessageTimerEventHandlerTest {
         )
 
         suspend fun withConversationUpdateMessageTimer() = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.updateMessageTimer(any(), any())
-            }.returns(Unit)
+            } returns Unit
         }
 
         suspend fun withConversationUpdateMessageTimerError() = apply {
-            coEvery {
+            everySuspend {
                 conversationDAO.updateMessageTimer(any(), any())
-            }.throws(IOException("Some error"))
+            } throws IOException("Some error")
         }
 
         suspend fun withPersistMessage(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 persistMessageUseCase.invoke(any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to conversationMessageTimerEventHandler

@@ -24,7 +24,6 @@ import com.wire.kalium.persistence.AppsQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -70,7 +69,6 @@ private fun mapAppToAppEntity(app: App): AppEntity =
         completeAssetId = app.complete_asset_id
     )
 
-@Mockable
 interface AppDAO {
     suspend fun insert(appEntity: AppEntity)
     suspend fun upsertApps(apps: List<AppEntity>)

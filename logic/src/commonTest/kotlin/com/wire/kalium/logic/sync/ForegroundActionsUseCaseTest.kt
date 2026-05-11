@@ -27,9 +27,11 @@ import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -57,7 +59,7 @@ internal class ForegroundActionsUseCaseTest {
         testFailedActions(ActionResults(userConfigSyncWorkerResult = Result.Failure))
 
     private suspend fun Arrangement.verifyActions(times: Int = 1) {
-        coVerify {
+        verifySuspend(VerifyMode.exactly(times)) {
             updateApiVersionsUseCase()
             userConfigSyncWorker.doWork()
             syncCertificateRevocationListUseCase()
@@ -67,19 +69,19 @@ internal class ForegroundActionsUseCaseTest {
             keyingMaterialsManager()
             recoverPendingMLSGroupJoinsUseCase()
             recoverPendingOneOnOneResolutionsUseCase()
-        }.wasInvoked(exactly = times)
+        }
     }
 
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) {
-        val updateApiVersionsUseCase = mock(UpdateApiVersionsUseCase::class)
-        val userConfigSyncWorker = mock(UserConfigSyncWorker::class)
-        val syncCertificateRevocationListUseCase = mock(SyncCertificateRevocationListUseCase::class)
-        val observeCertificateRevocationForSelfClient = mock(ObserveCertificateRevocationForSelfClientUseCase::class)
-        val mlsClientManager = mock(MLSClientManager::class)
-        val mlsMigrationManager = mock(MLSMigrationManager::class)
-        val keyingMaterialsManager = mock(KeyingMaterialsManager::class)
-        val recoverPendingMLSGroupJoinsUseCase = mock(RecoverPendingMLSGroupJoinsUseCase::class)
-        val recoverPendingOneOnOneResolutionsUseCase = mock(RecoverPendingOneOnOneResolutionsUseCase::class)
+        val updateApiVersionsUseCase = mock<UpdateApiVersionsUseCase>()
+        val userConfigSyncWorker = mock<UserConfigSyncWorker>()
+        val syncCertificateRevocationListUseCase = mock<SyncCertificateRevocationListUseCase>()
+        val observeCertificateRevocationForSelfClient = mock<ObserveCertificateRevocationForSelfClientUseCase>()
+        val mlsClientManager = mock<MLSClientManager>()
+        val mlsMigrationManager = mock<MLSMigrationManager>()
+        val keyingMaterialsManager = mock<KeyingMaterialsManager>()
+        val recoverPendingMLSGroupJoinsUseCase = mock<RecoverPendingMLSGroupJoinsUseCase>()
+        val recoverPendingOneOnOneResolutionsUseCase = mock<RecoverPendingOneOnOneResolutionsUseCase>()
 
         suspend fun arrange(): Pair<Arrangement, ForegroundActionsUseCase> = run {
             withActionResults(ActionResults())
@@ -99,15 +101,15 @@ internal class ForegroundActionsUseCaseTest {
         }
 
         suspend fun withActionResults(actionResults: ActionResults) = apply {
-            coEvery { updateApiVersionsUseCase() }.returns(Unit)
-            coEvery { userConfigSyncWorker.doWork() }.returns(actionResults.userConfigSyncWorkerResult)
-            coEvery { syncCertificateRevocationListUseCase() }.returns(Unit)
-            coEvery { observeCertificateRevocationForSelfClient() }.returns(Unit)
-            coEvery { mlsClientManager() }.returns(Unit)
-            coEvery { mlsMigrationManager() }.returns(Unit)
-            coEvery { keyingMaterialsManager() }.returns(Unit)
-            coEvery { recoverPendingMLSGroupJoinsUseCase() }.returns(Unit)
-            coEvery { recoverPendingOneOnOneResolutionsUseCase() }.returns(Unit)
+            everySuspend { updateApiVersionsUseCase() } returns Unit
+            everySuspend { userConfigSyncWorker.doWork() } returns actionResults.userConfigSyncWorkerResult
+            everySuspend { syncCertificateRevocationListUseCase() } returns Unit
+            everySuspend { observeCertificateRevocationForSelfClient() } returns Unit
+            everySuspend { mlsClientManager() } returns Unit
+            everySuspend { mlsMigrationManager() } returns Unit
+            everySuspend { keyingMaterialsManager() } returns Unit
+            everySuspend { recoverPendingMLSGroupJoinsUseCase() } returns Unit
+            everySuspend { recoverPendingOneOnOneResolutionsUseCase() } returns Unit
         }
     }
 

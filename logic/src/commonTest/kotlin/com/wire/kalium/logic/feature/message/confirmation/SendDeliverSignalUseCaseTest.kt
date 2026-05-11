@@ -27,10 +27,13 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.messaging.sending.MessageSender
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -50,7 +53,9 @@ class SendDeliverSignalUseCaseTest {
         val result = usecase.invoke(conversation, messageIdList)
 
         assertTrue(result is MessageOperationResult.Success)
-        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
+        verifySuspend(VerifyMode.atLeast(1)) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
     }
 
     @Test
@@ -66,7 +71,9 @@ class SendDeliverSignalUseCaseTest {
         val result = usecase.invoke(conversation, messageIdList)
 
         assertTrue(result is MessageOperationResult.Failure)
-        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
+        verifySuspend(VerifyMode.atLeast(1)) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
     }
 
     @Test
@@ -81,30 +88,30 @@ class SendDeliverSignalUseCaseTest {
         val result = usecase.invoke(conversation, messageIdList)
 
         assertTrue(result is MessageOperationResult.Failure)
-        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
     }
 
     private class Arrangement {
 
-        private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val messageSender = mock(MessageSender::class)
+        private val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
 
         suspend fun withCurrentClientIdProvider() = apply {
-            coEvery { currentClientIdProvider.invoke() }.returns(Either.Right(TestClient.CLIENT_ID))
+            everySuspend { currentClientIdProvider.invoke() } returns Either.Right(TestClient.CLIENT_ID)
         }
 
         suspend fun withCurrentClientIdProviderError() = apply {
-            coEvery { currentClientIdProvider.invoke() }.returns(
-                Either.Left(
-                    CoreFailure.Unknown(
-                        RuntimeException("Client ID not available")
-                    )
+            everySuspend { currentClientIdProvider.invoke() } returns Either.Left(
+                CoreFailure.Unknown(
+                    RuntimeException("Client ID not available")
                 )
             )
         }
 
         suspend fun withMessageSenderResult(result: Either<CoreFailure, Unit> = Unit.right()) = apply {
-            coEvery { messageSender.sendMessage(any(), any()) }.returns(result)
+            everySuspend { messageSender.sendMessage(any(), any()) } returns result
         }
 
         fun arrange() = this to SendDeliverSignalUseCaseImpl(

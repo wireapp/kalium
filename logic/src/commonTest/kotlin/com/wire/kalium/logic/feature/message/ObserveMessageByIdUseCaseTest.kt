@@ -30,10 +30,12 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -54,9 +56,9 @@ class ObserveMessageByIdUseCaseTest {
 
         useCase(message.conversationId, message.id)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.observeMessageById(message.conversationId, message.id)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -137,7 +139,7 @@ class ObserveMessageByIdUseCaseTest {
     }
 
     private inner class Arrangement {
-        val messageRepository: MessageRepository = mock(MessageRepository::class)
+        val messageRepository: MessageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
 
         private val observeMessageById by lazy {
             ObserveMessageByIdUseCase(messageRepository, testDispatchers)
@@ -148,9 +150,9 @@ class ObserveMessageByIdUseCaseTest {
             messageId: String,
             response: Flow<Either<StorageFailure, Message>>
         ) = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.observeMessageById(conversationId, messageId)
-            }.returns(response)
+            } returns response
         }
 
         fun arrange() = this to observeMessageById

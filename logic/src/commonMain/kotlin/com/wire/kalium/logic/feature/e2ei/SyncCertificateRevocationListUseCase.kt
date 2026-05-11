@@ -24,14 +24,12 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
 
 /**
  * This use case will wait until the sync is done and then check the CRLs if needed.
  */
-@Mockable
 internal interface SyncCertificateRevocationListUseCase {
     suspend operator fun invoke()
 }

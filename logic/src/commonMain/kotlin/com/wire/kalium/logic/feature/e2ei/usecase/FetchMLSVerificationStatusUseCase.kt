@@ -46,7 +46,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
 internal typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
@@ -55,7 +54,6 @@ internal typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
  * Check and update MLS Conversations Verification status.
  * Notify user (by adding System message in conversation) if needed about changes.
  */
-@Mockable
 internal interface FetchMLSVerificationStatusUseCase {
     suspend operator fun invoke(groupId: GroupID)
 }

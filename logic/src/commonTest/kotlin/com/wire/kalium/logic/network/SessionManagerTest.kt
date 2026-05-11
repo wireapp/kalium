@@ -42,12 +42,15 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.UserIDEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.Test
@@ -101,9 +104,9 @@ class SessionManagerTest {
         val refreshToken = "refreshToken"
         sessionManager.updateToken(arrangement.accessTokenApi, refreshToken)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.accessTokenRefresher.refreshTokenAndPersistSession(eq(refreshToken), any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -117,9 +120,9 @@ class SessionManagerTest {
         val refreshToken = "refreshToken"
         sessionManager.updateToken(arrangement.accessTokenApi, refreshToken)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.accessTokenRefresher.refreshTokenAndPersistSession(any(), eq(currentClientId))
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -132,9 +135,9 @@ class SessionManagerTest {
         val refreshToken = "refreshToken"
         sessionManager.updateToken(arrangement.accessTokenApi, refreshToken)
 
-        coVerify {
-            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(refreshToken, null)
-        }.wasInvoked()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(eq(refreshToken), eq(null))
+        }
     }
 
     @Test
@@ -214,21 +217,21 @@ class SessionManagerTest {
     }
 
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) {
-        private val sessionRepository = mock(SessionRepository::class)
+        private val sessionRepository = mock<SessionRepository>()
 
         // Unused, but necessary when updating tokens
-                val accessTokenApi = mock(AccessTokenApi::class)
-        val accessTokenRefresher = mock(AccessTokenRefresher::class)
+        val accessTokenApi = mock<AccessTokenApi>()
+        val accessTokenRefresher = mock<AccessTokenRefresher>()
         private val accessTokenRefresherFactory = object : AccessTokenRefresherFactory {
             override fun create(accessTokenApi: AccessTokenApi): AccessTokenRefresher {
                 return accessTokenRefresher
             }
         }
         private val userId = TestUser.USER_ID
-        private val tokenStorage = mock(AuthTokenStorage::class)
+        private val tokenStorage = mock<AuthTokenStorage>()
 
         private val logout = { _: LogoutReason -> }
-        private val serverConfigMapper = mock(ServerConfigMapper::class)
+        private val serverConfigMapper = mock<ServerConfigMapper>()
 
         private val sessionMapper = MapperProvider.sessionMapper()
 
@@ -250,9 +253,9 @@ class SessionManagerTest {
         }
 
         suspend fun withTokenRefresherResult(result: Either<CoreFailure, AccountTokens>) = apply {
-            coEvery {
+            everySuspend {
                 accessTokenRefresher.refreshTokenAndPersistSession(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         fun withCurrentTokenResult(result: AuthTokenEntity) = apply {
@@ -262,13 +265,13 @@ class SessionManagerTest {
         fun withCurrentTokenReturning(block: (args: Array<Any?>) -> AuthTokenEntity) = apply {
             every {
                 tokenStorage.getToken(any())
-            }.invokes(block)
+            } calls { invocation -> block(invocation.args.toTypedArray()) }
         }
 
         fun withFullAccountInfoReturning(block: (args: Array<Any?>) -> Either<StorageFailure, Account>) = apply {
             every {
                 sessionRepository.fullAccountInfo(any())
-            }.invokes(block)
+            } calls { invocation -> block(invocation.args.toTypedArray()) }
         }
 
         fun withServerConfigDTO(serverConfig: ServerConfig) = apply {

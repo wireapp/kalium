@@ -38,14 +38,12 @@ import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessSchedule
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFoundLabel
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mockable
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.async
 import okio.Path
 
-@Mockable
 public interface GetMessageAssetUseCase {
     /**
      * Function that enables fetching a message asset locally or if it doesn't exist, downloading it from the server, decrypting it and

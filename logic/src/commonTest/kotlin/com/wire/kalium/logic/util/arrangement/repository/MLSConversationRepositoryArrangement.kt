@@ -23,11 +23,13 @@ import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.every
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 
 internal interface MLSConversationRepositoryArrangement {
@@ -42,8 +44,8 @@ internal interface MLSConversationRepositoryArrangement {
 internal open class MLSConversationRepositoryArrangementImpl :
     MLSConversationRepositoryArrangement {
 
-    override val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
-    override val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
+    override val epochChangesObserver: EpochChangesObserver = mock<EpochChangesObserver>(mode = MockMode.autoUnit)
+    override val mlsConversationRepository: MLSConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
 
 
     override fun withObserveEpochChanges(result: Flow<GroupWithEpoch>) {
@@ -53,11 +55,11 @@ internal open class MLSConversationRepositoryArrangementImpl :
     }
 
     override suspend fun withSuccessfulLeaveGroup(groupId: GroupID) {
-        coEvery { mlsConversationRepository.leaveGroup(any(), eq(groupId)) }.returns(Either.Right(Unit))
+        everySuspend { mlsConversationRepository.leaveGroup(any(), eq(groupId)) }.returns(Either.Right(Unit))
     }
 
     override suspend fun withFailedLeaveGroup(groupId: GroupID) {
-        coEvery { mlsConversationRepository.leaveGroup(any(), eq(groupId)) }.returns(Either.Left(CoreFailure.Unknown(null)))
+        everySuspend { mlsConversationRepository.leaveGroup(any(), eq(groupId)) }.returns(Either.Left(CoreFailure.Unknown(null)))
     }
 
 }

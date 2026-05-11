@@ -573,7 +573,6 @@ import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
-import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -2990,7 +2989,6 @@ public class UserSessionScope internal constructor(
     }
 }
 
-@Mockable
 internal fun interface CachedClientIdClearer {
     operator fun invoke()
 }

@@ -21,17 +21,19 @@ package com.wire.kalium.logic.feature.session
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 internal class UpdateCurrentSessionUseCaseTest {
 
-    val sessionRepository: SessionRepository = mock(SessionRepository::class)
+    val sessionRepository: SessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
 
     lateinit var updateCurrentSessionUseCase: UpdateCurrentSessionUseCase
 
@@ -43,14 +45,14 @@ internal class UpdateCurrentSessionUseCaseTest {
     @Test
     fun givenAUserId_whenUpdateCurrentSessionUseCaseIsInvoked_thenUpdateCurrentSessionIsCalled() = runTest {
         val userId = UserId("user_id", "domain.de")
-        coEvery {
+        everySuspend {
             sessionRepository.updateCurrentSession(userId)
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
 
         updateCurrentSessionUseCase(userId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             sessionRepository.updateCurrentSession(userId)
-        }.wasInvoked(exactly = once)
+        }
     }
 }

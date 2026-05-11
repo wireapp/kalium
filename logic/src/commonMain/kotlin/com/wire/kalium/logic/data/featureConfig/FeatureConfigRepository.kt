@@ -24,9 +24,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
-import io.mockative.Mockable
 
-@Mockable
 internal interface FeatureConfigRepository {
     suspend fun getFeatureConfigs(): Either<NetworkFailure, FeatureConfigModel>
 }

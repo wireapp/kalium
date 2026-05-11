@@ -35,9 +35,7 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
-import io.mockative.Mockable
 
-@Mockable
 internal interface OneOnOneMigrator {
     /**
      * Migrates the user's one-on-one Proteus. Without creating a new one since MLS is the default, marking it as active.

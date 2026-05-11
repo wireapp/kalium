@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.framework.TestConversation.CONVERSATION_RESPONSE
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.util.ConversationPersistenceApi
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -80,7 +80,7 @@ internal class UpdateConversationProtocolUseCaseTest {
         assertEquals(Either.Right(true), result)
     }
 
-    class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         private val conversationRepository: ConversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         private val persistConversations: PersistConversationsUseCase = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
 

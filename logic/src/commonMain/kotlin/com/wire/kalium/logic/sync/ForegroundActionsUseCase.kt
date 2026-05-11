@@ -28,7 +28,6 @@ import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -37,7 +36,6 @@ import kotlinx.coroutines.withContext
  * Use case that combines all actions that should be performed when the app launches, gains focus (desktop/web),
  * or changes its state to foreground (mobile).
  */
-@Mockable
 public interface ForegroundActionsUseCase {
     public suspend operator fun invoke()
 }

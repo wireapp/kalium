@@ -25,10 +25,13 @@ import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertNull
@@ -63,9 +66,9 @@ class GetMessageDraftUseCaseTest {
 
         useCase(CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.getMessageById(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -106,29 +109,29 @@ class GetMessageDraftUseCaseTest {
 
     private inner class Arrangement {
 
-        val messageRepository: MessageRepository = mock(MessageRepository::class)
-        val messageDraftRepository: MessageDraftRepository = mock(MessageDraftRepository::class)
+        val messageRepository: MessageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
+        val messageDraftRepository: MessageDraftRepository = mock<MessageDraftRepository>(mode = MockMode.autoUnit)
 
         suspend fun withNoDraft() = apply {
-            coEvery {
+            everySuspend {
                 messageDraftRepository.getMessageDraft(any())
             } returns null
         }
 
         suspend fun withDraft(draft: MessageDraft) = apply {
-            coEvery {
+            everySuspend {
                 messageDraftRepository.getMessageDraft(any())
             } returns draft
         }
 
         suspend fun withRegularMessageEdit() = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.getMessageById(any(), any())
             } returns TestMessage.TEXT_MESSAGE.right()
         }
 
         suspend fun withMultipartMessageEdit() = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.getMessageById(any(), any())
             } returns TestMessage.multipartMessage(emptyList()).right()
         }

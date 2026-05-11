@@ -21,10 +21,8 @@ package com.wire.kalium.persistence.dao
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
-import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
-@Mockable
 interface PrekeyDAO {
     suspend fun updateMostRecentPreKeyId(newKeyId: Int)
     suspend fun forceInsertMostRecentPreKeyId(newKeyId: Int)

@@ -21,169 +21,168 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 
 interface MemberDAOArrangement {
-        val memberDAO: MemberDAO
+    val memberDAO: MemberDAO
 
     suspend fun withUpdateOrInsertOneOnOneMemberSuccess(
-        member: Matcher<MemberEntity> = AnyMatcher(valueOf()),
-        conversationId: Matcher<QualifiedIDEntity> = AnyMatcher(valueOf())
+        member: (MemberEntity) -> Boolean = { true },
+        conversationId: (QualifiedIDEntity) -> Boolean = { true }
     )
 
     suspend fun withUpdateOrInsertOneOnOneMemberFailure(
         error: Throwable,
-        member: Matcher<MemberEntity> = AnyMatcher(valueOf()),
-        conversationId: Matcher<QualifiedIDEntity> = AnyMatcher(valueOf())
+        member: (MemberEntity) -> Boolean = { true },
+        conversationId: (QualifiedIDEntity) -> Boolean = { true }
     )
 
     suspend fun withUpdateMemberRoleSuccess(
-        conversationId: Matcher<QualifiedIDEntity> = AnyMatcher(valueOf()),
-        userId: Matcher<UserIDEntity> = AnyMatcher(valueOf()),
-        role: Matcher<MemberEntity.Role> = AnyMatcher(valueOf())
+        conversationId: (QualifiedIDEntity) -> Boolean = { true },
+        userId: (UserIDEntity) -> Boolean = { true },
+        role: (MemberEntity.Role) -> Boolean = { true }
     )
 
     suspend fun withObserveIsUserMember(
         expectedIsUserMember: Flow<Boolean>,
-        userId: Matcher<UserIDEntity> = AnyMatcher(valueOf()),
-        conversationId: Matcher<QualifiedIDEntity> = AnyMatcher(valueOf())
+        userId: (UserIDEntity) -> Boolean = { true },
+        conversationId: (QualifiedIDEntity) -> Boolean = { true }
     )
 
     suspend fun withInsertMemberWithConversationIdSuccess(
-        conversationId: Matcher<QualifiedIDEntity> = AnyMatcher(valueOf()),
-        membersList: Matcher<List<MemberEntity>> = AnyMatcher(valueOf())
+        conversationId: (QualifiedIDEntity) -> Boolean = { true },
+        membersList: (List<MemberEntity>) -> Boolean = { true }
     )
 
     suspend fun withObserveConversationMembers(
         result: Flow<List<MemberEntity>>,
-        conversationId: Matcher<QualifiedIDEntity> = AnyMatcher(valueOf())
+        conversationId: (QualifiedIDEntity) -> Boolean = { true }
     )
 
     suspend fun withDeleteMembersByQualifiedID(
         result: Long,
-        conversationId: Matcher<QualifiedIDEntity> = AnyMatcher(valueOf()),
-        memberIdList: Matcher<List<QualifiedIDEntity>> = AnyMatcher(valueOf())
+        conversationId: (QualifiedIDEntity) -> Boolean = { true },
+        memberIdList: (List<QualifiedIDEntity>) -> Boolean = { true }
     )
 
     suspend fun withDeleteMembersByQualifiedIDThrows(
         throws: Throwable,
-        conversationId: Matcher<QualifiedIDEntity> = AnyMatcher(valueOf()),
-        memberIdList: Matcher<List<QualifiedIDEntity>> = AnyMatcher(valueOf())
+        conversationId: (QualifiedIDEntity) -> Boolean = { true },
+        memberIdList: (List<QualifiedIDEntity>) -> Boolean = { true }
     )
 }
 
 class MemberDAOArrangementImpl : MemberDAOArrangement {
-        override val memberDAO: MemberDAO = mock(MemberDAO::class)
+    override val memberDAO: MemberDAO = mock<MemberDAO>(mode = MockMode.autoUnit)
 
     override suspend fun withUpdateOrInsertOneOnOneMemberSuccess(
-        member: Matcher<MemberEntity>,
-        conversationId: Matcher<QualifiedIDEntity>
+        member: (MemberEntity) -> Boolean,
+        conversationId: (QualifiedIDEntity) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             memberDAO.updateOrInsertOneOnOneMember(
-                matches { member.matches(it) },
-                matches { conversationId.matches(it) }
+                matches { member(it) },
+                matches { conversationId(it) }
             )
-        }
+        } returns Unit
     }
 
     override suspend fun withUpdateOrInsertOneOnOneMemberFailure(
         error: Throwable,
-        member: Matcher<MemberEntity>,
-        conversationId: Matcher<QualifiedIDEntity>
+        member: (MemberEntity) -> Boolean,
+        conversationId: (QualifiedIDEntity) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             memberDAO.updateOrInsertOneOnOneMember(
-                matches { member.matches(it) },
-                matches { conversationId.matches(it) }
+                matches { member(it) },
+                matches { conversationId(it) }
             )
-        }.throws(error)
+        } throws error
     }
 
     override suspend fun withUpdateMemberRoleSuccess(
-        conversationId: Matcher<QualifiedIDEntity>,
-        userId: Matcher<UserIDEntity>,
-        role: Matcher<MemberEntity.Role>
+        conversationId: (QualifiedIDEntity) -> Boolean,
+        userId: (UserIDEntity) -> Boolean,
+        role: (MemberEntity.Role) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             memberDAO.updateConversationMemberRole(
                 matches {
-                    conversationId.matches(it)
+                    conversationId(it)
                 },
                 matches {
-                    userId.matches(it)
+                    userId(it)
                 },
                 matches {
-                    role.matches(it)
+                    role(it)
                 }
             )
-        }.returns(Unit)
+        } returns Unit
     }
 
     override suspend fun withObserveIsUserMember(
         expectedIsUserMember: Flow<Boolean>,
-        userId: Matcher<UserIDEntity>,
-        conversationId: Matcher<QualifiedIDEntity>
+        userId: (UserIDEntity) -> Boolean,
+        conversationId: (QualifiedIDEntity) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             memberDAO.observeIsUserMember(
-                matches { userId.matches(it) },
-                matches { conversationId.matches(it) }
+                matches { conversationId(it) },
+                matches { userId(it) }
             )
-        }.returns(expectedIsUserMember)
+        } returns expectedIsUserMember
     }
 
     override suspend fun withInsertMemberWithConversationIdSuccess(
-        conversationId: Matcher<QualifiedIDEntity>,
-        membersList: Matcher<List<MemberEntity>>
+        conversationId: (QualifiedIDEntity) -> Boolean,
+        membersList: (List<MemberEntity>) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             memberDAO.insertMembersWithQualifiedId(
-                matches { membersList.matches(it) },
-                matches { conversationId.matches(it) }
+                matches { membersList(it) },
+                matches { conversationId(it) }
             )
-        }.returns(Unit)
+        } returns Unit
     }
 
     override suspend fun withObserveConversationMembers(
         result: Flow<List<MemberEntity>>,
-        conversationId: Matcher<QualifiedIDEntity>
+        conversationId: (QualifiedIDEntity) -> Boolean
     ) {
-        coEvery {
-            memberDAO.observeConversationMembers(matches { conversationId.matches(it) })
-        }.returns(result)
+        everySuspend {
+            memberDAO.observeConversationMembers(matches { conversationId(it) })
+        } returns result
     }
 
     override suspend fun withDeleteMembersByQualifiedID(
         result: Long,
-        conversationId: Matcher<QualifiedIDEntity>,
-        memberIdList: Matcher<List<QualifiedIDEntity>>
+        conversationId: (QualifiedIDEntity) -> Boolean,
+        memberIdList: (List<QualifiedIDEntity>) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             memberDAO.deleteMembersByQualifiedID(
-                matches { memberIdList.matches(it) },
-                matches { conversationId.matches(it) }
+                matches { memberIdList(it) },
+                matches { conversationId(it) }
             )
-        }.returns(result)
+        } returns result
     }
 
     override suspend fun withDeleteMembersByQualifiedIDThrows(
         throws: Throwable,
-        conversationId: Matcher<QualifiedIDEntity>,
-        memberIdList: Matcher<List<QualifiedIDEntity>>
+        conversationId: (QualifiedIDEntity) -> Boolean,
+        memberIdList: (List<QualifiedIDEntity>) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             memberDAO.deleteMembersByQualifiedID(
-                matches { memberIdList.matches(it) },
-                matches { conversationId.matches(it) }
+                matches { memberIdList(it) },
+                matches { conversationId(it) }
             )
-        }.throws(throws)
+        } throws throws
     }
 }

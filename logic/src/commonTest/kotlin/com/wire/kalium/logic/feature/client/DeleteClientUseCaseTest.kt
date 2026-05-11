@@ -29,17 +29,19 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.network.exceptions.KaliumException
 import kotlinx.io.IOException
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -57,9 +59,9 @@ class DeleteClientUseCaseTest {
 
         deleteClient(params)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.deleteClient(eq(params))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -121,29 +123,29 @@ class DeleteClientUseCaseTest {
         val result = deleteClient(DELETE_CLIENT_PARAMETERS)
 
         assertIs<DeleteClientResult.Success>(result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
-        val clientRepository = mock(ClientRepository::class)
-        val updateSupportedProtocolsAndResolveOneOnOnes = mock(UpdateSupportedProtocolsAndResolveOneOnOnesUseCase::class)
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withDeleteClient(result: Either<NetworkFailure, Unit>) {
-            coEvery {
+            everySuspend {
                 clientRepository.deleteClient(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUpdateSupportedProtocolsAndResolveOneOnOnes(result: Either<CoreFailure, Unit>) {
-            coEvery {
+            everySuspend {
                 updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend inline fun arrange() = run {

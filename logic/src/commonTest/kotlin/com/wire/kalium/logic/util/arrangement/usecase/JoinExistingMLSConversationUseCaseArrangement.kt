@@ -20,9 +20,11 @@ package com.wire.kalium.logic.util.arrangement.usecase
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface JoinExistingMLSConversationUseCaseArrangement {
     val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
@@ -33,10 +35,10 @@ internal interface JoinExistingMLSConversationUseCaseArrangement {
 internal class JoinExistingMLSConversationUseCaseArrangementImpl : JoinExistingMLSConversationUseCaseArrangement {
 
         override val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase =
-        mock(JoinExistingMLSConversationUseCase::class)
+        mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
 
     override suspend fun withJoinExistingMLSConversationUseCaseReturning(result: Either<CoreFailure, Unit>) {
-        coEvery {
+        everySuspend {
             joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.returns(result)
     }

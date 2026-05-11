@@ -62,21 +62,22 @@ import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserConfigDAO
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.doesNothing
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -391,36 +392,30 @@ class SyncFeatureConfigsUseCaseTest {
 
     @Test
     fun givenRepositoryCallFailWithInvalidCredentials_thenOperationDeniedIsReturned() = runTest {
-        // Given
         val operationDeniedException = TestNetworkException.operationDenied
         val (arrangement, getFileSharingStatusUseCase) = arrangement()
             .withRemoteFeatureConfigsReturning(Either.Left(NetworkFailure.ServerMiscommunication(operationDeniedException)))
             .arrange()
 
-        // When
         getFileSharingStatusUseCase.invoke()
 
-        // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.featureConfigRepository.getFeatureConfigs()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenRepositoryCallFailWithUserThatNotInTheTeam_thenNoTeamIsReturned() = runTest {
-        // Given
         val noTeamException = TestNetworkException.noTeam
         val (arrangement, getFileSharingStatusUseCase) = arrangement()
             .withRemoteFeatureConfigsReturning(Either.Left(NetworkFailure.ServerMiscommunication(noTeamException)))
             .arrange()
 
-        // When
         getFileSharingStatusUseCase.invoke()
 
-        // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.featureConfigRepository.getFeatureConfigs()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -505,20 +500,17 @@ class SyncFeatureConfigsUseCaseTest {
 
     @Test
     fun givenTeamSettingsSelfDeletionIsDisabledInKaliumConfigs_whenSyncing_thenItDisablesIt() = runTest {
-        // Given
         val (arrangement, getTeamSettingsSelfDeletionStatusUseCase) = arrangement()
             .withKaliumConfigs { it.copy(selfDeletingMessages = false) }
             .withSetTeamSettingsSelfDeletionStatusSuccessful()
             .withGetSupportedProtocolsReturning(null)
             .arrange()
 
-        // When
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
-        // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
-                matches {
+                matching {
                     it.isStatusChanged == null && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Disabled
                 }
             )
@@ -527,7 +519,6 @@ class SyncFeatureConfigsUseCaseTest {
 
     @Test
     fun givenNewEnabledWithNullEnforcedTimeoutTeamSettingsSelfDeletionEvent_whenSyncing_thenItIsJustEnabled() = runTest {
-        // Given
         val expectedSelfDeletingMessagesModel = SelfDeletingMessagesModel(
             config = SelfDeletingMessagesConfigModel(null),
             status = Status.ENABLED
@@ -541,13 +532,11 @@ class SyncFeatureConfigsUseCaseTest {
             .withGetSupportedProtocolsReturning(null)
             .arrange()
 
-        // When
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
-        // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
-                matches {
+                matching {
                     it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
                 }
             )
@@ -556,7 +545,6 @@ class SyncFeatureConfigsUseCaseTest {
 
     @Test
     fun givenZeroEnforcedTeamSettingsSelfDeletionEvent_whenSyncing_thenItIsJustEnabled() = runTest {
-        // Given
         val expectedSelfDeletingMessagesModel = SelfDeletingMessagesModel(
             config = SelfDeletingMessagesConfigModel(0L),
             status = Status.ENABLED
@@ -570,13 +558,11 @@ class SyncFeatureConfigsUseCaseTest {
             .withGetSupportedProtocolsReturning(null)
             .arrange()
 
-        // When
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
-        // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
-                matches {
+                matching {
                     it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
                 }
             )
@@ -585,7 +571,6 @@ class SyncFeatureConfigsUseCaseTest {
 
     @Test
     fun givenNewEnforcedTeamSettingsSelfDeletionEvent_whenSyncing_thenItMapsToEnforced() = runTest {
-        // Given
         val enforcedTimeoutInMs = 3600000L
         val expectedSelfDeletingMessagesModel = SelfDeletingMessagesModel(
             config = SelfDeletingMessagesConfigModel(enforcedTimeoutInMs),
@@ -600,16 +585,14 @@ class SyncFeatureConfigsUseCaseTest {
             .withGetSupportedProtocolsReturning(null)
             .arrange()
 
-        // When
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
-        // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
-                matches {
-                    it.isStatusChanged == null && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enforced(
+                matching {
+                    it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enforced(
                         enforcedTimeoutInMs.toDuration(
-                            DurationUnit.MILLISECONDS
+                            DurationUnit.SECONDS
                         )
                     )
                 }
@@ -709,7 +692,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setAsyncNotificationsEnabled(eq(true))
         }
     }
@@ -726,7 +709,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setAsyncNotificationsEnabled(eq(false))
         }
     }
@@ -742,9 +725,9 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigDAO.setAsyncNotificationsEnabled(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -763,7 +746,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setMlsConversationsResetEnabled(eq(true))
         }
     }
@@ -784,7 +767,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setMlsConversationsResetEnabled(eq(false))
         }
     }
@@ -800,9 +783,9 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigDAO.setMlsConversationsResetEnabled(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -816,7 +799,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setAppsEnabled(eq(true))
         }
     }
@@ -832,7 +815,7 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigDAO.setAppsEnabled(eq(false))
         }
     }
@@ -848,21 +831,21 @@ class SyncFeatureConfigsUseCaseTest {
 
         syncFeatureConfigsUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigDAO.setAppsEnabled(any())
-        }.wasNotInvoked()
+        }
     }
 
     @OptIn(ExperimentalStdlibApi::class)
     private fun TestScope.arrangement() = Arrangement(coroutineContext[CoroutineDispatcher]!! as TestDispatcher)
 
     private class Arrangement(dispatcher: TestDispatcher) :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         private val inMemoryStorage = inMemoryUserConfigStorage()
         private val userDatabase = TestUserDatabase(TestUser.ENTITY_ID, dispatcher)
         val channelsConfigurationStorage = ChannelsConfigurationStorage(userDatabase.builder.metadataDAO)
         var kaliumConfigs = KaliumConfigs()
-        val userConfigDAO: UserConfigDAO = mock(UserConfigDAO::class)
+        val userConfigDAO: UserConfigDAO = mock<UserConfigDAO>(mode = MockMode.autoUnit)
 
         var userConfigRepository: UserConfigRepository = UserConfigDataSource(
             inMemoryStorage,
@@ -870,8 +853,8 @@ class SyncFeatureConfigsUseCaseTest {
             kaliumConfigs
         )
             private set
-        val featureConfigRepository = mock(FeatureConfigRepository::class)
-        val updateSupportedProtocolsAndResolveOneOnOnes = mock(UpdateSupportedProtocolsAndResolveOneOnOnesUseCase::class)
+        val featureConfigRepository = mock<FeatureConfigRepository>(mode = MockMode.autoUnit)
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>(mode = MockMode.autoUnit)
 
         private lateinit var syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
 
@@ -902,9 +885,9 @@ class SyncFeatureConfigsUseCaseTest {
             withRemoteFeatureConfigsReturning(Either.Right(featureConfigModel))
 
         suspend fun withRemoteFeatureConfigsReturning(result: Either<NetworkFailure, FeatureConfigModel>) = apply {
-            coEvery {
+            everySuspend {
                 featureConfigRepository.getFeatureConfigs()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withLocalSharingEnabledReturning(
@@ -925,21 +908,21 @@ class SyncFeatureConfigsUseCaseTest {
         }
 
         suspend fun withGetTeamSettingsSelfDeletionStatusSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 userConfigDAO.getTeamSettingsSelfDeletionStatus()
-            }.returns(null)
+            } returns null
         }
 
         suspend fun withSetTeamSettingsSelfDeletionStatusSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 userConfigDAO.setTeamSettingsSelfDeletionStatus(any())
-            }.doesNothing()
+            } returns Unit
         }
 
         suspend fun withGetSupportedProtocolsReturning(result: Set<SupportedProtocolEntity>?) = apply {
-            coEvery {
+            everySuspend {
                 userConfigDAO.getSupportedProtocols()
-            }.returns(result)
+            } returns result
         }
 
         fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {

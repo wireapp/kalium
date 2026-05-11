@@ -23,10 +23,12 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface MLSConversationRepositoryArrangement {
     val mlsConversationRepository: MLSConversationRepository
@@ -42,28 +44,28 @@ internal interface MLSConversationRepositoryArrangement {
 }
 
 internal class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrangement {
-    override val mlsConversationRepository = mock(MLSConversationRepository::class)
+    override val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>) {
-        coEvery {
+        everySuspend {
             mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
         }.returns(result)
     }
 
     override suspend fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>) {
-        coEvery {
+        everySuspend {
             mlsConversationRepository.getUserIdentity(any(), any())
         }.returns(result)
     }
 
     override suspend fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>) {
-        coEvery {
+        everySuspend {
             mlsConversationRepository.getMembersIdentities(any(), any(), any())
         }.returns(result)
     }
 
     override suspend fun withJoinGroupByExternalCommit(groupId: GroupID, groupInfo: ByteArray, result: Either<CoreFailure, Unit>) = apply {
-        coEvery {
+        everySuspend {
             mlsConversationRepository.joinGroupByExternalCommit(any(), eq(groupId), eq(groupInfo))
         }.returns(result)
     }

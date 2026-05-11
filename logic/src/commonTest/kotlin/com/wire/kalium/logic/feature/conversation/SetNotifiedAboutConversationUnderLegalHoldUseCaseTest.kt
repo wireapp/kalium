@@ -20,12 +20,14 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -41,23 +43,23 @@ class SetNotifiedAboutConversationUnderLegalHoldUseCaseTest {
         // when
         useCase.invoke(conversationId)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.setLegalHoldStatusChangeNotified(eq(conversationId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val conversationRepository = mock(ConversationRepository::class)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
 
         private val useCase: SetNotifiedAboutConversationUnderLegalHoldUseCase by lazy {
             SetNotifiedAboutConversationUnderLegalHoldUseCaseImpl(conversationRepository)
         }
         fun arrange() = this to useCase
         suspend fun withSetLegalHoldStatusChangeNotifiedSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.setLegalHoldStatusChangeNotified(any())
-            }.returns(Either.Right(true))
+            } returns Either.Right(true)
         }
     }
 }

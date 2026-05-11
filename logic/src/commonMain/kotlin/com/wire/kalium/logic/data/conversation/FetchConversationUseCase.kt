@@ -24,13 +24,11 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.Mockable
 
 /**
  * Use case responsible for fetching a single conversation from the backend
  * and persisting it locally if the fetch is successful.
  */
-@Mockable
 public interface FetchConversationUseCase {
     @Suppress("konsist.kaliumLogicModuleShouldNotExposeEitherTypesInPublicAPI")
     public suspend operator fun invoke(
