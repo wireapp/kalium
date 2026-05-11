@@ -24,12 +24,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.common.functional.Either
 import kotlinx.io.IOException
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Ignore
 import kotlin.test.Test
@@ -52,13 +54,13 @@ class DeleteSessionUseCaseTest {
             assertEquals(DeleteSessionUseCase.Result.Success, result)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.sessionRepository.deleteSession(eq(userId))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.userSessionScopeProvider.delete(eq(userId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -75,36 +77,36 @@ class DeleteSessionUseCaseTest {
             assertEquals(error, result.cause)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.sessionRepository.deleteSession(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrange.userSessionScopeProvider.delete(any())
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement {
 
-        val sessionRepository = mock(SessionRepository::class)
-        val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
+        val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
+        val userSessionScopeProvider = mock<UserSessionScopeProvider>(mode = MockMode.autoUnit)
 
         val deleteSessionUseCase = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider)
 
         suspend fun withSessionDeleteSuccess(userId: UserId): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.deleteSession(eq(userId))
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
 
-            coEvery {
+            everySuspend {
                 userSessionScopeProvider.delete(eq(userId))
-            }.returns(Unit)
+            } returns Unit
         }
 
         suspend fun withSessionDeleteFailure(userId: UserId, error: StorageFailure): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.deleteSession(eq(userId))
-            }.returns(Either.Left(error))
+            } returns Either.Left(error)
         }
 
         fun arrange() = this to deleteSessionUseCase

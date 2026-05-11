@@ -29,13 +29,14 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlin.test.Test
@@ -55,9 +56,9 @@ class KeyPackageManagerTests {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.refillKeyPackagesUseCase.invoke(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -70,9 +71,9 @@ class KeyPackageManagerTests {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.refillKeyPackagesUseCase.invoke(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -86,9 +87,9 @@ class KeyPackageManagerTests {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.refillKeyPackagesUseCase.invoke(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -106,13 +107,13 @@ class KeyPackageManagerTests {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.refillKeyPackagesUseCase.invoke(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.timestampKeyRepository.reset(any())
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -130,69 +131,68 @@ class KeyPackageManagerTests {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.refillKeyPackagesUseCase.invoke(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.timestampKeyRepository.reset(any())
-            }.wasInvoked(once)
+            }
         }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
-        val clientRepository = mock(ClientRepository::class)
-        val featureSupport = mock(FeatureSupport::class)
-        val timestampKeyRepository = mock(TimestampKeyRepository::class)
-        val refillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
-        val keyPackageCountUseCase = mock(MLSKeyPackageCountUseCase::class)
+        val clientRepository: ClientRepository = mock()
+        val featureSupport: FeatureSupport = mock()
+        val timestampKeyRepository: TimestampKeyRepository = mock()
+        val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock()
+        val keyPackageCountUseCase: MLSKeyPackageCountUseCase = mock()
 
         suspend fun withLastKeyPackageCountCheck(hasPassed: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 timestampKeyRepository.hasPassed(any(), any())
-            }.returns(Either.Right(hasPassed))
+            } returns Either.Right(hasPassed)
         }
 
         suspend fun withRefillKeyPackagesUseCaseSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 refillKeyPackagesUseCase.invoke(any())
-            }.returns(RefillKeyPackagesResult.Success)
+            } returns RefillKeyPackagesResult.Success
         }
 
         suspend fun withUpdateLastKeyPackageCountCheckSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 timestampKeyRepository.reset(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withKeyPackageCountReturnsRefillTrue() = apply {
-            coEvery {
+            everySuspend {
                 keyPackageCountUseCase.invoke(any())
-            }.returns(
+            } returns
                 MLSKeyPackageCountResult.Success(
                     TestClient.CLIENT_ID,
                     0, true
                 )
-            )
         }
 
         suspend fun withKeyPackageCountFailed() = apply {
-            coEvery {
+            everySuspend {
                 keyPackageCountUseCase.invoke(any())
-            }.returns(MLSKeyPackageCountResult.Failure.Generic(CoreFailure.MissingClientRegistration))
+            } returns MLSKeyPackageCountResult.Failure.Generic(CoreFailure.MissingClientRegistration)
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
             every {
                 featureSupport.isMLSSupported
-            }.returns(supported)
+            } returns supported
         }
 
         suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.hasRegisteredMLSClient()
-            }.returns(Either.Right(result))
+            } returns Either.Right(result)
         }
 
         suspend fun arrange() = this to KeyPackageManagerImpl(

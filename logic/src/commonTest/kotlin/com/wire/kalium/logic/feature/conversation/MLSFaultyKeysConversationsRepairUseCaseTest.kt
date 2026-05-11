@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2025 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,11 +29,13 @@ import com.wire.kalium.logic.feature.debug.TargetedRepairParam
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncStateObserver
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -47,12 +49,12 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.syncStateObserver.waitUntilLive()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.repairFaultyRemovalKeysUseCase(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -64,9 +66,9 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.syncStateObserver.waitUntilLive()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -80,9 +82,9 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.repairFaultyRemovalKeysUseCase(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -98,14 +100,14 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.repairFaultyRemovalKeysUseCase(
                 TargetedRepairParam(
                     domain = TestUser.USER_ID.domain,
                     faultyKeys = faultyKey
                 )
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -129,9 +131,9 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setMLSFaultyKeysRepairExecuted(true)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -154,9 +156,9 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setMLSFaultyKeysRepairExecuted(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -172,9 +174,9 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setMLSFaultyKeysRepairExecuted(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -190,9 +192,9 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setMLSFaultyKeysRepairExecuted(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -212,19 +214,18 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.repairFaultyRemovalKeysUseCase(
                 TargetedRepairParam(
                     domain = TestUser.USER_ID.domain,
                     faultyKeys = matchingKey
                 )
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenSetFlagReturnsFailure_whenInvoking_thenOperationCompletes() = runTest {
-        // This tests that we handle the Either result from setMLSFaultyKeysRepairExecuted
         val faultyKey = listOf("16665373b6bf396f75914a0bed297d44")
         val (arrangement, useCase) = Arrangement()
             .withRepairAlreadyExecuted(false)
@@ -242,24 +243,23 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
             .withSetRepairExecutedResult(StorageFailure.Generic(RuntimeException("DB error")).left())
             .arrange()
 
-        // Should not throw
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setMLSFaultyKeysRepairExecuted(true)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        val userConfigRepository = mock(UserConfigRepository::class)
-        val syncStateObserver = mock(SyncStateObserver::class)
-        val repairFaultyRemovalKeysUseCase = mock(RepairFaultyRemovalKeysUseCase::class)
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+        val syncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
+        val repairFaultyRemovalKeysUseCase = mock<RepairFaultyRemovalKeysUseCase>(mode = MockMode.autoUnit)
         private var kaliumConfigs = KaliumConfigs()
 
         suspend fun withRepairAlreadyExecuted(executed: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.isMLSFaultyKeysRepairExecuted()
-            }.returns(executed)
+            } returns executed
         }
 
         fun withDomainWithFaultyKeysMap(map: Map<String, List<String>>) = apply {
@@ -267,21 +267,21 @@ class MLSFaultyKeysConversationsRepairUseCaseTest {
         }
 
         suspend fun withRepairResult(result: RepairResult) = apply {
-            coEvery {
+            everySuspend {
                 repairFaultyRemovalKeysUseCase(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withSetRepairExecutedResult(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setMLSFaultyKeysRepairExecuted(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun arrange(): Pair<Arrangement, MLSFaultyKeysConversationsRepairUseCaseImpl> {
-            coEvery {
+            everySuspend {
                 syncStateObserver.waitUntilLive()
-            }.returns(Unit)
+            } returns Unit
 
             return this to MLSFaultyKeysConversationsRepairUseCaseImpl(
                 selfUserId = TestUser.USER_ID,

@@ -23,12 +23,14 @@ import com.wire.kalium.logic.data.conversation.folders.ConversationFolderReposit
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestFolder
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -47,16 +49,16 @@ class AddConversationToFavoritesUseCaseTest {
 
         assertIs<AddConversationToFavoritesUseCase.Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.getFavoriteConversationFolder()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.addConversationToFolder(
                 eq(TestConversation.ID),
                 eq(TestFolder.FAVORITE.id)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -70,9 +72,9 @@ class AddConversationToFavoritesUseCaseTest {
 
         assertIs<AddConversationToFavoritesUseCase.Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.getFavoriteConversationFolder()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -87,42 +89,42 @@ class AddConversationToFavoritesUseCaseTest {
 
         assertIs<AddConversationToFavoritesUseCase.Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.getFavoriteConversationFolder()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.addConversationToFolder(
                 eq(TestConversation.ID),
                 eq(TestFolder.FAVORITE.id)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        
-        val conversationFolderRepository = mock(ConversationFolderRepository::class)
+
+        val conversationFolderRepository = mock<ConversationFolderRepository>(mode = MockMode.autoUnit)
 
         private val addConversationToFavoritesUseCase = AddConversationToFavoritesUseCaseImpl(
             conversationFolderRepository
         )
 
         suspend fun withFavoriteFolder(either: Either<CoreFailure, ConversationFolder>) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.getFavoriteConversationFolder()
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withAddConversationToFolder(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.addConversationToFolder(any(), any())
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withSyncConversationFoldersFromLocal(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.syncConversationFoldersFromLocal()
-            }.returns(either)
+            } returns either
         }
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to addConversationToFavoritesUseCase }

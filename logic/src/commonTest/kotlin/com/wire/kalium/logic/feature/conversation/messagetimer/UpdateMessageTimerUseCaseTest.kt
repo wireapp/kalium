@@ -22,12 +22,14 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -46,9 +48,9 @@ class UpdateMessageTimerUseCaseTest {
 
         assertIs<UpdateMessageTimerUseCase.Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.updateMessageTimer(eq(TestConversation.ID), eq(messageTimer))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -62,23 +64,23 @@ class UpdateMessageTimerUseCaseTest {
         val result = updateMessageTimerUseCase(TestConversation.ID, messageTimer)
         assertIs<UpdateMessageTimerUseCase.Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.updateMessageTimer(eq(TestConversation.ID), eq(messageTimer))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val conversationGroupRepository = mock(ConversationGroupRepository::class)
+        val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
 
         private val updateMessageTimerUseCase = UpdateMessageTimerUseCaseImpl(
             conversationGroupRepository
         )
 
         suspend fun withUpdateMessageTimer(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationGroupRepository.updateMessageTimer(any(), any())
-            }.returns(either)
+            } returns either
         }
 
         fun arrange() = this to updateMessageTimerUseCase

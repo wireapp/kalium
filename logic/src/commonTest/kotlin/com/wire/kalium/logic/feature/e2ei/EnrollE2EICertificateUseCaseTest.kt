@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.e2ei.AuthorizationResult
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.Nonce
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
@@ -38,19 +39,18 @@ import com.wire.kalium.logic.feature.e2ei.usecase.FinalizeEnrollmentResult
 import com.wire.kalium.logic.feature.e2ei.usecase.InitialEnrollmentResult
 import com.wire.kalium.logic.framework.TestConversation.MLS_CONVERSATION
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
-import io.mockative.SuspendResultBuilder
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -84,7 +84,6 @@ internal class EnrollE2EICertificateUseCaseTest {
     @Test
     fun givenLoadACMEDirectoriesFails_whenInvokeUseCase_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withInitializingE2EIClientSucceed()
             withLoadTrustAnchorsResulting(Either.Right(Unit))
             withFetchFederationCertificateChainResulting(Either.Right(Unit))
@@ -92,65 +91,62 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
-        // then
         assertIs<InitialEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.loadACMEDirectories()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getACMENonce(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.createNewAccount(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.createNewOrder(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getAuthorizations(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getDPoPToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireAccessToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.checkOrderRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenGetACMENonceFails_whenInvokeUseCase_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withInitializingE2EIClientSucceed()
             withLoadTrustAnchorsResulting(Either.Right(Unit))
             withFetchFederationCertificateChainResulting(Either.Right(Unit))
@@ -159,63 +155,60 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
-        // then
         assertIs<InitialEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.loadACMEDirectories()
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.e2EIRepository.getACMENonce(any<String>())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getACMENonce(any())
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.createNewAccount(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.createNewOrder(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getAuthorizations(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getDPoPToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireAccessToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.checkOrderRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenCreateNewAccountFails_whenInvokeUseCase_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withInitializingE2EIClientSucceed()
             withLoadTrustAnchorsResulting(Either.Right(Unit))
             withFetchFederationCertificateChainResulting(Either.Right(Unit))
@@ -225,67 +218,64 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
-        // then
         assertIs<InitialEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.loadACMEDirectories()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.getACMENonce(any<String>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getACMENonce(any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.createNewAccount(any<Nonce>(), any<String>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.createNewAccount(any(), any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.createNewOrder(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getAuthorizations(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getDPoPToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireAccessToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.checkOrderRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenCreateNewOrderFailing_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withInitializingE2EIClientSucceed()
             withLoadTrustAnchorsResulting(Either.Right(Unit))
             withFetchFederationCertificateChainResulting(Either.Right(Unit))
@@ -296,68 +286,65 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
-        // then
         assertIs<InitialEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.loadACMEDirectories()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.getACMENonce(any<String>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getACMENonce(any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.createNewAccount(any<Nonce>(), any<String>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.createNewAccount(any(), any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.createNewOrder(any<Nonce>(), any<String>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.createNewOrder(any(), any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getAuthorizations(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getDPoPToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireAccessToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.checkOrderRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenCreateAuthorizationsFailing_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withInitializingE2EIClientSucceed()
             withLoadTrustAnchorsResulting(Either.Right(Unit))
             withFetchFederationCertificateChainResulting(Either.Right(Unit))
@@ -369,69 +356,66 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
-        // then
         assertIs<InitialEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.loadACMEDirectories()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.getACMENonce(any<String>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getACMENonce(any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.createNewAccount(any<Nonce>(), any<String>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.createNewAccount(any(), any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.createNewOrder(any<Nonce>(), any<String>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.createNewOrder(any(), any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.getAuthorizations(any<Nonce>(), any<List<String>>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getAuthorizations(any(), any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getDPoPToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireAccessToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.checkOrderRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenCallingInitialization_thenReturnInitializationResult() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withInitializingE2EIClientSucceed()
             withLoadTrustAnchorsResulting(Either.Right(Unit))
             withFetchFederationCertificateChainResulting(Either.Right(Unit))
@@ -445,210 +429,198 @@ internal class EnrollE2EICertificateUseCaseTest {
 
         val expected = INITIALIZATION_RESULT
 
-        // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
-        // then
         assertIs<InitialEnrollmentResult.Success>(result)
 
         assertEquals(expected, result.initializationResult)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.fetchAndSetTrustAnchors()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.loadACMEDirectories()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.getACMENonce(any<String>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getACMENonce(any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.createNewAccount(any<Nonce>(), any<String>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.createNewAccount(any(), any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.createNewOrder(any<Nonce>(), any<String>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.createNewOrder(any(), any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.getAuthorizations(any<Nonce>(), any<List<String>>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getAuthorizations(any(), any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getDPoPToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireAccessToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.checkOrderRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenGetWireNonceFailing_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withGetWireNonceResulting(E2EIFailure.WireNonce(TEST_CORE_FAILURE).left())
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
-        // then
         assertIs<FinalizeEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getDPoPToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireAccessToken(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.checkOrderRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenGetDPoPTokenFailing_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
             withGetDPoPTokenResulting(E2EIFailure.DPoPToken(TEST_CORE_FAILURE).left())
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
-        // then
         assertIs<FinalizeEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.getWireAccessToken(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.checkOrderRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenGetWireAccessTokenFailing_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
             withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
             withGetWireAccessTokenResulting(E2EIFailure.DPoPChallenge(TEST_CORE_FAILURE).left())
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
-        // then
         assertIs<FinalizeEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.checkOrderRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenValidateDPoPChallengeFailing_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
             withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
             withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -656,49 +628,46 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
-        // then
         assertIs<FinalizeEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any(), eq(DPOP_AUTHZ.challenge))
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.checkOrderRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenValidateOIDCChallengeFailing_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
             withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
             withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -707,49 +676,46 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
-        // then
         assertIs<FinalizeEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
-        }.wasInvoked(exactly = once)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any(), eq(DPOP_AUTHZ.challenge))
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any(), eq(OIDC_AUTHZ.challenge))
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.checkOrderRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenCheckOrderRequestFailing_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
             withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
             withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -759,50 +725,47 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
-        // then
         assertIs<FinalizeEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
-        }.wasInvoked(exactly = once)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any(), eq(DPOP_AUTHZ.challenge))
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any(), eq(OIDC_AUTHZ.challenge))
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.checkOrderRequest(any<String>(), any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.finalize(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenFinalizeFailing_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
             withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
             withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -813,48 +776,45 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
-        // then
         assertIs<FinalizeEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any(), eq(DPOP_AUTHZ.challenge))
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any(), eq(OIDC_AUTHZ.challenge))
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.checkOrderRequest(any<String>(), any<Nonce>())
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.e2EIRepository.finalize(any<String>(), any<Nonce>())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.e2EIRepository.certificateRequest(any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenCertificateRequestFailing_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
             withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
             withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -867,52 +827,49 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
-        // then
         assertIs<FinalizeEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any(), eq(DPOP_AUTHZ.challenge))
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any(), eq(OIDC_AUTHZ.challenge))
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.checkOrderRequest(any<String>(), any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.finalize(any<String>(), any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.certificateRequest(any<String>(), any<Nonce>())
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenRotatingKeysAndMigratingConversationsFailing_thenReturnFailure() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
             withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
             withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -926,45 +883,42 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
-        // then
         assertIs<FinalizeEnrollmentResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any(), eq(DPOP_AUTHZ.challenge))
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.e2EIRepository.checkOrderRequest(any<String>(), any<Nonce>())
-        }.wasInvoked(exactly = once)
-        coVerify {
-            arrangement.e2EIRepository.finalize(any<String>(), any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any(), eq(OIDC_AUTHZ.challenge))
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any<String>(), any(), any<Boolean>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenUseCase_whenEveryStepSucceed_thenShouldSucceed() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
             withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
             withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -978,53 +932,50 @@ internal class EnrollE2EICertificateUseCaseTest {
             withSelfUserFetched(true)
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
-        // then
         assertIs<FinalizeEnrollmentResult.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireNonce()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any(), eq(DPOP_AUTHZ.challenge))
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any(), eq(OIDC_AUTHZ.challenge))
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.checkOrderRequest(any<String>(), any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.finalize(any<String>(), any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.certificateRequest(any<String>(), any<Nonce>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }
 
-        coVerify {
-            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any<String>(), any(), any<Boolean>())
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }
     }
 
     @Test
     fun givenCertEnrollForNewClient_whenEnrolling_thenUpdateSelfUserInfo() = coroutineScope.runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange(coroutineScope) {
-            // given
             withInitializingE2EIClientSucceed()
             withLoadTrustAnchorsResulting(Either.Right(Unit))
             withFetchFederationCertificateChainResulting(Either.Right(Unit))
@@ -1037,150 +988,178 @@ internal class EnrollE2EICertificateUseCaseTest {
             withFetchSelfUser(Unit.right())
         }
 
-        // when
         val result = enrollE2EICertificateUseCase.initialEnrollment(true)
 
-        // then
         assertIs<InitialEnrollmentResult.Success>(result)
         advanceUntilIdle()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.fetchSelfUser()
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
-        val e2EIRepository = mock(E2EIRepository::class)
-        val conversationRepository = mock(ConversationRepository::class)
+        val userRepository: UserRepository = mock()
+        val e2EIRepository: E2EIRepository = mock()
+        val conversationRepository: ConversationRepository = mock()
 
         private var selfUserFetched: Boolean = false
 
-        // to ensure that at the moment of the given call, the user is already fetched
-        private fun <R> SuspendResultBuilder<R>.ensuresSelfUserFetchedAndReturns(value: R, methodName: String) = this.invokes {
-            require(selfUserFetched) { "Self user should be fetched before calling $methodName" }
-            value
+        suspend fun withFetchSelfUser(result: Either<CoreFailure, Unit>) {
+            everySuspend {
+                userRepository.fetchSelfUser()
+            } calls {
+                selfUserFetched = true
+                result
+            }
         }
 
         fun withSelfUserFetched(isFetched: Boolean = true) {
             selfUserFetched = isFetched
         }
 
-        override suspend fun withFetchSelfUser(result: Either<CoreFailure, Unit>) {
-            coEvery {
-                userRepository.fetchSelfUser()
-            }.invokes { _ ->
-                selfUserFetched = true
+        suspend fun withInitializingE2EIClientSucceed() = apply {
+            everySuspend {
+                e2EIRepository.initFreshE2EIClient(any(), any())
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling initFreshE2EIClient" }
+                Either.Right(Unit)
+            }
+        }
+
+        suspend fun withLoadTrustAnchorsResulting(result: Either<E2EIFailure, Unit>) = apply {
+            everySuspend {
+                e2EIRepository.fetchAndSetTrustAnchors()
+            } returns result
+        }
+
+        suspend fun withFetchFederationCertificateChainResulting(result: Either<E2EIFailure, Unit>) = apply {
+            everySuspend {
+                e2EIRepository.fetchFederationCertificates()
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling fetchFederationCertificates" }
                 result
             }
         }
 
-        suspend fun withInitializingE2EIClientSucceed() = apply {
-            coEvery {
-                e2EIRepository.initFreshE2EIClient(any(), any())
-            }.ensuresSelfUserFetchedAndReturns(Either.Right(Unit), e2EIRepository::initFreshE2EIClient.name)
-        }
-
-        suspend fun withLoadTrustAnchorsResulting(result: Either<E2EIFailure, Unit>) = apply {
-            coEvery {
-                e2EIRepository.fetchAndSetTrustAnchors()
-            }.returns(result)
-        }
-
-        suspend fun withFetchFederationCertificateChainResulting(result: Either<E2EIFailure, Unit>) = apply {
-            coEvery {
-                e2EIRepository.fetchFederationCertificates()
-            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::fetchFederationCertificates.name)
-        }
-
         suspend fun withLoadACMEDirectoriesResulting(result: Either<E2EIFailure, AcmeDirectory>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.loadACMEDirectories()
-            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::loadACMEDirectories.name)
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling loadACMEDirectories" }
+                result
+            }
         }
 
         suspend fun withGetACMENonceResulting(result: Either<E2EIFailure, Nonce>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.getACMENonce(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withCreateNewAccountResulting(result: Either<E2EIFailure, Nonce>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.createNewAccount(any(), any())
-            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::createNewAccount.name)
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling createNewAccount" }
+                result
+            }
         }
 
         suspend fun withCreateNewOrderResulting(result: Either<E2EIFailure, Triple<NewAcmeOrder, Nonce, String>>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.createNewOrder(any(), any())
-            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::createNewOrder.name)
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling createNewOrder" }
+                result
+            }
         }
 
         suspend fun withGettingChallenges(result: Either<E2EIFailure, AuthorizationResult>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.getAuthorizations(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withGetWireNonceResulting(result: Either<E2EIFailure, Nonce>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.getWireNonce()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withGetDPoPTokenResulting(result: Either<E2EIFailure, String>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.getDPoPToken(any())
-            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::getDPoPToken.name)
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling getDPoPToken" }
+                result
+            }
         }
 
         suspend fun withGetWireAccessTokenResulting(result: Either<E2EIFailure, AccessTokenResponse>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.getWireAccessToken(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withValidateDPoPChallengeResulting(result: Either<E2EIFailure, ChallengeResponse>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.validateDPoPChallenge(any(), any(), any())
-            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::validateDPoPChallenge.name)
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling validateDPoPChallenge" }
+                result
+            }
         }
 
         suspend fun withValidateOIDCChallengeResulting(result: Either<E2EIFailure, ChallengeResponse>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
-            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::validateOIDCChallenge.name)
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling validateOIDCChallenge" }
+                result
+            }
         }
 
         suspend fun withCheckOrderRequestResulting(result: Either<E2EIFailure, Pair<ACMEResponse, String>>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.checkOrderRequest(any(), any())
-            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::checkOrderRequest.name)
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling checkOrderRequest" }
+                result
+            }
         }
 
         suspend fun withFinalizeResulting(result: Either<E2EIFailure, Pair<ACMEResponse, String>>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.finalize(any(), any())
-            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::finalize.name)
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling finalize" }
+                result
+            }
         }
 
         suspend fun withRotateKeysAndMigrateConversations(result: Either<E2EIFailure, Unit>) = apply {
-            coEvery {
-                e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any<Boolean>())
-            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::rotateKeysAndMigrateConversations.name)
+            everySuspend {
+                e2EIRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling rotateKeysAndMigrateConversations" }
+                result
+            }
         }
 
         suspend fun withCertificateRequestResulting(result: Either<E2EIFailure, ACMEResponse>) = apply {
-            coEvery {
+            everySuspend {
                 e2EIRepository.certificateRequest(any(), any())
-            }.ensuresSelfUserFetchedAndReturns(result, e2EIRepository::certificateRequest.name)
+            } calls {
+                require(selfUserFetched) { "Self user should be fetched before calling certificateRequest" }
+                result
+            }
         }
 
         suspend fun withObserveConversationListResulting(result: List<Conversation>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeConversationList()
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
 
         suspend fun arrange(coroutineScope: CoroutineScope, block: suspend Arrangement.() -> Unit): Pair<Arrangement, EnrollE2EIUseCase> =

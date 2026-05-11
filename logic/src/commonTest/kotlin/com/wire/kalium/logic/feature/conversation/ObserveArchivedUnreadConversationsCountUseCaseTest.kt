@@ -20,10 +20,11 @@ package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -32,7 +33,7 @@ import kotlin.test.assertEquals
 
 class ObserveArchivedUnreadConversationsCountUseCaseTest {
 
-        private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+        private val conversationRepository: ConversationRepository = mock()
 
     private lateinit var observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
 
@@ -43,20 +44,17 @@ class ObserveArchivedUnreadConversationsCountUseCaseTest {
 
     @Test
     fun givenArchivedUnreadConversationsCount_whenObserving_thenCorrectCountShouldBeReturned() = runTest {
-        // Given
         val unreadCount = 10L
 
-        coEvery {
+        everySuspend {
             conversationRepository.observeUnreadArchivedConversationsCount()
-        }.returns(flowOf(unreadCount))
+        } returns flowOf(unreadCount)
 
-        // When
         observeArchivedUnreadConversationsCount().test {
-            // Then
             val result = awaitItem()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.observeUnreadArchivedConversationsCount()
-            }.wasInvoked(exactly = once)
+            }
 
             assertEquals(unreadCount, result)
             awaitComplete()

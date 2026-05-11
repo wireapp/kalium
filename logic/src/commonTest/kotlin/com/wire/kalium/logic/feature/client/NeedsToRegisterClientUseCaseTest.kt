@@ -28,12 +28,14 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -52,13 +54,13 @@ class NeedsToRegisterClientUseCaseTest {
             assertEquals(false, it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.userAccountInfo(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.currentClientIdProvider.invoke()
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -74,13 +76,13 @@ class NeedsToRegisterClientUseCaseTest {
             assertEquals(true, it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.userAccountInfo(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.currentClientIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -95,13 +97,13 @@ class NeedsToRegisterClientUseCaseTest {
             assertEquals(false, it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.userAccountInfo(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.currentClientIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -115,36 +117,36 @@ class NeedsToRegisterClientUseCaseTest {
             assertTrue(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.userAccountInfo(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.currentClientIdProvider.invoke()
-        }.wasNotInvoked()
+        }
     }
 
     private companion object {
         val selfUserId = UserId("selfUserId", "selfUserDomain")
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val sessionRepository = mock(SessionRepository::class)
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
 
         private val needsToRegisterClientUseCase: NeedsToRegisterClientUseCase =
             NeedsToRegisterClientUseCaseImpl(currentClientIdProvider, sessionRepository, cryptoTransactionProvider, selfUserId)
 
         suspend fun withCurrentClientId(result: Either<StorageFailure, ClientId>) = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUserAccountInfo(result: Either<StorageFailure, AccountInfo>) = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.userAccountInfo(selfUserId)
-            }.returns(result)
+            } returns result
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit) = let {

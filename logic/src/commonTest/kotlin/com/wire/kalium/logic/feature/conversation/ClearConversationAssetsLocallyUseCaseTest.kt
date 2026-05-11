@@ -22,10 +22,13 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -34,7 +37,6 @@ class ClearConversationAssetsLocallyUseCaseTest {
 
     @Test
     fun givenConversationAssetIds_whenAllDeletionsAreSuccess_thenSuccessResultIsPropagated() = runTest {
-        // given
         val ids = listOf("id_1", "id_2")
         val (arrangement, useCase) = Arrangement()
             .withAssetIdsResponse(ids)
@@ -42,17 +44,14 @@ class ClearConversationAssetsLocallyUseCaseTest {
             .withAssetClearSuccess("id_2")
             .arrange()
 
-        // when
         val result = useCase(ConversationId("someValue", "someDomain"))
 
-        // then
         assertIs<Either.Right<Unit>>(result)
-        coVerify { arrangement.assetRepository.deleteAssetLocally(any()) }.wasInvoked(exactly = 2)
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.assetRepository.deleteAssetLocally(any()) }
     }
 
     @Test
     fun givenConversationAssetIds_whenOneDeletionFailed_thenFailureResultIsPropagated() = runTest {
-        // given
         val ids = listOf("id_1", "id_2")
         val (arrangement, useCase) = Arrangement()
             .withAssetIdsResponse(ids)
@@ -60,44 +59,39 @@ class ClearConversationAssetsLocallyUseCaseTest {
             .withAssetClearError("id_2")
             .arrange()
 
-        // when
         val result = useCase(ConversationId("someValue", "someDomain"))
 
-        // then
         assertIs<Either.Left<Unit>>(result)
-        coVerify { arrangement.assetRepository.deleteAssetLocally(any()) }.wasInvoked(exactly = 2)
+        verifySuspend(VerifyMode.exactly(2)) { arrangement.assetRepository.deleteAssetLocally(any()) }
     }
 
     @Test
     fun givenEmptyConversationAssetIds_whenInvoked_thenDeletionsAreNotInvoked() = runTest {
-        // given
         val (arrangement, useCase) = Arrangement()
             .withAssetIdsResponse(emptyList())
             .arrange()
 
-        // when
         val result = useCase(ConversationId("someValue", "someDomain"))
 
-        // then
         assertIs<Either.Right<Unit>>(result)
-        coVerify { arrangement.assetRepository.deleteAssetLocally(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.assetRepository.deleteAssetLocally(any()) }
     }
 
     private class Arrangement {
         
-        val messageRepository = mock(MessageRepository::class)
-        val assetRepository = mock(AssetRepository::class)
+        val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
+        val assetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
 
         suspend fun withAssetClearSuccess(id: String) = apply {
-            coEvery { assetRepository.deleteAssetLocally(id) }.returns(Either.Right(Unit))
+            everySuspend { assetRepository.deleteAssetLocally(id) } returns Either.Right(Unit)
         }
 
         suspend fun withAssetClearError(id: String) = apply {
-            coEvery { assetRepository.deleteAssetLocally(id) }.returns(Either.Left(CoreFailure.Unknown(null)))
+            everySuspend { assetRepository.deleteAssetLocally(id) } returns Either.Left(CoreFailure.Unknown(null))
         }
 
         suspend fun withAssetIdsResponse(ids: List<String>) = apply {
-            coEvery { messageRepository.getAllAssetIdsFromConversationId(any()) }.returns(Either.Right(ids))
+            everySuspend { messageRepository.getAllAssetIdsFromConversationId(any()) } returns Either.Right(ids)
         }
 
         fun arrange() = this to ClearConversationAssetsLocallyUseCaseImpl(

@@ -18,20 +18,23 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.data.client.E2EIClientProvider
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class DebugE2EICertificateExpirationUseCaseTest {
 
-    private val e2EIClientProvider = mock(E2EIClientProvider::class)
+    private val e2EIClientProvider: E2EIClientProvider = mock(mode = MockMode.autoUnit)
 
     @Test
     fun givenOverrideIsMissing_whenGettingExpiration_thenReturnsDefault90Days() = runTest {
-        coEvery { e2EIClientProvider.getDebugCertificateExpirationOverride() }.returns(null)
+        everySuspend { e2EIClientProvider.getDebugCertificateExpirationOverride() } returns null
 
         val useCase = GetDebugE2EICertificateExpirationUseCaseImpl(e2EIClientProvider)
 
@@ -44,7 +47,9 @@ class DebugE2EICertificateExpirationUseCaseTest {
 
         useCase(120)
 
-        coVerify { e2EIClientProvider.setDebugCertificateExpirationOverride(MIN_DEBUG_E2EI_CERTIFICATE_EXPIRATION_SECONDS) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            e2EIClientProvider.setDebugCertificateExpirationOverride(MIN_DEBUG_E2EI_CERTIFICATE_EXPIRATION_SECONDS)
+        }
     }
 
     @Test
@@ -53,6 +58,8 @@ class DebugE2EICertificateExpirationUseCaseTest {
 
         useCase(900)
 
-        coVerify { e2EIClientProvider.setDebugCertificateExpirationOverride(900) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            e2EIClientProvider.setDebugCertificateExpirationOverride(900)
+        }
     }
 }

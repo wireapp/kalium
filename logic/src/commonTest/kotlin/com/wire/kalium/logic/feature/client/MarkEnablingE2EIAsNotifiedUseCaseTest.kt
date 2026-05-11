@@ -21,12 +21,14 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -43,9 +45,9 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
         useCase(2.days)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.snoozeE2EINotification(eq(1.days))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -54,9 +56,9 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
         useCase(5.hours)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.snoozeE2EINotification(eq(4.hours))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -65,9 +67,9 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
         useCase(2.hours)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.snoozeE2EINotification(eq(1.hours))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -76,9 +78,9 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
         useCase(16.minutes)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.snoozeE2EINotification(eq(15.minutes))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -87,20 +89,20 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
         useCase(14.minutes)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.snoozeE2EINotification(eq(5.minutes))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
         init {
             runBlocking {
-                coEvery {
+                everySuspend {
                     userConfigRepository.snoozeE2EINotification(any<Duration>())
-                }.returns(Either.Right(Unit))
+                } returns Either.Right(Unit)
             }
         }
 

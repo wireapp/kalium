@@ -27,11 +27,13 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.sync.SyncStateObserver
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.TestScope
@@ -68,9 +70,9 @@ class MLSClientManagerTest {
             advanceUntilIdle()
 
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.registerMLSClient.invoke(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -88,13 +90,13 @@ class MLSClientManagerTest {
             advanceUntilIdle()
 
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.registerMLSClient.invoke(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -111,9 +113,9 @@ class MLSClientManagerTest {
             mlsClientManager.invoke()
             advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -128,9 +130,9 @@ class MLSClientManagerTest {
             mlsClientManager.invoke()
             advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.registerMLSClient.invoke(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -144,63 +146,67 @@ class MLSClientManagerTest {
             mlsClientManager.invoke()
             advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.isAllowedToRegisterMLSClient()
-            }.wasNotInvoked()
+            }
         }
 
     private class Arrangement {
 
-        val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
-        var slowSyncRepository = mock(SlowSyncRepository::class)
-        var clientIdProvider = mock(CurrentClientIdProvider::class)
-        val clientRepository = mock(ClientRepository::class)
-        val isAllowedToRegisterMLSClient = mock(IsAllowedToRegisterMLSClientUseCase::class)
-        val registerMLSClient = mock(RegisterMLSClientUseCase::class)
+        val syncStateObserver: SyncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
+        var slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
+        var clientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val isAllowedToRegisterMLSClient = mock<IsAllowedToRegisterMLSClientUseCase>(mode = MockMode.autoUnit)
+        val registerMLSClient = mock<RegisterMLSClientUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withCurrentClientId(result: Either<CoreFailure, ClientId>) = apply {
-            coEvery {
+            everySuspend {
                 clientIdProvider.invoke()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withHasRegisteredMLSClient(result: Either<CoreFailure, Boolean>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.hasRegisteredMLSClient()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withRegisterMLSClientSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 registerMLSClient.invoke(any())
-            }.returns(Either.Right(RegisterMLSClientResult.Success))
+            } returns Either.Right(RegisterMLSClientResult.Success)
         }
 
         suspend fun withRegisterMLSClientE2EIRequired() = apply {
-            coEvery {
+            everySuspend {
                 registerMLSClient.invoke(any())
-            }.returns(Either.Right(RegisterMLSClientResult.E2EICertificateRequired))
+            } returns Either.Right(RegisterMLSClientResult.E2EICertificateRequired)
         }
 
         suspend fun withIsAllowedToRegisterMLSClient(enabled: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 isAllowedToRegisterMLSClient()
-            }.returns(enabled)
+            } returns enabled
         }
         suspend fun withSyncStates(result : Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 syncStateObserver.waitUntilLiveOrFailure()
-            }.returns(result)
+            } returns result
         }
 
-        fun arrange(testScope: TestScope) = this to MLSClientManagerImpl(
-            clientIdProvider,
-            isAllowedToRegisterMLSClient,
-            syncStateObserver,
-            lazy { slowSyncRepository },
-            lazy { clientRepository },
-            lazy { registerMLSClient },
-            testScope
-        )
+        fun arrange(testScope: TestScope) = apply {
+            everySuspend { slowSyncRepository.clearLastSlowSyncCompletionInstant() } returns Unit
+        }.let {
+            this to MLSClientManagerImpl(
+                clientIdProvider,
+                isAllowedToRegisterMLSClient,
+                syncStateObserver,
+                lazy { slowSyncRepository },
+                lazy { clientRepository },
+                lazy { registerMLSClient },
+                testScope
+            )
+        }
     }
 }

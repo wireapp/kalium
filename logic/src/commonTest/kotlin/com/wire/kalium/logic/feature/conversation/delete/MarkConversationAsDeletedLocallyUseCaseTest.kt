@@ -17,11 +17,18 @@
  */
 package com.wire.kalium.logic.feature.conversation.delete
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.coVerify
-import io.mockative.eq
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -40,7 +47,9 @@ class MarkConversationAsDeletedLocallyUseCaseTest {
 
         // then
         assertIs<MarkConversationAsDeletedResult.Success>(result)
-        coVerify { arrangement.conversationRepository.setConversationDeletedLocally(eq(CONVERSATION_ID), eq(true)) }.wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.setConversationDeletedLocally(eq(CONVERSATION_ID), eq(true))
+        }
     }
 
     @Test
@@ -55,14 +64,26 @@ class MarkConversationAsDeletedLocallyUseCaseTest {
 
         // then
         assertIs<MarkConversationAsDeletedResult.Failure>(result)
-        coVerify { arrangement.conversationRepository.setConversationDeletedLocally(eq(CONVERSATION_ID), eq(true)) }.wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.setConversationDeletedLocally(eq(CONVERSATION_ID), eq(true))
+        }
     }
 
-    private class Arrangement : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+    private class Arrangement {
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, MarkConversationAsDeletedLocallyUseCase> = run {
             val useCase = MarkConversationAsDeletedLocallyUseCaseImpl(conversationRepository = conversationRepository)
             block()
             this to useCase
+        }
+
+        suspend fun withSetConversationDeletedLocallySucceeding() {
+            everySuspend { conversationRepository.setConversationDeletedLocally(any(), any()) } returns Either.Right(Unit)
+        }
+
+        suspend fun withSetConversationDeletedLocallyFailing() {
+            everySuspend { conversationRepository.setConversationDeletedLocally(any(), any()) } returns Either.Left(CoreFailure.Unknown(null))
         }
     }
 

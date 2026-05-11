@@ -31,13 +31,16 @@ import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.framework.TestClient
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -62,15 +65,15 @@ class GetOrRegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.registerClientUseCase.invoke(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.persistClientId(eq(clientId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -94,30 +97,30 @@ class GetOrRegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.cachedClientIdClearer.invoke()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearClientDataUseCase.invoke()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.logoutRepository.clearClientRelatedLocalMetadata()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.clearRetainedClientId()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.registerClientUseCase.invoke(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.persistClientId(eq(clientId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -137,15 +140,15 @@ class GetOrRegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.registerClientUseCase.invoke(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.persistClientId(eq(clientId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -167,30 +170,30 @@ class GetOrRegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.E2EICertificateRequired>(result)
         assertEquals(client, result.client)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.setClientRegistrationBlockedByE2EI()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.registerClientUseCase.invoke(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.persistClientId(eq(clientId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        val clientRepository = mock(ClientRepository::class)
-        val pushTokenRepository = mock(PushTokenRepository::class)
-        val logoutRepository = mock(LogoutRepository::class)
-        val registerClientUseCase = mock(RegisterClientUseCase::class)
-        val clearClientDataUseCase = mock(ClearClientDataUseCase::class)
-        val upgradeCurrentSessionUseCase = mock(UpgradeCurrentSessionUseCase::class)
-        val syncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
-        val verifyExistingClientUseCase = mock(VerifyExistingClientUseCase::class)
-        val cachedClientIdClearer = mock(CachedClientIdClearer::class)
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val pushTokenRepository = mock<PushTokenRepository>(mode = MockMode.autoUnit)
+        val logoutRepository = mock<LogoutRepository>(mode = MockMode.autoUnit)
+        val registerClientUseCase = mock<RegisterClientUseCase>(mode = MockMode.autoUnit)
+        val clearClientDataUseCase = mock<ClearClientDataUseCase>(mode = MockMode.autoUnit)
+        val upgradeCurrentSessionUseCase = mock<UpgradeCurrentSessionUseCase>(mode = MockMode.autoUnit)
+        val syncFeatureConfigsUseCase = mock<SyncFeatureConfigsUseCase>(mode = MockMode.autoUnit)
+        val verifyExistingClientUseCase = mock<VerifyExistingClientUseCase>(mode = MockMode.autoUnit)
+        val cachedClientIdClearer = mock<CachedClientIdClearer>(mode = MockMode.autoUnit)
 
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
             clientRepository,
@@ -205,73 +208,77 @@ class GetOrRegisterClientUseCaseTest {
         )
 
         suspend fun withSyncFeatureConfigResult(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
-            coEvery {
+            everySuspend {
                 syncFeatureConfigsUseCase.invoke()
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.retainedClientId()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withRegisterClientResult(result: RegisterClientResult) = apply {
-            coEvery {
+            everySuspend {
                 registerClientUseCase.invoke(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withClearRetainedClientIdResult(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.clearRetainedClientId()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withPersistClientIdResult(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.persistClientId(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withPersistHasConsumableNotifications(hasConsumableNotifications: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.persistClientHasConsumableNotifications(hasConsumableNotifications)
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
             return this
         }
 
         suspend fun withClearHasConsumableNotifications(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.clearClientHasConsumableNotifications()
-            }.returns(result)
+            } returns result
             return this
         }
 
         suspend fun withSetClientRegistrationBlockedByE2EISucceed() = apply {
-            coEvery {
-                clientRepository::setClientRegistrationBlockedByE2EI.invoke()
-            }.returns(Unit.right())
+            everySuspend {
+                clientRepository.setClientRegistrationBlockedByE2EI()
+            } returns Unit.right()
         }
 
         suspend fun withVerifyExistingClientResult(result: VerifyExistingClientResult) = apply {
-            coEvery {
+            everySuspend {
                 verifyExistingClientUseCase.invoke(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUpgradeCurrentSessionResult(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 upgradeCurrentSessionUseCase.invoke(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withSetUpdateFirebaseTokenFlagResult(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 pushTokenRepository.setUpdateFirebaseTokenFlag(any())
-            }.returns(result)
+            } returns result
         }
 
-        fun arrange() = this to getOrRegisterClientUseCase
+        fun arrange() = apply {
+            every { cachedClientIdClearer.invoke() } returns Unit
+            everySuspend { clearClientDataUseCase.invoke() } returns Unit
+            everySuspend { logoutRepository.clearClientRelatedLocalMetadata() } returns Unit
+        }.let { this to getOrRegisterClientUseCase }
     }
 }

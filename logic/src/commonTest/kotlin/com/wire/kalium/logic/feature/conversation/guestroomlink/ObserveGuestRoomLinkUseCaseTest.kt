@@ -17,15 +17,17 @@
  */
 package com.wire.kalium.logic.feature.conversation.guestroomlink
 
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGuestLink
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.common.functional.Either
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -36,7 +38,7 @@ import kotlin.test.assertIs
 
 internal class ObserveGuestRoomLinkUseCaseTest {
 
-    val conversationGroupRepository = mock(ConversationGroupRepository::class)
+    val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
 
     private lateinit var observeGuestRoomLink: ObserveGuestRoomLinkUseCase
 
@@ -48,17 +50,17 @@ internal class ObserveGuestRoomLinkUseCaseTest {
     @Test
     fun givenRepositoryEmitsValues_whenObservingGuestRoomLink_thenPropagateTheLink() = runTest {
         val guestLink = ConversationGuestLink("link", false)
-        coEvery {
+        everySuspend {
             conversationGroupRepository.observeGuestRoomLink(eq(conversationId))
-        }.returns(flowOf(Either.Right(guestLink)))
+        } returns flowOf(Either.Right(guestLink))
 
         val result = observeGuestRoomLink(conversationId).first()
         assertIs<ObserveGuestRoomLinkResult.Success>(result)
         assertEquals(guestLink, result.link)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             conversationGroupRepository.observeGuestRoomLink(eq(conversationId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     companion object {

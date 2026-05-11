@@ -28,10 +28,12 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -54,12 +56,12 @@ class GetSearchedConversationMessagePositionUseCaseTest {
             messageId = MESSAGE_ID
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getSearchedConversationMessagePosition(
                 conversationId = CONVERSATION_ID,
                 messageId = MESSAGE_ID
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -103,7 +105,7 @@ class GetSearchedConversationMessagePositionUseCaseTest {
     }
 
     private inner class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-        val messageRepository: MessageRepository = mock(MessageRepository::class)
+        val messageRepository: MessageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
 
         private val getSearchedConversationMessagePosition by lazy {
             GetSearchedConversationMessagePositionUseCaseImpl(
@@ -117,12 +119,12 @@ class GetSearchedConversationMessagePositionUseCaseTest {
             messageId: String,
             response: Either<StorageFailure, Int>
         ) = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.getSearchedConversationMessagePosition(
                     conversationId = conversationId,
                     messageId = messageId
                 )
-            }.returns(response)
+            } returns response
         }
 
         fun arrange() = this to getSearchedConversationMessagePosition

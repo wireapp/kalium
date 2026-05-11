@@ -21,23 +21,23 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.matcher.eq as mokkeryEq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -53,9 +53,9 @@ class MLSOneOnOneConversationResolverTest {
 
         getOrEstablishMlsOneToOneUseCase(arrangement.transactionContext, userId)
 
-        coVerify {
-            arrangement.conversationRepository.getConversationsByUserId(eq(userId))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.getConversationsByUserId(mokkeryEq(userId))
+        }
     }
 
     @Test
@@ -72,13 +72,13 @@ class MLSOneOnOneConversationResolverTest {
             assertEquals(cause, it)
         }
 
-        coVerify {
-            arrangement.conversationRepository.fetchMlsOneToOneConversation(any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.fetchMlsOneToOneConversation(mokkeryAny())
+        }
 
-        coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(true))
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryEq(true))
+        }
     }
 
     @Test
@@ -131,9 +131,9 @@ class MLSOneOnOneConversationResolverTest {
             assertEquals(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.id, it)
         }
 
-        coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(true))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryEq(true))
+        }
     }
 
     @Test
@@ -154,25 +154,36 @@ class MLSOneOnOneConversationResolverTest {
             allowJoinByExternalCommit = false
         ).shouldSucceed()
 
-        coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(false))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryEq(false))
+        }
     }
 
     private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl()
-    {
-            val fetchMLSOneToOneConversation = mock(FetchMLSOneToOneConversationUseCase::class)
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val joinExistingMLSConversationUseCase = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
+        val fetchMLSOneToOneConversation = mock<FetchMLSOneToOneConversationUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withFetchMLSOneToOneConversation(result: Either<CoreFailure, Conversation>) = apply {
-            coEvery {
-                fetchMLSOneToOneConversation(any(), any())
-            }.returns(result)
+            everySuspend {
+                fetchMLSOneToOneConversation(mokkeryAny(), mokkeryAny())
+            } returns result
+        }
+
+        suspend fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>) = apply {
+            everySuspend {
+                conversationRepository.getConversationsByUserId(mokkeryAny())
+            } returns result
+        }
+
+        suspend fun withJoinExistingMLSConversationUseCaseReturning(result: Either<CoreFailure, Unit>) = apply {
+            everySuspend {
+                joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns result
         }
 
         fun arrange() = run {
