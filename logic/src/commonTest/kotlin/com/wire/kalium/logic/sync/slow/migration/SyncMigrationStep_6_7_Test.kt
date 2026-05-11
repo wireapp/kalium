@@ -18,21 +18,21 @@
 package com.wire.kalium.logic.sync.slow.migration
 
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.AccountRepository
+import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep_6_7
-import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.AccountRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.AccountRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -49,13 +49,13 @@ class SyncMigrationStep_6_7_Test {
 
         migration.invoke().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.accountRepository.updateSelfUserAvailabilityStatus(eq(UserAvailabilityStatus.NONE))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfTeamIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -67,13 +67,13 @@ class SyncMigrationStep_6_7_Test {
 
         migration.invoke().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.accountRepository.updateSelfUserAvailabilityStatus(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfTeamIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -87,13 +87,13 @@ class SyncMigrationStep_6_7_Test {
             assertIs<StorageFailure.DataNotFound>(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.accountRepository.updateSelfUserAvailabilityStatus(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfTeamIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -107,25 +107,38 @@ class SyncMigrationStep_6_7_Test {
             assertIs<StorageFailure.DataNotFound>(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.accountRepository.updateSelfUserAvailabilityStatus(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfTeamIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement : AccountRepositoryArrangement by AccountRepositoryArrangementImpl(),
-        SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl() {
+    private class Arrangement {
+        val accountRepository = mock<AccountRepository>()
+        val selfTeamIdProvider = mock<SelfTeamIdProvider>()
 
         private val migration: SyncMigrationStep_6_7 = SyncMigrationStep_6_7(
             lazy { accountRepository },
             selfTeamIdProvider
         )
 
-        fun arrange(block: suspend Arrangement.() -> Unit) = let {
-            runBlocking { block() }
+        suspend fun withTeamId(teamId: Either<StorageFailure, TeamId?>) {
+            everySuspend {
+                selfTeamIdProvider.invoke()
+            } returns teamId
+        }
+
+        suspend fun withUpdateSelfUserAvailabilityStatus(result: Either<StorageFailure, Unit>) {
+            everySuspend {
+                accountRepository.updateSelfUserAvailabilityStatus(any())
+            } returns result
+        }
+
+        suspend fun arrange(block: suspend Arrangement.() -> Unit) = let {
+            block()
             this to migration
         }
     }

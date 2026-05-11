@@ -30,11 +30,12 @@ import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
@@ -79,9 +80,9 @@ class ObserveConversationListDetailsUseCaseTest {
 
         // Then
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.observeConversationList()
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -152,9 +153,9 @@ class ObserveConversationListDetailsUseCaseTest {
 
         with(arrangement) {
             conversations.forEach { conversation ->
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     conversationRepository.observeConversationDetailsById(eq(conversation.id))
-                }.wasInvoked(exactly = once)
+                }
             }
         }
     }
@@ -323,42 +324,42 @@ class ObserveConversationListDetailsUseCaseTest {
 
     private class Arrangement {
 
-        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+        val conversationRepository: ConversationRepository = mock()
 
         suspend fun withConversationsDetailsChannelUpdates(
             conversation: Conversation,
             expectedConversationDetails: Channel<ConversationDetails.OneOne>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeConversationDetailsById(eq(conversation.id))
-            }.returns(expectedConversationDetails.consumeAsFlow().map { Either.Right(it) })
+            } returns expectedConversationDetails.consumeAsFlow().map { Either.Right(it) }
         }
 
         suspend fun withSuccessfulConversationsDetailsListUpdates(
             conversation: Conversation,
             expectedConversationDetailsList: List<ConversationDetails>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeConversationDetailsById(eq(conversation.id))
-            }.returns(expectedConversationDetailsList.asFlow().map { Either.Right(it) })
+            } returns expectedConversationDetailsList.asFlow().map { Either.Right(it) }
         }
 
         suspend fun withErrorConversationsDetailsListUpdates(conversation: Conversation) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeConversationDetailsById(eq(conversation.id))
-            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
+            } returns flowOf(Either.Left(StorageFailure.DataNotFound))
         }
 
         suspend fun withConversationsList(conversations: List<Conversation>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeConversationList()
-            }.returns(flowOf(conversations))
+            } returns flowOf(conversations)
         }
 
         suspend fun withConversationsList(conversations: Channel<List<Conversation>>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeConversationList()
-            }.returns(conversations.consumeAsFlow())
+            } returns conversations.consumeAsFlow()
         }
 
         fun arrange() = this to ObserveConversationListDetailsUseCaseImpl(conversationRepository)

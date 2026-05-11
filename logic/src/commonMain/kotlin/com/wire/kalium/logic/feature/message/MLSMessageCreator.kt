@@ -39,10 +39,8 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
-@Mockable
 internal interface MLSMessageCreator {
 
     suspend fun prepareMLSGroupAndCreateOutgoingMLSMessage(

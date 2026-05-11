@@ -25,14 +25,12 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
  * Use case that observes the legal hold request.
  */
-@Mockable
 public interface ObserveLegalHoldRequestUseCase {
     public operator fun invoke(): Flow<Result>
 

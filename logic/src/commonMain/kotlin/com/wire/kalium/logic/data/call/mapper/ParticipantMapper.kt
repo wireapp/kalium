@@ -23,9 +23,7 @@ import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import io.mockative.Mockable
 
-@Mockable
 internal interface ParticipantMapper {
     fun fromCallMemberToParticipantMinimized(member: CallMember): ParticipantMinimized
 }

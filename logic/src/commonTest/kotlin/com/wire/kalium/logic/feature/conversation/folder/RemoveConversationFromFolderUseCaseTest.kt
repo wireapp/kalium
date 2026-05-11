@@ -24,10 +24,12 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCase.Result
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -52,21 +54,21 @@ class RemoveConversationFromFolderUseCaseTest {
 
         assertIs<Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, testFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.observeConversationsFromFolder(testFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.removeFolder(testFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.syncConversationFoldersFromLocal()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -87,21 +89,21 @@ class RemoveConversationFromFolderUseCaseTest {
 
         assertIs<Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, testFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.observeConversationsFromFolder(testFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationFolderRepository.removeFolder(testFolderId)
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.syncConversationFoldersFromLocal()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -119,22 +121,22 @@ class RemoveConversationFromFolderUseCaseTest {
 
         assertIs<Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, testFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.observeConversationsFromFolder(testFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.removeFolder(testFolderId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val conversationFolderRepository = mock(ConversationFolderRepository::class)
+        val conversationFolderRepository = mock<ConversationFolderRepository>(mode = MockMode.autoUnit)
 
         private val removeConversationFromFolderUseCase = RemoveConversationFromFolderUseCaseImpl(
             conversationFolderRepository
@@ -145,33 +147,33 @@ class RemoveConversationFromFolderUseCaseTest {
             folderId: String,
             either: Either<CoreFailure, Unit>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.removeConversationFromFolder(conversationId, folderId)
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withObserveConversationsFromFolder(
             folderId: String,
             flow: Flow<List<ConversationDetailsWithEvents>>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.observeConversationsFromFolder(folderId)
-            }.returns(flow)
+            } returns flow
         }
 
         suspend fun withRemoveFolder(
             folderId: String,
             either: Either<CoreFailure, Unit>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.removeFolder(folderId)
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withSyncFolders(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.syncConversationFoldersFromLocal()
-            }.returns(either)
+            } returns either
         }
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to removeConversationFromFolderUseCase }

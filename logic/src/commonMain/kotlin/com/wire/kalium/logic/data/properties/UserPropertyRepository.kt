@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.conversation.folders.toFolder
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.serialization.json.JsonElement
@@ -65,7 +64,6 @@ internal interface ConversationFoldersPropertyRepository {
     suspend fun getConversationFolders(): Either<CoreFailure, List<FolderWithConversations>>
 }
 
-@Mockable
 internal interface UserPropertyRepository :
     ReadReceiptsPropertyRepository,
     TypingIndicatorPropertyRepository,

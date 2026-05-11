@@ -35,13 +35,15 @@ import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
 import com.wire.kalium.logic.framework.TestClient.CLIENT
 import com.wire.kalium.logic.sync.SyncRequestResult
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -57,9 +59,9 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.clientRepository.shouldUpdateClientConsumableNotificationsCapability()
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -75,13 +77,13 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
 
             useCase.invoke()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.selfServerConfigUseCase()
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.selfClientIdProvider.invoke()
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -101,25 +103,25 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
 
             useCase.invoke()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.clientRepository.shouldUpdateClientConsumableNotificationsCapability()
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.selfClientIdProvider.invoke()
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.clientRepository.setShouldUpdateClientConsumableNotificationsCapability(eq(false))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.clientRepository.persistClientHasConsumableNotifications(eq(true))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -140,95 +142,92 @@ class UpdateSelfClientCapabilityToConsumableNotificationsUseCaseTest {
 
             useCase.invoke()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.clientRepository.shouldUpdateClientConsumableNotificationsCapability()
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.selfClientIdProvider.invoke()
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.clientRepository.setShouldUpdateClientConsumableNotificationsCapability(eq(true))
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.clientRepository.persistClientHasConsumableNotifications(eq(true))
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
-            }.wasNotInvoked()
+            }
         }
 
     private class Arrangement {
-        val clientRepository: ClientRepository = mock(ClientRepository::class)
-        val clientRemoteRepository: ClientRemoteRepository = mock(ClientRemoteRepository::class)
-        val selfClientIdProvider = mock(CurrentClientIdProvider::class)
-        val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
-        val selfServerConfigUseCase = mock(SelfServerConfigUseCase::class)
-        val slowSyncRepository = mock(SlowSyncRepository::class)
+        val clientRepository: ClientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val clientRemoteRepository: ClientRemoteRepository = mock<ClientRemoteRepository>(mode = MockMode.autoUnit)
+        val selfClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val incrementalSyncRepository = mock<IncrementalSyncRepository>(mode = MockMode.autoUnit)
+        val selfServerConfigUseCase = mock<SelfServerConfigUseCase>(mode = MockMode.autoUnit)
+        val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
 
         init {
             runBlocking {
-                coEvery {
+                everySuspend {
                     selfClientIdProvider.invoke()
-                }.returns(Either.Right(CLIENT.id))
+                } returns Either.Right(CLIENT.id)
             }
         }
 
         fun withSyncOngoing() = apply {
             every {
                 incrementalSyncRepository.incrementalSyncState
-            }.returns(flowOf(IncrementalSyncStatus.FetchingPendingEvents))
+            } returns flowOf(IncrementalSyncStatus.FetchingPendingEvents)
         }
 
         fun withSyncDone() = apply {
             every {
                 incrementalSyncRepository.incrementalSyncState
-            }.returns(flowOf(IncrementalSyncStatus.Live))
+            } returns flowOf(IncrementalSyncStatus.Live)
         }
 
         suspend fun withClientHasConsumableNotifications(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.observeClientHasConsumableNotifications()
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
 
         suspend fun withShouldUpdateConsumableNotificationsCapabilityResult(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.shouldUpdateClientConsumableNotificationsCapability()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withIsEnabledByAPIResult(result: SelfServerConfigUseCase.Result) = apply {
-            coEvery {
+            everySuspend {
                 selfServerConfigUseCase.invoke()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUpdateClientCapabilityResult(result: Either<NetworkFailure, Unit>) = apply {
-            coEvery {
-                clientRemoteRepository.updateClientCapabilities(matches {
+            everySuspend {
+                clientRemoteRepository.updateClientCapabilities(matching {
                     it.capabilities.contains(ClientCapability.ConsumableNotifications)
                             && it.capabilities.contains(ClientCapability.LegalHoldImplicitConsent)
                 }, eq(CLIENT.id.value))
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withShouldUpdateClientConsumableNotificationsCapabilityResult(should: Boolean) = apply {
-            coEvery { clientRepository.setShouldUpdateClientConsumableNotificationsCapability(should) }
-                .returns(Unit.right())
+            everySuspend { clientRepository.setShouldUpdateClientConsumableNotificationsCapability(should) } returns Unit.right()
         }
 
         suspend fun withPersistClientHasConsumableNotificationsResult(should: Boolean) = apply {
-            coEvery { clientRepository.persistClientHasConsumableNotifications(should) }
-                .returns(Unit.right())
+            everySuspend { clientRepository.persistClientHasConsumableNotifications(should) } returns Unit.right()
         }
 
         suspend fun withClearLastSlowSyncCompletionInstantResult() = apply {
-            coEvery { slowSyncRepository.clearLastSlowSyncCompletionInstant() }
-                .returns(Unit)
+            everySuspend { slowSyncRepository.clearLastSlowSyncCompletionInstant() } returns Unit
         }
 
         fun arrange(withSyncRequester: suspend () -> SyncRequestResult = { SyncRequestResult.Success }) =

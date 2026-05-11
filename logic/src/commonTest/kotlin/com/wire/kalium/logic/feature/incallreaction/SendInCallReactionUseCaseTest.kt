@@ -27,11 +27,13 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.messaging.sending.MessageSender
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -42,64 +44,58 @@ class SendInCallReactionUseCaseTest {
     @Test
     fun givenEstablishedConnection_WhenSending_ShouldReturnSuccess() = runTest {
 
-        // Given
         val (arrangement, sendReactionUseCase) = Arrangement(this)
             .withCurrentClientProviderSuccess()
             .withSendMessageSuccess()
             .arrange()
 
-        // When
         val result = sendReactionUseCase(ConversationId("id", "domain"), "reaction")
 
-        // Then
         assertIs<MessageOperationResult.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
     fun givenNoConnectionWhenSendingShouldFail() = runTest {
 
-        // Given
         val (arrangement, sendReactionUseCase) = Arrangement(this)
             .withCurrentClientProviderSuccess()
             .withSendMessageFailure()
             .arrange()
 
-        // When
         val result = sendReactionUseCase(ConversationId("id", "domain"), "reaction")
 
-        // Then
         assertIs<MessageOperationResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement(private val coroutineScope: CoroutineScope) {
 
-        val messageSender = mock(MessageSender::class)
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+        val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
+        val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
 
         suspend fun withSendMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSendMessageFailure() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
         suspend fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(Either.Right(clientId))
+            } returns Either.Right(clientId)
         }
 
         fun arrange() = this to SendInCallReactionUseCase(

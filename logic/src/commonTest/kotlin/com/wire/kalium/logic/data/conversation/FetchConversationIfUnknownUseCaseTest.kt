@@ -21,15 +21,14 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -45,13 +44,13 @@ class FetchConversationIfUnknownUseCaseTest {
 
         useCase(arrangement.transactionContext, TestConversation.ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversation(
                 any(),
                 eq(TestConversation.ID),
                 eq(ConversationSyncReason.Other)
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -62,7 +61,7 @@ class FetchConversationIfUnknownUseCaseTest {
 
         useCase(arrangement.transactionContext, TestConversation.ID)
 
-        coVerify { arrangement.fetchConversation(any(), any(), any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.fetchConversation(any(), any(), any()) }
     }
 
     private suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, FetchConversationIfUnknownUseCase> =
@@ -70,25 +69,25 @@ class FetchConversationIfUnknownUseCaseTest {
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
-        val fetchConversation = mock(FetchConversationUseCase::class)
+        val conversationRepository = mock<ConversationRepository>()
+        val fetchConversation = mock<FetchConversationUseCase>()
 
         suspend fun withGetConversationLeft() = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationById(eq(TestConversation.ID))
             } returns Either.Left(StorageFailure.DataNotFound)
         }
 
         suspend fun withGetConversationRight() = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationById(eq(TestConversation.ID))
             } returns Either.Right(TestConversation.CONVERSATION)
         }
 
         suspend fun withFetchConversationSuccess() = apply {
-            coEvery {
+            everySuspend {
                 fetchConversation(
                     any(),
                     eq(TestConversation.ID),

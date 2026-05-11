@@ -17,32 +17,32 @@
  */
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocallyUseCase
+import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandlerImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.DeleteConversationArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -71,8 +71,8 @@ class ClearConversationContentHandlerTest {
             )
 
             // then
-            coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
-            coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
+            verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.clearContent(any()) }
         }
 
     @Test
@@ -96,8 +96,8 @@ class ClearConversationContentHandlerTest {
             )
 
             // then
-            coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
-            coVerify { arrangement.conversationRepository.clearContent(any()) }.wasNotInvoked()
+            verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
+            verifySuspend(VerifyMode.not) { arrangement.conversationRepository.clearContent(any()) }
         }
 
     @Test
@@ -121,8 +121,8 @@ class ClearConversationContentHandlerTest {
             )
 
             // then
-            coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
-            coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
+            verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.clearContent(any()) }
         }
 
     @Test
@@ -145,8 +145,8 @@ class ClearConversationContentHandlerTest {
         )
 
         // then
-        coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
-        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.clearContent(any()) }
     }
 
     @Test
@@ -169,8 +169,8 @@ class ClearConversationContentHandlerTest {
         )
 
         // then
-        coVerify { arrangement.deleteConversation(any(), any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.deleteConversation(any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.clearContent(any()) }
     }
 
     @Test
@@ -193,8 +193,8 @@ class ClearConversationContentHandlerTest {
         )
 
         // then
-        coVerify { arrangement.deleteConversation(any(), any()) }.wasNotInvoked()
-        coVerify { arrangement.conversationRepository.clearContent(any()) }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.not) { arrangement.deleteConversation(any(), any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.clearContent(any()) }
     }
 
     @Test
@@ -227,16 +227,15 @@ class ClearConversationContentHandlerTest {
 
     private class Arrangement(
         private val hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier,
-    ) :
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
-        DeleteConversationArrangement by DeleteConversationArrangementImpl() {
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
-        val isMessageSentInSelfConversationUseCase = mock(IsMessageSentInSelfConversationUseCase::class)
-        val clearConversationAssetsLocally = mock(ClearConversationAssetsLocallyUseCase::class)
+        val conversationRepository = mock<ConversationRepository>()
+        val deleteConversation = mock<DeleteConversationUseCase>()
+        val isMessageSentInSelfConversationUseCase = mock<IsMessageSentInSelfConversationUseCase>()
+        val clearConversationAssetsLocally = mock<ClearConversationAssetsLocallyUseCase>()
 
         suspend fun withMessageSentInSelfConversation(isSentInSelfConv: Boolean) = apply {
-            coEvery { isMessageSentInSelfConversationUseCase(any()) }.returns(isSentInSelfConv)
+            everySuspend { isMessageSentInSelfConversationUseCase(any()) } returns isSentInSelfConv
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, ClearConversationContentHandler> = run {
@@ -250,10 +249,18 @@ class ClearConversationContentHandlerTest {
             )
             withDeletingConversationSucceeding()
             withClearContentSucceeding()
-            coEvery { clearConversationAssetsLocally(any()) }.returns(Either.Right(Unit))
+            everySuspend { clearConversationAssetsLocally(any()) } returns Either.Right(Unit)
             block()
 
             this to clearConversationContentHandler
+        }
+
+        suspend fun withDeletingConversationSucceeding() {
+            everySuspend { deleteConversation(any(), any()) } returns Either.Right(Unit)
+        }
+
+        suspend fun withClearContentSucceeding() {
+            everySuspend { conversationRepository.clearContent(any()) } returns Either.Right(Unit)
         }
     }
 

@@ -18,8 +18,10 @@
 package com.wire.kalium.logic.util.arrangement.mls
 
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface IsMlsEnabledUseCaseArrangement {
     val isMlsEnabledUseCase: IsMLSEnabledUseCase
@@ -28,10 +30,10 @@ internal interface IsMlsEnabledUseCaseArrangement {
 }
 
 internal class IsMlsEnabledUseCaseArrangementImpl : IsMlsEnabledUseCaseArrangement {
-        override val isMlsEnabledUseCase: IsMLSEnabledUseCase = mock(IsMLSEnabledUseCase::class)
+        override val isMlsEnabledUseCase: IsMLSEnabledUseCase = mock<IsMLSEnabledUseCase>(mode = MockMode.autoUnit)
 
     override suspend fun withMLSEnabled(result: Boolean) {
-        coEvery {
+        everySuspend {
             isMlsEnabledUseCase.invoke()
         }.returns(result)
     }

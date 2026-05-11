@@ -27,13 +27,15 @@ import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncStateObserver
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.TestScope
@@ -60,9 +62,9 @@ class MLSMigrationManagerTest {
             mLSMigrationManager.invoke()
             advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsMigrationWorker.runMigration()
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -79,9 +81,9 @@ class MLSMigrationManagerTest {
             mLSMigrationManager.invoke()
             advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.mlsMigrationWorker.runMigration()
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -96,9 +98,9 @@ class MLSMigrationManagerTest {
             mLSMigrationManager.invoke()
             advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.mlsMigrationWorker.runMigration()
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -114,61 +116,61 @@ class MLSMigrationManagerTest {
             mLSMigrationManager.invoke()
             advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.mlsMigrationWorker.runMigration()
-            }.wasNotInvoked()
+            }
         }
 
     private class Arrangement {
 
-        val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
+        val syncStateObserver: SyncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
         val kaliumConfigs = KaliumConfigs()
-        val clientRepository = mock(ClientRepository::class)
-        val isMLSEnabledUseCase = mock(IsMLSEnabledUseCase::class)
-        val timestampKeyRepository = mock(TimestampKeyRepository::class)
-        val mlsMigrationWorker = mock(MLSMigrationWorker::class)
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val isMLSEnabledUseCase = mock<IsMLSEnabledUseCase>(mode = MockMode.autoUnit)
+        val timestampKeyRepository = mock<TimestampKeyRepository>(mode = MockMode.autoUnit)
+        val mlsMigrationWorker = mock<MLSMigrationWorker>(mode = MockMode.autoUnit)
 
         suspend fun withRunMigrationSucceeds() = apply {
-            coEvery {
+            everySuspend {
                 mlsMigrationWorker.runMigration()
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withLastMLSMigrationCheck(hasPassed: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 timestampKeyRepository.hasPassed(eq(TimestampKeys.LAST_MLS_MIGRATION_CHECK), any())
-            }.returns(Either.Right(hasPassed))
+            } returns Either.Right(hasPassed)
         }
 
         suspend fun withLastMLSMigrationCheckResetSucceeds() = apply {
-            coEvery {
+            everySuspend {
                 timestampKeyRepository.reset(eq(TimestampKeys.LAST_MLS_MIGRATION_CHECK))
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withIsMLSSupported(supported: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 isMLSEnabledUseCase()
-            }.returns(supported)
+            } returns supported
 
         }
 
         suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.hasRegisteredMLSClient()
-            }.returns(Either.Right(result))
+            } returns Either.Right(result)
         }
 
         fun withSyncStates(flow: StateFlow<SyncState>) = apply {
             every {
                 syncStateObserver.syncState
-            }.returns(flow)
+            } returns flow
         }
 
         suspend fun withWaitUntilLiveOrFailure(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 syncStateObserver.waitUntilLiveOrFailure()
-            }.returns(result)
+            } returns result
         }
 
         fun arrange(coroutineScope: CoroutineScope) = this to MLSMigrationManagerImpl(

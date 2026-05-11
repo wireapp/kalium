@@ -25,9 +25,8 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.checkFKViolations
 import com.wire.kalium.persistence.db.migrate
 import com.wire.kalium.persistence.db.userDatabaseDriverByPath
-import io.mockative.Mockable
+import kotlin.coroutines.cancellation.CancellationException
 
-@Mockable
 interface DatabaseImporter {
     suspend fun importFromFile(filePath: String, fromOtherClient: Boolean)
 }
@@ -36,7 +35,7 @@ internal class DatabaseImporterImpl internal constructor(
     private val localDatabase: UserDatabaseBuilder,
     private val importContentQueries: ImportContentQueries,
     private val isDataEncrypted: Boolean,
-    private val platformDatabaseData: PlatformDatabaseData
+    private val platformDatabaseData: PlatformDatabaseData,
 ) : DatabaseImporter {
     private val localDBDriver = localDatabase.sqlDriver
 
@@ -69,6 +68,19 @@ internal class DatabaseImporterImpl internal constructor(
                 importCompositeButtons()
                 importMessageLocationContentTable()
             }
+        }
+
+        optimizeAfterImport()
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun optimizeAfterImport() {
+        try {
+            localDatabase.databaseOptimizer.optimize()
+        } catch (exception: CancellationException) {
+            throw exception
+        } catch (_: Exception) {
+            // Best-effort maintenance; a restore should not fail because SQLite skipped optimization.
         }
     }
 

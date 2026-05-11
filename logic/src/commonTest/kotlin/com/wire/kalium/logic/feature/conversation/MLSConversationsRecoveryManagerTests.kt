@@ -27,14 +27,16 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -51,12 +53,12 @@ class MLSConversationsRecoveryManagerTests {
                 .withIncrementalSyncState(IncrementalSyncStatus.Live)
                 .arrange()
             mlsConversationsRecoveryManager.invoke()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.recoverMLSConversationsUseCase.invoke(any())
-            }.wasInvoked(once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(eq(false))
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -72,12 +74,12 @@ class MLSConversationsRecoveryManagerTests {
 
             mlsConversationsRecoveryManager.invoke()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.recoverMLSConversationsUseCase.invoke(any())
-            }.wasNotInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.not) {
                 arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -88,12 +90,12 @@ class MLSConversationsRecoveryManagerTests {
                 .withIncrementalSyncState(IncrementalSyncStatus.Live)
                 .arrange()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.recoverMLSConversationsUseCase.invoke(arrangement.transactionContext)
-            }.wasNotInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.not) {
                 arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -107,9 +109,9 @@ class MLSConversationsRecoveryManagerTests {
                 .withIncrementalSyncState(IncrementalSyncStatus.Live)
                 .arrange()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.recoverMLSConversationsUseCase.invoke(arrangement.transactionContext)
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -125,48 +127,48 @@ class MLSConversationsRecoveryManagerTests {
 
             mlsConversationsRecoveryManager.invoke()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.recoverMLSConversationsUseCase.invoke(any())
-            }.wasInvoked(once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.not) {
                 arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(any())
-            }.wasNotInvoked()
+            }
         }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
-        val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
-        val clientRepository = mock(ClientRepository::class)
-        val featureSupport = mock(FeatureSupport::class)
-        val recoverMLSConversationsUseCase = mock(RecoverMLSConversationsUseCase::class)
-        val slowSyncRepository = mock(SlowSyncRepository::class)
+        val incrementalSyncRepository: IncrementalSyncRepository = mock()
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
+        val recoverMLSConversationsUseCase = mock<RecoverMLSConversationsUseCase>(mode = MockMode.autoUnit)
+        val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
 
         suspend fun withMLSNeedsRecoveryReturn(state: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 slowSyncRepository.needsToRecoverMLSGroups()
-            }.returns(state)
+            } returns state
         }
 
         suspend fun withRecoverMLSConversationsResult(result: RecoverMLSConversationsResult) = apply {
-            coEvery {
+            everySuspend {
                 recoverMLSConversationsUseCase.invoke(any())
-            }.returns(result)
+            } returns result
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
             every {
                 featureSupport.isMLSSupported
-            }.returns(supported)
+            } returns supported
         }
 
         suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.hasRegisteredMLSClient()
-            }.returns(Either.Right(result))
+            } returns Either.Right(result)
         }
 
         fun withIncrementalSyncState(state: IncrementalSyncStatus) = apply {
-            every { incrementalSyncRepository.incrementalSyncState }.returns(flowOf(state))
+            every { incrementalSyncRepository.incrementalSyncState } returns flowOf(state)
         }
 
         suspend fun arrange() = this to MLSConversationsRecoveryManagerImpl(

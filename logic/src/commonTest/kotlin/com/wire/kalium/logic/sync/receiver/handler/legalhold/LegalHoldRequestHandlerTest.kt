@@ -24,12 +24,13 @@ import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -44,13 +45,13 @@ class LegalHoldRequestHandlerTest {
         val result = handler.handle(legalHoldRequestSelfUser)
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setLegalHoldRequest(
                 eq(legalHoldRequestSelfUser.clientId.value),
                 eq(legalHoldRequestSelfUser.lastPreKey.id),
                 eq(legalHoldRequestSelfUser.lastPreKey.key)
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -61,21 +62,21 @@ class LegalHoldRequestHandlerTest {
         val result = handler.handle(legalHoldRequestOtherUser)
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setLegalHoldRequest(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement {
-        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository: UserConfigRepository = mock()
 
         fun arrange() =
             this to LegalHoldRequestHandlerImpl(TestUser.SELF.id, userConfigRepository)
 
         suspend fun withSetLegalHoldSuccess() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setLegalHoldRequest(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
     }
 

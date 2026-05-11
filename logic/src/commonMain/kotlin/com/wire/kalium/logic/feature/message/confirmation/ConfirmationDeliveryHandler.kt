@@ -30,7 +30,6 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logic.sync.SyncManager
-import io.mockative.Mockable
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -41,7 +40,6 @@ import kotlinx.coroutines.flow.first
 /**
  * Internal: Handles the send of delivery confirmation of messages.
  */
-@Mockable
 internal interface ConfirmationDeliveryHandler {
     suspend fun enqueueConfirmationDelivery(conversationId: ConversationId, messageId: MessageId)
     suspend fun sendPendingConfirmations()

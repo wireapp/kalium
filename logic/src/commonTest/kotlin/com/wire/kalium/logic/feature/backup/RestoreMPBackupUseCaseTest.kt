@@ -38,9 +38,9 @@ import com.wire.kalium.logic.feature.backup.mapper.toBackupConversation
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
 import com.wire.kalium.logic.feature.backup.provider.BackupImporter
-import com.wire.kalium.logic.feature.backup.provider.ImportDataPagerMockable
+import com.wire.kalium.logic.feature.backup.provider.ImportDataPagerForMocking
 import com.wire.kalium.logic.feature.backup.provider.ImportResult
-import com.wire.kalium.logic.feature.backup.provider.ImportResultPagerMockable
+import com.wire.kalium.logic.feature.backup.provider.ImportResultPagerForMocking
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -216,11 +216,11 @@ class RestoreMPBackupUseCaseTest {
 
         val backupRepository = mock<BackupRepository>(mode = MockMode.autoUnit)
         val importerProvider = mock<MPBackupImporterProvider>(mode = MockMode.autoUnit)
-        val resultPager = mock<ImportResultPagerMockable>(mode = MockMode.autoUnit)
-        val usersPager = mock<ImportDataPagerMockable<BackupUser>>(mode = MockMode.autoUnit)
-        val conversationsPager = mock<ImportDataPagerMockable<BackupConversation>>(mode = MockMode.autoUnit)
-        val messagesPager = mock<ImportDataPagerMockable<BackupMessage>>(mode = MockMode.autoUnit)
-        val reactionsPager = mock<ImportDataPagerMockable<BackupReaction>>(mode = MockMode.autoUnit)
+        val resultPager = mock<ImportResultPagerForMocking>(mode = MockMode.autoUnit)
+        val usersPager = mock<ImportDataPagerForMocking<BackupUser>>(mode = MockMode.autoUnit)
+        val conversationsPager = mock<ImportDataPagerForMocking<BackupConversation>>(mode = MockMode.autoUnit)
+        val messagesPager = mock<ImportDataPagerForMocking<BackupMessage>>(mode = MockMode.autoUnit)
+        val reactionsPager = mock<ImportDataPagerForMocking<BackupReaction>>(mode = MockMode.autoUnit)
         val importer = mock<BackupImporter>(mode = MockMode.autoUnit)
         var usersPages: List<Array<BackupUser>> = listOf(arrayOf(testUser.toBackupUser()))
         var usersInsertStubConfigured = false

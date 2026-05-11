@@ -37,9 +37,7 @@ import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import io.ktor.util.encodeBase64
-import io.mockative.Mockable
 
-@Mockable
 internal interface KeyPackageRepository {
 
     /**

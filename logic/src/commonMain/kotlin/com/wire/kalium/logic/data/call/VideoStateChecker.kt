@@ -19,9 +19,7 @@
 package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.calling.VideoStateCalling
-import io.mockative.Mockable
 
-@Mockable
 internal interface VideoStateChecker {
     fun isCameraOn(state: VideoStateCalling): Boolean
     fun isSharingScreen(state: VideoStateCalling): Boolean

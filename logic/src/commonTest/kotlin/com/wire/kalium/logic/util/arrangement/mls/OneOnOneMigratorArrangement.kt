@@ -21,9 +21,11 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface OneOnOneMigratorArrangement {
 
@@ -38,22 +40,22 @@ internal interface OneOnOneMigratorArrangement {
 
 internal class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
 
-    override val oneOnOneMigrator = mock(OneOnOneMigrator::class)
+    override val oneOnOneMigrator = mock<OneOnOneMigrator>(mode = MockMode.autoUnit)
 
     override suspend fun withMigrateToMLSReturns(result: Either<CoreFailure, ConversationId>) {
-        coEvery {
+        everySuspend {
             oneOnOneMigrator.migrateToMLS(any(), any(), any())
         }.returns(result)
     }
 
     override suspend fun withMigrateToProteusReturns(result: Either<CoreFailure, ConversationId>) {
-        coEvery {
+        everySuspend {
             oneOnOneMigrator.migrateToProteus(any())
         }.returns(result)
     }
 
     override suspend fun withMigrateExistingToProteusReturns(result: Either<CoreFailure, ConversationId>) {
-        coEvery {
+        everySuspend {
             oneOnOneMigrator.migrateExistingProteus(any())
         }.returns(result)
     }

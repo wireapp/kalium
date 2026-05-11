@@ -33,10 +33,8 @@ import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyn
 import com.wire.kalium.nomaddevice.NomadAllMessagesMapper
 import com.wire.kalium.persistence.dao.backup.NomadMessageToInsert
 import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
-import io.mockative.Mockable
 import kotlinx.datetime.Clock
 
-@Mockable
 internal interface NomadMessagePagingCoordinator {
     /**
      * Fetches older messages for the given conversation if needed, based on the current paging state.

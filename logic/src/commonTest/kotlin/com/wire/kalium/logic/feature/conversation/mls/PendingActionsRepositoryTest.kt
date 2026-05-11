@@ -25,12 +25,14 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionEntity
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,13 +45,13 @@ class PendingActionsRepositoryTest {
 
         repository.enqueuePendingOneOnOneResolution(TestUser.OTHER_USER_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionDAO.upsert(
                 actionType = eq(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION),
                 qualifiedId = eq(TestUser.OTHER_USER_ID.toDao()),
                 createdAt = any()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -66,10 +68,10 @@ class PendingActionsRepositoryTest {
         val result = repository.getPendingOneOnOneResolutions()
 
         assertEquals(listOf(user1, user2), result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionDAO.getByActionType(eq(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION))
-        }.wasInvoked(once)
-        coVerify { arrangement.pendingActionDAO.deleteByActionTypeAndIds(any(), any()) }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) { arrangement.pendingActionDAO.deleteByActionTypeAndIds(any(), any()) }
     }
 
     @Test
@@ -80,7 +82,7 @@ class PendingActionsRepositoryTest {
 
         repository.acknowledgePendingOneOnOneResolutions(listOf(user1, user1, user2))
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionDAO.deleteByActionTypeAndIds(
                 actionType = eq(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION),
                 qualifiedIds = eq(
@@ -90,7 +92,7 @@ class PendingActionsRepositoryTest {
                     )
                 )
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -99,9 +101,9 @@ class PendingActionsRepositoryTest {
 
         repository.acknowledgePendingOneOnOneResolutions(emptyList())
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.pendingActionDAO.deleteByActionTypeAndIds(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -110,13 +112,13 @@ class PendingActionsRepositoryTest {
 
         repository.enqueuePendingMLSGroupJoin(TestConversation.ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionDAO.upsert(
                 actionType = eq(PendingActionType.JOIN_MLS_GROUP_CONVERSATION),
                 qualifiedId = eq(TestConversation.ID.toDao()),
                 createdAt = any()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -133,10 +135,10 @@ class PendingActionsRepositoryTest {
         val result = repository.getPendingMLSGroupJoins()
 
         assertEquals(listOf(conversation1, conversation2), result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionDAO.getByActionType(eq(PendingActionType.JOIN_MLS_GROUP_CONVERSATION))
-        }.wasInvoked(once)
-        coVerify { arrangement.pendingActionDAO.deleteByActionTypeAndIds(any(), any()) }.wasNotInvoked()
+        }
+        verifySuspend(VerifyMode.not) { arrangement.pendingActionDAO.deleteByActionTypeAndIds(any(), any()) }
     }
 
     @Test
@@ -147,7 +149,7 @@ class PendingActionsRepositoryTest {
 
         repository.acknowledgePendingMLSGroupJoins(listOf(conversation1, conversation1, conversation2))
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionDAO.deleteByActionTypeAndIds(
                 actionType = eq(PendingActionType.JOIN_MLS_GROUP_CONVERSATION),
                 qualifiedIds = eq(
@@ -157,28 +159,28 @@ class PendingActionsRepositoryTest {
                     )
                 )
             )
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
-        val pendingActionDAO = mock(PendingActionDAO::class)
+        val pendingActionDAO = mock<PendingActionDAO>(mode = MockMode.autoUnit)
         private val repository = PersistentPendingActionsRepository(pendingActionDAO)
 
         suspend fun withPendingRows(vararg rows: PendingActionEntity) = apply {
-            coEvery {
+            everySuspend {
                 pendingActionDAO.getByActionType(eq(PendingActionType.RESOLVE_ONE_ON_ONE_CONVERSATION))
-            }.returns(rows.toList())
+            } returns rows.toList()
         }
 
         suspend fun withPendingGroupRows(vararg rows: PendingActionEntity) = apply {
-            coEvery {
+            everySuspend {
                 pendingActionDAO.getByActionType(eq(PendingActionType.JOIN_MLS_GROUP_CONVERSATION))
-            }.returns(rows.toList())
+            } returns rows.toList()
         }
 
         suspend fun arrange(): Pair<Arrangement, PendingActionsRepository> = apply {
-            coEvery { pendingActionDAO.upsert(any(), any(), any()) }.returns(Unit)
-            coEvery { pendingActionDAO.deleteByActionTypeAndIds(any(), any()) }.returns(Unit)
+            everySuspend { pendingActionDAO.upsert(any(), any(), any()) } returns Unit
+            everySuspend { pendingActionDAO.deleteByActionTypeAndIds(any(), any()) } returns Unit
         } to repository
     }
 }

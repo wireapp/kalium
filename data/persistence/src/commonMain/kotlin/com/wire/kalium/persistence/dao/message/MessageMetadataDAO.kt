@@ -21,10 +21,8 @@ import com.wire.kalium.persistence.MessageMetadataQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
-import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
-@Mockable
 interface MessageMetadataDAO {
     suspend fun originalSenderId(conversationId: ConversationIDEntity, messageId: String): UserIDEntity?
 }

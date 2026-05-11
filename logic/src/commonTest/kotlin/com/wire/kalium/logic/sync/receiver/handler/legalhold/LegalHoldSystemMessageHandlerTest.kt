@@ -30,12 +30,13 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -64,15 +65,15 @@ class LegalHoldSystemMessagesHandlerTest {
         // when
         handler.handleEnabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches {
                 it.content is MessageContent.LegalHold.ForMembers.Enabled && it.date == Instant.UNIX_FIRST_DATE
                         && (it.content as MessageContent.LegalHold.ForMembers.Enabled).members == listOf(TestUser.OTHER_USER_ID)
             })
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.updateLegalHoldMessageMembers(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -86,16 +87,16 @@ class LegalHoldSystemMessagesHandlerTest {
         // when
         handler.handleEnabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.persistMessage.invoke(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.updateLegalHoldMessageMembers(
                 any(),
                 any(),
                 matches { it == listOf(TestUser.OTHER_USER_ID_2, TestUser.OTHER_USER_ID) }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -108,17 +109,17 @@ class LegalHoldSystemMessagesHandlerTest {
         // when
         handler.handleDisabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
                 matches {
                     it.content is MessageContent.LegalHold.ForMembers.Disabled && it.date == Instant.UNIX_FIRST_DATE
                             && (it.content as MessageContent.LegalHold.ForMembers.Disabled).members == listOf(TestUser.OTHER_USER_ID)
                 }
             )
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.updateLegalHoldMessageMembers(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -132,15 +133,15 @@ class LegalHoldSystemMessagesHandlerTest {
         // when
         handler.handleDisabledForUser(userId = TestUser.OTHER_USER_ID, Instant.UNIX_FIRST_DATE)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.persistMessage.invoke(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.updateLegalHoldMessageMembers(
                 any(),
                 any(),
                 matches { it == listOf(TestUser.OTHER_USER_ID_2, TestUser.OTHER_USER_ID) })
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -150,9 +151,9 @@ class LegalHoldSystemMessagesHandlerTest {
         // when
         handler.handleEnabledForConversation(conversationId = TestConversation.CONVERSATION.id, Instant.UNIX_FIRST_DATE)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches { it.content is MessageContent.LegalHold.ForConversation.Enabled && it.date == Instant.UNIX_FIRST_DATE })
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -162,17 +163,17 @@ class LegalHoldSystemMessagesHandlerTest {
         // when
         handler.handleDisabledForConversation(conversationId = TestConversation.CONVERSATION.id, Instant.UNIX_FIRST_DATE)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches { it.content is MessageContent.LegalHold.ForConversation.Disabled && it.date == Instant.UNIX_FIRST_DATE })
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val persistMessage = mock(PersistMessageUseCase::class)
-        val userConfigRepository = mock(UserConfigRepository::class)
-        val conversationRepository = mock(ConversationRepository::class)
-        val messageRepository = mock(MessageRepository::class)
+        val persistMessage = mock<PersistMessageUseCase>()
+        val userConfigRepository = mock<UserConfigRepository>()
+        val conversationRepository = mock<ConversationRepository>()
+        val messageRepository = mock<MessageRepository>()
 
         init {
             runBlocking {
@@ -192,33 +193,33 @@ class LegalHoldSystemMessagesHandlerTest {
         )
 
         suspend fun withGetConversationsByUserIdSuccess(conversations: List<Conversation> = emptyList()) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationsByUserId(any())
-            }.returns(Either.Right(conversations))
+            } returns Either.Right(conversations)
         }
 
         suspend fun withGetLastMessagesForConversationIdsSuccess(result: Map<ConversationId, Message>) = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.getLastMessagesForConversationIds(any())
-            }.returns(Either.Right(result))
+            } returns Either.Right(result)
         }
 
         suspend fun withUpdateLegalHoldMessageMembersSuccess() = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.updateLegalHoldMessageMembers(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withPersistMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 persistMessage.invoke(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withDeleteLegalHoldRequestSuccess() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.deleteLegalHoldRequest()
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
     }
 

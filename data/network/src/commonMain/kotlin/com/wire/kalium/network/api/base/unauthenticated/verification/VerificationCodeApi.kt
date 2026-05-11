@@ -18,9 +18,7 @@
 package com.wire.kalium.network.api.base.unauthenticated.verification
 
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mockable
 
-@Mockable
 interface VerificationCodeApi {
 
     /**

@@ -24,20 +24,21 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class PendingMessagesSenderWorkerTest {
 
-    private val messageRepository = mock(MessageRepository::class)
-    private val messageSender = mock(MessageSender::class)
+    private val messageRepository = mock<MessageRepository>()
+    private val messageSender = mock<MessageSender>()
 
     private lateinit var pendingMessagesSenderWorker: PendingMessagesSenderWorker
 
@@ -49,31 +50,31 @@ class PendingMessagesSenderWorkerTest {
     @Test
     fun givenPendingMessagesAreFetched_whenExecutingAWorker_thenScheduleSendingOfMessages() = runTest {
         val message = TestMessage.TEXT_MESSAGE
-        coEvery {
+        everySuspend {
             messageRepository.getAllPendingMessagesFromUser(eq(TestUser.USER_ID))
-        }.returns(Either.Right(listOf(message)))
-        coEvery {
+        } returns Either.Right(listOf(message))
+        everySuspend {
             messageSender.sendPendingMessage(eq(message.conversationId), eq(message.id))
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
 
         pendingMessagesSenderWorker.doWork()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             messageSender.sendPendingMessage(eq(message.conversationId), eq(message.id))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenPendingMessagesReturnsFailure_whenExecutingAWorker_thenDoNothing() = runTest {
         val dataNotFoundFailure = StorageFailure.DataNotFound
-        coEvery {
+        everySuspend {
             messageRepository.getAllPendingMessagesFromUser(eq(TestUser.USER_ID))
-        }.returns(Either.Left(dataNotFoundFailure))
+        } returns Either.Left(dataNotFoundFailure)
 
         pendingMessagesSenderWorker.doWork()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             messageSender.sendPendingMessage(any(), any())
-        }.wasNotInvoked()
+        }
     }
 }

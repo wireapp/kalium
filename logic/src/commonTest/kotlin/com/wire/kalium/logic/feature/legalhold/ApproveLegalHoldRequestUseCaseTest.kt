@@ -28,12 +28,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
 import kotlinx.io.IOException
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -53,9 +54,9 @@ class ApproveLegalHoldRequestUseCaseTest {
         // when
         useCase.invoke(password)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamRepository.approveLegalHoldRequest(eq(selfTeamId), eq(password))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -137,23 +138,23 @@ class ApproveLegalHoldRequestUseCaseTest {
 
     private class Arrangement {
 
-        val teamRepository: TeamRepository = mock(TeamRepository::class)
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
+        val teamRepository: TeamRepository = mock()
+        val selfTeamIdProvider: SelfTeamIdProvider = mock()
 
         val useCase: ApproveLegalHoldRequestUseCase by lazy { ApproveLegalHoldRequestUseCaseImpl(teamRepository, selfTeamIdProvider) }
 
         fun arrange() = this to useCase
 
         suspend fun withGetSelfTeamResult(result: Either<CoreFailure, TeamId?>) = apply {
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider.invoke()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withApproveLegalHoldResult(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 teamRepository.approveLegalHoldRequest(any(), any())
-            }.returns(result)
+            } returns result
         }
     }
 }

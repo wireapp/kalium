@@ -22,9 +22,11 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
@@ -48,46 +50,46 @@ internal interface PreKeyRepositoryArrangement {
 
 internal class PreKeyRepositoryArrangementImpl : PreKeyRepositoryArrangement {
 
-    override val preKeyRepository: PreKeyRepository = mock(PreKeyRepository::class)
+    override val preKeyRepository: PreKeyRepository = mock<PreKeyRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withRemotelyAvailablePreKeysReturning(result: Either<CoreFailure, List<Int>>) {
-        coEvery {
+        everySuspend {
             preKeyRepository.fetchRemotelyAvailablePrekeys()
         }.returns(result)
     }
 
     override suspend fun withUploadNewPrekeyBatchReturning(result: Either<CoreFailure, Unit>) {
-        coEvery {
+        everySuspend {
             preKeyRepository.uploadNewPrekeyBatch(any())
         }.returns(result)
     }
 
     override suspend fun withGenerateNewPreKeysReturning(result: Either<CoreFailure, List<PreKeyCrypto>>) {
-        coEvery {
+        everySuspend {
             preKeyRepository.generateNewPreKeys(any(), any())
         }.returns(result)
     }
 
     override suspend fun withMostRecentPreKeyId(result: Either<StorageFailure, Int>) {
-        coEvery {
+        everySuspend {
             preKeyRepository.mostRecentPreKeyId()
         }.returns(result)
     }
 
     override suspend fun withUpdatingMostRecentPrekeyReturning(result: Either<StorageFailure, Unit>) {
-        coEvery {
+        everySuspend {
             preKeyRepository.updateMostRecentPreKeyId(any())
         }.returns(result)
     }
 
     override suspend fun withSetLastPreKeyUploadInstantReturning(result: Either<StorageFailure, Unit>) {
-        coEvery {
+        everySuspend {
             preKeyRepository.setLastPreKeyRefillCheckInstant(any())
         }.returns(result)
     }
 
     override suspend fun withObserveLastPreKeyUploadInstantReturning(flow: Flow<Instant?>) {
-        coEvery {
+        everySuspend {
             preKeyRepository.lastPreKeyRefillCheckInstantFlow()
         }.returns(flow)
     }

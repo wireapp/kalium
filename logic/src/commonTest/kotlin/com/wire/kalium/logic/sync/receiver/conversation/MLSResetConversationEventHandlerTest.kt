@@ -27,16 +27,17 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -50,17 +51,17 @@ class MLSResetConversationEventHandlerTest {
 
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.hasEstablishedMLSGroup(any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -74,22 +75,22 @@ class MLSResetConversationEventHandlerTest {
 
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.hasEstablishedMLSGroup(any(), eq(NEW_GROUP_ID))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
                 eq(CONVERSATION_ID),
                 eq(NEW_GROUP_ID),
                 eq(0),
                 eq(ConversationEntity.GroupState.PENDING_AFTER_RESET),
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -105,25 +106,25 @@ class MLSResetConversationEventHandlerTest {
 
             handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.hasEstablishedMLSGroup(
                     any(),
                     eq(NEW_GROUP_ID)
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.updateGroupIdAndState(
                     eq(CONVERSATION_ID),
                     eq(NEW_GROUP_ID),
                     eq(newGroupEpoch),
                     eq(ConversationEntity.GroupState.ESTABLISHED)
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -137,25 +138,25 @@ class MLSResetConversationEventHandlerTest {
 
             handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.hasEstablishedMLSGroup(
                     any(),
                     eq(NEW_GROUP_ID)
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.updateGroupIdAndState(
                     eq(CONVERSATION_ID),
                     eq(NEW_GROUP_ID),
                     eq(0L),
                     eq(ConversationEntity.GroupState.PENDING_AFTER_RESET)
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -171,18 +172,18 @@ class MLSResetConversationEventHandlerTest {
 
             handler.handle(arrangement.transactionContext, event)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.leaveGroup(any(), eq(event.groupID))
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.updateGroupIdAndState(
                     matches { it == event.conversationId },
                     matches { it == event.newGroupID },
                     eq(0L),
                     matches { it == ConversationEntity.GroupState.PENDING_AFTER_RESET }
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -196,14 +197,14 @@ class MLSResetConversationEventHandlerTest {
 
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
                 eq(CONVERSATION_ID),
                 eq(NEW_GROUP_ID),
                 eq(0L),
                 eq(ConversationEntity.GroupState.PENDING_AFTER_RESET)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -218,73 +219,73 @@ class MLSResetConversationEventHandlerTest {
 
         handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.hasEstablishedMLSGroup(any(), eq(NEW_GROUP_ID))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
                 eq(CONVERSATION_ID),
                 eq(NEW_GROUP_ID),
                 eq(newGroupEpoch),
                 eq(ConversationEntity.GroupState.ESTABLISHED)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
+        val mlsConversationRepository = mock<MLSConversationRepository>()
 
         suspend fun withLeaveGroupSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.leaveGroup(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withLeaveGroupFailing(failure: CoreFailure) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.leaveGroup(any(), any())
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         suspend fun withHasEstablishedMLSGroupReturning(hasGroup: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.hasEstablishedMLSGroup(any(), any())
-            }.returns(Either.Right(hasGroup))
+            } returns Either.Right(hasGroup)
         }
 
         suspend fun withNewGroupEpoch(newGroupEpoch: Long) = apply {
-            coEvery {
+            everySuspend {
                 mlsContext.conversationEpoch(any())
-            }.returns(newGroupEpoch.toULong())
+            } returns newGroupEpoch.toULong()
         }
 
         suspend fun withHasEstablishedMLSGroupFailing(failure: MLSFailure) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.hasEstablishedMLSGroup(any(), any())
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         suspend fun withUpdateGroupIdAndStateSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withUpdateGroupIdAndStateFailing(failure: CoreFailure) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         suspend fun withMLSContextNull() = apply {
-            every { transactionContext.mls }.returns(null)
+            every { transactionContext.mls } returns null
         }
 
         suspend fun arrange() = run {

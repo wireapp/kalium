@@ -19,21 +19,24 @@ package com.wire.kalium.logic.feature.protocol
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.user.OtherUser
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -82,9 +85,9 @@ class OneOnOneProtocolSelectorTest {
         val otherUserId = TestUser.USER_ID
         oneOnOneProtocolSelector.getProtocolForUser(TestUser.USER_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.userById(eq(otherUserId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -179,16 +182,29 @@ class OneOnOneProtocolSelectorTest {
             }
     }
 
-    private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
-        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
+    private class Arrangement(private val configure: suspend Arrangement.() -> Unit) {
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+
         suspend fun arrange(): Pair<Arrangement, OneOnOneProtocolSelector> = run {
             configure()
             this@Arrangement to OneOnOneProtocolSelectorImpl(userRepository, userConfigRepository)
         }
+
+        suspend fun withSelfUserReturning(result: Either<StorageFailure, SelfUser>) {
+            everySuspend { userRepository.getSelfUser() } returns result
+        }
+
+        suspend fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>) {
+            everySuspend { userRepository.userById(eq(TestUser.USER_ID)) } returns result
+        }
+
+        suspend fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>) {
+            everySuspend { userConfigRepository.getDefaultProtocol() } returns result
+        }
     }
 
     private companion object {
-        fun arrange(configure: suspend Arrangement.() -> Unit) = runBlocking { Arrangement(configure).arrange() }
+        suspend fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
     }
 }

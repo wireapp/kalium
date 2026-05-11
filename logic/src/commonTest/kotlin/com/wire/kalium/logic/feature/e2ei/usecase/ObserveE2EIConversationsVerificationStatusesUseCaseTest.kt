@@ -17,17 +17,18 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
+import com.wire.kalium.logic.data.conversation.GroupWithEpoch
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -45,25 +46,28 @@ class ObserveE2EIConversationsVerificationStatusesUseCaseTest {
         handler()
         advanceUntilIdle()
 
-        coVerify { arrangement.fetchMLSVerificationStatusUseCase(eq(TestConversation.GROUP_ID)) }
-            .wasInvoked()
+        verifySuspend { arrangement.fetchMLSVerificationStatusUseCase(eq(TestConversation.GROUP_ID)) }
     }
 
     private suspend fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
         private val block: Arrangement.() -> Unit
-    ) : FetchMLSVerificationStatusArrangement by FetchMLSVerificationStatusArrangementImpl(),
-        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
+    ) {
+        val epochChangesObserver = mock<EpochChangesObserver>(mode = MockMode.autoUnit)
+        val fetchMLSVerificationStatusUseCase = mock<FetchMLSVerificationStatusUseCase>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = let {
             block()
-            mockFetchMLSVerificationStatus()
             this to ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
                 epochChangesObserver = epochChangesObserver,
                 fetchMLSVerificationStatus = fetchMLSVerificationStatusUseCase,
                 kaliumLogger = kaliumLogger,
             )
+        }
+
+        fun withObserveEpochChanges(flow: Flow<GroupWithEpoch>) {
+            every { epochChangesObserver.observe() } returns flow
         }
     }
 }

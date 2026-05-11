@@ -22,9 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import io.mockative.Mockable
 
-@Mockable
 internal interface SyncConnectionsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }

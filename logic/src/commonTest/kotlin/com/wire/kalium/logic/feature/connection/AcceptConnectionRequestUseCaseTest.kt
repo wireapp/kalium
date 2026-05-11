@@ -19,28 +19,28 @@
 package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangement
-import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangementImpl
-import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
-import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.matcher.eq as mokkeryEq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -64,13 +64,13 @@ class AcceptConnectionRequestUseCaseTest {
 
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.updateConnectionStatus(
-                any(),
-                eq(USER_ID),
-                eq(ConnectionState.ACCEPTED)
+                mokkeryAny(),
+                mokkeryEq(USER_ID),
+                mokkeryEq(ConnectionState.ACCEPTED)
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -89,9 +89,9 @@ class AcceptConnectionRequestUseCaseTest {
 
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
-        coVerify {
-            arrangement.conversationRepository.updateConversationModifiedDate(eq(CONNECTION.qualifiedConversationId), any())
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.updateConversationModifiedDate(mokkeryEq(CONNECTION.qualifiedConversationId), mokkeryAny())
+        }
     }
 
     @Test
@@ -110,13 +110,13 @@ class AcceptConnectionRequestUseCaseTest {
 
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(
-                any(),
-                eq(CONNECTION.qualifiedToId),
-                eq(true)
+                mokkeryAny(),
+                mokkeryEq(CONNECTION.qualifiedToId),
+                mokkeryEq(true)
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -132,22 +132,23 @@ class AcceptConnectionRequestUseCaseTest {
 
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Failure::class, resultFailure::class)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.updateConnectionStatus(
-                any(),
-                eq(USER_ID),
-                eq(ConnectionState.ACCEPTED)
+                mokkeryAny(),
+                mokkeryEq(USER_ID),
+                mokkeryEq(ConnectionState.ACCEPTED)
             )
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl(),
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
-        FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
-        NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl(),
         CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val connectionRepository = mock<ConnectionRepository>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val oneOnOneResolver = mock<OneOnOneResolver>(mode = MockMode.autoUnit)
+        val fetchConversation = mock<FetchConversationUseCase>(mode = MockMode.autoUnit)
+        val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>(mode = MockMode.autoUnit)
+
         suspend fun arrange() = run {
             block()
             withTransactionReturning(Either.Right(Unit))
@@ -159,6 +160,36 @@ class AcceptConnectionRequestUseCaseTest {
                 fetchConversation = fetchConversation,
                 transactionProvider = cryptoTransactionProvider
             )
+        }
+
+        suspend fun withUpdateConnectionStatus(result: Either<CoreFailure, Connection>) {
+            everySuspend {
+                connectionRepository.updateConnectionStatus(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns result
+        }
+
+        suspend fun withFetchConversationSucceeding() {
+            everySuspend {
+                fetchConversation(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withUpdateConversationModifiedDate(result: Either<StorageFailure, Unit>) {
+            everySuspend {
+                conversationRepository.updateConversationModifiedDate(mokkeryAny(), mokkeryAny())
+            } returns result
+        }
+
+        suspend fun withPersistUnverifiedWarningMessageSuccess() {
+            everySuspend {
+                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(mokkeryAny(), mokkeryAny())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>) {
+            everySuspend {
+                oneOnOneResolver.resolveOneOnOneConversationWithUserId(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns result
         }
     }
 

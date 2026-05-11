@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
@@ -25,12 +27,12 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -68,9 +70,9 @@ class RetryAttachmentUploadUseCaseTest {
 
         useCase(attachmentId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.uploadManager.retryUpload(attachmentId)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -84,31 +86,31 @@ class RetryAttachmentUploadUseCaseTest {
         advanceTimeBy(1)
         arrangement.uploadEventsFlow.emit(CellUploadEvent.UploadCompleted)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.repository.updateStatus(attachmentId, AttachmentUploadStatus.UPLOADED)
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement(val uploadScope: CoroutineScope) {
 
-        val uploadManager = mock(CellUploadManager::class)
-        val repository = mock(MessageAttachmentDraftRepository::class)
+        val uploadManager = mock<CellUploadManager>(mode = MockMode.autoUnit)
+        val repository = mock<MessageAttachmentDraftRepository>(mode = MockMode.autoUnit)
 
         val uploadEventsFlow = MutableSharedFlow<CellUploadEvent>()
 
         suspend fun withStatusUpdateSuccess() = apply {
-            coEvery { repository.updateStatus(any(), any()) }.returns(Unit.right())
+            everySuspend { repository.updateStatus(any(), any()) }.returns(Unit.right())
         }
 
         suspend fun withStatusUpdateFailure() = apply {
-            coEvery { repository.updateStatus(any(), any()) }.returns(
+            everySuspend { repository.updateStatus(any(), any()) }.returns(
                 StorageFailure.DataNotFound.left()
             )
         }
 
         suspend fun arrange(): Pair<Arrangement, RetryAttachmentUploadUseCaseImpl> {
 
-            coEvery { uploadManager.retryUpload(any()) }.returns(Unit)
+            everySuspend { uploadManager.retryUpload(any()) }.returns(Unit)
             every { uploadManager.observeUpload(any()) }.returns(uploadEventsFlow)
 
             return this to RetryAttachmentUploadUseCaseImpl(

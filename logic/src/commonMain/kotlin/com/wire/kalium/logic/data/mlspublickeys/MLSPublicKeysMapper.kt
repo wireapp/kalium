@@ -19,9 +19,7 @@
 package com.wire.kalium.logic.data.mlspublickeys
 
 import com.wire.kalium.logic.data.mls.CipherSuite
-import io.mockative.Mockable
 
-@Mockable
 internal interface MLSPublicKeysMapper {
     fun fromCipherSuite(cipherSuite: CipherSuite): MLSPublicKeyType
 }

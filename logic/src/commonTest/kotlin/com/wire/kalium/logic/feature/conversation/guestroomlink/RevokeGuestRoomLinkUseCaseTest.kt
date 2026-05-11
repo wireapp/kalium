@@ -21,11 +21,13 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -33,7 +35,7 @@ import kotlin.test.assertIs
 
 internal class RevokeGuestRoomLinkUseCaseTest {
 
-    val conversationGroupRepository = mock(ConversationGroupRepository::class)
+    val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
 
     private lateinit var revokeGuestRoomLink: RevokeGuestRoomLinkUseCase
 
@@ -47,31 +49,31 @@ internal class RevokeGuestRoomLinkUseCaseTest {
     @Test
     fun givenRepositoryReturnsSuccess_whenTryingToRevokeAGuestRoomLink_ThenReturnSuccess() = runTest {
 
-        coEvery {
+        everySuspend {
             conversationGroupRepository.revokeGuestRoomLink(any())
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
 
         val result = revokeGuestRoomLink(conversationId)
 
         assertIs<RevokeGuestRoomLinkResult.Success>(result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             conversationGroupRepository.revokeGuestRoomLink(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenRepositoryReturnsFailure_whenTryingToRevokeAGuestRoomLink_ThenReturnError() = runTest {
 
-        coEvery {
+        everySuspend {
             conversationGroupRepository.revokeGuestRoomLink(any())
-        }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+        } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
 
         val result = revokeGuestRoomLink(conversationId)
 
         assertIs<RevokeGuestRoomLinkResult.Failure>(result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             conversationGroupRepository.revokeGuestRoomLink(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     companion object {

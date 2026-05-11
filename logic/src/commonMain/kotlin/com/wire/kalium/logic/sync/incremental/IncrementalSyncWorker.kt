@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
-import io.mockative.Mockable
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
@@ -42,7 +41,6 @@ import kotlinx.coroutines.flow.onEach
 /**
  * Gathers and processes IncrementalSync events.
  */
-@Mockable
 internal interface IncrementalSyncWorker {
     /**
      * Upon collection, will start collecting and processing events,

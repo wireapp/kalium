@@ -23,12 +23,14 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.feature.message.MarkMessagesAsNotifiedUseCase.UpdateTarget
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,13 +45,13 @@ class MarkMessagesAsNotifiedUseCaseTest {
 
         val result = markMessagesAsNotified(UpdateTarget.AllConversations)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateAllConversationsNotificationDate()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.updateConversationNotificationDate(any(), any())
-        }.wasNotInvoked()
+        }
 
         assertEquals(result, Result.Success)
     }
@@ -62,13 +64,13 @@ class MarkMessagesAsNotifiedUseCaseTest {
 
         val result = markMessagesAsNotified(UpdateTarget.SingleConversation(CONVERSATION_ID))
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateConversationNotificationDate(eq(CONVERSATION_ID), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.updateAllConversationsNotificationDate()
-        }.wasNotInvoked()
+        }
 
         assertEquals(result, Result.Success)
     }
@@ -101,18 +103,18 @@ class MarkMessagesAsNotifiedUseCaseTest {
 
     private class Arrangement {
 
-        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+        val conversationRepository: ConversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
 
         suspend fun withUpdatingAllConversationsReturning(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateAllConversationsNotificationDate()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUpdatingOneConversationReturning(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateConversationNotificationDate(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to MarkMessagesAsNotifiedUseCase(

@@ -20,12 +20,10 @@ package com.wire.kalium.logic.feature.e2ei
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
-import io.mockative.Mockable
 
 /**
  * Use case that syncs ACME Certificates.
  */
-@Mockable
 internal interface ACMECertificatesSyncUseCase {
     suspend operator fun invoke()
 }
