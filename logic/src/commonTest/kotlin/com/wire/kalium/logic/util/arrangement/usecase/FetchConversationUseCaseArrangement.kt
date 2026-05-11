@@ -23,37 +23,39 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
 
 internal interface FetchConversationUseCaseArrangement {
     val fetchConversation: FetchConversationUseCase
     suspend fun withFetchConversationFailingWith(
         coreFailure: CoreFailure,
-        transactionContext: CryptoTransactionContext = any(),
-        conversationId: ConversationId = any(),
-        reason: ConversationSyncReason = any(),
+        transactionContext: (CryptoTransactionContext) -> Boolean = { true },
+        conversationId: (ConversationId) -> Boolean = { true },
+        reason: (ConversationSyncReason) -> Boolean = { true },
     ) {
-        coEvery {
+        everySuspend {
             fetchConversation(
-                transactionContext = transactionContext,
-                conversationId = conversationId,
-                reason = reason
+                transactionContext = matches { transactionContext(it) },
+                conversationId = matches { conversationId(it) },
+                reason = matches { reason(it) }
             )
         }.returns(Either.Left(coreFailure))
     }
 
     suspend fun withFetchConversationSucceeding(
-        transactionContext: CryptoTransactionContext = any(),
-        conversationId: ConversationId = any(),
-        reason: ConversationSyncReason = any(),
+        transactionContext: (CryptoTransactionContext) -> Boolean = { true },
+        conversationId: (ConversationId) -> Boolean = { true },
+        reason: (ConversationSyncReason) -> Boolean = { true },
     ) {
-        coEvery {
+        everySuspend {
             fetchConversation(
-                transactionContext = transactionContext,
-                conversationId = conversationId,
-                reason = reason
+                transactionContext = matches { transactionContext(it) },
+                conversationId = matches { conversationId(it) },
+                reason = matches { reason(it) }
             )
         }.returns(Either.Right(Unit))
     }
@@ -61,5 +63,5 @@ internal interface FetchConversationUseCaseArrangement {
 }
 
 internal open class FetchConversationUseCaseArrangementImpl : FetchConversationUseCaseArrangement {
-    override val fetchConversation: FetchConversationUseCase = mock(FetchConversationUseCase::class)
+    override val fetchConversation: FetchConversationUseCase = mock<FetchConversationUseCase>(mode = MockMode.autoUnit)
 }

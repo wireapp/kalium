@@ -24,7 +24,6 @@ import com.wire.kalium.persistence.dao.UserSearchEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
-import dev.mokkery.matcher.ArgMatcher
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 
@@ -38,29 +37,29 @@ internal interface SearchDAOArrangement {
 
     suspend fun withGetKnownContactsExcludingAConversation(
         result: List<UserSearchEntity>,
-        conversationId: ArgMatcher<ConversationIDEntity> = ArgMatcher.Any
+        conversationId: (ConversationIDEntity) -> Boolean = { true }
     )
 
     suspend fun withSearchList(
         result: List<UserSearchEntity>,
-        query: ArgMatcher<String> = ArgMatcher.Any
+        query: (String) -> Boolean = { true }
     )
 
     suspend fun withSearchListExcludingAConversation(
         result: List<UserSearchEntity>,
-        conversationId: ArgMatcher<ConversationIDEntity> = ArgMatcher.Any,
-        query: ArgMatcher<String> = ArgMatcher.Any
+        conversationId: (ConversationIDEntity) -> Boolean = { true },
+        query: (String) -> Boolean = { true }
     )
 
     suspend fun withSearchByHandle(
         result: List<UserSearchEntity>,
-        handle: ArgMatcher<String> = ArgMatcher.Any
+        handle: (String) -> Boolean = { true }
     )
 
     suspend fun withSearchByHandleExcludingConversation(
         result: List<UserSearchEntity>,
-        conversationId: ArgMatcher<ConversationIDEntity> = ArgMatcher.Any,
-        handle: ArgMatcher<String> = ArgMatcher.Any
+        conversationId: (ConversationIDEntity) -> Boolean = { true },
+        handle: (String) -> Boolean = { true }
     )
 }
 
@@ -79,49 +78,49 @@ internal class SearchDAOArrangementImpl : SearchDAOArrangement {
 
     override suspend fun withGetKnownContactsExcludingAConversation(
         result: List<UserSearchEntity>,
-        conversationId: ArgMatcher<ConversationIDEntity>
+        conversationId: (ConversationIDEntity) -> Boolean
     ) {
         everySuspend {
-            searchDAO.getKnownContactsExcludingAConversation(matches(conversationId))
+            searchDAO.getKnownContactsExcludingAConversation(matches { conversationId(it) })
         } returns result
     }
 
-    override suspend fun withSearchList(result: List<UserSearchEntity>, query: ArgMatcher<String>) {
+    override suspend fun withSearchList(result: List<UserSearchEntity>, query: (String) -> Boolean) {
         everySuspend {
-            searchDAO.searchList(matches(query))
+            searchDAO.searchList(matches { query(it) })
         } returns result
     }
 
     override suspend fun withSearchListExcludingAConversation(
         result: List<UserSearchEntity>,
-        conversationId: ArgMatcher<ConversationIDEntity>,
-        query: ArgMatcher<String>
+        conversationId: (ConversationIDEntity) -> Boolean,
+        query: (String) -> Boolean
     ) {
         everySuspend {
             searchDAO.searchListExcludingAConversation(
-                matches(conversationId),
-                matches(query)
+                matches { conversationId(it) },
+                matches { query(it) }
             )
         } returns result
     }
 
-    override suspend fun withSearchByHandle(result: List<UserSearchEntity>, handle: ArgMatcher<String>) {
+    override suspend fun withSearchByHandle(result: List<UserSearchEntity>, handle: (String) -> Boolean) {
         everySuspend {
             searchDAO.handleSearch(
-                matches(handle)
+                matches { handle(it) }
             )
         } returns result
     }
 
     override suspend fun withSearchByHandleExcludingConversation(
         result: List<UserSearchEntity>,
-        conversationId: ArgMatcher<ConversationIDEntity>,
-        handle: ArgMatcher<String>
+        conversationId: (ConversationIDEntity) -> Boolean,
+        handle: (String) -> Boolean
     ) {
         everySuspend {
             searchDAO.handleSearchExcludingAConversation(
-                matches(handle),
-                matches(conversationId)
+                matches { handle(it) },
+                matches { conversationId(it) }
             )
         } returns result
     }

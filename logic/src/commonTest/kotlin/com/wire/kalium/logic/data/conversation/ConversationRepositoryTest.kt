@@ -42,6 +42,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestNetworkException
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.ChannelAddPermissionTypeDTO
@@ -84,7 +86,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
-import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
@@ -1156,7 +1157,7 @@ class ConversationRepositoryTest {
         assertTrue { result.isRight() }
     }
 
-    private class Arrangement {
+    private class Arrangement : MemberDAOArrangement by MemberDAOArrangementImpl() {
 
         val userRepository: UserRepository = mock<UserRepository>(mode = MockMode.autoUnit)
         val selfTeamIdProvider: SelfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
@@ -1168,7 +1169,6 @@ class ConversationRepositoryTest {
         private val messageDraftDAO = mock<MessageDraftDAO>(mode = MockMode.autoUnit)
         val conversationMetaDataDAO: ConversationMetaDataDAO = mock<ConversationMetaDataDAO>(mode = MockMode.autoUnit)
         val metadataDAO: MetadataDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
-        val memberDAO: MemberDAO = mock<MemberDAO>(mode = MockMode.autoUnit)
 
         val conversationRepository =
             ConversationDataSource(
@@ -1308,12 +1308,6 @@ class ConversationRepositoryTest {
             withUpdateMemberRoleSuccess()
         }
 
-        suspend fun withUpdateMemberRoleSuccess() = apply {
-            everySuspend {
-                memberDAO.updateConversationMemberRole(any(), any(), any())
-            }.returns(Unit)
-        }
-
         suspend fun withSuccessfulConversationDeletion() = apply {
             everySuspend {
                 conversationDAO.deleteConversationByQualifiedID(any())
@@ -1328,18 +1322,6 @@ class ConversationRepositoryTest {
 
         suspend fun withExpectedIsUserMemberFlow(expectedIsUserMember: Flow<Boolean>) = apply {
             withObserveIsUserMember(expectedIsUserMember)
-        }
-
-        suspend fun withObserveIsUserMember(expectedIsUserMember: Flow<Boolean>) = apply {
-            everySuspend {
-                memberDAO.observeIsUserMember(any(), any())
-            }.returns(expectedIsUserMember)
-        }
-
-        suspend fun withInsertMemberWithConversationIdSuccess() = apply {
-            everySuspend {
-                memberDAO.insertMembersWithQualifiedId(any(), any())
-            }.returns(Unit)
         }
 
         suspend fun withExpectedObservableConversationDetails(conversationEntity: ConversationViewEntity? = null) = apply {

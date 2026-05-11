@@ -20,12 +20,8 @@ package com.wire.kalium.logic.sync.receiver
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
@@ -33,18 +29,23 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.persistence.dao.member.MemberDAO
-import dev.mokkery.MockMode
-import dev.mokkery.answering.returns
-import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
-import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
@@ -231,13 +232,13 @@ class FederationEventReceiverTest {
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl()
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl(),
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl(),
+        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        MemberDAOArrangement by MemberDAOArrangementImpl(),
+        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl()
     {
-        val conversationRepository = mock<ConversationRepository>()
-        val connectionRepository = mock<ConnectionRepository>()
-        val userRepository = mock<UserRepository>()
-        val memberDAO = mock<MemberDAO>(mode = MockMode.autoUnit)
-        val persistMessageUseCase = mock<PersistMessageUseCase>()
 
         var dispatcher: KaliumDispatcher = TestKaliumDispatcher
 
@@ -254,36 +255,5 @@ class FederationEventReceiverTest {
             )
         }
 
-        suspend fun withGetConnections(result: Either<com.wire.kalium.common.error.StorageFailure, Flow<List<ConversationDetails>>>) = apply {
-            everySuspend { connectionRepository.getConnections() } returns result
-        }
-
-        suspend fun withDeleteConnection(result: Either<com.wire.kalium.common.error.StorageFailure, Unit>) = apply {
-            everySuspend { connectionRepository.deleteConnection(any()) } returns result
-        }
-
-        suspend fun withGetGroupConversationsWithMembersWithBothDomains(
-            result: Either<com.wire.kalium.common.error.CoreFailure, Map<ConversationId, List<UserId>>>
-        ) = apply {
-            everySuspend { conversationRepository.getGroupConversationsWithMembersWithBothDomains(any(), any()) } returns result
-        }
-
-        suspend fun withGetOneOnOneConversationsWithFederatedMember(
-            result: Either<com.wire.kalium.common.error.CoreFailure, Map<ConversationId, UserId>>
-        ) = apply {
-            everySuspend { conversationRepository.getOneOnOneConversationsWithFederatedMembers(any()) } returns result
-        }
-
-        suspend fun withDefederateUser(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
-            everySuspend { userRepository.defederateUser(any()) } returns result
-        }
-
-        suspend fun withDeleteMembersByQualifiedID(result: Long) = apply {
-            everySuspend { memberDAO.deleteMembersByQualifiedID(any(), any()) } returns result
-        }
-
-        suspend fun withPersistingMessage(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
-            everySuspend { persistMessageUseCase.invoke(any()) } returns result
-        }
     }
 }

@@ -22,8 +22,10 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface CurrentClientIdProviderArrangement {
 
@@ -34,16 +36,16 @@ internal interface CurrentClientIdProviderArrangement {
 
 internal class CurrentClientIdProviderArrangementImpl : CurrentClientIdProviderArrangement {
 
-    override val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+    override val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
 
     override suspend fun withCurrentClientIdSuccess(currentClientId: ClientId) {
-        coEvery {
+        everySuspend {
             currentClientIdProvider.invoke()
         }.returns(Either.Right(currentClientId))
     }
 
     override suspend fun withCurrentClientIdFailure(error: CoreFailure) {
-        coEvery {
+        everySuspend {
             currentClientIdProvider.invoke()
         }.returns(Either.Left(error))
     }

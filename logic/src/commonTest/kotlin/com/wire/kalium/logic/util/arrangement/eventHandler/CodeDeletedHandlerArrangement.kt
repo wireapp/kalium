@@ -21,27 +21,26 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface CodeDeletedHandlerArrangement {
     val codeDeletedHandler: CodeDeletedHandler
 
     suspend fun withHandleCodeDeleteEvent(
         result: Either<StorageFailure, Unit>,
-        event: Matcher<Event.Conversation.CodeDeleted> = AnyMatcher(valueOf())
+        event: (Event.Conversation.CodeDeleted) -> Boolean = { true }
     ) {
-        coEvery {
-            codeDeletedHandler.handle(matches { event.matches(it) })
+        everySuspend {
+            codeDeletedHandler.handle(matches { event(it) })
         }.returns(result)
     }
 }
 
 internal class CodeDeletedHandlerArrangementImpl : CodeDeletedHandlerArrangement {
 
-    override val codeDeletedHandler = mock(CodeDeletedHandler::class)
+    override val codeDeletedHandler = mock<CodeDeletedHandler>(mode = MockMode.autoUnit)
 }

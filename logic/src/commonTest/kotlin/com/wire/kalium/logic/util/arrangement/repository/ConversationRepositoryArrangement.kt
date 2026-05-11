@@ -33,14 +33,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.datetime.Instant
 
@@ -53,19 +52,19 @@ internal interface ConversationRepositoryArrangement {
     val conversationRepository: ConversationRepository
     suspend fun withGetGroupConversationsWithMembersWithBothDomains(
         result: Either<CoreFailure, Map<ConversationId, List<UserId>>>,
-        firstDomain: Matcher<String> = AnyMatcher(valueOf()),
-        secondDomain: Matcher<String> = AnyMatcher(valueOf())
+        firstDomain: (String) -> Boolean = { true },
+        secondDomain: (String) -> Boolean = { true }
     )
 
     suspend fun withGetOneOnOneConversationsWithFederatedMember(
         result: Either<CoreFailure, Map<ConversationId, UserId>>,
-        domain: Matcher<String> = AnyMatcher(valueOf())
+        domain: (String) -> Boolean = { true }
     )
 
-    suspend fun withSetConversationDeletedLocallySucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(MOCKATIVE_CONVERSATION_ID))
-    suspend fun withSetConversationDeletedLocallyFailing(conversationId: Matcher<ConversationId> = AnyMatcher(MOCKATIVE_CONVERSATION_ID))
-    suspend fun withDeletingConversationLocallySucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(MOCKATIVE_CONVERSATION_ID))
-    suspend fun withDeletingConversationLocallyFailing(conversationId: Matcher<ConversationId> = AnyMatcher(MOCKATIVE_CONVERSATION_ID))
+    suspend fun withSetConversationDeletedLocallySucceeding(conversationId: (ConversationId) -> Boolean = { true })
+    suspend fun withSetConversationDeletedLocallyFailing(conversationId: (ConversationId) -> Boolean = { true })
+    suspend fun withDeletingConversationLocallySucceeding(conversationId: (ConversationId) -> Boolean = { true })
+    suspend fun withDeletingConversationLocallyFailing(conversationId: (ConversationId) -> Boolean = { true })
     suspend fun withGetConversationByIdReturning(conversation: Conversation? = TestConversation.CONVERSATION)
     suspend fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit> = Either.Right(Unit))
     suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangement
@@ -86,23 +85,23 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>)
 
     suspend fun withObserveByIdReturning(conversation: Conversation) {
-        coEvery {
+        everySuspend {
             conversationRepository.observeConversationById(eq(conversation.id))
         }.returns(flowOf(Either.Right(conversation)))
     }
 
     suspend fun withUpdateGroupStateReturning(result: Either<StorageFailure, Unit>) {
-        coEvery {
+        everySuspend {
             conversationRepository.updateConversationGroupState(
-                any(MOCKATIVE_GROUP_ID),
-                any(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN)
+                any(),
+                any()
             )
         }.returns(result)
     }
 
     suspend fun withUpdateConversationModifiedDate(result: Either<StorageFailure, Unit>) {
-        coEvery {
-            conversationRepository.updateConversationModifiedDate(any(MOCKATIVE_CONVERSATION_ID), any(MOCKATIVE_INSTANT))
+        everySuspend {
+            conversationRepository.updateConversationModifiedDate(any(), any())
         }.returns(result)
     }
 
@@ -114,142 +113,145 @@ internal interface ConversationRepositoryArrangement {
     suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>)
     suspend fun withClearContentSucceeding()
     suspend fun withGetConversationMembers(result: List<UserId>)
+    suspend fun withUpdateLegalHoldStatusSuccess(isChanged: Boolean = true): ConversationRepositoryArrangement
+    suspend fun withObserveConversationLegalHoldStatus(status: Conversation.LegalHoldStatus): ConversationRepositoryArrangement
+    suspend fun withObserveIsUserMember(userId: UserId, isMember: Boolean): ConversationRepositoryArrangement
 }
 
 @OptIn(ConversationPersistenceApi::class)
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
 
-    override val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+    override val conversationRepository: ConversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withGetGroupConversationsWithMembersWithBothDomains(
         result: Either<CoreFailure, Map<ConversationId, List<UserId>>>,
-        firstDomain: Matcher<String>,
-        secondDomain: Matcher<String>,
+        firstDomain: (String) -> Boolean,
+        secondDomain: (String) -> Boolean,
     ) {
-        coEvery {
+        everySuspend {
             conversationRepository.getGroupConversationsWithMembersWithBothDomains(
-                matches { firstDomain.matches(it) },
-                matches { secondDomain.matches(it) }
+                matches { firstDomain(it) },
+                matches { secondDomain(it) }
             )
         }.returns(result)
     }
 
     override suspend fun withGetOneOnOneConversationsWithFederatedMember(
         result: Either<CoreFailure, Map<ConversationId, UserId>>,
-        domain: Matcher<String>
+        domain: (String) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             conversationRepository.getOneOnOneConversationsWithFederatedMembers(
-                matches { domain.matches(it) }
+                matches { domain(it) }
             )
         }.returns(result)
     }
 
-    override suspend fun withSetConversationDeletedLocallySucceeding(conversationId: Matcher<ConversationId>) {
-        coEvery {
-            conversationRepository.setConversationDeletedLocally(matches(MOCKATIVE_CONVERSATION_ID) { conversationId.matches(it) }, any())
+    override suspend fun withSetConversationDeletedLocallySucceeding(conversationId: (ConversationId) -> Boolean) {
+        everySuspend {
+            conversationRepository.setConversationDeletedLocally(matches { conversationId(it) }, any())
         }.returns(Either.Right(Unit))
     }
 
-    override suspend fun withSetConversationDeletedLocallyFailing(conversationId: Matcher<ConversationId>) {
-        coEvery {
-            conversationRepository.setConversationDeletedLocally(matches(MOCKATIVE_CONVERSATION_ID) { conversationId.matches(it) }, any())
+    override suspend fun withSetConversationDeletedLocallyFailing(conversationId: (ConversationId) -> Boolean) {
+        everySuspend {
+            conversationRepository.setConversationDeletedLocally(matches { conversationId(it) }, any())
         }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
     }
 
-    override suspend fun withDeletingConversationLocallySucceeding(conversationId: Matcher<ConversationId>) {
-        coEvery {
-            conversationRepository.deleteConversationLocally(matches(MOCKATIVE_CONVERSATION_ID) { conversationId.matches(it) })
+    override suspend fun withDeletingConversationLocallySucceeding(conversationId: (ConversationId) -> Boolean) {
+        everySuspend {
+            conversationRepository.deleteConversationLocally(matches { conversationId(it) })
         }.returns(Either.Right(true))
     }
 
-    override suspend fun withDeletingConversationLocallyFailing(conversationId: Matcher<ConversationId>) {
-        coEvery {
-            conversationRepository.deleteConversationLocally(matches(MOCKATIVE_CONVERSATION_ID) { conversationId.matches(it) })
+    override suspend fun withDeletingConversationLocallyFailing(conversationId: (ConversationId) -> Boolean) {
+        everySuspend {
+            conversationRepository.deleteConversationLocally(matches { conversationId(it) })
         }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
     }
 
     override suspend fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit>) {
-        coEvery {
-            conversationRepository.setInformedAboutDegradedMLSVerificationFlag(any(MOCKATIVE_CONVERSATION_ID), any())
+        everySuspend {
+            conversationRepository.setInformedAboutDegradedMLSVerificationFlag(any(), any())
         }.returns(result)
     }
 
     override suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>) = apply {
-        coEvery {
-            conversationRepository.isInformedAboutDegradedMLSVerification(any(MOCKATIVE_CONVERSATION_ID))
+        everySuspend {
+            conversationRepository.isInformedAboutDegradedMLSVerification(any())
         }.returns(isInformed)
     }
 
     override suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) = apply {
-        coEvery {
-            conversationRepository.getConversationProtocolInfo(any(MOCKATIVE_CONVERSATION_ID))
+        everySuspend {
+            conversationRepository.getConversationProtocolInfo(any())
         }.returns(result)
     }
 
     override suspend fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
-        coEvery {
-            conversationRepository.updateMlsVerificationStatus(any(Conversation.VerificationStatus.NOT_VERIFIED), any(MOCKATIVE_CONVERSATION_ID))
+        everySuspend {
+            conversationRepository.updateMlsVerificationStatus(any(), any())
         }.returns(result)
     }
 
     override suspend fun withConversationByMLSGroupId(result: Either<StorageFailure, Conversation>) = apply {
-        coEvery {
-            conversationRepository.getConversationByMLSGroupId(any(MOCKATIVE_GROUP_ID))
+        everySuspend {
+            conversationRepository.getConversationByMLSGroupId(any())
         }.returns(result)
     }
 
     override suspend fun withUpdateProtocolLocally(result: Either<CoreFailure, ConversationProtocolUpdateStatus>) {
-        coEvery {
-            conversationRepository.updateProtocolLocally(any(MOCKATIVE_CONVERSATION_ID), any(Conversation.Protocol.PROTEUS))
+        everySuspend {
+            conversationRepository.updateProtocolLocally(any(), any())
         }.returns(result)
     }
 
     override suspend fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>) {
-        coEvery {
-            conversationRepository.getConversationsByUserId(any(MOCKATIVE_USER_ID))
+        everySuspend {
+            conversationRepository.getConversationsByUserId(any())
         }.returns(result)
     }
 
     override suspend fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, ConversationResponse>) {
-        coEvery {
-            conversationRepository.fetchMlsOneToOneConversation(any(MOCKATIVE_USER_ID))
+        everySuspend {
+            conversationRepository.fetchMlsOneToOneConversation(any())
         }.returns(result)
     }
 
     override suspend fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>) {
-        coEvery {
-            conversationRepository.observeOneToOneConversationWithOtherUser(any(MOCKATIVE_USER_ID))
+        everySuspend {
+            conversationRepository.observeOneToOneConversationWithOtherUser(any())
         }.returns(flowOf(result))
     }
 
     override suspend fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>) {
-        coEvery {
-            conversationRepository.observeConversationDetailsById(any(MOCKATIVE_CONVERSATION_ID))
+        everySuspend {
+            conversationRepository.observeConversationDetailsById(any())
         }.returns(flowOf(*results))
     }
 
     override suspend fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>) {
-        coEvery {
-            conversationRepository.getConversationIds(any(TestConversation.CONVERSATION.type), any(Conversation.Protocol.PROTEUS))
+        everySuspend {
+            conversationRepository.getConversationIds(any(), any())
         }.returns(result)
     }
 
     override suspend fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>) {
-        coEvery {
-            conversationRepository.getOneOnOneConversationsWithOtherUser(any(MOCKATIVE_USER_ID), any(Conversation.Protocol.PROTEUS))
+        everySuspend {
+            conversationRepository.getOneOnOneConversationsWithOtherUser(any(), any())
         }.returns(result)
     }
 
     override suspend fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) {
-        coEvery {
-            conversationRepository.getConversationProtocolInfo(any(MOCKATIVE_CONVERSATION_ID))
+        everySuspend {
+            conversationRepository.getConversationProtocolInfo(any())
         }.returns(result)
     }
 
     override suspend fun withGetConversationByIdReturning(conversation: Conversation?) {
-        coEvery {
-            conversationRepository.getConversationById(any(MOCKATIVE_CONVERSATION_ID))
+        everySuspend {
+            conversationRepository.getConversationById(any())
         }.returns(
             if (conversation != null) Either.Right(conversation)
             else Either.Left(StorageFailure.DataNotFound)
@@ -257,36 +259,48 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     }
 
     override suspend fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>) {
-        coEvery {
-            conversationRepository.setDegradedConversationNotifiedFlag(any(MOCKATIVE_CONVERSATION_ID), any())
+        everySuspend {
+            conversationRepository.setDegradedConversationNotifiedFlag(any(), any())
         }.returns(result)
     }
 
     override suspend fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>) {
-        coEvery {
-            conversationRepository.getGroupStatusMembersNamesAndHandles(any(MOCKATIVE_GROUP_ID))
+        everySuspend {
+            conversationRepository.getGroupStatusMembersNamesAndHandles(any())
         }.returns(result)
     }
 
     override suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>) {
-        coEvery {
-            conversationRepository.getConversationById(any(MOCKATIVE_CONVERSATION_ID))
+        everySuspend {
+            conversationRepository.getConversationById(any())
         }.returns(result)
     }
 
     override suspend fun withPersistMembers(result: Either<StorageFailure, Unit>) {
-        coEvery { conversationRepository.persistMembers(any(emptyList()), any(MOCKATIVE_CONVERSATION_ID)) }.returns(result)
+        everySuspend { conversationRepository.persistMembers(any(), any()) }.returns(result)
     }
 
     override suspend fun withMembersNameAndHandle(result: Either<StorageFailure, Map<UserId, NameAndHandle>>) {
-        coEvery { conversationRepository.selectMembersNameAndHandle(any(MOCKATIVE_CONVERSATION_ID)) }.returns(result)
+        everySuspend { conversationRepository.selectMembersNameAndHandle(any()) }.returns(result)
     }
 
     override suspend fun withClearContentSucceeding() {
-        coEvery { conversationRepository.clearContent(any(MOCKATIVE_CONVERSATION_ID)) }.returns(Either.Right(Unit))
+        everySuspend { conversationRepository.clearContent(any()) }.returns(Either.Right(Unit))
     }
 
     override suspend fun withGetConversationMembers(result: List<UserId>) {
-        coEvery { conversationRepository.getConversationMembers(any(MOCKATIVE_CONVERSATION_ID)) }.returns(Either.Right(result))
+        everySuspend { conversationRepository.getConversationMembers(any()) }.returns(Either.Right(result))
+    }
+
+    override suspend fun withUpdateLegalHoldStatusSuccess(isChanged: Boolean) = apply {
+        everySuspend { conversationRepository.updateLegalHoldStatus(any(), any()) }.returns(Either.Right(isChanged))
+    }
+
+    override suspend fun withObserveConversationLegalHoldStatus(status: Conversation.LegalHoldStatus) = apply {
+        everySuspend { conversationRepository.observeLegalHoldStatus(any()) }.returns(flowOf(Either.Right(status)))
+    }
+
+    override suspend fun withObserveIsUserMember(userId: UserId, isMember: Boolean) = apply {
+        everySuspend { conversationRepository.observeIsUserMember(any(), eq(userId)) }.returns(flowOf(Either.Right(isMember)))
     }
 }

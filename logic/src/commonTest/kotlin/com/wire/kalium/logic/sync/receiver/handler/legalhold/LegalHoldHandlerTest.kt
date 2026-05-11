@@ -18,10 +18,8 @@
 package com.wire.kalium.logic.sync.receiver.handler.legalhold
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -41,6 +39,10 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackResult
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.KaliumDispatcher
@@ -49,7 +51,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.sequentiallyReturns
 import dev.mokkery.every
-import dev.mokkery.everySuspend as coEvery
+import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.mock
@@ -989,13 +991,13 @@ class LegalHoldHandlerTest {
             }
         }
 
-    private class Arrangement {
+    private class Arrangement :
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
         val fetchUsersClientsFromRemote = mock<FetchUsersClientsFromRemoteUseCase>(mode = MockMode.autoUnit)
         val fetchSelfClientsFromRemote = mock<FetchSelfClientsFromRemoteUseCase>()
         val observeLegalHoldStateForUser = mock<ObserveLegalHoldStateForUserUseCase>()
         val membersHavingLegalHoldClient = mock<MembersHavingLegalHoldClientUseCase>()
-        val userConfigRepository = mock<UserConfigRepository>()
-        val conversationRepository = mock<ConversationRepository>()
         val legalHoldSystemMessagesHandler = mock<LegalHoldSystemMessagesHandler>(mode = MockMode.autoUnit)
         val observeSyncState = mock<ObserveSyncStateUseCase>()
 
@@ -1027,69 +1029,59 @@ class LegalHoldHandlerTest {
         }
 
         suspend fun withDeleteLegalHoldSuccess() = apply {
-            coEvery {
-                userConfigRepository.deleteLegalHoldRequest()
-            }.returns(Either.Right(Unit))
+            withDeleteLegalHoldRequestSuccess()
         }
 
-        suspend fun withSetLegalHoldChangeNotifiedSuccess() = apply {
-            coEvery {
+        override suspend fun withSetLegalHoldChangeNotifiedSuccess() = apply {
+            everySuspend {
                 userConfigRepository.setLegalHoldChangeNotified(any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withFetchSelfClientsFromRemoteSuccess() = apply {
-            coEvery {
+            everySuspend {
                 fetchSelfClientsFromRemote.invoke()
             }.returns(SelfClientsResult.Success(emptyList(), ClientId("client-id")))
         }
 
         suspend fun withObserveLegalHoldStateForUserSuccess(state: LegalHoldState) = apply {
-            coEvery {
+            everySuspend {
                 observeLegalHoldStateForUser.invoke(any())
             }.returns(flowOf(state))
         }
 
-        suspend fun withDeleteLegalHoldRequestSuccess() = apply {
-            coEvery {
-                userConfigRepository.deleteLegalHoldRequest()
-            }.returns(Either.Right(Unit))
-        }
-
         suspend fun withMembersHavingLegalHoldClientSuccess(result: List<UserId>) = apply {
-            coEvery {
+            everySuspend {
                 membersHavingLegalHoldClient.invoke(any())
             }.returns(Either.Right(result))
         }
 
         suspend fun withMembersHavingLegalHoldClientSuccess(vararg result: List<UserId>) = apply {
-            coEvery {
+            everySuspend {
                 membersHavingLegalHoldClient.invoke(any())
             } sequentiallyReturns result.map { Either.Right(it) }
         }
 
-        suspend fun withUpdateLegalHoldStatusSuccess(isChanged: Boolean = true) = apply {
-            coEvery {
+        override suspend fun withUpdateLegalHoldStatusSuccess(isChanged: Boolean) = apply {
+            everySuspend {
                 conversationRepository.updateLegalHoldStatus(any(), any())
             }.returns(Either.Right(isChanged))
         }
 
-        suspend fun withObserveConversationLegalHoldStatus(status: Conversation.LegalHoldStatus) = apply {
-            coEvery {
+        suspend fun withUpdateLegalHoldStatusSuccess() = withUpdateLegalHoldStatusSuccess(true)
+
+        override suspend fun withObserveConversationLegalHoldStatus(status: Conversation.LegalHoldStatus) = apply {
+            everySuspend {
                 conversationRepository.observeLegalHoldStatus(any())
             }.returns(flowOf(Either.Right(status)))
         }
 
         suspend fun withGetConversationsByUserIdSuccess(conversations: List<Conversation> = emptyList()) = apply {
-            coEvery {
-                conversationRepository.getConversationsByUserId(any())
-            }.returns(Either.Right(conversations))
+            withConversationsForUserIdReturning(Either.Right(conversations))
         }
 
         suspend fun withGetConversationMembersSuccess(members: List<UserId>) = apply {
-            coEvery {
-                conversationRepository.getConversationMembers(any())
-            }.returns(Either.Right(members))
+            withGetConversationMembers(members)
         }
 
         fun withSyncStates(syncStates: Flow<SyncState>) = apply {
@@ -1098,11 +1090,12 @@ class LegalHoldHandlerTest {
             }.returns(syncStates)
         }
 
-        suspend fun withObserveIsUserMember(userId: UserId, isMember: Boolean) = apply {
-            coEvery {
+        override suspend fun withObserveIsUserMember(userId: UserId, isMember: Boolean) = apply {
+            everySuspend {
                 conversationRepository.observeIsUserMember(any(), eq(userId))
             }.returns(flowOf(Either.Right(isMember)))
         }
+
     }
 
     companion object {

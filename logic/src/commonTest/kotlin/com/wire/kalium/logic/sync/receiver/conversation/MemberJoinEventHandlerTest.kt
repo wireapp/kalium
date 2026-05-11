@@ -23,27 +23,29 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
-import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangement
+import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangementImpl
+import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangement
+import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
-import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import dev.mokkery.MockMode
-import dev.mokkery.answering.returns
-import dev.mokkery.everySuspend
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
-import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
@@ -331,13 +333,13 @@ class MemberJoinEventHandlerTest {
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
-        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
-        val userRepository = mock<UserRepository>()
-        val persistMessageUseCase = mock<PersistMessageUseCase>()
-        val legalHoldHandler = mock<LegalHoldHandler>()
-        val fetchConversation = mock<FetchConversationUseCase>()
-        val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>()
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl(),
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
+        LegalHoldHandlerArrangement by LegalHoldHandlerArrangementImpl(),
+        FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
+        NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
 
         suspend fun arrange() = run {
             block()
@@ -360,48 +362,8 @@ class MemberJoinEventHandlerTest {
             )
         }
 
-        suspend fun withFetchConversationSucceeding() = apply {
-            everySuspend { fetchConversation(any(), any(), any()) } returns Either.Right(Unit)
-        }
-
-        suspend fun withFetchConversationFailingWith(coreFailure: com.wire.kalium.common.error.CoreFailure) = apply {
-            everySuspend { fetchConversation(any(), any(), any()) } returns Either.Left(coreFailure)
-        }
-
         suspend fun withFetchConversationIfUnknownFailingWith(coreFailure: com.wire.kalium.common.error.CoreFailure) = apply {
-            everySuspend { fetchConversation(any(), any(), any()) } returns Either.Left(coreFailure)
-        }
-
-        suspend fun withConversationDetailsByIdReturning(result: Either<com.wire.kalium.common.error.StorageFailure, Conversation>) = apply {
-            everySuspend { conversationRepository.getConversationById(any()) } returns result
-        }
-
-        suspend fun withPersistingMessage(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
-            everySuspend { persistMessageUseCase.invoke(any()) } returns result
-        }
-
-        suspend fun withUpdateActiveOneOnOneConversationIfNotSet(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
-            everySuspend { userRepository.updateActiveOneOnOneConversationIfNotSet(any(), any()) } returns result
-        }
-
-        suspend fun withFetchUsersIfUnknownByIdsReturning(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
-            everySuspend { userRepository.fetchUsersIfUnknownByIds(any()) } returns result
-        }
-
-        suspend fun withPersistMembers(result: Either<com.wire.kalium.common.error.StorageFailure, Unit>) = apply {
-            everySuspend { conversationRepository.persistMembers(any(), any()) } returns result
-        }
-
-        suspend fun withSetConversationDeletedLocallySucceeding() = apply {
-            everySuspend { conversationRepository.setConversationDeletedLocally(any(), any()) } returns Either.Right(Unit)
-        }
-
-        suspend fun withHandleConversationMembersChanged(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
-            everySuspend { legalHoldHandler.handleConversationMembersChanged(any()) } returns result
-        }
-
-        suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
-            everySuspend { newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any()) } returns Either.Right(Unit)
+            withFetchConversationFailingWith(coreFailure)
         }
     }
 

@@ -20,9 +20,11 @@ package com.wire.kalium.logic.util.arrangement
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface SystemMessageInserterArrangement {
     val systemMessageInserter: SystemMessageInserter
@@ -34,16 +36,16 @@ internal interface SystemMessageInserterArrangement {
 
 internal class SystemMessageInserterArrangementImpl: SystemMessageInserterArrangement {
 
-    override val systemMessageInserter = mock(SystemMessageInserter::class)
+    override val systemMessageInserter = mock<SystemMessageInserter>(mode = MockMode.autoUnit)
 
     override suspend fun withInsertProtocolChangedSystemMessage() {
-        coEvery {
+        everySuspend {
             systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
         }.returns(Unit)
     }
 
     override suspend fun withInsertLostCommitSystemMessage(result: Either<CoreFailure, Unit>) {
-        coEvery {
+        everySuspend {
             systemMessageInserter.insertLostCommitSystemMessage(any(), any())
         }.returns(result)
     }
