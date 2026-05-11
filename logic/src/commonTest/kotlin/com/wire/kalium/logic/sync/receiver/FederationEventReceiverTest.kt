@@ -20,7 +20,12 @@ package com.wire.kalium.logic.sync.receiver
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.connection.ConnectionRepository
+import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
@@ -28,27 +33,22 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
-import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.once
-import io.mockative.time
+import com.wire.kalium.persistence.dao.member.MemberDAO
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -120,36 +120,36 @@ class FederationEventReceiverTest {
         // Then
         useCase.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(defederatedConnections.size)) {
             arrangement.connectionRepository.deleteConnection(matches { it.qualifiedConversationId.domain == defederatedDomain })
-        }.wasInvoked(exactly = defederatedConnections.size.time)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.connectionRepository.deleteConnection(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(defederatedOneOnOneConversations.size)) {
             arrangement.userRepository.defederateUser(any())
-        }.wasInvoked(exactly = defederatedOneOnOneConversations.size.time)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.deleteMembersByQualifiedID(eq(defederatedUserIdList.map { it.toDao() }), eq(selfConversation.toDao()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.deleteMembersByQualifiedID(eq(selfUserIdList.map { it.toDao() }), eq(defederatedConversation.toDao()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.deleteMembersByQualifiedID(
                 eq(userIdWithBothDomainsList.map { it.toDao() }),
                 eq(otherConversation.toDao())
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(systemMessageCount)) {
             arrangement.persistMessageUseCase.invoke(any())
-        }.wasInvoked(exactly = systemMessageCount.time)
+        }
     }
 
     @Test
@@ -186,30 +186,30 @@ class FederationEventReceiverTest {
             // Then
             useCase.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.memberDAO.deleteMembersByQualifiedID(
                     eq(defederatedUserIdListTwo.map { it.toDao() }),
                     eq(defederatedConversation.toDao())
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.memberDAO.deleteMembersByQualifiedID(
                     eq(defederatedUserIdList.map { it.toDao() }),
                     eq(defederatedConversationTwo.toDao())
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.memberDAO.deleteMembersByQualifiedID(
                     eq(userIdWithBothDomainsList.map { it.toDao() }),
                     eq(selfConversation.toDao())
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(systemMessageCount)) {
                 arrangement.persistMessageUseCase.invoke(any())
-            }.wasInvoked(exactly = systemMessageCount.time)
+            }
         }
 
     private companion object {
@@ -231,13 +231,13 @@ class FederationEventReceiverTest {
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl(),
-        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        MemberDAOArrangement by MemberDAOArrangementImpl(),
-        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl()
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl()
     {
+        val conversationRepository = mock<ConversationRepository>()
+        val connectionRepository = mock<ConnectionRepository>()
+        val userRepository = mock<UserRepository>()
+        val memberDAO = mock<MemberDAO>(mode = MockMode.autoUnit)
+        val persistMessageUseCase = mock<PersistMessageUseCase>()
 
         var dispatcher: KaliumDispatcher = TestKaliumDispatcher
 
@@ -252,6 +252,38 @@ class FederationEventReceiverTest {
                 selfUserId = selfUserId,
                 dispatchers = dispatcher
             )
+        }
+
+        suspend fun withGetConnections(result: Either<com.wire.kalium.common.error.StorageFailure, Flow<List<ConversationDetails>>>) = apply {
+            everySuspend { connectionRepository.getConnections() } returns result
+        }
+
+        suspend fun withDeleteConnection(result: Either<com.wire.kalium.common.error.StorageFailure, Unit>) = apply {
+            everySuspend { connectionRepository.deleteConnection(any()) } returns result
+        }
+
+        suspend fun withGetGroupConversationsWithMembersWithBothDomains(
+            result: Either<com.wire.kalium.common.error.CoreFailure, Map<ConversationId, List<UserId>>>
+        ) = apply {
+            everySuspend { conversationRepository.getGroupConversationsWithMembersWithBothDomains(any(), any()) } returns result
+        }
+
+        suspend fun withGetOneOnOneConversationsWithFederatedMember(
+            result: Either<com.wire.kalium.common.error.CoreFailure, Map<ConversationId, UserId>>
+        ) = apply {
+            everySuspend { conversationRepository.getOneOnOneConversationsWithFederatedMembers(any()) } returns result
+        }
+
+        suspend fun withDefederateUser(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
+            everySuspend { userRepository.defederateUser(any()) } returns result
+        }
+
+        suspend fun withDeleteMembersByQualifiedID(result: Long) = apply {
+            everySuspend { memberDAO.deleteMembersByQualifiedID(any(), any()) } returns result
+        }
+
+        suspend fun withPersistingMessage(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
+            everySuspend { persistMessageUseCase.invoke(any()) } returns result
         }
     }
 }

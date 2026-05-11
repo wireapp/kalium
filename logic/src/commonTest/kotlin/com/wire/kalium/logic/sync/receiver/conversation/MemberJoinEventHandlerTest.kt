@@ -21,34 +21,31 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangement
-import com.wire.kalium.logic.util.arrangement.NewGroupConversationSystemMessageCreatorArrangementImpl
-import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangement
-import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationIfUnknownUseCaseArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -60,15 +57,15 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversation(any(), eq(event.conversationId), eq(ConversationSyncReason.Other))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -77,15 +74,15 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.persistMembers(eq(newMembers), eq(event.conversationId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -101,9 +98,9 @@ class MemberJoinEventHandlerTest {
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.persistMembers(eq(newMembers), eq(event.conversationId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -113,20 +110,22 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withConversationDetailsByIdReturning(conversation.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessageUseCase.invoke(
                 matches {
                     it is Message.System && it.content is MessageContent.MemberChange
                 }
             )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -137,23 +136,25 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
             withConversationDetailsByIdReturning(conversation.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.persistMessageUseCase(any())
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.updateActiveOneOnOneConversationIfNotSet(
                 userId = any(),
                 conversationId = any()
             )
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     @Test
@@ -162,15 +163,15 @@ class MemberJoinEventHandlerTest {
         val conversation = TEST_GROUP_CONVERSATION
         val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withConversationDetailsByIdReturning(conversation.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -179,15 +180,15 @@ class MemberJoinEventHandlerTest {
         val conversation = TEST_GROUP_CONVERSATION
         val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withConversationDetailsByIdReturning(conversation.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -196,16 +197,16 @@ class MemberJoinEventHandlerTest {
         val newMembers = listOf(Member(TEST_SELF_USER_ID, Member.Role.Admin))
         val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
             withConversationDetailsByIdReturning(conversation.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -214,16 +215,16 @@ class MemberJoinEventHandlerTest {
         val newMembers = listOf(Member(TestUser.OTHER_USER_ID, Member.Role.Admin))
         val event = TestEvent.memberJoin(members = newMembers).copy(conversationId = conversation.id)
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
             withConversationDetailsByIdReturning(conversation.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(conversation.id), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -234,19 +235,19 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
             withConversationDetailsByIdReturning(conversation.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.updateActiveOneOnOneConversationIfNotSet(
                 userId = any(),
                 conversationId = any()
             )
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     @Test
@@ -255,19 +256,19 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers).copy(id = "")
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withConversationDetailsByIdReturning(TestConversation.GROUP().right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessageUseCase.invoke(
                 matches {
                     it is Message.System && it.content is MessageContent.MemberChange && it.id.isNotEmpty()
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -276,15 +277,15 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.setConversationDeletedLocally(eq(event.conversationId), eq(false))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -293,15 +294,15 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
         }
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.setConversationDeletedLocally(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -311,7 +312,7 @@ class MemberJoinEventHandlerTest {
         val event = TestEvent.memberJoin(members = newMembers)
         val (arrangement, eventHandler) = arrange {
             withPersistingMessage(Either.Right(Unit))
-            withFetchConversationSucceeding(any(), any(), reason = eq(ConversationSyncReason.Other))
+            withFetchConversationSucceeding()
             withConversationDetailsByIdReturning(TestConversation.GROUP().right())
             withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             withPersistMembers(Unit.right())
@@ -319,25 +320,24 @@ class MemberJoinEventHandlerTest {
         // when
         eventHandler.handle(arrangement.transactionContext, event)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessageUseCase.invoke(
                 matches {
                     it is Message.System && it.content is MessageContent.MemberChange && it.id.isNotEmpty()
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
-        LegalHoldHandlerArrangement by LegalHoldHandlerArrangementImpl(),
-        FetchConversationIfUnknownUseCaseArrangement by FetchConversationIfUnknownUseCaseArrangementImpl(),
-        FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
-        NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val userRepository = mock<UserRepository>()
+        val persistMessageUseCase = mock<PersistMessageUseCase>()
+        val legalHoldHandler = mock<LegalHoldHandler>()
+        val fetchConversation = mock<FetchConversationUseCase>()
+        val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>()
 
         suspend fun arrange() = run {
             block()
@@ -358,6 +358,50 @@ class MemberJoinEventHandlerTest {
                 selfUserId = TEST_SELF_USER_ID,
                 fetchConversation
             )
+        }
+
+        suspend fun withFetchConversationSucceeding() = apply {
+            everySuspend { fetchConversation(any(), any(), any()) } returns Either.Right(Unit)
+        }
+
+        suspend fun withFetchConversationFailingWith(coreFailure: com.wire.kalium.common.error.CoreFailure) = apply {
+            everySuspend { fetchConversation(any(), any(), any()) } returns Either.Left(coreFailure)
+        }
+
+        suspend fun withFetchConversationIfUnknownFailingWith(coreFailure: com.wire.kalium.common.error.CoreFailure) = apply {
+            everySuspend { fetchConversation(any(), any(), any()) } returns Either.Left(coreFailure)
+        }
+
+        suspend fun withConversationDetailsByIdReturning(result: Either<com.wire.kalium.common.error.StorageFailure, Conversation>) = apply {
+            everySuspend { conversationRepository.getConversationById(any()) } returns result
+        }
+
+        suspend fun withPersistingMessage(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
+            everySuspend { persistMessageUseCase.invoke(any()) } returns result
+        }
+
+        suspend fun withUpdateActiveOneOnOneConversationIfNotSet(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
+            everySuspend { userRepository.updateActiveOneOnOneConversationIfNotSet(any(), any()) } returns result
+        }
+
+        suspend fun withFetchUsersIfUnknownByIdsReturning(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
+            everySuspend { userRepository.fetchUsersIfUnknownByIds(any()) } returns result
+        }
+
+        suspend fun withPersistMembers(result: Either<com.wire.kalium.common.error.StorageFailure, Unit>) = apply {
+            everySuspend { conversationRepository.persistMembers(any(), any()) } returns result
+        }
+
+        suspend fun withSetConversationDeletedLocallySucceeding() = apply {
+            everySuspend { conversationRepository.setConversationDeletedLocally(any(), any()) } returns Either.Right(Unit)
+        }
+
+        suspend fun withHandleConversationMembersChanged(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
+            everySuspend { legalHoldHandler.handleConversationMembersChanged(any()) } returns result
+        }
+
+        suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
+            everySuspend { newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any()) } returns Either.Right(Unit)
         }
     }
 

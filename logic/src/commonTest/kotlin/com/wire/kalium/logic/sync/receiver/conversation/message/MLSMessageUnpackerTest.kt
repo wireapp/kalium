@@ -31,17 +31,19 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
@@ -114,9 +116,9 @@ internal class MLSMessageUnpackerTest {
         val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
         mlsUnpacker.unpackMlsMessage(arrangement.mlsContext, messageEvent)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingProposalScheduler.scheduleCommit(eq(TestConversation.GROUP_ID), eq(eventTimestamp.plus(commitDelay.seconds)))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -130,20 +132,20 @@ internal class MLSMessageUnpackerTest {
         val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
         mlsUnpacker.unpackMlsMessage(arrangement.mlsContext, messageEvent)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.decryptMessage(
                 any(),
                 matches { it.contentEquals(Base64.decode(messageEvent.content)) },
                 eq(TestConversation.GROUP_ID)
             )
-        }.wasInvoked(once)
+        }
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val conversationRepository = mock(ConversationRepository::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val pendingProposalScheduler = mock(PendingProposalScheduler::class)
-        val subconversationRepository = mock(SubconversationRepository::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val conversationRepository = mock<ConversationRepository>()
+        val mlsConversationRepository = mock<MLSConversationRepository>()
+        val pendingProposalScheduler = mock<PendingProposalScheduler>(mode = MockMode.autoUnit)
+        val subconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
 
         private val mlsMessageUnpacker = MLSMessageUnpackerImpl(
             conversationRepository,
@@ -155,19 +157,19 @@ internal class MLSMessageUnpackerTest {
 
 
         suspend fun withDecryptMessageReturning(result: Either<CoreFailure, List<DecryptedMessageBundle>>) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.decryptMessage(any(), any(), any())
             }.returns(result)
         }
 
         suspend fun withScheduleCommitSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 pendingProposalScheduler.scheduleCommit(any(), any())
             }.returns(Unit)
         }
 
         suspend fun withGetConversationProtocolInfoSuccessful(protocolInfo: Conversation.ProtocolInfo) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationProtocolInfo(any())
             }.returns(Either.Right(protocolInfo))
         }
