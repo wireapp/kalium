@@ -18,11 +18,11 @@
 package com.wire.kalium.logic.feature.applock
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.AppLockTeamConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.common.functional.Either
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -38,60 +38,76 @@ import kotlin.time.Duration.Companion.seconds
 internal class AppLockTeamFeatureConfigObserverTest {
 
     @Test
-    fun givenRepositoryFailure_whenObservingAppLock_thenEmitNull() =
-        runTest {
+    fun givenRepositoryFailure_whenObservingAppLock_thenEmitNull() = runTest {
+        val (arrangement, observer) = Arrangement()
+            .withFailure()
+            .withNomadServiceUrl(null)
+            .arrange()
 
-            val (arrangement, observer) = Arrangement()
-                .withFailure()
-                .arrange()
+        assertNull(observer.invoke().first())
 
-            val result = observer.invoke()
-
-            verify {
-                arrangement.userConfigRepository.observeAppLockConfig()
-            }.wasInvoked(exactly = once)
-            assertNull(result.first())
-        }
+        verify {
+            arrangement.userConfigRepository.observeAppLockConfig()
+        }.wasInvoked(exactly = once)
+    }
 
     @Test
-    fun givenRepositorySuccess_whenObservingAppLock_thenEmitAppLockConfigWithValueFromRepository() {
-        runTest {
-            val expectedAppLockValue = AppLockTeamConfig(
-                appLockConfigModel.status.toBoolean(),
-                appLockConfigModel.inactivityTimeoutSecs.seconds,
-                isStatusChanged = false
-            )
-            val (arrangement, observer) = Arrangement()
-                .withSuccess()
-                .arrange()
+    fun givenRepositorySuccess_whenObservingAppLock_thenEmitAppLockConfigWithValueFromRepository() = runTest {
+        val expectedAppLockValue = AppLockTeamConfig(
+            appLockConfigModel.status.toBoolean(),
+            appLockConfigModel.inactivityTimeoutSecs.seconds,
+            isStatusChanged = false
+        )
+        val (arrangement, observer) = Arrangement()
+            .withSuccess()
+            .withNomadServiceUrl(null)
+            .arrange()
 
-            val result = observer.invoke()
+        assertEquals(expectedAppLockValue, observer.invoke().first())
 
-            verify {
-                arrangement.userConfigRepository.observeAppLockConfig()
-            }.wasInvoked(exactly = once)
-            assertEquals(expectedAppLockValue, result.first())
-        }
+        verify {
+            arrangement.userConfigRepository.observeAppLockConfig()
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSelfIsNomad_whenObservingAppLock_thenEmitNullRegardlessOfTeamConfig() = runTest {
+        val (arrangement, observer) = Arrangement()
+            .withSuccess()
+            .withNomadServiceUrl("https://nomad.service.url")
+            .arrange()
+
+        assertNull(observer.invoke().first())
+
+        verify {
+            arrangement.userConfigRepository.observeAppLockConfig()
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
 
         val userConfigRepository = mock(UserConfigRepository::class)
+        private var nomadServiceUrl: String? = null
 
         fun withFailure(): Arrangement = apply {
             every {
                 userConfigRepository.observeAppLockConfig()
-            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
+            } returns flowOf(Either.Left(StorageFailure.DataNotFound))
         }
 
         fun withSuccess(): Arrangement = apply {
             every {
                 userConfigRepository.observeAppLockConfig()
-            }.returns(flowOf(Either.Right(appLockTeamConfig)))
+            } returns flowOf(Either.Right(appLockTeamConfig))
+        }
+
+        fun withNomadServiceUrl(nomadServiceUrl: String?): Arrangement = apply {
+            this.nomadServiceUrl = nomadServiceUrl
         }
 
         fun arrange() = this to AppLockTeamFeatureConfigObserverImpl(
-            userConfigRepository = userConfigRepository
+            userConfigRepository = userConfigRepository,
+            nomadServiceUrl = nomadServiceUrl,
         )
     }
 
