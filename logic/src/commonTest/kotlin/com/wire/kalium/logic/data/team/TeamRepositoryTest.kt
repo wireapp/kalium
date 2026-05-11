@@ -57,7 +57,6 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import io.mockative.oneOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.flowOf
@@ -74,7 +73,7 @@ class TeamRepositoryTest {
 
         // Verifies that teamDAO insertTeam was called with the correct mapped values
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.teamDAO.insertTeam(oneOf(TestTeam.TEAM_ENTITY))
+            arrangement.teamDAO.insertTeam(eq(TestTeam.TEAM_ENTITY))
         }
 
         // Verifies that when fetching team by id, it succeeded
@@ -191,7 +190,7 @@ class TeamRepositoryTest {
         val (arrangement, teamRepository) = Arrangement().arrange()
 
         everySuspend {
-            arrangement.teamDAO.getTeamById(oneOf("teamId"))
+            arrangement.teamDAO.getTeamById(eq("teamId"))
         }.returns(flowOf(teamEntity))
 
         teamRepository.getTeam(teamId = TeamId("teamId")).test {
@@ -205,7 +204,7 @@ class TeamRepositoryTest {
         val (arrangement, teamRepository) = Arrangement().arrange()
 
         everySuspend {
-            arrangement.teamDAO.getTeamById(oneOf("teamId"))
+            arrangement.teamDAO.getTeamById(eq("teamId"))
         }.returns(flowOf(null))
 
         teamRepository.getTeam(teamId = TeamId("teamId")).test {
@@ -411,7 +410,7 @@ class TeamRepositoryTest {
 
         suspend fun withApiGetTeamInfoSuccess(teamDTO: TeamDTO) = apply {
             everySuspend {
-                teamsApi.getTeamInfo(oneOf(teamDTO.id))
+                teamsApi.getTeamInfo(eq(teamDTO.id))
             }.returns(NetworkResponse.Success(value = teamDTO, headers = mapOf(), httpCode = 200))
         }
 

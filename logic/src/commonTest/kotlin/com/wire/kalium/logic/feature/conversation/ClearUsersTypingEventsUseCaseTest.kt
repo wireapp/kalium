@@ -21,9 +21,10 @@ import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -35,14 +36,14 @@ class ClearUsersTypingEventsUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.typingIndicatorIncomingRepository.clearExpiredTypingIndicators()
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
-        val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository = mock(TypingIndicatorIncomingRepository::class)
+        val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository = mock(mode = MockMode.autoUnit)
 
         fun arrange() = this to ClearUsersTypingEventsUseCaseImpl(
             typingIndicatorIncomingRepository = typingIndicatorIncomingRepository,

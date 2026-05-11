@@ -23,13 +23,15 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -49,13 +51,13 @@ class CheckSystemIntegrityUseCaseTest {
 
         assertEquals(CheckSystemIntegrityUseCase.Result.Failed, result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.deleteSession(eq(Arrangement.INVALID_ACCOUNT.userId))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.deleteSession(eq(Arrangement.VALID_ACCOUNT.userId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -70,9 +72,9 @@ class CheckSystemIntegrityUseCaseTest {
 
         assertEquals(CheckSystemIntegrityUseCase.Result.Success, result)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.sessionRepository.deleteSession(eq(Arrangement.VALID_ACCOUNT.userId))
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -87,17 +89,17 @@ class CheckSystemIntegrityUseCaseTest {
 
         assertEquals(CheckSystemIntegrityUseCase.Result.Success, result)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.sessionRepository.deleteSession(eq(Arrangement.VALID_ACCOUNT.userId))
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement {
 
         var kaliumConfigs = KaliumConfigs()
 
-        val rootDetector = mock(RootDetector::class)
-        val sessionRepository = mock(SessionRepository::class)
+        val rootDetector = mock<RootDetector>(mode = MockMode.autoUnit)
+        val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
 
         fun arrange() = this to CheckSystemIntegrityUseCaseImpl(
             kaliumConfigs,
@@ -112,19 +114,19 @@ class CheckSystemIntegrityUseCaseTest {
         fun withIsSystemRooted(result: Boolean) = apply {
             every {
                 rootDetector.isSystemRooted()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withAccounts(accounts: List<AccountInfo>) = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.allSessions()
-            }.returns(Either.Right(accounts))
+            } returns Either.Right(accounts)
         }
 
         suspend fun withDeleteSessionSucceeds() = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.deleteSession(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         companion object {

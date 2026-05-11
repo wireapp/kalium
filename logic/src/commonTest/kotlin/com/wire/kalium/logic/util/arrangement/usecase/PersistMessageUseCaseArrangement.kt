@@ -21,31 +21,30 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface PersistMessageUseCaseArrangement {
     val persistMessageUseCase: PersistMessageUseCase
     suspend fun withPersistingMessage(
         result: Either<CoreFailure, Unit>,
-        messageMatcher: Matcher<Message.Standalone> = AnyMatcher(valueOf())
+        messageMatcher: (Message.Standalone) -> Boolean = { true }
     ): PersistMessageUseCaseArrangementImpl
 }
 
 internal open class PersistMessageUseCaseArrangementImpl : PersistMessageUseCaseArrangement {
 
-    override val persistMessageUseCase: PersistMessageUseCase = mock(PersistMessageUseCase::class)
+    override val persistMessageUseCase: PersistMessageUseCase = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
 
     override suspend fun withPersistingMessage(
         result: Either<CoreFailure, Unit>,
-        messageMatcher: Matcher<Message.Standalone>
+        messageMatcher: (Message.Standalone) -> Boolean
     ) = apply {
-        coEvery {
-            persistMessageUseCase.invoke(matches { messageMatcher.matches(it) })
+        everySuspend {
+            persistMessageUseCase.invoke(matches { messageMatcher(it) })
         }.returns(result)
     }
 }

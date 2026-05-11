@@ -30,7 +30,6 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
-import io.mockative.Mockable
 import kotlin.time.Duration.Companion.days
 
 internal sealed class UpdateKeyingMaterialsResult {
@@ -44,7 +43,6 @@ internal sealed class UpdateKeyingMaterialsResult {
  * This use case will check if the number of keying materials is below the minimum threshold and will
  * upload new keying materials if needed for the mls conversations of the user.
  */
-@Mockable
 internal interface UpdateKeyingMaterialsUseCase {
     suspend operator fun invoke(): UpdateKeyingMaterialsResult
 }

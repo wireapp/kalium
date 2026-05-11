@@ -22,10 +22,12 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
@@ -80,21 +82,21 @@ internal class DoesValidSessionExistUseCaseTest {
 
     class Arrangement {
 
-        private val sessionRepository = mock(SessionRepository::class)
+        private val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
         private val doesValidSessionExistUseCase: DoesValidSessionExistUseCase by lazy {
             DoesValidSessionExistUseCase(sessionRepository)
         }
 
         suspend fun withDoesValidSessionExist(userId: UserId, exists: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.doesValidSessionExist(eq(userId))
-            }.returns(Either.Right(exists))
+            } returns Either.Right(exists)
         }
 
         suspend fun withDoesValidSessionExistFailure(failure: StorageFailure) = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.doesValidSessionExist(any())
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         fun arrange() = this to doesValidSessionExistUseCase

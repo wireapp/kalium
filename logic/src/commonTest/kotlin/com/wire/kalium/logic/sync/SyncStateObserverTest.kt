@@ -34,7 +34,7 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
-import io.mockative.mock
+import dev.mokkery.mock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -358,7 +358,7 @@ class SyncStateObserverTest {
 
         val database = TestUserDatabase(UserIDEntity("SELF_USER", "DOMAIN"), dispatcher = testDispatcher)
         val slowSyncRepository: SlowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
-        val sessionRepository = mock(SessionRepository::class)
+        val sessionRepository = mock<SessionRepository>()
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 

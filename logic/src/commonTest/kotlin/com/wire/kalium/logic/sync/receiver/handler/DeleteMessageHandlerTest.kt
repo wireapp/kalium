@@ -18,26 +18,27 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
-import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
 import com.wire.kalium.messaging.hooks.MessageDeleteEventData
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.common.error.StorageFailure
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -71,9 +72,9 @@ class DeleteMessageHandlerTest {
             conversationId = conversationId
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -100,21 +101,21 @@ class DeleteMessageHandlerTest {
             conversationId = conversationId
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.notificationEventsManager.scheduleDeleteMessageNotification(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -142,21 +143,21 @@ class DeleteMessageHandlerTest {
             conversationId = conversationId
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.notificationEventsManager.scheduleDeleteMessageNotification(eq(originalMessage))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -180,21 +181,21 @@ class DeleteMessageHandlerTest {
 
         handler(content = content, senderUserId = deleteMessageSenderID, conversationId = conversationId)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.notificationEventsManager.scheduleDeleteMessageNotification(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -220,21 +221,21 @@ class DeleteMessageHandlerTest {
 
         handler(content = content, senderUserId = deleteMessageSenderID, conversationId = conversationId)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.notificationEventsManager.scheduleDeleteMessageNotification(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -308,9 +309,10 @@ class DeleteMessageHandlerTest {
     private class Arrangement(
         private val hookNotifier: PersistenceEventHookNotifier,
         private val block: suspend Arrangement.() -> Unit
-    ) : MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
-        AssetRepositoryArrangement by AssetRepositoryArrangementImpl(),
-        NotificationEventsManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
+    ) {
+        val messageRepository = mock<MessageRepository>()
+        val assetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
+        val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
 
         fun arrange() = run {
             runBlocking { block() }
@@ -321,6 +323,24 @@ class DeleteMessageHandlerTest {
                 selfUserId = SELF_USER_ID,
                 persistenceEventHookNotifier = hookNotifier,
             )
+        }
+
+        suspend fun withGetMessageById(result: Either<StorageFailure, Message>) = apply {
+            everySuspend {
+                messageRepository.getMessageById(any(), any())
+            } returns result
+        }
+
+        suspend fun withDeleteMessage(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
+            everySuspend {
+                messageRepository.deleteMessage(any(), any())
+            } returns result
+        }
+
+        suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>) = apply {
+            everySuspend {
+                messageRepository.markMessageAsDeleted(any(), any())
+            } returns result
         }
     }
 

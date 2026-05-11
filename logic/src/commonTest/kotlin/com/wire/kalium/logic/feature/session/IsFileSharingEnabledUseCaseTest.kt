@@ -23,10 +23,12 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,9 +46,9 @@ class IsFileSharingEnabledUseCaseTest {
         val actual = isFileSharingEnabledUseCase.invoke()
         assertEquals(expectedValue, actual)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.isFileSharingEnabled()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -60,29 +62,29 @@ class IsFileSharingEnabledUseCaseTest {
         // When
         isFileSharingEnabledUseCase.invoke()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.isFileSharingEnabled()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository: UserConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
         val isFileSharingEnabledUseCase = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
 
         suspend fun withSuccessfulResponse(expectedValue: FileSharingStatus): Arrangement {
-            coEvery {
+            everySuspend {
                 userConfigRepository.isFileSharingEnabled()
-            }.returns(Either.Right(expectedValue))
+            } returns Either.Right(expectedValue)
 
             return this
         }
 
         suspend fun withIsFileSharingEnabledErrorResponse(storageFailure: StorageFailure): Arrangement {
-            coEvery {
+            everySuspend {
                 userConfigRepository.isFileSharingEnabled()
-            }.returns(Either.Left(storageFailure))
+            } returns Either.Left(storageFailure)
             return this
         }
 

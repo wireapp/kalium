@@ -30,23 +30,25 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -74,12 +76,12 @@ class SendLocationUseCaseTest {
 
         // Then
         result.toEither().shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -100,12 +102,12 @@ class SendLocationUseCaseTest {
 
         // Then
         result.toEither().shouldFail()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -127,57 +129,64 @@ class SendLocationUseCaseTest {
 
         // Then
         result.toEither().shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                message = matches {
+                message = matching {
                     assertIs<Message.Regular>(it)
                     it.expirationData?.expireAfter == expectedDuration
                 },
                 messageTarget = any()
             )
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
-    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) :
-        ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement by ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl() {
-        private val persistMessage = mock(PersistMessageUseCase::class)
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        private val slowSyncRepository = mock(SlowSyncRepository::class)
-        val messageSender = mock(MessageSender::class)
-        val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
+        private val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
+        val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        private val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
+        val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
+        val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
+        val observeSelfDeletionTimerSettingsForConversation =
+            mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withSendMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSendMessageFailure() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
         suspend fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(Either.Right(clientId))
+            } returns Either.Right(clientId)
         }
 
         suspend fun withPersistMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 persistMessage.invoke(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         fun withSlowSyncStatusComplete() = apply {
             val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
             every {
                 slowSyncRepository.slowSyncStatus
-            }.returns(stateFlow)
+            } returns stateFlow
+        }
+
+        suspend fun withConversationTimer(result: Flow<SelfDeletionTimer>) {
+            everySuspend {
+                observeSelfDeletionTimerSettingsForConversation(any(), any())
+            } returns result
         }
 
         fun arrange(block: suspend (Arrangement.() -> Unit) = {}): Pair<Arrangement, SendLocationUseCase> {

@@ -31,13 +31,11 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlin.uuid.Uuid
 
-@Mockable
 internal interface PersistNewAssetMessageUseCase {
     suspend operator fun invoke(
         messageId: String,

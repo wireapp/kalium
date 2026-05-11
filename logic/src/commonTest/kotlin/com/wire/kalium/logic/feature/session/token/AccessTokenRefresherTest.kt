@@ -28,12 +28,14 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -52,9 +54,9 @@ class AccessTokenRefresherTest {
             .shouldFail {
                 assertEquals(failure, it)
             }
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.repository.persistTokens(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -88,9 +90,9 @@ class AccessTokenRefresherTest {
         }
 
         accessTokenRefresher.refreshTokenAndPersistSession("egal")
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.repository.persistTokens(eq(TEST_REFRESH_RESULT.accessToken), eq(TEST_REFRESH_RESULT.refreshToken))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -107,7 +109,7 @@ class AccessTokenRefresherTest {
 
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) {
 
-        val repository = mock(AccessTokenRepository::class)
+        val repository = mock<AccessTokenRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange(): Pair<Arrangement, AccessTokenRefresher> = run {
             configure()
@@ -115,15 +117,15 @@ class AccessTokenRefresherTest {
         }
 
         suspend fun withRefreshTokenReturning(result: Either<NetworkFailure, AccessTokenRefreshResult>) {
-            coEvery {
+            everySuspend {
                 repository.getNewAccessToken(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withPersistReturning(result: Either<StorageFailure, AccountTokens>) {
-            coEvery {
+            everySuspend {
                 repository.persistTokens(any(), any())
-            }.returns(result)
+            } returns result
         }
     }
 

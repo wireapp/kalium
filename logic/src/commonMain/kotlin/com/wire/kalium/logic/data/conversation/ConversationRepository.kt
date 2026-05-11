@@ -70,7 +70,6 @@ import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.util.ConversationPersistenceApi
 import com.wire.kalium.util.DelicateKaliumApi
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -81,7 +80,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
-@Mockable
 internal interface ConversationRepository {
     val extensions: ConversationRepositoryExtensions
 

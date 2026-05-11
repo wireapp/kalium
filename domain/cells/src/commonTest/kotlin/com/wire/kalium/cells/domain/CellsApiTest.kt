@@ -82,7 +82,6 @@ class CellsApiTest {
 
         // TODO: Fix issue with response deserialization
 //         assertTrue { result.isSuccessful() }
-//         coVerify { cellApi.moveNode(any(), any(), any()) }.wasInvoked(exactly = once)
     }
 
     private class Arrangement() {

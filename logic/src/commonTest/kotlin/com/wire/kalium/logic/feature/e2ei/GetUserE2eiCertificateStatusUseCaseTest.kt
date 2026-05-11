@@ -21,23 +21,26 @@ import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCaseImpl
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
-import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -152,9 +155,9 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             // then
             assertFalse(result)
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.mlsConversationRepository.getUserIdentity(any(), any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -214,10 +217,10 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
-        UserRepositoryArrangement by UserRepositoryArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        val isE2EIEnabledUseCase = mock<IsE2EIEnabledUseCase>(mode = MockMode.autoUnit)
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = run {
             runBlocking { block() }
@@ -228,6 +231,18 @@ class GetUserE2eiCertificateStatusUseCaseTest {
                 userRepository = userRepository,
                 transactionProvider = cryptoTransactionProvider
             )
+        }
+
+        suspend fun withE2EIEnabledAndMLSEnabled(result: Boolean) {
+            everySuspend { isE2EIEnabledUseCase.invoke() } returns result
+        }
+
+        suspend fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>) {
+            everySuspend { mlsConversationRepository.getUserIdentity(any(), any()) } returns result
+        }
+
+        suspend fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>) {
+            everySuspend { userRepository.getNameAndHandle(any()) } returns result
         }
     }
 

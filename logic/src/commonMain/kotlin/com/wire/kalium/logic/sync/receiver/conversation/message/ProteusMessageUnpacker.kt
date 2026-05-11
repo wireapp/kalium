@@ -41,10 +41,8 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import io.mockative.Mockable
 import kotlin.io.encoding.Base64
 
-@Mockable
 internal interface ProteusMessageUnpacker {
 
     suspend fun <T : Any> unpackProteusMessage(

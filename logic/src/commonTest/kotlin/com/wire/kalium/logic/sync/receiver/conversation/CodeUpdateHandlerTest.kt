@@ -21,14 +21,14 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
-import com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangement
-import com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangementImpl
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.persistence.dao.ConversationIDEntity
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import dev.mokkery.MockMode
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -51,7 +51,7 @@ class CodeUpdateHandlerTest {
 
         handler.handle(event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversionDAO.updateGuestRoomLink(
                 eq(
                     ConversationIDEntity(
@@ -62,7 +62,7 @@ class CodeUpdateHandlerTest {
                 eq(event.uri!!),
                 eq(event.isPasswordProtected)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -84,7 +84,7 @@ class CodeUpdateHandlerTest {
 
         handler.handle(event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversionDAO.updateGuestRoomLink(
                 eq(
                     ConversationIDEntity(
@@ -95,17 +95,20 @@ class CodeUpdateHandlerTest {
                 eq(expected),
                 eq(event.isPasswordProtected)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement : ConversionDAOArrangement by ConversionDAOArrangementImpl() {
+    private class Arrangement {
+        val conversionDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
 
         val serverConfigLinks = newServerConfig(1).links
 
         private val handler: CodeUpdatedHandler = CodeUpdateHandlerImpl(conversionDAO, serverConfigLinks)
 
-        fun arrange(block: suspend Arrangement.() -> Unit) = run {
-            runBlocking { block() }
+        fun withUpdatedGuestRoomLink() = apply {}
+
+        fun arrange(block: Arrangement.() -> Unit) = run {
+            block()
             this to handler
         }
     }

@@ -21,9 +21,11 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface MLSOneOnOneConversationResolverArrangement {
     val mlsOneOnOneConversationResolver: MLSOneOnOneConversationResolver
@@ -32,10 +34,10 @@ internal interface MLSOneOnOneConversationResolverArrangement {
 }
 
 internal class MLSOneOnOneConversationResolverArrangementImpl : MLSOneOnOneConversationResolverArrangement {
-        override val mlsOneOnOneConversationResolver = mock(MLSOneOnOneConversationResolver::class)
+        override val mlsOneOnOneConversationResolver = mock<MLSOneOnOneConversationResolver>(mode = MockMode.autoUnit)
 
     override suspend fun withResolveConversationReturning(result: Either<CoreFailure, ConversationId>) {
-        coEvery {
+        everySuspend {
             mlsOneOnOneConversationResolver.invoke(any(), any(), any())
         }.returns(result)
     }

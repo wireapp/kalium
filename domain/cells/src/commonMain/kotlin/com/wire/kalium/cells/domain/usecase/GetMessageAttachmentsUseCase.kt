@@ -22,12 +22,10 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageAttachment
-import io.mockative.Mockable
 
 /**
  * Use case to get all attachments for a message.
  */
-@Mockable
 public fun interface GetMessageAttachmentsUseCase {
     public suspend operator fun invoke(messageId: String, conversationId: ConversationId): Either<StorageFailure, List<MessageAttachment>>
 }

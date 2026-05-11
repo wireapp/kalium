@@ -27,10 +27,12 @@ import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -98,15 +100,15 @@ internal class IsCurrentSessionNomadAccountUseCaseTest {
 
     private class Arrangement {
 
-        private val sessionRepository = mock(SessionRepository::class)
+        private val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
         private val useCase by lazy { IsCurrentSessionNomadAccountUseCase(sessionRepository) }
 
         suspend fun withCurrentSession(result: Either<StorageFailure, AccountInfo>) = apply {
-            coEvery { sessionRepository.currentSession() }.returns(result)
+            everySuspend { sessionRepository.currentSession() } returns result
         }
 
         suspend fun withFullAccountInfo(userId: UserId, result: Either<StorageFailure, Account>) = apply {
-            every { sessionRepository.fullAccountInfo(eq(userId)) }.returns(result)
+            every { sessionRepository.fullAccountInfo(eq(userId)) } returns result
         }
 
         fun arrange() = this to useCase

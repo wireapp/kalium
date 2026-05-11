@@ -26,7 +26,6 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncStateObserver
-import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 
@@ -34,7 +33,6 @@ import kotlinx.coroutines.async
  * MLSClientManager is responsible for registering an MLS client when a user
  * upgrades to an MLS supported build.
  */
-@Mockable
 internal interface MLSClientManager {
     suspend operator fun invoke()
 }

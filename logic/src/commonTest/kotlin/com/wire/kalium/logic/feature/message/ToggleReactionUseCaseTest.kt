@@ -37,13 +37,16 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matching
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import io.mockative.mock
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -52,7 +55,7 @@ import kotlin.test.assertEquals
 
 class ToggleReactionUseCaseTest {
 
-    // FIXME: Mockative doesn't properly generate Mocks when there is a Typealias
+    // FIXME: Mocking repositories generated from typealiases is not supported by the current setup
     //       with generic types, such as typealias Foo = Bar<Thing>
     //       So ReactionRepository is mocked manually
 
@@ -108,9 +111,9 @@ class ToggleReactionUseCaseTest {
 
         toggleReactionUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_ID, emojiReaction)
 
-        coVerify {
+        verifySuspend {
             arrangement.messageSender.sendMessage(
-                message = matches {
+                message = matching {
                     val content = it.content as MessageContent.Reaction
                     content.emojiSet.isEmpty() && content.messageId == TEST_MESSAGE_ID
                 },
@@ -164,7 +167,7 @@ class ToggleReactionUseCaseTest {
                 originalMessageId: String,
                 conversationId: ConversationId
             ): Either<StorageFailure, UserReactions> {
-                return Either.Right(setOf(emojiReaction))
+                return Either.Right(emptySet())
             }
         }
 
@@ -172,8 +175,8 @@ class ToggleReactionUseCaseTest {
 
         toggleReactionUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_ID, emojiReaction)
 
-        coVerify {
-            arrangement.messageSender.sendMessage(matches {
+        verifySuspend {
+            arrangement.messageSender.sendMessage(matching {
                 val content = it.content as MessageContent.Reaction
                 content.emojiSet.size == 1 &&
                         content.emojiSet.first() == emojiReaction &&
@@ -185,20 +188,20 @@ class ToggleReactionUseCaseTest {
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
         val currentClientIdProvider: CurrentClientIdProvider = CurrentClientIdProvider { Either.Right(TEST_CURRENT_CLIENT) }
-        val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
-        val messageSender: MessageSender = mock(MessageSender::class)
+        val slowSyncRepository: SlowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
+        val messageSender: MessageSender = mock<MessageSender>(mode = MockMode.autoUnit)
         val persistenceEventHookNotifier: PersistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
 
         fun withSlowSyncCompleted() = apply {
             every {
                 slowSyncRepository.slowSyncStatus
-            }.returns(MutableStateFlow(SlowSyncStatus.Complete))
+            } returns MutableStateFlow(SlowSyncStatus.Complete)
         }
 
         suspend fun withMessageSendingReturning(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(either)
+            } returns either
         }
 
         suspend fun arrange(reactionRepository: ReactionRepository) = this to ToggleReactionUseCase(

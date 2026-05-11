@@ -17,14 +17,11 @@
  */
 package com.wire.kalium.persistence.dao.publiclink
 
-import io.mockative.Mockable
-
 data class PublicLinkEntity(
     val id: String,
     val password: String,
 )
 
-@Mockable
 interface PublicLinkDao {
     suspend fun insert(id: String, password: String)
     suspend fun update(id: String, password: String)

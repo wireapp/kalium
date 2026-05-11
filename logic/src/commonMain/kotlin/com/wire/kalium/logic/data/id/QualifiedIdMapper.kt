@@ -22,9 +22,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.common.logger.logStructuredJson
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.Mockable
 
-@Mockable
 public interface QualifiedIdMapper {
     public fun fromStringToQualifiedID(id: String): QualifiedID
 }

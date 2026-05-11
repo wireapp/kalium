@@ -25,12 +25,14 @@ import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.consumeAsFlow
@@ -43,9 +45,9 @@ import kotlin.test.assertContentEquals
 
 class ObserveConversationMembersUseCaseTest {
 
-        private val conversationRepository = mock(ConversationRepository::class)
+        private val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
 
-        private val userRepository = mock(UserRepository::class)
+        private val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
 
     private lateinit var observeConversationMembers: ObserveConversationMembersUseCase
 
@@ -61,23 +63,23 @@ class ObserveConversationMembersUseCaseTest {
     fun givenAConversationID_whenObservingMembers_thenConversationRepositoryIsCalledWithCorrectID() = runTest {
         val conversationID = TestConversation.ID
 
-        coEvery {
+        everySuspend {
             userRepository.observeSelfUser()
-        }.returns(flowOf(TestUser.SELF))
+        } returns flowOf(TestUser.SELF)
 
-        coEvery {
+        everySuspend {
             userRepository.getKnownUser(any())
-        }.returns(flowOf())
+        } returns flowOf()
 
-        coEvery {
+        everySuspend {
             conversationRepository.observeConversationMembers(any())
-        }.returns(flowOf())
+        } returns flowOf()
 
         observeConversationMembers(conversationID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             conversationRepository.observeConversationMembers(eq(conversationID))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -90,13 +92,13 @@ class ObserveConversationMembersUseCaseTest {
             Member(firstSelfUser.id, Member.Role.Member)
         )
 
-        coEvery {
+        everySuspend {
             userRepository.observeUser(eq(firstSelfUser.id))
-        }.returns(selfUserUpdates.asFlow())
+        } returns selfUserUpdates.asFlow()
 
-        coEvery {
+        everySuspend {
             conversationRepository.observeConversationMembers(any())
-        }.returns(flowOf(members))
+        } returns flowOf(members)
 
         observeConversationMembers(conversationID).test {
             assertContentEquals(listOf(MemberDetails(firstSelfUser, Member.Role.Member)), awaitItem())
@@ -114,18 +116,17 @@ class ObserveConversationMembersUseCaseTest {
             Member(firstOtherUser.id, Member.Role.Member)
         )
 
-        coEvery {
+        everySuspend {
             userRepository.observeUser(eq(firstOtherUser.id))
-        }.returns(
+        } returns
             flow {
                 emit(firstOtherUser)
                 emit(secondOtherUser)
             }
-        )
 
-        coEvery {
+        everySuspend {
             conversationRepository.observeConversationMembers(any())
-        }.returns(flowOf(members))
+        } returns flowOf(members)
 
         observeConversationMembers(conversationID).test {
             assertContentEquals(listOf(MemberDetails(firstOtherUser, Member.Role.Member)), awaitItem())
@@ -141,17 +142,17 @@ class ObserveConversationMembersUseCaseTest {
         val selfUser = TestUser.SELF
         val membersListChannel = Channel<List<Member>>(Channel.UNLIMITED)
 
-        coEvery {
+        everySuspend {
             userRepository.observeUser(eq(TestUser.SELF.id))
-        }.returns(flowOf(selfUser))
+        } returns flowOf(selfUser)
 
-        coEvery {
+        everySuspend {
             userRepository.observeUser(eq(otherUser.id))
-        }.returns(flowOf(otherUser))
+        } returns flowOf(otherUser)
 
-        coEvery {
+        everySuspend {
             conversationRepository.observeConversationMembers(eq(conversationID))
-        }.returns(membersListChannel.consumeAsFlow())
+        } returns membersListChannel.consumeAsFlow()
 
         observeConversationMembers(conversationID).test {
 
@@ -177,17 +178,17 @@ class ObserveConversationMembersUseCaseTest {
         val selfUser = TestUser.SELF
         val membersListChannel = Channel<List<Member>>(Channel.UNLIMITED)
 
-        coEvery {
+        everySuspend {
             userRepository.observeUser(eq(TestUser.SELF.id))
-        }.returns(flowOf(selfUser))
+        } returns flowOf(selfUser)
 
-        coEvery {
+        everySuspend {
             userRepository.observeUser(eq(otherUser.id))
-        }.returns(flowOf(otherUser))
+        } returns flowOf(otherUser)
 
-        coEvery {
+        everySuspend {
             conversationRepository.observeConversationMembers(eq(conversationID))
-        }.returns(membersListChannel.consumeAsFlow())
+        } returns membersListChannel.consumeAsFlow()
 
         observeConversationMembers(conversationID).test {
 

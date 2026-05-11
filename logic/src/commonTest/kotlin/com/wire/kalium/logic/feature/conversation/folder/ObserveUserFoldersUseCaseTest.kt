@@ -22,10 +22,12 @@ import com.wire.kalium.logic.data.conversation.ConversationFolder
 import com.wire.kalium.logic.data.conversation.FolderType
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -51,13 +53,13 @@ class ObserveUserFoldersUseCaseTest {
 
         assertEquals(userFolders, result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.observeFolders()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationFolderRepository.fetchConversationFolders()
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -71,13 +73,13 @@ class ObserveUserFoldersUseCaseTest {
 
         assertEquals(emptyList(), result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.observeFolders()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.fetchConversationFolders()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -94,13 +96,13 @@ class ObserveUserFoldersUseCaseTest {
 
         assertEquals(emptyList(), result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.observeFolders()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationFolderRepository.fetchConversationFolders()
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -113,33 +115,33 @@ class ObserveUserFoldersUseCaseTest {
 
         assertEquals(emptyList(), result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.observeFolders()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationFolderRepository.fetchConversationFolders()
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement {
 
-        val conversationFolderRepository = mock(ConversationFolderRepository::class)
+        val conversationFolderRepository = mock<ConversationFolderRepository>(mode = MockMode.autoUnit)
 
         private val observeUserFoldersUseCase = ObserveUserFoldersUseCaseImpl(
             conversationFolderRepository
         )
 
         suspend fun withObserveFolders(flow: Flow<Either<CoreFailure, List<ConversationFolder>>>) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.observeFolders()
-            }.returns(flow)
+            } returns flow
         }
 
         suspend fun withFetchConversationFolders(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.fetchConversationFolders()
-            }.returns(either)
+            } returns either
         }
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to observeUserFoldersUseCase }

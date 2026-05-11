@@ -35,15 +35,16 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageExtensions
 import com.wire.kalium.persistence.db.ReadDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -77,15 +78,15 @@ class MessageRepositoryExtensionsTest {
             startingOffset
         )
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.messageDaoExtensions.getPagerForConversation(
-                eq(CONVERSATION_ID_ENTITY), matches {
+                eq(CONVERSATION_ID_ENTITY), matching {
                     val list = it.toList()
                     list.size == 1 && list[0] == MessageEntity.Visibility.VISIBLE
                 }, eq(pagingConfig),
                 eq(startingOffset)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -104,14 +105,14 @@ class MessageRepositoryExtensionsTest {
             pageSize = 5,
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(
                 conversationId = eq(TestConversation.ID),
                 pageSize = eq(5),
                 beforeTimestampMs = eq(1234L),
                 onInvalidate = any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -130,8 +131,7 @@ class MessageRepositoryExtensionsTest {
             pageSize = 5,
         )
 
-        coVerify { arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) }
-            .wasInvoked(exactly = 0)
+        verifySuspend(VerifyMode.not) { arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) }
     }
 
     @Test
@@ -148,15 +148,14 @@ class MessageRepositoryExtensionsTest {
         )
 
         assertEquals(expectedResult, result)
-        coVerify { arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) }
-            .wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) }
     }
 
     private data class Arrangement(
-        val messageDaoExtensions: MessageExtensions = mock(MessageExtensions::class),
-        val messageDAO: MessageDAO = mock(MessageDAO::class),
-        val messageMapper: MessageMapper = mock(MessageMapper::class),
-        val pagingCoordinator: NomadMessagePagingCoordinator = mock(NomadMessagePagingCoordinator::class),
+        val messageDaoExtensions: MessageExtensions = mock<MessageExtensions>(),
+        val messageDAO: MessageDAO = mock<MessageDAO>(),
+        val messageMapper: MessageMapper = mock<MessageMapper>(),
+        val pagingCoordinator: NomadMessagePagingCoordinator = mock<NomadMessagePagingCoordinator>(),
         val usePagingCoordinator: Boolean = false,
     ) {
         init {
@@ -172,21 +171,20 @@ class MessageRepositoryExtensionsTest {
             }
 
         suspend fun withOldestTimestamp(timestamp: Long?): Arrangement = copy().also {
-            coEvery {
+            everySuspend {
                 it.messageDAO.getOldestVisibleMessageTimestampByConversationId(CONVERSATION_ID_ENTITY)
-            }.returns(timestamp)
+            } returns timestamp
         }
 
         suspend fun withPagingCoordinator(): Arrangement = copy(usePagingCoordinator = true).also {
-            coEvery {
+            everySuspend {
                 it.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any())
-            }.returns(NomadMessagePagingResult(hasMore = true))
+            } returns NomadMessagePagingResult(hasMore = true)
         }
 
         suspend fun withPagingCoordinatorResult(result: NomadMessagePagingResult): Arrangement =
             copy(usePagingCoordinator = true).also {
-                coEvery { it.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) }
-                    .returns(result)
+                everySuspend { it.pagingCoordinator.fetchOlderMessagesIfNeeded(any(), any(), any(), any()) } returns result
             }
 
         fun withoutPagingCoordinator(): Arrangement = copy(usePagingCoordinator = false)

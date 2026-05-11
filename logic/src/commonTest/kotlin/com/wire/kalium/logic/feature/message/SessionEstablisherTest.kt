@@ -33,16 +33,19 @@ import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -84,9 +87,9 @@ class SessionEstablisherTest {
 
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(arrangement.proteusContext, listOf(TEST_RECIPIENT_1))
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.preKeyRepository.establishSessions(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -97,7 +100,7 @@ class SessionEstablisherTest {
 
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(arrangement.proteusContext, listOf(TEST_RECIPIENT_1))
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusContext.doesSessionExist(
                 eq(
                     CryptoSessionId(
@@ -106,7 +109,7 @@ class SessionEstablisherTest {
                     )
                 )
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -129,28 +132,28 @@ class SessionEstablisherTest {
         val TEST_RECIPIENT_1 = Recipient(TestUser.USER_ID, listOf(TestClient.CLIENT_ID))
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val preKeyRepository = mock(PreKeyRepository::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val preKeyRepository = mock<PreKeyRepository>(mode = MockMode.autoUnit)
 
         private val sessionEstablisher: SessionEstablisher =
             SessionEstablisherImpl(preKeyRepository)
 
         suspend fun withEstablishSessions(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
-            coEvery {
+            everySuspend {
                 preKeyRepository.establishSessions(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withDoesSessionExist(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 proteusContext.doesSessionExist(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withDoesSessionExistThrows(throwable: Throwable) = apply {
-            coEvery {
+            everySuspend {
                 proteusContext.doesSessionExist(any())
-            }.throws(throwable)
+            } throws throwable
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit) = let {

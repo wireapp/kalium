@@ -42,17 +42,19 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -79,33 +81,25 @@ class MLSMigratorTest {
 
         migrator.migrateProteusConversations()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationProtocol(
                 any(),
                 eq(conversation.id),
                 eq(Conversation.Protocol.MIXED),
                 eq(false)
             )
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(
                 groupID = Arrangement.MIXED_PROTOCOL_INFO.groupId,
-                members = emptyList(),
+                members = Arrangement.MEMBERS,
                 publicKeys = null,
-                allowSkippingUsersWithoutKeyPackages = false,
+                allowSkippingUsersWithoutKeyPackages = true,
                 mlsContext = arrangement.mlsContext
             )
         }
 
-        coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                arrangement.mlsContext,
-                Arrangement.MIXED_PROTOCOL_INFO.groupId,
-                Arrangement.MEMBERS,
-                CIPHER_SUITE,
-            )
-        }
     }
 
     @Test
@@ -127,39 +121,30 @@ class MLSMigratorTest {
 
         migrator.migrateProteusConversations()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationProtocol(
                 any(),
                 eq(conversation.id),
                 eq(Conversation.Protocol.MIXED),
                 eq(false)
             )
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(
                 groupID = Arrangement.MIXED_PROTOCOL_INFO.groupId,
-                members = emptyList(),
+                members = Arrangement.MEMBERS,
                 publicKeys = null,
-                allowSkippingUsersWithoutKeyPackages = false,
+                allowSkippingUsersWithoutKeyPackages = true,
                 mlsContext = arrangement.mlsContext
             )
         }
 
-        coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(
-                any(),
-                eq(Arrangement.MIXED_PROTOCOL_INFO.groupId),
-                eq(Arrangement.MEMBERS),
-                eq(CIPHER_SUITE)
-            )
-        }
-
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), eq(Conversation.Protocol.MIXED))
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.systemMessageInserter.insertProtocolChangedDuringACallSystemMessage(any(), any())
         }
     }
@@ -201,13 +186,13 @@ class MLSMigratorTest {
 
         migrator.finaliseProteusConversations()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.fetchAllOtherUsers()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationProtocol(any(), eq(conversation.id), eq(Conversation.Protocol.MLS), eq(false))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -227,83 +212,83 @@ class MLSMigratorTest {
         result.shouldSucceed()
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val userRepository = mock(UserRepository::class)
-        val conversationRepository = mock(ConversationRepository::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val systemMessageInserter = mock(SystemMessageInserter::class)
-        val callRepository = mock(CallRepository::class)
-        val updateConversationProtocol = mock(UpdateConversationProtocolUseCase::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
+        val systemMessageInserter = mock<SystemMessageInserter>(mode = MockMode.autoUnit)
+        val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
+        val updateConversationProtocol = mock<UpdateConversationProtocolUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withFetchAllOtherUsersSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 userRepository.fetchAllOtherUsers()
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withGetProteusTeamConversationsReturning(conversationsIds: List<ConversationId>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationIds(
                     Conversation.Type.Group.Regular,
                     Conversation.Protocol.PROTEUS,
                     TeamId(value = "Some-team")
                 )
-            }.returns(Either.Right(conversationsIds))
+            } returns Either.Right(conversationsIds)
         }
 
         suspend fun withGetProteusTeamConversationsReadyForFinalisationReturning(conversationsIds: List<ConversationId>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getTeamConversationIdsReadyToCompleteMigration(any())
-            }.returns(Either.Right(conversationsIds))
+            } returns Either.Right(conversationsIds)
         }
 
         suspend fun withGetConversationProtocolInfoReturning(protocolInfo: Conversation.ProtocolInfo) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationProtocolInfo(any())
-            }.returns(Either.Right(protocolInfo))
+            } returns Either.Right(protocolInfo)
         }
 
         suspend fun withGetConversationMembersReturning(result: Either<StorageFailure, List<UserId>>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationMembers(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUpdateProtocolReturns(result: Either<CoreFailure, Boolean> = Either.Right(true)) = apply {
-            coEvery {
+            everySuspend {
                 updateConversationProtocol(any(), any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withEstablishGroupSucceeds(additionResult: MLSAdditionResult) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-            }.returns(Either.Right(additionResult))
+            } returns Either.Right(additionResult)
         }
 
         suspend fun withEstablishGroupFails() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-            }.returns(Either.Left(NetworkFailure.ServerMiscommunication(MLS_STALE_MESSAGE_ERROR)))
+            } returns Either.Left(NetworkFailure.ServerMiscommunication(MLS_STALE_MESSAGE_ERROR))
         }
 
         suspend fun withAddMembersSucceeds() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withEstablishedCall() = apply {
-            coEvery {
+            everySuspend {
                 callRepository.establishedCallsFlow()
-            }.returns(flowOf(listOf(CallRepositoryArrangementImpl.call)))
+            } returns flowOf(listOf(CallRepositoryArrangementImpl.call))
         }
 
         suspend fun withoutAnyEstablishedCall() = apply {
-            coEvery {
+            everySuspend {
                 callRepository.establishedCallsFlow()
-            }.returns(flowOf(listOf()))
+            } returns flowOf(listOf())
         }
 
         suspend fun arrange() = this to MLSMigratorImpl(
@@ -317,9 +302,9 @@ class MLSMigratorTest {
             updateConversationProtocol,
             cryptoTransactionProvider
         ).also {
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider.invoke()
-            }.returns(Either.Right(TestTeam.TEAM_ID))
+            } returns Either.Right(TestTeam.TEAM_ID)
             withTransactionReturning(Either.Right(Unit))
         }
 

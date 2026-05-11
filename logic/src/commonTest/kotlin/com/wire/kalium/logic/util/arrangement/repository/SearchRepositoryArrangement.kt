@@ -24,13 +24,12 @@ import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface SearchRepositoryArrangement {
 
@@ -38,10 +37,10 @@ internal interface SearchRepositoryArrangement {
 
     suspend fun withSearchUserRemoteDirectory(
         result: Either<CoreFailure, UserSearchResult>,
-        searchQuery: Matcher<String> = AnyMatcher(valueOf()),
-        domain: Matcher<String> = AnyMatcher(valueOf()),
-        maxResultSize: Matcher<Int?> = AnyMatcher(valueOf()),
-        searchUsersOptions: Matcher<SearchUsersOptions> = AnyMatcher(valueOf())
+        searchQuery: (String) -> Boolean = { true },
+        domain: (String) -> Boolean = { true },
+        maxResultSize: (Int?) -> Boolean = { true },
+        searchUsersOptions: (SearchUsersOptions) -> Boolean = { true }
     )
 
     suspend fun withGetKnownContacts(
@@ -50,32 +49,32 @@ internal interface SearchRepositoryArrangement {
 
     suspend fun withSearchLocalByName(
         result: Either<StorageFailure, List<UserSearchDetails>>,
-        searchQuery: Matcher<String> = AnyMatcher(valueOf()),
+        searchQuery: (String) -> Boolean = { true },
     )
 
     suspend fun withSearchByHandle(
         result: Either<StorageFailure, List<UserSearchDetails>>,
-        searchQuery: Matcher<String> = AnyMatcher(valueOf()),
+        searchQuery: (String) -> Boolean = { true },
     )
 }
 
 internal class SearchRepositoryArrangementImpl : SearchRepositoryArrangement {
 
-    override val searchUserRepository: SearchUserRepository = mock(SearchUserRepository::class)
+    override val searchUserRepository: SearchUserRepository = mock<SearchUserRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withSearchUserRemoteDirectory(
         result: Either<CoreFailure, UserSearchResult>,
-        searchQuery: Matcher<String>,
-        domain: Matcher<String>,
-        maxResultSize: Matcher<Int?>,
-        searchUsersOptions: Matcher<SearchUsersOptions>
+        searchQuery: (String) -> Boolean,
+        domain: (String) -> Boolean,
+        maxResultSize: (Int?) -> Boolean,
+        searchUsersOptions: (SearchUsersOptions) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             searchUserRepository.searchUserRemoteDirectory(
-                matches { searchQuery.matches(it) },
-                matches { domain.matches(it) },
-                matches { maxResultSize.matches(it) },
-                matches { searchUsersOptions.matches(it) }
+                matches { searchQuery(it) },
+                matches { domain(it) },
+                matches { maxResultSize(it) },
+                matches { searchUsersOptions(it) }
             )
         }.returns(result)
     }
@@ -83,18 +82,18 @@ internal class SearchRepositoryArrangementImpl : SearchRepositoryArrangement {
     override suspend fun withGetKnownContacts(
         result: Either<StorageFailure, List<UserSearchDetails>>,
     ) {
-        coEvery {
+        everySuspend {
             searchUserRepository.getKnownContacts(any())
         }.returns(result)
     }
 
     override suspend fun withSearchLocalByName(
         result: Either<StorageFailure, List<UserSearchDetails>>,
-        searchQuery: Matcher<String>,
+        searchQuery: (String) -> Boolean,
     ) {
-        coEvery {
+        everySuspend {
             searchUserRepository.searchLocalByName(
-                matches { searchQuery.matches(it) },
+                matches { searchQuery(it) },
                 any()
             )
         }.returns(result)
@@ -102,11 +101,11 @@ internal class SearchRepositoryArrangementImpl : SearchRepositoryArrangement {
 
     override suspend fun withSearchByHandle(
         result: Either<StorageFailure, List<UserSearchDetails>>,
-        searchQuery: Matcher<String>,
+        searchQuery: (String) -> Boolean,
     ) {
-        coEvery {
+        everySuspend {
             searchUserRepository.searchLocalByHandle(
-                matches { searchQuery.matches(it) },
+                matches { searchQuery(it) },
                 any()
             )
         }.returns(result)

@@ -32,22 +32,22 @@ import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
-private val MOCKATIVE_USER_ID = UserId("mockative-user", "mockative.test")
-private val MOCKATIVE_CONVERSATION_ID = ConversationId("mockative-conversation", "mockative.test")
-private val MOCKATIVE_CLIENT_ID = ClientId("mockative-client")
-private val MOCKATIVE_TEAM_ID = TeamId("mockative-team")
-private val MOCKATIVE_USER_UPDATE_EVENT = Event.User.Update(
-    id = "mockative-event",
-    userId = MOCKATIVE_USER_ID,
+private val MOKKERY_USER_ID = UserId("mokkery-user", "mokkery.test")
+private val MOKKERY_CONVERSATION_ID = ConversationId("mokkery-conversation", "mokkery.test")
+private val MOKKERY_CLIENT_ID = ClientId("mokkery-client")
+private val MOKKERY_TEAM_ID = TeamId("mokkery-team")
+private val MOKKERY_USER_UPDATE_EVENT = Event.User.Update(
+    id = "mokkery-event",
+    userId = MOKKERY_USER_ID,
     accentId = null,
     ssoIdDeleted = null,
     name = null,
@@ -61,8 +61,8 @@ private val MOCKATIVE_USER_UPDATE_EVENT = Event.User.Update(
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal interface UserRepositoryArrangement {
     val userRepository: UserRepository
-    suspend fun withDefederateUser(result: Either<CoreFailure, Unit>, userId: Matcher<UserId> = AnyMatcher(MOCKATIVE_USER_ID))
-    suspend fun withObserveUser(result: Flow<User?> = flowOf(TestUser.OTHER), userId: Matcher<UserId> = AnyMatcher(MOCKATIVE_USER_ID))
+    suspend fun withDefederateUser(result: Either<CoreFailure, Unit>, userId: (UserId) -> Boolean = { true })
+    suspend fun withObserveUser(result: Flow<User?> = flowOf(TestUser.OTHER), userId: (UserId) -> Boolean = { true })
 
     suspend fun withUpdateUserSuccess()
 
@@ -70,7 +70,7 @@ internal interface UserRepositoryArrangement {
 
     suspend fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
         result: List<ConversationId>,
-        userIdMatcher: Matcher<UserId> = AnyMatcher(MOCKATIVE_USER_ID)
+        userIdMatcher: (UserId) -> Boolean = { true }
     )
 
     suspend fun withSelfUserReturning(result: Either<StorageFailure, SelfUser>)
@@ -91,33 +91,33 @@ internal interface UserRepositoryArrangement {
 
     suspend fun withFetchUsersByIdReturning(
         result: Either<CoreFailure, Boolean>,
-        userIdList: Matcher<Set<UserId>> = AnyMatcher(emptySet())
+        userIdList: (Set<UserId>) -> Boolean = { true }
     )
 
     suspend fun withFetchUsersIfUnknownByIdsReturning(
         result: Either<CoreFailure, Unit>,
-        userIdList: Matcher<Set<UserId>> = AnyMatcher(emptySet())
+        userIdList: (Set<UserId>) -> Boolean = { true }
     )
 
     suspend fun withIsAtLeastOneUserATeamMember(
         result: Either<StorageFailure, Boolean>,
-        userIdList: Matcher<List<UserId>> = AnyMatcher(emptyList())
+        userIdList: (List<UserId>) -> Boolean = { true }
     )
 
-    suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
-    suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = AnyMatcher(MOCKATIVE_USER_ID))
+    suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: (List<UserId>) -> Boolean)
+    suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: (UserId) -> Boolean = { true })
     suspend fun withUpdateActiveOneOnOneConversationIfNotSet(
         result: Either<CoreFailure, Unit>,
-        userId: Matcher<UserId> = AnyMatcher(MOCKATIVE_USER_ID),
-        conversationId: Matcher<ConversationId> = AnyMatcher(MOCKATIVE_CONVERSATION_ID)
+        userId: (UserId) -> Boolean = { true },
+        conversationId: (ConversationId) -> Boolean = { true }
     )
 
-    suspend fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId> = AnyMatcher(MOCKATIVE_USER_ID))
+    suspend fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: (UserId) -> Boolean = { true })
 
     suspend fun withIsClientMlsCapable(
         result: Either<StorageFailure, Boolean>,
-        userId: Matcher<UserId> = AnyMatcher(MOCKATIVE_USER_ID),
-        clientId: Matcher<ClientId> = AnyMatcher(MOCKATIVE_CLIENT_ID)
+        userId: (UserId) -> Boolean = { true },
+        clientId: (ClientId) -> Boolean = { true }
     )
 
     suspend fun withFetchSelfUser(result: Either<CoreFailure, Unit>)
@@ -126,157 +126,157 @@ internal interface UserRepositoryArrangement {
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
 
-    override val userRepository: UserRepository = mock(UserRepository::class)
+    override val userRepository: UserRepository = mock<UserRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withFetchSelfUser(result: Either<CoreFailure, Unit>) {
-        coEvery {
+        everySuspend {
             userRepository.fetchSelfUser()
         }.returns(result)
     }
 
     override suspend fun withDefederateUser(
         result: Either<CoreFailure, Unit>,
-        userId: Matcher<UserId>
+        userId: (UserId) -> Boolean
     ) {
-        coEvery {
-            userRepository.defederateUser(matches(MOCKATIVE_USER_ID) { userId.matches(it) })
+        everySuspend {
+            userRepository.defederateUser(matches { userId(it) })
         }.returns(result)
     }
 
-    override suspend fun withObserveUser(result: Flow<User?>, userId: Matcher<UserId>) {
-        coEvery {
-            userRepository.observeUser(matches(MOCKATIVE_USER_ID) { userId.matches(it) })
+    override suspend fun withObserveUser(result: Flow<User?>, userId: (UserId) -> Boolean) {
+        everySuspend {
+            userRepository.observeUser(matches { userId(it) })
         }.returns(result)
     }
 
     override suspend fun withUpdateUserSuccess() {
-        coEvery {
-            userRepository.updateUserFromEvent(any(MOCKATIVE_USER_UPDATE_EVENT))
+        everySuspend {
+            userRepository.updateUserFromEvent(any())
         }.returns(Either.Right(Unit))
     }
 
     override suspend fun withUpdateUserFailure(coreFailure: CoreFailure) {
-        coEvery {
-            userRepository.updateUserFromEvent(any(MOCKATIVE_USER_UPDATE_EVENT))
+        everySuspend {
+            userRepository.updateUserFromEvent(any())
         }.returns(Either.Left(coreFailure))
     }
 
     override suspend fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
         result: List<ConversationId>,
-        userIdMatcher: Matcher<UserId>
+        userIdMatcher: (UserId) -> Boolean
     ) {
-        coEvery {
-            userRepository.markUserAsDeletedAndRemoveFromGroupConversations(matches(MOCKATIVE_USER_ID) { userIdMatcher.matches(it) })
+        everySuspend {
+            userRepository.markUserAsDeletedAndRemoveFromGroupConversations(matches { userIdMatcher(it) })
         }
             .returns(Either.Right(result))
     }
 
     override suspend fun withSelfUserReturning(result: Either<StorageFailure, SelfUser>) {
-        coEvery {
+        everySuspend {
             userRepository.getSelfUser()
         }.returns(result)
     }
 
     override suspend fun withObservingSelfUserReturning(selfUserFlow: Flow<SelfUser>) {
-        coEvery {
+        everySuspend {
             userRepository.observeSelfUser()
         }.returns(selfUserFlow)
     }
 
     override suspend fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>) {
-        coEvery {
-            userRepository.userById(any(MOCKATIVE_USER_ID))
+        everySuspend {
+            userRepository.userById(any())
         }.returns(result)
     }
 
     override suspend fun withUpdateOneOnOneConversationReturning(result: Either<CoreFailure, Unit>) {
-        coEvery {
-            userRepository.updateActiveOneOnOneConversation(any(MOCKATIVE_USER_ID), any(MOCKATIVE_CONVERSATION_ID))
+        everySuspend {
+            userRepository.updateActiveOneOnOneConversation(any(), any())
         }.returns(result)
     }
 
     override suspend fun withGetKnownUserReturning(result: Flow<OtherUser?>) {
-        coEvery {
-            userRepository.getKnownUser(any(MOCKATIVE_USER_ID))
+        everySuspend {
+            userRepository.getKnownUser(any())
         }.returns(result)
     }
 
     override suspend fun withGetUsersWithOneOnOneConversationReturning(result: List<OtherUser>) {
-        coEvery {
+        everySuspend {
             userRepository.getUsersWithOneOnOneConversation()
         }.returns(result)
     }
 
     override suspend fun withFetchAllOtherUsersReturning(result: Either<CoreFailure, Unit>) {
-        coEvery {
+        everySuspend {
             userRepository.fetchAllOtherUsers()
         }.returns(result)
     }
 
     override suspend fun withFetchUserInfoReturning(result: Either<CoreFailure, Unit>) {
-        coEvery {
-            userRepository.fetchUserInfo(any(MOCKATIVE_USER_ID))
+        everySuspend {
+            userRepository.fetchUserInfo(any())
         }.returns(result)
     }
 
     override suspend fun withFetchUsersByIdReturning(
         result: Either<CoreFailure, Boolean>,
-        userIdList: Matcher<Set<UserId>>
+        userIdList: (Set<UserId>) -> Boolean
     ) {
-        coEvery {
-            userRepository.fetchUsersByIds(matches(emptySet()) { userIdList.matches(it) })
+        everySuspend {
+            userRepository.fetchUsersByIds(matches { userIdList(it) })
         }.returns(result)
     }
 
-    override suspend fun withFetchUsersIfUnknownByIdsReturning(result: Either<CoreFailure, Unit>, userIdList: Matcher<Set<UserId>>) {
-        coEvery {
-            userRepository.fetchUsersIfUnknownByIds(matches(emptySet()) { userIdList.matches(it) })
+    override suspend fun withFetchUsersIfUnknownByIdsReturning(result: Either<CoreFailure, Unit>, userIdList: (Set<UserId>) -> Boolean) {
+        everySuspend {
+            userRepository.fetchUsersIfUnknownByIds(matches { userIdList(it) })
         }.returns(result)
     }
 
-    override suspend fun withIsAtLeastOneUserATeamMember(result: Either<StorageFailure, Boolean>, userIdList: Matcher<List<UserId>>) {
-        coEvery {
-            userRepository.isAtLeastOneUserATeamMember(matches(emptyList()) { userIdList.matches(it) }, any(MOCKATIVE_TEAM_ID))
+    override suspend fun withIsAtLeastOneUserATeamMember(result: Either<StorageFailure, Boolean>, userIdList: (List<UserId>) -> Boolean) {
+        everySuspend {
+            userRepository.isAtLeastOneUserATeamMember(matches { userIdList(it) }, any())
         }.returns(result)
     }
 
-    override suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>) {
-        coEvery {
-            userRepository.markAsDeleted(matches(emptyList()) { userId.matches(it) })
+    override suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: (List<UserId>) -> Boolean) {
+        everySuspend {
+            userRepository.markAsDeleted(matches { userId(it) })
         }.returns(result)
     }
 
-    override suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<QualifiedID>) {
-        coEvery { userRepository.getOneOnOnConversationId(matches(MOCKATIVE_USER_ID) { userId.matches(it) }) }
+    override suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: (QualifiedID) -> Boolean) {
+        everySuspend { userRepository.getOneOnOnConversationId(matches { userId(it) }) }
             .returns(result)
     }
 
     override suspend fun withUpdateActiveOneOnOneConversationIfNotSet(
         result: Either<CoreFailure, Unit>,
-        userId: Matcher<UserId>,
-        conversationId: Matcher<ConversationId>
+        userId: (UserId) -> Boolean,
+        conversationId: (ConversationId) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             userRepository.updateActiveOneOnOneConversationIfNotSet(
-                matches(MOCKATIVE_USER_ID) { userId.matches(it) },
-                matches(MOCKATIVE_CONVERSATION_ID) { conversationId.matches(it) })
+                matches { userId(it) },
+                matches { conversationId(it) })
         }
             .returns(result)
     }
 
-    override suspend fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>) {
-        coEvery { userRepository.getNameAndHandle(matches(MOCKATIVE_USER_ID) { userId.matches(it) }) }.returns(result)
+    override suspend fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: (UserId) -> Boolean) {
+        everySuspend { userRepository.getNameAndHandle(matches { userId(it) }) }.returns(result)
     }
 
     override suspend fun withIsClientMlsCapable(
         result: Either<StorageFailure, Boolean>,
-        userId: Matcher<UserId>,
-        clientId: Matcher<ClientId>
+        userId: (UserId) -> Boolean,
+        clientId: (ClientId) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             userRepository.isClientMlsCapable(
-                userId = matches(MOCKATIVE_USER_ID) { userId.matches(it) },
-                clientId = matches(MOCKATIVE_CLIENT_ID) { clientId.matches(it) }
+                userId = matches { userId(it) },
+                clientId = matches { clientId(it) }
             )
         }.returns(result)
     }

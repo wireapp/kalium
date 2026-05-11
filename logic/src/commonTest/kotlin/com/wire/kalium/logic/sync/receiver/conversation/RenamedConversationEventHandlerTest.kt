@@ -23,11 +23,14 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -44,13 +47,13 @@ class RenamedConversationEventHandlerTest {
         eventHandler.handle(event)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDao.updateConversationName(any(), any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 persistMessage.invoke(any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -65,19 +68,19 @@ class RenamedConversationEventHandlerTest {
         eventHandler.handle(event)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationDao.updateConversationName(any(), any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 persistMessage.invoke(any())
-            }.wasNotInvoked()
+            }
         }
     }
 
     private class Arrangement {
-        val persistMessage = mock(PersistMessageUseCase::class)
-        val conversationDao = mock(ConversationDAO::class)
+        val persistMessage = mock<PersistMessageUseCase>()
+        val conversationDao = mock<ConversationDAO>(mode = MockMode.autoUnit)
 
         private val renamedConversationEventHandler: RenamedConversationEventHandler = RenamedConversationEventHandlerImpl(
             conversationDao,
@@ -85,21 +88,21 @@ class RenamedConversationEventHandlerTest {
         )
 
         suspend fun withRenamingConversationSuccess() = apply {
-            coEvery {
+            everySuspend {
                 conversationDao.updateConversationName(any(), any(), any())
-            }.returns(Unit)
+            } returns Unit
         }
 
         suspend fun withRenamingConversationFailure() = apply {
-            coEvery {
+            everySuspend {
                 conversationDao.updateConversationName(any(), any(), any())
-            }.throws(Exception("An error occurred persisting the data"))
+            } throws Exception("An error occurred persisting the data")
         }
 
         suspend fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 persistMessage.invoke(any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to renamedConversationEventHandler

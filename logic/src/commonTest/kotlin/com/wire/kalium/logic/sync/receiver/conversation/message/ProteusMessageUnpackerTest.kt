@@ -33,23 +33,21 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matchers.PredicateMatcher
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
@@ -64,7 +62,7 @@ class ProteusMessageUnpackerTest {
         val (arrangement, proteusUnpacker) = Arrangement()
             .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
             .withProtoContentMapperReturning(
-                AnyMatcher(valueOf()),
+                { true },
                 ProtoContent.Readable(
                     "uuid",
                     MessageContent.Unknown(),
@@ -83,9 +81,9 @@ class ProteusMessageUnpackerTest {
         )
 
         val decodedByteArray = Base64.decode(messageEvent.content)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.proteusContext.decryptMessage<Any>(eq(cryptoSessionId), matches { it.contentEquals(decodedByteArray) }, any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -111,11 +109,11 @@ class ProteusMessageUnpackerTest {
         val (arrangement, proteusUnpacker) = Arrangement()
             .withProteusClientDecryptingByteArray(decryptedData = emptyArray)
             .withProtoContentMapperReturning(
-                PredicateMatcher(PlainMessageBlob::class, valueOf()) { it.data.contentEquals(emptyArray) },
+                { it.data.contentEquals(emptyArray) },
                 externalInstructions
             )
             .withProtoContentMapperReturning(
-                PredicateMatcher(PlainMessageBlob::class, valueOf()) { it.data.contentEquals(protobufExternalContent.encodeToByteArray()) },
+                { it.data.contentEquals(protobufExternalContent.encodeToByteArray()) },
                 ProtoContent.Readable(
                     messageUid,
                     decryptedExternalContent,
@@ -139,22 +137,22 @@ class ProteusMessageUnpackerTest {
         }
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val protoContentMapper = mock(ProtoContentMapper::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val protoContentMapper = mock<ProtoContentMapper>()
 
         suspend fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
-            coEvery {
+            everySuspend {
                 proteusContext.decryptMessage<Either<*, *>>(any(), any(), any())
-            }.invokes { args ->
-                val lambda = args[2] as suspend (ByteArray) -> Either<*, *>
+            } calls {
+                val lambda = it.args[2] as suspend (ByteArray) -> Either<*, *>
                 lambda.invoke(decryptedData)
             }
         }
 
-        fun withProtoContentMapperReturning(plainBlobMatcher: Matcher<PlainMessageBlob>, protoContent: ProtoContent) = apply {
+        fun withProtoContentMapperReturning(plainBlobMatcher: (PlainMessageBlob) -> Boolean, protoContent: ProtoContent) = apply {
             every {
-                protoContentMapper.decodeFromProtobuf(matches { plainBlobMatcher.matches(it) })
-            }.returns(protoContent)
+                protoContentMapper.decodeFromProtobuf(matches { plainBlobMatcher(it) })
+            } returns protoContent
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {

@@ -26,9 +26,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.MLS_PROTOCOL_INFO
 import com.wire.kalium.logic.framework.TestConversation.NETWORK_ID
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -37,8 +35,6 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import io.mockative.coEvery
-import io.mockative.any as mockativeAny
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -120,14 +116,14 @@ class PersistConversationUseCaseTest {
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
+        val conversationRepository = mock<ConversationRepository>()
         val persistConversations = mock<PersistConversationsUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withGetConversationDetails(result: Either<StorageFailure, Conversation>) = apply {
-            coEvery {
-                conversationRepository.getConversationDetails(mockativeAny())
+            everySuspend {
+                conversationRepository.getConversationDetails(any())
             } returns result
         }
 

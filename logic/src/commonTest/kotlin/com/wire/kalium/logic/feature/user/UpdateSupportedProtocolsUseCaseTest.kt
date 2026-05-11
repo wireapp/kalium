@@ -25,6 +25,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.SupportedProtocol
@@ -35,8 +36,6 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCaseTest.Ar
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
@@ -345,7 +344,8 @@ class UpdateSupportedProtocolsUseCaseTest {
         }
     }
 
-    private class Arrangement : CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
+    private class Arrangement {
+        val currentClientIdProvider = mock<CurrentClientIdProvider>()
         val clientRepository = mock<ClientRepository>()
         val userRepository = mock<UserRepository>()
         val userConfigRepository = mock<UserConfigRepository>()
@@ -357,6 +357,10 @@ class UpdateSupportedProtocolsUseCaseTest {
             every {
                 featureSupport.isMLSSupported
             } returns supported
+        }
+
+        suspend fun withCurrentClientIdSuccess(currentClientId: ClientId) = apply {
+            everySuspend { currentClientIdProvider.invoke() } returns Either.Right(currentClientId)
         }
 
         suspend fun withGetSelfUserSuccessful(supportedProtocols: Set<SupportedProtocol>? = null) = apply {

@@ -37,16 +37,16 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.of
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -55,172 +55,145 @@ import kotlin.test.Test
 class MLSMigrationWorkerTest {
     @Test
     fun givenGettingMigrationConfigurationFails_whenRunningMigration_workerReturnsNoFailure() = runTest {
-        // given
         val (arrangement, mlsMigrationWorker) = Arrangement().withGetMLSMigrationConfigurationsReturns(NOT_FOUND_FAILURE).arrange()
 
-        // when
         val result = mlsMigrationWorker.runMigration()
 
-        // then
         result.shouldSucceed()
 
-        coVerify { arrangement.userConfigRepository.getMigrationConfiguration() }.wasInvoked(once)
-        coVerify { arrangement.mlsMigrator.migrateProteusConversations() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.getMigrationConfiguration() }
+        verifySuspend(VerifyMode.not) { arrangement.mlsMigrator.migrateProteusConversations() }
     }
 
     @Test
     fun givenMigrationIsDisabled_whenRunningMigration_workerReturnsNoFailure() = runTest {
-        // given
         val (arrangement, mlsMigrationWorker) = Arrangement()
             .withGetMLSMigrationConfigurationsReturns(MIGRATION_CONFIG.copy(status = Status.DISABLED).right()).arrange()
 
-        // when
         val result = mlsMigrationWorker.runMigration()
 
-        // then
         result.shouldSucceed()
 
-        coVerify { arrangement.userConfigRepository.getMigrationConfiguration() }.wasInvoked(once)
-        coVerify { arrangement.mlsMigrator.migrateProteusConversations() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.getMigrationConfiguration() }
+        verifySuspend(VerifyMode.not) { arrangement.mlsMigrator.migrateProteusConversations() }
     }
 
     @Test
     fun givenMigrationIsEnabledButNotStarted_whenRunningMigration_workerReturnsNoFailure() = runTest {
-        // given
         val (arrangement, mlsMigrationWorker) = Arrangement().withGetMLSMigrationConfigurationsReturns(
             MIGRATION_CONFIG.copy(startTime = Instant.DISTANT_FUTURE, status = Status.ENABLED).right()
         ).arrange()
 
-        // when
         val result = mlsMigrationWorker.runMigration()
 
-        // then
         result.shouldSucceed()
 
-        coVerify { arrangement.userConfigRepository.getMigrationConfiguration() }.wasInvoked(once)
-        coVerify { arrangement.mlsMigrator.migrateProteusConversations() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.getMigrationConfiguration() }
+        verifySuspend(VerifyMode.not) { arrangement.mlsMigrator.migrateProteusConversations() }
     }
 
     @Test
     fun givenMigrationIsDisabledButStarted_whenRunningMigration_workerReturnsNoFailure() = runTest {
-        // given
         val (arrangement, mlsMigrationWorker) = Arrangement().withGetMLSMigrationConfigurationsReturns(
             MIGRATION_CONFIG.copy(startTime = Instant.DISTANT_PAST, status = Status.DISABLED).right()
         ).arrange()
 
-        // when
         val result = mlsMigrationWorker.runMigration()
 
-        // then
         result.shouldSucceed()
 
-        coVerify { arrangement.userConfigRepository.getMigrationConfiguration() }.wasInvoked(once)
-        coVerify { arrangement.mlsMigrator.migrateProteusConversations() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.getMigrationConfiguration() }
+        verifySuspend(VerifyMode.not) { arrangement.mlsMigrator.migrateProteusConversations() }
     }
 
     @Test
     fun givenMigrationIsEnabledAndStartedAndProteusMigrationFails_whenRunningMigration_thenWorkerShouldFail() = runTest {
-        // given
         val (arrangement, mlsMigrationWorker) = Arrangement().withGetMLSMigrationConfigurationsReturns(
             MIGRATION_CONFIG.copy(startTime = Instant.DISTANT_PAST, status = Status.ENABLED).right()
         ).withMigrateProteusConversationsReturn(TEST_FAILURE).arrange()
 
-        // when
         val result = mlsMigrationWorker.runMigration()
 
-        // then
         result.shouldFail()
 
-        coVerify { arrangement.userConfigRepository.getMigrationConfiguration() }.wasInvoked(once)
-        coVerify { arrangement.mlsMigrator.migrateProteusConversations() }.wasInvoked(once)
-        coVerify { arrangement.mlsMigrator.finaliseAllProteusConversations() }.wasNotInvoked()
-        coVerify { arrangement.mlsMigrator.finaliseProteusConversations() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.getMigrationConfiguration() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMigrator.migrateProteusConversations() }
+        verifySuspend(VerifyMode.not) { arrangement.mlsMigrator.finaliseAllProteusConversations() }
+        verifySuspend(VerifyMode.not) { arrangement.mlsMigrator.finaliseProteusConversations() }
     }
 
     @Test
     fun givenProteusMigrationSucceedAndMigrationHasNotEnded_whenRunningMigration_thenWorkerShouldSucceed() = runTest {
-        // given
         val (arrangement, mlsMigrationWorker) = Arrangement().withGetMLSMigrationConfigurationsReturns(
             MIGRATION_CONFIG.copy(startTime = Instant.DISTANT_PAST, endTime = Instant.DISTANT_FUTURE, status = Status.ENABLED).right()
         ).withMigrateProteusConversationsReturn(Unit.right()).withFinaliseProteusConversations(Unit.right()).arrange()
 
-        // when
         val result = mlsMigrationWorker.runMigration()
 
-        // then
         result.shouldSucceed()
 
-        coVerify { arrangement.userConfigRepository.getMigrationConfiguration() }.wasInvoked(once)
-        coVerify { arrangement.mlsMigrator.migrateProteusConversations() }.wasInvoked(once)
-        coVerify { arrangement.mlsMigrator.finaliseAllProteusConversations() }.wasNotInvoked()
-        coVerify { arrangement.mlsMigrator.finaliseProteusConversations() }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.getMigrationConfiguration() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMigrator.migrateProteusConversations() }
+        verifySuspend(VerifyMode.not) { arrangement.mlsMigrator.finaliseAllProteusConversations() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMigrator.finaliseProteusConversations() }
     }
 
     @Test
     fun givenProteusMigrationSucceedAndMigrationHasNotEndedAndFinaliseProteusConversationsFails_whenRunningMigration_thenWorkerShouldFail() =
         runTest {
-            // given
             val (arrangement, mlsMigrationWorker) = Arrangement().withGetMLSMigrationConfigurationsReturns(
                 MIGRATION_CONFIG.copy(startTime = Instant.DISTANT_PAST, endTime = Instant.DISTANT_FUTURE, status = Status.ENABLED).right()
             ).withMigrateProteusConversationsReturn(Unit.right()).withFinaliseProteusConversations(TEST_FAILURE).arrange()
 
-            // when
             val result = mlsMigrationWorker.runMigration()
 
-            // then
             result.shouldFail()
 
-            coVerify { arrangement.userConfigRepository.getMigrationConfiguration() }.wasInvoked(once)
-            coVerify { arrangement.mlsMigrator.migrateProteusConversations() }.wasInvoked(once)
-            coVerify { arrangement.mlsMigrator.finaliseAllProteusConversations() }.wasNotInvoked()
-            coVerify { arrangement.mlsMigrator.finaliseProteusConversations() }.wasInvoked(once)
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.getMigrationConfiguration() }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMigrator.migrateProteusConversations() }
+            verifySuspend(VerifyMode.not) { arrangement.mlsMigrator.finaliseAllProteusConversations() }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMigrator.finaliseProteusConversations() }
         }
 
     @Test
     fun givenProteusMigrationSucceedAndMigrationHasEnded_whenRunningMigration_thenWorkerShouldSucceed() = runTest {
-        // given
         val (arrangement, mlsMigrationWorker) = Arrangement().withGetMLSMigrationConfigurationsReturns(
             MIGRATION_CONFIG.copy(startTime = Instant.DISTANT_PAST, endTime = Instant.DISTANT_PAST, status = Status.ENABLED).right()
         ).withMigrateProteusConversationsReturn(Unit.right()).withFinaliseAllProteusConversations(Unit.right()).arrange()
 
-        // when
         val result = mlsMigrationWorker.runMigration()
 
-        // then
         result.shouldSucceed()
 
-        coVerify { arrangement.userConfigRepository.getMigrationConfiguration() }.wasInvoked(once)
-        coVerify { arrangement.mlsMigrator.migrateProteusConversations() }.wasInvoked(once)
-        coVerify { arrangement.mlsMigrator.finaliseAllProteusConversations() }.wasInvoked(once)
-        coVerify { arrangement.mlsMigrator.finaliseProteusConversations() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.getMigrationConfiguration() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMigrator.migrateProteusConversations() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMigrator.finaliseAllProteusConversations() }
+        verifySuspend(VerifyMode.not) { arrangement.mlsMigrator.finaliseProteusConversations() }
     }
 
     @Test
     fun givenProteusMigrationSucceedAndMigrationHasEndedAndFinaliseAllProteusConversationsFails_whenRunningMigration_thenWorkerShouldFail() =
         runTest {
-            // given
             val (arrangement, mlsMigrationWorker) = Arrangement().withGetMLSMigrationConfigurationsReturns(
                 MIGRATION_CONFIG.copy(startTime = Instant.DISTANT_PAST, endTime = Instant.DISTANT_PAST, status = Status.ENABLED)
                     .right()
             ).withMigrateProteusConversationsReturn(Unit.right()).withFinaliseAllProteusConversations(TEST_FAILURE).arrange()
 
-            // when
             val result = mlsMigrationWorker.runMigration()
 
-            // then
             result.shouldFail()
 
-            coVerify { arrangement.userConfigRepository.getMigrationConfiguration() }.wasInvoked(once)
-            coVerify { arrangement.mlsMigrator.migrateProteusConversations() }.wasInvoked(once)
-            coVerify { arrangement.mlsMigrator.finaliseAllProteusConversations() }.wasInvoked(once)
-            coVerify { arrangement.mlsMigrator.finaliseProteusConversations() }.wasNotInvoked()
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.getMigrationConfiguration() }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMigrator.migrateProteusConversations() }
+            verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsMigrator.finaliseAllProteusConversations() }
+            verifySuspend(VerifyMode.not) { arrangement.mlsMigrator.finaliseProteusConversations() }
         }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val userConfigRepository: UserConfigRepository = mock(of<UserConfigRepository>())
-        val featureConfigRepository: FeatureConfigRepository = mock(of<FeatureConfigRepository>())
-        val updateSupportedProtocolsAndResolveOneOnOnes = mock(of<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())
-        val mlsMigrator: MLSMigrator = mock(of<MLSMigrator>())
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val userConfigRepository: UserConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+        val featureConfigRepository: FeatureConfigRepository = mock<FeatureConfigRepository>(mode = MockMode.autoUnit)
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>(mode = MockMode.autoUnit)
+        val mlsMigrator: MLSMigrator = mock<MLSMigrator>(mode = MockMode.autoUnit)
 
         val mlsConfigHandler = MLSConfigHandler(
             userConfigRepository,
@@ -235,30 +208,30 @@ class MLSMigrationWorkerTest {
         )
 
         suspend fun withGetMLSMigrationConfigurationsReturns(result: Either<StorageFailure, MLSMigrationModel>) = apply {
-            coEvery { userConfigRepository.getMigrationConfiguration() }.returns(result)
+            everySuspend { userConfigRepository.getMigrationConfiguration() } returns result
         }
 
         suspend fun withMigrateProteusConversationsReturn(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { mlsMigrator.migrateProteusConversations() }.returns(result)
+            everySuspend { mlsMigrator.migrateProteusConversations() } returns result
         }
 
         suspend fun withFinaliseAllProteusConversations(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { mlsMigrator.finaliseAllProteusConversations() }.returns(result)
+            everySuspend { mlsMigrator.finaliseAllProteusConversations() } returns result
         }
 
         suspend fun withFinaliseProteusConversations(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { mlsMigrator.finaliseProteusConversations() }.returns(result)
+            everySuspend { mlsMigrator.finaliseProteusConversations() } returns result
         }
 
         init {
             runBlocking {
-                coEvery { featureConfigRepository.getFeatureConfigs() }.returns(FeatureConfigTest.newModel().right())
-                coEvery { userConfigRepository.setMLSEnabled(any<Boolean>()) }.returns(Unit.right())
-                coEvery { userConfigRepository.getSupportedProtocols() }.returns(NOT_FOUND_FAILURE)
-                coEvery { userConfigRepository.setDefaultProtocol(any<SupportedProtocol>()) }.returns(Unit.right())
-                coEvery { userConfigRepository.setSupportedProtocols(any<Set<SupportedProtocol>>()) }.returns(Unit.right())
-                coEvery { userConfigRepository.setSupportedCipherSuite(any<SupportedCipherSuite>()) }.returns(Unit.right())
-                coEvery { userConfigRepository.setMigrationConfiguration(any<MLSMigrationModel>()) }.returns(Unit.right())
+                everySuspend { featureConfigRepository.getFeatureConfigs() } returns FeatureConfigTest.newModel().right()
+                everySuspend { userConfigRepository.setMLSEnabled(any<Boolean>()) } returns Unit.right()
+                everySuspend { userConfigRepository.getSupportedProtocols() } returns NOT_FOUND_FAILURE
+                everySuspend { userConfigRepository.setDefaultProtocol(any<SupportedProtocol>()) } returns Unit.right()
+                everySuspend { userConfigRepository.setSupportedProtocols(any<Set<SupportedProtocol>>()) } returns Unit.right()
+                everySuspend { userConfigRepository.setSupportedCipherSuite(any<SupportedCipherSuite>()) } returns Unit.right()
+                everySuspend { userConfigRepository.setMigrationConfiguration(any<MLSMigrationModel>()) } returns Unit.right()
             }
         }
 

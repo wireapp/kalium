@@ -23,9 +23,10 @@ import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -47,7 +48,7 @@ class ObserveLegalHoldStateForUserUseCaseTest {
 
     @Test
     fun givenNoClients_whenObserving_thenReturnDisabledState() = runTest {
-        val (arrangement, useCase) = Arrangement()
+        val (_, useCase) = Arrangement()
             .withEmptyClients()
             .arrange()
 
@@ -80,7 +81,7 @@ class ObserveLegalHoldStateForUserUseCaseTest {
 
     private class Arrangement {
 
-        val clientRepository: ClientRepository = mock(ClientRepository::class)
+        val clientRepository: ClientRepository = mock()
 
         val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase =
             ObserveLegalHoldStateForUserUseCaseImpl(
@@ -90,27 +91,27 @@ class ObserveLegalHoldStateForUserUseCaseTest {
         fun arrange() = this to observeLegalHoldStateForUser
 
         suspend fun withClientRepositoryFailure() = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.observeClientsByUserId(any())
-            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
+            } returns flowOf(Either.Left(StorageFailure.DataNotFound))
         }
 
         suspend fun withEmptyClients() = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.observeClientsByUserId(any())
-            }.returns(flowOf(Either.Right(listOf())))
+            } returns flowOf(Either.Right(listOf()))
         }
 
         suspend fun withNoClientUnderLegalHold() = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.observeClientsByUserId(any())
-            }.returns(flowOf(Either.Right(listOf(TestClient.CLIENT))))
+            } returns flowOf(Either.Right(listOf(TestClient.CLIENT)))
         }
 
         suspend fun withClientUnderLegalHold() = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.observeClientsByUserId(any())
-            }.returns(flowOf(Either.Right(listOf(legalHoldClient))))
+            } returns flowOf(Either.Right(listOf(legalHoldClient)))
         }
     }
 

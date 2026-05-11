@@ -26,7 +26,6 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.CONVERSATIONS
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
-import io.mockative.Mockable
 
 /**
  * Use case responsible for persisting a single conversation, if it doesn't already exist
@@ -41,7 +40,6 @@ import io.mockative.Mockable
  * @return [Either.Right] with `true` if the conversation was persisted, `false` otherwise.
  *         Returns [Either.Left] if an error occurred.
  */
-@Mockable
 internal interface PersistConversationUseCase {
     suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,

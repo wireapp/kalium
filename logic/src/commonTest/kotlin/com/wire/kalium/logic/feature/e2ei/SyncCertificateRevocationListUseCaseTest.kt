@@ -24,16 +24,18 @@ import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -51,25 +53,25 @@ class SyncCertificateRevocationListUseCaseTest {
 
         checkCrlWorker()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.certificateRevocationListRepository.getCRLs()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.checkRevocationList.check(any(), eq(DUMMY_URL))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.certificateRevocationListRepository.addOrUpdateCRL(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
-        }.wasInvoked(exactly = once)
+        }
 
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
-        val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
-        val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
-        val checkRevocationList = mock(RevocationListChecker::class)
+        val certificateRevocationListRepository: CertificateRevocationListRepository = mock(mode = MockMode.autoUnit)
+        val incrementalSyncRepository: IncrementalSyncRepository = mock(mode = MockMode.autoUnit)
+        val checkRevocationList: RevocationListChecker = mock(mode = MockMode.autoUnit)
 
         suspend fun arrange() = this to SyncCertificateRevocationListUseCaseImpl(
             certificateRevocationListRepository,
@@ -82,27 +84,27 @@ class SyncCertificateRevocationListUseCaseTest {
         }
 
         suspend fun withNoCRL() = apply {
-            coEvery {
+            everySuspend {
                 certificateRevocationListRepository.getCRLs()
-            }.returns(null)
+            } returns null
         }
 
         suspend fun withNonExpiredCRL() = apply {
-            coEvery {
+            everySuspend {
                 certificateRevocationListRepository.getCRLs()
-            }.returns(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, FUTURE_TIMESTAMP))))
+            } returns CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, FUTURE_TIMESTAMP)))
         }
 
         suspend fun withExpiredCRL() = apply {
-            coEvery {
+            everySuspend {
                 certificateRevocationListRepository.getCRLs()
-            }.returns(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))))
+            } returns CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP)))
         }
 
         suspend fun withCheckRevocationListResult() = apply {
-            coEvery {
+            everySuspend {
                 checkRevocationList.check(any(), any())
-            }.returns(Either.Right(FUTURE_TIMESTAMP))
+            } returns Either.Right(FUTURE_TIMESTAMP)
         }
 
         fun withIncrementalSyncState(flow: Flow<IncrementalSyncStatus>) = apply {
@@ -114,7 +116,7 @@ class SyncCertificateRevocationListUseCaseTest {
 
     companion object {
         const val DUMMY_URL = "https://dummy.url"
-        val TIMESTAMP = 633218892.toULong() // Wednesday, 24 January 1990 22:08:12
-        val FUTURE_TIMESTAMP = 4104511692.toULong() // Sunday, 24 January 2100 22:08:12
+        val TIMESTAMP = 633218892.toULong()
+        val FUTURE_TIMESTAMP = 4104511692.toULong()
     }
 }

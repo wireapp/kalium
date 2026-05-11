@@ -27,11 +27,13 @@ import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.PROTEUS_PROTOCOL_INFO
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,9 +49,9 @@ class IsFederationSearchAllowedUseCaseTest {
         val isAllowed = isFederationSearchAllowedUseCase(conversationId = null)
 
         assertEquals(true, isAllowed)
-        coVerify { arrangement.mlsPublicKeysRepository.getKeys() }.wasInvoked(once)
-        coVerify { arrangement.getDefaultProtocol.invoke() }.wasNotInvoked()
-        coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsPublicKeysRepository.getKeys() }
+        verifySuspend(VerifyMode.not) { arrangement.getDefaultProtocol.invoke() }
+        verifySuspend(VerifyMode.not) { arrangement.getConversationProtocolInfo.invoke(any()) }
     }
 
     @Test
@@ -61,9 +63,9 @@ class IsFederationSearchAllowedUseCaseTest {
         val isAllowed = isFederationSearchAllowedUseCase(conversationId = null)
 
         assertEquals(true, isAllowed)
-        coVerify { arrangement.mlsPublicKeysRepository.getKeys() }.wasInvoked(once)
-        coVerify { arrangement.getDefaultProtocol.invoke() }.wasNotInvoked()
-        coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsPublicKeysRepository.getKeys() }
+        verifySuspend(VerifyMode.not) { arrangement.getDefaultProtocol.invoke() }
+        verifySuspend(VerifyMode.not) { arrangement.getConversationProtocolInfo.invoke(any()) }
     }
 
     @Test
@@ -76,9 +78,9 @@ class IsFederationSearchAllowedUseCaseTest {
         val isAllowed = isFederationSearchAllowedUseCase(conversationId = null)
 
         assertEquals(true, isAllowed)
-        coVerify { arrangement.mlsPublicKeysRepository.getKeys() }.wasInvoked(once)
-        coVerify { arrangement.getDefaultProtocol.invoke() }.wasInvoked(once)
-        coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsPublicKeysRepository.getKeys() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.getDefaultProtocol.invoke() }
+        verifySuspend(VerifyMode.not) { arrangement.getConversationProtocolInfo.invoke(any()) }
     }
 
     @Test
@@ -92,9 +94,9 @@ class IsFederationSearchAllowedUseCaseTest {
         val isAllowed = isFederationSearchAllowedUseCase(conversationId = TestConversation.ID)
 
         assertEquals(false, isAllowed)
-        coVerify { arrangement.mlsPublicKeysRepository.getKeys() }.wasInvoked(once)
-        coVerify { arrangement.getDefaultProtocol.invoke() }.wasInvoked(once)
-        coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsPublicKeysRepository.getKeys() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.getDefaultProtocol.invoke() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.getConversationProtocolInfo.invoke(any()) }
     }
 
     @Test
@@ -108,16 +110,16 @@ class IsFederationSearchAllowedUseCaseTest {
         val isAllowed = isFederationSearchAllowedUseCase(conversationId = TestConversation.ID)
 
         assertEquals(false, isAllowed)
-        coVerify { arrangement.mlsPublicKeysRepository.getKeys() }.wasInvoked(once)
-        coVerify { arrangement.getDefaultProtocol.invoke() }.wasInvoked(once)
-        coVerify { arrangement.getConversationProtocolInfo.invoke(any()) }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsPublicKeysRepository.getKeys() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.getDefaultProtocol.invoke() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.getConversationProtocolInfo.invoke(any()) }
     }
 
     private class Arrangement {
 
-        val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
-        val getDefaultProtocol = mock(GetDefaultProtocolUseCase::class)
-        val getConversationProtocolInfo = mock(GetConversationProtocolInfoUseCase::class)
+        val mlsPublicKeysRepository = mock<MLSPublicKeysRepository>(mode = MockMode.autoUnit)
+        val getDefaultProtocol = mock<GetDefaultProtocolUseCase>(mode = MockMode.autoUnit)
+        val getConversationProtocolInfo = mock<GetConversationProtocolInfoUseCase>(mode = MockMode.autoUnit)
 
         private val MLS_PUBLIC_KEY = MLSPublicKeys(
             removal = mapOf(
@@ -126,15 +128,15 @@ class IsFederationSearchAllowedUseCaseTest {
         )
 
         suspend fun withDefaultProtocol(protocol: SupportedProtocol) = apply {
-            coEvery { getDefaultProtocol.invoke() }.returns(protocol)
+            everySuspend { getDefaultProtocol.invoke() } returns protocol
         }
 
         suspend fun withConversationProtocolInfo(protocolInfo: GetConversationProtocolInfoUseCase.Result) = apply {
-            coEvery { getConversationProtocolInfo(any()) }.returns(protocolInfo)
+            everySuspend { getConversationProtocolInfo.invoke(any()) } returns protocolInfo
         }
 
         suspend fun withMLSConfiguredForBackend(isConfigured: Boolean = true) = apply {
-            coEvery { mlsPublicKeysRepository.getKeys() }.returns(
+            everySuspend { mlsPublicKeysRepository.getKeys() } returns (
                 if (isConfigured) {
                     Either.Right(MLS_PUBLIC_KEY)
                 } else {
@@ -144,7 +146,7 @@ class IsFederationSearchAllowedUseCaseTest {
         }
 
         suspend fun withEmptyMlsKeys() = apply {
-            coEvery { mlsPublicKeysRepository.getKeys() }.returns(Either.Right(MLSPublicKeys(emptyMap())))
+            everySuspend { mlsPublicKeysRepository.getKeys() } returns Either.Right(MLSPublicKeys(emptyMap()))
         }
 
         fun arrange() = this to IsFederationSearchAllowedUseCase(
@@ -155,5 +157,3 @@ class IsFederationSearchAllowedUseCaseTest {
         )
     }
 }
-
-

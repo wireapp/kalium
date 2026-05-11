@@ -30,7 +30,6 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
-import io.mockative.Mockable
 
 /**
  * Attempts to find an existing MLS-capable one-on-one conversation,
@@ -38,7 +37,6 @@ import io.mockative.Mockable
  * In case the conversation already exists, but it's not established yet
  * (see [GroupState.ESTABLISHED]), it will attempt to join it, returning failure if it fails.
  */
-@Mockable
 internal interface MLSOneOnOneConversationResolver {
     /**
      * Attempts to find an existing MLS-capable one-on-one conversation,

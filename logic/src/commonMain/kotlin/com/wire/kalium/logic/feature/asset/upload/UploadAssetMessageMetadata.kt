@@ -23,6 +23,7 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.asset.isAudioMimeType
 import com.wire.kalium.logic.data.asset.isDisplayableImageMimeType
+import com.wire.kalium.logic.data.asset.isVideoMimeType
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
@@ -103,7 +104,18 @@ internal fun UploadAssetMessageMetadata.toAssetContent() = AssetContent(
     mimeType = mimeType,
     metadata = when {
         isDisplayableImageMimeType(mimeType) && (assetHeight.isGreaterThan(0) && (assetWidth.isGreaterThan(0))) -> {
-            AssetContent.AssetMetadata.Image(assetWidth, assetHeight)
+            AssetContent.AssetMetadata.Image(
+                width = assetWidth,
+                height = assetHeight
+            )
+        }
+
+        isVideoMimeType(mimeType) -> {
+            AssetContent.AssetMetadata.Video(
+                width = assetWidth,
+                height = assetHeight,
+                durationMs = audioLengthInMs
+            )
         }
 
         isAudioMimeType(mimeType) -> {

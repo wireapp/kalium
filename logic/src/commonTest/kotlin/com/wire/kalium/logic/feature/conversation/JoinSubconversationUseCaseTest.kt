@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
@@ -40,13 +40,15 @@ import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.sequentiallyReturns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.Test
@@ -65,11 +67,11 @@ class JoinSubconversationUseCaseTest {
 
             joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.establishMLSSubConversationGroup(
                     any(), eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH.groupId)), any()
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -83,11 +85,11 @@ class JoinSubconversationUseCaseTest {
 
             joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.joinGroupByExternalCommit(
                     any(), eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)), any()
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -101,13 +103,13 @@ class JoinSubconversationUseCaseTest {
 
             joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.subconversationRepository.insertSubconversation(
                     eq(Arrangement.CONVERSATION_ID),
                     eq(Arrangement.SUBCONVERSATION_ID),
                     eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId))
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -121,7 +123,7 @@ class JoinSubconversationUseCaseTest {
 
             joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationApi.deleteSubconversation(
                     eq(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.parentId),
                     eq(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.id),
@@ -132,15 +134,15 @@ class JoinSubconversationUseCaseTest {
                         )
                     )
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.establishMLSSubConversationGroup(
                     any(),
                     eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId)),
                     any(),
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -153,17 +155,17 @@ class JoinSubconversationUseCaseTest {
 
         joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
                 any(),
                 eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_NON_ZERO_EPOCH.groupId)),
                 any()
             )
-        }.wasInvoked(twice)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.cryptoTransactionProvider.mlsTransaction<Either<CoreFailure, Unit>>(eq("JoinSubconversation"), any())
-        }.wasInvoked(twice)
+        }
     }
 
     @Test
@@ -177,10 +179,10 @@ class JoinSubconversationUseCaseTest {
         joinSubconversationUseCase(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID).shouldFail()
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val conversationApi = mock(ConversationApi::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val subconversationRepository = mock(SubconversationRepository::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val conversationApi = mock<ConversationApi>(mode = MockMode.autoUnit)
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        val subconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = this to JoinSubconversationUseCaseImpl(
             conversationApi,
@@ -192,39 +194,39 @@ class JoinSubconversationUseCaseTest {
         }
 
         suspend fun withEstablishMLSSubConversationGroupSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.establishMLSSubConversationGroup(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withJoinByExternalCommitSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withJoinByExternalCommitGroupReturning(vararg result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
-            }.returnsMany(*result)
+            } sequentiallyReturns result.toList()
         }
 
         suspend fun withFetchingSubconversationGroupInfoSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.fetchSubconversationGroupInfo(any(), any())
-            }.returns(NetworkResponse.Success(PUBLIC_GROUP_STATE, mapOf(), 200))
+            } returns NetworkResponse.Success(PUBLIC_GROUP_STATE, mapOf(), 200)
         }
 
         suspend fun withFetchingSubconversationDetails(response: SubconversationResponse) = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.fetchSubconversationDetails(any(), any())
-            }.returns(NetworkResponse.Success(response, emptyMap(), 200))
+            } returns NetworkResponse.Success(response, emptyMap(), 200)
         }
 
         suspend fun withDeleteSubconversationSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.deleteSubconversation(any(), any(), any())
-            }.returns(NetworkResponse.Success(Unit, emptyMap(), 200))
+            } returns NetworkResponse.Success(Unit, emptyMap(), 200)
         }
 
         companion object {

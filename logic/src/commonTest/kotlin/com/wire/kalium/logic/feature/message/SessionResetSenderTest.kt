@@ -27,12 +27,14 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,11 +46,11 @@ import kotlin.test.assertEquals
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class SessionResetSenderTest {
 
-        private val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
+        private val slowSyncRepository: SlowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
 
-        private val provideClientId = mock(CurrentClientIdProvider::class)
+        private val provideClientId = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
 
-        private val messageSender = mock(MessageSender::class)
+        private val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
 
     private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
 
@@ -70,22 +72,22 @@ internal class SessionResetSenderTest {
 
             slowSyncRepository.slowSyncStatus
 
-        }.returns(completeStateFlow)
+        } returns completeStateFlow
 
     }
 
     @Test
     fun givenClientIdProvideAFailure_whenSendingSessionResetMessage_thenReturnFailure() = runTest(testDispatchers.io) {
 
-        coEvery {
+        everySuspend {
             provideClientId.invoke()
-        }.returns(Either.Left(failure))
+        } returns Either.Left(failure)
 
         val result = sessionResetSender(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             provideClientId.invoke()
-        }.wasInvoked(exactly = once)
+        }
 
         assertEquals(Either.Left(failure), result)
 
@@ -94,23 +96,23 @@ internal class SessionResetSenderTest {
     @Test
     fun givenMessageSenderFailure_whenSendingSessionResetMessage_thenReturnFailure() = runTest(testDispatchers.io) {
 
-        coEvery {
+        everySuspend {
             provideClientId.invoke()
-        }.returns(Either.Right(TestClient.CLIENT_ID))
+        } returns Either.Right(TestClient.CLIENT_ID)
 
-        coEvery {
+        everySuspend {
             messageSender.sendMessage(any(), any())
-        }.returns(Either.Left(failure))
+        } returns Either.Left(failure)
 
         val result = sessionResetSender(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             provideClientId.invoke()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             messageSender.sendMessage(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
         assertEquals(Either.Left(failure), result)
     }
@@ -118,23 +120,23 @@ internal class SessionResetSenderTest {
     @Test
     fun givenMessageSenderRanSuccessfully_whenSendingSessionResetMessage_thenReturnSuccess() = runTest(testDispatchers.io) {
 
-        coEvery {
+        everySuspend {
             provideClientId.invoke()
-        }.returns(Either.Right(TestClient.CLIENT_ID))
+        } returns Either.Right(TestClient.CLIENT_ID)
 
-        coEvery {
+        everySuspend {
             messageSender.sendMessage(any(), any())
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
 
         val result = sessionResetSender(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             provideClientId.invoke()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             messageSender.sendMessage(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
         assertEquals(Either.Right(Unit), result)
     }

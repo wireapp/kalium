@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.client.toCrypto
@@ -28,23 +29,23 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.CLIENT_FETCH_ERROR
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.KEY_PACKAGE_COUNT
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.KEY_PACKAGE_COUNT_DTO
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.NETWORK_FAILURE
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -66,9 +67,9 @@ class MLSKeyPackageCountUseCaseTest {
 
         val actual = keyPackageCountUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
-        }.wasNotInvoked()
+        }
 
         assertIs<MLSKeyPackageCountResult.Failure.FetchClientIdFailure>(actual)
         assertEquals(actual.genericFailure, CLIENT_FETCH_ERROR)
@@ -89,9 +90,9 @@ class MLSKeyPackageCountUseCaseTest {
 
         val actual = keyPackageCountUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
-        }.wasInvoked(once)
+        }
         assertIs<MLSKeyPackageCountResult.Success>(actual)
         assertEquals(actual, MLSKeyPackageCountResult.Success(TestClient.CLIENT_ID, KEY_PACKAGE_COUNT, true))
     }
@@ -110,9 +111,9 @@ class MLSKeyPackageCountUseCaseTest {
 
         val actual = keyPackageCountUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
-        }.wasInvoked(once)
+        }
         assertIs<MLSKeyPackageCountResult.Failure.NetworkCallFailure>(actual)
         assertEquals(actual.networkFailure, NETWORK_FAILURE)
     }
@@ -130,45 +131,51 @@ class MLSKeyPackageCountUseCaseTest {
 
         val actual = keyPackageCountUseCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.isMLSEnabled()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.keyPackageRepository.getAvailableKeyPackageCount(eq(TestClient.CLIENT_ID), eq(expectedCipherSuite))
-        }.wasNotInvoked()
+        }
         assertIs<MLSKeyPackageCountResult.Failure.NotEnabled>(actual)
     }
 
-    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
-        val keyPackageRepository = mock(KeyPackageRepository::class)
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
+        val userConfigRepository: UserConfigRepository = mock()
+        val keyPackageRepository: KeyPackageRepository = mock()
+        val currentClientIdProvider: CurrentClientIdProvider = mock()
+        val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock()
 
         suspend fun withClientId(result: Either<CoreFailure, ClientId>) = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(result)
+            } returns result
         }
 
         fun withKeyPackageLimitSucceed() = apply {
             every {
                 keyPackageLimitsProvider.needsRefill(any())
-            }.returns(true)
+            } returns true
         }
 
         suspend fun withAvailableKeyPackageCountReturn(result: Either<NetworkFailure, KeyPackageCountDTO>) = apply {
-            coEvery {
+            everySuspend {
                 keyPackageRepository.getAvailableKeyPackageCount(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         fun withDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
             every {
                 mlsContext.getDefaultCipherSuite()
-            }.returns(cipherSuite.toCrypto())
+            } returns cipherSuite.toCrypto()
+        }
+
+        suspend fun withGetMLSEnabledReturning(result: Either<StorageFailure, Boolean>) = apply {
+            everySuspend {
+                userConfigRepository.isMLSEnabled()
+            } returns result
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit) = apply {
