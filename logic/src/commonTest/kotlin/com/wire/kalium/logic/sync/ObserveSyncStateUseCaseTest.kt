@@ -22,8 +22,9 @@ import app.cash.turbine.test
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
@@ -69,12 +70,12 @@ class ObserveSyncStateUseCaseTest {
 
     private class Arrangement {
 
-        val syncStateObserver: SyncStateObserver = mock(SyncStateObserver::class)
+        val syncStateObserver: SyncStateObserver = mock()
 
         fun withSyncStates(flow: StateFlow<SyncState>) = apply {
             every {
                 syncStateObserver.syncState
-            }.returns(flow)
+            } returns flow
         }
 
         fun arrange() = this to ObserveSyncStateUseCaseImpl(

@@ -29,12 +29,10 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.Mockable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Instant
 
-@Mockable
 internal interface LastReadContentHandler {
     suspend fun handle(
         message: Message.Signaling,

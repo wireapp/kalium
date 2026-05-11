@@ -34,9 +34,7 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
-import io.mockative.Mockable
 
-@Mockable
 internal interface ServerConfigRepository {
     val minimumApiVersionForPersonalToTeamAccountMigration: Int
 

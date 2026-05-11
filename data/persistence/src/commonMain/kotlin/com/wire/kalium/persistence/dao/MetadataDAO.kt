@@ -18,11 +18,9 @@
 
 package com.wire.kalium.persistence.dao
 
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 
-@Mockable
 interface MetadataDAO {
     suspend fun insertValue(value: String, key: String)
     suspend fun deleteValue(key: String)

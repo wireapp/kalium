@@ -28,12 +28,10 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import io.mockative.Mockable
 
 /**
  * Use case to check if the CRL is expired and if so, register CRL and update conversation statuses if there is a change.
  */
-@Mockable
 internal interface RevocationListChecker {
     suspend fun check(mlsContext: MlsCoreCryptoContext, url: String): Either<CoreFailure, ULong?>
 }

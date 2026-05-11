@@ -29,7 +29,6 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.sync.SyncStateObserver
-import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.hours
@@ -39,7 +38,6 @@ import kotlin.time.Duration.Companion.hours
  * if a conversation's LastKeyingMaterialUpdate surpassed the threshold then
  * it'll send a new UpdateCommit for that conversation.
  */
-@Mockable
 internal interface KeyingMaterialsManager {
     suspend operator fun invoke()
 }

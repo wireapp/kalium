@@ -26,13 +26,15 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -60,18 +62,18 @@ class UpdateConversationReceiptModeUseCaseTest {
         // then
         assertIs<ConversationUpdateReceiptModeResult.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateReceiptMode(eq(TestConversation.ID), eq(receiptMode))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matches {
+                matching {
                     val message = (it as Message.System)
                     message.content is MessageContent.ConversationReceiptModeChanged
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
 
     }
 
@@ -95,15 +97,15 @@ class UpdateConversationReceiptModeUseCaseTest {
         // then
         assertIs<ConversationUpdateReceiptModeResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateReceiptMode(eq(TestConversation.ID), eq(receiptMode))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val conversationRepository = mock(ConversationRepository::class)
-        val persistMessage = mock(PersistMessageUseCase::class)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
 
         val selfUserId = TestUser.USER_ID
 
@@ -112,15 +114,15 @@ class UpdateConversationReceiptModeUseCaseTest {
         )
 
         suspend fun withUpdateReceiptMode(receiptMode: Conversation.ReceiptMode, either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateReceiptMode(any(), eq(receiptMode))
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withPersistingMessage() = apply {
-            coEvery {
+            everySuspend {
                 persistMessage.invoke(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         fun arrange() = this to updateConversationReceiptMode

@@ -18,12 +18,18 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.UserRepository
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -63,13 +69,18 @@ class IsOneToOneConversationCreatedUseCaseTest {
 
     internal class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
+    ) {
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = run {
             block()
             this@Arrangement to IsOneToOneConversationCreatedUseCaseImpl(
                 userRepository = userRepository
             )
+        }
+
+        suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>) {
+            everySuspend { userRepository.getOneOnOnConversationId(any()) } returns result
         }
     }
 }

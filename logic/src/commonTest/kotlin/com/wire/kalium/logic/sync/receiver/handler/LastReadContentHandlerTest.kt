@@ -29,12 +29,14 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -54,9 +56,9 @@ class LastReadContentHandlerTest {
         handler.handle(Arrangement.selfSignalingMessage(), Arrangement.lastReadContent(CONVERSATION_ID, older))
         handler.flushPendingLastReads()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(eq(mapOf(CONVERSATION_ID to newer)))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -71,9 +73,9 @@ class LastReadContentHandlerTest {
         handler.handle(Arrangement.selfSignalingMessage(), Arrangement.lastReadContent(CONVERSATION_ID, timestamp))
         handler.flushPendingLastReads()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(eq(mapOf(CONVERSATION_ID to timestamp)))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -95,7 +97,7 @@ class LastReadContentHandlerTest {
         handler.handle(Arrangement.selfSignalingMessage(), Arrangement.lastReadContent(OTHER_CONVERSATION_ID, timestamp))
         handler.flushPendingLastReads()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(
                 eq(
                     mapOf(
@@ -104,7 +106,7 @@ class LastReadContentHandlerTest {
                     )
                 )
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -117,12 +119,12 @@ class LastReadContentHandlerTest {
         handler.handle(Arrangement.otherUserSignalingMessage(), Arrangement.lastReadContent(CONVERSATION_ID, timestamp))
         handler.flushPendingLastReads()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.notificationEventsManager.scheduleConversationSeenNotification(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -137,24 +139,24 @@ class LastReadContentHandlerTest {
         handler.flushPendingLastReads()
         handler.flushPendingLastReads()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateReadDatesAndGetHasUnreadEvents(eq(mapOf(CONVERSATION_ID to timestamp)))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        val conversationRepository = mock(ConversationRepository::class)
-        private val isMessageSentInSelfConversation = mock(IsMessageSentInSelfConversationUseCase::class)
-        val notificationEventsManager = mock(NotificationEventsManager::class)
+        val conversationRepository = mock<ConversationRepository>()
+        private val isMessageSentInSelfConversation = mock<IsMessageSentInSelfConversationUseCase>()
+        val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
 
         suspend fun withIsMessageSentInSelfConversation(isSelfConversation: Boolean) = apply {
-            coEvery { isMessageSentInSelfConversation.invoke(any()) }.returns(isSelfConversation)
+            everySuspend { isMessageSentInSelfConversation.invoke(any()) } returns isSelfConversation
         }
 
         suspend fun withUpdateReadDatesAndGetHasUnreadEvents(result: Either<StorageFailure, Map<ConversationId, Boolean>>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateReadDatesAndGetHasUnreadEvents(any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to LastReadContentHandlerImpl(

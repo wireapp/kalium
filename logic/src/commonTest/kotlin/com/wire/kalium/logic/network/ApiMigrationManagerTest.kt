@@ -21,11 +21,12 @@ package com.wire.kalium.logic.network
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.MetadataDAO
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -120,9 +121,9 @@ class ApiMigrationManagerTest {
 
         apiUpgradeManager.performMigrations()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.metadataDAO.insertValue(eq("2"), eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -139,15 +140,15 @@ class ApiMigrationManagerTest {
 
         apiUpgradeManager.performMigrations()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.metadataDAO.insertValue(eq("1"), eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
-        }.wasInvoked(once)
+        }
     }
 
     internal class Arrangement {
 
         var apiVersion: Int = 0
-        val metadataDAO = mock(MetadataDAO::class)
+        val metadataDAO = mock<MetadataDAO>()
         var migrations: MutableList<Pair<Int, ApiMigration>> = mutableListOf()
 
         fun withCurrentApiVersion(apiVersion: Int) = apply {
@@ -155,9 +156,9 @@ class ApiMigrationManagerTest {
         }
 
         suspend fun withPreviousApiVersion(apiVersion: Int) = apply {
-            coEvery {
+            everySuspend {
                 metadataDAO.valueByKey(eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
-            }.returns(apiVersion.toString())
+            } returns apiVersion.toString()
         }
 
         fun withMigration(api: Int, migration: ApiMigration) = apply {

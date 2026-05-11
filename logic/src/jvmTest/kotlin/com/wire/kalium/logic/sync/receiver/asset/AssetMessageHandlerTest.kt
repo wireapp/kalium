@@ -34,14 +34,16 @@ import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
+import dev.mokkery.verifySuspend
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.test.runTest
@@ -67,16 +69,18 @@ class AssetMessageHandlerTest {
 
         // Then
         assertTrue(assetMessageContent.value.hasValidRemoteData())
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches {
                 it.id == assetMessage.id
                         && it.conversationId.toString() == assetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.VISIBLE
             })
-        }.wasInvoked(exactly = once)
-        coVerify {
+
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id))
-        }.wasInvoked(exactly = once)
+
+        }
     }
 
     @Test
@@ -94,16 +98,18 @@ class AssetMessageHandlerTest {
         assetMessageHandler.handle(assetMessage)
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches {
                 it.id == assetMessage.id
                         && it.conversationId.toString() == assetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.HIDDEN
             })
-        }.wasInvoked(exactly = once)
-        coVerify {
+
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id))
-        }.wasInvoked(exactly = once)
+
+        }
     }
 
     @Test
@@ -129,16 +135,18 @@ class AssetMessageHandlerTest {
         assetMessageHandler.handle(assetMessage)
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches {
                 it.id == assetMessage.id
                         && it.conversationId.toString() == assetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.VISIBLE
             })
-        }.wasInvoked(exactly = once)
-        coVerify {
+
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id))
-        }.wasInvoked(exactly = once)
+
+        }
     }
 
     @Test
@@ -159,17 +167,19 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches {
                 it.id == updateAssetMessage.id
                         && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.VISIBLE
             })
-        }.wasInvoked(exactly = once)
 
-        coVerify {
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
-        }.wasInvoked(exactly = once)
+
+        }
     }
 
     @Test
@@ -196,17 +206,19 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertFalse((updateBrokenKeysAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches {
                 it.id == updateBrokenKeysAssetMessage.id
                         && it.conversationId.toString() == updateBrokenKeysAssetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.HIDDEN
             })
-        }.wasInvoked(exactly = once)
 
-        coVerify {
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
-        }.wasInvoked(exactly = once)
+
+        }
     }
 
     @Test
@@ -229,17 +241,19 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertTrue((updateInvalidSenderIdAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.persistMessage.invoke(matches {
                 it.id == updateInvalidSenderIdAssetMessage.id
                         && it.conversationId.toString() == updateInvalidSenderIdAssetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.HIDDEN
             })
-        }.wasNotInvoked()
 
-        coVerify {
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
-        }.wasInvoked(exactly = once)
+
+        }
     }
 
     @Test
@@ -260,15 +274,16 @@ class AssetMessageHandlerTest {
         assetMessageHandler.handle(updateAssetMessage)
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(
                 eq(updateAssetMessage.conversationId),
                 eq(updateAssetMessage.id)
             )
-        }.wasInvoked(exactly = once)
 
-        coVerify { arrangement.persistMessage(any()) }
-            .wasNotInvoked()
+        }
+
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage(any())
+        }
     }
 
     @Test
@@ -290,29 +305,32 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(
                 matches {
                     it.id == updateAssetMessage.id
                             && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
                             && it.visibility == Message.Visibility.VISIBLE
                 })
-        }.wasInvoked(exactly = once)
 
-        coVerify {
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(
                 eq(previewAssetMessage.conversationId),
                 eq(previewAssetMessage.id)
             )
-        }.wasInvoked(exactly = once)
 
-        coVerify {
+        }
+
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateAssetFileTypeUseCase(
                 fileName = eq(COMPLETE_ASSET_CONTENT.value.name),
                 mimeType = eq("application/zip"),
                 allowedExtension = eq(isFileSharingEnabled.allowedType)
             )
-        }.wasInvoked(exactly = once)
+
+        }
     }
 
     @Test
@@ -334,28 +352,31 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(matches {
                 it.id == updateAssetMessage.id
                         && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
                         && it.visibility == updateAssetMessage.visibility
             })
-        }.wasInvoked(exactly = once)
 
-        coVerify {
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(
                 conversationId = eq(previewAssetMessage.conversationId),
                 messageUuid = eq(previewAssetMessage.id)
             )
-        }.wasInvoked(exactly = once)
 
-        coVerify {
+        }
+
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateAssetFileTypeUseCase(
                 fileName = eq(COMPLETE_ASSET_CONTENT.value.name),
                 mimeType = eq("application/zip"),
                 allowedExtension = eq(isFileSharingEnabled.allowedType)
             )
-        }.wasInvoked(exactly = once)
+
+        }
     }
 
     @Test
@@ -377,26 +398,20 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(matches {
                 it.id == updateAssetMessage.id
                         && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
                         && it.visibility == updateAssetMessage.visibility
             })
-        }.wasInvoked(exactly = once)
 
-        coVerify { arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id)) }
-            .wasNotInvoked()
-
-        coVerify {
-            arrangement.validateAssetFileTypeUseCase(
-                fileName = any<String>(),
-                mimeType = any<String>(),
-                allowedExtension = any<List<String>>()
-            )
         }
-        coVerify { arrangement.validateAssetFileTypeUseCase(any<String>(), any<String>(), any<List<String>>()) }
-            .wasNotInvoked()
+
+        verifySuspend(VerifyMode.not) { arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+        }
+
+        verify(VerifyMode.not) { arrangement.validateAssetFileTypeUseCase(any<String>(), any<String>(), any<List<String>>())
+        }
     }
 
     @Test
@@ -437,14 +452,15 @@ class AssetMessageHandlerTest {
         assetMessageHandler.handle(assetMessage)
 
         // Then
-        coVerify { arrangement.persistMessage(any()) }
-            .wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.persistMessage(any())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(
                 eq(assetMessage.conversationId), eq(assetMessage.id)
             )
-        }.wasInvoked(exactly = once)
+
+        }
     }
 
     @Test
@@ -482,19 +498,19 @@ class AssetMessageHandlerTest {
         assetMessageHandler.handle(assetMessage)
 
         // Then
-        coVerify { arrangement.persistMessage(any()) }
-            .wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.persistMessage(any())
+        }
 
-        coVerify { arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id)) }
-            .wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id))
+        }
     }
 
     private class Arrangement {
 
-        val messageRepository = mock(MessageRepository::class)
-        val persistMessage = mock(PersistMessageUseCase::class)
-        val userConfigRepository = mock(UserConfigRepository::class)
-        val validateAssetFileTypeUseCase = mock(ValidateAssetFileTypeUseCase::class)
+        val messageRepository = mock<MessageRepository>()
+        val persistMessage = mock<PersistMessageUseCase>()
+        val userConfigRepository = mock<UserConfigRepository>()
+        val validateAssetFileTypeUseCase = mock<ValidateAssetFileTypeUseCase>()
 
         private val assetMessageHandlerImpl =
             AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetFileTypeUseCase)
@@ -506,13 +522,13 @@ class AssetMessageHandlerTest {
         }
 
         suspend fun withSuccessfulFileSharingFlag(value: FileSharingStatus.Value) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.isFileSharingEnabled()
             }.returns(Either.Right(FileSharingStatus(state = value, isStatusChanged = false)))
         }
 
         suspend fun withSuccessfulPersistMessageUseCase(message: Message) = apply {
-            coEvery {
+            everySuspend {
                 persistMessage(matches {
                     it.id == message.id && it.conversationId == message.conversationId
                 })
@@ -521,10 +537,10 @@ class AssetMessageHandlerTest {
 
         suspend fun withSuccessfulStoredMessage(persistedMessage: Message?) = apply {
             persistedMessage?.let { message ->
-                coEvery {
+                everySuspend {
                     messageRepository.getMessageById(any(), any())
                 }.returns(Either.Right(message))
-            } ?: coEvery {
+            } ?: everySuspend {
                 messageRepository.getMessageById(any(), any())
             }.returns(Either.Left(StorageFailure.DataNotFound))
         }

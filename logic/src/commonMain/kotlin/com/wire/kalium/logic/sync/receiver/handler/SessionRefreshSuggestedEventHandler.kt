@@ -24,9 +24,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.FailureToRefreshTokenException
 import com.wire.kalium.network.session.SessionManager
-import io.mockative.Mockable
 
-@Mockable
 internal interface SessionRefreshSuggestedEventHandler {
     suspend fun handle(event: Event.User.SessionRefreshSuggested): Either<CoreFailure, Unit>
 }

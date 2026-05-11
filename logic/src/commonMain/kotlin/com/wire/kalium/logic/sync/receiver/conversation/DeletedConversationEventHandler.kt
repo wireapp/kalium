@@ -34,10 +34,8 @@ import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 
-@Mockable
 internal interface DeletedConversationEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.DeletedConversation)
 }

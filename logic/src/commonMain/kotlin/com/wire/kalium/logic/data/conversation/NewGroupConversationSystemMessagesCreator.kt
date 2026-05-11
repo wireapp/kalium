@@ -34,7 +34,6 @@ import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
-import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.uuid.Uuid
@@ -43,7 +42,6 @@ import kotlin.uuid.Uuid
  * This class is responsible to generate system messages for new group conversations.
  * This can be orchestrated by different components that creates a new group conversation, ie: Events, UseCases, Repositories.
  */
-@Mockable
 internal interface NewGroupConversationSystemMessagesCreator {
     suspend fun conversationStarted(conversation: ConversationEntity): Either<CoreFailure, Unit>
     suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse, instant: Instant): Either<CoreFailure, Unit>

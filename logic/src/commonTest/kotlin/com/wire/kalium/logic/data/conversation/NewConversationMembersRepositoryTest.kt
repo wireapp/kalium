@@ -21,8 +21,6 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
-import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
@@ -31,11 +29,14 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.persistence.dao.member.MemberDAO
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -52,13 +53,13 @@ class NewConversationMembersRepositoryTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.insertMembersWithQualifiedId(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -75,17 +76,17 @@ class NewConversationMembersRepositoryTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.insertMembersWithQualifiedId(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement :
-        MemberDAOArrangement by MemberDAOArrangementImpl() {
-        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
+    private class Arrangement {
+        val memberDAO = mock<MemberDAO>(mode = MockMode.autoUnit)
+        val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>()
 
         suspend fun withPersistResolvedMembersSystemMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any(), any())
             }.returns(Either.Right(Unit))
         }

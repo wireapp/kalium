@@ -24,12 +24,14 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -51,9 +53,9 @@ class ObserveIsSelfUserMemberUseCaseTest {
             val isMemberResult = awaitItem()
             assertEquals(IsSelfUserMemberResult.Success(true), isMemberResult)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationRepository.observeIsUserMember(eq(conversationId), eq(selfUser.id))
-            }.wasInvoked(exactly = once)
+            }
 
             awaitComplete()
         }
@@ -73,9 +75,9 @@ class ObserveIsSelfUserMemberUseCaseTest {
             val isMemberResult = awaitItem()
             assertEquals(IsSelfUserMemberResult.Success(false), isMemberResult)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationRepository.observeIsUserMember(eq(conversationId), eq(selfUser.id))
-            }.wasInvoked(exactly = once)
+            }
 
             awaitComplete()
         }
@@ -95,9 +97,9 @@ class ObserveIsSelfUserMemberUseCaseTest {
             val isMemberResult = awaitItem()
             assertIs<IsSelfUserMemberResult.Failure>(isMemberResult)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationRepository.observeIsUserMember(eq(conversationId), eq(selfUser.id))
-            }.wasInvoked(exactly = once)
+            }
 
             awaitComplete()
         }
@@ -106,27 +108,27 @@ class ObserveIsSelfUserMemberUseCaseTest {
 
     private class Arrangement {
 
-        val conversationRepository = mock(ConversationRepository::class)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
 
         val observeIsSelfUserMember: ObserveIsSelfUserMemberUseCase =
             ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, TestUser.SELF.id)
 
         suspend fun withExistingMembership() = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeIsUserMember(any(), any())
-            }.returns(flowOf(Either.Right(true)))
+            } returns flowOf(Either.Right(true))
         }
 
         suspend fun withNonExistingMembership() = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeIsUserMember(any(), any())
-            }.returns(flowOf(Either.Right(false)))
+            } returns flowOf(Either.Right(false))
         }
 
         suspend fun withExistingMembershipError() = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeIsUserMember(any(), any())
-            }.returns(flowOf(Either.Left(CoreFailure.Unknown(null))))
+            } returns flowOf(Either.Left(CoreFailure.Unknown(null)))
         }
 
         fun arrange() = this to observeIsSelfUserMember

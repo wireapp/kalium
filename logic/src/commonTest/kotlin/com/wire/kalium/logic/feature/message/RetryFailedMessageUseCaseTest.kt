@@ -48,13 +48,14 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.matching
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -126,16 +127,16 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageRepository.updateMessageStatus(
-                    eq(MessageEntity.Status.PENDING),
-                    eq(message.conversationId),
-                    eq(message.id)
+                    MessageEntity.Status.PENDING,
+                    message.conversationId,
+                    message.id
                 )
-            }.wasInvoked(exactly = once)
-            coVerify {
-                arrangement.messageSender.sendMessage(eq(message), any())
-            }.wasInvoked(exactly = once)
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageSender.sendMessage(message, any())
+            }
         }
 
     @Test
@@ -154,16 +155,16 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.messageSender.sendMessage(
-                    matches {
+                    matching {
                         it is Message.Signaling // message edits are sent as signaling messages
                                 && it.id != message.id // when editing we need to generate and set a new id
                                 && it.content is MessageContent.TextEdited
                                 && (it.content as MessageContent.TextEdited).editMessageId == message.id // original id in edited content
                     }, any()
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -193,9 +194,9 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.updateAssetMessageTransferStatus.invoke(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -225,25 +226,25 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.assetRepository.uploadAndPersistPrivateAsset(
                     mimeType = any(),
-                    assetDataPath = eq(path),
+                    assetDataPath = path,
                     otrKey = any(),
-                    extension = eq(name.fileExtension()),
+                    extension = name.fileExtension(),
                     conversationId = any(),
                     filename = any(),
                     filetype = any()
                 )
-            }.wasInvoked(exactly = once)
-            coVerify {
-                arrangement.messageSender.sendMessage(matches {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageSender.sendMessage(matching {
                     it.id == message.id && it.content is MessageContent.Asset
                             && (it.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
                             && (it.content as MessageContent.Asset).value.remoteData.assetDomain == uploadedAssetId.domain
                             && (it.content as MessageContent.Asset).value.remoteData.assetToken == uploadedAssetId.assetToken
                 }, any())
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -270,7 +271,7 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.assetRepository.uploadAndPersistPrivateAsset(
                     mimeType = any(),
                     assetDataPath = any(),
@@ -280,10 +281,10 @@ class RetryFailedMessageUseCaseTest {
                     filename = any(),
                     filetype = any()
                 )
-            }.wasNotInvoked()
-            coVerify {
-                arrangement.messageSender.sendMessage(eq(message), any())
-            }.wasInvoked(exactly = once)
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.messageSender.sendMessage(message, any())
+            }
         }
 
     @Test
@@ -376,59 +377,59 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.persistMessage.invoke(
-                    matches {
+                    matching {
                         it.id == message.id && it.content is MessageContent.Asset
                                 && (it.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
                                 && (it.content as MessageContent.Asset).value.remoteData.assetDomain == uploadedAssetId.domain
                                 && (it.content as MessageContent.Asset).value.remoteData.assetToken == uploadedAssetId.assetToken
                     }
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     private class Arrangement {
 
-        val messageRepository = mock(MessageRepository::class)
-        val assetRepository = mock(AssetRepository::class)
-        val attachmentsRepository = mock(MessageAttachmentDraftRepository::class)
-        val conversationRepository = mock(ConversationRepository::class)
-        val persistMessage = mock(PersistMessageUseCase::class)
-        val messageSender = mock(MessageSender::class)
-        val updateAssetMessageTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
-        val getAssetMessageTransferStatus = mock(GetAssetMessageTransferStatusUseCase::class)
-        val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
-        val publishAttachments = mock(PublishAttachmentsUseCase::class)
+        val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
+        val assetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
+        val attachmentsRepository = mock<MessageAttachmentDraftRepository>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
+        val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
+        val updateAssetMessageTransferStatus = mock<UpdateAssetMessageTransferStatusUseCase>(mode = MockMode.autoUnit)
+        val getAssetMessageTransferStatus = mock<GetAssetMessageTransferStatusUseCase>(mode = MockMode.autoUnit)
+        val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
+        val publishAttachments = mock<PublishAttachmentsUseCase>(mode = MockMode.autoUnit)
 
         private val testScope = TestScope(testDispatcher.default)
 
         suspend fun withGetMessageById(result: Either<StorageFailure, Message>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.getMessageById(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUpdateMessageStatus(result: Either<CoreFailure, Unit>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.updateMessageStatus(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUpdateAssetMessageTransferStatus(result: UpdateTransferStatusResult): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 updateAssetMessageTransferStatus.invoke(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withFetchPrivateDecodedAsset(result: Either<CoreFailure, Path>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 assetRepository.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
-            }.returns(result.map { FetchedAssetData(it, true) })
+            } returns result.map { FetchedAssetData(it, true) }
         }
 
         suspend fun withUploadAndPersistPrivateAsset(result: Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 assetRepository.uploadAndPersistPrivateAsset(
                     mimeType = any(),
                     assetDataPath = any(),
@@ -438,19 +439,19 @@ class RetryFailedMessageUseCaseTest {
                     filename = any(),
                     filetype = any()
                 )
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withPersistMessage(result: Either<CoreFailure, Unit>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 persistMessage.invoke(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withSendMessage(result: Either<CoreFailure, Unit>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement = apply {
@@ -461,9 +462,9 @@ class RetryFailedMessageUseCaseTest {
         }
 
         suspend fun withGetAssetMessageTransferStatus(result: AssetTransferStatus) = apply {
-            coEvery {
+            everySuspend {
                 getAssetMessageTransferStatus.invoke(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to RetryFailedMessageUseCase(

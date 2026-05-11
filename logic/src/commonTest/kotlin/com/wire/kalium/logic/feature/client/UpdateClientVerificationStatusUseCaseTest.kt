@@ -18,16 +18,20 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import okio.FileNotFoundException
@@ -48,9 +52,9 @@ class UpdateClientVerificationStatusUseCaseTest {
 
         useCase(userId, clientID, true)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.updateClientProteusVerificationStatus(eq(userId), eq(clientID), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -66,9 +70,9 @@ class UpdateClientVerificationStatusUseCaseTest {
             assertIs<UpdateClientVerificationStatusUseCase.Result.Success>(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.updateClientProteusVerificationStatus(eq(userId), eq(clientID), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -87,22 +91,29 @@ class UpdateClientVerificationStatusUseCaseTest {
             assertEquals(expectedError, it.error)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.updateClientProteusVerificationStatus(eq(userId), eq(clientID), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
+    ) {
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
 
         fun arrange() = run {
             runBlocking { block() }
             this@Arrangement to UpdateClientVerificationStatusUseCase(
                 clientRepository = clientRepository
             )
+        }
+
+        suspend fun withUpdateClientProteusVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
+            everySuspend {
+                clientRepository.updateClientProteusVerificationStatus(any(), any(), any())
+            } returns result
         }
     }
 

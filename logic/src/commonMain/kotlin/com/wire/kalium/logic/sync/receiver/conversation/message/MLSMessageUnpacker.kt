@@ -42,12 +42,10 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.sync.KaliumSyncException
-import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.seconds
 
-@Mockable
 internal interface MLSMessageUnpacker {
     suspend fun unpackMlsMessage(
         mlsContext: MlsCoreCryptoContext,

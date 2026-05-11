@@ -27,10 +27,12 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -48,9 +50,9 @@ class GetNextAudioMessageInConversationUseCaseTest {
 
         getMessageByIdUseCase(CONVERSATION_ID, MESSAGE_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.getMessageById(CONVERSATION_ID, MESSAGE_ID)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -80,7 +82,7 @@ class GetNextAudioMessageInConversationUseCaseTest {
 
     private inner class Arrangement {
 
-        val messageRepository: MessageRepository = mock(MessageRepository::class)
+        val messageRepository: MessageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
 
         private val getMessageById by lazy {
             GetMessageByIdUseCase(messageRepository, testDispatchers)
@@ -91,9 +93,9 @@ class GetNextAudioMessageInConversationUseCaseTest {
             messageId: String,
             response: Either<StorageFailure, Message>
         ) = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.getMessageById(conversationId, messageId)
-            }.returns(response)
+            } returns response
         }
 
         fun arrange() = this to getMessageById

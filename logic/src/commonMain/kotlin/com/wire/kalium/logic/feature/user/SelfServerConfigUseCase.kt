@@ -23,12 +23,10 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.Mockable
 
 /**
  * This use case is responsible for retrieving the current user's server configuration.
  */
-@Mockable
 public interface SelfServerConfigUseCase {
     /**
      * @return [ServerConfig] or [CoreFailure]

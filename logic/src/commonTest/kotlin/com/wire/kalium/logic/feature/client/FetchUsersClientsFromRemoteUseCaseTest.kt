@@ -28,11 +28,13 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -43,7 +45,6 @@ class FetchUsersClientsFromRemoteUseCaseTest {
 
     @Test
     fun givenASuccessfulRepositoryResponse_whenInvokingTheUseCase_thenSuccessResultIsReturned() = runTest {
-        // Given
         val userId = UserId("123", "wire.com")
 
         val userIdDTO = UserIdDTO(userId.value, userId.domain)
@@ -54,42 +55,38 @@ class FetchUsersClientsFromRemoteUseCaseTest {
             .withSuccessfulResponse(userIdDTO, otherUserClients)
             .arrange()
 
-        // When
         useCase(listOf(userId))
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRemoteRepository.fetchOtherUserClients(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.storeUserClientListAndRemoveRedundantClients(any())
-        }.wasInvoked(exactly = once)
+        }
 
     }
 
     @Test
     fun givenRepositoryCallFailWithInvalidUserId_thenNoUserFoundReturned() = runTest {
-        // Given
         val userId = UserId("123", "wire.com")
         val noUserFoundException = TestNetworkException.noTeam
         val (arrangement, useCase) = Arrangement()
             .withGetOtherUserClientsErrorResponse(noUserFoundException)
             .arrange()
 
-        // When
         useCase.invoke(listOf(userId))
 
-        // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRemoteRepository.fetchOtherUserClients(any())
-        }.wasInvoked(exactly = once)
+        }
 
     }
 
     private class Arrangement {
 
-        val clientRemoteRepository = mock(ClientRemoteRepository::class)
-        val clientRepository = mock(ClientRepository::class)
+        val clientRemoteRepository = mock<ClientRemoteRepository>(mode = MockMode.autoUnit)
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
 
         val clientMapper = MapperProvider.clientMapper()
 
@@ -97,26 +94,26 @@ class FetchUsersClientsFromRemoteUseCaseTest {
             FetchUsersClientsFromRemoteUseCaseImpl(clientRemoteRepository, clientRepository)
 
         suspend fun withSuccessfulResponse(userIdDTO: UserIdDTO, expectedResponse: List<SimpleClientResponse>): Arrangement {
-            coEvery {
+            everySuspend {
                 clientRemoteRepository.fetchOtherUserClients(any())
-            }.returns(Either.Right(mapOf(userIdDTO to expectedResponse)))
+            } returns Either.Right(mapOf(userIdDTO to expectedResponse))
 
-            coEvery {
+            everySuspend {
                 clientRepository.storeUserClientListAndRemoveRedundantClients(
                     clientMapper.toInsertClientParam(
                         userIdDTO = userIdDTO,
                         simpleClientResponse = expectedResponse
                     )
                 )
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
 
             return this
         }
 
         suspend fun withGetOtherUserClientsErrorResponse(exception: KaliumException): Arrangement {
-            coEvery {
+            everySuspend {
                 clientRemoteRepository.fetchOtherUserClients(any())
-            }.returns(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
+            } returns Either.Left(NetworkFailure.ServerMiscommunication(exception))
             return this
         }
 

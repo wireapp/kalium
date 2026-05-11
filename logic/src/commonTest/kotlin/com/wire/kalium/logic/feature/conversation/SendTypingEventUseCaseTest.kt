@@ -25,11 +25,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,9 +46,9 @@ class SendTypingEventUseCaseTest {
 
         useCase(TestConversation.ID, Conversation.TypingIndicatorMode.STOPPED)
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STOPPED))
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -60,22 +62,22 @@ class SendTypingEventUseCaseTest {
 
         val result = useCase(TestConversation.ID, Conversation.TypingIndicatorMode.STARTED)
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STARTED))
-        }.wasInvoked()
+        }
         assertEquals(Unit, result)
     }
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-                val typingIndicatorRepository: TypingIndicatorOutgoingRepository = mock(TypingIndicatorOutgoingRepository::class)
+                val typingIndicatorRepository: TypingIndicatorOutgoingRepository = mock()
 
         suspend fun withTypingIndicatorStatusAndResult(
             typingMode: Conversation.TypingIndicatorMode,
             result: Either<CoreFailure, Unit> = Either.Right(Unit)
         ) = apply {
-            coEvery {
+            everySuspend {
                 typingIndicatorRepository.sendTypingIndicatorStatus(any(), eq(typingMode))
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to SendTypingEventUseCaseImpl(

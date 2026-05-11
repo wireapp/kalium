@@ -19,7 +19,6 @@ package com.wire.kalium.persistence.dao.newclient
 
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
@@ -30,7 +29,6 @@ data class NewClientEntity(
     val model: String?,
 )
 
-@Mockable
 interface NewClientDAO {
     suspend fun insertNewClient(client: InsertClientParam)
     suspend fun observeNewClients(): Flow<List<NewClientEntity>>

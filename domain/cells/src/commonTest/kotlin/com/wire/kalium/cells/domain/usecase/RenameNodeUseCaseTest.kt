@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.PreCheckResult
@@ -26,11 +28,11 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.mapLeft
 import com.wire.kalium.common.functional.right
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -50,13 +52,13 @@ class RenameNodeUseCaseTest {
             newName = "newName.jpg"
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.renameNode(
                 uuid = ("uuid"),
                 path = ("somePath/someFile.txt"),
                 targetPath = ("somePath/newName.jpg")
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -72,12 +74,12 @@ class RenameNodeUseCaseTest {
             newName = "newName.jpg"
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.updateAssetPath(
                 assetId = ("uuid"),
                 remotePath = ("somePath/newName.jpg")
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -93,12 +95,12 @@ class RenameNodeUseCaseTest {
             newName = "newName.jpg"
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.attachmentsRepository.updateAssetPath(
                 assetId = ("uuid"),
                 remotePath = ("somePath/newName.jpg")
             )
-        }.wasNotInvoked()
+        }
 
         assertTrue(result is Either.Left<RenameNodeFailure>)
         assertTrue(result.value is RenameNodeFailure.FileAlreadyExists)
@@ -106,24 +108,24 @@ class RenameNodeUseCaseTest {
 
     private class Arrangement {
 
-        val cellsRepository = mock(CellsRepository::class)
-        val attachmentsRepository = mock(CellAttachmentsRepository::class)
+        val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
+        val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
 
         suspend fun withSuccessRename() = apply {
-            coEvery { cellsRepository.renameNode(any(), any(), any()) }.returns(Unit.right())
+            everySuspend { cellsRepository.renameNode(any(), any(), any()) }.returns(Unit.right())
         }
 
         suspend fun withSuccessPreCheck() = apply {
-            coEvery { cellsRepository.preCheck(any()) }.returns(PreCheckResult.Success.right())
+            everySuspend { cellsRepository.preCheck(any()) }.returns(PreCheckResult.Success.right())
         }
 
         suspend fun withFileAlreadyExist() = apply {
-            coEvery { cellsRepository.preCheck(any()) }.returns(PreCheckResult.FileExists("").right())
+            everySuspend { cellsRepository.preCheck(any()) }.returns(PreCheckResult.FileExists("").right())
         }
 
         suspend fun arrange(): Pair<Arrangement, RenameNodeUseCaseImpl> {
 
-            coEvery { attachmentsRepository.updateAssetPath(any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.updateAssetPath(any(), any()) }.returns(Unit.right())
 
             return this to RenameNodeUseCaseImpl(
                 cellsRepository = cellsRepository,

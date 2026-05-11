@@ -19,7 +19,6 @@
 package com.wire.kalium.cryptography
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
-import io.mockative.Mockable
 import kotlin.coroutines.cancellation.CancellationException
 
 data class CryptoSessionId(val userId: CryptoUserID, val cryptoClientId: CryptoClientId) {
@@ -49,11 +48,10 @@ data class PreKeyCrypto(
     val pkb: String
 )
 
-@Suppress("TooManyFunctions", "OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 /**
  * @sample samples.cryptography.ProteusClient.basicEncryption
  */
-@Mockable
+@Suppress("TooManyFunctions", "OPTIONAL_DECLARATION_USAGE_IN_NON_COMMON_SOURCE")
 interface ProteusClient {
 
     @Throws(ProteusException::class, CancellationException::class)

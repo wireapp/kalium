@@ -23,21 +23,23 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
+import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
-import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangement
-import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -81,9 +83,9 @@ class EventProcessorTest {
         eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationEventReceiver.onEvent(any(), eq(event), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -114,9 +116,9 @@ class EventProcessorTest {
         eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userEventReceiver.onEvent(any(), eq(event), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -171,9 +173,9 @@ class EventProcessorTest {
         advanceUntilIdle()
         assertFalse(callerScope.isActive)
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertiesEventReceiver.onEvent(any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -194,9 +196,9 @@ class EventProcessorTest {
             advanceUntilIdle()
         }
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertiesEventReceiver.onEvent(any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -213,9 +215,9 @@ class EventProcessorTest {
             advanceUntilIdle()
         }
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userPropertiesEventReceiver.onEvent(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -227,25 +229,24 @@ class EventProcessorTest {
         val result = eventProcessor.processEvent(arrangement.transactionContext, event.wrapInEnvelope())
 
         assertEquals(Either.Right(null), result)
-        coVerify { arrangement.conversationEventReceiver.onEvent(any(), any(), any()) }
-            .wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.conversationEventReceiver.onEvent(any(), any(), any()) }
     }
 
     private class Arrangement(
         val processingScope: CoroutineScope
-    ) : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
-        val conversationEventReceiver = mock(ConversationEventReceiver::class)
-        val userEventReceiver = mock(UserEventReceiver::class)
-        val teamEventReceiver = mock(TeamEventReceiver::class)
-        val userPropertiesEventReceiver = mock(UserPropertiesEventReceiver::class)
-        val federationEventReceiver = mock(FederationEventReceiver::class)
+        val conversationEventReceiver = mock<ConversationEventReceiver>()
+        val userEventReceiver = mock<UserEventReceiver>()
+        val teamEventReceiver = mock<TeamEventReceiver>()
+        val featureConfigEventReceiver = mock<FeatureConfigEventReceiver>(mode = MockMode.autoUnit)
+        val userPropertiesEventReceiver = mock<UserPropertiesEventReceiver>()
+        val federationEventReceiver = mock<FederationEventReceiver>(mode = MockMode.autoUnit)
 
         suspend fun withConversationEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationEventReceiver.onEvent(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withConversationEventReceiverSucceeding() = withConversationEventReceiverReturning(Either.Right(Unit))
@@ -255,9 +256,9 @@ class EventProcessorTest {
         )
 
         suspend fun withUserEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 userEventReceiver.onEvent(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUserEventReceiverSucceeding() = withUserEventReceiverReturning(Either.Right(Unit))
@@ -267,23 +268,23 @@ class EventProcessorTest {
         )
 
         suspend fun withTeamEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 teamEventReceiver.onEvent(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withTeamEventReceiverSucceeding() = withTeamEventReceiverReturning(Either.Right(Unit))
 
         suspend fun withUserPropertiesEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 userPropertiesEventReceiver.onEvent(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
-        suspend fun withUserPropertiesEventReceiverInvoking(invocation: (args: Array<Any?>) -> Either<CoreFailure, Unit>) = apply {
-            coEvery {
+        suspend fun withUserPropertiesEventReceiverInvoking(invocation: () -> Either<CoreFailure, Unit>) = apply {
+            everySuspend {
                 userPropertiesEventReceiver.onEvent(any(), any(), any())
-            }.invokes(invocation)
+            } calls { invocation() }
         }
 
         suspend fun withUserPropertiesEventReceiverSucceeding() = withUserPropertiesEventReceiverReturning(Either.Right(Unit))

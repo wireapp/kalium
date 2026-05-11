@@ -18,12 +18,10 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import io.mockative.Mockable
 
 /**
  * Use case to check if Wire Cells feature is enabled.
  */
-@Mockable
 public interface IsWireCellsEnabledUseCase {
     public suspend operator fun invoke(): Boolean
 }

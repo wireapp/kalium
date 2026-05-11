@@ -32,11 +32,13 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -65,9 +67,9 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val result = observeSelfDeletionMessagesFlag(conversationId, true)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
-        }.wasInvoked(exactly = once)
+        }
         assertEquals(storedConversationStatus.messageTimer, result.first().duration)
     }
 
@@ -99,9 +101,9 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val result = observeSelfDeletionMessagesFlag(conversationId, true)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 userConfigRepository.observeTeamSettingsSelfDeletingStatus()
-            }.wasInvoked(exactly = once)
+            }
 
             assertEquals(expectedSelfDeletionStatus.selfDeletionTimer, result.first())
         }
@@ -129,9 +131,9 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val result = observeSelfDeletionTimer(conversationId, true)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
-        }.wasInvoked(exactly = once)
+        }
 
         assertEquals(storedTeamSettingsDuration, result.first().duration)
     }
@@ -157,12 +159,10 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val result = observeSelfDeletionTimer(conversationId, true)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
-        }.wasInvoked(exactly = once)
+        }
 
-//         verify(arrangement.userConfigRepository).invocation { observeConversationSelfDeletionTimer(conversationId) }
-//             .wasNotInvoked()
         assertEquals(conversationDuration, result.first().duration)
     }
 
@@ -190,12 +190,12 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val result = observeSelfDeletionTimer(conversationId, true)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeConversationById(any())
-        }.wasInvoked(exactly = once)
+        }
 
         assertEquals(storedConversationStatus.messageTimer, result.first().duration)
     }
@@ -224,12 +224,12 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val result = observeSelfDeletionTimer(conversationId, true)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.observeConversationById(any())
-        }.wasNotInvoked()
+        }
 
         assertEquals(SelfDeletionTimer.Disabled, result.first())
     }
@@ -239,28 +239,28 @@ class ObserveSelfDeletingMessagesUseCaseTest {
     }
 
     private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
-                val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
-        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+                val userConfigRepository: UserConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+        val conversationRepository: ConversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
 
         val observeSelfDeletionStatus: ObserveSelfDeletionTimerSettingsForConversationUseCase by lazy {
             ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl(userConfigRepository, conversationRepository, dispatcher)
         }
 
         suspend fun withStoredConversation(conversation: Conversation) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeConversationById(any())
-            }.returns(flowOf(Either.Right(conversation)))
+            } returns flowOf(Either.Right(conversation))
         }
 
         suspend fun withObserveTeamSettingsSelfDeletionStatus(eitherFlow: Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>) =
             apply {
-                coEvery {
+                everySuspend {
                     userConfigRepository.observeTeamSettingsSelfDeletingStatus()
-                }.returns(eitherFlow)
+                } returns eitherFlow
             }
 
         suspend fun withCellEnabled(enabled: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.isCellEnabled(any())
             } returns enabled.right()
         }

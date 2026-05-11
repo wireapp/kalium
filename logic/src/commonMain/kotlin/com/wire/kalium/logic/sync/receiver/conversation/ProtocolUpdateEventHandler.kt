@@ -32,10 +32,8 @@ import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
-@Mockable
 internal interface ProtocolUpdateEventHandler {
     suspend fun handle(
         transactionContext: CryptoTransactionContext,

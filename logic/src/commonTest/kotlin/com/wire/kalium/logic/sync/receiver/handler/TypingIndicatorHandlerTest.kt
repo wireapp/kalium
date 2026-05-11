@@ -24,11 +24,13 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -44,9 +46,9 @@ class TypingIndicatorHandlerTest {
         val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STARTED))
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.typingIndicatorIncomingRepository.addTypingUserInConversation(eq(TestConversation.ID), eq(TestUser.SELF.id))
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -58,9 +60,9 @@ class TypingIndicatorHandlerTest {
         val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STARTED))
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.typingIndicatorIncomingRepository.addTypingUserInConversation(eq(TestConversation.ID), eq(TestUser.OTHER_USER_ID))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -72,9 +74,9 @@ class TypingIndicatorHandlerTest {
         val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STOPPED))
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(eq(TestConversation.ID), eq(TestUser.OTHER_USER_ID))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -86,18 +88,18 @@ class TypingIndicatorHandlerTest {
         val result = handler.handle(TestEvent.typingIndicator(Conversation.TypingIndicatorMode.STOPPED))
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.typingIndicatorIncomingRepository.removeTypingUserInConversation(eq(TestConversation.ID), eq(TestUser.SELF.id))
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement {
-                val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository = mock(TypingIndicatorIncomingRepository::class)
+        val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository = mock(mode = MockMode.autoUnit)
 
         suspend fun withTypingIndicatorObserve(usersId: Set<UserId>) = apply {
-            coEvery {
+            everySuspend {
                 typingIndicatorIncomingRepository.observeUsersTyping(eq(TestConversation.ID))
-            }.returns(flowOf(usersId))
+            } returns flowOf(usersId)
         }
 
         fun arrange() = this to TypingIndicatorHandlerImpl(TestUser.SELF.id, typingIndicatorIncomingRepository)

@@ -23,14 +23,13 @@ import com.wire.kalium.logic.data.conversation.folders.ConversationFolderReposit
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -46,9 +45,9 @@ class UserPropertiesEventReceiverTest {
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setReadReceiptsStatus(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -60,15 +59,15 @@ class UserPropertiesEventReceiverTest {
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.updateConversationFolders(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
-        val userConfigRepository = mock(UserConfigRepository::class)
-        val conversationFolderRepository = mock(ConversationFolderRepository::class)
+        val userConfigRepository = mock<UserConfigRepository>()
+        val conversationFolderRepository = mock<ConversationFolderRepository>()
 
         private val userPropertiesEventReceiver: UserPropertiesEventReceiver = UserPropertiesEventReceiverImpl(
             userConfigRepository = userConfigRepository,
@@ -76,15 +75,15 @@ class UserPropertiesEventReceiverTest {
         )
 
         suspend fun withUpdateReadReceiptsSuccess() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setReadReceiptsStatus(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withUpdateConversationFolders() = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.updateConversationFolders(any())
-             }.returns(Either.Right(Unit))
+             } returns Either.Right(Unit)
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {

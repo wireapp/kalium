@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.data.logout.LogoutReason
-import io.mockative.Mockable
 
 /**
  * Handles the migration error of a proteus client storage from CryptoBox to CoreCrypto.
@@ -26,7 +25,6 @@ import io.mockative.Mockable
  *
  * This achieves that the client data is cleared and the user is logged out without losing content.
  */
-@Mockable
 internal interface ProteusMigrationRecoveryHandler {
     suspend fun clearClientData(clearLocalFiles: suspend () -> Unit)
 }

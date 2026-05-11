@@ -30,7 +30,6 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.sync.KaliumSyncException
-import io.mockative.Mockable
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -51,7 +50,6 @@ import kotlinx.coroutines.flow.transform
  * In legacy environments, it first fetches pending events and then transitions to live updates.
  *
  */
-@Mockable
 internal interface EventGatherer {
 
     /**

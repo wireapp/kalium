@@ -22,9 +22,7 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
-import io.mockative.Mockable
 
-@Mockable
 internal interface UserSessionScopeProvider {
     fun get(userId: UserId): UserSessionScope?
     fun getOrCreate(userId: UserId): UserSessionScope

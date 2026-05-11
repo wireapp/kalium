@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -33,15 +32,17 @@ import com.wire.kalium.logic.data.MockConversation
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -71,9 +72,9 @@ class PendingProposalSchedulerTest {
 
         pendingProposalsScheduler.scheduleCommit(Arrangement.PROPOSAL_TIMER.groupID, Arrangement.PROPOSAL_TIMER.timestamp)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.setProposalTimer(eq(Arrangement.PROPOSAL_TIMER), eq(false))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -85,9 +86,9 @@ class PendingProposalSchedulerTest {
 
         pendingProposalsScheduler.scheduleCommit(Arrangement.PROPOSAL_TIMER.groupID, Arrangement.PROPOSAL_TIMER.timestamp)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.setProposalTimer(eq(Arrangement.PROPOSAL_TIMER), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -100,9 +101,9 @@ class PendingProposalSchedulerTest {
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -115,9 +116,9 @@ class PendingProposalSchedulerTest {
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -131,9 +132,9 @@ class PendingProposalSchedulerTest {
         yield()
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -149,9 +150,9 @@ class PendingProposalSchedulerTest {
         proposalChannel.trySend(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_NEAR_FUTURE)))
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -169,9 +170,9 @@ class PendingProposalSchedulerTest {
         proposalChannel.trySend(listOf(ProposalTimer(MockConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -185,13 +186,13 @@ class PendingProposalSchedulerTest {
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.clearProposalTimer(eq(MockConversation.GROUP_ID))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -206,13 +207,13 @@ class PendingProposalSchedulerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.clearProposalTimer(eq(MockConversation.GROUP_ID))
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -226,13 +227,13 @@ class PendingProposalSchedulerTest {
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.clearProposalTimer(eq(MockConversation.GROUP_ID))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -246,20 +247,20 @@ class PendingProposalSchedulerTest {
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.commitPendingProposals(any(), eq(MockConversation.GROUP_ID))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.clearProposalTimer(any())
-        }.wasNotInvoked()
+        }
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val subconversationRepository = mock(SubconversationRepository::class)
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        val subconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange(testDispatcher: KaliumDispatcher) = this to PendingProposalSchedulerImpl(
             incrementalSyncRepository,
@@ -272,51 +273,51 @@ class PendingProposalSchedulerTest {
         }
 
         suspend fun withSubconversationRepositoryDoesNotContainGroup() = apply {
-            coEvery {
+            everySuspend {
                 subconversationRepository.containsSubconversation(any())
-            }.returns(false)
+            } returns false
         }
 
         suspend fun withSubconversationRepositoryContainsGroup(groupID: GroupID) = apply {
-            coEvery {
+            everySuspend {
                 subconversationRepository.containsSubconversation(eq(groupID))
-            }.returns(true)
+            } returns true
         }
 
         suspend fun withScheduleProposalTimerSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.setProposalTimer(any(), any())
-            }.returns(Unit)
+            } returns Unit
         }
 
         suspend fun withCommitPendingProposalsSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.commitPendingProposals(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withCommitPendingProposalsFailing(failure: CoreFailure) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.commitPendingProposals(any(), any())
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         suspend fun withClearProposalTimerSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.clearProposalTimer(any())
-            }.returns(Unit)
+            } returns Unit
         }
 
         suspend fun withScheduledProposalTimers(timers: List<ProposalTimer>) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.observeProposalTimers()
-            }.returns(flowOf(timers).flatten())
+            } returns flowOf(timers).flatten()
         }
 
         suspend fun withScheduledProposalTimersFlow(timersFlow: Flow<List<ProposalTimer>>) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.observeProposalTimers()
-            }.returns(timersFlow.flatten())
+            } returns timersFlow.flatten()
         }
 
         companion object {

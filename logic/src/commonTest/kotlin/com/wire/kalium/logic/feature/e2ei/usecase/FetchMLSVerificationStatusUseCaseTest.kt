@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CredentialType
@@ -28,28 +29,26 @@ import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseTest.Arrangement.Companion.getMockedIdentity
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -71,17 +70,17 @@ class FetchMLSVerificationStatusUseCaseTest {
         handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.updateMlsVerificationStatus(any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
-            arrangement.persistMessageUseCase.invoke(any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessageUseCase.invoke(any<Message.System>())
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -98,20 +97,20 @@ class FetchMLSVerificationStatusUseCaseTest {
         handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateMlsVerificationStatus(
                 verificationStatus = eq(Conversation.VerificationStatus.DEGRADED),
                 conversationID = eq(conversationDetails.id)
             )
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessageUseCase.invoke(any<Message.System>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), eq(false))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -129,17 +128,17 @@ class FetchMLSVerificationStatusUseCaseTest {
         handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.updateMlsVerificationStatus(any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.persistMessageUseCase.invoke(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -172,20 +171,20 @@ class FetchMLSVerificationStatusUseCaseTest {
         handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateMlsVerificationStatus(
                 eq(Conversation.VerificationStatus.VERIFIED),
                 eq(epochChangedData.conversationId)
             )
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessageUseCase.invoke(any<Message.System>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), eq(true))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -218,48 +217,69 @@ class FetchMLSVerificationStatusUseCaseTest {
         handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateMlsVerificationStatus(
                 eq(Conversation.VerificationStatus.DEGRADED),
                 eq(epochChangedData.conversationId)
             )
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessageUseCase.invoke(any<Message.System>())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), eq(false))
-        }.wasInvoked(once)
+        }
     }
 
     private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
-        UserRepositoryArrangement by UserRepositoryArrangementImpl() {
+    ) {
 
-        val mlsClientProvider = mock(MLSClientProvider::class)
-        val mlsClient = mock(MLSClient::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
+        val mlsClientProvider: MLSClientProvider = mock()
+        val mlsClient: MLSClient = mock()
+        val mlsConversationRepository: MLSConversationRepository = mock()
+        val conversationRepository: ConversationRepository = mock()
+        val persistMessageUseCase: PersistMessageUseCase = mock()
+        val userRepository: UserRepository = mock()
 
         suspend fun withGetMLSClientSuccess() {
-            coEvery { mlsClientProvider.getMLSClient(any()) }.returns(Either.Right(mlsClient))
+            everySuspend { mlsClientProvider.getMLSClient(any()) } returns Either.Right(mlsClient)
         }
 
         suspend fun withIsGroupVerified(result: E2EIConversationState) {
-            coEvery {
+            everySuspend {
                 mlsClient.getGroupState(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withGetMembersIdentities(result: Map<UserId, List<WireIdentity>>) {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.getMembersIdentities(eq(mlsClient), any(), any())
-            }.returns(Either.Right(result))
+            } returns Either.Right(result)
+        }
+
+        suspend fun withUpdateVerificationStatus(result: Either<CoreFailure, Unit>) {
+            everySuspend { conversationRepository.updateMlsVerificationStatus(any(), any()) } returns result
+        }
+
+        suspend fun withConversationByMLSGroupId(result: Either<CoreFailure, Conversation>) {
+            everySuspend { conversationRepository.getConversationByMLSGroupId(any()) } returns result
+        }
+
+        suspend fun withPersistingMessage(result: Either<CoreFailure, Unit>) {
+            everySuspend { persistMessageUseCase.invoke(any()) } returns result
+        }
+
+        suspend fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>) {
+            everySuspend { conversationRepository.setDegradedConversationNotifiedFlag(any(), any()) } returns result
+        }
+
+        suspend fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>) {
+            everySuspend { conversationRepository.getGroupStatusMembersNamesAndHandles(any()) } returns result
         }
 
         suspend inline fun arrange() = let {

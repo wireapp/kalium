@@ -298,6 +298,7 @@ import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingMLSGroupJoin
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingOneOnOneResolutionsUseCaseImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
+import com.wire.kalium.logic.feature.debug.OptimizeDatabaseUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCase
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
@@ -572,7 +573,6 @@ import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
-import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
@@ -1475,7 +1475,8 @@ public class UserSessionScope internal constructor(
                 userStorageProvider = userStorageProvider,
                 userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
                 logger = userScopedLogger
-            )
+            ),
+            optimizer = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
         )
     }
 
@@ -2988,7 +2989,6 @@ public class UserSessionScope internal constructor(
     }
 }
 
-@Mockable
 internal fun interface CachedClientIdClearer {
     operator fun invoke()
 }

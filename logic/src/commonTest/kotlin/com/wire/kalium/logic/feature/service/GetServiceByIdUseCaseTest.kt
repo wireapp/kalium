@@ -21,9 +21,11 @@ import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,21 +35,18 @@ class GetServiceByIdUseCaseTest {
 
     @Test
     fun givenServiceId_whenGettingServiceById_thenReturnServiceDetails() = runTest {
-        // given
         val (_, getServiceById) = Arrangement()
             .withGetServiceByIdSuccess(serviceId = Arrangement.serviceId)
             .arrange()
 
-        // when
         val result = getServiceById(serviceId = Arrangement.serviceId)
 
-        // then
         assertIs<ServiceDetails>(result)
         assertEquals(Arrangement.serviceDetails, result)
     }
 
     private class Arrangement {
-        private val serviceRepository = mock(ServiceRepository::class)
+        private val serviceRepository = mock<ServiceRepository>(mode = MockMode.autoUnit)
 
         private val getServiceById = GetServiceByIdUseCaseImpl(
             serviceRepository = serviceRepository
@@ -58,9 +57,9 @@ class GetServiceByIdUseCaseTest {
         suspend fun withGetServiceByIdSuccess(
             serviceId: ServiceId
         ) = apply {
-            coEvery {
+            everySuspend {
                 serviceRepository.getServiceById(eq(serviceId))
-            }.returns(Either.Right(serviceDetails))
+            } returns Either.Right(serviceDetails)
         }
 
         companion object {

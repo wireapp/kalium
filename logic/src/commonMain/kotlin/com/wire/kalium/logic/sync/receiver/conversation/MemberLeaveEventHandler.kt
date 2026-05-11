@@ -47,9 +47,7 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCu
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.member.MemberDAO
-import io.mockative.Mockable
 
-@Mockable
 internal interface MemberLeaveEventHandler {
     suspend fun handle(
         transactionContext: CryptoTransactionContext,

@@ -22,27 +22,22 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubConversation
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangement
-import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementImpl
-import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.SubconversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.SubconversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversationUseCaseArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
@@ -53,12 +48,14 @@ import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any as mokkeryAny
+import dev.mokkery.matcher.eq as mokkeryEq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -73,9 +70,9 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldFail()
 
-        coVerify {
-            arrangement.systemMessageInserter.insertLostCommitSystemMessage(any(), any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(mokkeryAny(), mokkeryAny())
+        }
     }
 
     @Test
@@ -87,13 +84,13 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversationUseCase.invoke(
-                eq(arrangement.transactionContext),
-                eq(CONVERSATION_ID),
-                eq(ConversationSyncReason.Other)
+                mokkeryEq(arrangement.transactionContext),
+                mokkeryEq(CONVERSATION_ID),
+                mokkeryEq(ConversationSyncReason.Other)
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -105,14 +102,14 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.joinExistingMLSConversationUseCase.invoke(
                 arrangement.transactionContext,
                 CONVERSATION_ID,
                 null,
                 true
             )
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -126,14 +123,14 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(
-                any(),
-                eq(CONVERSATION_ID),
-                any(),
-                any()
+                mokkeryAny(),
+                mokkeryEq(CONVERSATION_ID),
+                mokkeryAny(),
+                mokkeryAny()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -146,9 +143,9 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldFail()
 
-        coVerify {
-            arrangement.systemMessageInserter.insertLostCommitSystemMessage(eq(CONVERSATION_ID), any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(mokkeryEq(CONVERSATION_ID), mokkeryAny())
+        }
     }
 
     @Test
@@ -162,9 +159,9 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(arrangement.transactionContext, CONVERSATION_ID).shouldSucceed()
 
-        coVerify {
-            arrangement.systemMessageInserter.insertLostCommitSystemMessage(eq(CONVERSATION_ID), any())
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(mokkeryEq(CONVERSATION_ID), mokkeryAny())
+        }
     }
 
     @Test
@@ -179,17 +176,17 @@ class StaleEpochVerifierTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.subconversationRepository.fetchRemoteSubConversationDetails(CONVERSATION_ID, subConversationId)
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.isLocalGroupEpochStale(
-                any(),
-                eq(TestSubConversationDetails.groupId),
-                eq(TestSubConversationDetails.epoch)
+                mokkeryAny(),
+                mokkeryEq(TestSubConversationDetails.groupId),
+                mokkeryEq(TestSubConversationDetails.epoch)
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -206,17 +203,17 @@ class StaleEpochVerifierTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.subconversationRepository.fetchRemoteSubConversationDetails(CONVERSATION_ID, subConversationId)
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
-                any(),
-                eq(TestSubConversationDetails.groupId),
-                eq(TestGroupInfo)
+                mokkeryAny(),
+                mokkeryEq(TestSubConversationDetails.groupId),
+                mokkeryEq(TestGroupInfo)
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -234,9 +231,9 @@ class StaleEpochVerifierTest {
 
         result.shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.subconversationRepository.fetchRemoteSubConversationDetails(CONVERSATION_ID, subConversationId)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -257,15 +254,15 @@ class StaleEpochVerifierTest {
 
         result.shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.subconversationRepository.fetchRemoteSubConversationDetails(CONVERSATION_ID, subConversationId)
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
-                any(), eq(TestSubConversationDetails.groupId), eq(TestGroupInfo)
+                mokkeryAny(), mokkeryEq(TestSubConversationDetails.groupId), mokkeryEq(TestGroupInfo)
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -280,34 +277,32 @@ class StaleEpochVerifierTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.subconversationRepository.fetchRemoteSubConversationDetails(CONVERSATION_ID, subConversationId)
-        }.wasInvoked(once)
+        }
 
-        coVerify {
-            arrangement.fetchConversationUseCase.invoke(any(), any(), any())
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.fetchConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny())
+        }
     }
 
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        SystemMessageInserterArrangement by SystemMessageInserterArrangementImpl(),
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        SubconversationRepositoryArrangement by SubconversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
-        JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl() {
-        val fetchConversationUseCase = mock(FetchConversationUseCase::class)
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val systemMessageInserter = mock<SystemMessageInserter>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        val subconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
+        val joinExistingMLSConversationUseCase = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
+        val fetchConversationUseCase = mock<FetchConversationUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withFetchConversationResponse(result: Either<CoreFailure, ConversationResponse>) {
-            coEvery {
-                fetchConversationUseCase.invoke(any(), any(), any())
-            }.returns(
-                when (result) {
-                    is Either.Left -> Either.Left(result.value)
-                    is Either.Right -> Either.Right(Unit)
-                }
-            )
+            everySuspend {
+                fetchConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny())
+            } returns when (result) {
+                is Either.Left -> Either.Left(result.value)
+                is Either.Right -> Either.Right(Unit)
+            }
 
             val localProtocolInfo: Either<StorageFailure, Conversation.ProtocolInfo> = when (result) {
                 is Either.Left -> Either.Left(StorageFailure.Generic(IllegalStateException(result.value.toString())))
@@ -317,9 +312,47 @@ class StaleEpochVerifierTest {
                 }
             }
 
-            coEvery {
-                conversationRepository.getConversationProtocolInfo(any())
-            }.returns(localProtocolInfo)
+            everySuspend {
+                conversationRepository.getConversationProtocolInfo(mokkeryAny())
+            } returns localProtocolInfo
+        }
+
+        suspend fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>) {
+            everySuspend { mlsConversationRepository.isLocalGroupEpochStale(mokkeryAny(), mokkeryAny(), mokkeryAny()) } returns result
+        }
+
+        suspend fun withJoinExistingMLSConversationUseCaseReturning(result: Either<CoreFailure, Unit>) {
+            everySuspend { joinExistingMLSConversationUseCase.invoke(mokkeryAny(), mokkeryAny(), mokkeryAny(), mokkeryAny()) } returns result
+        }
+
+        suspend fun withInsertLostCommitSystemMessage(result: Either<CoreFailure, Unit>) {
+            everySuspend { systemMessageInserter.insertLostCommitSystemMessage(mokkeryAny(), mokkeryAny()) } returns result
+        }
+
+        suspend fun withFetchRemoteSubConversationDetails(
+            conversationId: ConversationId,
+            subConversationId: SubconversationId,
+            result: Either<NetworkFailure, SubConversation>
+        ) {
+            everySuspend {
+                subconversationRepository.fetchRemoteSubConversationDetails(mokkeryEq(conversationId), mokkeryEq(subConversationId))
+            } returns result
+        }
+
+        suspend fun withFetchRemoteSubConversationGroupInfo(
+            conversationId: ConversationId,
+            subConversationId: SubconversationId,
+            result: Either<CoreFailure, ByteArray>
+        ) {
+            everySuspend {
+                subconversationRepository.fetchRemoteSubConversationGroupInfo(mokkeryEq(conversationId), mokkeryEq(subConversationId))
+            } returns result
+        }
+
+        suspend fun withJoinGroupByExternalCommit(groupId: GroupID, groupInfo: ByteArray, result: Either<CoreFailure, Unit>) {
+            everySuspend {
+                mlsConversationRepository.joinGroupByExternalCommit(mokkeryAny(), mokkeryEq(groupId), mokkeryEq(groupInfo))
+            } returns result
         }
 
         suspend fun arrange() = run {

@@ -21,10 +21,12 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.eq
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.Job
 
 internal interface OneOnOneResolverArrangement {
@@ -40,27 +42,27 @@ internal interface OneOnOneResolverArrangement {
 
 internal class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
 
-    override val oneOnOneResolver = mock(OneOnOneResolver::class)
+    override val oneOnOneResolver = mock<OneOnOneResolver>(mode = MockMode.autoUnit)
     override suspend fun withScheduleResolveOneOnOneConversationWithUserId() {
-        coEvery {
+        everySuspend {
             oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any(), any())
         }.returns(Job())
     }
 
     override suspend fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>) {
-        coEvery {
+        everySuspend {
             oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), eq(true))
         }.returns(result)
     }
 
     override suspend fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, ConversationId>) {
-        coEvery {
+        everySuspend {
             oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
         }.returns(result)
     }
 
     override suspend fun withResolveAllOneOnOneConversationsReturning(result: Either<CoreFailure, Unit>) {
-        coEvery {
+        everySuspend {
             oneOnOneResolver.resolveAllOneOnOneConversations(any(), any(), any())
         }.returns(result)
     }

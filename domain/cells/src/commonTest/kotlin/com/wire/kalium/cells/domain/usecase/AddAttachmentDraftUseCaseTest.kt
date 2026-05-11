@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.CellUploadEvent
 import com.wire.kalium.cells.domain.CellUploadManager
@@ -26,13 +28,13 @@ import com.wire.kalium.cells.domain.model.CellNode
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.every
+import dev.mokkery.mock
+import dev.mokkery.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -90,13 +92,13 @@ class AddAttachmentDraftUseCaseTest {
 
         useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.uploadManager.upload(
                 assetPath = assetPath,
                 assetSize = assetSize,
                 destNodePath = destNodePath,
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -109,7 +111,7 @@ class AddAttachmentDraftUseCaseTest {
 
         useCase(conversationId, fileName, mimeType, assetPath, assetSize, metadata)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.repository.add(
                 conversationId = conversationId,
                 node = testNode,
@@ -118,7 +120,7 @@ class AddAttachmentDraftUseCaseTest {
                 metadata = AssetContent.AssetMetadata.Image(0, 0),
                 uploadStatus = AttachmentUploadStatus.UPLOADING,
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -133,9 +135,9 @@ class AddAttachmentDraftUseCaseTest {
 
         advanceTimeBy(1)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.uploadManager.observeUpload(any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -151,9 +153,9 @@ class AddAttachmentDraftUseCaseTest {
 
         advanceTimeBy(1)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.repository.updateStatus(testNode.uuid, AttachmentUploadStatus.UPLOADED)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -169,21 +171,21 @@ class AddAttachmentDraftUseCaseTest {
 
         advanceTimeBy(1)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.repository.updateStatus(testNode.uuid, AttachmentUploadStatus.FAILED)
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement(val useCaseScope: CoroutineScope) {
 
-        val uploadManager = mock(CellUploadManager::class)
-        val conversationRepository = mock(CellConversationRepository::class)
-        val repository = mock(MessageAttachmentDraftRepository::class)
+        val uploadManager = mock<CellUploadManager>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<CellConversationRepository>(mode = MockMode.autoUnit)
+        val repository = mock<MessageAttachmentDraftRepository>(mode = MockMode.autoUnit)
 
         val uploadEventsFlow = MutableSharedFlow<CellUploadEvent>()
 
         suspend fun withSuccessPreCheck() = apply {
-            coEvery {
+            everySuspend {
                 uploadManager.upload(
                     assetPath = any(),
                     assetSize = any(),
@@ -193,7 +195,7 @@ class AddAttachmentDraftUseCaseTest {
         }
 
         suspend fun withSuccessAdd() = apply {
-            coEvery {
+            everySuspend {
                 repository.add(
                     conversationId = any(),
                     node = any(),
@@ -206,7 +208,7 @@ class AddAttachmentDraftUseCaseTest {
         }
 
         suspend fun withSuccessUpdate() = apply {
-            coEvery {
+            everySuspend {
                 repository.updateStatus(
                     uuid = any(),
                     status = any()
@@ -234,7 +236,7 @@ class AddAttachmentDraftUseCaseTest {
 
         suspend fun arrange(): Pair<Arrangement, AddAttachmentDraftUseCaseImpl> {
 
-            coEvery { conversationRepository.getCellName(any()) }.returns("wire-cells-android/$conversationId".right())
+            everySuspend { conversationRepository.getCellName(any()) }.returns("wire-cells-android/$conversationId".right())
 
             return this to AddAttachmentDraftUseCaseImpl(
                 uploadManager = uploadManager,

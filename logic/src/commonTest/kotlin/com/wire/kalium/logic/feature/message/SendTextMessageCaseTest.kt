@@ -42,14 +42,15 @@ import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.sending.MessageSender
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import dev.mokkery.every
+import dev.mokkery.matcher.matching
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -79,21 +80,21 @@ class SendTextMessageCaseTest {
         // Then
         result.toEither().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertyRepository.getReadReceiptsStatus()
-        }.wasInvoked(once)
-        coVerify {
-            arrangement.persistMessage.invoke(matches { message -> message.content is MessageContent.Text })
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matching { message -> message.content is MessageContent.Text })
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matches { message -> message.content is MessageContent.Text },
+                matching { message -> message.content is MessageContent.Text },
                 any()
             )
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -114,18 +115,18 @@ class SendTextMessageCaseTest {
         // Then
         result.toEither().shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertyRepository.getReadReceiptsStatus()
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(any())
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -156,14 +157,14 @@ class SendTextMessageCaseTest {
         // Then
         result.toEither().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
-            arrangement.persistMessage.invoke(matches { message ->
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matching { message ->
                 (message.content as MessageContent.Text).linkPreviews.get(0).image == null
             })
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -195,17 +196,17 @@ class SendTextMessageCaseTest {
         // Then
         result.toEither().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
-                matches { message ->
+                matching { message ->
                     (message.content as MessageContent.Text).linkPreviews[0].image != null
                             && !(message.content as MessageContent.Text).linkPreviews[0].image?.otrKey.contentEquals(ByteArray(0))
                 }
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -237,14 +238,14 @@ class SendTextMessageCaseTest {
         // Then
         result.toEither().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
-        }.wasInvoked(once)
-        coVerify {
-            arrangement.persistMessage.invoke(matches { message ->
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matching { message ->
                 (message.content as MessageContent.Text).linkPreviews.get(0).image != null
             })
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -276,15 +277,15 @@ class SendTextMessageCaseTest {
         // Then
         result.toEither().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
-        }.wasInvoked(once)
-        coVerify {
-            arrangement.persistMessage.invoke(matches { message ->
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage.invoke(matching { message ->
                 assertIs<MessageContent.Text>(message.content)
                 (message.content as MessageContent.Text).linkPreviews.get(0).image == null
             })
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -316,82 +317,82 @@ class SendTextMessageCaseTest {
         sendTextMessage(testConversationId, "some-text", linkPreviews)
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetRepository.uploadAndPersistPrivateAsset(
-                mimeType = eq(VALID_LINK_PREVIEW_ASSET.mimeType),
+                mimeType = VALID_LINK_PREVIEW_ASSET.mimeType,
                 assetDataPath = any(),
                 otrKey = any(),
-                extension = eq(null),
-                conversationId = eq(testConversationId.toApi()),
-                filename = eq("link-preview-$testUrl"),
-                filetype = eq(VALID_LINK_PREVIEW_ASSET.mimeType)
+                extension = null,
+                conversationId = testConversationId.toApi(),
+                filename = "link-preview-$testUrl",
+                filetype = VALID_LINK_PREVIEW_ASSET.mimeType
             )
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement(private val coroutineScope: CoroutineScope) {
-        val persistMessage = mock(PersistMessageUseCase::class)
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val assetRepository = mock(AssetRepository::class)
-        val slowSyncRepository = mock(SlowSyncRepository::class)
-        val messageSender = mock(MessageSender::class)
-        val userPropertyRepository = mock(UserPropertyRepository::class)
-        val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
-        val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
+        val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
+        val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val assetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
+        val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
+        val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
+        val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
+        val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
+        val observeSelfDeletionTimerSettingsForConversation = mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withSendMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSendMessageFailure() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
         suspend fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(Either.Right(clientId))
+            } returns Either.Right(clientId)
         }
 
         suspend fun withPersistMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 persistMessage.invoke(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withUploadAndPersistPrivateAssetSuccess() = apply {
-            coEvery {
+            everySuspend {
                 assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
-            }.returns(Either.Right(Pair<UploadedAssetId, SHA256Key>(UploadedAssetId(any(), any(), any()), SHA256Key(ByteArray(any())))))
+            } returns Either.Right(Pair(UploadedAssetId("", "", ""), SHA256Key(ByteArray(0))))
         }
 
         suspend fun withUploadAndPersistPrivateAssetFailure() = apply {
-            coEvery {
+            everySuspend {
                 assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any(), any(), any(), any())
-            }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
         fun withSlowSyncStatusComplete() = apply {
             val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
             every {
                 slowSyncRepository.slowSyncStatus
-            }.returns(stateFlow)
+            } returns stateFlow
         }
 
         suspend fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
-            coEvery {
+            everySuspend {
                 userPropertyRepository.getReadReceiptsStatus()
-            }.returns(enabled)
+            } returns enabled
         }
 
         suspend fun withMessageTimer(result: SelfDeletionTimer) = apply {
-            coEvery {
+            everySuspend {
                 observeSelfDeletionTimerSettingsForConversation.invoke(any(), any())
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
 
         fun arrange() = this to SendTextMessageUseCase(
