@@ -24,12 +24,13 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -47,9 +48,9 @@ class ButtonActionHandlerTest {
 
         handler.handle(convId, senderId, content.referencedMessageId, content.buttonId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.compositeMessageRepository.markSelected(eq("messageId"), eq(convId), eq("buttonId"))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -66,9 +67,9 @@ class ButtonActionHandlerTest {
 
         handler.handle(convId, senderId, content.referencedMessageId, content.buttonId)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.compositeMessageRepository.markSelected(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     private companion object {
@@ -77,10 +78,10 @@ class ButtonActionHandlerTest {
 
     private class Arrangement {
 
-        val compositeMessageRepository = mock(CompositeMessageRepository::class)
+        val compositeMessageRepository = mock<CompositeMessageRepository>()
 
         suspend fun withMarkSelected(result: Either<StorageFailure, Unit> = Unit.right()) = apply {
-            coEvery { compositeMessageRepository.markSelected(any(), any(), any()) }.returns(result)
+            everySuspend { compositeMessageRepository.markSelected(any(), any(), any()) } returns result
         }
 
         fun arrange() = this to ButtonActionHandlerImpl(
