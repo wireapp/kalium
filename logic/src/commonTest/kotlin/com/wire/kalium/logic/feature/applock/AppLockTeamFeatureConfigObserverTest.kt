@@ -23,11 +23,9 @@ import com.wire.kalium.logic.configuration.AppLockTeamConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import com.wire.kalium.logic.data.session.SessionRepository
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
-import dev.mokkery.everySuspend
 import dev.mokkery.mock
 import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
@@ -45,7 +43,7 @@ internal class AppLockTeamFeatureConfigObserverTest {
     fun givenRepositoryFailure_whenObservingAppLock_thenEmitNull() = runTest {
         val (arrangement, observer) = Arrangement()
             .withFailure()
-            .withValidNomadAccountExists(false)
+            .withNomadServiceUrl(null)
             .arrange()
 
         assertNull(observer.invoke().first())
@@ -64,7 +62,7 @@ internal class AppLockTeamFeatureConfigObserverTest {
         )
         val (arrangement, observer) = Arrangement()
             .withSuccess()
-            .withValidNomadAccountExists(false)
+            .withNomadServiceUrl(null)
             .arrange()
 
         assertEquals(expectedAppLockValue, observer.invoke().first())
@@ -75,34 +73,23 @@ internal class AppLockTeamFeatureConfigObserverTest {
     }
 
     @Test
-    fun givenValidNomadAccountExists_whenObservingAppLock_thenEmitNullRegardlessOfTeamConfig() = runTest {
-        val (_, observer) = Arrangement()
+    fun givenSelfIsNomad_whenObservingAppLock_thenEmitNullRegardlessOfTeamConfig() = runTest {
+        val (arrangement, observer) = Arrangement()
             .withSuccess()
-            .withValidNomadAccountExists(true)
+            .withNomadServiceUrl("https://nomad.service.url")
             .arrange()
 
         assertNull(observer.invoke().first())
-    }
 
-    @Test
-    fun givenNomadCheckFails_whenObservingAppLock_thenFallBackToTeamConfig() = runTest {
-        val expectedAppLockValue = AppLockTeamConfig(
-            appLockConfigModel.status.toBoolean(),
-            appLockConfigModel.inactivityTimeoutSecs.seconds,
-            isStatusChanged = false
-        )
-        val (_, observer) = Arrangement()
-            .withSuccess()
-            .withNomadCheckFailure()
-            .arrange()
-
-        assertEquals(expectedAppLockValue, observer.invoke().first())
+        verify(VerifyMode.exactly(0)) {
+            arrangement.userConfigRepository.observeAppLockConfig()
+        }
     }
 
     private class Arrangement {
 
         val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
-        val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
+        private var nomadServiceUrl: String? = null
 
         fun withFailure(): Arrangement = apply {
             every {
@@ -116,21 +103,13 @@ internal class AppLockTeamFeatureConfigObserverTest {
             } returns flowOf(Either.Right(appLockTeamConfig))
         }
 
-        suspend fun withValidNomadAccountExists(exists: Boolean): Arrangement = apply {
-            everySuspend {
-                sessionRepository.doesValidNomadAccountExist()
-            } returns Either.Right(exists)
-        }
-
-        suspend fun withNomadCheckFailure(): Arrangement = apply {
-            everySuspend {
-                sessionRepository.doesValidNomadAccountExist()
-            } returns Either.Left(StorageFailure.DataNotFound)
+        fun withNomadServiceUrl(nomadServiceUrl: String?): Arrangement = apply {
+            this.nomadServiceUrl = nomadServiceUrl
         }
 
         fun arrange() = this to AppLockTeamFeatureConfigObserverImpl(
             userConfigRepository = userConfigRepository,
-            sessionRepository = sessionRepository,
+            nomadServiceUrl = nomadServiceUrl,
         )
     }
 
