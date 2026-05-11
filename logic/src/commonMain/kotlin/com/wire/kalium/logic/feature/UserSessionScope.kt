@@ -2611,7 +2611,7 @@ public class UserSessionScope internal constructor(
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
 
     public val appLockTeamFeatureConfigObserver: AppLockTeamFeatureConfigObserver
-        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository)
+        get() = AppLockTeamFeatureConfigObserverImpl(userConfigRepository, globalScope.sessionRepository)
 
     public val markTeamAppLockStatusAsNotified: MarkTeamAppLockStatusAsNotifiedUseCase
         get() = MarkTeamAppLockStatusAsNotifiedUseCaseImpl(userConfigRepository)
