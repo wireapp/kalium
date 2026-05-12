@@ -38,11 +38,9 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
-@Mockable
 internal interface StaleEpochVerifier {
     suspend fun verifyEpoch(
         transactionContext: CryptoTransactionContext,

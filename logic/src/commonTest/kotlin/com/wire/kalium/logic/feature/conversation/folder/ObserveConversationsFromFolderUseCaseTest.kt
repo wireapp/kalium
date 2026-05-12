@@ -20,10 +20,12 @@ package com.wire.kalium.logic.feature.conversation.folder
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.framework.TestConversationDetails
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -52,9 +54,9 @@ class ObserveConversationsFromFolderUseCaseTest {
 
         assertEquals(testConversations, result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.observeConversationsFromFolder(testFolderId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -69,23 +71,23 @@ class ObserveConversationsFromFolderUseCaseTest {
 
         assertEquals(emptyList<ConversationDetailsWithEvents>(), result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.observeConversationsFromFolder(testFolderId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val conversationFolderRepository = mock(ConversationFolderRepository::class)
+        val conversationFolderRepository = mock<ConversationFolderRepository>(mode = MockMode.autoUnit)
 
         private val observeConversationsFromFolderUseCase = ObserveConversationsFromFolderUseCaseImpl(
             conversationFolderRepository
         )
 
         suspend fun withConversationsFromFolder(folderId: String, conversationList: List<ConversationDetailsWithEvents>) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.observeConversationsFromFolder(folderId)
-            }.returns(flowOf(conversationList))
+            } returns flowOf(conversationList)
         }
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to observeConversationsFromFolderUseCase }

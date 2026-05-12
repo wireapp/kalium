@@ -17,15 +17,17 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -42,9 +44,9 @@ class GetAllTagsUseCaseTest {
         val result = useCase.invoke()
 
         assertEquals(tags.right(), result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.getAllTags()
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -57,17 +59,17 @@ class GetAllTagsUseCaseTest {
         val result = useCase.invoke()
 
         assertEquals(failure.left(), result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.getAllTags()
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
 
-        val cellsRepository = mock(CellsRepository::class)
+        val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
 
         suspend fun withRepositoryReturning(result: Either<NetworkFailure, List<String>>) = apply {
-            coEvery { cellsRepository.getAllTags() }.returns(result)
+            everySuspend { cellsRepository.getAllTags() }.returns(result)
         }
 
         fun arrange() = this to GetAllTagsUseCaseImpl(

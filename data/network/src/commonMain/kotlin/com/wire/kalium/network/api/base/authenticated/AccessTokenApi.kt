@@ -21,9 +21,7 @@ package com.wire.kalium.network.api.base.authenticated
 import com.wire.kalium.network.api.model.AccessTokenDTO
 import com.wire.kalium.network.api.model.RefreshTokenDTO
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mockable
 
-@Mockable
 interface AccessTokenApi {
     suspend fun getToken(
         refreshToken: String,

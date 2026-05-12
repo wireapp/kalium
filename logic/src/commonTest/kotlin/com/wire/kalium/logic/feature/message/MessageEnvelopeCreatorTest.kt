@@ -36,7 +36,6 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangement
-import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementMockativeImpl
 import com.wire.kalium.logic.util.arrangement.provider.ProteusCoreCryptoContextArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed

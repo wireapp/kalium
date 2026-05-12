@@ -20,27 +20,26 @@ package com.wire.kalium.logic.sync.receiver
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandlerImpl
-import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangement
-import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,13 +58,13 @@ class ProtocolUpdateEventHandlerTest {
 
         useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -80,17 +79,17 @@ class ProtocolUpdateEventHandlerTest {
 
         useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertProtocolChangedDuringACallSystemMessage(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -107,9 +106,9 @@ class ProtocolUpdateEventHandlerTest {
             assertEquals(failure, it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -124,9 +123,9 @@ class ProtocolUpdateEventHandlerTest {
 
         useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -140,21 +139,20 @@ class ProtocolUpdateEventHandlerTest {
 
         useCase.handle(arrangement.transactionContext, event).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(
                 eq(event.conversationId),
                 eq(event.senderUserId),
                 eq(event.protocol)
             )
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        SystemMessageInserterArrangement by SystemMessageInserterArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
-        CallRepositoryArrangement by CallRepositoryArrangementImpl() {
-        val updateConversationProtocol = mock(UpdateConversationProtocolUseCase::class)
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val updateConversationProtocol = mock<UpdateConversationProtocolUseCase>()
+        val systemMessageInserter = mock<SystemMessageInserter>(mode = MockMode.autoUnit)
+        val callRepository = mock<CallRepository>()
 
         private val protocolUpdateEventHandler: ProtocolUpdateEventHandler = ProtocolUpdateEventHandlerImpl(
             systemMessageInserter,
@@ -163,9 +161,27 @@ class ProtocolUpdateEventHandlerTest {
         )
 
         suspend fun withUpdateProtocolUpdateReturns(result: Either<CoreFailure, Boolean>) {
-            coEvery {
+            everySuspend {
                 updateConversationProtocol(any(), any(), any(), any())
-            }.returns(result)
+            } returns result
+        }
+
+        suspend fun withInsertProtocolChangedSystemMessage() {
+            everySuspend {
+                systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+            } returns Unit
+        }
+
+        suspend fun withEstablishedCall() {
+            everySuspend {
+                callRepository.establishedCallsFlow()
+            } returns flowOf(listOf(com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangementImpl.call))
+        }
+
+        suspend fun withoutAnyEstablishedCall() {
+            everySuspend {
+                callRepository.establishedCallsFlow()
+            } returns flowOf(emptyList())
         }
 
         fun arrange() = run {

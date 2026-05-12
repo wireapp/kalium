@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.usecase.download.DownloadCellFileUseCaseImpl
@@ -26,11 +28,11 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -57,9 +59,9 @@ class DownloadNodeFileUseCaseTest {
 
         useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.downloadFile(outFilePath, remoteFilePath, progressListener)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -71,9 +73,9 @@ class DownloadNodeFileUseCaseTest {
 
         useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.DOWNLOAD_IN_PROGRESS)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -85,9 +87,9 @@ class DownloadNodeFileUseCaseTest {
 
         useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.downloadFile(outFilePath, remoteFilePath, progressListener)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -111,9 +113,9 @@ class DownloadNodeFileUseCaseTest {
 
         useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -125,9 +127,9 @@ class DownloadNodeFileUseCaseTest {
 
         useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.saveLocalPath(assetId, outFilePath.toString())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -139,9 +141,9 @@ class DownloadNodeFileUseCaseTest {
 
         useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.FAILED_DOWNLOAD)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -153,9 +155,9 @@ class DownloadNodeFileUseCaseTest {
 
         useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.downloadFile(outFilePath, remoteFilePath, progressListener)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -179,43 +181,43 @@ class DownloadNodeFileUseCaseTest {
 
         useCase(assetId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.saveStandaloneAssetPath(assetId, outFilePath.toString(), assetSize, null, null)
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
 
-        val cellsRepository = mock(CellsRepository::class)
-        val attachmentsRepository = mock(CellAttachmentsRepository::class)
+        val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
+        val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
 
         suspend fun withAssetPath() = apply {
-            coEvery { attachmentsRepository.getAssetPath(any()) }.returns(assetPath.right())
+            everySuspend { attachmentsRepository.getAssetPath(any()) }.returns(assetPath.right())
         }
 
         suspend fun withAssetPathMissing() = apply {
-            coEvery { attachmentsRepository.getAssetPath(any()) }.returns(null.right())
+            everySuspend { attachmentsRepository.getAssetPath(any()) }.returns(null.right())
         }
 
         suspend fun withAssetNotFound() = apply {
-            coEvery { attachmentsRepository.getAssetPath(any()) }.returns(StorageFailure.DataNotFound.left())
+            everySuspend { attachmentsRepository.getAssetPath(any()) }.returns(StorageFailure.DataNotFound.left())
         }
 
         suspend fun withDownloadSuccess() = apply {
-            coEvery { cellsRepository.downloadFile(any(), any(), any()) }.returns(Unit.right())
+            everySuspend { cellsRepository.downloadFile(any(), any(), any()) }.returns(Unit.right())
         }
 
         suspend fun withDownloadFailure() = apply {
-            coEvery { cellsRepository.downloadFile(any(), any(), any()) }.returns(
+            everySuspend { cellsRepository.downloadFile(any(), any(), any()) }.returns(
                 NetworkFailure.ServerMiscommunication(IllegalStateException("Test")).left()
             )
         }
 
         suspend fun arrange(): Pair<Arrangement, DownloadCellFileUseCaseImpl> {
 
-            coEvery { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
-            coEvery { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
-            coEvery { attachmentsRepository.saveStandaloneAssetPath(any(), any(), any(), any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.saveStandaloneAssetPath(any(), any(), any()) }.returns(Unit.right())
 
             return this to DownloadCellFileUseCaseImpl(
                 cellsRepository = cellsRepository,

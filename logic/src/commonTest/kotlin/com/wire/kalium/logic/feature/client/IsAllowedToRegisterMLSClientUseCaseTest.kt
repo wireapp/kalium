@@ -24,9 +24,11 @@ import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,119 +37,104 @@ class IsAllowedToRegisterMLSClientUseCaseTest {
 
     @Test
     fun givenAllMlsConditionsAreMet_whenUseCaseInvoked_returnsTrue() = runTest {
-        // given
         val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
             .withMlsFeatureFlag(true)
             .withUserConfigMlsEnabled(true)
             .withGetPublicKeysSuccessful()
             .arrange()
 
-        // when
         val result = isAllowedToRegisterMLSClientUseCase()
 
-        // then
         assertEquals(true, result)
     }
 
     @Test
     fun givenMlsFeatureFlagDisabled_whenUseCaseInvoked_returnsFalse() = runTest {
-        // given
         val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
             .withMlsFeatureFlag(false)
             .withUserConfigMlsEnabled(true)
             .withGetPublicKeysSuccessful()
             .arrange()
 
-        // when
         val result = isAllowedToRegisterMLSClientUseCase()
 
-        // then
         assertEquals(false, result)
     }
 
     @Test
     fun givenUserConfigMlsDisabled_whenUseCaseInvoked_returnsFalse() = runTest {
-        // given
         val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
             .withMlsFeatureFlag(true)
             .withUserConfigMlsEnabled(false)
             .withGetPublicKeysSuccessful()
             .arrange()
 
-        // when
         val result = isAllowedToRegisterMLSClientUseCase()
 
-        // then
         assertEquals(false, result)
     }
 
     @Test
     fun givenPublicKeysFailure_whenUseCaseInvoked_returnsFalse() = runTest {
-        // given
         val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
             .withMlsFeatureFlag(true)
             .withUserConfigMlsEnabled(true)
             .withGetPublicKeysFailed()
             .arrange()
 
-        // when
         val result = isAllowedToRegisterMLSClientUseCase()
 
-        // then
         assertEquals(false, result)
     }
 
     @Test
     fun givenUserConfigDataNotFound_whenUseCaseInvoked_returnsFalse() = runTest {
-        // given
         val (_, isAllowedToRegisterMLSClientUseCase) = Arrangement()
             .withMlsFeatureFlag(true)
             .withUserConfigDataNotFound()
             .withGetPublicKeysFailed()
             .arrange()
 
-        // when
         val result = isAllowedToRegisterMLSClientUseCase()
 
-        // then
         assertEquals(false, result)
     }
 
 
     private class Arrangement {
 
-        val featureSupport = mock(FeatureSupport::class)
-        val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
+        val mlsPublicKeysRepository = mock<MLSPublicKeysRepository>(mode = MockMode.autoUnit)
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
         fun withMlsFeatureFlag(enabled: Boolean) = apply {
             every {
                 featureSupport.isMLSSupported
-            }.returns(enabled)
+            } returns enabled
         }
 
         suspend fun withUserConfigMlsEnabled(enabled: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.isMLSEnabled()
-            }.returns(Either.Right(enabled))
+            } returns Either.Right(enabled)
         }
 
         suspend fun withUserConfigDataNotFound() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.isMLSEnabled()
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            } returns Either.Left(StorageFailure.DataNotFound)
         }
 
         suspend fun withGetPublicKeysSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsPublicKeysRepository.getKeys()
-            }.returns(Either.Right(MLS_PUBLIC_KEY))
+            } returns Either.Right(MLS_PUBLIC_KEY)
         }
 
         suspend fun withGetPublicKeysFailed() = apply {
-            coEvery {
+            everySuspend {
                 mlsPublicKeysRepository.getKeys()
-            }.returns(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
+            } returns Either.Left(CoreFailure.Unknown(Throwable("an error")))
         }
 
         fun arrange() = this to IsAllowedToRegisterMLSClientUseCaseImpl(

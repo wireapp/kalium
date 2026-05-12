@@ -28,7 +28,6 @@ import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.dao.member.MemberEntity
-import io.mockative.Mockable
 
 internal interface MemberMapper {
     fun fromApiModel(conversationMember: ConversationMemberDTO.Other): Conversation.Member
@@ -92,7 +91,6 @@ internal class MemberMapperImpl(private val idMapper: IdMapper, private val role
     }
 }
 
-@Mockable
 internal interface ConversationRoleMapper {
     fun toApi(role: Conversation.Member.Role): String
     fun fromApi(roleDTO: String): Conversation.Member.Role

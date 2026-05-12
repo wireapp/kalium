@@ -32,11 +32,13 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -77,7 +79,7 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement
                 .conversationRepository
                 .updateAccessInfo(
@@ -88,7 +90,7 @@ class UpdateConversationAccessUseCaseTest {
                         .toMutableSet()
                         .apply { add(Conversation.AccessRole.GUEST) }
                 )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -125,7 +127,7 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement
                 .conversationRepository
                 .updateAccessInfo(
@@ -138,7 +140,7 @@ class UpdateConversationAccessUseCaseTest {
                     ),
                     access = setOf(Conversation.Access.CODE, Conversation.Access.INVITE)
                 )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -169,7 +171,7 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateAccessInfo(
                 conversationID = conversation.id,
                 accessRole = setOf(
@@ -179,7 +181,7 @@ class UpdateConversationAccessUseCaseTest {
                 ),
                 access = conversation.access.toSet()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -208,7 +210,7 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateAccessInfo(
                 conversationID = conversation.id,
                 accessRole = setOf(
@@ -219,7 +221,7 @@ class UpdateConversationAccessUseCaseTest {
                 ),
                 access = conversation.access.toSet()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -254,11 +256,11 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.revokeGuestRoomLink(any())
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateAccessInfo(
                 conversationID = conversation.id,
                 accessRole = setOf(
@@ -268,7 +270,7 @@ class UpdateConversationAccessUseCaseTest {
                 ),
                 access = Conversation.defaultGroupAccess
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -303,7 +305,7 @@ class UpdateConversationAccessUseCaseTest {
         }
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateAccessInfo(
                 conversationID = conversation.id,
                 accessRole = Conversation.defaultGroupAccessRoles.toMutableSet().apply {
@@ -312,7 +314,7 @@ class UpdateConversationAccessUseCaseTest {
                 },
                 access = setOf(Conversation.Access.INVITE, Conversation.Access.CODE)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -335,9 +337,9 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<NetworkFailure.NoNetworkConnection>(result.cause)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateAccessInfo(any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -355,9 +357,9 @@ class UpdateConversationAccessUseCaseTest {
         val result = updateConversationAccessRole(TestConversation.ID, accessRoles, setOf())
         assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationGroupRepository.revokeGuestRoomLink(any())
-        }.wasNotInvoked()
+        }
 
     }
 
@@ -376,9 +378,9 @@ class UpdateConversationAccessUseCaseTest {
         val result = updateConversationAccessRole(TestConversation.ID, accessRoles, setOf())
         assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationGroupRepository.revokeGuestRoomLink(any())
-        }.wasNotInvoked()
+        }
     }
 
     companion object {
@@ -415,9 +417,9 @@ class UpdateConversationAccessUseCaseTest {
     }
 
     private class Arrangement {
-        val conversationRepository = mock(ConversationRepository::class)
-        val conversationGroupRepository = mock(ConversationGroupRepository::class)
-        val syncManager = mock(SyncManager::class)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
+        val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
 
         val updateConversationAccess: UpdateConversationAccessRoleUseCase = UpdateConversationAccessRoleUseCaseImpl(
             conversationRepository,
@@ -427,32 +429,32 @@ class UpdateConversationAccessUseCaseTest {
 
         init {
             runBlocking {
-                coEvery {
+                everySuspend {
                     syncManager.waitUntilLiveOrFailure()
-                }.returns(Either.Right(Unit))
+                } returns Either.Right(Unit)
 
-                coEvery {
+                everySuspend {
                     conversationGroupRepository.revokeGuestRoomLink(any())
-                }.returns(Either.Right(Unit))
+                } returns Either.Right(Unit)
             }
         }
 
         suspend fun withUpdateAccessInfoRetuning(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateAccessInfo(any(), any(), any())
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withWaitUntilLiveOrFailure(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 syncManager.waitUntilLiveOrFailure()
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withGuestRoomLink(result: Flow<Either<CoreFailure, ConversationGuestLink?>>) = apply {
-            coEvery {
+            everySuspend {
                 conversationGroupRepository.observeGuestRoomLink(any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to updateConversationAccess

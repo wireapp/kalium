@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.data
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationDetails
@@ -24,9 +26,9 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -291,7 +293,7 @@ class CellConversationRepositoryTest {
     )
 
     private class Arrangement {
-        private val conversationDAO = mock(ConversationDAO::class)
+        private val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
         private var conversations: List<ConversationEntity> = emptyList()
         private var pagedConversations: Map<Int, List<ConversationEntity>> = emptyMap()
 
@@ -304,18 +306,18 @@ class CellConversationRepositoryTest {
         }
 
         suspend fun arrange(): Pair<Arrangement, CellConversationDataSource> {
-            coEvery {
+            everySuspend {
                 conversationDAO.getCellGroupConversations()
             }.returns(conversations)
 
             if (pagedConversations.isNotEmpty()) {
                 pagedConversations.forEach { (offset, convs) ->
-                    coEvery {
+                    everySuspend {
                         conversationDAO.getCellGroupConversationsPaged(20, offset, "")
                     }.returns(convs)
                 }
             } else {
-                coEvery {
+                everySuspend {
                     conversationDAO.getCellGroupConversationsPaged(any(), any(), any())
                 }.returns(emptyList())
             }

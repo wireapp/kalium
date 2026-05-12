@@ -22,7 +22,6 @@ import com.wire.kalium.common.functional.mapToRightOr
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -33,7 +32,6 @@ import kotlinx.coroutines.flow.map
  * It returns a boolean indicating whether the apps feature is enabled or not for this user session.
  * In case the team or session does not have the apps feature enabled, it will return AppsAllowedResult.Disabled.
  */
-@Mockable
 public interface ObserveIsAppsAllowedForUsageUseCase {
     public suspend operator fun invoke(): Flow<AppsAllowedResult>
 }

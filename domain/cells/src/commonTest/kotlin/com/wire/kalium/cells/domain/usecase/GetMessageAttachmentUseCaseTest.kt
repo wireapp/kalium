@@ -17,15 +17,17 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -81,10 +83,10 @@ class GetMessageAttachmentUseCaseTest {
 
     private class Arrangement {
 
-        val cellAttachmentsRepository = mock(CellAttachmentsRepository::class)
+        val cellAttachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
 
         suspend fun withRepositoryReturning(result: Either<StorageFailure, MessageAttachment>) = apply {
-            coEvery {
+            everySuspend {
                 cellAttachmentsRepository.getAttachment(any())
             }.returns(result)
         }

@@ -28,12 +28,14 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -41,7 +43,6 @@ class SyncSelfTeamUseCaseTest {
 
     @Test
     fun givenSelfUserDoesNotHaveValidTeam_whenSyncingSelfTeam_thenTeamInfoAndServicesAreNotRequested() = runTest {
-        // given
         val selfUser = TestUser.SELF.copy(teamId = null).right()
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
@@ -49,25 +50,22 @@ class SyncSelfTeamUseCaseTest {
             .witFetchAllTeamMembersEagerly(200)
             .arrange()
 
-        // when
         syncSelfTeamUseCase.invoke()
 
-        // then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.fetchTeamById(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.fetchMembersByTeamId(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.syncServices(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
     fun givenSelfUserHasValidTeamAndFetchAllTeamMembersEagerlyIsTrue_whenSyncingSelfTeam_thenTeamInfoAndServicesAreRequestedSuccessfully() =
         runTest {
-            // given
             val selfUser = TestUser.SELF.right()
 
             val (arrangement, syncSelfTeamUseCase) = Arrangement()
@@ -78,29 +76,26 @@ class SyncSelfTeamUseCaseTest {
                 .withServicesSync()
                 .arrange()
 
-            // when
             syncSelfTeamUseCase.invoke()
 
-            // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.teamRepository.fetchTeamById(eq(TestUser.SELF.teamId!!))
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.teamRepository.fetchMembersByTeamId(
                     eq(TestUser.SELF.teamId!!),
                     eq(TestUser.SELF.id.domain),
                     any(),
                     any()
                 )
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.teamRepository.syncServices(eq(TestUser.SELF.teamId!!))
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
     fun givenFetchingTeamInfoReturnsAnError_whenSyncingSelfTeam_thenServicesAreNotSynced() = runTest {
-        // given
         val selfUser = TestUser.SELF.right()
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
@@ -109,32 +104,29 @@ class SyncSelfTeamUseCaseTest {
             .withFailingTeamInfo()
             .arrange()
 
-        // when
         syncSelfTeamUseCase.invoke()
 
-        // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamRepository.fetchTeamById(eq(TestUser.SELF.teamId!!))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.fetchMembersByTeamId(any(), any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.syncServices(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.fetchMembersByTeamId(
                 eq(TestUser.SELF.teamId!!),
                 eq(TestUser.SELF.id.domain),
                 any(),
                 any()
             )
-        }.wasNotInvoked()
+        }
     }
 
     @Test
     fun givenServicesReturnAccessDenied_whenSyncingSelfTeam_thenServicesAreIgnoredButUseCaseSucceeds() = runTest {
-        // given
         val selfUser = TestUser.SELF.right()
 
         val (_, syncSelfTeamUseCase) = Arrangement()
@@ -145,16 +137,13 @@ class SyncSelfTeamUseCaseTest {
             .withFailingServicesSync()
             .arrange()
 
-        // when
         val result = syncSelfTeamUseCase.invoke()
 
-        // then
         result.shouldSucceed()
     }
 
     @Test
     fun givenSelfUserHasValidTeamAndFetchLimitIsNull_whenSyncingSelfTeam_thenTeamInfoAndServicesAreRequestedSuccessfully() = runTest {
-        // given
         val selfUser = TestUser.SELF.right()
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
@@ -165,27 +154,25 @@ class SyncSelfTeamUseCaseTest {
             .withServicesSync()
             .arrange()
 
-        // when
         syncSelfTeamUseCase.invoke()
 
-        // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamRepository.fetchTeamById(eq(TestUser.SELF.teamId!!))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamRepository.fetchMembersByTeamId(any(), any(), eq<Int?>(null), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamRepository.syncServices(eq(TestUser.SELF.teamId!!))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
         var fetchTeamMemberLimit: Int? = null
-        val userRepository = mock(UserRepository::class)
-        val teamRepository = mock(TeamRepository::class)
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val teamRepository = mock<TeamRepository>(mode = MockMode.autoUnit)
 
         private lateinit var syncSelfTeamUseCase: SyncSelfTeamUseCase
         fun witFetchAllTeamMembersEagerly(result: Int?) = apply {
@@ -193,39 +180,39 @@ class SyncSelfTeamUseCaseTest {
         }
 
         suspend fun withSelfUser(result: Either<StorageFailure, SelfUser>) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.getSelfUser()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withTeam() = apply {
-            coEvery {
+            everySuspend {
                 teamRepository.fetchTeamById(any())
-            }.returns(Either.Right(TestTeam.TEAM))
+            } returns Either.Right(TestTeam.TEAM)
         }
 
         suspend fun withFailingTeamInfo() = apply {
-            coEvery {
+            everySuspend {
                 teamRepository.fetchTeamById(any())
-            }.returns(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest)))
+            } returns Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.badRequest))
         }
 
         suspend fun withTeamMembers() = apply {
-            coEvery {
+            everySuspend {
                 teamRepository.fetchMembersByTeamId(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withServicesSync() = apply {
-            coEvery {
+            everySuspend {
                 teamRepository.syncServices(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withFailingServicesSync() = apply {
-            coEvery {
+            everySuspend {
                 teamRepository.syncServices(any())
-            }.returns(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied)))
+            } returns Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.accessDenied))
         }
 
         fun arrange(): Pair<Arrangement, SyncSelfTeamUseCase> {

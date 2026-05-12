@@ -323,7 +323,7 @@ class UserDatabaseBuilder internal constructor(
         get() = ObfuscatedCopyExporter(userId, platformDatabaseData, this)
 
     val databaseOptimizer: DatabaseOptimizer
-        get() = DatabaseOptimizer(this)
+        get() = DatabaseOptimizer(this.sqlDriver, writeDispatcher)
 
     val messagesFeeder: MessagesFeeder
         get() = MessagesFeeder(this)

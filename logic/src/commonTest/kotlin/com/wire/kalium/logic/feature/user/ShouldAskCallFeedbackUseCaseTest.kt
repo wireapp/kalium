@@ -18,12 +18,15 @@
 package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -91,11 +94,16 @@ class ShouldAskCallFeedbackUseCaseTest {
         assertTrue(result is ShouldAskCallFeedbackUseCaseResult.ShouldNotAskCallFeedback.CallDurationIsLessThanOneMinute)
     }
 
-    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
+    private class Arrangement {
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
-        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, ShouldAskCallFeedbackUseCase> {
-            runBlocking { block() }
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, ShouldAskCallFeedbackUseCase> {
+            block()
             return this to ShouldAskCallFeedbackUseCase(userConfigRepository)
+        }
+
+        suspend fun withGetNextTimeForCallFeedback(result: Either<StorageFailure, Long>) {
+            everySuspend { userConfigRepository.getNextTimeForCallFeedback() } returns result
         }
     }
 

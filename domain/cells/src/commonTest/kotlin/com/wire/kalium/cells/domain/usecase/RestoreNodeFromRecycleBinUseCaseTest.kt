@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.NetworkFailure
@@ -24,11 +26,11 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.CellAssetContent
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -43,9 +45,9 @@ class RestoreNodeFromRecycleBinUseCaseTest {
 
         useCase("assetId")
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus("assetId", AssetTransferStatus.SAVED_INTERNALLY)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -57,9 +59,9 @@ class RestoreNodeFromRecycleBinUseCaseTest {
 
         useCase("assetId")
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus("assetId", AssetTransferStatus.NOT_DOWNLOADED)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -70,31 +72,31 @@ class RestoreNodeFromRecycleBinUseCaseTest {
 
         useCase("assetId")
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.attachmentsRepository.setAssetTransferStatus(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement {
 
-        val cellsRepository = mock(CellsRepository::class)
-        val attachmentsRepository = mock(CellAttachmentsRepository::class)
+        val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
+        val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
 
         suspend fun withNodeRestoreSuccess() = apply {
-            coEvery { cellsRepository.restoreNode(any()) } returns Unit.right()
+            everySuspend { cellsRepository.restoreNode(any()) } returns Unit.right()
         }
 
         suspend fun withNodeRestoreFailure() = apply {
-            coEvery { cellsRepository.restoreNode(any()) } returns NetworkFailure.NoNetworkConnection(null).left()
+            everySuspend { cellsRepository.restoreNode(any()) } returns NetworkFailure.NoNetworkConnection(null).left()
         }
 
         suspend fun withLocalAttachment(attachment: CellAssetContent = testAttachment) = apply {
-            coEvery { attachmentsRepository.getAttachment(any()) }.returns(attachment.right())
+            everySuspend { attachmentsRepository.getAttachment(any()) }.returns(attachment.right())
         }
 
         suspend fun arrange(): Pair<Arrangement, RestoreNodeFromRecycleBinUseCase> {
 
-            coEvery { attachmentsRepository.setAssetTransferStatus(any(), any()) } returns Unit.right()
+            everySuspend { attachmentsRepository.setAssetTransferStatus(any(), any()) } returns Unit.right()
 
             return this to RestoreNodeFromRecycleBinUseCaseImpl(
                 cellsRepository = cellsRepository,

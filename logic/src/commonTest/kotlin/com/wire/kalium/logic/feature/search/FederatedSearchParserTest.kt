@@ -17,17 +17,18 @@
  */
 package com.wire.kalium.logic.feature.search
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.right
-import com.wire.kalium.logic.util.arrangement.repository.SessionRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.SessionRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,7 +38,7 @@ class FederatedSearchParserTest {
     @Test
     fun givenUserIsNotFederated_whenParsingSearchQuery_thenSearchQueryIsNotModified() = runTest {
         val (arrangement, federatedSearchParser) = Arrangement().arrange {
-            withIsFederated(result = false.right(), userId = AnyMatcher(valueOf()))
+            withIsFederated(result = false.right())
         }
 
         val searchQuery = "searchQuery"
@@ -46,15 +47,15 @@ class FederatedSearchParserTest {
         assertEquals(searchQuery, result.searchTerm)
         assertEquals(selfUserId.domain, result.domain)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.isFederated(eq(selfUserId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenUserIsFederated_whenSearchQueryIncludeNoDomain_thenSearchQueryIsNotModified() = runTest {
         val (arrangement, federatedSearchParser) = Arrangement().arrange {
-            withIsFederated(result = true.right(), userId = AnyMatcher(valueOf()))
+            withIsFederated(result = true.right())
         }
 
         val searchQuery = "search Query"
@@ -63,15 +64,15 @@ class FederatedSearchParserTest {
         assertEquals(searchQuery, result.searchTerm)
         assertEquals(selfUserId.domain, result.domain)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.isFederated(eq(selfUserId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenUserIsFederated_whenSearchQueryIncludeDomain_thenSearchQueryIsModified() = runTest {
         val (arrangement, federatedSearchParser) = Arrangement().arrange {
-            withIsFederated(result = true.right(), userId = AnyMatcher(valueOf()))
+            withIsFederated(result = true.right())
         }
 
         val searchQuery = " search Query @domain.co"
@@ -80,15 +81,15 @@ class FederatedSearchParserTest {
         assertEquals(" search Query ", result.searchTerm)
         assertEquals("domain.co", result.domain)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.isFederated(eq(selfUserId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenSearchQuery_whenTheParserIsCalledMultibletime_thenIsFederatedIsExecutedOnlyOnce() = runTest {
         val (arrangement, federatedSearchParser) = Arrangement().arrange {
-            withIsFederated(result = true.right(), userId = AnyMatcher(valueOf()))
+            withIsFederated(result = true.right())
         }
 
         val searchQuery = " search Query @domain.co"
@@ -96,15 +97,15 @@ class FederatedSearchParserTest {
         federatedSearchParser(searchQuery, true)
         federatedSearchParser(searchQuery, true)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.isFederated(eq(selfUserId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenUserIsNotFederated_whenSearchQueryIncludeDomainButRemoteDomainForbidden_thenSearchQueryIsNotModified() = runTest {
         val (arrangement, federatedSearchParser) = Arrangement().arrange {
-            withIsFederated(result = true.right(), userId = AnyMatcher(valueOf()))
+            withIsFederated(result = true.right())
         }
 
         val searchQuery = " search Query @domain.co"
@@ -113,22 +114,26 @@ class FederatedSearchParserTest {
         assertEquals(" search Query @domain.co", result.searchTerm)
         assertEquals(selfUserId.domain, result.domain)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.isFederated(eq(selfUserId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private companion object {
         val selfUserId: UserId = UserId("selfUser", "selfDomain")
     }
-    private class Arrangement: SessionRepositoryArrangement by SessionRepositoryArrangementImpl() {
+    private class Arrangement {
+        val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
 
         private val federatedSearchParser = FederatedSearchParser(sessionRepository, selfUserId)
 
-        fun arrange(block: suspend Arrangement.() -> Unit) = let {
-            runBlocking { block() }
+        suspend fun arrange(block: suspend Arrangement.() -> Unit) = let {
+            block()
             this to federatedSearchParser
         }
 
+        suspend fun withIsFederated(result: Either<StorageFailure, Boolean>) {
+            everySuspend { sessionRepository.isFederated(eq(selfUserId)) } returns result
+        }
     }
 }

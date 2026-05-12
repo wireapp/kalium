@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.periodic
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
@@ -31,13 +32,15 @@ import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.proteus.ProteusPreKeyRefiller
 import com.wire.kalium.logic.sync.Result
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
@@ -117,7 +120,7 @@ class UserConfigSyncWorkerTest {
         val workerJob = async { worker.doWork() }
         advanceTimeBy(1.seconds)
 
-        arrangement.verifyActions(times = 1) // sync is already live
+        arrangement.verifyActions(actionResults) // sync is already live
         assertEquals(Result.Failure, workerJob.await())
     }
 
@@ -134,20 +137,48 @@ class UserConfigSyncWorkerTest {
         testFailedActions(ActionResults(mlsPublicKeysFetchResult = NetworkFailure.NoNetworkConnection(null).left()))
 
     private suspend fun Arrangement.verifyActions(times: Int = 1) {
-        coVerify {
+        verifySuspend(VerifyMode.exactly(times)) {
             syncFeatureConfigsUseCase()
             proteusPreKeyRefiller.refillIfNeeded()
             mlsPublicKeysRepository.fetchKeys()
             acmeCertificatesSyncUseCase()
-        }.wasInvoked(exactly = times)
+        }
     }
 
-    private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
-        IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl() {
-        val syncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
-        val proteusPreKeyRefiller = mock(ProteusPreKeyRefiller::class)
-        val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
-        val acmeCertificatesSyncUseCase = mock(ACMECertificatesSyncUseCase::class)
+    private suspend fun Arrangement.verifyActions(actionResults: ActionResults) {
+        verifySuspend(VerifyMode.exactly(1)) { syncFeatureConfigsUseCase() }
+
+        if (actionResults.syncFeatureConfigsResult.isLeft()) {
+            verifySuspend(VerifyMode.not) { mlsPublicKeysRepository.fetchKeys() }
+            verifySuspend(VerifyMode.not) { proteusPreKeyRefiller.refillIfNeeded() }
+            verifySuspend(VerifyMode.not) { acmeCertificatesSyncUseCase() }
+            return
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) { mlsPublicKeysRepository.fetchKeys() }
+
+        if (actionResults.mlsPublicKeysFetchResult.isLeft()) {
+            verifySuspend(VerifyMode.not) { proteusPreKeyRefiller.refillIfNeeded() }
+            verifySuspend(VerifyMode.not) { acmeCertificatesSyncUseCase() }
+            return
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) { proteusPreKeyRefiller.refillIfNeeded() }
+
+        if (actionResults.proteusPreKeyRefillResult.isLeft()) {
+            verifySuspend(VerifyMode.not) { acmeCertificatesSyncUseCase() }
+            return
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) { acmeCertificatesSyncUseCase() }
+    }
+
+    private class Arrangement(private val configure: suspend Arrangement.() -> Unit) {
+        val incrementalSyncRepository = mock<com.wire.kalium.logic.data.sync.IncrementalSyncRepository>()
+        val syncFeatureConfigsUseCase = mock<SyncFeatureConfigsUseCase>()
+        val proteusPreKeyRefiller = mock<ProteusPreKeyRefiller>()
+        val mlsPublicKeysRepository = mock<MLSPublicKeysRepository>()
+        val acmeCertificatesSyncUseCase = mock<ACMECertificatesSyncUseCase>()
         val timeout = 10.seconds
 
         suspend fun arrange(): Pair<Arrangement, UserConfigSyncWorker> = run {
@@ -166,11 +197,15 @@ class UserConfigSyncWorkerTest {
             )
         }
 
+        fun withIncrementalSyncState(statusFlow: Flow<IncrementalSyncStatus>) {
+            every { incrementalSyncRepository.incrementalSyncState } returns statusFlow
+        }
+
         suspend fun withActionResults(actionResults: ActionResults) = apply {
-            coEvery { syncFeatureConfigsUseCase() }.returns(actionResults.syncFeatureConfigsResult)
-            coEvery { proteusPreKeyRefiller.refillIfNeeded() }.returns(actionResults.proteusPreKeyRefillResult)
-            coEvery { mlsPublicKeysRepository.fetchKeys() }.returns(actionResults.mlsPublicKeysFetchResult)
-            coEvery { acmeCertificatesSyncUseCase() }.returns(Unit)
+            everySuspend { syncFeatureConfigsUseCase() } returns actionResults.syncFeatureConfigsResult
+            everySuspend { proteusPreKeyRefiller.refillIfNeeded() } returns actionResults.proteusPreKeyRefillResult
+            everySuspend { mlsPublicKeysRepository.fetchKeys() } returns actionResults.mlsPublicKeysFetchResult
+            everySuspend { acmeCertificatesSyncUseCase() } returns Unit
         }
     }
 

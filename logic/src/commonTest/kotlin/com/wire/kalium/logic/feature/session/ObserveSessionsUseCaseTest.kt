@@ -23,8 +23,10 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -85,15 +87,15 @@ class ObserveSessionsUseCaseTest {
 
     class Arrangement {
 
-        private val sessionRepository = mock(SessionRepository::class)
+        private val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
         private val useCase: ObserveSessionsUseCase by lazy {
             ObserveSessionsUseCase(sessionRepository)
         }
 
         suspend fun withAllValidSessionsFlow(result: Flow<Either<StorageFailure, List<AccountInfo.Valid>>>) = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.allValidSessionsFlow()
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to useCase

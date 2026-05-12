@@ -27,15 +27,16 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -61,7 +62,7 @@ class AccessUpdateHandlerTest {
         eventHandler.handle(event)
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationDAO.updateAccess(
                 matches {
                     it == PersistenceQualifiedId(
@@ -74,7 +75,7 @@ class AccessUpdateHandlerTest {
                 },
                 matches {
                     it.contains(ConversationEntity.AccessRole.TEAM_MEMBER) &&
-                            it.contains(ConversationEntity.AccessRole.SERVICE)
+                    it.contains(ConversationEntity.AccessRole.SERVICE)
                 }
             )
         }
@@ -105,14 +106,14 @@ class AccessUpdateHandlerTest {
         eventHandler.handle(event)
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = eq(event.id),
                 conversationId = eq(event.conversationId),
                 senderUserId = eq(event.qualifiedFrom),
                 isAppsAccessEnabled = eq(true)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -140,14 +141,14 @@ class AccessUpdateHandlerTest {
         eventHandler.handle(event)
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = eq(event.id),
                 conversationId = eq(event.conversationId),
                 senderUserId = eq(event.qualifiedFrom),
                 isAppsAccessEnabled = eq(false)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -175,14 +176,14 @@ class AccessUpdateHandlerTest {
         eventHandler.handle(event)
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = any(),
                 conversationId = any(),
                 senderUserId = any(),
                 isAppsAccessEnabled = any()
             )
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -211,14 +212,14 @@ class AccessUpdateHandlerTest {
         eventHandler.handle(event)
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = matches { it == eventId },
                 conversationId = any(),
                 senderUserId = any(),
                 isAppsAccessEnabled = any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -248,34 +249,33 @@ class AccessUpdateHandlerTest {
         eventHandler.handle(event)
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = any(),
                 conversationId = any(),
                 senderUserId = matches { it == senderId },
                 isAppsAccessEnabled = any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val conversationDAO = mock(ConversationDAO::class)
-        val conversationMapper = mock(ConversationMapper::class)
-        val systemMessageInserter = mock(SystemMessageInserter::class)
+        val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
+        val conversationMapper = mock<ConversationMapper>()
+        val systemMessageInserter = mock<SystemMessageInserter>(mode = MockMode.autoUnit)
 
         init {
-            runBlocking {
-                coEvery { conversationDAO.updateAccess(any(), any(), any()) }.returns(Unit)
-                coEvery {
-                    systemMessageInserter.insertConversationAppsAccessChanged(
-                        eventId = any(),
-                        conversationId = any(),
-                        senderUserId = any(),
-                        isAppsAccessEnabled = any()
-                    )
-                }.returns(Unit)
-            }
+            everySuspend { conversationDAO.updateAccess(any(), any(), any()) } returns Unit
+            everySuspend { conversationDAO.getConversationById(any()) } returns null
+            everySuspend {
+                systemMessageInserter.insertConversationAppsAccessChanged(
+                    eventId = any(),
+                    conversationId = any(),
+                    senderUserId = any(),
+                    isAppsAccessEnabled = any()
+                )
+            } returns Unit
         }
 
         private val accessUpdateEventHandler: AccessUpdateEventHandler = AccessUpdateEventHandler(
@@ -288,26 +288,24 @@ class AccessUpdateHandlerTest {
         fun withMappingModelToDAOAccess(param: Set<Access>, result: List<ConversationEntity.Access>) = apply {
             every {
                 conversationMapper.fromModelToDAOAccess(param)
-            }.returns(result)
+            } returns result
         }
 
         fun withMappingModelToDAOAccessRole(param: Set<AccessRole>, result: List<ConversationEntity.AccessRole>) = apply {
             every {
                 conversationMapper.fromModelToDAOAccessRole(param)
-            }.returns(result)
+            } returns result
         }
 
         fun withInsertMessageReturningUnit() = apply {
-            runBlocking {
-                coEvery {
-                    systemMessageInserter.insertConversationAppsAccessChanged(
-                        eventId = any(),
-                        conversationId = any(),
-                        senderUserId = any(),
-                        isAppsAccessEnabled = any()
-                    )
-                }.returns(Unit)
-            }
+            everySuspend {
+                systemMessageInserter.insertConversationAppsAccessChanged(
+                    eventId = any(),
+                    conversationId = any(),
+                    senderUserId = any(),
+                    isAppsAccessEnabled = any()
+                )
+            } returns Unit
         }
 
         suspend fun withExistingConversationAccessRole(accessRoles: List<ConversationEntity.AccessRole>?) = apply {
@@ -316,9 +314,9 @@ class AccessUpdateHandlerTest {
             } else {
                 null
             }
-            coEvery {
+            everySuspend {
                 conversationDAO.getConversationById(any())
-            }.returns(conversationEntity)
+            } returns conversationEntity
         }
 
         fun arrange() = this to accessUpdateEventHandler

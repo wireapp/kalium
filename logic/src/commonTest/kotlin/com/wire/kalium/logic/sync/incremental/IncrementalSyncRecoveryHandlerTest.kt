@@ -22,11 +22,11 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementMokkeryImpl
+import dev.mokkery.MockMode
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -51,13 +51,13 @@ class IncrementalSyncRecoveryHandlerTest {
 
         // then
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 eventRepository.clearLastSavedEventId()
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 restartSlowSyncProcessForRecoveryUseCase.invoke()
-            }.wasInvoked(exactly = once)
+            }
         }
         assertTrue(wasInvoked)
     }
@@ -79,9 +79,9 @@ class IncrementalSyncRecoveryHandlerTest {
 
         // then
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 restartSlowSyncProcessForRecoveryUseCase.invoke()
-            }.wasNotInvoked()
+            }
         }
         assertTrue(wasInvoked)
     }
@@ -100,15 +100,15 @@ class IncrementalSyncRecoveryHandlerTest {
 
         // then
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 eventRepository.clearLastSavedEventId()
-            }.wasNotInvoked()
+            }
         }
     }
 
     private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
-        EventRepositoryArrangement by EventRepositoryArrangementImpl() {
-        val restartSlowSyncProcessForRecoveryUseCase = mock(RestartSlowSyncProcessForRecoveryUseCase::class)
+        EventRepositoryArrangement by EventRepositoryArrangementMokkeryImpl() {
+        val restartSlowSyncProcessForRecoveryUseCase = mock<RestartSlowSyncProcessForRecoveryUseCase>(mode = MockMode.autoUnit)
 
         private val incrementalSyncRecoveryHandler by lazy {
             IncrementalSyncRecoveryHandlerImpl(
@@ -117,13 +117,13 @@ class IncrementalSyncRecoveryHandlerTest {
             )
         }
 
-        fun arrange(): Pair<Arrangement, IncrementalSyncRecoveryHandler> = run {
-            runBlocking { configure() }
+        suspend fun arrange(): Pair<Arrangement, IncrementalSyncRecoveryHandler> = run {
+            configure()
             this@Arrangement to incrementalSyncRecoveryHandler
         }
     }
 
     private companion object {
-        fun arrange(configure: suspend Arrangement.() -> Unit = {}) = Arrangement(configure).arrange()
+        suspend fun arrange(configure: suspend Arrangement.() -> Unit = {}) = Arrangement(configure).arrange()
     }
 }

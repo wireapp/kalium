@@ -30,11 +30,9 @@ import com.wire.kalium.cells.domain.model.PublicLink
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mockable
 import okio.Path
 
 @Suppress("TooManyFunctions", "LongParameterList")
-@Mockable
 internal interface CellsRepository {
     suspend fun preCheck(nodePath: String): Either<NetworkFailure, PreCheckResult>
     suspend fun downloadFile(out: Path, cellPath: String, onProgressUpdate: (Long) -> Unit): Either<NetworkFailure, Unit>

@@ -22,10 +22,12 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -33,7 +35,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class VerifyActivationCodeUseCaseTest {
-        private val registerAccountRepository = mock(RegisterAccountRepository::class)
+        private val registerAccountRepository = mock<RegisterAccountRepository>(mode = MockMode.autoUnit)
 
     private lateinit var verifyActivationCodeUseCase: VerifyActivationCodeUseCase
 
@@ -46,17 +48,17 @@ class VerifyActivationCodeUseCaseTest {
     fun givenRepositoryCallIsSuccessful_thenSaucesIsPropagated() = runTest {
         val email = TEST_EMAIL
         val code = TEST_CODE
-        coEvery {
+        everySuspend {
             registerAccountRepository.verifyActivationCode(email, code)
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
 
         val actual = verifyActivationCodeUseCase(email, code)
 
         assertIs<VerifyActivationCodeResult.Success>(actual)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             registerAccountRepository.verifyActivationCode(email, code)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -65,17 +67,17 @@ class VerifyActivationCodeUseCaseTest {
         val code = TEST_CODE
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.invalidCode)
 
-        coEvery {
+        everySuspend {
             registerAccountRepository.verifyActivationCode(email, code) 
-        }.returns(Either.Left(expected))
+        } returns Either.Left(expected)
 
         val actual = verifyActivationCodeUseCase(email, code)
 
         assertIs<VerifyActivationCodeResult.Failure.InvalidCode>(actual)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             registerAccountRepository.verifyActivationCode(email, code) 
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -84,18 +86,18 @@ class VerifyActivationCodeUseCaseTest {
         val code = TEST_CODE
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
 
-        coEvery {
+        everySuspend {
             registerAccountRepository.verifyActivationCode(email, code) 
-        }.returns(Either.Left(expected))
+        } returns Either.Left(expected)
 
         val actual = verifyActivationCodeUseCase(email, code)
 
         assertIs<VerifyActivationCodeResult.Failure.Generic>(actual)
         assertEquals(expected, actual.failure)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             registerAccountRepository.verifyActivationCode(email, code) 
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private companion object {
@@ -104,4 +106,3 @@ class VerifyActivationCodeUseCaseTest {
     }
 
 }
-

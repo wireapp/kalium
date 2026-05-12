@@ -37,21 +37,20 @@ import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandl
 import com.wire.kalium.logic.sync.receiver.conversation.ReceiptModeUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.NewMessageEventHandler
+import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
+import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.sync.receiver.handler.TypingIndicatorHandler
-import com.wire.kalium.logic.util.arrangement.eventHandler.CodeDeletedHandlerArrangement
-import com.wire.kalium.logic.util.arrangement.eventHandler.CodeDeletedHandlerArrangementImpl
-import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangement
-import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -70,9 +69,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newMessageEventHandler.handleNewProteusMessage(any(), eq(newMessageEvent), any())
-        }.wasInvoked(once)
+        }
 
         result.shouldSucceed()
     }
@@ -89,9 +88,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newMessageEventHandler.handleNewMLSMessage(any(), eq(newMLSMessageEvent), any())
-        }.wasInvoked(once)
+        }
 
         result.shouldSucceed()
     }
@@ -108,9 +107,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newConversationEventHandler.handle(any(), eq(newConversationEvent))
-        }.wasInvoked(once)
+        }
 
         result.shouldSucceed()
     }
@@ -127,9 +126,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.deletedConversationEventHandler.handle(any(), eq(deletedConversationEvent))
-        }.wasInvoked(once)
+        }
 
         result.shouldSucceed()
     }
@@ -148,9 +147,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberJoinEventHandler.handle(any(), eq(memberJoinEvent))
-        }.wasInvoked(once)
+        }
 
         result.shouldSucceed()
     }
@@ -169,9 +168,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberLeaveEventHandler.handle(any(), eq(memberLeaveEvent))
-        }.wasInvoked(once)
+        }
 
         result.shouldSucceed()
     }
@@ -189,9 +188,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberChangeEventHandler.handle(any(), eq(memberChangeEvent))
-        }.wasInvoked(once)
+        }
         result.shouldSucceed()
     }
 
@@ -209,9 +208,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsWelcomeEventHandler.handle(any(), eq(mlsWelcomeEvent))
-        }.wasInvoked(once)
+        }
         result.shouldSucceed()
     }
 
@@ -227,9 +226,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.renamedConversationEventHandler.handle(eq(renamedConversationEvent))
-        }.wasInvoked(once)
+        }
         result.shouldSucceed()
     }
 
@@ -246,9 +245,9 @@ class ConversationEventReceiverTest {
                 TestEvent.liveDeliveryInfo
             )
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.receiptModeUpdateEventHandler.handle(eq(receiptModeUpdateEvent))
-            }.wasInvoked(once)
+            }
             result.shouldSucceed()
         }
 
@@ -267,9 +266,9 @@ class ConversationEventReceiverTest {
                 TestEvent.liveDeliveryInfo
             )
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationMessageTimerEventHandler.handle(eq(conversationMessageTimerEvent))
-            }.wasInvoked(once)
+            }
 
             result.shouldFail()
         }
@@ -289,9 +288,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.codeUpdatedHandler.handle(eq(codeUpdatedEvent))
-        }.wasInvoked(once)
+        }
 
         result.shouldSucceed()
     }
@@ -311,9 +310,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.codeUpdatedHandler.handle(eq(codeUpdatedEvent))
-        }.wasInvoked(once)
+        }
 
         result.shouldFail()
     }
@@ -333,9 +332,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.codeDeletedHandler.handle(eq(codeUpdatedEvent))
-        }.wasInvoked(once)
+        }
 
         result.shouldSucceed()
     }
@@ -355,9 +354,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.codeDeletedHandler.handle(eq(codeUpdatedEvent))
-        }.wasInvoked(once)
+        }
 
         result.shouldFail()
     }
@@ -375,9 +374,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.typingIndicatorHandler.handle(eq(typingStarted))
-        }.wasInvoked(once)
+        }
         result.shouldSucceed()
     }
 
@@ -394,9 +393,9 @@ class ConversationEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.typingIndicatorHandler.handle(eq(typingStarted))
-        }.wasInvoked(once)
+        }
         result.shouldFail()
     }
 
@@ -417,9 +416,9 @@ class ConversationEventReceiverTest {
 
         // then
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.accessUpdateEventHandler.handle(eq(accessUpdateEvent))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -439,31 +438,31 @@ class ConversationEventReceiverTest {
 
         // then
         result.shouldFail()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.accessUpdateEventHandler.handle(eq(accessUpdateEvent))
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement :
-        CodeUpdatedHandlerArrangement by CodeUpdatedHandlerArrangementImpl(),
-        CodeDeletedHandlerArrangement by CodeDeletedHandlerArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
-        val conversationMessageTimerEventHandler = mock(ConversationMessageTimerEventHandler::class)
-        val receiptModeUpdateEventHandler = mock(ReceiptModeUpdateEventHandler::class)
-        val renamedConversationEventHandler = mock(RenamedConversationEventHandler::class)
-        val mlsWelcomeEventHandler = mock(MLSWelcomeEventHandler::class)
-        val memberChangeEventHandler = mock(MemberChangeEventHandler::class)
-        val memberLeaveEventHandler = mock(MemberLeaveEventHandler::class)
-        val memberJoinEventHandler = mock(MemberJoinEventHandler::class)
-        val newMessageEventHandler = mock(NewMessageEventHandler::class)
-        val newConversationEventHandler = mock(NewConversationEventHandler::class)
-        val deletedConversationEventHandler = mock(DeletedConversationEventHandler::class)
-        val typingIndicatorHandler = mock(TypingIndicatorHandler::class)
-        val protocolUpdateEventHandler = mock(ProtocolUpdateEventHandler::class)
-        val channelAddPermissionUpdateEventHandler = mock(ChannelAddPermissionUpdateEventHandler::class)
-        val accessUpdateEventHandler = mock(AccessUpdateEventHandler::class)
-        val mlsResetConversationEventHandler = mock(MLSResetConversationEventHandler::class)
+        val conversationMessageTimerEventHandler = mock<ConversationMessageTimerEventHandler>()
+        val receiptModeUpdateEventHandler = mock<ReceiptModeUpdateEventHandler>()
+        val renamedConversationEventHandler = mock<RenamedConversationEventHandler>()
+        val mlsWelcomeEventHandler = mock<MLSWelcomeEventHandler>()
+        val memberChangeEventHandler = mock<MemberChangeEventHandler>()
+        val memberLeaveEventHandler = mock<MemberLeaveEventHandler>()
+        val memberJoinEventHandler = mock<MemberJoinEventHandler>()
+        val newMessageEventHandler = mock<NewMessageEventHandler>()
+        val newConversationEventHandler = mock<NewConversationEventHandler>()
+        val deletedConversationEventHandler = mock<DeletedConversationEventHandler>()
+        val typingIndicatorHandler = mock<TypingIndicatorHandler>()
+        val protocolUpdateEventHandler = mock<ProtocolUpdateEventHandler>()
+        val channelAddPermissionUpdateEventHandler = mock<ChannelAddPermissionUpdateEventHandler>()
+        val accessUpdateEventHandler = mock<AccessUpdateEventHandler>()
+        val mlsResetConversationEventHandler = mock<MLSResetConversationEventHandler>()
+        val codeUpdatedHandler = mock<CodeUpdatedHandler>()
+        val codeDeletedHandler = mock<CodeDeletedHandler>()
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             newMessageHandler = newMessageEventHandler,
@@ -486,44 +485,75 @@ class ConversationEventReceiverTest {
         )
 
         fun arrange(block: suspend Arrangement.() -> Unit = {}) = run {
-            runBlocking { block() }
+            runBlocking {
+                withDefaultSuccessfulHandlers()
+                block()
+            }
             this to conversationEventReceiver
         }
 
+        private suspend fun withDefaultSuccessfulHandlers() {
+            everySuspend { newMessageEventHandler.handleNewProteusMessage(any(), any(), any()) } returns Unit
+            everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), any(), any()) } returns Unit
+            everySuspend { newConversationEventHandler.handle(any(), any()) } returns Unit
+            everySuspend { deletedConversationEventHandler.handle(any(), any()) } returns Unit
+            everySuspend { memberJoinEventHandler.handle(any(), any()) } returns Either.Right(Unit)
+            everySuspend { memberLeaveEventHandler.handle(any(), any()) } returns Either.Right(Unit)
+            everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Unit
+            everySuspend { mlsWelcomeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
+            everySuspend { renamedConversationEventHandler.handle(any()) } returns Unit
+            everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Unit
+            everySuspend { protocolUpdateEventHandler.handle(any(), any()) } returns Either.Right(Unit)
+            everySuspend { channelAddPermissionUpdateEventHandler.handle(any()) } returns Either.Right(Unit)
+            everySuspend { mlsResetConversationEventHandler.handle(any(), any()) } returns Unit
+        }
+
         suspend fun withMemberLeaveSucceeded() = apply {
-            coEvery {
+            everySuspend {
                 memberLeaveEventHandler.handle(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withMemberJoinSucceeded() = apply {
-            coEvery {
+            everySuspend {
                 memberJoinEventHandler.handle(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withConversationMessageTimerFailed() = apply {
-            coEvery {
+            everySuspend {
                 conversationMessageTimerEventHandler.handle(any())
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         suspend fun withConversationTypingEventSucceeded(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 typingIndicatorHandler.handle(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withConversationAccessUpdateEventSucceeded(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 accessUpdateEventHandler.handle(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withMLSWelcomeEventSucceeded() = apply {
-            coEvery {
+            everySuspend {
                 mlsWelcomeEventHandler.handle(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withHandleCodeUpdatedEvent(result: Either<StorageFailure, Unit>) = apply {
+            everySuspend {
+                codeUpdatedHandler.handle(any())
+            } returns result
+        }
+
+        suspend fun withHandleCodeDeleteEvent(result: Either<StorageFailure, Unit>) = apply {
+            everySuspend {
+                codeDeletedHandler.handle(any())
+            } returns result
         }
     }
 

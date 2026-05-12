@@ -27,9 +27,7 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.SyncStateObserver
-import io.mockative.Mockable
 
-@Mockable
 internal interface RecoverPendingOneOnOneResolutionsUseCase {
     suspend operator fun invoke()
 }

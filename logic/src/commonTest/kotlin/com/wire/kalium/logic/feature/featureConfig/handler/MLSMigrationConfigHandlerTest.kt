@@ -20,16 +20,18 @@ package com.wire.kalium.logic.feature.featureConfig.handler
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -44,9 +46,9 @@ class MLSMigrationConfigHandlerTest {
 
         handler.handle(MIGRATION_CONFIG, duringSlowSync = false)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setMigrationConfiguration(eq(MIGRATION_CONFIG))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -63,9 +65,9 @@ class MLSMigrationConfigHandlerTest {
             ), duringSlowSync = false
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -82,9 +84,9 @@ class MLSMigrationConfigHandlerTest {
             ), duringSlowSync = true
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -103,18 +105,19 @@ class MLSMigrationConfigHandlerTest {
             transactionContext = arrangement.transactionContext
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), eq(true))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
-        UpdateSupportedProtocolsAndResolveOneOnOnesArrangement by UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>(mode = MockMode.autoUnit)
+
         fun arrange() = run {
             runBlocking {
                 withTransactionReturning(Either.Right(Unit))
@@ -125,6 +128,18 @@ class MLSMigrationConfigHandlerTest {
                 updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes,
                 transactionProvider = cryptoTransactionProvider
             )
+        }
+
+        suspend fun withSetMigrationConfigurationSuccessful() {
+            everySuspend {
+                userConfigRepository.setMigrationConfiguration(any())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful() {
+            everySuspend {
+                updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), any())
+            } returns Either.Right(Unit)
         }
     }
 
@@ -139,4 +154,3 @@ class MLSMigrationConfigHandlerTest {
     }
 
 }
-

@@ -24,10 +24,12 @@ import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -37,7 +39,7 @@ import kotlin.test.assertIs
 
 internal class CurrentSessionFlowUseCaseTest {
 
-    val sessionRepository = mock(SessionRepository::class)
+    val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
 
     lateinit var currentSessionFlowUseCase: CurrentSessionFlowUseCase
 
@@ -52,7 +54,7 @@ internal class CurrentSessionFlowUseCaseTest {
 
         every {
             sessionRepository.currentSessionFlow()
-        }.returns(flow { emit(Either.Right(expected)) })
+        } returns flow { emit(Either.Right(expected)) }
 
         currentSessionFlowUseCase().test {
             awaitItem().run {
@@ -62,9 +64,9 @@ internal class CurrentSessionFlowUseCaseTest {
             awaitComplete()
         }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             sessionRepository.currentSessionFlow()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -73,28 +75,27 @@ internal class CurrentSessionFlowUseCaseTest {
 
         every {
             sessionRepository.currentSessionFlow()
-        }.returns(flow { emit(Either.Left(expected)) })
+        } returns flow { emit(Either.Left(expected)) }
 
         currentSessionFlowUseCase().test {
             assertIs<CurrentSessionResult.Failure.SessionNotFound>(awaitItem())
             awaitComplete()
         }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             sessionRepository.currentSessionFlow()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenAUserID_whenCurrentSessionFlowEmitsSameDataAgain_thenDoPropagateTheSameDataAgain() = runTest {
         val expected: AccountInfo = TEST_ACCOUNT_INFO
 
-        every { sessionRepository.currentSessionFlow() }.returns(
+        every { sessionRepository.currentSessionFlow() } returns
             flow {
                 emit(Either.Right(expected))
                 emit(Either.Right(expected))
             }
-        )
 
         currentSessionFlowUseCase().test {
             awaitItem().run {
@@ -104,9 +105,9 @@ internal class CurrentSessionFlowUseCaseTest {
             awaitComplete()
         }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             sessionRepository.currentSessionFlow()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private companion object {

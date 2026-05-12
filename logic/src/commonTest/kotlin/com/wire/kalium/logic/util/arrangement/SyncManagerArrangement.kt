@@ -20,8 +20,10 @@ package com.wire.kalium.logic.util.arrangement
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface SyncManagerArrangement {
         val syncManager: SyncManager
@@ -30,9 +32,9 @@ internal interface SyncManagerArrangement {
 }
 
 internal class SyncManagerArrangementImpl : SyncManagerArrangement {
-        override val syncManager: SyncManager = mock(SyncManager::class)
+        override val syncManager: SyncManager = mock<SyncManager>(mode = MockMode.autoUnit)
     override suspend fun withWaitUntilLiveOrFailure(result: Either<CoreFailure, Unit>) {
-        coEvery {
+        everySuspend {
             syncManager.waitUntilLiveOrFailure()
         }.returns(result)
     }

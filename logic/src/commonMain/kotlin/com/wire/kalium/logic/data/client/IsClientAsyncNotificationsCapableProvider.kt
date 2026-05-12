@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
-import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,7 +48,6 @@ internal class IsClientAsyncNotificationsCapableProviderImpl(
     }
 }
 
-@Mockable
 internal interface IsClientAsyncNotificationsCapableProvider {
     val isClientAsyncNotificationsCapableFlow: Flow<Boolean>
     fun isClientAsyncNotificationsCapable(): Boolean

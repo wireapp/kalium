@@ -38,13 +38,15 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -129,13 +131,13 @@ class GroupConversationCreatorTest {
 
         createGroupConversation(name, members, conversationOptions)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.refreshUsersWithoutMetadata.invoke()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.createGroupConversation(eq(name), eq(members), eq(conversationOptions))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -146,7 +148,7 @@ class GroupConversationCreatorTest {
         val conversationOptions = CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS, creatorClientId = creatorClientId)
 
         val rootCause = StorageFailure.DataNotFound
-        val (arrangement, createGroupConversation) = Arrangement()
+        val (_, createGroupConversation) = Arrangement()
             .withWaitingForSyncSucceeding()
             .withUpdateConversationModifiedDateSucceeding()
             .withCurrentClientIdReturning(creatorClientId)
@@ -176,14 +178,13 @@ class GroupConversationCreatorTest {
 
         createGroupConversation(name, members, conversationOptions)
 
-        coVerify {
-            arrangement.conversationRepository.updateConversationModifiedDate(any(), matches { it.wasInTheLastSecond })
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.conversationRepository.updateConversationModifiedDate(any(), matching { it.wasInTheLastSecond })
+        }
     }
 
     @Test
     fun givenNameMembersAndOptions_whenCreatingGroupConversation_thenPersistSystemMessageForReceiptMode() = runTest {
-        // given
         val name = "Conv Name"
         val creatorClientId = ClientId("ClientId")
         val members = listOf(TestUser.USER_ID, TestUser.OTHER.id)
@@ -201,23 +202,21 @@ class GroupConversationCreatorTest {
             .withPersistingReadReceiptsSystemMessage()
             .arrange()
 
-        // when
         createGroupConversation(name, members, conversationOptions)
 
-        // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(any<Conversation>())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val conversationRepository = mock(ConversationRepository::class)
-        val conversationGroupRepository = mock(ConversationGroupRepository::class)
-        val refreshUsersWithoutMetadata = mock(RefreshUsersWithoutMetadataUseCase::class)
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val syncManager = mock(SyncManager::class)
-        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
+        val refreshUsersWithoutMetadata = mock<RefreshUsersWithoutMetadataUseCase>(mode = MockMode.autoUnit)
+        val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
+        val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>(mode = MockMode.autoUnit)
 
         private val createGroupConversation = GroupConversationCreatorImpl(
             conversationRepository,
@@ -246,9 +245,9 @@ class GroupConversationCreatorTest {
         )
 
         private suspend fun withSyncReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 syncManager.waitUntilLiveOrFailure()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withCreateGroupConversationFailingWith(coreFailure: CoreFailure) =
@@ -258,27 +257,27 @@ class GroupConversationCreatorTest {
             withCreateGroupConversationReturning(Either.Right(conversation))
 
         private suspend fun withCreateGroupConversationReturning(result: Either<CoreFailure, Conversation>) = apply {
-            coEvery {
+            everySuspend {
                 conversationGroupRepository.createGroupConversation(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withCurrentClientIdReturning(clientId: ClientId) = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(Either.Right(clientId))
+            } returns Either.Right(clientId)
         }
 
         suspend fun withUpdateConversationModifiedDateSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateConversationModifiedDate(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withPersistingReadReceiptsSystemMessage() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(any<Conversation>())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         fun arrange() = this to createGroupConversation

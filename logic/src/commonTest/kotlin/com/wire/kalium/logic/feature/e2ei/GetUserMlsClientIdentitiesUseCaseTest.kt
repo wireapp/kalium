@@ -21,19 +21,23 @@ import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserMlsClientIdentitiesUseCaseImpl
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.mls.IsMlsEnabledUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.mls.IsMlsEnabledUseCaseArrangementImpl
-import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coVerify
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -110,15 +114,15 @@ class GetUserMlsClientIdentitiesUseCaseTest {
                 mapOf(),
                 result
             )
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.mlsConversationRepository.getUserIdentity(any(), any())
-            }.wasNotInvoked()
+            }
         }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl(),
-        IsMlsEnabledUseCaseArrangement by IsMlsEnabledUseCaseArrangementImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        val isMlsEnabledUseCase = mock<IsMLSEnabledUseCase>(mode = MockMode.autoUnit)
 
         fun arrange() = run {
             runBlocking {
@@ -129,6 +133,14 @@ class GetUserMlsClientIdentitiesUseCaseTest {
                 isMlsEnabledUseCase = isMlsEnabledUseCase,
                 transactionProvider = cryptoTransactionProvider
             )
+        }
+
+        suspend fun withMLSEnabled(result: Boolean) {
+            everySuspend { isMlsEnabledUseCase.invoke() } returns result
+        }
+
+        suspend fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>) {
+            everySuspend { mlsConversationRepository.getUserIdentity(any(), any()) } returns result
         }
     }
 

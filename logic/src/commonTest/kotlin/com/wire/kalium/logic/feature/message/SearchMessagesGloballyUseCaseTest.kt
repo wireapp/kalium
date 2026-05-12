@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -29,12 +30,14 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -53,13 +56,13 @@ class SearchMessagesGloballyUseCaseTest {
 
         searchMessagesUseCase(SEARCH_QUERY, DEFAULT_LIMIT, DEFAULT_OFFSET)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByTextGlobally(
                 eq(SEARCH_QUERY),
                 eq(DEFAULT_LIMIT),
                 eq(DEFAULT_OFFSET)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -72,13 +75,13 @@ class SearchMessagesGloballyUseCaseTest {
 
         searchMessagesUseCase(SEARCH_QUERY, customLimit, customOffset)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByTextGlobally(
                 eq(SEARCH_QUERY),
                 eq(customLimit),
                 eq(customOffset)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -138,7 +141,6 @@ class SearchMessagesGloballyUseCaseTest {
 
         assertIs<SearchMessagesGloballyUseCase.Result.Success>(result)
         assertEquals(3, result.messages.size)
-        // Verify messages are from different conversations
         assertEquals(CONVERSATION_ID_1, result.messages[0].conversationId)
         assertEquals(CONVERSATION_ID_2, result.messages[1].conversationId)
         assertEquals(CONVERSATION_ID_3, result.messages[2].conversationId)
@@ -169,20 +171,19 @@ class SearchMessagesGloballyUseCaseTest {
             .withSearchMessagesGloballyReturning(SEARCH_QUERY, Either.Right(emptyList()))
             .arrange()
 
-        // Call without specifying limit and offset
         searchMessagesUseCase(SEARCH_QUERY)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByTextGlobally(
                 eq(SEARCH_QUERY),
-                eq(100),  // default limit
-                eq(0)     // default offset
+                eq(100),
+                eq(0)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private inner class Arrangement {
-        val messageRepository: MessageRepository = mock(MessageRepository::class)
+        val messageRepository: MessageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
 
         private val searchMessagesGlobally by lazy {
             SearchMessagesGloballyUseCaseImpl(messageRepository, testDispatchers)
@@ -192,13 +193,13 @@ class SearchMessagesGloballyUseCaseTest {
             searchQuery: String,
             response: Either<StorageFailure, List<Message.Standalone>>
         ) = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.searchMessagesByTextGlobally(
                     eq(searchQuery),
                     any(),
                     any()
                 )
-            }.returns(response)
+            } returns response
         }
 
         fun arrange() = this to searchMessagesGlobally

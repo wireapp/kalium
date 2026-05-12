@@ -20,9 +20,10 @@ package com.wire.kalium.logic.feature.legalhold
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
@@ -57,14 +58,14 @@ class MarkLegalHoldChangeAsNotifiedForSelfUseCaseTest {
 
     private class Arrangement {
 
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository: UserConfigRepository = mock()
         val useCase: MarkLegalHoldChangeAsNotifiedForSelfUseCase = MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl(userConfigRepository)
 
         fun arrange() = this to useCase
         suspend fun withSetLegalHoldChangeNotifiedResult(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setLegalHoldChangeNotified(any())
-            }.returns(result)
+            } returns result
         }
     }
 }

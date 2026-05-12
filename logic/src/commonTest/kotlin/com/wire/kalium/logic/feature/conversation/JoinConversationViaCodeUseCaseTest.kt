@@ -32,18 +32,20 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isWrongConversationPassword
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
@@ -79,17 +81,17 @@ class JoinConversationViaCodeUseCaseTest {
             )
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberJoinEventHandler.handle(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -117,17 +119,17 @@ class JoinConversationViaCodeUseCaseTest {
             assertIs<JoinConversationViaCodeUseCase.Result.Success.Changed>(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberJoinEventHandler.handle(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), any(), eq(listOf(selfUserId)), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -154,17 +156,17 @@ class JoinConversationViaCodeUseCaseTest {
             assertEquals(ConversationId(limitedConversationInfo.nonQualifiedId, domain), it.conversationId)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.memberJoinEventHandler.handle(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -191,13 +193,13 @@ class JoinConversationViaCodeUseCaseTest {
             assertEquals(ConversationId(limitedConversationInfo.nonQualifiedId, selfUserId.domain), it.conversationId)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -227,13 +229,13 @@ class JoinConversationViaCodeUseCaseTest {
             assertEquals(null, it.conversationId)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -260,13 +262,13 @@ class JoinConversationViaCodeUseCaseTest {
             assertEquals(storageFailure, it.failure)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberJoinEventHandler.handle(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.joinExistingMLSConversation.invoke(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -288,9 +290,9 @@ class JoinConversationViaCodeUseCaseTest {
             .withMemberJoinHandler()
             .withProtocolInfo(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
             .also { arr ->
-                coEvery {
+                everySuspend {
                     arr.joinExistingMLSConversation.invoke(any(), any(), any(), any())
-                }.returns(Either.Left(mlsFailure))
+                } returns Either.Left(mlsFailure)
             }
             .arrange()
 
@@ -299,9 +301,9 @@ class JoinConversationViaCodeUseCaseTest {
             assertEquals(mlsFailure, it.failure)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -327,25 +329,25 @@ class JoinConversationViaCodeUseCaseTest {
             assertIs<JoinConversationViaCodeUseCase.Result.Failure.IncorrectPassword>(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     private companion object {
         val selfUserId = UserId("selfUserId", "selfUserIdDomain")
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val conversationGroupRepository = mock(ConversationGroupRepository::class)
-        val conversationRepository = mock(ConversationRepository::class)
-        val memberJoinEventHandler = mock(MemberJoinEventHandler::class)
-        val joinExistingMLSConversation = mock(JoinExistingMLSConversationUseCase::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val memberJoinEventHandler = mock<MemberJoinEventHandler>(mode = MockMode.autoUnit)
+        val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
         private val useCase: JoinConversationViaCodeUseCase =
             JoinConversationViaCodeUseCase(
                 conversationGroupRepository,
@@ -364,9 +366,9 @@ class JoinConversationViaCodeUseCaseTest {
             password: String?,
             result: Either<NetworkFailure, ConversationMemberAddedResponse>
         ): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withFetchLimitedInfoViaInviteCodeReturns(
@@ -374,34 +376,34 @@ class JoinConversationViaCodeUseCaseTest {
             key: String,
             result: Either<NetworkFailure, ConversationCodeInfo>
         ): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key)
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withMemberJoinHandler(result: Either<CoreFailure, Unit> = Either.Right(Unit)): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 memberJoinEventHandler.handle(any(), any())
-            }.returns(result)
+            } returns result
             withTransactionReturning(result)
         }
 
         suspend fun withProtocolInfo(result: Either<StorageFailure, com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationProtocolInfo(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withJoinExistingMLSConversationSucceeds(): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 joinExistingMLSConversation.invoke(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withAddMemberToMLSGroupSucceeds(): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.addMemberToMLSGroup(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         fun arrange() = useCase to this

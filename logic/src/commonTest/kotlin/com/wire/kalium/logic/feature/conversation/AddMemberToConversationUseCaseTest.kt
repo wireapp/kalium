@@ -25,15 +25,17 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.data.user.UserRepository
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -51,17 +53,17 @@ class AddMemberToConversationUseCaseTest {
 
         assertIs<AddMemberToConversationUseCase.Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.addMembers(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.refreshUsersWithoutMetadata.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -74,24 +76,24 @@ class AddMemberToConversationUseCaseTest {
         val result = addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
         assertIs<AddMemberToConversationUseCase.Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.addMembers(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.refreshUsersWithoutMetadata.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
-
-        val conversationGroupRepository = mock(ConversationGroupRepository::class)
-        val refreshUsersWithoutMetadata = mock(RefreshUsersWithoutMetadataUseCase::class)
-        val resetMLSConversationUseCase = mock(ResetMLSConversationUseCase::class)
+    private class Arrangement {
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
+        val refreshUsersWithoutMetadata = mock<RefreshUsersWithoutMetadataUseCase>(mode = MockMode.autoUnit)
+        val resetMLSConversationUseCase = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
 
         private val addMemberUseCase = AddMemberToConversationUseCaseImpl(
             conversationGroupRepository,
@@ -101,22 +103,22 @@ class AddMemberToConversationUseCaseTest {
         )
 
         suspend fun withAddMembers(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationGroupRepository.addMembers(any(), any())
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withInsertOrIgnoreIncompleteUsers() = apply {
-            coEvery {
+            everySuspend {
                 userRepository.insertOrIgnoreIncompleteUsers(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun arrange(block: Arrangement.() -> Unit = { }): Pair<Arrangement, AddMemberToConversationUseCase> {
 
-            coEvery {
-                resetMLSConversationUseCase(any()).toEither()
-            } returns Unit.right()
+            everySuspend {
+                resetMLSConversationUseCase(any())
+            } returns ResetMLSConversationResult.Success
 
             return apply(block).let { this to addMemberUseCase }
         }

@@ -18,12 +18,9 @@
 
 package com.wire.kalium.logic.feature.auth
 
-import io.mockative.Mockable
-
 /**
  * Validates a user handle
  */
-@Mockable
 public interface ValidateUserHandleUseCase {
     /**
      * Validates a user handle

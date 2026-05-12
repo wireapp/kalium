@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.model.CellNode
@@ -30,11 +32,11 @@ import com.wire.kalium.logic.data.message.CellAssetContent
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
@@ -119,9 +121,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         useCase.invoke(assetId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.saveLocalPath(testAttachment.id, null)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -136,9 +138,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         useCase.invoke(assetId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.saveLocalPath(testAttachment.id, null)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -153,7 +155,7 @@ class RefreshNodeAssetStateUseCaseTest {
 
         useCase.invoke(assetId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.updateAttachment(
                 assetId,
                 testNode.contentUrl,
@@ -162,7 +164,7 @@ class RefreshNodeAssetStateUseCaseTest {
                 testNode.path,
                 testNode.supportedEditors.isNotEmpty()
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -180,9 +182,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         useCase.invoke(assetId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_DOWNLOADED)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -199,9 +201,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         useCase.invoke(assetId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -219,9 +221,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         assertFalse { arrangement.fileSystem.exists("localPath".toPath()) }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -247,9 +249,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         assertFalse { arrangement.fileSystem.exists("localPath".toPath()) }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -264,9 +266,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         assertFalse { arrangement.fileSystem.exists("localPath".toPath()) }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.setAssetTransferStatus(assetId, AssetTransferStatus.NOT_FOUND)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -281,9 +283,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         useCase.invoke(assetId)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.cellsRepository.getPreviews(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -298,9 +300,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         useCase.invoke(assetId)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.cellsRepository.getPreviews(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -315,11 +317,11 @@ class RefreshNodeAssetStateUseCaseTest {
 
         useCase.invoke(assetId)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.cellsRepository.getPreviews(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend {
             arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url)
         }
     }
@@ -335,9 +337,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         useCase.invoke(assetId)
 
-        coVerify {
+        verifySuspend {
             arrangement.cellsRepository.getPreviews(any())
-        }.wasInvoked(20)
+        }
     }
 
     @Test
@@ -351,9 +353,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         useCase.invoke(assetId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.getPreviews(any())
-        }.wasInvoked(1)
+        }
     }
 
     @Test
@@ -367,9 +369,9 @@ class RefreshNodeAssetStateUseCaseTest {
 
         useCase.invoke(assetId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.savePreviewUrl(assetId, testPreviews.first().url)
-        }.wasInvoked(1)
+        }
     }
 
     @Test
@@ -438,23 +440,23 @@ class RefreshNodeAssetStateUseCaseTest {
 
     private class Arrangement {
 
-        val cellsRepository = mock(CellsRepository::class)
-        val attachmentsRepository = mock(CellAttachmentsRepository::class)
+        val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
+        val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
 
         val fileSystem = FakeFileSystem()
 
         suspend fun withNodeResponseSuccess(node: CellNode = testNode) = apply {
-            coEvery { cellsRepository.getNode(any()) }.returns(node.right())
+            everySuspend { cellsRepository.getNode(any()) }.returns(node.right())
         }
 
         suspend fun withNodeResponseError() = apply {
-            coEvery { cellsRepository.getNode(any()) }.returns(
+            everySuspend { cellsRepository.getNode(any()) }.returns(
                 NetworkFailure.ServerMiscommunication(IllegalStateException("Test")).left()
             )
         }
 
         suspend fun withNodeResponseNotFound() = apply {
-            coEvery { cellsRepository.getNode(any()) }.returns(
+            everySuspend { cellsRepository.getNode(any()) }.returns(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.ServerError(
                         ErrorResponse(HttpStatusCode.NotFound.value, "Test", "")
@@ -464,7 +466,7 @@ class RefreshNodeAssetStateUseCaseTest {
         }
 
         suspend fun withNodeResponseForbidden() = apply {
-            coEvery { cellsRepository.getNode(any()) }.returns(
+            everySuspend { cellsRepository.getNode(any()) }.returns(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.ServerError(
                         ErrorResponse(HttpStatusCode.Forbidden.value, "Test", "")
@@ -474,7 +476,7 @@ class RefreshNodeAssetStateUseCaseTest {
         }
 
         suspend fun withLocalAttachment(attachment: CellAssetContent = testAttachment) = apply {
-            coEvery { attachmentsRepository.getAttachment(any()) }.returns(attachment.right())
+            everySuspend { attachmentsRepository.getAttachment(any()) }.returns(attachment.right())
         }
 
         fun withLocalFileAvailable() = apply {
@@ -486,15 +488,15 @@ class RefreshNodeAssetStateUseCaseTest {
         }
 
         suspend fun withPreviewsNotReady() = apply {
-            coEvery { cellsRepository.getPreviews(any()) }.returns(emptyList<NodePreview>().right())
+            everySuspend { cellsRepository.getPreviews(any()) }.returns(emptyList<NodePreview>().right())
         }
 
         suspend fun withPreviewsReady() = apply {
-            coEvery { cellsRepository.getPreviews(any()) }.returns(testPreviews.right())
+            everySuspend { cellsRepository.getPreviews(any()) }.returns(testPreviews.right())
         }
 
         suspend fun withAssetNotFound() = apply {
-            coEvery { cellsRepository.getPreviews(any()) }.returns(
+            everySuspend { cellsRepository.getPreviews(any()) }.returns(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.ServerError(
                         ErrorResponse(HttpStatusCode.NotFound.value, "Test", "")
@@ -505,10 +507,10 @@ class RefreshNodeAssetStateUseCaseTest {
 
         suspend fun arrange(): Pair<Arrangement, RefreshCellAssetStateUseCaseImpl> {
 
-            coEvery { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
-            coEvery { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
-            coEvery { attachmentsRepository.savePreviewUrl(any(), any()) }.returns(Unit.right())
-            coEvery { attachmentsRepository.updateAttachment(any(), any(), any(), any(), any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.savePreviewUrl(any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.updateAttachment(any(), any(), any(), any(), any(), any()) }.returns(Unit.right())
 
             return this to RefreshCellAssetStateUseCaseImpl(
                 cellsRepository = cellsRepository,

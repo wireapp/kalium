@@ -20,29 +20,33 @@ package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.InteractionAvailability
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Ignore
 import kotlin.test.Test
@@ -65,9 +69,9 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.ENABLED), interactionResult)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
-            }.wasInvoked(exactly = once)
+            }
 
             awaitComplete()
         }
@@ -88,9 +92,9 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.NOT_MEMBER), interactionResult)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
-            }.wasInvoked(exactly = once)
+            }
 
             awaitComplete()
         }
@@ -111,9 +115,9 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             val interactionResult = awaitItem()
             assertIs<IsInteractionAvailableResult.Failure>(interactionResult)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
-            }.wasInvoked(exactly = once)
+            }
 
             awaitComplete()
         }
@@ -134,9 +138,9 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.BLOCKED_USER), interactionResult)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
-            }.wasInvoked(exactly = once)
+            }
 
             awaitComplete()
         }
@@ -156,9 +160,9 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.DELETED_USER), interactionResult)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
-            }.wasInvoked(exactly = once)
+            }
 
             awaitComplete()
         }
@@ -276,9 +280,10 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
 
     private class Arrangement(
         private val configure: suspend Arrangement.() -> Unit
-    ) : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
+    ) {
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
 
         var dispatcher: KaliumDispatcher = TestKaliumDispatcher
 
@@ -337,6 +342,18 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
                 selfUserId = selfUser,
                 selfClientIdProvider = currentClientIdProvider
                 )
+        }
+
+        suspend fun withObserveConversationDetailsByIdReturning(result: Either<StorageFailure, ConversationDetails>) {
+            everySuspend { conversationRepository.observeConversationDetailsById(any()) } returns flowOf(result)
+        }
+
+        suspend fun withIsClientMlsCapable(result: Either<StorageFailure, Boolean>) {
+            everySuspend { userRepository.isClientMlsCapable(any(), any()) } returns result
+        }
+
+        suspend fun withCurrentClientIdSuccess(currentClientId: ClientId) {
+            everySuspend { currentClientIdProvider.invoke() } returns Either.Right(currentClientId)
         }
     }
 

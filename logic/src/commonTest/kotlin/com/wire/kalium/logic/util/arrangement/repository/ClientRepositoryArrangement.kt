@@ -26,16 +26,15 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.persistence.dao.client.InsertClientParam
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
-private val MOCKATIVE_USER_ID = UserId("mockative-user", "mockative.test")
-private val MOCKATIVE_CLIENT_ID = ClientId("mockative-client")
+private val MOKKERY_USER_ID = UserId("mokkery-user", "mokkery.test")
+private val MOKKERY_CLIENT_ID = ClientId("mokkery-client")
 
 internal interface ClientRepositoryArrangement {
     val clientRepository: ClientRepository
@@ -44,23 +43,23 @@ internal interface ClientRepositoryArrangement {
     suspend fun withClientsByUserId(result: Either<StorageFailure, List<OtherUserClient>>): ClientRepositoryArrangementImpl
     suspend fun withRemoveClientsAndReturnUsersWithNoClients(
         result: Either<StorageFailure, List<UserId>>,
-        redundantClientsOfUsers: Matcher<Map<UserId, List<ClientId>>> = AnyMatcher(valueOf())
+        redundantClientsOfUsers: (Map<UserId, List<ClientId>>) -> Boolean = { true }
     )
 
     suspend fun withStoreUserClientIdList(
         result: Either<StorageFailure, Unit>,
-        userId: Matcher<UserId> = AnyMatcher(MOCKATIVE_USER_ID),
-        clientIds: Matcher<List<ClientId>> = AnyMatcher(valueOf())
+        userId: (UserId) -> Boolean = { true },
+        clientIds: (List<ClientId>) -> Boolean = { true }
     )
 
     suspend fun withStoreMapOfUserToClientId(
         result: Either<StorageFailure, Unit>,
-        mapUserToClientId: Matcher<Map<UserId, List<ClientId>>> = AnyMatcher(valueOf())
+        mapUserToClientId: (Map<UserId, List<ClientId>>) -> Boolean = { true }
     )
 
     suspend fun withStoreUserClientListAndRemoveRedundantClients(
         result: Either<StorageFailure, Unit>,
-        clients: Matcher<List<InsertClientParam>> = AnyMatcher(valueOf())
+        clients: (List<InsertClientParam>) -> Boolean = { true }
     )
 
     suspend fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>)
@@ -68,61 +67,61 @@ internal interface ClientRepositoryArrangement {
 
 internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangement {
 
-    override val clientRepository: ClientRepository = mock(ClientRepository::class)
+    override val clientRepository: ClientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withUpdateClientProteusVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
-        coEvery {
-            clientRepository.updateClientProteusVerificationStatus(any(MOCKATIVE_USER_ID), any(MOCKATIVE_CLIENT_ID), any())
+        everySuspend {
+            clientRepository.updateClientProteusVerificationStatus(any(), any(), any())
         }.returns(result)
     }
 
     override suspend fun withClientsByUserId(result: Either<StorageFailure, List<OtherUserClient>>) = apply {
-        coEvery {
-            clientRepository.getClientsByUserId(any(MOCKATIVE_USER_ID))
+        everySuspend {
+            clientRepository.getClientsByUserId(any())
         }.returns(result)
     }
 
     override suspend fun withRemoveClientsAndReturnUsersWithNoClients(
         result: Either<StorageFailure, List<UserId>>,
-        redundantClientsOfUsers: Matcher<Map<UserId, List<ClientId>>>
+        redundantClientsOfUsers: (Map<UserId, List<ClientId>>) -> Boolean
     ) {
-        coEvery {
-            clientRepository.removeClientsAndReturnUsersWithNoClients(matches { redundantClientsOfUsers.matches(it) })
+        everySuspend {
+            clientRepository.removeClientsAndReturnUsersWithNoClients(matches { redundantClientsOfUsers(it) })
         }.returns(result)
     }
 
     override suspend fun withStoreUserClientIdList(
         result: Either<StorageFailure, Unit>,
-        userId: Matcher<UserId>,
-        clientIds: Matcher<List<ClientId>>
+        userId: (UserId) -> Boolean,
+        clientIds: (List<ClientId>) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             clientRepository.storeUserClientIdList(
-                matches(MOCKATIVE_USER_ID) { userId.matches(it) },
-                matches(emptyList()) { clientIds.matches(it) }
+                matches { userId(it) },
+                matches { clientIds(it) }
             )
         }.returns(result)
     }
 
     override suspend fun withStoreMapOfUserToClientId(
         result: Either<StorageFailure, Unit>,
-        mapUserToClientId: Matcher<Map<UserId, List<ClientId>>>
+        mapUserToClientId: (Map<UserId, List<ClientId>>) -> Boolean
     ) {
-        coEvery {
-            clientRepository.storeMapOfUserToClientId(matches { mapUserToClientId.matches(it) })
+        everySuspend {
+            clientRepository.storeMapOfUserToClientId(matches { mapUserToClientId(it) })
         }.returns(result)
     }
 
     override suspend fun withStoreUserClientListAndRemoveRedundantClients(
         result: Either<StorageFailure, Unit>,
-        clients: Matcher<List<InsertClientParam>>
+        clients: (List<InsertClientParam>) -> Boolean
     ) {
-        coEvery {
-            clientRepository.storeUserClientListAndRemoveRedundantClients(matches(emptyList()) { clients.matches(it) })
+        everySuspend {
+            clientRepository.storeUserClientListAndRemoveRedundantClients(matches { clients(it) })
         }.returns(result)
     }
 
     override suspend fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>) {
-        coEvery { clientRepository.selfListOfClients() }.returns(result)
+        everySuspend { clientRepository.selfListOfClients() }.returns(result)
     }
 }

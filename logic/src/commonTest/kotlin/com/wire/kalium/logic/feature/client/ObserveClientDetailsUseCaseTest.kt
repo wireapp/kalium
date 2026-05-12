@@ -27,9 +27,11 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -41,26 +43,26 @@ import kotlin.test.assertIs
 
 class ObserveClientDetailsUseCaseTest {
 
-        private val clientRepository = mock(ClientRepository::class)
+        private val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
 
-        private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+        private val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
     private lateinit var observeClientDetailsUseCase: ObserveClientDetailsUseCase
     private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
 
     @BeforeTest
     fun setup() = runBlocking {
         observeClientDetailsUseCase = ObserveClientDetailsUseCaseImpl(clientRepository, currentClientIdProvider)
-        coEvery {
+        everySuspend {
             currentClientIdProvider.invoke()
-        }.returns(Either.Right(CLIENT.id))
+        } returns Either.Right(CLIENT.id)
     }
 
     @Test
     fun givenAClientIdSuccess_thenTheSuccessPropagated() = runTest(testDispatchers.io) {
         val expected = CLIENT_RESULT
-        coEvery {
+        everySuspend {
             clientRepository.observeClientsByUserIdAndClientId(any(), any())
-        }.returns(flowOf(Either.Right(expected)))
+        } returns flowOf(Either.Right(expected))
 
         val actual = observeClientDetailsUseCase.invoke(USER_ID, CLIENT_ID).first()
         assertIs<GetClientDetailsResult.Success>(actual)
@@ -69,9 +71,9 @@ class ObserveClientDetailsUseCaseTest {
     @Test
     fun givenClientDetailsFail_thenTheErrorPropagated() = runTest(testDispatchers.io) {
         val expected = StorageFailure.DataNotFound
-        coEvery {
+        everySuspend {
             clientRepository.observeClientsByUserIdAndClientId(any(), any())
-        }.returns(flowOf(Either.Left(expected)))
+        } returns flowOf(Either.Left(expected))
 
         val actual = observeClientDetailsUseCase.invoke(USER_ID, CLIENT_ID).first()
         assertIs<GetClientDetailsResult.Failure.Generic>(actual)

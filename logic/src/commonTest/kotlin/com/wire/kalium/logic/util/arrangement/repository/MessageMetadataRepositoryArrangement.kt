@@ -23,12 +23,11 @@ import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface MessageMetadataRepositoryArrangement {
 
@@ -36,23 +35,23 @@ internal interface MessageMetadataRepositoryArrangement {
 
     suspend fun withMessageOriginalSender(
         result: Either<StorageFailure, UserId>,
-        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()),
-        messageId: Matcher<MessageId> = AnyMatcher(valueOf())
+        conversationId: (ConversationId) -> Boolean = { true },
+        messageId: (MessageId) -> Boolean = { true }
     )
 }
 
 internal class MessageMetadataRepositoryArrangementImpl : MessageMetadataRepositoryArrangement {
-        override val messageMetadataRepository: MessageMetadataRepository = mock(MessageMetadataRepository::class)
+        override val messageMetadataRepository: MessageMetadataRepository = mock<MessageMetadataRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withMessageOriginalSender(
         result: Either<StorageFailure, UserId>,
-        conversationId: Matcher<ConversationId>,
-        messageId: Matcher<MessageId>
+        conversationId: (ConversationId) -> Boolean,
+        messageId: (MessageId) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             messageMetadataRepository.originalSenderId(
-                matches { conversationId.matches(it) },
-                matches { messageId.matches(it) }
+                matches { conversationId(it) },
+                matches { messageId(it) }
             )
         }.returns(result)
     }
