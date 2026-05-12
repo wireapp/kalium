@@ -66,6 +66,13 @@ kotlin {
                 implementation(libs.jna)
             }
         }
+        matching { sourceSet ->
+            sourceSet.name.startsWith("ios") && sourceSet.name.endsWith("Main")
+        }.all {
+            dependencies {
+                api(libs.avsKmp)
+            }
+        }
 
         val commonTest by getting {
             dependencies { }

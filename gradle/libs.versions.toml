@@ -233,6 +233,7 @@ difference-jvm = { module = "dev.andrewbailey.difference:difference-jvm", versio
 
 # avs
 avs = { module = "com.wire:avs", version.ref = "avs" }
+avsKmp = { module = "com.wire:avs-kmp", version.ref = "avs" }
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 
 # logging
