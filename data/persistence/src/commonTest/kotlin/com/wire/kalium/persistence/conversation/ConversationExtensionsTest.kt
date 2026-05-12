@@ -18,11 +18,8 @@
 
 package com.wire.kalium.persistence.conversation
 
-import app.cash.paging.PagingConfig
-import app.cash.paging.PagingSource
-import app.cash.paging.PagingSourceLoadParamsAppend
-import app.cash.paging.PagingSourceLoadParamsRefresh
-import app.cash.paging.PagingSourceLoadResultPage
+import androidx.paging.PagingConfig
+import androidx.paging.PagingSource
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -86,7 +83,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     fun givenInsertedConversations_whenGettingFirstPage_thenItShouldContainTheCorrectCountBeforeAndAfter() = runTest(dispatcher) {
         populateData(isChannel = false)
         val result = getPager().pagingSource.refresh()
-        assertIs<PagingSourceLoadResultPage<Int, ConversationDetailsWithEventsEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
         // Assuming the first page was fetched, itemsAfter should be the remaining ones
         assertEquals(CONVERSATION_COUNT - PAGE_SIZE, result.itemsAfter)
         assertEquals(0, result.itemsBefore) // No items before the first page
@@ -97,7 +94,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         populateData(isChannel = false)
         val searchQuery = "conversation 1"
         val result = getPager(searchQuery = searchQuery).pagingSource.refresh()
-        assertIs<PagingSourceLoadResultPage<Int, ConversationDetailsWithEventsEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
         // Assuming the first page was fetched containing only 11 results ("conversation 1" and "conversation 10" to "conversation 19")
         assertEquals(0, result.itemsAfter) // Since the page has fewer elements than PAGE_SIZE, there should be no items after this page
         assertEquals(0, result.itemsBefore) // No items before the first page
@@ -107,7 +104,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     fun givenInsertedConversations_whenGettingFirstPage_thenTheNextKeyShouldBeTheFirstItemOfTheNextPage() = runTest(dispatcher) {
         populateData(isChannel = false)
         val result = getPager().pagingSource.refresh()
-        assertIs<PagingSourceLoadResultPage<Int, ConversationDetailsWithEventsEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
         assertEquals(PAGE_SIZE, result.nextKey) // First page fetched, second page starts at the end of the first one
     }
 
@@ -115,7 +112,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     fun givenInsertedConversations_whenGettingFirstPage_thenItShouldContainTheFirstPageOfItems() = runTest(dispatcher) {
         populateData(isChannel = false)
         val result = getPager().pagingSource.refresh()
-        assertIs<PagingSourceLoadResultPage<Long, ConversationDetailsWithEventsEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
         result.data.forEachIndexed { index, conversation ->
             assertEquals("$CONVERSATION_ID_PREFIX$index", conversation.conversationViewEntity.id.value)
             assertEquals(false, conversation.conversationViewEntity.archived)
@@ -127,7 +124,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         populateData(isChannel = false)
         val pagingSource = getPager().pagingSource
         val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE)
-        assertIs<PagingSourceLoadResultPage<Int, ConversationDetailsWithEventsEntity>>(secondPageResult)
+        assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(secondPageResult)
         assertFalse { secondPageResult.data.isEmpty() }
         assertTrue { secondPageResult.data.size <= PAGE_SIZE }
         secondPageResult.data.forEachIndexed { index, conversation ->
@@ -140,7 +137,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         populateData(archived = false, count = CONVERSATION_COUNT, conversationIdPrefix = CONVERSATION_ID_PREFIX, isChannel = false)
         populateData(archived = true, count = CONVERSATION_COUNT, conversationIdPrefix = ARCHIVED_CONVERSATION_ID_PREFIX, isChannel = false)
         val result = getPager(fromArchive = true).pagingSource.refresh()
-        assertIs<PagingSourceLoadResultPage<Long, ConversationDetailsWithEventsEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
         result.data.forEachIndexed { index, conversation ->
             assertEquals("$ARCHIVED_CONVERSATION_ID_PREFIX$index", conversation.conversationViewEntity.id.value)
             assertEquals(true, conversation.conversationViewEntity.archived)
@@ -152,7 +149,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         populateData(isChannel = false)
         val searchQuery = "conversation 1"
         val result = getPager(searchQuery = searchQuery).pagingSource.refresh()
-        assertIs<PagingSourceLoadResultPage<Int, ConversationDetailsWithEventsEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
         // Assuming the first page was fetched containing only 11 results ["conversation 1" and "conversation 10" to "conversation 19"]
         assertEquals(11, result.data.size)
         result.data.forEachIndexed { index, conversation ->
@@ -165,7 +162,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         populateData(archived = false, count = 10, conversationIdPrefix = "group_", isChannel = false)
         populateData(archived = false, count = 9, conversationIdPrefix = "channel_", isChannel = true)
         getPager(searchQuery = "", filter = ConversationFilterEntity.GROUPS).pagingSource.refresh().also { result ->
-            assertIs<PagingSourceLoadResultPage<Long, ConversationDetailsWithEventsEntity>>(result)
+            assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
             assertEquals(10, result.data.size)
             result.data.forEach {
                 assertFalse { it.conversationViewEntity.isChannel }
@@ -178,7 +175,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         populateData(archived = false, count = 10, conversationIdPrefix = "group_", isChannel = false)
         populateData(archived = false, count = 9, conversationIdPrefix = "channel_", isChannel = true)
         getPager(searchQuery = "", filter = ConversationFilterEntity.CHANNELS).pagingSource.refresh().also { result ->
-            assertIs<PagingSourceLoadResultPage<Long, ConversationDetailsWithEventsEntity>>(result)
+            assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
             assertEquals(9, result.data.size)
             result.data.forEach {
                 assertTrue { it.conversationViewEntity.isChannel }
@@ -192,10 +189,10 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         )
 
     private suspend fun PagingSource<Int, ConversationDetailsWithEventsEntity>.refresh() =
-        load(PagingSourceLoadParamsRefresh<Int>(null, PAGE_SIZE, false))
+        load(PagingSource.LoadParams.Refresh<Int>(null, PAGE_SIZE, false))
 
     private suspend fun PagingSource<Int, ConversationDetailsWithEventsEntity>.nextPageForOffset(key: Int) =
-        load(PagingSourceLoadParamsAppend<Int>(key, PAGE_SIZE, true))
+        load(PagingSource.LoadParams.Append<Int>(key, PAGE_SIZE, true))
 
     private suspend fun populateData(
         archived: Boolean = false,

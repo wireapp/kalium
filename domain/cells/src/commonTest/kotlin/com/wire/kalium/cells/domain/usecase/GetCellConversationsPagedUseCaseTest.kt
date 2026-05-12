@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import androidx.paging.PagingData
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
-import app.cash.paging.PagingData
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.functional.right
