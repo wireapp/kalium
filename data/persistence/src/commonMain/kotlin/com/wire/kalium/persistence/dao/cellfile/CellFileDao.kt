@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.persistence.dao.cellfile
 
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
 data class CellFileEntity(
@@ -31,7 +30,6 @@ data class CellFileEntity(
     val modifiedAt: Long? = null,
 )
 
-@Mockable
 interface CellFileDao {
     suspend fun upsert(entity: CellFileEntity)
     suspend fun delete(id: String)
