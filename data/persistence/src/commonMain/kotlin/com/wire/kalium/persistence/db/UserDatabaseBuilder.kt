@@ -18,9 +18,6 @@
 
 package com.wire.kalium.persistence.db
 
-import app.cash.sqldelight.async.coroutines.awaitMigrate
-import app.cash.sqldelight.async.coroutines.awaitQuery
-import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.db.SqlSchema
@@ -107,7 +104,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -476,40 +472,9 @@ internal expect fun createEmptyDatabaseFile(
     userId: UserIDEntity,
 ): String?
 
-@Suppress("TooGenericExceptionCaught")
-suspend fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.AsyncValue<Unit>>): Boolean {
-    val oldVersion = awaitQuery(null, "PRAGMA user_version;", {
-        it.next().await()
-        it.getLong(0)
-    }, 0) ?: return false
-
-    val newVersion = sqlSchema.version
-    return try {
-        if (oldVersion != newVersion) {
-            sqlSchema.awaitMigrate(this, oldVersion, newVersion)
-        }
-        true
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        false
-    }
-}
+expect suspend fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.AsyncValue<Unit>>): Boolean
 
 /**
  * @return true if the database have fk violations, false otherwise
  */
-suspend fun SqlDriver.checkFKViolations(): Boolean {
-    var result = false
-    awaitQuery(null, "PRAGMA foreign_key_check;", {
-        // foreign_key_check returns the rows with the fk violations
-        // if the cursor has a next, it means there are violations
-        // and the backup is corrupted
-        if (it.next().await()) {
-            result = true
-        }
-        Unit
-    }, 0, null)
-
-    return result
-}
+expect suspend fun SqlDriver.checkFKViolations(): Boolean
