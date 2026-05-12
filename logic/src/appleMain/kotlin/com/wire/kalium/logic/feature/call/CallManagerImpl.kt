@@ -25,6 +25,7 @@ import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.logger.callingLogger
