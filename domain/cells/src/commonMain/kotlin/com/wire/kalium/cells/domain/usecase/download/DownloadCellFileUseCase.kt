@@ -48,6 +48,7 @@ public interface DownloadCellFileUseCase {
     @Suppress("LongParameterList")
     public suspend operator fun invoke(
         assetId: String,
+        conversationId: String?,
         outFilePath: Path,
         assetSize: Long,
         remoteFilePath: String? = null,
@@ -64,6 +65,7 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
 ) : DownloadCellFileUseCase {
     override suspend operator fun invoke(
         assetId: String,
+        conversationId: String?,
         outFilePath: Path,
         assetSize: Long,
         remoteFilePath: String?,
@@ -76,7 +78,7 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
                 // Attachment asset not found
                 // Try to download standalone file (not received as attachment in conversation).
                 remoteFilePath?.let {
-                    downloadFromRemotePath(assetId, outFilePath, assetSize, it, name, ownerId, onProgressUpdate)
+                    downloadFromRemotePath(assetId, conversationId, outFilePath, assetSize, it, name, ownerId, onProgressUpdate)
                 } ?: Either.Left(StorageFailure.DataNotFound)
             },
             { path ->
@@ -99,6 +101,7 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
     @Suppress("LongParameterList")
     private suspend fun downloadFromRemotePath(
         assetId: String,
+        conversationId: String?,
         outFilePath: Path,
         assetSize: Long,
         path: String,
@@ -106,6 +109,15 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
         ownerId: String?,
         onProgressUpdate: (Long) -> Unit,
     ) = cellsRepository.downloadFile(outFilePath, path, onProgressUpdate)
-            .onSuccess { attachmentsRepository.saveStandaloneAssetPath(assetId, outFilePath.toString(), assetSize, name, ownerId) }
+        .onSuccess {
+            attachmentsRepository.saveStandaloneAssetPath(
+                assetId,
+                conversationId,
+                outFilePath.toString(),
+                assetSize,
+                name,
+                ownerId
+            )
+        }
 
 }

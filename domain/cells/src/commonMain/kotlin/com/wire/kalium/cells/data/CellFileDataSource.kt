@@ -44,6 +44,7 @@ private fun CellFileEntity.toInfo() = OfflineFileInfo(
     size = size,
     downloadedAt = downloadedAt,
     modifiedAt = modifiedAt,
+    conversationId = conversationId,
 )
 
 private fun OfflineFileInfo.toEntity() = CellFileEntity(
@@ -55,4 +56,5 @@ private fun OfflineFileInfo.toEntity() = CellFileEntity(
     downloadedAt = downloadedAt,
     isOffline = true,
     modifiedAt = modifiedAt,
+    conversationId = conversationId,
 )

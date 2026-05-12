@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.Flow
 
 public data class OfflineFileInfo(
     val id: String,
+    val conversationId: String?,
     val name: String,
     val owner: String,
     val localPath: String,

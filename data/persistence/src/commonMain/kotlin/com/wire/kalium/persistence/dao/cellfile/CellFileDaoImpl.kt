@@ -35,6 +35,7 @@ internal class CellFileDaoImpl(
     override suspend fun upsert(entity: CellFileEntity) {
         withContext(writeDispatcher.value) {
             queries.upsertCellFile(
+                conversationId = entity.conversationId,
                 uuid = entity.uuid,
                 name = entity.name,
                 owner = entity.owner,
@@ -70,6 +71,7 @@ internal class CellFileDaoImpl(
     @Suppress("LongParameterList")
     private fun toEntity(
         uuid: String,
+        conversationId: String?,
         name: String?,
         owner: String?,
         localPath: String?,
@@ -86,5 +88,6 @@ internal class CellFileDaoImpl(
         downloadedAt = downloadedAt,
         isOffline = isOffline == 1L,
         modifiedAt = modifiedAt,
+        conversationId = conversationId,
     )
 }

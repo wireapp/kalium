@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.Flow
 
 data class CellFileEntity(
     val uuid: String,
+    val conversationId: String?,
     val name: String?,
     val owner: String?,
     val localPath: String?,

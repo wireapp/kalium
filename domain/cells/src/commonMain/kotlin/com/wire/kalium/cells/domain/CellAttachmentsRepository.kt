@@ -43,6 +43,7 @@ internal interface CellAttachmentsRepository {
     suspend fun getAttachments(): Either<StorageFailure, List<MessageAttachment>>
     suspend fun saveStandaloneAssetPath(
         assetId: String,
+        conversationId: String?,
         path: String,
         size: Long,
         name: String? = null,

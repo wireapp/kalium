@@ -104,6 +104,7 @@ internal class CellAttachmentsDataSource(
 
     override suspend fun saveStandaloneAssetPath(
         assetId: String,
+        conversationId: String?,
         path: String,
         size: Long,
         name: String?,
@@ -113,6 +114,7 @@ internal class CellAttachmentsDataSource(
             cellFileDao.upsert(
                 CellFileEntity(
                     uuid = assetId,
+                    conversationId = conversationId,
                     name = name,
                     owner = ownerId,
                     localPath = path,

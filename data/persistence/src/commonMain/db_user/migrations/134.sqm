@@ -1,12 +1,13 @@
 CREATE TABLE IF NOT EXISTS CellFile (
-    uuid         TEXT    NOT NULL,
-    name         TEXT,
-    owner        TEXT,
-    localPath    TEXT,
-    size         INTEGER,
-    downloadedAt INTEGER NOT NULL,
-    modifiedAt   INTEGER,
-    isOffline    INTEGER NOT NULL DEFAULT 0,
+    uuid           TEXT   NOT NULL,
+    conversationId TEXT,
+    name           TEXT,
+    owner          TEXT,
+    localPath      TEXT,
+    size           INTEGER,
+    downloadedAt   INTEGER NOT NULL,
+    modifiedAt     INTEGER,
+    isOffline      INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (uuid)
 );
 
