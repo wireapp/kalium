@@ -89,7 +89,7 @@ class CustomServerConfigRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.setFederationToTrue(any())
         }
-        verify(VerifyMode.exactly(1)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.configById(any())
         }
     }
@@ -117,7 +117,7 @@ class CustomServerConfigRepositoryTest {
         verifySuspend(VerifyMode.not) {
             arrangement.serverConfigurationDAO.setFederationToTrue(any())
         }
-        verify(VerifyMode.exactly(1)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.configById(any())
         }
     }
@@ -156,7 +156,7 @@ class CustomServerConfigRepositoryTest {
         verifySuspend(VerifyMode.not) {
             arrangement.serverConfigurationDAO.setFederationToTrue(any())
         }
-        verify(VerifyMode.exactly(1)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigurationDAO.configById(any())
         }
     }
@@ -203,7 +203,7 @@ class CustomServerConfigRepositoryTest {
             CustomServerConfigDataSource(versionApi, serverConfigApi, developmentApiEnabled, serverConfigurationDAO, backendMetaDataUtil)
 
         suspend fun withConfigForNewRequest(serverConfigEntity: ServerConfigEntity): Arrangement {
-            every {
+            everySuspend {
                 serverConfigurationDAO.configById(any())
             } returns serverConfigEntity
             everySuspend {
@@ -230,8 +230,8 @@ class CustomServerConfigRepositoryTest {
             return this
         }
 
-        fun withConfigById(serverConfig: ServerConfigEntity): Arrangement {
-            every {
+        suspend fun withConfigById(serverConfig: ServerConfigEntity): Arrangement {
+            everySuspend {
                 serverConfigurationDAO.configById(any())
             } returns serverConfig
             return this
@@ -265,7 +265,7 @@ class CustomServerConfigRepositoryTest {
             )
 
             everySuspend { serverConfigurationDAO.configByLinks(serverConfigEntity.links) } returns serverConfigEntity
-            every {
+            everySuspend {
                 serverConfigurationDAO.configById(any())
             } returns newServerConfigEntity
 
