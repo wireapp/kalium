@@ -28,8 +28,8 @@ import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
 import dev.mokkery.verifySuspend
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.mock
@@ -191,33 +191,33 @@ class DownloadNodeFileUseCaseTest {
         val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
         val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
 
-        suspend fun withAssetPath() = apply {
+        fun withAssetPath() = apply {
             everySuspend { attachmentsRepository.getAssetPath(any()) }.returns(assetPath.right())
         }
 
-        suspend fun withAssetPathMissing() = apply {
+        fun withAssetPathMissing() = apply {
             everySuspend { attachmentsRepository.getAssetPath(any()) }.returns(null.right())
         }
 
-        suspend fun withAssetNotFound() = apply {
+        fun withAssetNotFound() = apply {
             everySuspend { attachmentsRepository.getAssetPath(any()) }.returns(StorageFailure.DataNotFound.left())
         }
 
-        suspend fun withDownloadSuccess() = apply {
+        fun withDownloadSuccess() = apply {
             everySuspend { cellsRepository.downloadFile(any(), any(), any()) }.returns(Unit.right())
         }
 
-        suspend fun withDownloadFailure() = apply {
+        fun withDownloadFailure() = apply {
             everySuspend { cellsRepository.downloadFile(any(), any(), any()) }.returns(
                 NetworkFailure.ServerMiscommunication(IllegalStateException("Test")).left()
             )
         }
 
-        suspend fun arrange(): Pair<Arrangement, DownloadCellFileUseCaseImpl> {
+        fun arrange(): Pair<Arrangement, DownloadCellFileUseCaseImpl> {
 
             everySuspend { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
             everySuspend { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
-            everySuspend { attachmentsRepository.saveStandaloneAssetPath(any(), any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.saveStandaloneAssetPath(any(), any(), any(), any(), any()) }.returns(Unit.right())
 
             return this to DownloadCellFileUseCaseImpl(
                 cellsRepository = cellsRepository,
