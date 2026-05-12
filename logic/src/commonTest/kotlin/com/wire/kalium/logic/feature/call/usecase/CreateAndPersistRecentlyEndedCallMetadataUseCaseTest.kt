@@ -33,12 +33,14 @@ import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseC
 import com.wire.kalium.logic.framework.TestCall.CALLER_ID
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_MINIMIZED
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -61,9 +63,9 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateRecentlyEndedCallMetadata(DEFAULT_ENDED_CALL_METADATA)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -82,7 +84,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateRecentlyEndedCallMetadata(
                 DEFAULT_ENDED_CALL_METADATA.copy(
                     conversationDetails = DEFAULT_ENDED_CALL_METADATA.conversationDetails.copy(
@@ -90,7 +92,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
                     )
                 )
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -109,7 +111,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateRecentlyEndedCallMetadata(
                 DEFAULT_ENDED_CALL_METADATA.copy(
                     conversationDetails = DEFAULT_ENDED_CALL_METADATA.conversationDetails.copy(
@@ -118,7 +120,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
                     )
                 )
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -137,7 +139,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.updateRecentlyEndedCallMetadata(
                 DEFAULT_ENDED_CALL_METADATA.copy(
                     callDetails = DEFAULT_ENDED_CALL_METADATA.callDetails.copy(
@@ -145,27 +147,29 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
                     )
                 )
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val observeConversationMembers = mock(ObserveConversationMembersUseCase::class)
-        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val callRepository = mock(CallRepository::class)
+        val observeConversationMembers = mock<ObserveConversationMembersUseCase>(mode = MockMode.autoUnit)
+        val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
+        val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
         fun withOutgoingCall() = apply {
-            every { callRepository.getCallMetadata(CONVERSATION_ID) }
-                .returns(callMetadata().copy(callStatus = CallStatus.STARTED))
+            every { callRepository.getCallMetadata(CONVERSATION_ID) } returns (
+                callMetadata().copy(callStatus = CallStatus.STARTED)
+            )
         }
 
         fun withIncomingCall() = apply {
-            every { callRepository.getCallMetadata(CONVERSATION_ID) }
-                .returns(callMetadata().copy(callerId = CALLER_ID.copy(value = "external"), callStatus = CallStatus.INCOMING))
+            every { callRepository.getCallMetadata(CONVERSATION_ID) } returns (
+                callMetadata().copy(callerId = CALLER_ID.copy(value = "external"), callStatus = CallStatus.INCOMING)
+            )
         }
 
         suspend fun withConversationMembers() = apply {
-            coEvery { observeConversationMembers(any()) }.returns(
+            everySuspend { observeConversationMembers(any()) } returns (
                 flowOf(
                     listOf(
                         MemberDetails(TestUser.SELF, Conversation.Member.Role.Admin),
@@ -176,7 +180,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         }
 
         suspend fun withConversationGuests() = apply {
-            coEvery { observeConversationMembers(any()) }.returns(
+            everySuspend { observeConversationMembers(any()) } returns (
                 flowOf(
                     listOf(
                         MemberDetails(TestUser.SELF, Conversation.Member.Role.Admin),
@@ -190,7 +194,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         }
 
         suspend fun withConversationGuestsPro() = apply {
-            coEvery { observeConversationMembers(any()) }.returns(
+            everySuspend { observeConversationMembers(any()) } returns (
                 flowOf(
                     listOf(
                         MemberDetails(TestUser.SELF, Conversation.Member.Role.Admin),
@@ -201,7 +205,7 @@ class CreateAndPersistRecentlyEndedCallMetadataUseCaseTest {
         }
 
         suspend fun withSelfTeamIdPresent() = apply {
-            coEvery { selfTeamIdProvider() }.returns(Either.Right(TestUser.SELF.teamId))
+            everySuspend { selfTeamIdProvider() } returns (Either.Right(TestUser.SELF.teamId))
         }
 
         fun arrange(): Pair<Arrangement, CreateAndPersistRecentlyEndedCallMetadataUseCase> =

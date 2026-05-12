@@ -26,13 +26,14 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -52,9 +53,9 @@ class CancelConnectionRequestUseCaseTest {
 
         // then
         assertEquals(CancelConnectionRequestUseCaseResult.Success, resultOk)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.updateConnectionStatus(any(), eq(userId), eq(ConnectionState.CANCELLED))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -69,19 +70,19 @@ class CancelConnectionRequestUseCaseTest {
 
         // then
         assertEquals(CancelConnectionRequestUseCaseResult.Failure::class, resultFailure::class)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.updateConnectionStatus(any(), eq(userId), eq(ConnectionState.CANCELLED))
-        }.wasInvoked(once)
+        }
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
-        val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
+        val connectionRepository: ConnectionRepository = mock()
 
         suspend fun withCancelResult(result: Either<CoreFailure, Connection>) = apply {
-            coEvery {
+            everySuspend {
                 connectionRepository.updateConnectionStatus(any(), eq(userId), eq(ConnectionState.CANCELLED))
-            }.returns(result)
+            } returns result
         }
 
         val useCase = CancelConnectionRequestUseCaseImpl(connectionRepository, cryptoTransactionProvider)

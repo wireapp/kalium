@@ -39,9 +39,7 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import io.mockative.Mockable
 
-@Mockable
 internal interface MessageSendFailureHandler {
     /**
      * Handle a failure when attempting to send a message

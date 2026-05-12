@@ -26,14 +26,14 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.FetchConversationsUseCase
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.doesNothing
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -49,9 +49,9 @@ class SyncConversationsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversations(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -66,9 +66,9 @@ class SyncConversationsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
-            arrangement.systemMessageInserter.insertHistoryLostProtocolChangedSystemMessage(eq(conversationId))
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.systemMessageInserter.insertHistoryLostProtocolChangedSystemMessage(conversationId)
+        }
     }
 
     @Test
@@ -83,35 +83,34 @@ class SyncConversationsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
-            arrangement.systemMessageInserter.insertHistoryLostProtocolChangedSystemMessage(eq(conversationId))
-        }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) {
+            arrangement.systemMessageInserter.insertHistoryLostProtocolChangedSystemMessage(conversationId)
+        }
     }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
-        val conversationRepository = mock(ConversationRepository::class)
-        val systemMessageInserter = mock(SystemMessageInserter::class)
-        val fetchConversations = mock(FetchConversationsUseCase::class)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val systemMessageInserter = mock<SystemMessageInserter>(mode = MockMode.autoUnit)
+        val fetchConversations = mock<FetchConversationsUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withFetchConversationsSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 fetchConversations(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withGetConversationsIdsReturning(
             conversationIds: List<ConversationId>,
             protocol: Conversation.Protocol? = null
         ) = apply {
-            coEvery {
-                conversationRepository.getConversationIds(eq(Conversation.Type.Group.Regular), protocol?.let { eq(it) } ?: any(), eq<TeamId?>(null))
-            }.returns(Either.Right(conversationIds))
+            everySuspend {
+                conversationRepository.getConversationIds(any(), any(), any())
+            } returns Either.Right(conversationIds)
         }
 
         suspend fun withInsertHistoryLostProtocolChangedSystemMessageSuccessful() = apply {
-            coEvery { systemMessageInserter.insertHistoryLostProtocolChangedSystemMessage(any()) }
-                .doesNothing()
+            everySuspend { systemMessageInserter.insertHistoryLostProtocolChangedSystemMessage(any()) } returns Unit
         }
 
         suspend fun arrange() = this to SyncConversationsUseCaseImpl(

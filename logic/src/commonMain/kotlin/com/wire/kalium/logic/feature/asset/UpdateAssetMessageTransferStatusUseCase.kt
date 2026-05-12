@@ -25,10 +25,8 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
-@Mockable
 public interface UpdateAssetMessageTransferStatusUseCase {
     /**
      * Function that allows update an asset message transfer status.

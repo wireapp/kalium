@@ -30,9 +30,11 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import io.mockative.any
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -43,14 +45,11 @@ class GetAllContactsNotInTheConversationUseCaseTest {
 
     @Test
     fun givenSuccessFullResult_whenGettingUsersNotPartofTheConversation_ThenReturnTheResult() = runTest {
-        // given
         val (_, getAllContactsNotInTheConversation) = Arrangement()
             .withSuccessFullGetUsersNotPartOfConversation()
             .arrange()
 
-        // when
         getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain")).test {
-            // then
             val result = awaitItem()
             assertIs<Result.Success>(result)
             assertTrue { result.contactsNotInConversation == Arrangement.mockAllContacts }
@@ -60,14 +59,11 @@ class GetAllContactsNotInTheConversationUseCaseTest {
 
     @Test
     fun givenFailure_whenGettingUsersNotPartofTheConversation_ThenReturnTheResult() = runTest {
-        // given
         val (_, getAllContactsNotInTheConversation) = Arrangement()
             .withFailureGetUsersNotPartOfConversation()
             .arrange()
 
-        // when
         getAllContactsNotInTheConversation(ConversationId("someValue", "someDomain")).test {
-            // then
             val result = awaitItem()
             assertIs<Result.Failure>(result)
             cancelAndIgnoreRemainingEvents()
@@ -117,26 +113,25 @@ class GetAllContactsNotInTheConversationUseCaseTest {
                 )
             )
         }
-        val conversationRepository = mock(ConversationRepository::class)
-        val userRepository = mock(UserRepository::class)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
 
         fun withSuccessFullGetUsersNotPartOfConversation(allContacts: List<OtherUser> = mockAllContacts): Arrangement {
             every {
                 userRepository.observeAllKnownUsersNotInConversation(any())
-            }.returns(
+            } returns
                     flowOf(
                         Either.Right(
                             allContacts
                         )
                     )
-                )
             return this
         }
 
         fun withFailureGetUsersNotPartOfConversation(): Arrangement {
             every {
                 userRepository.observeAllKnownUsersNotInConversation(any())
-            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
+            } returns flowOf(Either.Left(StorageFailure.DataNotFound))
 
             return this
         }

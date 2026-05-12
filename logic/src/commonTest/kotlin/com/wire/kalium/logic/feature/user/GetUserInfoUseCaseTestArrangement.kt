@@ -26,49 +26,49 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 
 internal class GetUserInfoUseCaseTestArrangement {
 
-    val userRepository: UserRepository = mock(UserRepository::class)
+    val userRepository: UserRepository = mock()
 
-    val teamRepository: TeamRepository = mock(TeamRepository::class)
+    val teamRepository: TeamRepository = mock()
 
     suspend fun withSuccessfulUserRetrieve(
         localUserPresent: Boolean = true,
         hasTeam: Boolean = true,
         userType: UserTypeInfo = UserTypeInfo.Regular(UserType.EXTERNAL)
     ): GetUserInfoUseCaseTestArrangement {
-        coEvery {
+        everySuspend {
             userRepository.getKnownUser(any())
-        }.returns(
+        } returns
             flowOf(
                 if (!localUserPresent) null
                 else if (hasTeam) TestUser.OTHER.copy(userType = userType)
                 else TestUser.OTHER.copy(teamId = null, userType = userType)
             )
-        )
 
         if (!localUserPresent) {
-            coEvery {
+            everySuspend {
                 userRepository.userById(any())
-            }.returns(Either.Right(TestUser.OTHER))
+            } returns Either.Right(TestUser.OTHER)
         }
 
         return this
     }
 
     suspend fun withFailingUserRetrieve(): GetUserInfoUseCaseTestArrangement {
-        coEvery {
+        everySuspend {
             userRepository.getKnownUser(any())
-        }.returns(flowOf(null))
+        } returns flowOf(null)
 
-        coEvery {
+        everySuspend {
             userRepository.userById(any())
-        }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+        } returns Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
 
         return this
     }
@@ -76,32 +76,31 @@ internal class GetUserInfoUseCaseTestArrangement {
     suspend fun withSuccessfulTeamRetrieve(
         localTeamPresent: Boolean = true,
     ): GetUserInfoUseCaseTestArrangement {
-        coEvery {
+        everySuspend {
             teamRepository.getTeam(any())
-        }.returns(
+        } returns
             flowOf(
                 if (!localTeamPresent) null
                 else TestTeam.TEAM
             )
-        )
 
         if (!localTeamPresent) {
-            coEvery {
+            everySuspend {
                 teamRepository.fetchTeamById(any())
-            }.returns(Either.Right(TestTeam.TEAM))
+            } returns Either.Right(TestTeam.TEAM)
         }
 
         return this
     }
 
     suspend fun withFailingTeamRetrieve(): GetUserInfoUseCaseTestArrangement {
-        coEvery {
+        everySuspend {
             teamRepository.getTeam(any())
-        }.returns(flowOf(null))
+        } returns flowOf(null)
 
-        coEvery {
+        everySuspend {
             teamRepository.fetchTeamById(any())
-        }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+        } returns Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
 
         return this
     }

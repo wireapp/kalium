@@ -23,10 +23,13 @@ import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -42,22 +45,22 @@ class RemoveMessageDraftUseCaseTest {
 
         removeMessageDraft(CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageDraftRepository.removeMessageDraft(CONVERSATION_ID)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private inner class Arrangement {
-        val messageDraftRepository: MessageDraftRepository = mock(MessageDraftRepository::class)
+        val messageDraftRepository: MessageDraftRepository = mock<MessageDraftRepository>(mode = MockMode.autoUnit)
 
         private val removeMessageDraft by lazy {
             RemoveMessageDraftUseCaseImpl(messageDraftRepository, testDispatchers)
         }
 
         suspend fun withRemoveMessageDraft(conversationId: ConversationId) = apply {
-            coEvery {
+            everySuspend {
                 messageDraftRepository.removeMessageDraft(conversationId)
-            }.returns(Unit)
+            } returns Unit
         }
 
         fun arrange() = this to removeMessageDraft

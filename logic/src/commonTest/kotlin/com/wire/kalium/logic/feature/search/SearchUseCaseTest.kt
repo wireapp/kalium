@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.search
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -30,15 +31,14 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
-import com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.EqualsMatcher
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -63,9 +63,9 @@ class SearchUseCaseTest {
             expected = emptyList(),
             actual = result.connected
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.getKnownContacts(null)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -88,9 +88,9 @@ class SearchUseCaseTest {
             expected = emptyList(),
             actual = result.connected
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.getKnownContacts(eq(conversationId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -114,9 +114,9 @@ class SearchUseCaseTest {
             expected = emptyList(),
             actual = result.connected
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(eq("searchquery"), any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -148,11 +148,11 @@ class SearchUseCaseTest {
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchUserRemoteDirectory(
                 result = UserSearchResult(remoteSearchResult).right(),
-                searchQuery = EqualsMatcher("searchquery"),
+                searchQuery = "searchquery",
             )
             withSearchLocalByName(
                 result = localSearchResult.right(),
-                searchQuery = EqualsMatcher("searchquery"),
+                searchQuery = "searchquery",
             )
         }
 
@@ -166,12 +166,12 @@ class SearchUseCaseTest {
             expected = expected,
             actual = result
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(eq("searchquery"), any(), any(), any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchLocalByName(eq("searchquery"), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -181,11 +181,11 @@ class SearchUseCaseTest {
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchUserRemoteDirectory(
                 result = UserSearchResult(emptyList()).right(),
-                searchQuery = EqualsMatcher(cleanQuery),
+                searchQuery = cleanQuery,
             )
             withSearchLocalByName(
                 result = emptyList<UserSearchDetails>().right(),
-                searchQuery = EqualsMatcher(cleanQuery),
+                searchQuery = cleanQuery,
             )
         }
 
@@ -199,12 +199,12 @@ class SearchUseCaseTest {
             expected = emptyList(),
             actual = result.connected
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchUserRemoteDirectory(eq(cleanQuery), any(), any(), any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.searchUserRepository.searchLocalByName(eq(cleanQuery), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private companion object {
@@ -242,7 +242,8 @@ class SearchUseCaseTest {
         )
     }
 
-    private class Arrangement : SearchRepositoryArrangement by SearchRepositoryArrangementImpl() {
+    private class Arrangement {
+        val searchUserRepository = mock<SearchUserRepository>(mode = MockMode.autoUnit)
 
         private val searchUseCase: SearchUsersUseCase = SearchUsersUseCaseImpl(
             searchUserRepository = searchUserRepository,
@@ -250,8 +251,35 @@ class SearchUseCaseTest {
             maxRemoteSearchResultCount = 30
         )
 
-        fun arrange(block: suspend Arrangement.() -> Unit) = apply {
-            runBlocking { block() }
+        suspend fun arrange(block: suspend Arrangement.() -> Unit) = apply {
+            block()
         }.run { this to searchUseCase }
+
+        suspend fun withGetKnownContacts(result: com.wire.kalium.common.functional.Either<com.wire.kalium.common.error.StorageFailure, List<UserSearchDetails>>) {
+            everySuspend { searchUserRepository.getKnownContacts(any()) } returns result
+        }
+
+        suspend fun withSearchUserRemoteDirectory(
+            result: com.wire.kalium.common.functional.Either<com.wire.kalium.common.error.CoreFailure, UserSearchResult>,
+            searchQuery: String? = null
+        ) {
+            everySuspend {
+                searchUserRepository.searchUserRemoteDirectory(
+                    if (searchQuery == null) any() else eq(searchQuery),
+                    any(),
+                    any(),
+                    any()
+                )
+            } returns result
+        }
+
+        suspend fun withSearchLocalByName(
+            result: com.wire.kalium.common.functional.Either<com.wire.kalium.common.error.StorageFailure, List<UserSearchDetails>>,
+            searchQuery: String? = null
+        ) {
+            everySuspend {
+                searchUserRepository.searchLocalByName(if (searchQuery == null) any() else eq(searchQuery), any())
+            } returns result
+        }
     }
 }

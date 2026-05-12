@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.FetchMLSOneToOneConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.ResetMLSConversationResult
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
@@ -42,9 +43,10 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import com.wire.kalium.logic.util.thenReturnSequentially
+import dev.mokkery.MockMode
+import dev.mokkery.answering.sequentiallyReturns
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -54,15 +56,16 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -79,13 +82,13 @@ class JoinExistingMLSConversationUseCaseTest {
 
             joinExistingMLSConversationUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.mlsConversationRepository.joinGroupByExternalCommit(
                     groupID = any(),
                     groupInfo = any(),
                     mlsContext = any()
                 )
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -100,13 +103,13 @@ class JoinExistingMLSConversationUseCaseTest {
 
             joinExistingMLSConversationsUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.mlsConversationRepository.joinGroupByExternalCommit(
                     any(),
                     any(),
                     any()
                 )
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -122,11 +125,11 @@ class JoinExistingMLSConversationUseCaseTest {
 
         joinExistingMLSConversationsUseCase(arrangement.transactionContext, conversation.id).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
                 any(), eq((conversation.protocol as Conversation.ProtocolInfo.MLS).groupId), any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -139,15 +142,15 @@ class JoinExistingMLSConversationUseCaseTest {
 
         joinExistingMLSConversationsUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationApi.fetchGroupInfo(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -167,7 +170,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION.id
             ).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.establishMLSGroup(
                     mlsContext = any(),
                     groupID = eq(Arrangement.GROUP_ID3),
@@ -175,12 +178,11 @@ class JoinExistingMLSConversationUseCaseTest {
                     publicKeys = any(),
                     allowSkippingUsersWithoutKeyPackages = eq(false)
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
     fun givenSelfConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() = runTest {
-        // GIVEN
         val (arrangement, joinExistingMLSConversationUseCase) = Arrangement(testKaliumDispatcher)
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
@@ -188,13 +190,11 @@ class JoinExistingMLSConversationUseCaseTest {
             .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet(), emptySet()))
             .arrange()
 
-        // WHEN
         val result = joinExistingMLSConversationUseCase(arrangement.transactionContext, Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION.id)
 
-        // THEN
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.establishMLSGroup(
                 any(),
                 eq(Arrangement.GROUP_ID_SELF),
@@ -202,7 +202,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 any(),
                 eq(false)
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -222,7 +222,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION.id
             ).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.establishMLSGroup(
                     mlsContext = any(),
                     groupID = eq(Arrangement.GROUP_ID_ONE_ON_ONE),
@@ -230,7 +230,7 @@ class JoinExistingMLSConversationUseCaseTest {
                     publicKeys = any(),
                     allowSkippingUsersWithoutKeyPackages = eq(false)
                 )
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -247,17 +247,17 @@ class JoinExistingMLSConversationUseCaseTest {
 
         joinExistingMLSConversationsUseCase(arrangement.transactionContext, Arrangement.MLS_CONVERSATION1.id).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversation(
                 any(),
                 eq(Arrangement.MLS_CONVERSATION1.id),
                 eq(ConversationSyncReason.Other)
             )
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), eq(Arrangement.GROUP_ID1), any())
-        }.wasInvoked(twice)
+        }
 
     }
 
@@ -280,25 +280,25 @@ class JoinExistingMLSConversationUseCaseTest {
             Arrangement.MLS_PENDING_AFTER_RESET_GROUP_CONVERSATION.id
         ).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversation(
                 any(),
                 eq(Arrangement.MLS_PENDING_AFTER_RESET_GROUP_CONVERSATION.id),
                 eq(ConversationSyncReason.Other)
             )
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(
                 any(),
                 eq(Arrangement.GROUP_ID3),
                 any()
             )
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -315,15 +315,15 @@ class JoinExistingMLSConversationUseCaseTest {
     }
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val featureSupport = mock(FeatureSupport::class)
-        val conversationApi = mock(ConversationApi::class)
-        val clientRepository = mock(ClientRepository::class)
-        val conversationRepository = mock(ConversationRepository::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val fetchMLSOneToOneConversation = mock(FetchMLSOneToOneConversationUseCase::class)
-        val fetchConversation = mock(FetchConversationUseCase::class)
-        val resetMlsConversation = mock(ResetMLSConversationUseCase::class)
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
+        val conversationApi = mock<ConversationApi>(mode = MockMode.autoUnit)
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        val fetchMLSOneToOneConversation = mock<FetchMLSOneToOneConversationUseCase>(mode = MockMode.autoUnit)
+        val fetchConversation = mock<FetchConversationUseCase>(mode = MockMode.autoUnit)
+        val resetMlsConversation = mock<ResetMLSConversationUseCase>(mode = MockMode.autoUnit)
         private var localGroupExists: Boolean = false
         private var localGroupEpoch: ULong = LOCAL_GROUP_EPOCH
 
@@ -342,68 +342,68 @@ class JoinExistingMLSConversationUseCaseTest {
             dispatcher
         ).also {
             withTransactionReturning(Either.Right(Unit))
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.hasEstablishedMLSGroup(any(), any())
-            }.invokes {
+            } calls {
                 Either.Right(localGroupExists)
             }
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.getLocalGroupEpoch(any(), any())
-            }.returns(Either.Right(localGroupEpoch))
-            coEvery {
+            } returns Either.Right(localGroupEpoch)
+            everySuspend {
                 conversationRepository.updateConversationGroupState(any(), any())
-            }.returns(Either.Right(Unit))
-            coEvery {
+            } returns Either.Right(Unit)
+            everySuspend {
                 mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
 
-            coEvery {
-                resetMlsConversation.invoke(any()).toEither()
-            } returns Unit.right()
+            everySuspend {
+                resetMlsConversation.invoke(any())
+            } returns ResetMLSConversationResult.Success
         }
 
         @Suppress("MaxLineLength")
         suspend fun withGetConversationsByIdSuccessful(conversation: Conversation = MLS_CONVERSATION1) =
             apply {
-                coEvery {
+                everySuspend {
                     conversationRepository.getNonDeletedConversationById(any())
-                }.returns(Either.Right(conversation))
+                } returns Either.Right(conversation)
             }
 
         suspend fun withGetConversationsByIdSequentially(vararg conversations: Conversation) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getNonDeletedConversationById(any())
-            }.thenReturnSequentially(*conversations.map { Either.Right(it) }.toTypedArray())
+            } sequentiallyReturns conversations.map { Either.Right(it) }
         }
 
         suspend fun withGetNonDeletedConversationByIdFailure(failure: StorageFailure) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getNonDeletedConversationById(any())
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         suspend fun withFetchConversationSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 fetchConversation.invoke(any(), any(), eq(ConversationSyncReason.Other))
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withGetConversationMembersSuccessful(members: List<UserId>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationMembers(any())
-            }.returns(Either.Right(members))
+            } returns Either.Right(members)
         }
 
         suspend fun withEstablishMLSGroupSuccessful(additionResult: MLSAdditionResult) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-            }.returns(Either.Right(additionResult))
+            } returns Either.Right(additionResult)
         }
 
         suspend fun withJoinByExternalCommitSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withLocalGroupExists(exists: Boolean) = apply {
@@ -416,32 +416,32 @@ class JoinExistingMLSConversationUseCaseTest {
 
         suspend fun withJoinByExternalCommitGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {
             var invocationCounter = 0
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.joinGroupByExternalCommit(
-                    any(), matches {
+                    any(), matching {
                         invocationCounter += 1
                         invocationCounter <= times
                     }, any()
                 )
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         suspend fun withFetchingGroupInfoSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 conversationApi.fetchGroupInfo(any())
-            }.returns(NetworkResponse.Success(PUBLIC_GROUP_STATE, mapOf(), 200))
+            } returns NetworkResponse.Success(PUBLIC_GROUP_STATE, mapOf(), 200)
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
             every {
                 featureSupport.isMLSSupported
-            }.returns(supported)
+            } returns supported
         }
 
         suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.hasRegisteredMLSClient()
-            }.returns(Either.Right(result))
+            } returns Either.Right(result)
         }
 
         companion object {

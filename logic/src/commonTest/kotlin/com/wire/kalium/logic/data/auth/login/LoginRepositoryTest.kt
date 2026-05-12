@@ -29,21 +29,23 @@ import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRedi
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
 import com.wire.kalium.network.api.unauthenticated.login.LoginParam
 import com.wire.kalium.network.utils.NetworkResponse
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
-import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
+import kotlinx.coroutines.test.runTest
 
 class LoginRepositoryTest {
 
-    val loginApi = mock(LoginApi::class)
-    val getDomainRegistrationApi = mock(GetDomainRegistrationApi::class)
+    val loginApi = mock<LoginApi>(mode = MockMode.autoUnit)
+    val getDomainRegistrationApi = mock<GetDomainRegistrationApi>(mode = MockMode.autoUnit)
 
     private lateinit var loginRepository: LoginRepository
 
@@ -70,9 +72,9 @@ class LoginRepositoryTest {
             label = TEST_LABEL,
             verificationCode = TEST_SECOND_FACTOR_CODE
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginApi.login(eq(expectedParam), eq(TEST_PERSIST_CLIENT))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -91,9 +93,9 @@ class LoginRepositoryTest {
             password = TEST_PASSWORD,
             label = TEST_LABEL,
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.loginApi.login(eq(expectedParam), eq(TEST_PERSIST_CLIENT))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -102,7 +104,7 @@ class LoginRepositoryTest {
         loginRepository.getDomainRegistration(
             email = TEST_EMAIL
         )
-        coVerify { arrangement.getDomainRegistrationApi.getDomainRegistration(eq(TEST_EMAIL)) }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.getDomainRegistrationApi.getDomainRegistration(eq(TEST_EMAIL)) }
     }
 
     @Test
@@ -112,15 +114,15 @@ class LoginRepositoryTest {
             .withFetchDomainRedirectCustomBackendConfigReturning(DOMAIN_LOOKUP_RESPONSE)
             .arrange()
         loginRepository.fetchDomainRedirectCustomBackendConfig(backendUrl = backendUrl)
-        coVerify { arrangement.getDomainRegistrationApi.customBackendConfig(eq(backendUrl)) }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.getDomainRegistrationApi.customBackendConfig(eq(backendUrl)) }
     }
 
     private class Arrangement {
-        val loginApi = mock(LoginApi::class)
-        val getDomainRegistrationApi = mock(GetDomainRegistrationApi::class)
+        val loginApi = mock<LoginApi>(mode = MockMode.autoUnit)
+        val getDomainRegistrationApi = mock<GetDomainRegistrationApi>(mode = MockMode.autoUnit)
 
         suspend fun withLoginReturning(response: NetworkResponse<Pair<SessionDTO, SelfUserDTO>>) = apply {
-            coEvery {
+            everySuspend {
                 loginApi.login(
                     param = any(),
                     persist = any()
@@ -129,7 +131,7 @@ class LoginRepositoryTest {
         }
 
         suspend fun withGetDomainRegistrationReturning(response: DomainRegistrationDTO) = apply {
-            coEvery {
+            everySuspend {
                 getDomainRegistrationApi.getDomainRegistration(
                     any()
                 )
@@ -143,7 +145,7 @@ class LoginRepositoryTest {
         }
 
         suspend fun withFetchDomainRedirectCustomBackendConfigReturning(response: DomainLookupResponse) = apply {
-            coEvery {
+            everySuspend {
                 getDomainRegistrationApi.customBackendConfig(any())
             }.returns(
                 NetworkResponse.Success(

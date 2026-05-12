@@ -20,9 +20,11 @@ package com.wire.kalium.logic.util.arrangement.eventHandler
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface LegalHoldHandlerArrangement {
     val legalHoldHandler: LegalHoldHandler
@@ -31,10 +33,10 @@ internal interface LegalHoldHandlerArrangement {
 }
 
 internal open class LegalHoldHandlerArrangementImpl : LegalHoldHandlerArrangement {
-        override val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
+        override val legalHoldHandler: LegalHoldHandler = mock<LegalHoldHandler>(mode = MockMode.autoUnit)
 
     override suspend fun withHandleConversationMembersChanged(result: Either<CoreFailure, Unit>) {
-        coEvery { legalHoldHandler.handleConversationMembersChanged(any()) }.returns(result)
+        everySuspend { legalHoldHandler.handleConversationMembersChanged(any()) }.returns(result)
     }
 
 }

@@ -30,12 +30,13 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.exceptions.KaliumException
 import kotlinx.io.IOException
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -53,9 +54,9 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
         // when
         useCase.invoke()
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.teamRepository.fetchLegalHoldStatus(eq(selfTeamId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -123,8 +124,8 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
 
     private class Arrangement {
 
-        val teamRepository: TeamRepository = mock(TeamRepository::class)
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
+        val teamRepository: TeamRepository = mock()
+        val selfTeamIdProvider: SelfTeamIdProvider = mock()
         val useCase: FetchLegalHoldForSelfUserFromRemoteUseCase by lazy {
             FetchLegalHoldForSelfUserFromRemoteUseCaseImpl(teamRepository, selfTeamIdProvider)
         }
@@ -132,15 +133,15 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
         fun arrange() = this to useCase
 
         suspend fun withGetSelfTeamResult(result: Either<CoreFailure, TeamId?>) = apply {
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider.invoke()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withFetchLegalHoldStatusResult(result: Either<CoreFailure, LegalHoldStatus>) = apply {
-            coEvery {
+            everySuspend {
                 teamRepository.fetchLegalHoldStatus(any())
-            }.returns(result)
+            } returns result
         }
     }
 }

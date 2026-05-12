@@ -35,13 +35,14 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionEntity
-import io.mockative.eq
-import io.mockative.coEvery
-import io.mockative.every
-import io.mockative.mock
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.test.runTest
 
 class ReactionsMapperTest {
 
@@ -142,9 +143,9 @@ class ReactionsMapperTest {
 
     private class Arrangement {
         val idMapper = IdMapper()
-        val availabilityStatusMapper = mock(AvailabilityStatusMapper::class)
-        val connectionStateMapper = mock(ConnectionStateMapper::class)
-        val domainUserTypeMapper = mock(DomainUserTypeMapper::class)
+        val availabilityStatusMapper = mock<AvailabilityStatusMapper>(mode = MockMode.autoUnit)
+        val connectionStateMapper = mock<ConnectionStateMapper>(mode = MockMode.autoUnit)
+        val domainUserTypeMapper = mock<DomainUserTypeMapper>(mode = MockMode.autoUnit)
 
         fun withDomainUserTypeStandard() = apply {
             every {

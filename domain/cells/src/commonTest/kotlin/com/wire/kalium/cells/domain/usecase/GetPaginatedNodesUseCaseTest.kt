@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
@@ -31,9 +33,9 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -123,14 +125,14 @@ class GetPaginatedNodesUseCaseTest {
 
     private inner class Arrangement {
 
-        val cellsRepository = mock(CellsRepository::class)
-        val conversationRepository = mock(CellConversationRepository::class)
-        val attachmentsRepository = mock(CellAttachmentsRepository::class)
-        val usersRepository = mock(CellUsersRepository::class)
+        val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<CellConversationRepository>(mode = MockMode.autoUnit)
+        val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
+        val usersRepository = mock<CellUsersRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange(): Pair<Arrangement, GetPaginatedNodesUseCase> {
 
-            coEvery {
+            everySuspend {
                 cellsRepository.getPaginatedNodes(
                     path = any(),
                     query = any(),
@@ -146,13 +148,13 @@ class GetPaginatedNodesUseCaseTest {
                 ).right()
             )
 
-            coEvery { usersRepository.getUserNames() }.returns(testUserNames.right())
+            everySuspend { usersRepository.getUserNames() }.returns(testUserNames.right())
 
-            coEvery { conversationRepository.getConversationNames() }.returns(testConversationNames.right())
+            everySuspend { conversationRepository.getConversationNames() }.returns(testConversationNames.right())
 
-            coEvery { attachmentsRepository.getAttachments() }.returns(testAttachments.right())
+            everySuspend { attachmentsRepository.getAttachments() }.returns(testAttachments.right())
 
-            coEvery { attachmentsRepository.getStandaloneAssetPaths() }.returns(testAssetPaths.right())
+            everySuspend { attachmentsRepository.getStandaloneAssetPaths() }.returns(testAssetPaths.right())
 
             return this to GetPaginatedNodesUseCaseImpl(
                 cellsRepository = cellsRepository,

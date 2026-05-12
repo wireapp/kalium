@@ -25,6 +25,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.SupportedProtocol
@@ -35,15 +36,14 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCaseTest.Ar
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -62,9 +62,9 @@ class UpdateSupportedProtocolsUseCaseTest {
         val result = useCase.invoke()
 
         assertTrue(result is UpdateSelfUserSupportedProtocolsResult.NotUpdated)
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userRepository.updateSupportedProtocols(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -82,9 +82,9 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userRepository.updateSupportedProtocols(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -102,9 +102,9 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
-            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.PROTEUS) })
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.PROTEUS) })
+        }
     }
 
     @Test
@@ -122,9 +122,9 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
-            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.PROTEUS) })
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.PROTEUS) })
+        }
     }
 
     @Test
@@ -142,9 +142,9 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
-            arrangement.userRepository.updateSupportedProtocols(matches { !it.contains(SupportedProtocol.PROTEUS) })
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateSupportedProtocols(matching { !it.contains(SupportedProtocol.PROTEUS) })
+        }
     }
 
     @Test
@@ -166,9 +166,9 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
-            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.MLS) })
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.MLS) })
+        }
     }
 
     @Test
@@ -191,9 +191,9 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
-            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.MLS) })
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.MLS) })
+        }
     }
 
     @Test
@@ -216,9 +216,9 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
-            arrangement.userRepository.updateSupportedProtocols(matches { !it.contains(SupportedProtocol.MLS) })
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateSupportedProtocols(matching { !it.contains(SupportedProtocol.MLS) })
+        }
     }
 
     @Test
@@ -241,9 +241,9 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
-            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.MLS) })
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.MLS) })
+        }
     }
 
     @Test
@@ -265,9 +265,9 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
-            arrangement.userRepository.updateSupportedProtocols(matches { it.contains(SupportedProtocol.MLS) })
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateSupportedProtocols(matching { it.contains(SupportedProtocol.MLS) })
+        }
     }
 
     @Test
@@ -289,9 +289,9 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
-            arrangement.userRepository.updateSupportedProtocols(matches { !it.contains(SupportedProtocol.MLS) })
-        }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateSupportedProtocols(matching { !it.contains(SupportedProtocol.MLS) })
+        }
     }
 
     @Test
@@ -310,9 +310,9 @@ class UpdateSupportedProtocolsUseCaseTest {
         val result = useCase.invoke()
 
         assertTrue(result is UpdateSelfUserSupportedProtocolsResult.NotUpdated)
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userRepository.updateSupportedProtocols(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -335,68 +335,72 @@ class UpdateSupportedProtocolsUseCaseTest {
 
         useCase()
 
-        coVerify {
-            arrangement.userRepository.updateSupportedProtocols(matches {
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.updateSupportedProtocols(matching {
                 it.contains(SupportedProtocol.MLS) && it.contains(
                     SupportedProtocol.PROTEUS
                 )
             })
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement : CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
-        val clientRepository = mock(ClientRepository::class)
-        val userRepository = mock(UserRepository::class)
-        val userConfigRepository = mock(UserConfigRepository::class)
-        val featureSupport = mock(FeatureSupport::class)
+    private class Arrangement {
+        val currentClientIdProvider = mock<CurrentClientIdProvider>()
+        val clientRepository = mock<ClientRepository>()
+        val userRepository = mock<UserRepository>()
+        val userConfigRepository = mock<UserConfigRepository>()
+        val featureSupport = mock<FeatureSupport>()
 
         private var kaliumLogger = KaliumLogger.disabled()
 
         fun withIsMLSSupported(supported: Boolean) = apply {
             every {
                 featureSupport.isMLSSupported
-            }.returns(supported)
+            } returns supported
+        }
+
+        suspend fun withCurrentClientIdSuccess(currentClientId: ClientId) = apply {
+            everySuspend { currentClientIdProvider.invoke() } returns Either.Right(currentClientId)
         }
 
         suspend fun withGetSelfUserSuccessful(supportedProtocols: Set<SupportedProtocol>? = null) = apply {
-            coEvery { userRepository.getSelfUser() }
-                .returns(TestUser.SELF.copy(supportedProtocols = supportedProtocols).right())
+            everySuspend { userRepository.getSelfUser() } returns TestUser.SELF.copy(supportedProtocols = supportedProtocols).right()
         }
 
         suspend fun withUpdateSupportedProtocolsSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 userRepository.updateSupportedProtocols(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withGetMigrationConfigurationSuccessful(migrationConfiguration: MLSMigrationModel) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getMigrationConfiguration()
-            }.returns(Either.Right(migrationConfiguration))
+            } returns Either.Right(migrationConfiguration)
         }
 
         suspend fun withGetMigrationConfigurationFailing(failure: StorageFailure) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getMigrationConfiguration()
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         suspend fun withTeamSupportedProtocol(supportedProtocols: Set<SupportedProtocol>) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getSupportedProtocols()
-            }.returns(Either.Right(supportedProtocols))
+            } returns Either.Right(supportedProtocols)
         }
 
         suspend fun withGetSupportedProtocolsFailing(failure: StorageFailure) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getSupportedProtocols()
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         suspend fun withGetSelfClientsSuccessful(clients: List<Client>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.selfListOfClients()
-            }.returns(Either.Right(clients))
+            } returns Either.Right(clients)
         }
 
         suspend fun arrange(block: suspend (Arrangement.() -> Unit)) = run {

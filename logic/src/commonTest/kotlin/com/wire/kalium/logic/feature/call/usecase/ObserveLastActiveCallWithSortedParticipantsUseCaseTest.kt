@@ -61,7 +61,7 @@ class ObserveLastActiveCallWithSortedParticipantsUseCaseTest {
         verify(VerifyMode.exactly(1)) {
             arrangement.callRepository.observeLastActiveCallByConversationId(establishedCall.conversationId)
         }
-        verifySuspend(VerifyMode.exactly(0)) {
+        verifySuspend(VerifyMode.not) {
             arrangement.callingParticipantsOrder.reorderItems(establishedCall.participants)
         }
     }
@@ -169,12 +169,12 @@ class ObserveLastActiveCallWithSortedParticipantsUseCaseTest {
         fun withReorderItemsReturning(result: List<Participant>) = apply {
             everySuspend {
                 callingParticipantsOrder.reorderItems(any(), any())
-            }.returns(result)
+            } returns (result)
         }
         fun withObserveLastActiveCallByConversationIdReturning(result: Flow<Call?>) = apply {
             every {
                 callRepository.observeLastActiveCallByConversationId(any())
-            }.returns(result)
+            } returns (result)
         }
     }
 

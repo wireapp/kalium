@@ -20,11 +20,9 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.cryptography.MLSEpochObserver
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.logic.data.id.GroupID
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
-@Mockable
 internal interface EpochChangesObserver : MLSEpochObserver {
     fun observe(): Flow<GroupWithEpoch>
     suspend fun emit(groupId: MLSGroupId, epoch: ULong)

@@ -41,10 +41,8 @@ import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import io.mockative.Mockable
 
 @Deprecated("These events are not received/sent to clients anymore", ReplaceWith("SyncFeatureConfigsUseCase"))
-@Mockable
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
 @Suppress("LongParameterList")

@@ -38,9 +38,7 @@ import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import io.mockative.Mockable
 
-@Mockable
 internal interface CallMapper {
     fun toCallTypeCalling(callType: CallType): CallTypeCalling
     fun toConversationTypeCalling(conversationTypeForCall: ConversationTypeForCall): ConversationTypeCalling

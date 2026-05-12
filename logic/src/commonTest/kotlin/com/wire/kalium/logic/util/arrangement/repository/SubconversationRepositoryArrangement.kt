@@ -25,9 +25,11 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface SubconversationRepositoryArrangement {
     val subconversationRepository: SubconversationRepository
@@ -69,14 +71,14 @@ internal interface SubconversationRepositoryArrangement {
 
 internal class SubconversationRepositoryArrangementImpl : SubconversationRepositoryArrangement {
 
-    override val subconversationRepository: SubconversationRepository = mock(SubconversationRepository::class)
+    override val subconversationRepository: SubconversationRepository = mock<SubconversationRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withInsertSubconversation(
         conversationId: ConversationId,
         subConversationId: SubconversationId,
         groupId: GroupID
     ) {
-        coEvery {
+        everySuspend {
             subconversationRepository.insertSubconversation(conversationId, subConversationId, groupId)
         }.returns(Unit)
     }
@@ -86,19 +88,19 @@ internal class SubconversationRepositoryArrangementImpl : SubconversationReposit
         subConversationId: SubconversationId,
         result: GroupID?
     ) {
-        coEvery {
+        everySuspend {
             subconversationRepository.getSubconversationInfo(conversationId, subConversationId)
         }.returns(result)
     }
 
     override suspend fun withContainsSubconversation(groupId: GroupID, result: Boolean) {
-        coEvery {
+        everySuspend {
             subconversationRepository.containsSubconversation(groupId)
         }.returns(result)
     }
 
     override suspend fun withDeleteSubconversation(conversationId: ConversationId, subConversationId: SubconversationId) {
-        coEvery {
+        everySuspend {
             subconversationRepository.deleteSubconversation(conversationId, subConversationId)
         }.returns(Unit)
     }
@@ -108,7 +110,7 @@ internal class SubconversationRepositoryArrangementImpl : SubconversationReposit
         subConversationId: SubconversationId,
         result: Either<CoreFailure, Unit>
     ) {
-        coEvery {
+        everySuspend {
             subconversationRepository.deleteRemoteSubConversation(conversationId, subConversationId, any())
         }.returns(result)
     }
@@ -118,7 +120,7 @@ internal class SubconversationRepositoryArrangementImpl : SubconversationReposit
         subConversationId: SubconversationId,
         result: Either<CoreFailure, ByteArray>
     ) {
-        coEvery {
+        everySuspend {
             subconversationRepository.fetchRemoteSubConversationGroupInfo(conversationId, subConversationId)
         }.returns(result)
     }
@@ -128,7 +130,7 @@ internal class SubconversationRepositoryArrangementImpl : SubconversationReposit
         subConversationId: SubconversationId,
         result: Either<NetworkFailure, SubConversation>
     ) {
-        coEvery {
+        everySuspend {
             subconversationRepository.fetchRemoteSubConversationDetails(conversationId, subConversationId)
         }.returns(result)
     }

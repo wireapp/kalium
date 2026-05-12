@@ -27,10 +27,11 @@ import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotC
 import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigUseCaseImpl
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -56,13 +57,13 @@ class ObserveScreenshotCensoringConfigUseCaseTest {
             val item = awaitItem()
             assertEquals(expectedResult, item)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userConfigRepository.observeScreenshotCensoringConfig()
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
-            }.wasInvoked(once)
+            }
 
             awaitComplete()
         }
@@ -142,20 +143,20 @@ class ObserveScreenshotCensoringConfigUseCaseTest {
 
     private class Arrangement {
 
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository = mock<UserConfigRepository>()
 
         val observeScreenshotCensoringConfig = ObserveScreenshotCensoringConfigUseCaseImpl(userConfigRepository)
 
         suspend fun withObserveScreenshotCensoringConfigResult(result: Either<StorageFailure, Boolean>) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.observeScreenshotCensoringConfig()
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
 
         suspend fun withSuccessfulObserveTeamSelfDeletingStatusResult(result: Either<StorageFailure, TeamSelfDeleteTimer>) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.observeTeamSettingsSelfDeletingStatus()
-            }.returns(flowOf(result.map { TeamSettingsSelfDeletionStatus(false, it) }))
+            } returns flowOf(result.map { TeamSettingsSelfDeletionStatus(false, it) })
         }
 
         fun arrange() = this to observeScreenshotCensoringConfig

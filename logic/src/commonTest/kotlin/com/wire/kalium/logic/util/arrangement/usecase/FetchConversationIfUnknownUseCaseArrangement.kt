@@ -20,20 +20,22 @@ package com.wire.kalium.logic.util.arrangement.usecase
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface FetchConversationIfUnknownUseCaseArrangement {
     val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase
     suspend fun withFetchConversationIfUnknownFailingWith(coreFailure: CoreFailure) {
-        coEvery {
+        everySuspend {
             fetchConversationIfUnknown(any(), any(), any())
         }.returns(Either.Left(coreFailure))
     }
 
     suspend fun withFetchConversationIfUnknownSucceeding() {
-        coEvery {
+        everySuspend {
             fetchConversationIfUnknown(any(), any(), any())
         }.returns(Either.Right(Unit))
     }
@@ -41,5 +43,5 @@ internal interface FetchConversationIfUnknownUseCaseArrangement {
 }
 
 internal open class FetchConversationIfUnknownUseCaseArrangementImpl : FetchConversationIfUnknownUseCaseArrangement {
-    override val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase = mock(FetchConversationIfUnknownUseCase::class)
+    override val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase = mock<FetchConversationIfUnknownUseCase>(mode = MockMode.autoUnit)
 }

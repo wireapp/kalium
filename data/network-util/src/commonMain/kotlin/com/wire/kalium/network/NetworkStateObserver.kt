@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.network
 
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -25,7 +24,6 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
 
-@Mockable
 interface NetworkStateObserver {
 
     fun observeNetworkState(): StateFlow<NetworkState>

@@ -19,13 +19,17 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.util.KaliumDispatcher
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -58,8 +62,9 @@ class GetConversationProtocolInfoUseCaseTest {
         assertEquals(Conversation.ProtocolInfo.Proteus, result.protocolInfo)
     }
 
-    private class Arrangement : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+    private class Arrangement {
 
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
         var dispatcher: KaliumDispatcher = TestKaliumDispatcher
         private lateinit var getConversationProtocolInfo: GetConversationProtocolInfoUseCase
 
@@ -71,6 +76,12 @@ class GetConversationProtocolInfoUseCaseTest {
             )
 
             return this to getConversationProtocolInfo
+        }
+
+        suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) {
+            everySuspend {
+                conversationRepository.getConversationProtocolInfo(any())
+            } returns result
         }
     }
 }

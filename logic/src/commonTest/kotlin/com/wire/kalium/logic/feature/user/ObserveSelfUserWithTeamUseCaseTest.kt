@@ -23,8 +23,9 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -61,12 +62,12 @@ class ObserveSelfUserWithTeamUseCaseTest {
     }
 
     private class Arrangement {
-                val userRepository: UserRepository = mock(UserRepository::class)
+        val userRepository: UserRepository = mock()
 
         suspend fun withSelfUserWithTeam(result: Pair<SelfUser, Team?>) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.observeSelfUserWithTeam()
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
 
         fun arrange(): Pair<Arrangement, ObserveSelfUserWithTeamUseCase> {

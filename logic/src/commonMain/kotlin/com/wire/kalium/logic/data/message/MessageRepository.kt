@@ -70,14 +70,12 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 import kotlin.collections.map
 
 @Suppress("TooManyFunctions")
-@Mockable
 internal interface MessageRepository {
     /**
      * this fun should never be used directly, use PersistMessageUseCase() instead

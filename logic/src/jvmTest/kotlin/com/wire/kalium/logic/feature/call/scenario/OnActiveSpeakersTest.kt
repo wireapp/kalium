@@ -25,10 +25,13 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.verifySuspend
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -61,8 +64,9 @@ class OnActiveSpeakersTest {
         onActiveSpeakers.onActiveSpeakersChanged(Handle(), convId.toString(), data, null)
 
         // then
-        coVerify { arrangement.callRepository.updateParticipantsActiveSpeaker(convId, expected) }
-            .wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.callRepository.updateParticipantsActiveSpeaker(convId, expected)
+        }
     }
 
     private fun speaker(suffix: Int = 1, isSpeaking: Boolean = false) = CallActiveSpeaker(
@@ -75,14 +79,14 @@ class OnActiveSpeakersTest {
     private fun userId(suffix: Int) = QualifiedID("userId$suffix", "some-domain")
 
     internal class Arrangement {
-        val callRepository = mock(CallRepository::class)
+        val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
         val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
 
         init {
             every {
                 callRepository.updateParticipantsActiveSpeaker(any(), any())
-            }.returns(Unit)
+            } returns (Unit)
         }
 
         fun arrange() = this to OnActiveSpeakers(callRepository, qualifiedIdMapper)

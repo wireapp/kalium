@@ -17,16 +17,20 @@
  */
 package com.wire.kalium.logic.feature.conversation.guestroomlink
 
-import com.wire.kalium.logic.configuration.server.CommonApiVersionType
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.repository.ServerConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ServerConfigRepositoryArrangementImpl
+import com.wire.kalium.logic.configuration.server.CommonApiVersionType
+import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -47,9 +51,9 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
             assertTrue(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigRepository.configForUser(eq(SELF_USER_ID))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -65,9 +69,9 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
             assertTrue(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigRepository.configForUser(eq(SELF_USER_ID))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -83,25 +87,30 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
             assertFalse(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigRepository.configForUser(eq(SELF_USER_ID))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private companion object {
         val SELF_USER_ID = UserId("selfUser", "domain")
     }
 
-    private class Arrangement : ServerConfigRepositoryArrangement by ServerConfigRepositoryArrangementImpl() {
+    private class Arrangement {
+        val serverConfigRepository = mock<ServerConfigRepository>(mode = MockMode.autoUnit)
 
         private val useCase: CanCreatePasswordProtectedLinksUseCase = CanCreatePasswordProtectedLinksUseCase(
             serverConfigRepository,
             SELF_USER_ID
         )
 
-        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, CanCreatePasswordProtectedLinksUseCase> {
-            runBlocking { block() }
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, CanCreatePasswordProtectedLinksUseCase> {
+            block()
             return this to useCase
+        }
+
+        suspend fun withServerConfigForUser(result: Either<StorageFailure, ServerConfig>) {
+            everySuspend { serverConfigRepository.configForUser(eq(SELF_USER_ID)) } returns result
         }
     }
 }

@@ -9,11 +9,13 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -42,8 +44,8 @@ class GetCallConversationTypeProviderTest {
 
         // Then
         assertEquals(ConversationTypeCalling.ConferenceMls, result)
-        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
 
     @Test
@@ -62,8 +64,8 @@ class GetCallConversationTypeProviderTest {
 
         // Then
         assertEquals(ConversationTypeCalling.OneOnOne, result)
-        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
 
     @Test
@@ -82,8 +84,8 @@ class GetCallConversationTypeProviderTest {
 
         // Then
         assertEquals(ConversationTypeCalling.Conference, result)
-        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
 
     @Test
@@ -101,8 +103,8 @@ class GetCallConversationTypeProviderTest {
 
         // Then
         assertEquals(ConversationTypeCalling.Unknown, result)
-        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
 
     @Test
@@ -121,8 +123,8 @@ class GetCallConversationTypeProviderTest {
 
         // Then
         assertEquals(ConversationTypeCalling.Unknown, result)
-        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
 
     @Test
@@ -140,8 +142,8 @@ class GetCallConversationTypeProviderTest {
 
         // Then
         assertEquals(ConversationTypeCalling.Unknown, result)
-        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
 
     @Test
@@ -165,8 +167,8 @@ class GetCallConversationTypeProviderTest {
 
         // Then
         assertEquals(ConversationTypeCalling.Conference, result)
-        coVerify { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.shouldUseSFTForOneOnOneCalls() }
     }
 
     @Test
@@ -230,8 +232,8 @@ class GetCallConversationTypeProviderTest {
     }
 
     private class Arrangement {
-        val userConfigRepository = mock(UserConfigRepository::class)
-        val conversationMetaDataRepository = mock(ConversationMetaDataRepository::class)
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+        val conversationMetaDataRepository = mock<ConversationMetaDataRepository>(mode = MockMode.autoUnit)
 
         private val getCallConversationType = GetCallConversationTypeProviderImpl(
             userConfigRepository = userConfigRepository,
@@ -239,32 +241,32 @@ class GetCallConversationTypeProviderTest {
         )
 
         suspend fun withShouldUseSFTForOneOnOneCalls() = apply {
-            coEvery { userConfigRepository.shouldUseSFTForOneOnOneCalls() }.returns(Either.Right(true))
+            everySuspend { userConfigRepository.shouldUseSFTForOneOnOneCalls() } returns (Either.Right(true))
         }
 
         suspend fun withShouldNotUseSFTForOneOnOneCalls() = apply {
-            coEvery { userConfigRepository.shouldUseSFTForOneOnOneCalls() }.returns(Either.Right(false))
+            everySuspend { userConfigRepository.shouldUseSFTForOneOnOneCalls() } returns (Either.Right(false))
         }
 
         suspend fun withGetConversationTypeAndProtocolInfoSuccess(
             type: Conversation.Type,
             protocolInfo: Conversation.ProtocolInfo
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any())
-            }.returns(Either.Right(Pair(type, protocolInfo)))
+            } returns (Either.Right(Pair(type, protocolInfo)))
         }
 
         suspend fun withSFTCheckFailure() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.shouldUseSFTForOneOnOneCalls()
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            } returns (Either.Left(StorageFailure.DataNotFound))
         }
 
         suspend fun withGetConversationTypeAndProtocolInfoFailure(result: Either.Left<StorageFailure>) {
-            coEvery {
+            everySuspend {
                 conversationMetaDataRepository.getConversationTypeAndProtocolInfo(any())
-            }.returns(result)
+            } returns (result)
         }
 
 

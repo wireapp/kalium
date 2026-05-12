@@ -23,7 +23,6 @@ plugins {
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.mockative)
 }
 
 kaliumLibrary {

@@ -20,13 +20,12 @@ package com.wire.kalium.logic.util.arrangement
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 
 internal interface ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement {
@@ -34,25 +33,25 @@ internal interface ObserveSelfDeletionTimerSettingsForConversationUseCaseArrange
 
     suspend fun withConversationTimer(
         result: Flow<SelfDeletionTimer>,
-        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()),
-        considerSelfUserSettings: Matcher<Boolean> = AnyMatcher(valueOf())
+        conversationId: (ConversationId) -> Boolean = { true },
+        considerSelfUserSettings: (Boolean) -> Boolean = { true }
     )
 }
 
 internal open class ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl :
     ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement {
         override val observeSelfDeletionTimerSettingsForConversation: ObserveSelfDeletionTimerSettingsForConversationUseCase =
-        mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
+        mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>(mode = MockMode.autoUnit)
 
     override suspend fun withConversationTimer(
         result: Flow<SelfDeletionTimer>,
-        conversationId: Matcher<ConversationId>,
-        considerSelfUserSettings: Matcher<Boolean>
+        conversationId: (ConversationId) -> Boolean,
+        considerSelfUserSettings: (Boolean) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             observeSelfDeletionTimerSettingsForConversation(
-                matches { conversationId.matches(it) },
-                matches { considerSelfUserSettings.matches(it) }
+                matches { conversationId(it) },
+                matches { considerSelfUserSettings(it) }
             )
         }.returns(result)
     }

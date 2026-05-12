@@ -26,12 +26,13 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -42,7 +43,7 @@ import kotlin.test.assertIs
 
 class ObserveConversationDetailsUseCaseTest {
 
-        private val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
+        private val conversationRepository: ConversationRepository = mock()
 
     private lateinit var observeConversationsUseCase: ObserveConversationDetailsUseCase
 
@@ -59,15 +60,15 @@ class ObserveConversationDetailsUseCaseTest {
         runTest(TestKaliumDispatcher.main) {
             val conversationId = TestConversation.ID
 
-            coEvery {
+            everySuspend {
                 conversationRepository.observeConversationDetailsById(any())
-            }.returns(flowOf())
+            } returns flowOf()
 
             observeConversationsUseCase(conversationId)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.observeConversationDetailsById(eq(conversationId))
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -91,9 +92,9 @@ class ObserveConversationDetailsUseCaseTest {
                 )
             )
 
-            coEvery {
+            everySuspend {
                 conversationRepository.observeConversationDetailsById(any())
-            }.returns(conversationDetailsValues.asFlow())
+            } returns conversationDetailsValues.asFlow()
 
             observeConversationsUseCase(TestConversation.ID).test {
                 awaitItem().let { item ->
@@ -112,9 +113,9 @@ class ObserveConversationDetailsUseCaseTest {
     fun givenTheStorageFailure_whenObservingConversationUseCase_thenThisUpdateIsPropagatedInTheFlow() = runTest(TestKaliumDispatcher.main) {
         val failure = StorageFailure.DataNotFound
 
-        coEvery {
+        everySuspend {
             conversationRepository.observeConversationDetailsById(any())
-        }.returns(flowOf(Either.Left(failure)))
+        } returns flowOf(Either.Left(failure))
 
         observeConversationsUseCase(TestConversation.ID).test {
             awaitItem().let { item ->

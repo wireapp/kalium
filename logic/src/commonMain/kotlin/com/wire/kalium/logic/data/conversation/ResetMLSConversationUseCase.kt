@@ -45,7 +45,6 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationRespon
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.Mockable
 import kotlin.experimental.ExperimentalObjCRefinement
 import kotlin.native.HiddenFromObjC
 
@@ -58,7 +57,6 @@ import kotlin.native.HiddenFromObjC
  *  - Fetching the conversation to update group ID
  *  - Re-establishing the MLS group with the updated group ID and current members.
  */
-@Mockable
 public interface ResetMLSConversationUseCase {
     // TODO(refactor): transactionProvider should be always required to avoid deadlocks.
     //                 Callers of this function should get one if needed.

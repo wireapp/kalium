@@ -19,12 +19,10 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.userstorage.di.UserStorage
-import io.mockative.Mockable
 
 /**
  * Clears the user data from the local storage, except for the client id
  */
-@Mockable
 internal interface ClearUserDataUseCase {
     suspend operator fun invoke()
 }

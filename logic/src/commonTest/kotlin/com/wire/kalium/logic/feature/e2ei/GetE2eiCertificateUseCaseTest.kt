@@ -32,12 +32,13 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCaseImpl
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -54,9 +55,9 @@ class GetE2eiCertificateUseCaseTest {
 
         val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.getClientIdentity(any(), any())
-        }.wasInvoked(once)
+        }
 
         assertIs<GetMLSClientIdentityResult.Failure.Generic>(result)
     }
@@ -69,9 +70,9 @@ class GetE2eiCertificateUseCaseTest {
 
         val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.getClientIdentity(any(), any())
-        }.wasInvoked(once)
+        }
 
         assertIs<GetMLSClientIdentityResult.Failure.E2EINotAvailable>(result)
     }
@@ -88,9 +89,9 @@ class GetE2eiCertificateUseCaseTest {
             assertIs<GetMLSClientIdentityResult.Success>(result)
             assertEquals(MLSClientE2EIStatus.VALID, result.identity.e2eiStatus)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.getClientIdentity(any(), any())
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -105,9 +106,9 @@ class GetE2eiCertificateUseCaseTest {
             assertIs<GetMLSClientIdentityResult.Success>(result)
             assertEquals(MLSClientE2EIStatus.NOT_ACTIVATED, result.identity.e2eiStatus)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.getClientIdentity(any(), any())
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -121,13 +122,13 @@ class GetE2eiCertificateUseCaseTest {
 
             assertIs<GetMLSClientIdentityResult.Failure.IdentityNotFound>(result)
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.getClientIdentity(any(), any())
-            }.wasInvoked(once)
+            }
         }
 
-    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
+    private class Arrangement: CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val mlsConversationRepository: MLSConversationRepository = mock()
 
         suspend fun arrange() = this to GetMLSClientIdentityUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
@@ -138,15 +139,15 @@ class GetE2eiCertificateUseCaseTest {
             }
 
         suspend fun withRepositoryFailure(failure: CoreFailure = E2EIFailure.Generic(Exception())) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.getClientIdentity(any(), any())
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         suspend fun withRepositoryValidCertificate(identity: WireIdentity?) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.getClientIdentity(any(), any())
-            }.returns(Either.Right(identity))
+            } returns Either.Right(identity)
         }
     }
 

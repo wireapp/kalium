@@ -17,26 +17,29 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
-import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -54,9 +57,9 @@ class NotifyConversationIsOpenUseCaseTest {
         }
         notifyConversationIsOpenUseCase.invoke(details.conversation.id)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.observeConversationDetailsById(eq(details.conversation.id))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -71,9 +74,9 @@ class NotifyConversationIsOpenUseCaseTest {
         }
         notifyConversationIsOpenUseCase.invoke(details.conversation.id)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -91,31 +94,43 @@ class NotifyConversationIsOpenUseCaseTest {
         }
         notifyConversationIsOpenUseCase.invoke(details.conversation.id)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(
                 any(), eq(details.otherUser), any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement(
         private val configure: suspend Arrangement.() -> Unit
-    ) : OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        private val deleteEphemeralMessageEndDate = mock(DeleteEphemeralMessagesAfterEndDateUseCase::class)
-        private val slowSyncRepository = mock(SlowSyncRepository::class)
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val oneOnOneResolver = mock<OneOnOneResolver>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        private val deleteEphemeralMessageEndDate = mock<DeleteEphemeralMessagesAfterEndDateUseCase>(mode = MockMode.autoUnit)
+        private val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
 
         suspend fun withDeleteEphemeralMessageEndDateSuccess() {
-            coEvery {
+            everySuspend {
                 deleteEphemeralMessageEndDate.invoke()
-            }.returns(Unit)
+            } returns Unit
+        }
+
+        suspend fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>) {
+            everySuspend {
+                conversationRepository.observeConversationDetailsById(any())
+            } returns flowOf(*results)
+        }
+
+        suspend fun withResolveOneOnOneConversationWithUserReturning(result: Either<com.wire.kalium.common.error.CoreFailure, com.wire.kalium.logic.data.id.ConversationId>) {
+            everySuspend {
+                oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
+            } returns result
         }
 
         init {
             every {
                 slowSyncRepository.slowSyncStatus
-            }.returns(MutableStateFlow(SlowSyncStatus.Complete))
+            } returns MutableStateFlow(SlowSyncStatus.Complete)
         }
 
         suspend fun arrange(): Pair<Arrangement, NotifyConversationIsOpenUseCase> = run {

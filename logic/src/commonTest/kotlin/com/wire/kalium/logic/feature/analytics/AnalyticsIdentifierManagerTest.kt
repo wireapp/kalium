@@ -18,27 +18,26 @@
 package com.wire.kalium.logic.feature.analytics
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
-import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.messaging.sending.MessageTarget
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -57,9 +56,9 @@ class AnalyticsIdentifierManagerTest {
         manager.onMigrationComplete()
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.deletePreviousTrackingIdentifier()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -76,11 +75,11 @@ class AnalyticsIdentifierManagerTest {
         manager.propagateTrackingIdentifier(CURRENT_IDENTIFIER)
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(matches {
                 it is Message.Signaling && it.content is MessageContent.DataTransfer
             }, any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -95,9 +94,9 @@ class AnalyticsIdentifierManagerTest {
         manager.propagateTrackingIdentifier(CURRENT_IDENTIFIER)
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     private companion object {
@@ -107,12 +106,12 @@ class AnalyticsIdentifierManagerTest {
         const val CURRENT_IDENTIFIER = "abcd-1234"
     }
 
-    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
-        MessageSenderArrangement by MessageSenderArrangementImpl(),
-        CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl(),
-        SelfConversationIdProviderArrangement by SelfConversationIdProviderArrangementImpl() {
-
-        val syncManager = mock(SyncManager::class)
+    private class Arrangement {
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+        val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
+        val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val selfConversationIdProvider = mock<SelfConversationIdProvider>(mode = MockMode.autoUnit)
+        val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
 
         private val useCase: AnalyticsIdentifierManager = AnalyticsIdentifierManager(
             messageSender = messageSender,
@@ -124,9 +123,39 @@ class AnalyticsIdentifierManagerTest {
         )
 
         suspend fun withWaitUntilLiveSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 syncManager.waitUntilLiveOrFailure()
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withDeletePreviousTrackingIdentifier() = apply {
+            everySuspend {
+                userConfigRepository.deletePreviousTrackingIdentifier()
+            } returns Unit
+        }
+
+        suspend fun withCurrentClientIdSuccess(currentClientId: ClientId) = apply {
+            everySuspend {
+                currentClientIdProvider.invoke()
+            } returns Either.Right(currentClientId)
+        }
+
+        suspend fun withCurrentClientIdFailure(error: StorageFailure) = apply {
+            everySuspend {
+                currentClientIdProvider.invoke()
+            } returns Either.Left(error)
+        }
+
+        suspend fun withSelfConversationIds(conversationIds: List<ConversationId>) = apply {
+            everySuspend {
+                selfConversationIdProvider.invoke()
+            } returns Either.Right(conversationIds)
+        }
+
+        suspend fun withSendMessageSucceed() = apply {
+            everySuspend {
+                messageSender.sendMessage(any(), any<MessageTarget>())
+            } returns Either.Right(Unit)
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, AnalyticsIdentifierManager> {

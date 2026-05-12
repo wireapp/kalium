@@ -17,25 +17,27 @@
  */
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
+import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReactionEventData
-import com.wire.kalium.common.error.StorageFailure
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 
 class PersistReactionUseCaseTest {
 
@@ -53,7 +55,7 @@ class PersistReactionUseCaseTest {
             date = Instant.DISTANT_PAST
         )
 
-        coVerify {
+        verifySuspend {
             arrangement.reactionRepository.updateReaction(any(), any(), any(), any(), eq(setOf("❤️")))
         }
     }
@@ -107,14 +109,14 @@ class PersistReactionUseCaseTest {
         private val hookNotifier: PersistenceEventHookNotifier = NoOpPersistenceEventHookNotifier
     ) {
 
-        val reactionRepository = mock(ReactionRepository::class)
+        val reactionRepository = mock<ReactionRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = this to PersistReactionUseCaseImpl(
             reactionRepository = reactionRepository,
             selfUserId = TestUser.USER_ID,
             persistenceEventHookNotifier = hookNotifier,
         ).also {
-            coEvery {
+            everySuspend {
                 reactionRepository.updateReaction(any(), any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
@@ -124,7 +126,7 @@ class PersistReactionUseCaseTest {
             selfUserId = TestUser.USER_ID,
             persistenceEventHookNotifier = hookNotifier,
         ).also {
-            coEvery {
+            everySuspend {
                 reactionRepository.updateReaction(any(), any(), any(), any(), any())
             }.returns(Either.Left(StorageFailure.DataNotFound))
         }

@@ -25,15 +25,16 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -53,12 +54,12 @@ class SendConnectionRequestUseCaseTest {
 
         // then
         assertEquals(SendConnectionRequestResult.Success, resultOk)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.fetchUserInfo(eq(userId))
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -74,12 +75,12 @@ class SendConnectionRequestUseCaseTest {
 
         // then
         assertEquals(SendConnectionRequestResult.Failure.GenericFailure::class, resultFailure::class)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.fetchUserInfo(eq(userId))
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -95,9 +96,9 @@ class SendConnectionRequestUseCaseTest {
 
         // then
         assertEquals(SendConnectionRequestResult.Failure.GenericFailure::class, resultFailure::class)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -114,9 +115,9 @@ class SendConnectionRequestUseCaseTest {
 
         // then
         assertEquals(SendConnectionRequestResult.Failure.FederationDenied::class, resultFailure::class)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -137,25 +138,25 @@ class SendConnectionRequestUseCaseTest {
 
         // then
         assertEquals(SendConnectionRequestResult.Failure.MissingLegalHoldConsent::class, resultFailure::class)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.sendUserConnection(any(), eq(userId))
-        }.wasInvoked(once)
+        }
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val connectionRepository = mock(ConnectionRepository::class)
-        val userRepository = mock(UserRepository::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val connectionRepository: ConnectionRepository = mock()
+        val userRepository: UserRepository = mock()
 
         suspend fun withCreateConnectionResult(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 connectionRepository.sendUserConnection(any(), eq(userId))
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withFetchUserInfoResult(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.fetchUserInfo(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun arrange() = this to SendConnectionRequestUseCaseImpl(connectionRepository, userRepository, cryptoTransactionProvider)

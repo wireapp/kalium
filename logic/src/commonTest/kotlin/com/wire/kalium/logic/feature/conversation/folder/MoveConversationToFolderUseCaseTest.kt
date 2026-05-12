@@ -23,10 +23,12 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCase.Result
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -49,17 +51,17 @@ class MoveConversationToFolderUseCaseTest {
 
         assertIs<Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, previousFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.addConversationToFolder(testConversationId, testFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.syncConversationFoldersFromLocal()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -76,9 +78,9 @@ class MoveConversationToFolderUseCaseTest {
 
         assertIs<Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, previousFolderId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -96,13 +98,13 @@ class MoveConversationToFolderUseCaseTest {
 
         assertIs<Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, previousFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.addConversationToFolder(testConversationId, testFolderId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -121,22 +123,22 @@ class MoveConversationToFolderUseCaseTest {
 
         assertIs<Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.removeConversationFromFolder(testConversationId, previousFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.addConversationToFolder(testConversationId, testFolderId)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.syncConversationFoldersFromLocal()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val conversationFolderRepository = mock(ConversationFolderRepository::class)
+        val conversationFolderRepository = mock<ConversationFolderRepository>(mode = MockMode.autoUnit)
 
         private val moveConversationToFolderUseCase = MoveConversationToFolderUseCaseImpl(
             conversationFolderRepository
@@ -147,9 +149,9 @@ class MoveConversationToFolderUseCaseTest {
             folderId: String,
             either: Either<CoreFailure, Unit>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.removeConversationFromFolder(conversationId, folderId)
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withAddConversationToFolder(
@@ -157,18 +159,17 @@ class MoveConversationToFolderUseCaseTest {
             folderId: String,
             either: Either<CoreFailure, Unit>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.addConversationToFolder(conversationId, folderId)
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withSyncFolders(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.syncConversationFoldersFromLocal()
-            }.returns(either)
+            } returns either
         }
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to moveConversationToFolderUseCase }
     }
 }
-

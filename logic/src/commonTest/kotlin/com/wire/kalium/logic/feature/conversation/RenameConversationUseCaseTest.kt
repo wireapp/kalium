@@ -30,12 +30,14 @@ import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEvent
 import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
 import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -53,13 +55,13 @@ class RenameConversationUseCaseTest {
 
         assertIs<RenamingResult.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.changeConversationName(eq(TestConversation.ID), eq("new_name"))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.renamedConversationEventHandler.handle(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -72,16 +74,16 @@ class RenameConversationUseCaseTest {
 
         assertIs<RenamingResult.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.changeConversationName(eq(TestConversation.ID), eq("new_name"))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val conversationRepository = mock(ConversationRepository::class)
-        val persistMessage = mock(PersistMessageUseCase::class)
-        val renamedConversationEventHandler = mock(RenamedConversationEventHandler::class)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
+        val renamedConversationEventHandler = mock<RenamedConversationEventHandler>(mode = MockMode.autoUnit)
 
         val selfUserId = USER_ID
 
@@ -93,9 +95,9 @@ class RenameConversationUseCaseTest {
         )
 
         suspend fun withRenameConversationIs(either: Either<CoreFailure, ConversationRenameResponse>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.changeConversationName(any(), any())
-            }.returns(either)
+            } returns either
         }
 
         fun arrange() = this to renameConversation

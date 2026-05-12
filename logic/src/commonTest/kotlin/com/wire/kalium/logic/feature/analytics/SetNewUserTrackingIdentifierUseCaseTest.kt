@@ -18,12 +18,10 @@
 package com.wire.kalium.logic.feature.analytics
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.MockMode
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -36,18 +34,14 @@ class SetNewUserTrackingIdentifierUseCaseTest {
         val newIdentifier = "newIdentifier"
         useCase(newIdentifier)
 
-        coVerify { arrangement.userConfigRepository.setCurrentTrackingIdentifier(eq(newIdentifier)) }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userConfigRepository.setCurrentTrackingIdentifier(newIdentifier)
+        }
     }
 
     private class Arrangement {
 
-        val userConfigRepository = mock(UserConfigRepository::class)
-
-        init {
-            runBlocking {
-                coEvery { userConfigRepository.setCurrentTrackingIdentifier(any()) } returns Unit
-            }
-        }
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
         fun arrange() = this to SetNewUserTrackingIdentifierUseCase(
             userConfigRepository = userConfigRepository

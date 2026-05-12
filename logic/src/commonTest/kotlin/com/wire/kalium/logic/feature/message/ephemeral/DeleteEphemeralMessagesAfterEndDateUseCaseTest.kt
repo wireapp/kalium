@@ -17,10 +17,12 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -32,23 +34,21 @@ class DeleteEphemeralMessagesAfterEndDateUseCaseTest {
             .withDeleteSelfDeletionMessagesFromEndDateSuccess()
             .arrange()
 
-        // when
         useCase.invoke()
 
-        // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.ephemeralMessageDeletionHandler.deleteAlreadyEndedSelfDeletionMessages()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val ephemeralMessageDeletionHandler = mock(EphemeralMessageDeletionHandler::class)
+        val ephemeralMessageDeletionHandler = mock<EphemeralMessageDeletionHandler>(mode = MockMode.autoUnit)
 
         suspend fun withDeleteSelfDeletionMessagesFromEndDateSuccess() = apply {
-            coEvery {
+            everySuspend {
                 ephemeralMessageDeletionHandler.deleteAlreadyEndedSelfDeletionMessages()
-            }.returns(Unit)
+            } returns Unit
         }
 
         fun arrange() = this to DeleteEphemeralMessagesAfterEndDateUseCaseImpl(

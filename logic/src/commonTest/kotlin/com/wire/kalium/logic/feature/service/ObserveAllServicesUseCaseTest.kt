@@ -27,9 +27,11 @@ import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -88,9 +90,9 @@ class ObserveAllServicesUseCaseTest {
     }
 
     private class Arrangement {
-        val serviceRepository: ServiceRepository = mock(ServiceRepository::class)
-        val teamRepository: TeamRepository = mock(TeamRepository::class)
-        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
+        val serviceRepository: ServiceRepository = mock<ServiceRepository>(mode = MockMode.autoUnit)
+        val teamRepository: TeamRepository = mock<TeamRepository>(mode = MockMode.autoUnit)
+        val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
 
         private val useCase: ObserveAllServicesUseCase = ObserveAllServicesUseCaseImpl(
             serviceRepository,
@@ -99,21 +101,21 @@ class ObserveAllServicesUseCaseTest {
         )
 
         suspend fun withObserveAllServices(result: Flow<Either<StorageFailure, List<ServiceDetails>>>) = apply {
-            coEvery {
+            everySuspend {
                 serviceRepository.observeAllServices()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider.invoke()
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withSyncingServices() = apply {
-            coEvery {
+            everySuspend {
                 teamRepository.syncServices(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         fun arrange() = this to useCase

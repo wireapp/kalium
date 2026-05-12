@@ -32,11 +32,9 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import io.ktor.util.collections.ConcurrentMap
-import io.mockative.Mockable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-@Mockable
 internal interface SubconversationRepository {
 
     suspend fun insertSubconversation(

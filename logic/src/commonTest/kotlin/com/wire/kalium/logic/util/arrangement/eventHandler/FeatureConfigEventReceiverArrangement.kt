@@ -21,13 +21,12 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface FeatureConfigEventReceiverArrangement {
 
@@ -35,20 +34,20 @@ internal interface FeatureConfigEventReceiverArrangement {
 
     suspend fun withFeatureConfigEventReceiverArrangement(
         result: Either<CoreFailure, Unit>,
-        event: Matcher<Event.FeatureConfig> = AnyMatcher(valueOf())
+        event: (Event.FeatureConfig) -> Boolean = { true }
     )
 }
 
 internal class FeatureConfigEventReceiverArrangementImpl : FeatureConfigEventReceiverArrangement {
 
-    override val featureConfigEventReceiver: FeatureConfigEventReceiver = mock(FeatureConfigEventReceiver::class)
+    override val featureConfigEventReceiver: FeatureConfigEventReceiver = mock<FeatureConfigEventReceiver>(mode = MockMode.autoUnit)
 
     override suspend fun withFeatureConfigEventReceiverArrangement(
         result: Either<CoreFailure, Unit>,
-        event: Matcher<Event.FeatureConfig>
+        event: (Event.FeatureConfig) -> Boolean
     ) {
-        coEvery {
-            featureConfigEventReceiver.onEvent(any(), matches { event.matches(it) }, any())
+        everySuspend {
+            featureConfigEventReceiver.onEvent(any(), matches { event(it) }, any())
         }.returns(result)
     }
 }

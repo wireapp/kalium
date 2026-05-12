@@ -25,13 +25,14 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.framework.TestCall
-import io.mockative.eq
-import io.mockative.coEvery
-import io.mockative.doesNothing
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.eq
+import dev.mokkery.everySuspend
+import dev.mokkery.every
+import dev.mokkery.mock
+import dev.mokkery.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -39,15 +40,14 @@ import kotlin.test.Test
 
 class UpdateVideoStateUseCaseTest {
 
-        private val callRepository = mock(CallRepository::class)
+        private val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
     private lateinit var updateVideoStateUseCase: UpdateVideoStateUseCase
 
     @BeforeTest
     fun setup() {
         updateVideoStateUseCase = UpdateVideoStateUseCase(callRepository)
-        every { callRepository.updateIsCameraOnById(eq(conversationId), eq(isCameraOn)) }
-            .doesNothing()
+        every { callRepository.updateIsCameraOnById(eq(conversationId), eq(isCameraOn)) } returns (Unit)
     }
 
     @Test
@@ -65,28 +65,28 @@ class UpdateVideoStateUseCaseTest {
             null
         )
 
-        coEvery {
+        everySuspend {
             callRepository.establishedCallsFlow()
-        }.returns(flowOf(listOf(establishedCall)))
+        } returns (flowOf(listOf(establishedCall)))
 
         updateVideoStateUseCase(conversationId, videoState)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             callRepository.updateIsCameraOnById(eq(conversationId), eq(isCameraOn))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
     fun givenAFlowOfEstablishedCallsThatContainsNonEstablishedCall_whenUseCaseInvoked_thenDoNotInvokeUpdateVideoState() = runTest {
-        coEvery {
+        everySuspend {
             callRepository.establishedCallsFlow()
-        }.returns(flowOf(listOf()))
+        } returns (flowOf(listOf()))
 
         updateVideoStateUseCase(conversationId, videoState)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             callRepository.updateIsCameraOnById(eq(conversationId), eq(isCameraOn))
-        }.wasInvoked(once)
+        }
     }
 
     companion object {

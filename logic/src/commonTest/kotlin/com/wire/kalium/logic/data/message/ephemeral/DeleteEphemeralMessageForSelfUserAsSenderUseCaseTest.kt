@@ -23,25 +23,19 @@ import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
-import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.matchers.EqualsMatcher
-import io.mockative.once
+import com.wire.kalium.logic.data.asset.AssetRepository
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -53,15 +47,15 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         val message = MESSAGE_REGULAR
         val (arrangement, useCase) = Arrangement()
             .arrange {
-                withMarkAsDeleted(Either.Right(Unit), EqualsMatcher(message.id), EqualsMatcher(message.conversationId))
-                withGetMessageById(Either.Right(message), EqualsMatcher(message.id), EqualsMatcher(message.conversationId))
+                withMarkAsDeleted(Either.Right(Unit))
+                withGetMessageById(Either.Right(message))
             }
 
         useCase(message.conversationId, message.id).toEither().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markMessageAsDeleted(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -72,16 +66,16 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         )
         val (arrangement, useCase) = Arrangement()
             .arrange {
-                withMarkAsDeleted(Either.Right(Unit), EqualsMatcher(message.id), EqualsMatcher(message.conversationId))
-                withGetMessageById(Either.Right(message), EqualsMatcher(message.id), EqualsMatcher(message.conversationId))
-                withDeleteAssetLocally(Either.Right(Unit), EqualsMatcher(assetContent.remoteData.assetId))
+                withMarkAsDeleted(Either.Right(Unit))
+                withGetMessageById(Either.Right(message))
+                withDeleteAssetLocally(Either.Right(Unit))
             }
 
         useCase(message.conversationId, message.id).toEither().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetRepository.deleteAssetLocally(assetContent.remoteData.assetId)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private companion object {
@@ -114,12 +108,9 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         )
     }
 
-    private class Arrangement :
-        CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl(),
-        MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
-        MessageSenderArrangement by MessageSenderArrangementImpl(),
-        SelfConversationIdProviderArrangement by SelfConversationIdProviderArrangementImpl(),
-        AssetRepositoryArrangement by AssetRepositoryArrangementImpl() {
+    private class Arrangement {
+        val messageRepository = mock<MessageRepository>()
+        val assetRepository = mock<AssetRepository>()
 
         private val useCase: DeleteEphemeralMessageForSelfUserAsSenderUseCase =
             DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(
@@ -130,6 +121,18 @@ class DeleteEphemeralMessageForSelfUserAsSenderUseCaseTest {
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteEphemeralMessageForSelfUserAsSenderUseCase> {
             block()
             return this to useCase
+        }
+
+        suspend fun withMarkAsDeleted(result: Either<com.wire.kalium.common.error.StorageFailure, Unit>) = apply {
+            everySuspend { messageRepository.markMessageAsDeleted(any(), any()) } returns result
+        }
+
+        suspend fun withGetMessageById(result: Either<com.wire.kalium.common.error.StorageFailure, Message>) = apply {
+            everySuspend { messageRepository.getMessageById(any(), any()) } returns result
+        }
+
+        suspend fun withDeleteAssetLocally(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) = apply {
+            everySuspend { assetRepository.deleteAssetLocally(any()) } returns result
         }
     }
 }

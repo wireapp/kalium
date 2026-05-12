@@ -22,15 +22,17 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.test.runTest
 
 class MessageDraftRepositoryTest {
 
@@ -48,9 +50,9 @@ class MessageDraftRepositoryTest {
         assertEquals(TEST_MESSAGE_DRAFT_ENTITY.toModel(), result)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageDraftDAO.getMessageDraft(eq(TEST_CONVERSATION_ID.toDao()))
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -66,9 +68,9 @@ class MessageDraftRepositoryTest {
 
         // Then
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageDraftDAO.upsertMessageDraft(TEST_MESSAGE_DRAFT.toDao())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -84,29 +86,29 @@ class MessageDraftRepositoryTest {
 
         // Then
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageDraftDAO.removeMessageDraft(eq(TEST_CONVERSATION_ID.toDao()))
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
     private class Arrangement {
-        val messageDraftDAO = mock(MessageDraftDAO::class)
+        val messageDraftDAO = mock<MessageDraftDAO>(mode = MockMode.autoUnit)
 
         suspend fun withRemoveMessageDraftSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 messageDraftDAO.removeMessageDraft(any())
             }.returns(Unit)
         }
 
         suspend fun withGetMessageDraft(result: MessageDraftEntity) = apply {
-            coEvery {
+            everySuspend {
                 messageDraftDAO.getMessageDraft(any())
             } returns result
         }
 
         suspend fun withUpsertMessageDraft() = apply {
-            coEvery {
+            everySuspend {
                 messageDraftDAO.upsertMessageDraft(any())
             }.returns(Unit)
         }

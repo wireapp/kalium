@@ -54,14 +54,22 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.event.EventDAO
 import com.wire.kalium.persistence.dao.event.EventEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
@@ -69,12 +77,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
 
 class EventRepositoryTest {
 
@@ -87,8 +89,7 @@ class EventRepositoryTest {
             .arrange()
 
         eventRepository.liveEvents()
-        coVerify { arrangement.notificationApi.listenToLiveEvents(eq(TestClient.CLIENT_ID.value)) }
-            .wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.notificationApi.listenToLiveEvents(eq(TestClient.CLIENT_ID.value)) }
     }
 
     @Test
@@ -100,8 +101,7 @@ class EventRepositoryTest {
             .arrange()
 
         eventRepository.liveEvents()
-        coVerify { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value), any()) }
-            .wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.notificationApi.consumeLiveEvents(eq(TestClient.CLIENT_ID.value), any()) }
     }
 
     @Test
@@ -126,9 +126,9 @@ class EventRepositoryTest {
 
         eventRepository.fetchOldestAvailableEventId()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.notificationApi.oldestNotification(eq(currentClientId.value))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -200,7 +200,7 @@ class EventRepositoryTest {
             flow.test {
                 awaitItem()
                 awaitComplete()
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     arrangement.notificationApi.acknowledgeEvents(
                         eq(TestClient.CLIENT_ID.value),
                         any(),
@@ -210,7 +210,7 @@ class EventRepositoryTest {
                             it.data?.multiple == false
                         }
                     )
-                }.wasInvoked(exactly = once)
+                }
             }
         })
     }
@@ -330,7 +330,7 @@ class EventRepositoryTest {
         result.fold({}, { flow ->
             flow.test {
                 awaitComplete()
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     arrangement.notificationApi.acknowledgeEvents(
                         eq(TestClient.CLIENT_ID.value),
                         any(),
@@ -340,7 +340,7 @@ class EventRepositoryTest {
                             it.data?.multiple == false
                         }
                     )
-                }.wasInvoked(exactly = once)
+                }
             }
         })
     }
@@ -360,7 +360,7 @@ class EventRepositoryTest {
                 )
             )
             .apply {
-                coEvery {
+                everySuspend {
                     notificationApi.notificationsByBatch(any(), any(), any())
                 } returns NetworkResponse.Error(TestNetworkException.notFound)
             }
@@ -394,7 +394,7 @@ class EventRepositoryTest {
                 )
             )
             .apply {
-                coEvery {
+                everySuspend {
                     notificationApi.notificationsByBatch(any(), any(), any())
                 } returns NetworkResponse.Error(TestNetworkException.generic)
             }
@@ -581,13 +581,13 @@ class EventRepositoryTest {
 
     private class Arrangement {
 
-        val notificationApi: NotificationApi = mock(NotificationApi::class)
-        val metaDAO = mock(MetadataDAO::class)
-        val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
-        val clientIdProvider = mock(CurrentClientIdProvider::class)
-        val eventDAO: EventDAO = mock(EventDAO::class)
+        val notificationApi: NotificationApi = mock<NotificationApi>(mode = MockMode.autoUnit)
+        val metaDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
+        val clientRegistrationStorage = mock<ClientRegistrationStorage>(mode = MockMode.autoUnit)
+        val clientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val eventDAO: EventDAO = mock<EventDAO>(mode = MockMode.autoUnit)
         val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase =
-            mock(RestartSlowSyncProcessForRecoveryUseCase::class)
+            mock<RestartSlowSyncProcessForRecoveryUseCase>(mode = MockMode.autoUnit)
 
         private val eventRepository: EventRepository = EventDataSource(
             notificationApi = notificationApi,
@@ -609,73 +609,73 @@ class EventRepositoryTest {
         }
 
         suspend fun withClientHasConsumableNotifications(hasConsumableNotifications: Boolean = false) = apply {
-            coEvery {
+            everySuspend {
                 clientRegistrationStorage.observeHasConsumableNotifications()
             }.returns(flowOf(hasConsumableNotifications))
         }
 
         suspend fun withLastStoredEventId(value: String?) = apply {
-            coEvery {
+            everySuspend {
                 metaDAO.valueByKey(LAST_SAVED_EVENT_ID_KEY)
             }.returns(value)
         }
 
         suspend fun withNotificationsByBatch(result: NetworkResponse<NotificationResponse>) = apply {
-            coEvery {
+            everySuspend {
                 notificationApi.notificationsByBatch(any(), any(), any())
             }.returns(result)
         }
 
         suspend fun withOldestNotificationReturning(result: NetworkResponse<EventResponseToStore>) = apply {
-            coEvery {
+            everySuspend {
                 notificationApi.oldestNotification(any())
             }.returns(result)
         }
 
         suspend fun withCurrentClientIdReturning(clientId: ClientId) = apply {
-            coEvery {
+            everySuspend {
                 clientIdProvider.invoke()
             }.returns(Either.Right(clientId))
         }
 
         suspend fun withConsumeLiveEventsReturning(result: NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>) = apply {
-            coEvery {
+            everySuspend {
                 notificationApi.consumeLiveEvents(any(), any())
             }.returns(result)
         }
 
         suspend fun withListenLiveEventsReturning(result: NetworkResponse<Flow<WebSocketEvent<EventResponseToStore>>>) = apply {
-            coEvery {
+            everySuspend {
                 notificationApi.listenToLiveEvents(any())
             }.returns(result)
         }
 
         suspend fun withAcknowledgeEvents() = apply {
-            coEvery {
+            everySuspend {
                 notificationApi.acknowledgeEvents(any(), any(), any())
             }.returns(Unit)
         }
 
         suspend fun withUnprocessedEvents(events: Flow<List<EventEntity>>) = apply {
-            coEvery {
+            everySuspend {
                 eventDAO.observeUnprocessedEvents(any())
             }.returns(events)
         }
 
         suspend fun withMarkEventAsProcessed() = apply {
-            coEvery {
+            everySuspend {
                 eventDAO.markEventAsProcessed(any())
             }.returns(Unit)
         }
 
         suspend fun withSetAllUnprocessedEventsAsPending() = apply {
-            coEvery {
+            everySuspend {
                 eventDAO.setAllUnprocessedEventsAsPending()
             }.returns(Unit)
         }
 
         suspend fun withClearProcessedEvents(eventId: String, id: Long = 1L, transient: Boolean = false) = apply {
-            coEvery { eventDAO.getEventById(eq(eventId)) }.returns(
+            everySuspend { eventDAO.getEventById(eq(eventId)) }.returns(
                 EventEntity(
                     id = id,
                     eventId = eventId,
@@ -686,8 +686,8 @@ class EventRepositoryTest {
                 )
             )
 
-            coEvery { eventDAO.deleteProcessedEventsBefore(id) }.returns(Unit)
-            coEvery { eventDAO.deleteAllProcessedEvents() }.returns(Unit)
+            everySuspend { eventDAO.deleteProcessedEventsBefore(id) }.returns(Unit)
+            everySuspend { eventDAO.deleteAllProcessedEvents() }.returns(Unit)
         }
 
         inline fun arrange(): Pair<Arrangement, EventRepository> {

@@ -31,13 +31,15 @@ import com.wire.kalium.logic.feature.call.CallManagerImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.instanceOf
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.ofType
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Test
@@ -70,16 +72,16 @@ class OnSendOTRTest {
         )
         yield()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.enqueueSendingOfCallingMessage(
                 any(),
                 eq(Arrangement.conversationId),
                 any(),
                 any(),
                 any(),
-                instanceOf<CallingMessageTarget.Self>(),
+                ofType<CallingMessageTarget.Self>(),
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -107,22 +109,22 @@ class OnSendOTRTest {
         )
         yield()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.enqueueSendingOfCallingMessage(
                 any(),
                 eq(Arrangement.conversationId),
                 any(),
                 any(),
                 any(),
-                instanceOf<CallingMessageTarget.HostConversation>(),
+                ofType<CallingMessageTarget.HostConversation>(),
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     internal class Arrangement {
-        val calling = mock(Calling::class)
-        val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
-        val messageSender = mock(CallingMessageSender::class)
+        val calling = mock<Calling>(mode = MockMode.autoUnit)
+        val selfConversationIdProvider = mock<SelfConversationIdProvider>(mode = MockMode.autoUnit)
+        val messageSender = mock<CallingMessageSender>(mode = MockMode.autoUnit)
 
         val qualifiedIdMapper = QualifiedIdMapper(TestUser.SELF.id)
 
@@ -144,13 +146,13 @@ class OnSendOTRTest {
         }
 
         suspend fun givenSelfConversationIdProviderReturns(result: Either<StorageFailure, List<ConversationId>>) = apply {
-            coEvery {
+            everySuspend {
                 selfConversationIdProvider.invoke()
-            }.returns(result)
+            } returns (result)
         }
 
         suspend fun givenSendMessageSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.enqueueSendingOfCallingMessage(
                     context = any(),
                     callHostConversationId = any(),
@@ -159,7 +161,7 @@ class OnSendOTRTest {
                     avsSelfClientId = any(),
                     messageTarget = any(),
                 )
-            }.returns(Unit)
+            } returns (Unit)
         }
     }
 

@@ -18,43 +18,45 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigTest
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.FeatureConfigRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.util.reflect.instanceOf
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 
 class MLSClientProviderTest {
 
@@ -85,14 +87,11 @@ class MLSClientProviderTest {
             assertEquals(expected.supportedCipherSuite, it)
         }
 
-        coVerify { arrangement.userConfigRepository.isMLSEnabled() }
-            .wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.isMLSEnabled() }
 
-        coVerify { arrangement.userConfigRepository.getSupportedCipherSuite() }
-            .wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.getSupportedCipherSuite() }
 
-        coVerify { arrangement.featureConfigRepository.getFeatureConfigs() }
-            .wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.featureConfigRepository.getFeatureConfigs() }
     }
 
     @Test
@@ -115,16 +114,15 @@ class MLSClientProviderTest {
             assertEquals(expected, it)
         }
 
-        coVerify { arrangement.userConfigRepository.isMLSEnabled() }
-            .wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userConfigRepository.isMLSEnabled() }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.getSupportedCipherSuite()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.featureConfigRepository.getFeatureConfigs()
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -152,11 +150,9 @@ class MLSClientProviderTest {
                 it.instanceOf(CoreFailure.Unknown::class)
             }
 
-            coVerify { arrangement.userConfigRepository.getSupportedCipherSuite() }
-                .wasNotInvoked()
+            verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.getSupportedCipherSuite() }
 
-            coVerify { arrangement.featureConfigRepository.getFeatureConfigs() }
-                .wasNotInvoked()
+            verifySuspend(VerifyMode.not) { arrangement.featureConfigRepository.getFeatureConfigs() }
         }
 
     @Test
@@ -185,15 +181,16 @@ class MLSClientProviderTest {
 
     private inner class Arrangement(
         val processingScope: CoroutineScope
-    ) : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
-        FeatureConfigRepositoryArrangement by FeatureConfigRepositoryArrangementImpl(),
-        CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
+    ) {
 
         val rootKeyStorePath: String = "rootKeyStorePath"
         val userId: UserId = UserId("userId", "domain")
-        val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
-        val mlsTransportProvider: MLSTransportProvider = mock(MLSTransportProvider::class)
-        val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
+        val userConfigRepository = mock<UserConfigRepository>()
+        val featureConfigRepository = mock<FeatureConfigRepository>()
+        val currentClientIdProvider = mock<CurrentClientIdProvider>()
+        val passphraseStorage = mock<PassphraseStorage>(mode = MockMode.autoUnit)
+        val mlsTransportProvider = mock<MLSTransportProvider>(mode = MockMode.autoUnit)
+        val epochChangesObserver = mock<EpochChangesObserver>(mode = MockMode.autoUnit)
 
         fun withCoreCryptoDatabaseDoesNotExists() {
             val clientId = TestClient.CLIENT_ID
@@ -217,6 +214,26 @@ class MLSClientProviderTest {
         fun withPassphraseStorage() {
             val passphraseBase64 = Base64.encode(ByteArray(32) { 0xAB.toByte() })
             every { passphraseStorage.getPassphrase(any()) }.returns(passphraseBase64)
+        }
+
+        suspend fun withGetSupportedCipherSuitesReturning(result: com.wire.kalium.common.functional.Either<StorageFailure, SupportedCipherSuite>) = apply {
+            everySuspend { userConfigRepository.getSupportedCipherSuite() }.returns(result)
+        }
+
+        suspend fun withGetFeatureConfigsReturning(result: com.wire.kalium.common.functional.Either<NetworkFailure, com.wire.kalium.logic.data.featureConfig.FeatureConfigModel>) = apply {
+            everySuspend { featureConfigRepository.getFeatureConfigs() }.returns(result)
+        }
+
+        suspend fun withGetMLSEnabledReturning(result: com.wire.kalium.common.functional.Either<StorageFailure, Boolean>) = apply {
+            everySuspend { userConfigRepository.isMLSEnabled() }.returns(result)
+        }
+
+        suspend fun withCurrentClientIdFailure(error: CoreFailure) = apply {
+            everySuspend { currentClientIdProvider.invoke() }.returns(error.left())
+        }
+
+        suspend fun withCurrentClientIdSuccess(clientId: ClientId) = apply {
+            everySuspend { currentClientIdProvider.invoke() }.returns(clientId.right())
         }
 
         fun arrange(block: suspend Arrangement.() -> Unit) = apply { runBlocking { block() } }.let {

@@ -22,9 +22,11 @@ import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -42,12 +44,10 @@ class SearchServiceByNameUseCaseTest {
             serviceDetails.copy(id = ServiceId("id1", "providerId")),
             serviceDetails.copy(id = ServiceId("id2", "providerId"))
         )
-        // given
-        val (arrangement, searchServiceByNameUseCase) = Arrangement()
+        val (_, searchServiceByNameUseCase) = Arrangement()
             .withSearchServiceByName("query", flowOf(Either.Right(expected)))
             .arrange()
 
-        // when
         searchServiceByNameUseCase("query").first().also {
             assertEquals(expected, it)
         }
@@ -56,12 +56,10 @@ class SearchServiceByNameUseCaseTest {
     @Test
     fun givenError_whenSearchingServiceByName_thenResultIsEmpty() = runTest {
         val error = StorageFailure.DataNotFound
-        // given
-        val (arrangement, searchServiceByNameUseCase) = Arrangement()
+        val (_, searchServiceByNameUseCase) = Arrangement()
             .withSearchServiceByName("query", flowOf(Either.Left(error)))
             .arrange()
 
-        // when
         searchServiceByNameUseCase("query").first().also {
             assertEquals(emptyList(), it)
         }
@@ -84,14 +82,14 @@ class SearchServiceByNameUseCaseTest {
 
     private class Arrangement {
 
-        val serviceRepository: ServiceRepository = mock(ServiceRepository::class)
+        val serviceRepository: ServiceRepository = mock<ServiceRepository>(mode = MockMode.autoUnit)
 
         private val searchServiceByNameUseCase = SearchServicesByNameUseCaseImpl(serviceRepository)
 
         suspend fun withSearchServiceByName(query: String, result: Flow<Either<StorageFailure, List<ServiceDetails>>>) = apply {
-            coEvery {
+            everySuspend {
                 serviceRepository.searchServicesByName(eq(query))
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to searchServiceByNameUseCase

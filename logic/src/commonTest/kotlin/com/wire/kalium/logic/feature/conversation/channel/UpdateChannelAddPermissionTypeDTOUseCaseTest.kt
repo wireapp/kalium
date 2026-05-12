@@ -22,11 +22,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationDetails.Group.Channel.ChannelAddPermission
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -43,7 +45,7 @@ class UpdateChannelAddPermissionTypeDTOUseCaseTest {
         val result = usecase(conversationId, ChannelAddPermission.ADMINS)
 
         assertTrue(result is UpdateChannelAddPermissionUseCase.UpdateChannelAddPermissionUseCaseResult.Success)
-        coVerify { arrangement.conversationRepository.updateChannelAddPermission(any(), any()) }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.updateChannelAddPermission(any(), any()) }
     }
 
     @Test
@@ -56,19 +58,19 @@ class UpdateChannelAddPermissionTypeDTOUseCaseTest {
         val result = usecase(conversationId, ChannelAddPermission.ADMINS)
 
         assertTrue(result is UpdateChannelAddPermissionUseCase.UpdateChannelAddPermissionUseCaseResult.Failure)
-        coVerify { arrangement.conversationRepository.updateChannelAddPermission(any(), any()) }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.updateChannelAddPermission(any(), any()) }
     }
 
     private class Arrangement {
 
-        val conversationRepository = mock(ConversationRepository::class)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
 
         private val updateChannelAddPermission = UpdateChannelAddPermissionUseCaseImpl(conversationRepository)
 
         suspend fun withUpdateReturning(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateChannelAddPermission(any(), any())
-            }.returns(either)
+            } returns either
         }
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to updateChannelAddPermission }
