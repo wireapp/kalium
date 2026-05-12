@@ -20,7 +20,9 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.db.SqlDriver
+import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.CoroutineDispatcher
 
@@ -36,12 +38,27 @@ actual fun userDatabaseBuilder(
     dbInvalidationControlEnabled: Boolean
 ): UserDatabaseBuilder {
     val rawDriver = createKaliumWebWorkerDriver()
+    val initializedDriver = SchemaInitializingSqlDriver(rawDriver) {
+        UserDatabase.Schema.create(rawDriver).await()
+        rawDriver.execute(
+            identifier = null,
+            sql = "INSERT OR IGNORE INTO SelfUser(id) VALUES(?);",
+            parameters = 1
+        ) {
+            bindString(0, userId.toString())
+        }.await()
+        rawDriver.execute(
+            identifier = null,
+            sql = "PRAGMA foreign_keys = 1;",
+            parameters = 0,
+        ).await()
+    }
     val invalidationController = DbInvalidationController(
         enabled = dbInvalidationControlEnabled,
-        notifyKey = { key -> rawDriver.notifyListeners(key) }
+        notifyKey = { key -> initializedDriver.notifyListeners(key) }
     )
     val driver: SqlDriver = MutedSqlDriver(
-        delegate = rawDriver,
+        delegate = initializedDriver,
         invalidationController = invalidationController
     )
     return UserDatabaseBuilder(

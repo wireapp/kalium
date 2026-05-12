@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.dao.conversation
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+import app.cash.sqldelight.async.coroutines.await
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationDetailsQueries
@@ -662,7 +663,7 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun clearContent(conversationId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
-            conversationQueries.clearContent(conversationId)
+            conversationQueries.clearContent(conversationId).await()
         }
     }
 
@@ -685,19 +686,12 @@ internal class ConversationDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         legalHoldStatus: ConversationEntity.LegalHoldStatus
     ) = withContext(writeDispatcher.value) {
-        conversationQueries.transactionWithResult {
-            conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId)
-            conversationQueries.selectChanges().awaitAsOne() > 0
-        }
-
+        conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId).await() > 0
     }
 
     override suspend fun updateLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity, notified: Boolean) =
         withContext(writeDispatcher.value) {
-            conversationQueries.transactionWithResult {
-                conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified)
-                conversationQueries.selectChanges().awaitAsOne() > 0
-            }
+            conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified).await() > 0
         }
 
     override suspend fun observeLegalHoldStatus(conversationId: QualifiedIDEntity) =

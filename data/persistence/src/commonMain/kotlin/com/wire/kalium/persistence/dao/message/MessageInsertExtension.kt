@@ -19,6 +19,7 @@ package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+import app.cash.sqldelight.async.coroutines.await
 
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
@@ -95,7 +96,7 @@ internal class MessageInsertExtensionImpl(
                 assetSha256 = assetSha256Key,
                 assetEncryptionAlgorithm = assetEncryptionAlgorithm,
                 assetNormalizedLoudness = assetNormalizedLoudness,
-            )
+            ).await()
         }
     }
 

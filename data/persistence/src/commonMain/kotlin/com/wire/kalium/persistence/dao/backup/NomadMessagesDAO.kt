@@ -179,7 +179,7 @@ internal class NomadMessagesDAOImpl internal constructor(
         return true
     }
 
-    private fun insertReactions(message: NomadMessageToInsert) {
+    private suspend fun insertReactions(message: NomadMessageToInsert) {
         message.reactions.forEach { reaction ->
             reaction.emojis.forEach { emoji ->
                 reactionsQueries.insertReaction(
@@ -193,7 +193,7 @@ internal class NomadMessagesDAOImpl internal constructor(
         }
     }
 
-    private fun insertReadReceipts(message: NomadMessageToInsert) {
+    private suspend fun insertReadReceipts(message: NomadMessageToInsert) {
         message.readReceipts.forEach { receipt ->
             receiptsQueries.insertReceipt(
                 message.id,
@@ -299,7 +299,7 @@ private class NomadMessageContentWriter(
     private val messageAttachmentsQueries: MessageAttachmentsQueries,
 ) {
 
-    private suspend fun insertRegularContent(message: NomadMessageToInsert): Boolean {
+    suspend fun insertRegularContent(message: NomadMessageToInsert): Boolean {
         val content = message.payload
         return when (content) {
             is SyncableMessagePayloadEntity.Text -> insertTextContent(message, content)

@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao.backup
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.RemotebackupChangeLogQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -98,7 +99,7 @@ internal class RemoteBackupChangeLogDAOImpl(
             conversationId = conversationId,
             eventType = ChangeLogEventType.CONVERSATION_DELETE,
             timestampMs = timestampMs
-        )
+        ).await()
     }
 
     override suspend fun logConversationClear(
@@ -109,7 +110,7 @@ internal class RemoteBackupChangeLogDAOImpl(
             conversationId = conversationId,
             eventType = ChangeLogEventType.CONVERSATION_CLEAR,
             timestampMs = timestampMs
-        )
+        ).await()
     }
 
     override suspend fun logConversationMetadataSync(
