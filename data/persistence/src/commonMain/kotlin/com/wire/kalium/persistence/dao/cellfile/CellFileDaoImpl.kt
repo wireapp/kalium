@@ -75,8 +75,8 @@ internal class CellFileDaoImpl(
         localPath: String?,
         size: Long?,
         downloadedAt: Long,
-        isOffline: Long,
         modifiedAt: Long?,
+        isOffline: Long,
     ): CellFileEntity = CellFileEntity(
         uuid = uuid,
         name = name,
