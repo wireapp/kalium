@@ -25,7 +25,6 @@ import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.logger.callingLogger
@@ -76,7 +75,6 @@ import kotlinx.cinterop.COpaquePointer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
@@ -386,7 +384,7 @@ internal class CallManagerImpl internal constructor(
                     messageTarget = messageTarget
                 )
                 AvsCallBackError.NONE.value
-            } catch (e: Exception) {
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 callingLogger.e("[OnSendOTR/iOS] -> Error Exception: $e")
                 AvsCallBackError.COULD_NOT_DECODE_ARGUMENT.value
             }
@@ -403,7 +401,11 @@ internal class CallManagerImpl internal constructor(
                     return@launch
                 }
                 val dataString = data.decodeToString()
-                val responseData = callRepository.connectToSFT(url = url, data = dataString).nullableFold({ null }, { it }) ?: byteArrayOf()
+                val responseData = callRepository.connectToSFT(url = url, data = dataString)
+                    .nullableFold(
+                        { null },
+                        { it }
+                    ) ?: byteArrayOf()
                 val error = if (responseData.isEmpty()) AvsSFTError.NO_RESPONSE_DATA.value else AvsSFTError.NONE.value
                 AppleAvsInterop.respondToSft(deferredHandle.await(), error, responseData, context)
             }
@@ -559,8 +561,8 @@ internal class CallManagerImpl internal constructor(
                 }
             }
             val (code, message) = when (result) {
-                is Either.Right -> 200 to ""
-                is Either.Left -> 400 to "Couldn't send Calling Message"
+                is Either.Right -> AVS_SEND_SUCCESS_STATUS_CODE to ""
+                is Either.Left -> AVS_SEND_FAILURE_STATUS_CODE to "Couldn't send Calling Message"
             }
             AppleAvsInterop.respondToSend(deferredHandle.await(), code, message, context)
         }
@@ -672,6 +674,8 @@ internal class CallManagerImpl internal constructor(
 
     internal companion object {
         private const val DEFAULT_REQUEST_VIDEO_STREAMS_MODE = 0
+        private const val AVS_SEND_SUCCESS_STATUS_CODE = 200
+        private const val AVS_SEND_FAILURE_STATUS_CODE = 400
         private const val TAG = "CallManager"
         private val DEFAULT_WAIT_UNTIL_CONNECTED_TIMEOUT = 15.seconds
     }

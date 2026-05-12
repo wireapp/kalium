@@ -60,7 +60,7 @@ import kotlinx.cinterop.staticCFunction
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.usePinned
 
-@Suppress("TooManyFunctions")
+@Suppress("LongParameterList", "ReturnCount", "TooManyFunctions")
 internal object AppleAvsInterop {
     interface Callbacks {
         fun onReady(version: Int)
@@ -76,7 +76,15 @@ internal object AppleAvsInterop {
             myClientsOnly: Boolean
         ): Int
         fun onSftRequest(context: COpaquePointer?, url: String?, data: ByteArray): Int
-        fun onIncomingCall(conversationId: String?, messageTime: UInt, userId: String?, clientId: String?, video: Boolean, shouldRing: Boolean, conversationType: Int)
+        fun onIncomingCall(
+            conversationId: String?,
+            messageTime: UInt,
+            userId: String?,
+            clientId: String?,
+            video: Boolean,
+            shouldRing: Boolean,
+            conversationType: Int
+        )
         fun onMissedCall(conversationId: String?, messageTime: UInt, userId: String?, video: Boolean)
         fun onAnsweredCall(conversationId: String?)
         fun onEstablishedCall(conversationId: String?, userId: String?, clientId: String?)
@@ -150,7 +158,15 @@ internal object AppleAvsInterop {
             shouldRing: Int,
             conversationType: Int,
             arg: COpaquePointer? ->
-        callbacks(arg)?.onIncomingCall(conversationId.string(), msgTime, userId.string(), clientId.string(), video != 0, shouldRing != 0, conversationType)
+        callbacks(arg)?.onIncomingCall(
+            conversationId.string(),
+            msgTime,
+            userId.string(),
+            clientId.string(),
+            video != 0,
+            shouldRing != 0,
+            conversationType
+        )
         Unit
     }
 

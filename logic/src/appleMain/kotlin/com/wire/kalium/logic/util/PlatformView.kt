@@ -20,6 +20,12 @@ package com.wire.kalium.logic.util
 
 import platform.UIKit.UIView
 
+/**
+ * Native iOS view wrapper used by calling APIs that need a platform rendering surface.
+ *
+ * For AVS video calls, the iOS UI owns the [UIView] lifecycle and passes it through this wrapper.
+ * Kalium forwards [view] to AVS so remote video can be rendered into the native UI surface.
+ */
 public actual class PlatformView(
     public val view: UIView?
 )
