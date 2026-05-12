@@ -92,7 +92,7 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun getNonDeletedConversationById(
         qualifiedID: QualifiedIDEntity
     ): ConversationEntity? = withContext(readDispatcher.value) {
-        conversationQueries.selectByQualifiedId(qualifiedID, conversationMapper::fromViewToModel).executeAsOneOrNull()
+        conversationQueries.selectByQualifiedId(qualifiedID, conversationMapper::fromViewToModel).awaitAsOneOrNull()
     }
 
     override suspend fun observeConversationDetailsById(
@@ -505,7 +505,7 @@ internal class ConversationDAOImpl internal constructor(
                 conversationDates.forEach { (conversationId, date) ->
                     unreadEventsQueries.deleteUnreadEvents(date, conversationId)
                     conversationQueries.updateConversationReadDate(date, conversationId)
-                    updatedConversations += conversationQueries.selectChanges().executeAsOne().toInt()
+                    updatedConversations += conversationQueries.selectChanges().awaitAsOne().toInt()
                 }
 
                 updatedConversations
@@ -792,6 +792,6 @@ internal class ConversationDAOImpl internal constructor(
                 offset = offset.toLong(),
                 query = query,
                 mapper = conversationMapper::toConversationEntity
-            ).executeAsList()
+            ).awaitAsList()
         }
 }

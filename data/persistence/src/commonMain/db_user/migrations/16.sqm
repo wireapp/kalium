@@ -1,6 +1,6 @@
 import kotlin.Boolean;
 
-DROP VIEW MessageDetailsView;
+DROP VIEW IF EXISTS MessageDetailsView;
 ALTER TABLE MessageFailedToDecryptContent ADD COLUMN is_decryption_resolved INTEGER AS Boolean NOT NULL DEFAULT(0);
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView

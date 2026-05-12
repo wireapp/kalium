@@ -110,7 +110,7 @@ internal class MessageInsertExtensionImpl(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             /* no-op */
         }
     }

@@ -298,7 +298,7 @@ internal class MessageDAOImpl internal constructor(
         conversationId: ConversationIDEntity
     ): Long? = withContext(readDispatcher.value) {
         queries.selectOldestVisibleMessageTimestampByConversationId(conversationId)
-            .executeAsOneOrNull()
+            .awaitAsOneOrNull()
             ?.MIN?.toEpochMilliseconds()
     }
 

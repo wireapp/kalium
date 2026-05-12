@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.App
@@ -118,7 +119,7 @@ internal class AppDAOImpl(
     }
 
     override suspend fun byId(id: QualifiedIDEntity): AppEntity? = withContext(readDispatcher.value) {
-        appsQueries.byId(id = id, mapper = ::mapToAppEntity).executeAsOneOrNull()
+        appsQueries.byId(id = id, mapper = ::mapToAppEntity).awaitAsOneOrNull()
     }
 
     /**

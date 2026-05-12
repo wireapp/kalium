@@ -24,7 +24,7 @@ import org.w3c.dom.Worker
 
 internal fun createKaliumWebWorkerDriver(): SqlDriver = WebWorkerDriver(createKaliumWorker())
 
-@Suppress("UnsafeCastFromDynamic")
+@Suppress("LongMethod", "UnsafeCastFromDynamic")
 private fun createKaliumWorker(): Worker {
     val hasBrowserWorker = js("typeof window !== 'undefined' && typeof Worker !== 'undefined'").unsafeCast<Boolean>()
     if (hasBrowserWorker) {
@@ -41,9 +41,27 @@ private fun createKaliumWorker(): Worker {
                 "const { parentPort, workerData } = require('node:worker_threads');",
                 "const initSqlJs = require(workerData.sqlJsModulePath);",
                 "let dbPromise = initSqlJs({ locateFile: () => workerData.sqlJsWasmPath }).then(SQL => new SQL.Database());",
+                "const booleanColumnPattern = /^(deleted|incomplete_metadata|defederated|archived|deletedLocally|isFavorite|isChannel|is_channel|userDeleted|userDefederated|isUserDeleted|senderIsDeleted|senderDefederated|hasIncompleteMetadata|lastMessageIsSelfMessage|expects_read_confirmation|expectsReadConfirmation|isSelfMessage|isSelfDelete|isEphemeral|isMentioningSelfUser|isQuotingSelfUser|isQuotingSelf|isQuoteVerified|isUnread|isConversationAppsEnabled|newConversationReceiptMode|conversationReceiptModeChanged|isDecryptionResolved|is_selected|cell_asset|is_valid|is_verified|is_mls_capable|is_async_notifications_capable|legal_hold_status_change_notified|legalHoldStatusChangeNotified|degraded_conversation_notified|degradedConversationNotified|mls_degraded_notified|is_guest_password_protected|should_notify|read_receipt|enabled|notified|hasRegisteredMLSClient|isOnPremises|federation|apiProxyNeedsAuthentication|isNativePushSupportedByServer|isPersistentWebSocketEnabled)$/i;",
+                "function normalizeResult(sql, result) {",
+                "  if (!result || !Array.isArray(result.columns) || !Array.isArray(result.values)) return result;",
+                "  const booleanIndexes = result.columns",
+                "    .map((column, index) => booleanColumnPattern.test(String(column)) ? index : -1)",
+                "    .filter(index => index >= 0);",
+                "  if (result.columns.length === 1 && /^\\s*select\\s+exists\\s*\\(/i.test(sql)) booleanIndexes.push(0);",
+                "  if (booleanIndexes.length === 0) return result;",
+                "  return {",
+                "    values: result.values.map(row => row.map((value, index) =>",
+                "      booleanIndexes.includes(index) && (value === 0 || value === 1) ? value === 1 : value",
+                "    ))",
+                "  };",
+                "}",
+                "function isQuery(sql) {",
+                "  return /^\\s*(select|with|pragma|explain)\\b/i.test(sql);",
+                "}",
                 "function resultFor(db, sql, params) {",
                 "  const result = db.exec(sql, params)[0];",
-                "  if (result) return result;",
+                "  if (result) return normalizeResult(sql, result);",
+                "  if (isQuery(sql)) return { values: [] };",
                 "  return { values: [[db.getRowsModified()]] };",
                 "}",
                 "parentPort.on('message', async (data) => {",
@@ -78,6 +96,9 @@ private fun createKaliumWorker(): Worker {
                     sqlJsWasmPath: sqlJsWasmPath
                 }
             });
+            if (typeof worker.setMaxListeners === 'function') {
+                worker.setMaxListeners(0);
+            }
             if (typeof worker.unref === 'function') {
                 worker.unref();
             }

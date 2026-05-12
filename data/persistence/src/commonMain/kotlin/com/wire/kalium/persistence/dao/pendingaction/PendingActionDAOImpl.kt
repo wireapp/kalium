@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.pendingaction
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import com.wire.kalium.persistence.PendingActionsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -43,7 +44,7 @@ internal class PendingActionDAOImpl(
         pendingActionsQueries.selectByActionType(
             action_type = actionType,
             mapper = ::PendingActionEntity
-        ).executeAsList()
+        ).awaitAsList()
     }
 
     override suspend fun deleteByActionTypeAndIds(actionType: PendingActionType, qualifiedIds: List<QualifiedIDEntity>) {
