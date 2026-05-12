@@ -15,27 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.persistence.dao.cellfile
+package com.wire.kalium.cells.domain
 
-import io.mockative.Mockable
+import com.wire.kalium.cells.domain.usecase.offline.OfflineFileInfo
 import kotlinx.coroutines.flow.Flow
 
-data class CellFileEntity(
-    val uuid: String,
-    val name: String?,
-    val owner: String?,
-    val localPath: String?,
-    val size: Long?,
-    val downloadedAt: Long,
-    val isOffline: Boolean,
-    val modifiedAt: Long? = null,
-)
-
-@Mockable
-interface CellFileDao {
-    suspend fun upsert(entity: CellFileEntity)
+internal interface CellFileRepository {
+    suspend fun upsert(info: OfflineFileInfo)
     suspend fun delete(id: String)
-    fun observeOfflineFiles(): Flow<List<CellFileEntity>>
-    suspend fun getById(id: String): CellFileEntity?
-    suspend fun getAllWithLocalPath(): List<Pair<String, String>>
+    fun observeOfflineFiles(): Flow<List<OfflineFileInfo>>
+    suspend fun getById(id: String): OfflineFileInfo?
 }

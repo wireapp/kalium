@@ -42,6 +42,7 @@ internal class CellFileDaoImpl(
                 size = entity.size,
                 downloadedAt = entity.downloadedAt,
                 isOffline = if (entity.isOffline) 1L else 0L,
+                modifiedAt = entity.modifiedAt,
             )
         }
     }
@@ -75,6 +76,7 @@ internal class CellFileDaoImpl(
         size: Long?,
         downloadedAt: Long,
         isOffline: Long,
+        modifiedAt: Long?,
     ): CellFileEntity = CellFileEntity(
         uuid = uuid,
         name = name,
@@ -83,5 +85,6 @@ internal class CellFileDaoImpl(
         size = size,
         downloadedAt = downloadedAt,
         isOffline = isOffline == 1L,
+        modifiedAt = modifiedAt,
     )
 }

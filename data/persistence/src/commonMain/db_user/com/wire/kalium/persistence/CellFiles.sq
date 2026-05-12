@@ -6,19 +6,21 @@ CREATE TABLE IF NOT EXISTS CellFile (
     size         INTEGER,
     downloadedAt INTEGER NOT NULL,
     isOffline    INTEGER NOT NULL DEFAULT 0,
+    modifiedAt   INTEGER,
     PRIMARY KEY (uuid)
 );
 
 upsertCellFile:
-INSERT INTO CellFile(uuid, name, owner, localPath, size, downloadedAt, isOffline)
-VALUES (?, ?, ?, ?, ?, ?, ?)
+INSERT INTO CellFile(uuid, name, owner, localPath, size, downloadedAt, isOffline, modifiedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(uuid) DO UPDATE SET
     name = COALESCE(excluded.name, name),
     owner = COALESCE(excluded.owner, owner),
     localPath = COALESCE(excluded.localPath, localPath),
     size = COALESCE(excluded.size, size),
     downloadedAt = excluded.downloadedAt,
-    isOffline = excluded.isOffline;
+    isOffline = excluded.isOffline,
+    modifiedAt = COALESCE(excluded.modifiedAt, modifiedAt);
 
 deleteCellFile:
 DELETE FROM CellFile WHERE uuid = ?;

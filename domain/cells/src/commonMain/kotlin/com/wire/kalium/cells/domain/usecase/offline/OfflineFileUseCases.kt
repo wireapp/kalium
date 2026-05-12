@@ -17,10 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase.offline
 
-import com.wire.kalium.persistence.dao.cellfile.CellFileDao
-import com.wire.kalium.persistence.dao.cellfile.CellFileEntity
+import com.wire.kalium.cells.domain.CellFileRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 public data class OfflineFileInfo(
     val id: String,
@@ -29,6 +27,7 @@ public data class OfflineFileInfo(
     val localPath: String,
     val size: Long?,
     val downloadedAt: Long,
+    val modifiedAt: Long? = null,
 )
 
 /**
@@ -62,50 +61,29 @@ public interface GetOfflineFileUseCase {
 }
 
 internal class SaveOfflineFileUseCaseImpl(
-    private val dao: CellFileDao,
+    private val repository: CellFileRepository,
 ) : SaveOfflineFileUseCase {
     override suspend fun invoke(info: OfflineFileInfo) {
-        dao.upsert(info.toCellEntity())
+        repository.upsert(info)
     }
 }
 
 internal class DeleteOfflineFileUseCaseImpl(
-    private val dao: CellFileDao,
+    private val repository: CellFileRepository,
 ) : DeleteOfflineFileUseCase {
     override suspend fun invoke(id: String) {
-        dao.delete(id)
+        repository.delete(id)
     }
 }
 
 internal class ObserveOfflineFilesUseCaseImpl(
-    private val dao: CellFileDao,
+    private val repository: CellFileRepository,
 ) : ObserveOfflineFilesUseCase {
-    override fun invoke(): Flow<List<OfflineFileInfo>> =
-        dao.observeOfflineFiles().map { list -> list.map { it.toInfo() } }
+    override fun invoke(): Flow<List<OfflineFileInfo>> = repository.observeOfflineFiles()
 }
 
 internal class GetOfflineFileUseCaseImpl(
-    private val dao: CellFileDao,
+    private val repository: CellFileRepository,
 ) : GetOfflineFileUseCase {
-    override suspend fun invoke(id: String): OfflineFileInfo? =
-        dao.getById(id)?.toInfo()
+    override suspend fun invoke(id: String): OfflineFileInfo? = repository.getById(id)
 }
-
-private fun CellFileEntity.toInfo() = OfflineFileInfo(
-    id = uuid,
-    name = name.orEmpty(),
-    owner = owner.orEmpty(),
-    localPath = localPath.orEmpty(),
-    size = size,
-    downloadedAt = downloadedAt,
-)
-
-private fun OfflineFileInfo.toCellEntity() = CellFileEntity(
-    uuid = id,
-    name = name,
-    owner = owner,
-    localPath = localPath,
-    size = size,
-    downloadedAt = downloadedAt,
-    isOffline = true,
-)

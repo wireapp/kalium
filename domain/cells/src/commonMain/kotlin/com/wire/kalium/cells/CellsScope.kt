@@ -20,6 +20,7 @@ package com.wire.kalium.cells
 import com.wire.kalium.cells.data.CellAttachmentsDataSource
 import com.wire.kalium.cells.data.CellConfigDataSource
 import com.wire.kalium.cells.data.CellConversationDataSource
+import com.wire.kalium.cells.data.CellFileDataSource
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.CellUsersDataSource
 import com.wire.kalium.cells.data.CellsApiImpl
@@ -32,6 +33,7 @@ import com.wire.kalium.cells.data.fileDownloader
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConfigRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
+import com.wire.kalium.cells.domain.CellFileRepository
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsApi
@@ -247,6 +249,10 @@ public class CellsScope(
         CellConfigDataSource(dao.userConfigDAO)
     }
 
+    private val cellFileRepository: CellFileRepository by lazy {
+        CellFileDataSource(dao.cellFileDao)
+    }
+
     public val uploadManager: CellUploadManager by lazy {
         CellUploadManagerImpl(
             repository = cellsRepository,
@@ -414,18 +420,18 @@ public class CellsScope(
     }
 
     public val saveOfflineFile: SaveOfflineFileUseCase by lazy {
-        SaveOfflineFileUseCaseImpl(dao.cellFileDao)
+        SaveOfflineFileUseCaseImpl(cellFileRepository)
     }
 
     public val deleteOfflineFile: DeleteOfflineFileUseCase by lazy {
-        DeleteOfflineFileUseCaseImpl(dao.cellFileDao)
+        DeleteOfflineFileUseCaseImpl(cellFileRepository)
     }
 
     public val observeOfflineFiles: ObserveOfflineFilesUseCase by lazy {
-        ObserveOfflineFilesUseCaseImpl(dao.cellFileDao)
+        ObserveOfflineFilesUseCaseImpl(cellFileRepository)
     }
 
     public val getOfflineFile: GetOfflineFileUseCase by lazy {
-        GetOfflineFileUseCaseImpl(dao.cellFileDao)
+        GetOfflineFileUseCaseImpl(cellFileRepository)
     }
 }
