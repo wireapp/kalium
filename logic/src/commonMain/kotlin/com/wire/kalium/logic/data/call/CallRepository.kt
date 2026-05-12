@@ -132,7 +132,9 @@ internal interface CallRepository {
     suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>)
     fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: Map<UserId, List<String>>)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
-    suspend fun updateOpenCallsToClosedStatus()
+    suspend fun updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupDoneAfterwards: Boolean = true)
+    fun setStaleOpenCallsCleanupDone()
+    fun observeStaleOpenCallsCleanupDone(): Flow<Boolean>
     suspend fun leavePreviouslyJoinedMlsConferences()
     suspend fun persistMissedCall(conversationId: ConversationId)
     suspend fun joinMlsConference(
@@ -186,6 +188,7 @@ internal class CallDataSource(
     private val _recentlyEndedCallFlow = MutableSharedFlow<RecentlyEndedCallMetadata>(
         extraBufferCapacity = 1
     )
+    private val staleOpenCallsCleanupDoneFlow = MutableStateFlow(false)
 
     override suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata) {
         _recentlyEndedCallFlow.emit(recentlyEndedCallMetadata)
@@ -543,10 +546,21 @@ internal class CallDataSource(
             )
         )
 
-    override suspend fun updateOpenCallsToClosedStatus() {
+    override suspend fun updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupDoneAfterwards: Boolean) {
         leavePreviouslyJoinedMlsConferences()
+        val count = callDAO.observeEstablishedCalls().first().size
+        callingLogger.i("Updating open calls to closed status if there are any $count")
         callDAO.updateOpenCallsToClosedStatus()
+        if (setStaleOpenCallsCleanupDoneAfterwards) {
+            setStaleOpenCallsCleanupDone()
+        }
     }
+
+    override fun setStaleOpenCallsCleanupDone() {
+        staleOpenCallsCleanupDoneFlow.value = true
+        callingLogger.i("Stale open calls cleanup is done")
+    }
+    override fun observeStaleOpenCallsCleanupDone(): Flow<Boolean> = staleOpenCallsCleanupDoneFlow
 
     override suspend fun establishedCallConversationId(): ConversationId? =
         callDAO
