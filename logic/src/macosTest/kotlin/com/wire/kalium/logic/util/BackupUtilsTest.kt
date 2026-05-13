@@ -180,6 +180,35 @@ class BackupUtilsTest {
         }
     }
 
+    @Test
+    fun givenLargeFile_whenRoundTripping_thenContentMatchesAndSystemUnzipAccepts() {
+        val largeContent = ByteArray(LARGE_TEST_SIZE_BYTES) { (it % 251).toByte() }
+        val zipPath = testDir / "large.zip"
+
+        val createResult = createCompressedFile(
+            listOf(largeContent.toSource() to "large.bin"),
+            fileSystem.sink(zipPath)
+        )
+        assertIs<Either.Right<Long>>(createResult)
+
+        val entries = listZipEntries(zipPath)
+        assertEquals(listOf("large.bin"), entries)
+
+        val outputDir = testDir / "large-extracted"
+        val extractResult = extractCompressedFile(
+            inputSource = fileSystem.source(zipPath),
+            outputRootPath = outputDir,
+            param = ExtractFilesParam.All,
+            fileSystem = testKaliumFileSystem,
+        )
+        assertIs<Either.Right<Long>>(extractResult)
+        assertEquals(LARGE_TEST_SIZE_BYTES.toLong(), extractResult.value)
+
+        val extractedBytes = fileSystem.source(outputDir / "large.bin").buffer().use { it.readByteArray() }
+        assertEquals(LARGE_TEST_SIZE_BYTES, extractedBytes.size)
+        assertTrue(extractedBytes.contentEquals(largeContent), "Large round-trip content mismatch")
+    }
+
     // endregion
 
     // region checkIfCompressedFileContainsFileTypes
@@ -225,6 +254,12 @@ class BackupUtilsTest {
     private fun String.toSource(): Source {
         val buffer = Buffer()
         buffer.writeUtf8(this)
+        return buffer
+    }
+
+    private fun ByteArray.toSource(): Source {
+        val buffer = Buffer()
+        buffer.write(this)
         return buffer
     }
 
@@ -275,4 +310,8 @@ class BackupUtilsTest {
     }
 
     // endregion
+
+    private companion object {
+        const val LARGE_TEST_SIZE_BYTES = 5 * 1024 * 1024
+    }
 }

@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 @file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
-@file:Suppress("TooManyFunctions")
+@file:Suppress("TooManyFunctions", "LongMethod", "NestedBlockDepth", "ComplexMethod", "ReturnCount")
 
 package com.wire.kalium.logic.util
 
@@ -37,6 +37,7 @@ import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.sizeOf
 import kotlinx.cinterop.usePinned
 import okio.Buffer
+import okio.BufferedSink
 import okio.BufferedSource
 import okio.Path
 import okio.Sink
@@ -54,7 +55,6 @@ import platform.zlib.Z_OK
 import platform.zlib.Z_STREAM_END
 import platform.zlib.crc32
 import platform.zlib.deflate
-import platform.zlib.deflateBound
 import platform.zlib.deflateEnd
 import platform.zlib.deflateInit2
 import platform.zlib.inflate
@@ -66,56 +66,81 @@ import platform.zlib.z_stream
 internal actual fun createCompressedFile(files: List<Pair<Source, String>>, outputSink: Sink): Either<CoreFailure, Long> = try {
     require(files.isNotEmpty()) { "Cannot create a compressed backup without files" }
 
-    val entries = files.map { (source, fileName) ->
-        val sanitizedFileName = sanitizeFileName(fileName)
-        val content = source.buffer().use { it.readByteArray() }
-        val compressedContent = deflateRaw(content)
-        ZipEntryData(
-            name = sanitizedFileName,
-            content = content,
-            compressedContent = compressedContent,
-            crc = crc32(content),
+    var bytesWritten = 0L
+    outputSink.buffer().use { sink ->
+        val centralDirectoryEntries = mutableListOf<ZipEntryMetadata>()
+
+        files.forEach { (source, fileName) ->
+            val sanitizedFileName = sanitizeFileName(fileName)
+            val localHeaderOffset = bytesWritten
+            bytesWritten += sink.writeStreamingLocalHeader(sanitizedFileName)
+            val deflateResult = source.buffer().use { input -> streamDeflate(input, sink) }
+            bytesWritten += deflateResult.compressedSize
+            bytesWritten += sink.writeDataDescriptor(
+                crc = deflateResult.crc,
+                compressedSize = deflateResult.compressedSize,
+                uncompressedSize = deflateResult.uncompressedSize,
+            )
+            centralDirectoryEntries += ZipEntryMetadata(
+                name = sanitizedFileName,
+                compressionMethod = COMPRESSION_METHOD_DEFLATE,
+                crc = deflateResult.crc,
+                compressedSize = deflateResult.compressedSize.toZip32Int("compressed size"),
+                uncompressedSize = deflateResult.uncompressedSize.toZip32Int("uncompressed size"),
+                localHeaderOffset = localHeaderOffset.toZip32Int("local header offset"),
+            )
+        }
+
+        val centralDirectoryOffset = bytesWritten
+        var centralDirectorySize = 0L
+        centralDirectoryEntries.forEach { entry ->
+            centralDirectorySize += sink.writeCentralDirectoryHeader(entry)
+        }
+        bytesWritten += centralDirectorySize
+        bytesWritten += sink.writeEndOfCentralDirectory(
+            entryCount = centralDirectoryEntries.size,
+            centralDirectorySize = centralDirectorySize.toZip32Int("central directory size"),
+            centralDirectoryOffset = centralDirectoryOffset.toZip32Int("central directory offset"),
         )
     }
-
-    val zipData = buildZip(entries)
-    outputSink.buffer().use { sink ->
-        sink.write(zipData)
-    }
-    Either.Right(zipData.size.toLong())
+    Either.Right(bytesWritten)
 } catch (e: Exception) {
     Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to compress the provided files", e)))
 }
 
-@Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
+@Suppress("TooGenericExceptionCaught")
 internal actual fun extractCompressedFile(
     inputSource: Source,
     outputRootPath: Path,
     param: ExtractFilesParam,
     fileSystem: KaliumFileSystem
 ): Either<CoreFailure, Long> = try {
-    val archive = ZipArchive(inputSource.buffer().use { it.readByteArray() })
-    val entries = archive.entries()
-    val targetEntries = when (param) {
-        ExtractFilesParam.All -> entries
-        is ExtractFilesParam.Only -> entries.filter { it.name in param.files }
-    }
-
-    if (targetEntries.any { isInvalidEntryPathDestination(it.name) }) {
-        throw IllegalArgumentException("Archive contains invalid entry path")
-    }
-
     fileSystem.createDirectories(outputRootPath)
     var totalExtractedFilesSize = 0L
-    targetEntries.forEach { entry ->
-        val outputPath = (outputRootPath / entry.name).normalized()
-        val data = archive.readEntry(entry)
-        fileSystem.sink(outputPath).buffer().use { sink ->
-            sink.write(data)
-        }
-        totalExtractedFilesSize += data.size
-    }
 
+    inputSource.buffer().use { source ->
+        val reader = StreamingZipReader(source)
+        while (true) {
+            val signature = reader.readIntLe()
+            if (signature == CENTRAL_DIRECTORY_HEADER_SIGNATURE) break
+            require(signature == LOCAL_FILE_HEADER_SIGNATURE) { "Unexpected signature in ZIP stream" }
+            val header = reader.readLocalFileHeader()
+            require(!isInvalidEntryPathDestination(header.name)) { "Archive contains invalid entry path" }
+            val shouldExtract = when (param) {
+                ExtractFilesParam.All -> true
+                is ExtractFilesParam.Only -> header.name in param.files
+            }
+            if (shouldExtract) {
+                val outputPath = (outputRootPath / header.name).normalized()
+                val extracted = fileSystem.sink(outputPath).buffer().use { entrySink ->
+                    extractEntry(reader, entrySink, header)
+                }
+                totalExtractedFilesSize += extracted
+            } else {
+                extractEntry(reader, output = null, header = header)
+            }
+        }
+    }
     Either.Right(totalExtractedFilesSize)
 } catch (e: Exception) {
     kaliumLogger.e("Error extracting compressed backup file", e)
@@ -127,30 +152,30 @@ internal actual fun checkIfCompressedFileContainsFileTypes(
     compressedFilePath: Path,
     fileSystem: KaliumFileSystem,
     expectedFileExtensions: List<String>
-): Either<CoreFailure, Map<String, Boolean>> =
-    try {
-        if (!fileSystem.exists(compressedFilePath)) {
-            return Either.Left(StorageFailure.DataNotFound)
-        }
-
-        val archive = ZipArchive(fileSystem.source(compressedFilePath).buffer().use { it.readByteArray() })
-        val foundExtensions = archive.entries().map { it.name.substringAfterLast('.', "") }.toSet()
-        Either.Right(expectedFileExtensions.associateWith { it in foundExtensions })
-    } catch (e: Exception) {
-        Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to validate the provided compressed file", e)))
+): Either<CoreFailure, Map<String, Boolean>> = try {
+    if (!fileSystem.exists(compressedFilePath)) {
+        return Either.Left(StorageFailure.DataNotFound)
     }
+    val foundExtensions = mutableSetOf<String>()
+    fileSystem.source(compressedFilePath).buffer().use { source ->
+        val reader = StreamingZipReader(source)
+        while (true) {
+            val signature = reader.readIntLe()
+            if (signature != LOCAL_FILE_HEADER_SIGNATURE) break
+            val header = reader.readLocalFileHeader()
+            foundExtensions += header.name.substringAfterLast('.', "")
+            extractEntry(reader, output = null, header = header)
+        }
+    }
+    Either.Right(expectedFileExtensions.associateWith { it in foundExtensions })
+} catch (e: Exception) {
+    Either.Left(StorageFailure.Generic(RuntimeException("There was an error trying to validate the provided compressed file", e)))
+}
 
 internal actual inline fun <reified T> decodeBufferSequence(bufferedSource: BufferedSource): Sequence<T> {
     val jsonString = bufferedSource.readUtf8()
     return KtxWebSerializer.json.decodeFromString<List<T>>(jsonString).asSequence()
 }
-
-private data class ZipEntryData(
-    val name: String,
-    val content: ByteArray,
-    val compressedContent: ByteArray,
-    val crc: UInt,
-)
 
 private data class ZipEntryMetadata(
     val name: String,
@@ -161,68 +186,77 @@ private data class ZipEntryMetadata(
     val localHeaderOffset: Int,
 )
 
-private fun buildZip(entries: List<ZipEntryData>): ByteArray {
-    val output = Buffer()
-    val centralDirectory = Buffer()
-    val centralDirectoryEntries = mutableListOf<Pair<ZipEntryData, Int>>()
-
-    entries.forEach { entry ->
-        val localHeaderOffset = output.size.toInt()
-        centralDirectoryEntries += entry to localHeaderOffset
-        output.writeLocalHeader(entry)
-        output.write(entry.compressedContent)
-    }
-
-    val centralDirectoryOffset = output.size.toInt()
-    centralDirectoryEntries.forEach { (entry, localHeaderOffset) ->
-        centralDirectory.writeCentralDirectoryHeader(entry, localHeaderOffset)
-    }
-    val centralDirectorySize = centralDirectory.size.toInt()
-    output.writeAll(centralDirectory)
-    output.writeEndOfCentralDirectory(entries.size, centralDirectorySize, centralDirectoryOffset)
-
-    return output.readByteArray()
+private data class LocalFileHeader(
+    val generalPurposeFlag: Int,
+    val compressionMethod: Int,
+    val crc: UInt,
+    val compressedSize: Int,
+    val uncompressedSize: Int,
+    val name: String,
+) {
+    val hasDataDescriptor: Boolean
+        get() = (generalPurposeFlag and GENERAL_PURPOSE_DATA_DESCRIPTOR_FLAG) != 0
 }
 
-private fun Buffer.writeLocalHeader(entry: ZipEntryData) {
-    val fileName = entry.name.encodeToByteArray()
+private data class DeflateResult(
+    val crc: UInt,
+    val compressedSize: Long,
+    val uncompressedSize: Long,
+)
+
+private fun BufferedSink.writeStreamingLocalHeader(name: String): Long {
+    val fileName = name.encodeToByteArray()
     writeIntLe(LOCAL_FILE_HEADER_SIGNATURE)
     writeShortLe(ZIP_VERSION_NEEDED)
-    writeShortLe(GENERAL_PURPOSE_UTF8_FLAG)
+    writeShortLe(GENERAL_PURPOSE_UTF8_FLAG or GENERAL_PURPOSE_DATA_DESCRIPTOR_FLAG)
     writeShortLe(COMPRESSION_METHOD_DEFLATE)
     writeShortLe(0)
     writeShortLe(0)
-    writeIntLe(entry.crc.toInt())
-    writeIntLe(entry.compressedContent.size)
-    writeIntLe(entry.content.size)
+    writeIntLe(0)
+    writeIntLe(0)
+    writeIntLe(0)
     writeShortLe(fileName.size)
     writeShortLe(0)
     write(fileName)
+    return (LOCAL_FILE_HEADER_FIXED_SIZE + fileName.size).toLong()
 }
 
-private fun Buffer.writeCentralDirectoryHeader(entry: ZipEntryData, localHeaderOffset: Int) {
+private fun BufferedSink.writeDataDescriptor(crc: UInt, compressedSize: Long, uncompressedSize: Long): Long {
+    writeIntLe(DATA_DESCRIPTOR_SIGNATURE)
+    writeIntLe(crc.toInt())
+    writeIntLe(compressedSize.toZip32Int("compressed size"))
+    writeIntLe(uncompressedSize.toZip32Int("uncompressed size"))
+    return DATA_DESCRIPTOR_SIZE.toLong()
+}
+
+private fun BufferedSink.writeCentralDirectoryHeader(entry: ZipEntryMetadata): Long {
     val fileName = entry.name.encodeToByteArray()
     writeIntLe(CENTRAL_DIRECTORY_HEADER_SIGNATURE)
     writeShortLe(ZIP_VERSION_MADE_BY)
     writeShortLe(ZIP_VERSION_NEEDED)
-    writeShortLe(GENERAL_PURPOSE_UTF8_FLAG)
-    writeShortLe(COMPRESSION_METHOD_DEFLATE)
+    writeShortLe(GENERAL_PURPOSE_UTF8_FLAG or GENERAL_PURPOSE_DATA_DESCRIPTOR_FLAG)
+    writeShortLe(entry.compressionMethod)
     writeShortLe(0)
     writeShortLe(0)
     writeIntLe(entry.crc.toInt())
-    writeIntLe(entry.compressedContent.size)
-    writeIntLe(entry.content.size)
+    writeIntLe(entry.compressedSize)
+    writeIntLe(entry.uncompressedSize)
     writeShortLe(fileName.size)
     writeShortLe(0)
     writeShortLe(0)
     writeShortLe(0)
     writeShortLe(0)
     writeIntLe(0)
-    writeIntLe(localHeaderOffset)
+    writeIntLe(entry.localHeaderOffset)
     write(fileName)
+    return (CENTRAL_DIRECTORY_FIXED_SIZE + fileName.size).toLong()
 }
 
-private fun Buffer.writeEndOfCentralDirectory(entryCount: Int, centralDirectorySize: Int, centralDirectoryOffset: Int) {
+private fun BufferedSink.writeEndOfCentralDirectory(
+    entryCount: Int,
+    centralDirectorySize: Int,
+    centralDirectoryOffset: Int,
+): Long {
     writeIntLe(END_OF_CENTRAL_DIRECTORY_SIGNATURE)
     writeShortLe(0)
     writeShortLe(0)
@@ -231,78 +265,177 @@ private fun Buffer.writeEndOfCentralDirectory(entryCount: Int, centralDirectoryS
     writeIntLe(centralDirectorySize)
     writeIntLe(centralDirectoryOffset)
     writeShortLe(0)
+    return EOCD_FIXED_SIZE.toLong()
 }
 
-private class ZipArchive(private val data: ByteArray) {
+private class StreamingZipReader(private val source: BufferedSource) {
+    private val head = Buffer()
 
-    fun entries(): List<ZipEntryMetadata> {
-        val endOfCentralDirectoryOffset = findEndOfCentralDirectory()
-        val entryCount = data.readUInt16Le(endOfCentralDirectoryOffset + EOCD_ENTRY_COUNT_OFFSET)
-        val centralDirectoryOffset = data.readInt32Le(endOfCentralDirectoryOffset + EOCD_CENTRAL_DIRECTORY_OFFSET)
-
-        val entries = mutableListOf<ZipEntryMetadata>()
-        var offset = centralDirectoryOffset
-        repeat(entryCount) {
-            require(data.readInt32Le(offset) == CENTRAL_DIRECTORY_HEADER_SIGNATURE) { "Invalid central directory header" }
-            val compressionMethod = data.readUInt16Le(offset + CD_COMPRESSION_METHOD_OFFSET)
-            val crc = data.readUInt32Le(offset + CD_CRC_OFFSET)
-            val compressedSize = data.readInt32Le(offset + CD_COMPRESSED_SIZE_OFFSET)
-            val uncompressedSize = data.readInt32Le(offset + CD_UNCOMPRESSED_SIZE_OFFSET)
-            val fileNameLength = data.readUInt16Le(offset + CD_FILE_NAME_LENGTH_OFFSET)
-            val extraFieldLength = data.readUInt16Le(offset + CD_EXTRA_FIELD_LENGTH_OFFSET)
-            val fileCommentLength = data.readUInt16Le(offset + CD_FILE_COMMENT_LENGTH_OFFSET)
-            val localHeaderOffset = data.readInt32Le(offset + CD_LOCAL_HEADER_OFFSET)
-            val fileNameOffset = offset + CENTRAL_DIRECTORY_FIXED_SIZE
-            val name = data.decodeToString(fileNameOffset, fileNameOffset + fileNameLength)
-
-            entries += ZipEntryMetadata(
-                name = name,
-                compressionMethod = compressionMethod,
-                crc = crc,
-                compressedSize = compressedSize,
-                uncompressedSize = uncompressedSize,
-                localHeaderOffset = localHeaderOffset,
-            )
-
-            offset = fileNameOffset + fileNameLength + extraFieldLength + fileCommentLength
+    private fun ensureAvailable(byteCount: Int) {
+        while (head.size < byteCount.toLong()) {
+            val needed = byteCount.toLong() - head.size
+            val read = source.read(head, needed)
+            if (read == -1L) throw IllegalStateException("Unexpected end of ZIP stream")
         }
-        return entries
     }
 
-    fun readEntry(entry: ZipEntryMetadata): ByteArray {
-        val offset = entry.localHeaderOffset
-        require(data.readInt32Le(offset) == LOCAL_FILE_HEADER_SIGNATURE) { "Invalid local file header" }
-        val fileNameLength = data.readUInt16Le(offset + LFH_FILE_NAME_LENGTH_OFFSET)
-        val extraFieldLength = data.readUInt16Le(offset + LFH_EXTRA_FIELD_LENGTH_OFFSET)
-        val compressedDataOffset = offset + LOCAL_FILE_HEADER_FIXED_SIZE + fileNameLength + extraFieldLength
-        val compressedData = data.copyOfRange(compressedDataOffset, compressedDataOffset + entry.compressedSize)
-        val uncompressedData = when (entry.compressionMethod) {
-            COMPRESSION_METHOD_STORED -> compressedData
-            COMPRESSION_METHOD_DEFLATE -> inflateRaw(compressedData, entry.uncompressedSize)
-            else -> throw IllegalArgumentException("Unsupported ZIP compression method: ${entry.compressionMethod}")
-        }
-        require(crc32(uncompressedData) == entry.crc) { "Invalid CRC for ZIP entry ${entry.name}" }
-        return uncompressedData
+    fun readIntLe(): Int {
+        ensureAvailable(Int.SIZE_BYTES)
+        return head.readIntLe()
     }
 
-    private fun findEndOfCentralDirectory(): Int {
-        val minOffset = (data.size - MAX_EOCD_SEARCH).coerceAtLeast(0)
-        for (offset in data.size - EOCD_FIXED_SIZE downTo minOffset) {
-            if (data.readInt32Le(offset) == END_OF_CENTRAL_DIRECTORY_SIGNATURE) {
-                return offset
+    fun readShortLe(): Int {
+        ensureAvailable(Short.SIZE_BYTES)
+        return head.readShortLe().toInt() and SHORT_MASK
+    }
+
+    fun readByteArray(byteCount: Int): ByteArray {
+        ensureAvailable(byteCount)
+        return head.readByteArray(byteCount.toLong())
+    }
+
+    fun skip(byteCount: Int) {
+        ensureAvailable(byteCount)
+        head.skip(byteCount.toLong())
+    }
+
+    fun fillInto(out: ByteArray, offset: Int, length: Int): Int {
+        if (head.size > 0L) {
+            return head.read(out, offset, minOf(length.toLong(), head.size).toInt())
+        }
+        return source.read(out, offset, length)
+    }
+
+    fun unread(data: ByteArray, offset: Int, length: Int) {
+        if (length <= 0) return
+        if (head.size == 0L) {
+            head.write(data, offset, length)
+            return
+        }
+        val existing = head.readByteArray()
+        head.write(data, offset, length)
+        head.write(existing)
+    }
+}
+
+private fun StreamingZipReader.readLocalFileHeader(): LocalFileHeader {
+    readShortLe()
+    val generalPurposeFlag = readShortLe()
+    val compressionMethod = readShortLe()
+    readShortLe()
+    readShortLe()
+    val crc = readIntLe().toUInt()
+    val compressedSize = readIntLe()
+    val uncompressedSize = readIntLe()
+    val fileNameLength = readShortLe()
+    val extraFieldLength = readShortLe()
+    val nameBytes = readByteArray(fileNameLength)
+    if (extraFieldLength > 0) skip(extraFieldLength)
+    return LocalFileHeader(
+        generalPurposeFlag = generalPurposeFlag,
+        compressionMethod = compressionMethod,
+        crc = crc,
+        compressedSize = compressedSize,
+        uncompressedSize = uncompressedSize,
+        name = nameBytes.decodeToString(),
+    )
+}
+
+private fun extractEntry(reader: StreamingZipReader, output: BufferedSink?, header: LocalFileHeader): Long =
+    when (header.compressionMethod) {
+        COMPRESSION_METHOD_STORED -> {
+            require(!header.hasDataDescriptor) { "STORED compression with data descriptor is not supported" }
+            copyStored(reader, output, header)
+        }
+        COMPRESSION_METHOD_DEFLATE -> inflateEntry(reader, output, header)
+        else -> throw IllegalArgumentException("Unsupported ZIP compression method: ${header.compressionMethod}")
+    }
+
+private fun copyStored(reader: StreamingZipReader, output: BufferedSink?, header: LocalFileHeader): Long {
+    val buf = ByteArray(STREAMING_BUFFER_SIZE)
+    var remaining = header.compressedSize.toLong()
+    var crc = 0u
+    while (remaining > 0) {
+        val toRead = minOf(remaining, buf.size.toLong()).toInt()
+        val n = reader.fillInto(buf, 0, toRead)
+        if (n <= 0) throw IllegalStateException("Unexpected end of stream while reading STORED entry")
+        crc = crc32Update(crc, buf, 0, n)
+        output?.write(buf, 0, n)
+        remaining -= n
+    }
+    require(crc == header.crc) { "Invalid CRC for ZIP entry ${header.name}" }
+    return header.uncompressedSize.toLong()
+}
+
+private fun inflateEntry(reader: StreamingZipReader, output: BufferedSink?, header: LocalFileHeader): Long = memScoped {
+    val stream = alloc<z_stream>()
+    memset(stream.ptr, 0, sizeOf<z_stream>().convert())
+    val initResult = inflateInit2(stream.ptr, -MAX_WBITS)
+    check(initResult == Z_OK) { "Failed to initialize zlib inflate: $initResult" }
+
+    val inputBuffer = ByteArray(STREAMING_BUFFER_SIZE)
+    val outputBuffer = ByteArray(STREAMING_BUFFER_SIZE)
+    var crc = 0u
+    var uncompressedSize = 0L
+
+    try {
+        outputBuffer.usePinned { outputPinned ->
+            val outPtr: CPointer<UByteVar> = outputPinned.addressOf(0).reinterpret()
+            var done = false
+            while (!done) {
+                val inputLen = reader.fillInto(inputBuffer, 0, inputBuffer.size)
+                if (inputLen <= 0) throw IllegalStateException("Unexpected end of compressed stream for ${header.name}")
+
+                inputBuffer.usePinned { inputPinned ->
+                    stream.next_in = inputPinned.addressOf(0).reinterpret()
+                    stream.avail_in = inputLen.convert()
+
+                    while (stream.avail_in.toInt() > 0 && !done) {
+                        stream.next_out = outPtr
+                        stream.avail_out = outputBuffer.size.convert()
+
+                        val result = inflate(stream.ptr, Z_NO_FLUSH)
+                        check(result == Z_OK || result == Z_STREAM_END) {
+                            "Failed to inflate ZIP entry ${header.name}: $result"
+                        }
+
+                        val produced = outputBuffer.size - stream.avail_out.toInt()
+                        if (produced > 0) {
+                            uncompressedSize += produced
+                            crc = crc32Update(crc, outputBuffer, 0, produced)
+                            output?.write(outputBuffer, 0, produced)
+                        }
+                        if (result == Z_STREAM_END) done = true
+                    }
+                    val unused = stream.avail_in.toInt()
+                    if (done && unused > 0) {
+                        reader.unread(inputBuffer, inputLen - unused, unused)
+                    }
+                }
             }
         }
-        throw IllegalArgumentException("ZIP end of central directory not found")
+
+        if (header.hasDataDescriptor) {
+            val first = reader.readIntLe()
+            val descriptorCrc: UInt = if (first == DATA_DESCRIPTOR_SIGNATURE) {
+                reader.readIntLe().toUInt()
+            } else {
+                first.toUInt()
+            }
+            reader.readIntLe()
+            reader.readIntLe()
+            require(crc == descriptorCrc) { "Invalid CRC for ZIP entry ${header.name}" }
+        } else {
+            require(crc == header.crc) { "Invalid CRC for ZIP entry ${header.name}" }
+        }
+
+        uncompressedSize
+    } finally {
+        inflateEnd(stream.ptr)
     }
 }
 
-private fun sanitizeFileName(fileName: String): String {
-    require(fileName.isNotBlank()) { "File name cannot be blank" }
-    require(!isInvalidEntryPathDestination(fileName)) { "Invalid file name: $fileName" }
-    return fileName.substringAfterLast('/')
-}
-
-private fun deflateRaw(input: ByteArray): ByteArray = memScoped {
+private fun streamDeflate(input: BufferedSource, output: BufferedSink): DeflateResult = memScoped {
     val stream = alloc<z_stream>()
     memset(stream.ptr, 0, sizeOf<z_stream>().convert())
     val initResult = deflateInit2(
@@ -315,103 +448,107 @@ private fun deflateRaw(input: ByteArray): ByteArray = memScoped {
     )
     check(initResult == Z_OK) { "Failed to initialize zlib deflate: $initResult" }
 
-    try {
-        val outputSize = deflateBound(stream.ptr, input.size.convert()).toInt().coerceAtLeast(MIN_ZLIB_OUTPUT_BUFFER_SIZE)
-        val output = ByteArray(outputSize)
-        input.usePinned { inputPinned ->
-            output.usePinned { outputPinned ->
-                stream.next_in = if (input.isEmpty()) null else inputPinned.addressOf(0).reinterpret()
-                stream.avail_in = input.size.convert()
-                stream.next_out = outputPinned.addressOf(0).reinterpret()
-                stream.avail_out = output.size.convert()
+    val inputBuffer = ByteArray(STREAMING_BUFFER_SIZE)
+    val outputBuffer = ByteArray(STREAMING_BUFFER_SIZE)
+    var crc = 0u
+    var compressedSize = 0L
+    var uncompressedSize = 0L
 
-                val result = deflate(stream.ptr, Z_FINISH)
-                check(result == Z_STREAM_END) { "Failed to deflate data: $result" }
-                output.copyOf(stream.total_out.toInt())
+    try {
+        outputBuffer.usePinned { outputPinned ->
+            val outPtr: CPointer<UByteVar> = outputPinned.addressOf(0).reinterpret()
+
+            var inputLen = input.read(inputBuffer, 0, inputBuffer.size)
+            while (inputLen != -1) {
+                if (inputLen > 0) {
+                    uncompressedSize += inputLen
+                    crc = crc32Update(crc, inputBuffer, 0, inputLen)
+
+                    inputBuffer.usePinned { inputPinned ->
+                        stream.next_in = inputPinned.addressOf(0).reinterpret()
+                        stream.avail_in = inputLen.convert()
+
+                        while (stream.avail_in.toInt() > 0) {
+                            stream.next_out = outPtr
+                            stream.avail_out = outputBuffer.size.convert()
+
+                            val result = deflate(stream.ptr, Z_NO_FLUSH)
+                            check(result == Z_OK) { "Failed to deflate data: $result" }
+
+                            val produced = outputBuffer.size - stream.avail_out.toInt()
+                            if (produced > 0) {
+                                output.write(outputBuffer, 0, produced)
+                                compressedSize += produced
+                            }
+                        }
+                    }
+                }
+                inputLen = input.read(inputBuffer, 0, inputBuffer.size)
+            }
+
+            var finishResult = Z_OK
+            while (finishResult != Z_STREAM_END) {
+                stream.next_in = null
+                stream.avail_in = 0u.convert()
+                stream.next_out = outPtr
+                stream.avail_out = outputBuffer.size.convert()
+
+                finishResult = deflate(stream.ptr, Z_FINISH)
+                check(finishResult == Z_OK || finishResult == Z_STREAM_END) {
+                    "Failed to finish deflate: $finishResult"
+                }
+
+                val produced = outputBuffer.size - stream.avail_out.toInt()
+                if (produced > 0) {
+                    output.write(outputBuffer, 0, produced)
+                    compressedSize += produced
+                }
             }
         }
+        DeflateResult(crc, compressedSize, uncompressedSize)
     } finally {
         deflateEnd(stream.ptr)
     }
 }
 
-private fun inflateRaw(input: ByteArray, expectedSize: Int): ByteArray = memScoped {
-    val stream = alloc<z_stream>()
-    memset(stream.ptr, 0, sizeOf<z_stream>().convert())
-    val initResult = inflateInit2(stream.ptr, -MAX_WBITS)
-    check(initResult == Z_OK) { "Failed to initialize zlib inflate: $initResult" }
-
-    try {
-        val output = ByteArray(expectedSize)
-        input.usePinned { inputPinned ->
-            output.usePinned { outputPinned ->
-                stream.next_in = if (input.isEmpty()) null else inputPinned.addressOf(0).reinterpret()
-                stream.avail_in = input.size.convert()
-                stream.next_out = if (output.isEmpty()) null else outputPinned.addressOf(0).reinterpret()
-                stream.avail_out = output.size.convert()
-
-                val result = inflate(stream.ptr, Z_NO_FLUSH)
-                check(result == Z_STREAM_END) { "Failed to inflate data: $result" }
-                output.copyOf(stream.total_out.toInt())
-            }
-        }
-    } finally {
-        inflateEnd(stream.ptr)
+private fun crc32Update(prev: UInt, data: ByteArray, offset: Int, length: Int): UInt {
+    if (length == 0) return prev
+    return data.usePinned { pinned ->
+        val ptr: CPointer<UByteVar> = pinned.addressOf(offset).reinterpret()
+        crc32(prev.convert(), ptr, length.convert()).toUInt()
     }
 }
 
-private fun crc32(input: ByteArray): UInt =
-    input.usePinned { pinned ->
-        val dataPointer: CPointer<UByteVar>? = if (input.isEmpty()) null else pinned.addressOf(0).reinterpret()
-        crc32(0u, dataPointer, input.size.convert()).toUInt()
+private fun Long.toZip32Int(fieldName: String): Int {
+    require(this in 0..ZIP32_MAX_VALUE) {
+        "ZIP64 is not supported; $fieldName exceeds ZIP32 limit: $this"
     }
+    return toInt()
+}
 
-private fun ByteArray.readUInt16Le(offset: Int): Int =
-    (this[offset].toInt() and BYTE_MASK) or
-            ((this[offset + BYTE_1].toInt() and BYTE_MASK) shl BITS_PER_BYTE)
-
-private fun ByteArray.readInt32Le(offset: Int): Int =
-    (this[offset].toInt() and BYTE_MASK) or
-            ((this[offset + BYTE_1].toInt() and BYTE_MASK) shl BITS_PER_BYTE) or
-            ((this[offset + BYTE_2].toInt() and BYTE_MASK) shl (BITS_PER_BYTE * BYTE_2)) or
-            ((this[offset + BYTE_3].toInt() and BYTE_MASK) shl (BITS_PER_BYTE * BYTE_3))
-
-private fun ByteArray.readUInt32Le(offset: Int): UInt =
-    readInt32Le(offset).toUInt()
+private fun sanitizeFileName(fileName: String): String {
+    require(fileName.isNotBlank()) { "File name cannot be blank" }
+    require(!isInvalidEntryPathDestination(fileName)) { "Invalid file name: $fileName" }
+    return fileName.substringAfterLast('/')
+}
 
 private const val LOCAL_FILE_HEADER_SIGNATURE = 0x04034b50
 private const val CENTRAL_DIRECTORY_HEADER_SIGNATURE = 0x02014b50
 private const val END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50
+private const val DATA_DESCRIPTOR_SIGNATURE = 0x08074b50
 
 private const val ZIP_VERSION_MADE_BY = 0x0314
 private const val ZIP_VERSION_NEEDED = 20
 private const val GENERAL_PURPOSE_UTF8_FLAG = 0x0800
+private const val GENERAL_PURPOSE_DATA_DESCRIPTOR_FLAG = 0x0008
 private const val COMPRESSION_METHOD_STORED = 0
 private const val COMPRESSION_METHOD_DEFLATE = 8
 private const val ZLIB_MEMORY_LEVEL = 8
-private const val MIN_ZLIB_OUTPUT_BUFFER_SIZE = 64
-private const val BYTE_MASK = 0xff
-private const val BITS_PER_BYTE = 8
-private const val BYTE_1 = 1
-private const val BYTE_2 = 2
-private const val BYTE_3 = 3
+private const val SHORT_MASK = 0xFFFF
+private const val STREAMING_BUFFER_SIZE = 8192
+private const val ZIP32_MAX_VALUE = 0xFFFF_FFFFL
 
 private const val LOCAL_FILE_HEADER_FIXED_SIZE = 30
-private const val LFH_FILE_NAME_LENGTH_OFFSET = 26
-private const val LFH_EXTRA_FIELD_LENGTH_OFFSET = 28
-
 private const val CENTRAL_DIRECTORY_FIXED_SIZE = 46
-private const val CD_COMPRESSION_METHOD_OFFSET = 10
-private const val CD_CRC_OFFSET = 16
-private const val CD_COMPRESSED_SIZE_OFFSET = 20
-private const val CD_UNCOMPRESSED_SIZE_OFFSET = 24
-private const val CD_FILE_NAME_LENGTH_OFFSET = 28
-private const val CD_EXTRA_FIELD_LENGTH_OFFSET = 30
-private const val CD_FILE_COMMENT_LENGTH_OFFSET = 32
-private const val CD_LOCAL_HEADER_OFFSET = 42
-
 private const val EOCD_FIXED_SIZE = 22
-private const val EOCD_ENTRY_COUNT_OFFSET = 10
-private const val EOCD_CENTRAL_DIRECTORY_OFFSET = 16
-private const val MAX_ZIP_COMMENT_SIZE = 65_535
-private const val MAX_EOCD_SEARCH = EOCD_FIXED_SIZE + MAX_ZIP_COMMENT_SIZE
+private const val DATA_DESCRIPTOR_SIZE = 16
