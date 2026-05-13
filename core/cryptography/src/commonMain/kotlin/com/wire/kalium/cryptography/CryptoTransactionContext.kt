@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.cryptography
 
-import io.mockative.Mockable
 import kotlin.time.Duration
 
 /**
@@ -29,13 +28,11 @@ import kotlin.time.Duration
  *
  * It is typically passed into blocks executed by [CryptoTransactionProvider.transaction].
  */
-@Mockable
 interface CryptoTransactionContext {
     val mls: MlsCoreCryptoContext?
     val proteus: ProteusCoreCryptoContext
 }
 
-@Mockable
 @Suppress("TooManyFunctions")
 interface MlsCoreCryptoContext {
 
@@ -301,7 +298,6 @@ interface MlsCoreCryptoContext {
     suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration
 }
 
-@Mockable
 interface ProteusCoreCryptoContext {
     suspend fun <T : Any> decryptMessage(
         sessionId: CryptoSessionId,

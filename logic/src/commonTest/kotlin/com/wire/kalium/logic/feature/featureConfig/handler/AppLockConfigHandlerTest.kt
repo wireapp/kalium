@@ -23,12 +23,14 @@ import com.wire.kalium.logic.configuration.AppLockTeamConfig
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -45,17 +47,17 @@ internal class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.isTeamAppLockEnabled()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
                 eq(false)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -67,17 +69,17 @@ internal class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.isTeamAppLockEnabled()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
                 eq(true)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -89,17 +91,17 @@ internal class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.isTeamAppLockEnabled()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
                 eq(appLockTeamConfigEnabled.isStatusChanged)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -111,22 +113,22 @@ internal class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.isTeamAppLockEnabled()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
                 eq(true)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository: UserConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
         fun arrange() = run {
             this@Arrangement to AppLockConfigHandler(
@@ -136,28 +138,28 @@ internal class AppLockConfigHandlerTest {
 
         init {
             runBlocking {
-                coEvery {
+                everySuspend {
                     userConfigRepository.setAppLockStatus(any(), any(), any())
-                }.returns(Either.Right(Unit))
+                } returns Either.Right(Unit)
             }
         }
 
         suspend fun withUserConfigRepositoryFailure() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.isTeamAppLockEnabled()
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            } returns Either.Left(StorageFailure.DataNotFound)
         }
 
         suspend fun withAppLocked() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.isTeamAppLockEnabled()
-            }.returns(Either.Right(appLockTeamConfigEnabled))
+            } returns Either.Right(appLockTeamConfigEnabled)
         }
 
         suspend fun withAppNotLocked() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.isTeamAppLockEnabled()
-            }.returns(Either.Right(appLockTeamConfigDisabled))
+            } returns Either.Right(appLockTeamConfigDisabled)
         }
     }
 

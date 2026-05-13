@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversationDetails
@@ -31,7 +32,7 @@ import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -42,13 +43,13 @@ import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArran
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.once
-import io.mockative.time
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -120,36 +121,36 @@ class FederationEventReceiverTest {
         // Then
         useCase.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(defederatedConnections.size)) {
             arrangement.connectionRepository.deleteConnection(matches { it.qualifiedConversationId.domain == defederatedDomain })
-        }.wasInvoked(exactly = defederatedConnections.size.time)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.connectionRepository.deleteConnection(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(defederatedOneOnOneConversations.size)) {
             arrangement.userRepository.defederateUser(any())
-        }.wasInvoked(exactly = defederatedOneOnOneConversations.size.time)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.deleteMembersByQualifiedID(eq(defederatedUserIdList.map { it.toDao() }), eq(selfConversation.toDao()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.deleteMembersByQualifiedID(eq(selfUserIdList.map { it.toDao() }), eq(defederatedConversation.toDao()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.memberDAO.deleteMembersByQualifiedID(
                 eq(userIdWithBothDomainsList.map { it.toDao() }),
                 eq(otherConversation.toDao())
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(systemMessageCount)) {
             arrangement.persistMessageUseCase.invoke(any())
-        }.wasInvoked(exactly = systemMessageCount.time)
+        }
     }
 
     @Test
@@ -186,30 +187,30 @@ class FederationEventReceiverTest {
             // Then
             useCase.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.memberDAO.deleteMembersByQualifiedID(
                     eq(defederatedUserIdListTwo.map { it.toDao() }),
                     eq(defederatedConversation.toDao())
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.memberDAO.deleteMembersByQualifiedID(
                     eq(defederatedUserIdList.map { it.toDao() }),
                     eq(defederatedConversationTwo.toDao())
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.memberDAO.deleteMembersByQualifiedID(
                     eq(userIdWithBothDomainsList.map { it.toDao() }),
                     eq(selfConversation.toDao())
                 )
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(systemMessageCount)) {
                 arrangement.persistMessageUseCase.invoke(any())
-            }.wasInvoked(exactly = systemMessageCount.time)
+            }
         }
 
     private companion object {
@@ -231,12 +232,12 @@ class FederationEventReceiverTest {
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl(),
+        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         MemberDAOArrangement by MemberDAOArrangementImpl(),
-        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl()
+        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl()
     {
 
         var dispatcher: KaliumDispatcher = TestKaliumDispatcher
@@ -253,5 +254,6 @@ class FederationEventReceiverTest {
                 dispatchers = dispatcher
             )
         }
+
     }
 }

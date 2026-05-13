@@ -22,8 +22,9 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -34,7 +35,7 @@ import kotlin.test.assertNull
 
 internal class ObserveGuestRoomLinkFeatureFlagUseCaseTest {
 
-    val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+    val userConfigRepository = mock<UserConfigRepository>()
 
     lateinit var observeGuestRoomLinkFeatureFlag: ObserveGuestRoomLinkFeatureFlagUseCase
 
@@ -47,7 +48,7 @@ internal class ObserveGuestRoomLinkFeatureFlagUseCaseTest {
     fun givenRepositoryEmitsFailure_whenRunningUseCase_thenEmitStatusWithNullValues() = runTest {
         every {
             userConfigRepository.observeGuestRoomLinkFeatureFlag()
-        }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
+        } returns flowOf(Either.Left(StorageFailure.DataNotFound))
 
         val result = observeGuestRoomLinkFeatureFlag()
 
@@ -61,7 +62,7 @@ internal class ObserveGuestRoomLinkFeatureFlagUseCaseTest {
 
         every {
             userConfigRepository.observeGuestRoomLinkFeatureFlag()
-        }.returns(flowOf(Either.Right(expectedStatus)))
+        } returns flowOf(Either.Right(expectedStatus))
 
         val result = observeGuestRoomLinkFeatureFlag()
 

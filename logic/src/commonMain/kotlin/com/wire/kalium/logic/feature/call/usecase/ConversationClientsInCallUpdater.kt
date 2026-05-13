@@ -29,14 +29,12 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
 /**
  * This class is responsible for updating conversation clients in a call
  * Usually called when a member is removed from conversation
  */
-@Mockable
 internal interface ConversationClientsInCallUpdater {
     suspend operator fun invoke(conversationId: ConversationId)
 }

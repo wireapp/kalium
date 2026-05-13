@@ -19,14 +19,17 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -44,8 +47,7 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
         useCase(TestConversation.ID)
         advanceUntilIdle()
 
-        coVerify { arrangement.fetchMLSVerificationStatusUseCase(any()) }
-            .wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.fetchMLSVerificationStatusUseCase(any()) }
     }
 
     @Test
@@ -57,8 +59,7 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
         useCase(TestConversation.ID)
         advanceUntilIdle()
 
-        coVerify { arrangement.fetchMLSVerificationStatusUseCase(any()) }
-            .wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.fetchMLSVerificationStatusUseCase(any()) }
     }
 
     @Test
@@ -71,24 +72,27 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
         useCase(TestConversation.ID)
         advanceUntilIdle()
 
-        coVerify { arrangement.fetchMLSVerificationStatusUseCase(eq(protocolInfo.groupId)) }
-            .wasInvoked()
+        verifySuspend { arrangement.fetchMLSVerificationStatusUseCase(eq(protocolInfo.groupId)) }
     }
 
     private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : FetchMLSVerificationStatusArrangement by FetchMLSVerificationStatusArrangementImpl(),
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+    ) {
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val fetchMLSVerificationStatusUseCase = mock<FetchMLSVerificationStatusUseCase>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = let {
             block()
-            mockFetchMLSVerificationStatus()
             this to FetchConversationMLSVerificationStatusUseCaseImpl(
                 conversationRepository = conversationRepository,
                 fetchMLSVerificationStatusUseCase = fetchMLSVerificationStatusUseCase
             )
+        }
+
+        suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>) {
+            everySuspend { conversationRepository.getConversationById(any()) } returns result
         }
     }
 }

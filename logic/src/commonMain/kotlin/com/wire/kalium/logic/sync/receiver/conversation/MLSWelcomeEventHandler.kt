@@ -49,11 +49,9 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlin.io.encoding.Base64
 
-@Mockable
 internal interface MLSWelcomeEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit>
 }

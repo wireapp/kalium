@@ -23,11 +23,13 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestCall
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -35,9 +37,9 @@ import kotlin.test.Test
 
 class UpdateConversationClientsForCurrentCallUseCaseTest {
 
-        private val callRepository = mock(CallRepository::class)
+        private val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
-        private val conversationClientsInCallUpdater = mock(ConversationClientsInCallUpdater::class)
+        private val conversationClientsInCallUpdater = mock<ConversationClientsInCallUpdater>(mode = MockMode.autoUnit)
 
     private lateinit var updateConversationClientsForCurrentCall: UpdateConversationClientsForCurrentCallUseCase
 
@@ -51,35 +53,35 @@ class UpdateConversationClientsForCurrentCallUseCaseTest {
 
     @Test
     fun givenNoOngoingCall_whenUseCaseIsInvoked_thenNothingToDo() = runTest {
-        coEvery {
+        everySuspend {
             callRepository.establishedCallsFlow()
-        }.returns(flowOf(listOf()))
+        } returns (flowOf(listOf()))
 
         updateConversationClientsForCurrentCall(CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             callRepository.establishedCallsFlow()
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             conversationClientsInCallUpdater.invoke(eq(CONVERSATION_ID))
-        }.wasNotInvoked()
+        }
     }
 
     @Test
     fun givenAnOngoingCall_whenUseCaseIsInvoked_thenUpdateClients() = runTest {
-        coEvery {
+        everySuspend {
             callRepository.establishedCallsFlow()
-        }.returns(flowOf(listOf(call)))
+        } returns (flowOf(listOf(call)))
 
         updateConversationClientsForCurrentCall(CONVERSATION_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             callRepository.establishedCallsFlow()
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend {
             conversationClientsInCallUpdater.invoke(eq(CONVERSATION_ID))
-        }.wasInvoked()
+        }
     }
 
     companion object {

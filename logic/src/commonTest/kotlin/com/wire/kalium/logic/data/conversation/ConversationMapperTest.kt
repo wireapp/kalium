@@ -46,9 +46,11 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
-import io.mockative.any
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,13 +61,13 @@ import kotlin.test.assertTrue
 
 internal class ConversationMapperTest {
 
-    val protocolInfoMapper = mock(ProtocolInfoMapper::class)
-    val conversationStatusMapper = mock(ConversationStatusMapper::class)
-    val userAvailabilityStatusMapper = mock(AvailabilityStatusMapper::class)
-    val domainUserTypeMapper = mock(DomainUserTypeMapper::class)
-    val connectionStatusMapper = mock(ConnectionStatusMapper::class)
-    val conversationMemberMapper = mock(ConversationRoleMapper::class)
-    val messageMapper = mock(MessageMapper::class)
+    val protocolInfoMapper = mock<ProtocolInfoMapper>(mode = MockMode.autoUnit)
+    val conversationStatusMapper = mock<ConversationStatusMapper>(mode = MockMode.autoUnit)
+    val userAvailabilityStatusMapper = mock<AvailabilityStatusMapper>(mode = MockMode.autoUnit)
+    val domainUserTypeMapper = mock<DomainUserTypeMapper>(mode = MockMode.autoUnit)
+    val connectionStatusMapper = mock<ConnectionStatusMapper>(mode = MockMode.autoUnit)
+    val conversationMemberMapper = mock<ConversationRoleMapper>(mode = MockMode.autoUnit)
+    val messageMapper = mock<MessageMapper>(mode = MockMode.autoUnit)
 
     private lateinit var conversationMapper: ConversationMapper
 

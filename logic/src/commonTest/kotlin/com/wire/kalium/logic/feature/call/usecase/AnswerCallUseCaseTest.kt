@@ -27,21 +27,23 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class AnswerCallUseCaseTest {
 
-    private val observeOngoingAndIncomingCalls = mock(ObserveOngoingAndIncomingCallsUseCase::class)
-    private val muteCall = mock(MuteCallUseCase::class)
-    private val callManager = mock(CallManager::class)
+    private val observeOngoingAndIncomingCalls = mock<ObserveOngoingAndIncomingCallsUseCase>(mode = MockMode.autoUnit)
+    private val muteCall = mock<MuteCallUseCase>(mode = MockMode.autoUnit)
+    private val callManager = mock<CallManager>(mode = MockMode.autoUnit)
 
     private val answerCall = AnswerCallUseCaseImpl(
         observeOngoingAndIncomingCalls = observeOngoingAndIncomingCalls,
@@ -56,13 +58,13 @@ class AnswerCallUseCaseTest {
         val isCbrEnabled = true
         val configs = KaliumConfigs(forceConstantBitrateCalls = isCbrEnabled)
 
-        coEvery {
+        everySuspend {
             observeOngoingAndIncomingCalls()
-        }.returns(flowOf(listOf(call.copy(isCameraOn = true))))
+        } returns (flowOf(listOf(call.copy(isCameraOn = true))))
 
-        coEvery {
+        everySuspend {
             callManager.answerCall(eq(conversationId), eq(configs.forceConstantBitrateCalls), any())
-        }.returns(Unit)
+        } returns (Unit)
 
         val answerCallWithCBR = AnswerCallUseCaseImpl(
             observeOngoingAndIncomingCalls = observeOngoingAndIncomingCalls,
@@ -76,28 +78,28 @@ class AnswerCallUseCaseTest {
             conversationId = conversationId
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             callManager.answerCall(eq(conversationId), eq(isCbrEnabled), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenAnOnGoingGroupCall_whenJoiningIt_thenMuteThatCall() = runTest(TestKaliumDispatcher.main) {
-        coEvery {
+        everySuspend {
             observeOngoingAndIncomingCalls()
-        }.returns(flowOf(listOf(call.copy(status = CallStatus.STILL_ONGOING))))
+        } returns (flowOf(listOf(call.copy(status = CallStatus.STILL_ONGOING))))
 
         answerCall(
             conversationId = conversationId
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             callManager.answerCall(eq(conversationId), eq(false), eq(false))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             muteCall(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
     }
 

@@ -17,14 +17,16 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import app.cash.paging.PagingData
+import androidx.paging.PagingData
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -80,10 +82,10 @@ class GetCellConversationsPagedUseCaseTest {
     }
 
     private class Arrangement {
-        val repository: CellConversationRepository = mock(CellConversationRepository::class)
+        val repository: CellConversationRepository = mock<CellConversationRepository>(mode = MockMode.autoUnit)
 
         suspend fun withPaginatedConversations(conversations: List<CellConversation>) = apply {
-            coEvery {
+            everySuspend {
                 repository.getPaginatedCellGroupConversations(any(), any(), any())
             }.returns(conversations.right())
         }

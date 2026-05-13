@@ -30,14 +30,12 @@ import com.wire.kalium.logic.data.user.type.isGuest
 import com.wire.kalium.logic.data.user.type.isOwner
 import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
 /**
  * Given a call and raw call end reason create metadata containing all information regarding
  * a call.
  */
-@Mockable
 internal interface CreateAndPersistRecentlyEndedCallMetadataUseCase {
     suspend operator fun invoke(conversationId: ConversationId, callEndedReason: Int)
 }

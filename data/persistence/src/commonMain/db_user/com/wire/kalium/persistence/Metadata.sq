@@ -4,15 +4,23 @@ CREATE TABLE Metadata (
 );
 
 insertValue:
+-- @NotifyCustomKey metadata_:key
+-- @NotifyCustomKey Metadata
 INSERT INTO Metadata(key, stringValue)
-VALUES (?, ?)
+VALUES (:key, :stringValue)
 ON CONFLICT(key) DO UPDATE SET stringValue = excluded.stringValue;
 
 selectValueByKey:
-SELECT stringValue FROM Metadata WHERE key = ?;
+-- @CustomKey metadata_:key
+SELECT stringValue FROM Metadata WHERE key = :key;
 
 deleteValue:
-DELETE FROM Metadata WHERE key = ?;
+-- @NotifyCustomKey metadata_:key
+-- @NotifyCustomKey Metadata
+DELETE FROM Metadata WHERE key = :key;
+
+selectAllMetadata:
+SELECT * FROM Metadata;
 
 deleteAllExcept:
 DELETE FROM Metadata WHERE key NOT IN ?;

@@ -28,7 +28,6 @@ import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
 import com.wire.kalium.util.InternalCryptoAccess
-import io.mockative.Mockable
 
 /**
  * Provides transactional access to cryptographic operations using either
@@ -49,7 +48,6 @@ import io.mockative.Mockable
  * }
  * ```
  */
-@Mockable
 internal interface CryptoTransactionProvider {
     val mlsClientProvider: MLSClientProvider
     val proteusClientProvider: ProteusClientProvider

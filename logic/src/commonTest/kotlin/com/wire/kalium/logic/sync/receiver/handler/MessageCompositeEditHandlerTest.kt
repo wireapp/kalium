@@ -21,16 +21,17 @@ package com.wire.kalium.logic.sync.receiver.handler
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -50,14 +51,14 @@ class MessageCompositeEditHandlerTest {
             )
 
             with(arrangement) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     messageRepository.updateCompositeMessage(
                         eq(EDIT_MESSAGE.conversationId),
                         eq(EDIT_COMPOSITE_CONTENT),
                         eq(EDIT_MESSAGE.id),
                         eq(EDIT_MESSAGE.date)
                     )
-                }.wasInvoked(exactly = once)
+                }
             }
         }
 
@@ -74,9 +75,9 @@ class MessageCompositeEditHandlerTest {
         )
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 messageRepository.updateCompositeMessage(any(), any(), any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -85,18 +86,31 @@ class MessageCompositeEditHandlerTest {
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : MessageRepositoryArrangement by MessageRepositoryArrangementImpl() {
+    ) {
+        val messageRepository = mock<MessageRepository>()
 
         suspend fun arrange() = block().run {
-            coEvery {
+            everySuspend {
                 messageRepository.updateTextMessage(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
-            coEvery {
+            } returns Either.Right(Unit)
+            everySuspend {
                 messageRepository.updateMessageStatus(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
             this@Arrangement to MessageCompositeEditHandlerImpl(
                 messageRepository = messageRepository,
             )
+        }
+
+        suspend fun withGetMessageById(result: Either<com.wire.kalium.common.error.StorageFailure, com.wire.kalium.logic.data.message.Message>) {
+            everySuspend {
+                messageRepository.getMessageById(any(), any())
+            } returns result
+        }
+
+        suspend fun withEditCompositeMessage(result: Either<com.wire.kalium.common.error.StorageFailure, Unit>) {
+            everySuspend {
+                messageRepository.updateCompositeMessage(any(), any(), any(), any())
+            } returns result
         }
     }
 

@@ -32,12 +32,10 @@ import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationMemberDTO
-import io.mockative.Mockable
 
 /**
  * Leave a sub-conversation you've previously joined
  */
-@Mockable
 internal interface LeaveSubconversationUseCase {
     suspend operator fun invoke(
         mlsContext: MlsCoreCryptoContext,

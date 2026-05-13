@@ -22,7 +22,6 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.mockative)
     alias(libs.plugins.mokkery)
     alias(libs.plugins.skie)
 }
@@ -88,6 +87,7 @@ kotlin {
                 implementation(libs.okio.core)
 
                 implementation(libs.sqldelight.androidxPaging)
+                api(libs.paging.common)
                 // Concurrent collections
                 implementation(libs.concurrentCollections)
                 implementation(libs.statelyCommons)

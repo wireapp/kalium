@@ -24,18 +24,20 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
-import io.mockative.any
-import io.mockative.eq
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlinx.coroutines.test.runTest
 
 class SecondFactorVerificationRepositoryTest {
 
@@ -82,9 +84,9 @@ class SecondFactorVerificationRepositoryTest {
             VerifiableAction.LOGIN_OR_CLIENT_REGISTRATION
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.verificationCodeApi.sendVerificationCode(eq(EMAIL), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -161,7 +163,7 @@ class SecondFactorVerificationRepositoryTest {
     }
 
     private class Arrangement {
-        val verificationCodeApi = mock(VerificationCodeApi::class)
+        val verificationCodeApi = mock<VerificationCodeApi>(mode = MockMode.autoUnit)
 
         suspend fun withCodeRequestSucceeding() = withCodeRequestReturning(
             NetworkResponse.Success(
@@ -176,7 +178,7 @@ class SecondFactorVerificationRepositoryTest {
         )
 
         suspend fun withCodeRequestReturning(networkResponse: NetworkResponse<Unit>) = apply {
-            coEvery {
+            everySuspend {
                 verificationCodeApi.sendVerificationCode(any(), any())
             }.returns(networkResponse)
         }

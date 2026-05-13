@@ -19,9 +19,7 @@ package com.wire.kalium.network.api.base.authenticated
 
 import com.wire.kalium.network.api.authenticated.user.CreateUserTeamDTO
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mockable
 
-@Mockable
 interface UpgradePersonalToTeamApi : BaseApi {
 
     suspend fun migrateToTeam(teamName: String): NetworkResponse<CreateUserTeamDTO>

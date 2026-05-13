@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.dao.call
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
 data class CallEntity(
@@ -51,7 +50,6 @@ data class CallEntity(
     }
 }
 
-@Mockable
 @Suppress("TooManyFunctions")
 interface CallDAO {
     suspend fun insertCall(call: CallEntity)

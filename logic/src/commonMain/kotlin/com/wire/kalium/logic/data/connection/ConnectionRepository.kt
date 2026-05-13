@@ -69,11 +69,9 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-@Mockable
 internal interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(transactionContext: CryptoTransactionContext): Either<CoreFailure, Unit>
     suspend fun sendUserConnection(transactionContext: CryptoTransactionContext, userId: UserId): Either<CoreFailure, Unit>

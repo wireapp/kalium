@@ -17,9 +17,6 @@
  */
 package com.wire.kalium.logic.feature.rootDetection
 
-import io.mockative.Mockable
-
-@Mockable
 internal interface RootDetector {
     fun isSystemRooted(): Boolean
 }

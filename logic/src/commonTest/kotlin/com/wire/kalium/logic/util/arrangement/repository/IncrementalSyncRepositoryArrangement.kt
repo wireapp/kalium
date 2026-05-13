@@ -19,8 +19,10 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.every
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 
 internal interface IncrementalSyncRepositoryArrangement {
@@ -31,7 +33,7 @@ internal interface IncrementalSyncRepositoryArrangement {
 
 internal open class IncrementalSyncRepositoryArrangementImpl : IncrementalSyncRepositoryArrangement {
 
-    override val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
+    override val incrementalSyncRepository = mock<IncrementalSyncRepository>(mode = MockMode.autoUnit)
 
     override fun withIncrementalSyncState(statusFlow: Flow<IncrementalSyncStatus>) {
         every { incrementalSyncRepository.incrementalSyncState }

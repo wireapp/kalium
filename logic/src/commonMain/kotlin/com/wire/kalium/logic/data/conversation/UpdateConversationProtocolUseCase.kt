@@ -24,7 +24,6 @@ import com.wire.kalium.common.functional.map
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.Mockable
 
 /**
  * Use case responsible for updating the protocol of a conversation, either locally or remotely.
@@ -38,7 +37,6 @@ import io.mockative.Mockable
  * @param localOnly If true, applies the protocol update locally without backend interaction.
  * @return [Either.Right] with `true` if the update was successful, or [Either.Left] if an error occurred.
  */
-@Mockable
 internal interface UpdateConversationProtocolUseCase {
     suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,

@@ -30,11 +30,14 @@ import com.wire.kalium.logic.feature.message.MessageOperationResult
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.sync.SyncManager
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -90,8 +93,8 @@ class ConfirmationDeliveryHandlerTest {
         advanceUntilIdle()
         job.cancel()
 
-        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
-        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasInvoked()
+        verifySuspend(VerifyMode.atLeast(1)) { arrangement.conversationRepository.observeConversationById(any()) }
+        verifySuspend(VerifyMode.atLeast(1)) { arrangement.sendDeliverSignal(any(), any()) }
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
@@ -111,8 +114,8 @@ class ConfirmationDeliveryHandlerTest {
         sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
         advanceUntilIdle()
 
-        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasNotInvoked()
-        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.observeConversationById(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.sendDeliverSignal(any(), any()) }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -137,8 +140,8 @@ class ConfirmationDeliveryHandlerTest {
 
         job.cancel()
 
-        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
-        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasInvoked()
+        verifySuspend(VerifyMode.atLeast(1)) { arrangement.conversationRepository.observeConversationById(any()) }
+        verifySuspend(VerifyMode.atLeast(1)) { arrangement.sendDeliverSignal(any(), any()) }
         assertTrue(arrangement.pendingConfirmationMessages.isNotEmpty())
     }
 
@@ -166,8 +169,8 @@ class ConfirmationDeliveryHandlerTest {
         advanceTimeBy(2000L)
         job.cancel()
 
-        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
-        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasInvoked(once)
+        verifySuspend(VerifyMode.atLeast(1)) { arrangement.conversationRepository.observeConversationById(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.sendDeliverSignal(any(), any()) }
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
@@ -189,8 +192,8 @@ class ConfirmationDeliveryHandlerTest {
         advanceUntilIdle()
         job.cancel()
 
-        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
-        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasInvoked(once)
+        verifySuspend(VerifyMode.atLeast(1)) { arrangement.conversationRepository.observeConversationById(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.sendDeliverSignal(any(), any()) }
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
@@ -201,7 +204,7 @@ class ConfirmationDeliveryHandlerTest {
             .withSendDeliverSignalResult()
             .arrange()
 
-        coEvery { arrangement.syncManager.waitUntilLive() }.invokes { _ ->
+        everySuspend { arrangement.syncManager.waitUntilLive() } calls {
             delay(10.seconds)
         }
 
@@ -216,7 +219,7 @@ class ConfirmationDeliveryHandlerTest {
                 TestMessage.TEST_MESSAGE_ID
             )
         }
-        advanceTimeBy(1.seconds) // Enqueue and return immediately
+        advanceTimeBy(1.seconds)
 
         assertTrue(enqueueJob.isCompleted)
         sendJob.cancel()
@@ -236,25 +239,25 @@ class ConfirmationDeliveryHandlerTest {
         advanceUntilIdle()
         job.cancel()
 
-        coVerify { arrangement.conversationRepository.observeConversationById(any()) }.wasInvoked()
-        coVerify { arrangement.sendDeliverSignal(any(), any()) }.wasInvoked()
+        verifySuspend(VerifyMode.atLeast(1)) { arrangement.conversationRepository.observeConversationById(any()) }
+        verifySuspend(VerifyMode.atLeast(1)) { arrangement.sendDeliverSignal(any(), any()) }
         assertTrue(arrangement.pendingConfirmationMessages[TestConversation.ID]?.isEmpty() ?: true)
     }
 
     private class Arrangement {
 
-        val syncManager: SyncManager = mock(SyncManager::class)
-        val sendDeliverSignal: SendDeliverSignalUseCase = mock(SendDeliverSignalUseCase::class)
-        val conversationRepository = mock(ConversationRepository::class)
+        val syncManager: SyncManager = mock<SyncManager>(mode = MockMode.autoUnit)
+        val sendDeliverSignal: SendDeliverSignalUseCase = mock<SendDeliverSignalUseCase>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
 
         val pendingConfirmationMessages: ConcurrentMutableMap<ConversationId, MutableSet<String>> = ConcurrentMutableMap()
 
         suspend fun withConversationDetailsResult(result: Flow<Either<StorageFailure, Conversation>>) = apply {
-            coEvery { conversationRepository.observeConversationById(any()) }.returns(result)
+            everySuspend { conversationRepository.observeConversationById(any()) } returns result
         }
 
         suspend fun withSendDeliverSignalResult(result: MessageOperationResult = MessageOperationResult.Success) = apply {
-            coEvery { sendDeliverSignal(any(), any()) }.returns(result)
+            everySuspend { sendDeliverSignal(any(), any()) } returns result
         }
 
         fun arrange() = this to ConfirmationDeliveryHandlerImpl(

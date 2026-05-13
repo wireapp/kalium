@@ -18,21 +18,21 @@
 package com.wire.kalium.logic.feature.message.composite
 
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
-import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.SyncManagerArrangement
-import com.wire.kalium.logic.util.arrangement.SyncManagerArrangementImpl
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.matches
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.logic.sync.SyncManager
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -59,34 +59,34 @@ class SendButtonActionConfirmationMessageTest {
 
         assertIs<SendButtonActionConfirmationMessageUseCase.Result.Success>(result)
 
-        coVerify {
-            arrangement.messageSender.sendMessage(any(), matches {
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(any(), matching {
                 it is MessageTarget.Users && it.userId == listOf(buttonActionSender)
             })
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.currentClientIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.syncManager.waitUntilLiveOrFailure()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private companion object {
         val SELF_USER_ID: UserId = UserId("self-user-id", "self-user-domain")
     }
 
-    private class Arrangement :
-        MessageSenderArrangement by MessageSenderArrangementImpl(),
-        SyncManagerArrangement by SyncManagerArrangementImpl(),
-        CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
+    private class Arrangement {
+        val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
+        val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
+        val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
 
         private lateinit var useCase: SendButtonActionConfirmationMessageUseCase
 
-        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, SendButtonActionConfirmationMessageUseCase> {
-            runBlocking { block() }
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, SendButtonActionConfirmationMessageUseCase> {
+            block()
             useCase = SendButtonActionConfirmationMessageUseCase(
                 messageSender = messageSender,
                 syncManager = syncManager,
@@ -95,6 +95,18 @@ class SendButtonActionConfirmationMessageTest {
             )
 
             return this to useCase
+        }
+
+        suspend fun withWaitUntilLiveOrFailure(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) {
+            everySuspend { syncManager.waitUntilLiveOrFailure() } returns result
+        }
+
+        suspend fun withCurrentClientIdSuccess(currentClientId: ClientId) {
+            everySuspend { currentClientIdProvider.invoke() } returns Either.Right(currentClientId)
+        }
+
+        suspend fun withSendMessageSucceed() {
+            everySuspend { messageSender.sendMessage(any(), any()) } returns Either.Right(Unit)
         }
     }
 }

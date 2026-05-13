@@ -24,9 +24,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserIdToClientMap
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
-import io.mockative.Mockable
 
-@Mockable
 internal interface SendMessageFailureMapper {
     fun fromDTO(error: ProteusClientsChangedError): ProteusSendMessageFailure
 }

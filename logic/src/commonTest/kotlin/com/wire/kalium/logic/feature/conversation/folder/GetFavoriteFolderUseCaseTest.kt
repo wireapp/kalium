@@ -24,11 +24,12 @@ import com.wire.kalium.logic.data.conversation.folders.ConversationFolderReposit
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase.Result
 import com.wire.kalium.logic.framework.TestFolder
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -48,9 +49,9 @@ class GetFavoriteFolderUseCaseTest {
         assertIs<ConversationFolder>(result.folder)
         assertEquals(TestFolder.FAVORITE.id, result.folder.id)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.getFavoriteConversationFolder()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -63,9 +64,9 @@ class GetFavoriteFolderUseCaseTest {
 
         assertIs<Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.getFavoriteConversationFolder()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -79,32 +80,32 @@ class GetFavoriteFolderUseCaseTest {
 
         assertIs<Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.conversationFolderRepository.getFavoriteConversationFolder()
-        }.wasInvoked(exactly = twice)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationFolderRepository.fetchConversationFolders()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        
-        val conversationFolderRepository = mock(ConversationFolderRepository::class)
+
+        val conversationFolderRepository = mock<ConversationFolderRepository>(mode = MockMode.autoUnit)
 
         private val getFavoriteFolderUseCase = GetFavoriteFolderUseCaseImpl(
             conversationFolderRepository
         )
 
         suspend fun withFavoriteFolder(either: Either<CoreFailure, ConversationFolder>) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.getFavoriteConversationFolder()
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withFetchConversationFolders(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationFolderRepository.fetchConversationFolders()
-            }.returns(either)
+            } returns either
         }
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to getFavoriteFolderUseCase }

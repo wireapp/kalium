@@ -25,9 +25,7 @@ import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
-import io.mockative.Mockable
 
-@Mockable
 interface SessionManager {
     suspend fun session(): SessionDTO?
     fun serverConfig(): ServerConfigDTO

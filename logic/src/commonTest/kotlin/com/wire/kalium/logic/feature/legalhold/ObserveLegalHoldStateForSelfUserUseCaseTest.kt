@@ -18,13 +18,14 @@
 package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -47,12 +48,12 @@ internal class ObserveLegalHoldStateForSelfUserUseCaseTest {
         val result = useCase()
         // then
         assertEquals(expected, result.first())
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.observeLegalHoldStateForUser.invoke(eq(TestUser.SELF.id))
-        }.wasInvoked(once)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.observeLegalHoldRequestUseCase.invoke()
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -80,8 +81,8 @@ internal class ObserveLegalHoldStateForSelfUserUseCaseTest {
         )
 
     class Arrangement {
-        val observeLegalHoldStateForUser = mock(ObserveLegalHoldStateForUserUseCase::class)
-        val observeLegalHoldRequestUseCase = mock(ObserveLegalHoldRequestUseCase::class)
+        val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase = mock()
+        val observeLegalHoldRequestUseCase: ObserveLegalHoldRequestUseCase = mock()
 
         private val observeLegalHoldForSelfUser: ObserveLegalHoldStateForSelfUserUseCase =
             ObserveLegalHoldStateForSelfUserUseCaseImpl(
@@ -93,9 +94,9 @@ internal class ObserveLegalHoldStateForSelfUserUseCaseTest {
         fun arrange() = this to observeLegalHoldForSelfUser
 
         suspend fun withLegalHoldState(result: LegalHoldState) = apply {
-            coEvery {
+            everySuspend {
                 observeLegalHoldStateForUser.invoke(eq(TestUser.SELF.id))
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
 
         fun withLegalHoldRequestState(result: ObserveLegalHoldRequestUseCase.Result) = apply {

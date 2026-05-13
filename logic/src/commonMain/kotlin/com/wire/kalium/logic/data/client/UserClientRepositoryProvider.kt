@@ -22,9 +22,7 @@ package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
-import io.mockative.Mockable
 
-@Mockable
 internal interface UserClientRepositoryProvider {
     fun provide(userId: UserId): ClientRepository
 }

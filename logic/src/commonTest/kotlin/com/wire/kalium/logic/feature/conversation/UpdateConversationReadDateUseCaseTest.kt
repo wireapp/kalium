@@ -18,6 +18,9 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.message.MessageOperationResult
@@ -28,23 +31,21 @@ import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
-import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -71,15 +72,15 @@ class UpdateConversationReadDateUseCaseTest {
 
         updateConversationReadDateUseCase(conversationId, persistedLastRead - 1.seconds)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.sendConfirmation(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.updateConversationReadDate(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -95,9 +96,9 @@ class UpdateConversationReadDateUseCaseTest {
 
         updateConversationReadDateUseCase(conversationId, newLastRead)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sendConfirmation(eq(conversationId), eq(persistedLastRead), eq(newLastRead))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -113,9 +114,9 @@ class UpdateConversationReadDateUseCaseTest {
 
         updateConversationReadDateUseCase(conversationId, newLastRead)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateConversationReadDate(eq(conversationId), eq(newLastRead))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -147,9 +148,9 @@ class UpdateConversationReadDateUseCaseTest {
 
         updateConversationReadDateUseCase(conversationId, newLastRead)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                message = matches { message ->
+                message = matching { message ->
                     val content = message.content
                     assertIs<MessageContent.LastRead>(content)
                     assertEquals(conversationId, content.conversationId)
@@ -157,12 +158,12 @@ class UpdateConversationReadDateUseCaseTest {
                     assertEquals(arrangement.selfConversationId, message.conversationId)
                     true
                 },
-                messageTarget = matches { target ->
+                messageTarget = matching { target ->
                     assertIs<MessageTarget.Conversation>(target)
                     true
                 }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -178,9 +179,9 @@ class UpdateConversationReadDateUseCaseTest {
 
         updateConversationReadDateUseCase(conversationId, newLastRead, invokeImmediately = true)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sendConfirmation(eq(conversationId), eq(persistedLastRead), eq(newLastRead))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -195,12 +196,12 @@ class UpdateConversationReadDateUseCaseTest {
 
         updateConversationReadDateUseCase(conversationId, persistedLastRead - 1.seconds, invokeImmediately = true)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.sendConfirmation(any(), any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.updateConversationReadDate(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -246,35 +247,36 @@ class UpdateConversationReadDateUseCaseTest {
         advanceTimeBy(3.seconds + 1.milliseconds)
         runCurrent()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateConversationReadDate(eq(conversationId), eq(newLastRead))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement(
         private val configure: suspend Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        MessageSenderArrangement by MessageSenderArrangementImpl(),
-        SelfConversationIdProviderArrangement by SelfConversationIdProviderArrangementImpl() {
+    ) {
 
         var currentClientId = TestClient.CLIENT_ID
         var selfUserID = TestUser.SELF.id
         var selfConversationId = TestConversation.SELF().id.copy("SELF")
-        val sendConfirmation = mock(SendConfirmationUseCase::class)
+        val selfConversationIdProvider = mock<SelfConversationIdProvider>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
+        val sendConfirmation = mock<SendConfirmationUseCase>(mode = MockMode.autoUnit)
         val persistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
 
         var workQueue: ConversationWorkQueue = InstantConversationWorkQueue()
 
         suspend fun arrange(): Pair<Arrangement, UpdateConversationReadDateUseCase> = run {
-            coEvery {
+            everySuspend {
                 sendConfirmation(any(), any(), any())
-            }.returns(MessageOperationResult.Success)
-            coEvery {
+            } returns MessageOperationResult.Success
+            everySuspend {
                 conversationRepository.updateConversationReadDate(any(), any())
-            }.returns(Either.Right(Unit))
-            coEvery {
+            } returns Either.Right(Unit)
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
             withSelfConversationIds(listOf(selfConversationId))
             configure()
             this@Arrangement to UpdateConversationReadDateUseCase(
@@ -288,6 +290,16 @@ class UpdateConversationReadDateUseCaseTest {
                 persistenceEventHookNotifier,
                 kaliumLogger
             )
+        }
+
+        suspend fun withObserveByIdReturning(conversation: Conversation) {
+            everySuspend {
+                conversationRepository.observeConversationById(eq(conversation.id))
+            } returns flowOf(Either.Right(conversation))
+        }
+
+        suspend fun withSelfConversationIds(conversationIds: List<ConversationId>) {
+            everySuspend { selfConversationIdProvider.invoke() } returns Either.Right(conversationIds)
         }
     }
 

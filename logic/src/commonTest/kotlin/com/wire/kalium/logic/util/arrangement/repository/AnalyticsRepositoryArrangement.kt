@@ -20,9 +20,11 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.analytics.AnalyticsRepository
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.datetime.Instant
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -41,37 +43,37 @@ internal interface AnalyticsRepositoryArrangement {
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal open class AnalyticsRepositoryArrangementImpl : AnalyticsRepositoryArrangement {
     
-    override val analyticsRepository: AnalyticsRepository = mock(AnalyticsRepository::class)
+    override val analyticsRepository: AnalyticsRepository = mock<AnalyticsRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withContactsAmountCached(result: Either<StorageFailure, Int>) {
-        coEvery { analyticsRepository.getContactsAmountCached() }.returns(result)
+        everySuspend { analyticsRepository.getContactsAmountCached() }.returns(result)
     }
 
     override suspend fun withCountContactsAmount(result: Either<StorageFailure, Int>) {
-        coEvery { analyticsRepository.countContactsAmount() }.returns(result)
+        everySuspend { analyticsRepository.countContactsAmount() }.returns(result)
     }
 
     override suspend fun withTeamMembersAmountCached(result: Either<StorageFailure, Int>) {
-        coEvery { analyticsRepository.getTeamMembersAmountCached() }.returns(result)
+        everySuspend { analyticsRepository.getTeamMembersAmountCached() }.returns(result)
     }
 
     override suspend fun withCountTeamMembersAmount(result: Either<StorageFailure, Int>) {
-        coEvery { analyticsRepository.countTeamMembersAmount(any()) }.returns(result)
+        everySuspend { analyticsRepository.countTeamMembersAmount(any()) }.returns(result)
     }
 
     override suspend fun withSetContactsAmountCachingDate() {
-        coEvery { analyticsRepository.setLastContactsDateUpdateDate(any()) }.returns(Unit)
+        everySuspend { analyticsRepository.setLastContactsDateUpdateDate(any()) }.returns(Unit)
     }
 
     override suspend fun withSetTeamMembersAmountCached() {
-        coEvery { analyticsRepository.setTeamMembersAmountCached(any()) }.returns(Unit)
+        everySuspend { analyticsRepository.setTeamMembersAmountCached(any()) }.returns(Unit)
     }
 
     override suspend fun withSetContactsAmountCached() {
-        coEvery { analyticsRepository.setContactsAmountCached(any()) }.returns(Unit)
+        everySuspend { analyticsRepository.setContactsAmountCached(any()) }.returns(Unit)
     }
 
     override suspend fun withLastContactsDateUpdateDate(result: Either<StorageFailure, Instant>) {
-        coEvery { analyticsRepository.getLastContactsDateUpdateDate() }.returns(result)
+        everySuspend { analyticsRepository.getLastContactsDateUpdateDate() }.returns(result)
     }
 }

@@ -39,7 +39,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -47,7 +46,6 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
-@Mockable
 internal interface E2EIClientProvider {
     suspend fun getE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<E2EIFailure, E2EIClient>
     suspend fun setDebugCertificateExpirationOverride(seconds: Long?)

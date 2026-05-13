@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.di.MapperProvider
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
@@ -80,7 +79,6 @@ internal object NotificationEventsManagerImpl : NotificationEventsManager {
     override suspend fun observeRegularNotificationsChecking(): Flow<Unit> = regularNotificationChecking
 }
 
-@Mockable
 internal interface NotificationEventsManager {
     /**
      * Ideally we should have logic that allows to mark messages as notified,

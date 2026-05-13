@@ -26,16 +26,18 @@ import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyn
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
-import kotlinx.coroutines.test.runTest
-import okio.Buffer
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlinx.coroutines.test.runTest
+import okio.Buffer
 
 class CryptoStateBackupRemoteRepositoryTest {
 
@@ -50,7 +52,7 @@ class CryptoStateBackupRemoteRepositoryTest {
         result.shouldSucceed { actual ->
             assertEquals(Unit, actual)
         }
-        coVerify { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }
     }
 
     @Test
@@ -64,7 +66,7 @@ class CryptoStateBackupRemoteRepositoryTest {
         result.shouldFail { failure ->
             assertIs<NetworkFailure.ServerMiscommunication>(failure)
         }
-        coVerify { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }
     }
 
     @Test
@@ -81,7 +83,7 @@ class CryptoStateBackupRemoteRepositoryTest {
         result.shouldFail { failure ->
             assertIs<BackupFailure.NoCryptoStateAvailable>(failure)
         }
-        coVerify { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }
     }
 
     @Test
@@ -98,15 +100,15 @@ class CryptoStateBackupRemoteRepositoryTest {
         result.shouldFail { failure ->
             assertIs<BackupFailure.NoCryptoStateAvailable>(failure)
         }
-        coVerify { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.nomadDeviceSyncApi.downloadCryptoState(any()) }
     }
 
     private class Arrangement {
-        val nomadDeviceSyncApi = mock(NomadDeviceSyncApi::class)
+        val nomadDeviceSyncApi = mock<NomadDeviceSyncApi>(mode = MockMode.autoUnit)
         private val repository = CryptoStateBackupRemoteDataSource(nomadDeviceSyncApi)
 
         suspend fun withDownloadCryptoState(result: NetworkResponse<Unit>) = apply {
-            coEvery { nomadDeviceSyncApi.downloadCryptoState(any()) }.returns(result)
+            everySuspend { nomadDeviceSyncApi.downloadCryptoState(any()) }.returns(result)
         }
 
         fun arrange() = this to repository

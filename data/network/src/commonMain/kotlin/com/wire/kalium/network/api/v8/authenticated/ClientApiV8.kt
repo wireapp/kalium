@@ -21,6 +21,6 @@ package com.wire.kalium.network.api.v8.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.v7.authenticated.ClientApiV7
 
-internal class ClientApiV8 internal constructor(
+internal open class ClientApiV8 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
 ) : ClientApiV7(authenticatedNetworkClient)

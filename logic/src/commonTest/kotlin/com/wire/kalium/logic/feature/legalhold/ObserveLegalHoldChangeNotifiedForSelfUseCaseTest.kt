@@ -21,9 +21,10 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -90,22 +91,22 @@ class ObserveLegalHoldChangeNotifiedForSelfUseCaseTest {
     private class Arrangement {
 
         val selfUserId = TestUser.SELF.id
-        val userConfigRepository = mock(UserConfigRepository::class)
-        val observeLegalHoldForUser = mock(ObserveLegalHoldStateForUserUseCase::class)
+        val userConfigRepository: UserConfigRepository = mock()
+        val observeLegalHoldForUser: ObserveLegalHoldStateForUserUseCase = mock()
         val useCase: ObserveLegalHoldChangeNotifiedForSelfUseCase =
             ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl(selfUserId, userConfigRepository, observeLegalHoldForUser)
 
         fun arrange() = this to useCase
         suspend fun withLegalHoldEnabledState(result: LegalHoldState) = apply {
-            coEvery {
+            everySuspend {
                 observeLegalHoldForUser.invoke(any())
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
 
         suspend fun withLegalHoldChangeNotified(result: Either<StorageFailure, Boolean>) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.observeLegalHoldChangeNotified()
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
     }
 }

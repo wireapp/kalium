@@ -28,10 +28,12 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -60,7 +62,7 @@ class OnIncomingCallTest {
         )
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.createCall(
                 eq(TestConversation.CONVERSATION.id),
                 eq(ConversationTypeForCall.Conference),
@@ -70,7 +72,7 @@ class OnIncomingCallTest {
                 eq(false),
                 eq(false)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -90,7 +92,7 @@ class OnIncomingCallTest {
         )
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callRepository.createCall(
                 eq(TestConversation.CONVERSATION.id),
                 eq(ConversationTypeForCall.Conference),
@@ -100,11 +102,11 @@ class OnIncomingCallTest {
                 eq(false),
                 eq(false)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement(val testScope: TestScope) {
-        val callRepository: CallRepository = mock(CallRepository::class)
+        val callRepository: CallRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
         val kaliumConfigs = KaliumConfigs()
 

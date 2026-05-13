@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import app.cash.turbine.test
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.FileFilters
@@ -36,11 +38,11 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.mock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -117,9 +119,9 @@ class NodeUploadManagerTest {
 
         advanceTimeBy(1)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.repository.uploadFile(any(), any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -211,9 +213,9 @@ class NodeUploadManagerTest {
 
         advanceTimeBy(1)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.repository.uploadFile(any(), any(), any())
-        }.wasInvoked(2)
+        }
     }
 
     @Test
@@ -235,22 +237,22 @@ class NodeUploadManagerTest {
 
     private class Arrangement(val uploadScope: CoroutineScope) {
 
-        val repository = mock(CellsRepository::class)
+        val repository = mock<CellsRepository>(mode = MockMode.autoUnit)
 
         val fileSystem = FakeFileSystem()
 
         suspend fun withPreCheckFileExists(suggestedName: String) = apply {
-            coEvery { repository.preCheck(any()) }.returns(
+            everySuspend { repository.preCheck(any()) }.returns(
                 PreCheckResult.FileExists(suggestedName).right()
             )
         }
 
         suspend fun withPreCheckSuccess() = apply {
-            coEvery { repository.preCheck(any()) }.returns(PreCheckResult.Success.right())
+            everySuspend { repository.preCheck(any()) }.returns(PreCheckResult.Success.right())
         }
 
         suspend fun withPreCheckFailed() = apply {
-            coEvery { repository.preCheck(any()) }.returns(
+            everySuspend { repository.preCheck(any()) }.returns(
                 NetworkFailure.NoNetworkConnection(
                     IllegalStateException("test")
                 ).left()
@@ -258,11 +260,11 @@ class NodeUploadManagerTest {
         }
 
         suspend fun withUploadSuccess() = apply {
-            coEvery { repository.uploadFile(any(), any(), any()) }.returns(Unit.right())
+            everySuspend { repository.uploadFile(any(), any(), any()) }.returns(Unit.right())
         }
 
         suspend fun withUploadFailed() = apply {
-            coEvery { repository.uploadFile(any(), any(), any()) }.returns(
+            everySuspend { repository.uploadFile(any(), any(), any()) }.returns(
                 NetworkFailure.NoNetworkConnection(IllegalStateException("test")).left()
             )
         }

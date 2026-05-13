@@ -25,11 +25,13 @@ import com.wire.kalium.logic.feature.conversation.RefreshConversationsWithoutMet
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlin.test.Test
@@ -48,17 +50,17 @@ class MissingMetadataUpdateManagerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.refreshConversationsWithoutMetadataUseCase.invoke()
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.refreshUsersWithoutMetadataUseCase.invoke()
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.timestampKeyRepository.reset(any())
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -73,42 +75,42 @@ class MissingMetadataUpdateManagerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.refreshConversationsWithoutMetadataUseCase.invoke()
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.refreshUsersWithoutMetadataUseCase.invoke()
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.timestampKeyRepository.reset(any())
-            }.wasNotInvoked()
+            }
         }
 
     private class Arrangement {
 
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
-        val timestampKeyRepository = mock(TimestampKeyRepository::class)
-        val refreshConversationsWithoutMetadataUseCase = mock(RefreshConversationsWithoutMetadataUseCase::class)
-        val refreshUsersWithoutMetadataUseCase = mock(RefreshUsersWithoutMetadataUseCase::class)
+        val timestampKeyRepository = mock<TimestampKeyRepository>(mode = MockMode.autoUnit)
+        val refreshConversationsWithoutMetadataUseCase = mock<RefreshConversationsWithoutMetadataUseCase>(mode = MockMode.autoUnit)
+        val refreshUsersWithoutMetadataUseCase = mock<RefreshUsersWithoutMetadataUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withLastMetadataSyncKeyCheck(hasPassed: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 timestampKeyRepository.hasPassed(any(), any())
-            }.returns(Either.Right(hasPassed))
+            } returns Either.Right(hasPassed)
         }
 
         suspend fun withLastMetadataSyncKeyResetCheckSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 timestampKeyRepository.reset(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withRefreshUsersSuccess() = apply {
-            coEvery {
+            everySuspend {
                 refreshUsersWithoutMetadataUseCase.invoke()
-            }.returns(Unit)
+            } returns Unit
         }
 
         fun arrange() = this to MissingMetadataUpdateManagerImpl(

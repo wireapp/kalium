@@ -19,39 +19,37 @@ package com.wire.kalium.logic.util.arrangement.dao
 
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
 
 interface ConversionDAOArrangement {
     val conversionDAO: ConversationDAO
 
-    suspend fun withDeleteGustLink(conversationId: Matcher<ConversationIDEntity> = AnyMatcher(valueOf())) {
-        coEvery {
-            conversionDAO.deleteGuestRoomLink(matches { conversationId.matches(it) })
-        }.returns(Unit)
+    suspend fun withDeleteGustLink(conversationId: (ConversationIDEntity) -> Boolean = { true }) {
+        everySuspend {
+            conversionDAO.deleteGuestRoomLink(matches { conversationId(it) })
+        } returns Unit
     }
 
     suspend fun withUpdatedGuestRoomLink(
-        conversationId: Matcher<ConversationIDEntity> = AnyMatcher(valueOf()),
-        uri: Matcher<String?> = AnyMatcher(valueOf()),
-        isPasswordProtected: Matcher<Boolean> = AnyMatcher(valueOf())
+        conversationId: (ConversationIDEntity) -> Boolean = { true },
+        uri: (String?) -> Boolean = { true },
+        isPasswordProtected: (Boolean) -> Boolean = { true }
     ) {
-        coEvery {
+        everySuspend {
             conversionDAO.updateGuestRoomLink(
-                matches { conversationId.matches(it) },
-                matches { uri.matches(it) },
-                matches { isPasswordProtected.matches(it) }
+                matches { conversationId(it) },
+                matches { uri(it) },
+                matches { isPasswordProtected(it) }
             )
-        }.returns(Unit)
+        } returns Unit
     }
 }
 
 class ConversionDAOArrangementImpl : ConversionDAOArrangement {
 
-    override val conversionDAO: ConversationDAO = mock(ConversationDAO::class)
+    override val conversionDAO: ConversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
 }

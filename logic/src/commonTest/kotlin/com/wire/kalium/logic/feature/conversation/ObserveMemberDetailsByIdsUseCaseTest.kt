@@ -22,10 +22,12 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -36,7 +38,7 @@ import kotlin.test.assertEquals
 
 class ObserveMemberDetailsByIdsUseCaseTest {
 
-        private val userRepository = mock(UserRepository::class)
+        private val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
 
     private lateinit var observeMemberDetailsByIds: ObserveUserListByIdUseCase
 
@@ -54,9 +56,9 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val selfUserUpdates = listOf(firstSelfUser, secondSelfUser)
         val userIds = listOf(firstSelfUser.id)
 
-        coEvery {
+        everySuspend {
             userRepository.observeUser(any())
-        }.returns(selfUserUpdates.asFlow())
+        } returns selfUserUpdates.asFlow()
 
         observeMemberDetailsByIds(userIds).test {
             assertContentEquals(listOf(firstSelfUser), awaitItem())
@@ -72,13 +74,13 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val otherUserUpdates = listOf(firstOtherUser, secondOtherUser)
         val userIds = listOf(firstOtherUser.id)
 
-        coEvery {
+        everySuspend {
             userRepository.observeUser(eq(TestUser.SELF.id))
-        }.returns(flowOf(TestUser.SELF))
+        } returns flowOf(TestUser.SELF)
 
-        coEvery {
+        everySuspend {
             userRepository.observeUser(any())
-        }.returns(otherUserUpdates.asFlow())
+        } returns otherUserUpdates.asFlow()
 
         observeMemberDetailsByIds(userIds).test {
             assertContentEquals(listOf(firstOtherUser), awaitItem())
@@ -93,13 +95,13 @@ class ObserveMemberDetailsByIdsUseCaseTest {
         val notKnownUserId = UserId("not-known-user-id", "domain")
         val userIds = listOf(knownUser.id, notKnownUserId)
 
-        coEvery {
+        everySuspend {
             userRepository.observeUser(eq(knownUser.id))
-        }.returns(flowOf(knownUser))
+        } returns flowOf(knownUser)
 
-        coEvery {
+        everySuspend {
             userRepository.observeUser(eq(notKnownUserId))
-        }.returns(flowOf(null))
+        } returns flowOf(null)
 
         observeMemberDetailsByIds(userIds).test {
             val list = awaitItem()

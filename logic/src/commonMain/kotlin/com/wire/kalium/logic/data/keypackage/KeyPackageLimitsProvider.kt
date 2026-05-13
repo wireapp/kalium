@@ -19,9 +19,7 @@
 package com.wire.kalium.logic.data.keypackage
 
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import io.mockative.Mockable
 
-@Mockable
 internal interface KeyPackageLimitsProvider {
 
     fun needsRefill(keyPackageCount: Int): Boolean

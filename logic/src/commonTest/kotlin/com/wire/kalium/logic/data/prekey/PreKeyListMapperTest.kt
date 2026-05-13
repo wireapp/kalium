@@ -21,20 +21,21 @@ package com.wire.kalium.logic.data.prekey
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
-import io.mockative.any
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class PreKeyListMapperTest {
 
-        private val preKeyMapper = mock(PreKeyMapper::class)
+    private val preKeyMapper = mock<PreKeyMapper>(mode = MockMode.autoUnit)
 
     private lateinit var subject: PreKeyListMapper
 
@@ -94,9 +95,9 @@ class PreKeyListMapperTest {
 
         subject.fromRemoteQualifiedPreKeyInfoMap(preKeyResponse)
 
-        verify {
+        verify(VerifyMode.exactly(2)) {
             preKeyMapper.fromPreKeyDTO(any())
-        }.wasInvoked(exactly = twice)
+        }
     }
 
     @Test
@@ -113,13 +114,13 @@ class PreKeyListMapperTest {
 
         subject.fromRemoteQualifiedPreKeyInfoMap(preKeyResponse)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             preKeyMapper.fromPreKeyDTO(eq(firstKey))
-        }.wasInvoked(exactly = once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             preKeyMapper.fromPreKeyDTO(eq(secondKey))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test

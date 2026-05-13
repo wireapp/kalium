@@ -24,12 +24,10 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import io.mockative.Mockable
 
 /**
  * This use case is used to get the e2ei certificate
  */
-@Mockable
 public interface GetMLSClientIdentityUseCase {
     public suspend operator fun invoke(clientId: ClientId): GetMLSClientIdentityResult
 }

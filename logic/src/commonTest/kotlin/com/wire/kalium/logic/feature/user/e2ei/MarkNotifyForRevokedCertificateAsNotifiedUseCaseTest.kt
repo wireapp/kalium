@@ -18,10 +18,12 @@
 package com.wire.kalium.logic.feature.user.e2ei
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -36,22 +38,22 @@ class MarkNotifyForRevokedCertificateAsNotifiedUseCaseTest {
 
             markNotifyForRevokedCertificateAsNotified.invoke()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userConfigRepository.setShouldNotifyForRevokedCertificate(eq(false))
-            }.wasInvoked()
+            }
         }
 
     internal class Arrangement {
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository = mock<UserConfigRepository>()
 
         fun arrange() = this to MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl(
             userConfigRepository = userConfigRepository
         )
 
         suspend fun withUserConfigRepository() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setShouldNotifyForRevokedCertificate(eq(false))
-            }.returns(Unit)
+            } returns Unit
         }
     }
 }

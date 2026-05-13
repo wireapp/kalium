@@ -31,13 +31,15 @@ import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.ProxyCredentialsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -82,13 +84,13 @@ class UpdateApiVersionUseCaseTest {
         updateApiVersionsUseCase()
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.tokenStorage.proxyCredentials(any<UserIDEntity>())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigRepository1.updateConfigMetaData(eq(serverConfig1))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -116,13 +118,13 @@ class UpdateApiVersionUseCaseTest {
         updateApiVersionsUseCase()
         advanceUntilIdle()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.tokenStorage.proxyCredentials(any<UserIDEntity>())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigRepository1.updateConfigMetaData(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -152,13 +154,13 @@ class UpdateApiVersionUseCaseTest {
         advanceUntilIdle()
 
         assertEquals(1, arrangement.serverConfigProviderCalledCount)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.tokenStorage.proxyCredentials(any<UserIDEntity>())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigRepository1.updateConfigMetaData(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -198,21 +200,21 @@ class UpdateApiVersionUseCaseTest {
         advanceUntilIdle()
 
         assertEquals(2, arrangement.serverConfigProviderCalledCount)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.tokenStorage.proxyCredentials(eq(userId2.toDao()))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.tokenStorage.proxyCredentials(eq(userId1.toDao()))
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigRepository1.updateConfigMetaData(any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigRepository2.updateConfigMetaData(any())
-        }.wasInvoked(exactly = once)
+        }
 
     }
 
@@ -224,13 +226,13 @@ class UpdateApiVersionUseCaseTest {
     }
 
     private class Arrangement {
-                val sessionRepository: SessionRepository = mock(SessionRepository::class)
-        val tokenStorage: AuthTokenStorage = mock(AuthTokenStorage::class)
+                val sessionRepository: SessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
+        val tokenStorage: AuthTokenStorage = mock<AuthTokenStorage>(mode = MockMode.autoUnit)
 
         var serverConfigProviderCalledCount: Int = 0
             private set
-        val serverConfigRepository1: ServerConfigRepository = mock(ServerConfigRepository::class)
-        val serverConfigRepository2: ServerConfigRepository = mock(ServerConfigRepository::class)
+        val serverConfigRepository1: ServerConfigRepository = mock<ServerConfigRepository>(mode = MockMode.autoUnit)
+        val serverConfigRepository2: ServerConfigRepository = mock<ServerConfigRepository>(mode = MockMode.autoUnit)
 
         fun withProxyCredForUser(
             userId: UserIDEntity,
@@ -238,7 +240,7 @@ class UpdateApiVersionUseCaseTest {
         ) {
             every {
                 tokenStorage.proxyCredentials(eq(userId))
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUpdateConfigMetaData(
@@ -247,11 +249,9 @@ class UpdateApiVersionUseCaseTest {
         ) {
             when (serverConfig.id) {
                 serverConfig1.id ->
-                    coEvery { serverConfigRepository1.updateConfigMetaData(any()) }
-                        .returns(result)
+                    everySuspend { serverConfigRepository1.updateConfigMetaData(any()) } returns result
 
-                serverConfig2.id -> coEvery { serverConfigRepository2.updateConfigMetaData(any()) }
-                    .returns(result)
+                serverConfig2.id -> everySuspend { serverConfigRepository2.updateConfigMetaData(any()) } returns result
 
                 else -> throw IllegalArgumentException("Unexpected server config: $serverConfig")
             }
@@ -260,9 +260,9 @@ class UpdateApiVersionUseCaseTest {
         suspend fun withValidSessionWithServerConfig(
             result: Either<StorageFailure, Map<UserId, ServerConfig>>
         ) {
-            coEvery {
+            everySuspend {
                 sessionRepository.validSessionsWithServerConfig()
-            }.returns(result)
+            } returns result
         }
 
         private val updateApiVersionsUseCase = UpdateApiVersionsUseCaseImpl(

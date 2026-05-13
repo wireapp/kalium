@@ -21,33 +21,33 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
 
 internal interface DeleteConversationArrangement {
     val deleteConversation: DeleteConversationUseCase
 
-    suspend fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
-    suspend fun withDeletingConversationFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
+    suspend fun withDeletingConversationSucceeding(conversationId: (ConversationId) -> Boolean = { true })
+    suspend fun withDeletingConversationFailing(conversationId: (ConversationId) -> Boolean = { true })
 }
 
 internal open class DeleteConversationArrangementImpl : DeleteConversationArrangement {
 
-    override val deleteConversation: DeleteConversationUseCase = mock(DeleteConversationUseCase::class)
+    override val deleteConversation: DeleteConversationUseCase = mock<DeleteConversationUseCase>(mode = MockMode.autoUnit)
 
-    override suspend fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId>) {
-        coEvery {
-            deleteConversation(any(), io.mockative.matches { conversationId.matches(it) })
+    override suspend fun withDeletingConversationSucceeding(conversationId: (ConversationId) -> Boolean) {
+        everySuspend {
+            deleteConversation(any(), matches { conversationId(it) })
         }.returns(Either.Right(Unit))
     }
 
-    override suspend fun withDeletingConversationFailing(conversationId: Matcher<ConversationId>) {
-        coEvery {
-            deleteConversation(any(), io.mockative.matches { conversationId.matches(it) })
+    override suspend fun withDeletingConversationFailing(conversationId: (ConversationId) -> Boolean) {
+        everySuspend {
+            deleteConversation(any(), matches { conversationId(it) })
         }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
     }
 

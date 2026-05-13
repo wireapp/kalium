@@ -40,7 +40,6 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.util.getExtensionFromMimeType
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 import okio.IOException
 import okio.Path
@@ -49,7 +48,6 @@ import okio.Sink
 import okio.use
 import kotlin.uuid.Uuid
 
-@Mockable
 internal interface AssetRepository {
     /**
      * Method used to upload and persist to local memory a public asset

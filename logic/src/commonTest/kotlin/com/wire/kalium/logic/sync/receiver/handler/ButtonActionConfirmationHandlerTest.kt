@@ -18,20 +18,21 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangementImpl
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.CompositeMessageRepository
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageMetadataRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.shouldFail
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -52,13 +53,13 @@ class ButtonActionConfirmationHandlerTest {
 
         handler.handle(convId, senderId, content)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.compositeMessageRepository.markSelected(eq("messageId"), eq(convId), eq("buttonId"))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.compositeMessageRepository.resetSelection(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -77,13 +78,13 @@ class ButtonActionConfirmationHandlerTest {
 
         handler.handle(convId, senderId, content)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.compositeMessageRepository.markSelected(any(), any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.compositeMessageRepository.resetSelection(eq("messageId"), eq(convId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -106,13 +107,13 @@ class ButtonActionConfirmationHandlerTest {
             it is CoreFailure.InvalidEventSenderID
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.compositeMessageRepository.markSelected(any(), any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.compositeMessageRepository.resetSelection(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     private companion object {
@@ -120,17 +121,29 @@ class ButtonActionConfirmationHandlerTest {
         val SENDER_USER_ID = UserId("senderUserId", "domain")
     }
 
-    private class Arrangement :
-        CompositeMessageRepositoryArrangement by CompositeMessageRepositoryArrangementImpl(),
-        MessageMetadataRepositoryArrangement by MessageMetadataRepositoryArrangementImpl() {
+    private class Arrangement {
+        val compositeMessageRepository = mock<CompositeMessageRepository>()
+        val messageMetadataRepository = mock<MessageMetadataRepository>()
 
         private val handler: ButtonActionConfirmationHandler = ButtonActionConfirmationHandlerImpl(
             compositeMessageRepository = compositeMessageRepository,
             messageMetadataRepository = messageMetadataRepository
         )
 
-        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, ButtonActionConfirmationHandler> {
-            runBlocking { block() }
+        suspend fun withMarkSelected(result: Either<StorageFailure, Unit>) {
+            everySuspend { compositeMessageRepository.markSelected(any(), any(), any()) } returns result
+        }
+
+        suspend fun withClearSelection(result: Either<StorageFailure, Unit>) {
+            everySuspend { compositeMessageRepository.resetSelection(any(), any()) } returns result
+        }
+
+        suspend fun withMessageOriginalSender(result: Either<StorageFailure, UserId>) {
+            everySuspend { messageMetadataRepository.originalSenderId(any(), any()) } returns result
+        }
+
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, ButtonActionConfirmationHandler> {
+            block()
             return this to handler
         }
     }

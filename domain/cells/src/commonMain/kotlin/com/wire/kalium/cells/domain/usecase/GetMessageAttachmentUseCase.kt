@@ -21,12 +21,10 @@ import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.MessageAttachment
-import io.mockative.Mockable
 
 /**
  * Use case to get a message attachment by its asset ID.
  */
-@Mockable
 public interface GetMessageAttachmentUseCase {
     public suspend operator fun invoke(
         assetId: String,

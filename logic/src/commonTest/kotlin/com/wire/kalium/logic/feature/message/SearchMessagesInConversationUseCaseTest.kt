@@ -30,12 +30,14 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -54,14 +56,14 @@ class SearchMessagesInConversationUseCaseTest {
 
         searchMessagesUseCase(CONVERSATION_ID, SEARCH_QUERY, DEFAULT_LIMIT, DEFAULT_OFFSET)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByText(
                 eq(CONVERSATION_ID),
                 eq(SEARCH_QUERY),
                 eq(DEFAULT_LIMIT),
                 eq(DEFAULT_OFFSET)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -74,14 +76,14 @@ class SearchMessagesInConversationUseCaseTest {
 
         searchMessagesUseCase(CONVERSATION_ID, SEARCH_QUERY, customLimit, customOffset)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByText(
                 eq(CONVERSATION_ID),
                 eq(SEARCH_QUERY),
                 eq(customLimit),
                 eq(customOffset)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -151,21 +153,20 @@ class SearchMessagesInConversationUseCaseTest {
             .withSearchMessagesReturning(CONVERSATION_ID, SEARCH_QUERY, Either.Right(emptyList()))
             .arrange()
 
-        // Call without specifying limit and offset
         searchMessagesUseCase(CONVERSATION_ID, SEARCH_QUERY)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.searchMessagesByText(
                 eq(CONVERSATION_ID),
                 eq(SEARCH_QUERY),
-                eq(100),  // default limit
-                eq(0)     // default offset
+                eq(100),
+                eq(0)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private inner class Arrangement {
-        val messageRepository: MessageRepository = mock(MessageRepository::class)
+        val messageRepository: MessageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
 
         private val searchMessagesInConversation by lazy {
             SearchMessagesInConversationUseCaseImpl(messageRepository, testDispatchers)
@@ -176,14 +177,14 @@ class SearchMessagesInConversationUseCaseTest {
             searchQuery: String,
             response: Either<StorageFailure, List<Message.Standalone>>
         ) = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.searchMessagesByText(
                     eq(conversationId),
                     eq(searchQuery),
                     any(),
                     any()
                 )
-            }.returns(response)
+            } returns response
         }
 
         fun arrange() = this to searchMessagesInConversation

@@ -21,10 +21,11 @@ package com.wire.kalium.logic.data.logout
 import app.cash.turbine.test
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import com.wire.kalium.persistence.dao.MetadataDAO
-import io.mockative.mock
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.mock
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.test.runTest
 
 class LogoutRepositoryTest {
 
@@ -83,8 +84,8 @@ class LogoutRepositoryTest {
     }
 
     private class Arrangement {
-        private val logoutApi = mock(LogoutApi::class)
-        private val metadataDAO = mock(MetadataDAO::class)
+        private val logoutApi = mock<LogoutApi>(mode = MockMode.autoUnit)
+        private val metadataDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
 
         private val logoutDataSource = LogoutDataSource(logoutApi, metadataDAO)
 

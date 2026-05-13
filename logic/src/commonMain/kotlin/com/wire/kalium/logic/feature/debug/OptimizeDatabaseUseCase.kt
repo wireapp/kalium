@@ -20,46 +20,43 @@
 
 package com.wire.kalium.logic.feature.debug
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.persistence.db.DatabaseOptimizer
-import com.wire.kalium.util.DelicateKaliumApi
 
 /**
  * Use case responsible for optimizing the local SQLCipher database by invoking `PRAGMA optimize`.
  * This operation analyzes and optimizes indexes, potentially improving the performance of read-heavy queries,
  * especially on large datasets (e.g., conversations and messages).
- *
- * Intended for use in debugging or diagnostic tools (e.g., developer-only settings screens).
  */
-internal interface OptimizeDatabaseUseCase {
-    suspend operator fun invoke(): OptimizeDatabaseResult
+public interface OptimizeDatabaseUseCase {
+    public suspend operator fun invoke(): OptimizeDatabaseResult
+    public suspend fun optimizeAllTables(): OptimizeDatabaseResult
 }
 
-internal sealed class OptimizeDatabaseResult {
-    internal data object Success : OptimizeDatabaseResult()
-    internal data class Failure(val coreFailure: CoreFailure) : OptimizeDatabaseResult()
+public sealed class OptimizeDatabaseResult {
+    public data object Success : OptimizeDatabaseResult()
+    public data class Failure(val error: StorageFailure) : OptimizeDatabaseResult()
 }
 
-@DelicateKaliumApi(
-    message = "This use case is intended for debugging purposes only and should not be used in production code."
-)
-internal class OptimizeDatabaseUseCaseImpl constructor(
+internal class OptimizeDatabaseUseCaseImpl(
     private val optimizer: DatabaseOptimizer
 ) : OptimizeDatabaseUseCase {
 
-    @Suppress("TooGenericExceptionCaught")
-    @DelicateKaliumApi(
-        message = "This use case is intended for debugging purposes only and should not be used in production code."
-    )
-    override suspend fun invoke(): OptimizeDatabaseResult {
-        return try {
-            optimizer.optimize()
-            kaliumLogger.i("Database optimization completed successfully")
-            OptimizeDatabaseResult.Success
-        } catch (e: Exception) {
-            kaliumLogger.e("Database optimization failed: ${e.stackTraceToString()}")
-            OptimizeDatabaseResult.Failure(CoreFailure.Unknown(e))
-        }
-    }
+    override suspend fun invoke(): OptimizeDatabaseResult = wrapStorageRequest {
+        optimizer.optimize()
+    }.fold({
+        OptimizeDatabaseResult.Failure(it)
+    }, {
+        OptimizeDatabaseResult.Success
+    })
+
+    override suspend fun optimizeAllTables(): OptimizeDatabaseResult = wrapStorageRequest {
+        optimizer.optimizeAllTables()
+    }.fold({
+        OptimizeDatabaseResult.Failure(it)
+    }, {
+        OptimizeDatabaseResult.Success
+    })
 }

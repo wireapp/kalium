@@ -18,19 +18,21 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.feature.call.CallManager
-import io.mockative.any
-import io.mockative.eq
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 class SetTestPreviewActiveUseCaseTest {
 
-        private val callManager = mock(CallManager::class)
+        private val callManager = mock<CallManager>(mode = MockMode.autoUnit)
 
     private lateinit var setTestPreviewActive: SetTestPreviewActiveUseCase
 
@@ -38,17 +40,17 @@ class SetTestPreviewActiveUseCaseTest {
     fun setup() = runBlocking {
         setTestPreviewActive = SetTestPreviewActiveUseCase(lazy { callManager })
 
-        coEvery {
+        everySuspend {
             callManager.setTestPreviewActive(any())
-        }.returns(Unit)
+        } returns (Unit)
     }
 
     @Test
     fun givenWhenSetTestPreviewActive_thenUpdateTestPreviewActive() = runTest {
         setTestPreviewActive(true)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             callManager.setTestPreviewActive(eq(true))
-        }.wasInvoked(once)
+        }
     }
 }

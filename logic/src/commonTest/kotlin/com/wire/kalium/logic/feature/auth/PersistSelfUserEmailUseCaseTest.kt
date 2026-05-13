@@ -20,11 +20,13 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.UserRepository
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -41,9 +43,9 @@ internal class PersistSelfUserEmailUseCaseTest {
         val result = useCase(email)
 
         assertIs<PersistSelfUserEmailResult.Success>(result)
-        coVerify {
-            arrangement.userRepository.insertSelfIncompleteUserWithOnlyEmail(eq(email))
-        }.wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.insertSelfIncompleteUserWithOnlyEmail(email)
+        }
     }
 
     @Test
@@ -56,29 +58,29 @@ internal class PersistSelfUserEmailUseCaseTest {
         val result = useCase(email)
 
         assertIs<PersistSelfUserEmailResult.Failure>(result)
-        coVerify {
-            arrangement.userRepository.insertSelfIncompleteUserWithOnlyEmail(eq(email))
-        }.wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.userRepository.insertSelfIncompleteUserWithOnlyEmail(email)
+        }
     }
 
     inner class Arrangement {
 
-        val userRepository: UserRepository = mock(UserRepository::class)
+        val userRepository: UserRepository = mock(mode = MockMode.autoUnit)
 
         internal val useCase by lazy {
             PersistSelfUserEmailUseCaseImpl(userRepository = userRepository)
         }
 
         internal suspend fun withSuccess() = apply {
-            coEvery {
+            everySuspend {
                 userRepository.insertSelfIncompleteUserWithOnlyEmail(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         internal suspend fun withFailure() = apply {
-            coEvery {
+            everySuspend {
                 userRepository.insertSelfIncompleteUserWithOnlyEmail(any())
-            }.returns(Either.Left(StorageFailure.Generic(RuntimeException("DB failed"))))
+            } returns Either.Left(StorageFailure.Generic(RuntimeException("DB failed")))
         }
 
         internal fun arrange() = this to useCase

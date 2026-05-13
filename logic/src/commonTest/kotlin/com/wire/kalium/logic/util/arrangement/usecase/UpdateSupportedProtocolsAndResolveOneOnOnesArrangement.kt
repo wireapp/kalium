@@ -19,9 +19,11 @@ package com.wire.kalium.logic.util.arrangement.usecase
 
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface UpdateSupportedProtocolsAndResolveOneOnOnesArrangement {
     val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
@@ -33,10 +35,10 @@ internal class UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl
     : UpdateSupportedProtocolsAndResolveOneOnOnesArrangement {
 
     override val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase =
-        mock(UpdateSupportedProtocolsAndResolveOneOnOnesUseCase::class)
+        mock<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>(mode = MockMode.autoUnit)
 
     override suspend fun withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful() {
-        coEvery {
+        everySuspend {
             updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), any())
         }.returns(Either.Right(Unit))
     }

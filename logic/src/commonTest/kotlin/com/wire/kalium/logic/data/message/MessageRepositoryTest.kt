@@ -61,22 +61,18 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
-import okio.Path.Companion.toPath
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -84,6 +80,13 @@ import kotlin.test.assertIs
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.hours
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
+import okio.Path.Companion.toPath
 
 class MessageRepositoryTest {
 
@@ -101,9 +104,9 @@ class MessageRepositoryTest {
 
         // Then
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageDAO.getMessagesByConversationAndVisibility(eq(mappedId), any(), any(), any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -121,9 +124,9 @@ class MessageRepositoryTest {
 
         // Then
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageDAO.getImageMessageAssets(eq(mappedId), any(), any(), any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -144,9 +147,9 @@ class MessageRepositoryTest {
 
         // Then
         with(arrangement) {
-            verify {
+            verify(VerifyMode.exactly(1)) {
                 messageMapper.fromEntityToMessage(eq(entity))
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -163,13 +166,13 @@ class MessageRepositoryTest {
         assertEquals(insertOrIgnoreMessage.right(), messageRepository.persistMessage(message))
 
         with(arrangement) {
-            verify {
+            verify(VerifyMode.exactly(1)) {
                 messageMapper.fromMessageToEntity(eq(message))
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageDAO.insertOrIgnoreMessage(eq(mappedEntity), any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -207,9 +210,9 @@ class MessageRepositoryTest {
             }
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageApi.qualifiedSendMessage(matches { it.externalBlob!!.contentEquals(dataBlob.data) }, any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -237,13 +240,13 @@ class MessageRepositoryTest {
             )
         ).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.messageApi.qualifiedSendMessage(
                 matches {
                     it.recipients.isEmpty() && it.messageOption == QualifiedMessageOption.IgnoreAll
                 }, any()
             )
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -261,13 +264,13 @@ class MessageRepositoryTest {
             .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation())
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.messageApi.qualifiedSendMessage(
                 matches {
                     it.recipients.isEmpty() && it.messageOption == QualifiedMessageOption.ReportAll
                 }, any()
             )
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -299,9 +302,9 @@ class MessageRepositoryTest {
             }
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageApi.qualifiedBroadcastMessage(matches { it.externalBlob!!.contentEquals(dataBlob.data) })
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -319,11 +322,11 @@ class MessageRepositoryTest {
             BroadcastMessageOption.IgnoreSome(listOf())
         ).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.messageApi.qualifiedBroadcastMessage(
                 matches { it.recipients.isEmpty() && it.messageOption == QualifiedMessageOption.IgnoreSome(listOf()) }
             )
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -339,14 +342,14 @@ class MessageRepositoryTest {
 
         messageRepository.promoteMessageToSentUpdatingServerTime(conversationID, messageID, newServerData, millis).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageDAO.promoteMessageToSentUpdatingServerTime(
                 eq(conversationID.toDao()),
                 eq(messageID),
                 eq(newServerData),
                 eq(millis)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -368,7 +371,7 @@ class MessageRepositoryTest {
             .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Users(listOf(TEST_USER_ID)))
             .shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.messageApi.qualifiedSendMessage(
                 matches {
                     val messageOption = it.messageOption
@@ -379,7 +382,7 @@ class MessageRepositoryTest {
                 },
                 any()
             )
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -395,14 +398,14 @@ class MessageRepositoryTest {
 
         messageRepository.persistRecipientsDeliveryFailure(conversationID, messageID, listOfUserIds).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageDAO.insertFailedRecipientDelivery(
                 eq(messageID),
                 eq(conversationID.toDao()),
                 eq(expectedFailedUsers),
                 eq(RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -418,17 +421,16 @@ class MessageRepositoryTest {
 
         messageRepository.persistNoClientsToDeliverFailure(conversationID, messageID, listOfUserIds).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
 
             arrangement.messageDAO.insertFailedRecipientDelivery(
-                eq(messageID),
-                eq(conversationID.toDao()),
-                eq(expectedFailedUsers),
-                eq(RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER)
+                messageID,
+                conversationID.toDao(),
+                expectedFailedUsers,
+                RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER
             )
 
         }
-            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -449,17 +451,17 @@ class MessageRepositoryTest {
             (result as Either.Right).value.failedToConfirmClients.isNotEmpty()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsMessageApi.sendMessage(
                 matches {
                     it.contentToString() == ByteArray(0).contentToString()
                 },
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.sendMessagePartialFailureMapper.fromMlsDTO(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -476,12 +478,12 @@ class MessageRepositoryTest {
             targetConversationId
         ).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageDAO.moveMessages(
                 eq(sourceConversationId.toDao()),
                 eq(targetConversationId.toDao())
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -542,13 +544,13 @@ class MessageRepositoryTest {
         // when
         messageRepository.updateLegalHoldMessageMembers(TEST_MESSAGE_ID, TEST_CONVERSATION_ID, newUsersList)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageDAO.updateLegalHoldMessageMembers(
                 eq(TEST_CONVERSATION_ID.toDao()),
                 eq(TEST_MESSAGE_ID),
                 eq(newUsersList.map { it.toDao() })
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -561,9 +563,9 @@ class MessageRepositoryTest {
         // when
         messageRepository.getLastMessagesForConversationIds(conversationIds)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageDAO.getLastMessagesByConversations(eq(conversationIds.map { it.toDao() }))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -578,8 +580,7 @@ class MessageRepositoryTest {
 
         // then
         result.shouldSucceed { it.isEmpty() }
-        coVerify { arrangement.messageDAO.getNotificationMessage() }
-            .wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.messageDAO.getNotificationMessage() }
 
     }
 
@@ -701,11 +702,11 @@ class MessageRepositoryTest {
         )
 
         result.shouldSucceed()
-        coVerify {
+        verifySuspend {
             arrangement.messageDAO.updateCompositeMessageContent(
                 eq(message.conversationId.toDao()),
-                any(messageContent.editMessageId),
-                any(Instant.UNIX_FIRST_DATE.plus(1.hours)),
+                any(),
+                any(),
                 any(),
                 any()
             )
@@ -713,17 +714,17 @@ class MessageRepositoryTest {
     }
 
     private class Arrangement {
-        val messageApi = mock(MessageApi::class)
-        val mlsMessageApi = mock(MLSMessageApi::class)
-        val messageDAO = mock(MessageDAO::class)
-        val sendMessageFailureMapper = mock(SendMessageFailureMapper::class)
-        val sendMessagePartialFailureMapper = mock(SendMessagePartialFailureMapper::class)
-        val messageMapper = mock(MessageMapper::class)
+        val messageApi = mock<MessageApi>(mode = MockMode.autoUnit)
+        val mlsMessageApi = mock<MLSMessageApi>(mode = MockMode.autoUnit)
+        val messageDAO = mock<MessageDAO>(mode = MockMode.autoUnit)
+        val sendMessageFailureMapper = mock<SendMessageFailureMapper>(mode = MockMode.autoUnit)
+        val sendMessagePartialFailureMapper = mock<SendMessagePartialFailureMapper>(mode = MockMode.autoUnit)
+        val messageMapper = mock<MessageMapper>(mode = MockMode.autoUnit)
         suspend fun withMockedMessages(messages: List<MessageEntity>): Arrangement {
-            coEvery {
+            everySuspend {
                 messageDAO.getMessagesByConversationAndVisibility(any(), any(), any(), any())
             }.returns(flowOf(messages))
-            coEvery {
+            everySuspend {
                 messageDAO.getMessageIdsThatExpectReadConfirmationWithinDates(
                     any(),
                     any(),
@@ -763,7 +764,7 @@ class MessageRepositoryTest {
         }
 
         suspend fun withSuccessfulMessageDelivery(dateTime: Instant) = apply {
-            coEvery { messageApi.qualifiedSendMessage(any(), any()) }
+            everySuspend { messageApi.qualifiedSendMessage(any(), any()) }
                 .returns(
                     NetworkResponse.Success(
                         QualifiedSendMessageResponse.MessageSent(dateTime, mapOf(), mapOf(), mapOf()),
@@ -799,7 +800,7 @@ class MessageRepositoryTest {
                 listOf()
             )
         ): Arrangement {
-            coEvery { mlsMessageApi.sendMessage(any()) }
+            everySuspend { mlsMessageApi.sendMessage(any()) }
                 .returns(
                     NetworkResponse.Success(
                         timestamp,
@@ -811,7 +812,7 @@ class MessageRepositoryTest {
         }
 
         suspend fun withSuccessfulMessageBroadcasting(dateTime: Instant): Arrangement {
-            coEvery { messageApi.qualifiedBroadcastMessage(any()) }
+            everySuspend { messageApi.qualifiedBroadcastMessage(any()) }
                 .returns(
                     NetworkResponse.Success(
                         QualifiedSendMessageResponse.MessageSent(dateTime, mapOf(), mapOf(), mapOf()),
@@ -823,19 +824,19 @@ class MessageRepositoryTest {
         }
 
         suspend fun withUpdateMessageAfterSend() = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any())
             }.returns(Unit)
         }
 
         suspend fun withMovingToAnotherConversationSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.moveMessages(any(), any())
             }.returns(Unit)
         }
 
         suspend fun withMovingToAnotherConversationFailingWith(throwable: Throwable) = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.moveMessages(any(), any())
             }.throws(throwable)
         }
@@ -845,7 +846,7 @@ class MessageRepositoryTest {
             messageId: String,
             result: Int
         ) = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.getSearchedConversationMessagePosition(eq(conversationId), eq(messageId))
             }.returns(result)
         }
@@ -854,25 +855,25 @@ class MessageRepositoryTest {
             conversationId: QualifiedIDEntity,
             result: List<AssetMessageEntity>
         ) = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.getImageMessageAssets(eq(conversationId), any(), any(), any())
             }.returns(result)
         }
 
         suspend fun withGetLastMessagesByConversations(result: Map<QualifiedIDEntity, MessageEntity>) = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.getLastMessagesByConversations(any())
             }.returns(result)
         }
 
         suspend fun withInsertOrIgnoreMessage(result: InsertMessageResult) = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.insertOrIgnoreMessage(any(), any())
             }.returns(result)
         }
 
         suspend fun withNotificationMessage(notificationEntities: List<NotificationMessageEntity>) = apply {
-            coEvery { messageDAO.getNotificationMessage() }.returns(notificationEntities)
+            everySuspend { messageDAO.getNotificationMessage() }.returns(notificationEntities)
         }
 
         fun arrange() = this to MessageDataSource(
@@ -886,13 +887,13 @@ class MessageRepositoryTest {
         )
 
         suspend fun withInsertFailedRecipients() = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.insertFailedRecipientDelivery(any(), any(), any(), any())
             }.returns(Unit)
         }
 
         suspend fun withObserveMessageById(messageFlow: Flow<MessageEntity?>) = apply {
-            coEvery {
+            everySuspend {
                 messageDAO.observeMessageById(any(), any())
             }.returns(messageFlow)
         }

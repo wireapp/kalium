@@ -45,14 +45,16 @@ import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -63,7 +65,6 @@ import kotlin.time.Duration.Companion.seconds
 class DeleteMessageUseCaseTest {
     @Test
     fun givenASentMessage_WhenDeleteForEveryIsTrue_TheGeneratedMessageShouldBeCorrect() = runTest {
-        // given
         val deleteForEveryone = true
 
         val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
@@ -76,26 +77,23 @@ class DeleteMessageUseCaseTest {
             .withTextMessage(Message.Status.Sent)
             .arrange()
 
-        // when
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).toEither().shouldSucceed()
 
-        // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matches { message ->
+                matching { message ->
                     message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
                 },
                 any()
             )
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markMessageAsDeleted(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenAFailedMessage_WhenItGetsDeletedForEveryone_TheMessageShouldBeDeleted() = runTest {
-        // given
         val deleteForEveryone = true
         val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
             .withSendMessageSucceed()
@@ -108,24 +106,21 @@ class DeleteMessageUseCaseTest {
             .withTextMessage(Message.Status.Failed)
             .arrange()
 
-        // when
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).toEither().shouldSucceed()
 
-        // then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.messageRepository.markMessageAsDeleted(any(), any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.deleteMessage(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenASentMessage_WhenDeleteForEveryoneIsFalse_TheGeneratedMessageShouldBeDeletedOnlyLocally() = runTest {
-        // given
         val deleteForEveryone = false
         val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
             .withSendMessageSucceed()
@@ -137,7 +132,6 @@ class DeleteMessageUseCaseTest {
             .withTextMessage(Message.Status.Sent)
             .arrange()
 
-        // when
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).toEither().shouldSucceed()
 
         val deletedForMeContent = MessageContent.DeleteForMe(
@@ -145,25 +139,23 @@ class DeleteMessageUseCaseTest {
             TEST_CONVERSATION_ID
         )
 
-        // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matches { message ->
+                matching { message ->
                     message.conversationId == SELF_CONVERSATION_ID && message.content == deletedForMeContent
                 },
                 any()
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markMessageAsDeleted(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
-        }.wasInvoked(exactly = once)
+        }
 
     }
 
     @Test
     fun givenAMessageWithAsset_WhenDelete_TheDeleteAssetShouldBeInvoked() = runTest {
-        // given
         val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
@@ -176,35 +168,32 @@ class DeleteMessageUseCaseTest {
             .withAssetRepositoryDeleteAssetSucceed()
             .arrange()
 
-        // when
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, false).toEither().shouldSucceed()
         val deletedForMeContent = MessageContent.DeleteForMe(
             TEST_MESSAGE_UUID,
             TEST_CONVERSATION_ID
         )
 
-        // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matches { message ->
+                matching { message ->
                     message.conversationId == SELF_CONVERSATION_ID && message.content == deletedForMeContent
                 },
                 any()
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.assetRepository.deleteAsset(eq(ASSET_ID.value), eq(ASSET_ID.domain), eq(ASSET_TOKEN))
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.markMessageAsDeleted(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenAEphemeralSentMessage_WhenDeleteForEveryIsTrue_TheGeneratedMessageShouldBeCorrect() = runTest {
-        // given
         val deleteForEveryone = true
 
         val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
@@ -223,33 +212,31 @@ class DeleteMessageUseCaseTest {
             )
             .arrange()
 
-        // when
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).toEither().shouldSucceed()
 
-        // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(
-                matches { message ->
+                matching { message ->
                     message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
                 },
                 any()
             )
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.deleteMessage(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
-        val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val messageRepository: MessageRepository = mock(MessageRepository::class)
-        val userRepository: UserRepository = mock(UserRepository::class)
-        val slowSyncRepository = mock(SlowSyncRepository::class)
-        val messageSender: MessageSender = mock(MessageSender::class)
-        val assetRepository: AssetRepository = mock(AssetRepository::class)
-        val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
-        val deleteCellAssets: DeleteMessageAttachmentsUseCase = mock(DeleteMessageAttachmentsUseCase::class)
+        val currentClientIdProvider: CurrentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val messageRepository: MessageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
+        val userRepository: UserRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
+        val messageSender: MessageSender = mock<MessageSender>(mode = MockMode.autoUnit)
+        val assetRepository: AssetRepository = mock<AssetRepository>(mode = MockMode.autoUnit)
+        val selfConversationIdProvider: SelfConversationIdProvider = mock<SelfConversationIdProvider>(mode = MockMode.autoUnit)
+        val deleteCellAssets: DeleteMessageAttachmentsUseCase = mock<DeleteMessageAttachmentsUseCase>(mode = MockMode.autoUnit)
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
@@ -269,69 +256,69 @@ class DeleteMessageUseCaseTest {
         )
 
         suspend fun withSendMessageSucceed() = apply {
-            coEvery {
+            everySuspend {
                 messageSender.sendMessage(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSelfUser(selfUser: SelfUser) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.observeSelfUser()
-            }.returns(flowOf(selfUser))
+            } returns flowOf(selfUser)
         }
 
         suspend fun withCurrentClientId(clientId: ClientId) = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(Either.Right(clientId))
+            } returns Either.Right(clientId)
         }
 
         fun withCompletedSlowSync() = apply {
             every {
                 slowSyncRepository.slowSyncStatus
-            }.returns(completeStateFlow)
+            } returns completeStateFlow
         }
 
         suspend fun withMessageRepositoryMarkMessageAsDeletedSucceed() = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.markMessageAsDeleted(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withMessageRepositoryDeletionSucceed() = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.deleteMessage(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withMessageRepositoryDeleteMessageSucceed() = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.deleteMessage(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withTextMessage(status: Message.Status, expirationData: Message.ExpirationData? = null) = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.getMessageById(any(), any())
-            }.returns(Either.Right(TestMessage.TEXT_MESSAGE.copy(status = status, expirationData = expirationData)))
+            } returns Either.Right(TestMessage.TEXT_MESSAGE.copy(status = status, expirationData = expirationData))
         }
 
         suspend fun withAssetMessage() = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.getMessageById(any(), any())
-            }.returns(Either.Right(TestMessage.TEXT_MESSAGE.copy(content = MESSAGE_ASSET_CONTENT)))
+            } returns Either.Right(TestMessage.TEXT_MESSAGE.copy(content = MESSAGE_ASSET_CONTENT))
         }
 
         suspend fun withAssetRepositoryDeleteAssetSucceed() = apply {
-            coEvery {
+            everySuspend {
                 assetRepository.deleteAsset(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSelfConversationIds(conversationIds: List<ConversationId>) = apply {
-            coEvery {
+            everySuspend {
                 selfConversationIdProvider.invoke()
-            }.returns(Either.Right(conversationIds))
+            } returns Either.Right(conversationIds)
         }
 
     }

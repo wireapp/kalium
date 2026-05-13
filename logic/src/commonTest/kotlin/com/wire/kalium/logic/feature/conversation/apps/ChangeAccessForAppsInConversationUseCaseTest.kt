@@ -23,13 +23,15 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.feature.conversation.UpdateConversationAccessRoleUseCase
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -40,7 +42,6 @@ class ChangeAccessForAppsInConversationUseCaseTest {
 
     @Test
     fun givenSuccessfulUpdate_whenEnablingAppsAccess_thenSystemMessageIsInsertedWithEnabledTrue() = runTest {
-        // Given
         val accessRoles = setOf(
             Conversation.AccessRole.TEAM_MEMBER,
             Conversation.AccessRole.NON_TEAM_MEMBER,
@@ -52,37 +53,34 @@ class ChangeAccessForAppsInConversationUseCaseTest {
             .withUpdateAccessRoleReturning(UpdateConversationAccessRoleUseCase.Result.Success)
             .arrange()
 
-        // When
         val result = changeAccessForApps(
             conversationId = MockConversation.ID,
             accessRoles = accessRoles,
             access = access
         )
 
-        // Then
         assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationAccessRole(
                 conversationId = eq(MockConversation.ID),
                 accessRoles = eq(accessRoles),
                 access = eq(access)
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = any(),
                 conversationId = eq(MockConversation.ID),
                 senderUserId = eq(arrangement.selfUserId),
                 isAppsAccessEnabled = eq(true)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenSuccessfulUpdate_whenDisablingAppsAccess_thenSystemMessageIsInsertedWithEnabledFalse() = runTest {
-        // Given
         val accessRoles = setOf(
             Conversation.AccessRole.TEAM_MEMBER,
             Conversation.AccessRole.NON_TEAM_MEMBER
@@ -93,29 +91,26 @@ class ChangeAccessForAppsInConversationUseCaseTest {
             .withUpdateAccessRoleReturning(UpdateConversationAccessRoleUseCase.Result.Success)
             .arrange()
 
-        // When
         val result = changeAccessForApps(
             conversationId = MockConversation.ID,
             accessRoles = accessRoles,
             access = access
         )
 
-        // Then
         assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = any(),
                 conversationId = eq(MockConversation.ID),
                 senderUserId = eq(arrangement.selfUserId),
                 isAppsAccessEnabled = eq(false)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenFailedUpdate_whenChangingAppsAccess_thenNoSystemMessageIsInserted() = runTest {
-        // Given
         val accessRoles = setOf(
             Conversation.AccessRole.TEAM_MEMBER,
             Conversation.AccessRole.SERVICE
@@ -127,38 +122,35 @@ class ChangeAccessForAppsInConversationUseCaseTest {
             .withUpdateAccessRoleReturning(UpdateConversationAccessRoleUseCase.Result.Failure(networkError))
             .arrange()
 
-        // When
         val result = changeAccessForApps(
             conversationId = MockConversation.ID,
             accessRoles = accessRoles,
             access = access
         )
 
-        // Then
         assertIs<UpdateConversationAccessRoleUseCase.Result.Failure>(result)
         assertIs<NetworkFailure.NoNetworkConnection>(result.cause)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationAccessRole(
                 conversationId = any(),
                 accessRoles = any(),
                 access = any()
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = any(),
                 conversationId = any(),
                 senderUserId = any(),
                 isAppsAccessEnabled = any()
             )
-        }.wasNotInvoked()
+        }
     }
 
     @Test
     fun givenSuccessfulUpdate_whenChangingAccess_thenCorrectAccessRolesArePassedToUpdateUseCase() = runTest {
-        // Given
         val expectedAccessRoles = setOf(
             Conversation.AccessRole.TEAM_MEMBER,
             Conversation.AccessRole.NON_TEAM_MEMBER,
@@ -171,26 +163,23 @@ class ChangeAccessForAppsInConversationUseCaseTest {
             .withUpdateAccessRoleReturning(UpdateConversationAccessRoleUseCase.Result.Success)
             .arrange()
 
-        // When
         changeAccessForApps(
             conversationId = MockConversation.ID,
             accessRoles = expectedAccessRoles,
             access = expectedAccess
         )
 
-        // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationAccessRole(
                 conversationId = eq(MockConversation.ID),
-                accessRoles = matches { it == expectedAccessRoles },
-                access = matches { it == expectedAccess }
+                accessRoles = matching { it == expectedAccessRoles },
+                access = matching { it == expectedAccess }
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenSuccessfulUpdate_whenChangingAccess_thenSystemMessageContainsCorrectSender() = runTest {
-        // Given
         val accessRoles = setOf(Conversation.AccessRole.SERVICE)
         val access = setOf(Conversation.Access.INVITE)
 
@@ -198,27 +187,24 @@ class ChangeAccessForAppsInConversationUseCaseTest {
             .withUpdateAccessRoleReturning(UpdateConversationAccessRoleUseCase.Result.Success)
             .arrange()
 
-        // When
         changeAccessForApps(
             conversationId = MockConversation.ID,
             accessRoles = accessRoles,
             access = access
         )
 
-        // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = any(),
                 conversationId = any(),
-                senderUserId = matches { it == arrangement.selfUserId },
+                senderUserId = matching { it == arrangement.selfUserId },
                 isAppsAccessEnabled = any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenSuccessfulUpdate_whenChangingAccess_thenSystemMessageContainsCorrectConversationId() = runTest {
-        // Given
         val accessRoles = setOf(Conversation.AccessRole.SERVICE)
         val access = setOf(Conversation.Access.INVITE)
 
@@ -226,27 +212,25 @@ class ChangeAccessForAppsInConversationUseCaseTest {
             .withUpdateAccessRoleReturning(UpdateConversationAccessRoleUseCase.Result.Success)
             .arrange()
 
-        // When
         changeAccessForApps(
             conversationId = MockConversation.ID,
             accessRoles = accessRoles,
             access = access
         )
 
-        // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.systemMessageInserter.insertConversationAppsAccessChanged(
                 eventId = any(),
-                conversationId = matches { it == MockConversation.ID },
+                conversationId = matching { it == MockConversation.ID },
                 senderUserId = any(),
                 isAppsAccessEnabled = any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        val updateConversationAccessRole = mock(UpdateConversationAccessRoleUseCase::class)
-        val systemMessageInserter = mock(SystemMessageInserter::class)
+        val updateConversationAccessRole = mock<UpdateConversationAccessRoleUseCase>(mode = MockMode.autoUnit)
+        val systemMessageInserter = mock<SystemMessageInserter>(mode = MockMode.autoUnit)
         val selfUserId = TestUser.SELF.id
 
         val changeAccessForApps = ChangeAccessForAppsInConversationUseCase(
@@ -257,25 +241,25 @@ class ChangeAccessForAppsInConversationUseCaseTest {
 
         init {
             runBlocking {
-                coEvery {
+                everySuspend {
                     systemMessageInserter.insertConversationAppsAccessChanged(
                         eventId = any(),
                         conversationId = any(),
                         senderUserId = any(),
                         isAppsAccessEnabled = any()
                     )
-                }.returns(Unit)
+                } returns Unit
             }
         }
 
         suspend fun withUpdateAccessRoleReturning(result: UpdateConversationAccessRoleUseCase.Result) = apply {
-            coEvery {
+            everySuspend {
                 updateConversationAccessRole(
                     conversationId = any(),
                     accessRoles = any(),
                     access = any()
                 )
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to changeAccessForApps

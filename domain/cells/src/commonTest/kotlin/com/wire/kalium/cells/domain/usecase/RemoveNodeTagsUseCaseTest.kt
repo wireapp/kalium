@@ -17,16 +17,18 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,9 +45,9 @@ class RemoveNodeTagsUseCaseTest {
         val result = useCase.invoke(uuid)
 
         assertEquals(Unit.right(), result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.removeNodeTags(uuid)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -59,17 +61,17 @@ class RemoveNodeTagsUseCaseTest {
         val result = useCase.invoke(uuid)
 
         assertEquals(failure.left(), result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.removeNodeTags(uuid)
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
 
-        val cellsRepository = mock(CellsRepository::class)
+        val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
 
         suspend fun withRepositoryReturning(result: Either<NetworkFailure, Unit>) = apply {
-            coEvery { cellsRepository.removeNodeTags(any()) }.returns(result)
+            everySuspend { cellsRepository.removeNodeTags(any()) }.returns(result)
         }
 
         fun arrange() = this to RemoveNodeTagsUseCaseImpl(

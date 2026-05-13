@@ -47,12 +47,10 @@ import com.wire.kalium.persistence.dao.ManagedByEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.SsoIdEntity
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 @Suppress("TooManyFunctions")
-@Mockable
 internal interface SessionRepository {
     suspend fun storeSession(session: StoreSessionParam): Either<StorageFailure, Unit>
 

@@ -19,14 +19,12 @@
 package com.wire.kalium.logic.feature.auth.sso
 
 import com.wire.kalium.logic.feature.auth.sso.ValidateSSOCodeUseCase.Companion.SSO_CODE_WIRE_PREFIX
-import io.mockative.Mockable
 import kotlin.uuid.Uuid
 
 /**
  * Validates a SSO code.
  * The code is valid if it starts with [SSO_CODE_WIRE_PREFIX] and contains **a valid UUID with hex-and-dash format**.
  */
-@Mockable
 public interface ValidateSSOCodeUseCase {
     /**
      * @param ssoCode the SSO code to validate
