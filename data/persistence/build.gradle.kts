@@ -39,6 +39,7 @@ sqldelight {
             val sourceFolderName = "db_user"
             srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))
             schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
+            enableCustomQueryKeys.set(true)
         }
 
         create("GlobalDatabase") {
