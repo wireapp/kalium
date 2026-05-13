@@ -36,8 +36,9 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -88,8 +89,8 @@ class MPBackupRealCompressionIntegrationTest {
             messages = listOf(TestMessage.TEXT_MESSAGE),
             reactions = listOf(testReaction),
         )
-        val userRepository = mock(UserRepository::class)
-        coEvery { userRepository.getSelfUser() }.returns(TestUser.SELF.right())
+        val userRepository = mock<UserRepository>()
+        everySuspend { userRepository.getSelfUser() } returns TestUser.SELF.right()
         val createUseCase = CreateMPBackupUseCaseImpl(
             backupRepository = exportRepository,
             userRepository = userRepository,
