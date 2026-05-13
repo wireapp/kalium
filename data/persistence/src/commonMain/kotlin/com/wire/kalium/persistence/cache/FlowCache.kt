@@ -52,6 +52,9 @@ internal class FlowCache<Key : Any, Value>(
     private val flowTimeoutDuration: Duration = FLOW_OBSERVING_TIMEOUT_IN_MILLIS.milliseconds,
 ) {
 
+    private val cacheParentJob: Job = requireNotNull(cacheScope.coroutineContext[Job]) {
+        "cacheScope must have a Job in its context so sharing jobs can be parented to it"
+    }
     private val mutex = Mutex()
     private val storage = hashMapOf<Key, Flow<Value>>()
     private val sharingJobs = hashMapOf<Key, Job>()
@@ -61,20 +64,27 @@ internal class FlowCache<Key : Any, Value>(
         flowProducer: suspend (key: Key) -> Flow<Value>
     ): Flow<Value> {
         suspend fun createFlow(): Flow<Value> {
-            val sharingJob = SupervisorJob(cacheScope.coroutineContext[Job])
+            val sharingJob = SupervisorJob(cacheParentJob)
             val sharingScope = CoroutineScope(cacheScope.coroutineContext + sharingJob)
-            sharingJobs[key] = sharingJob
-            return flowProducer(key)
-                .onCompletion {
-                    remove(key)
-                }
-                .shareIn(
-                    scope = sharingScope,
-                    started = SharingStarted.WhileSubscribed(
-                        stopTimeoutMillis = flowTimeoutDuration.inWholeMilliseconds
-                    ),
-                    replay = 1
-                )
+            var registered = false
+            try {
+                val sharedFlow = flowProducer(key)
+                    .onCompletion { removeIfOwned(key, sharingJob) }
+                    .shareIn(
+                        scope = sharingScope,
+                        started = SharingStarted.WhileSubscribed(
+                            stopTimeoutMillis = flowTimeoutDuration.inWholeMilliseconds
+                        ),
+                        replay = 1
+                    )
+                sharingJobs[key] = sharingJob
+                registered = true
+                return sharedFlow
+            } finally {
+                // Only fires when flowProducer/shareIn failed before the job was registered;
+                // cancel the orphan SupervisorJob so it doesn't linger as a child of cacheScope.
+                if (!registered) sharingJob.cancel()
+            }
         }
 
         return mutex.withLock {
@@ -92,6 +102,21 @@ internal class FlowCache<Key : Any, Value>(
     suspend fun remove(key: Key) = mutex.withLock {
         storage.remove(key)
         sharingJobs.remove(key)?.cancel()
+    }
+
+    /**
+     * Removes the entry for [key] and cancels [owningJob] only if [owningJob] is still the
+     * currently-registered sharing job for [key]. Used by the upstream's [onCompletion] hook so
+     * that a late-firing completion from an already-evicted flow does not tear down a
+     * newly-recreated entry under the same key. The job cancellation is required to kill the
+     * surrounding `launchSharing` coroutine that [shareIn] keeps alive across STOP signals.
+     */
+    private suspend fun removeIfOwned(key: Key, owningJob: Job) = mutex.withLock {
+        if (sharingJobs[key] === owningJob) {
+            storage.remove(key)
+            sharingJobs.remove(key)
+            owningJob.cancel()
+        }
     }
 
     companion object {
