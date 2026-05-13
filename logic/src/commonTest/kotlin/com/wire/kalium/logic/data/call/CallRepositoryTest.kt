@@ -1499,6 +1499,62 @@ class CallRepositoryTest {
     }
 
     @Test
+    fun givenStaleOpenCallsCleanupIsObserved_whenCleanupIsMarkedDone_thenInitialAndDoneStatesAreEmitted() = runTest {
+        // given
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
+
+        callRepository.observeStaleOpenCallsCleanupFinished().test {
+            assertEquals(false, awaitItem())
+
+            // when
+            callRepository.setStaleOpenCallsCleanupFinished()
+
+            // then
+            assertEquals(true, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenOpenCallsCleanupShouldNotBeMarkedDone_whenClosingOpenCalls_thenCleanupFinishedIsNotEmitted() = runTest {
+        // given
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveEstablishedCallsReturns(flowOf(emptyList()))
+            .arrange()
+
+        callRepository.observeStaleOpenCallsCleanupFinished().test {
+            // then
+            assertEquals(false, awaitItem())
+
+            // when
+            callRepository.updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards = false)
+
+            // then
+            expectNoEvents()
+        }
+    }
+
+    @Test
+    fun givenOpenCallsCleanupShouldBeMarkedDone_whenClosingOpenCalls_thenCleanupFinishedIsEmitted() = runTest {
+        // given
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveEstablishedCallsReturns(flowOf(emptyList()))
+            .arrange()
+
+        callRepository.observeStaleOpenCallsCleanupFinished().test {
+            // then
+            assertEquals(false, awaitItem())
+
+            // when
+            callRepository.updateOpenCallsToClosedStatus()
+
+            // then
+            assertEquals(true, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun givenAConversationIdThatExistsInTheFlow_whenUpdateParticipantsActiveSpeakerIsCalled_thenUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .withInitialCallMetadataProfile(
