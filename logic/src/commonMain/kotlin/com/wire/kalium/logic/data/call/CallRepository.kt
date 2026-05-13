@@ -283,6 +283,7 @@ internal class CallDataSource(
                     "| status: [$status] | isCallInCurrentSession: [$isCallInCurrentSession]"
         )
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
+            // Save into metadata
             _callMetadataProfile.update { callMetadataProfile ->
                 callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
             }
@@ -319,14 +320,14 @@ internal class CallDataSource(
                 }
             } else if (lastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
                 callingLogger.i("[CallRepository][createCall] -> Insert Call")
-                // Save into database
-                wrapStorageRequest {
-                    callDAO.insertCall(call = callEntity)
-                }
-
                 // Save into metadata
                 _callMetadataProfile.update { callMetadataProfile ->
                     callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
+                }
+
+                // Save into database
+                wrapStorageRequest {
+                    callDAO.insertCall(call = callEntity)
                 }
             }
         }
