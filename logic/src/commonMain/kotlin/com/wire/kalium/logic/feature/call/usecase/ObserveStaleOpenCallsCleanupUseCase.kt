@@ -26,10 +26,10 @@ import kotlinx.coroutines.flow.Flow
  *
  * @return a flow of boolean, where true means that the cleanup is done, and false means that the cleanup is still in progress.
  */
-public interface ObserveStaleOpenCallsCleanup {
+public interface ObserveStaleOpenCallsCleanupUseCase {
     public operator fun invoke(): Flow<Boolean>
 }
 
-internal class ObserveStaleOpenCallsCleanupImpl(private val callRepository: CallRepository) : ObserveStaleOpenCallsCleanup {
+internal class ObserveStaleOpenCallsCleanupUseCaseImpl(private val callRepository: CallRepository) : ObserveStaleOpenCallsCleanupUseCase {
     override fun invoke(): Flow<Boolean> = callRepository.observeStaleOpenCallsCleanupDone()
 }

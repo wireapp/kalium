@@ -29,7 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class ObserveStaleOpenCallsCleanupTest {
+class ObserveStaleOpenCallsCleanupUseCaseTest {
 
     @Test
     fun givenCallRepositoryEmitsCleanupStates_whenInvokingUseCase_thenCleanupStatesAreEmitted() = runTest {
@@ -57,6 +57,6 @@ class ObserveStaleOpenCallsCleanupTest {
             } returns cleanupDoneFlow
         }
 
-        fun arrange() = this to ObserveStaleOpenCallsCleanupImpl(callRepository)
+        fun arrange() = this to ObserveStaleOpenCallsCleanupUseCaseImpl(callRepository)
     }
 }
