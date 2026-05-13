@@ -124,14 +124,6 @@ allprojects {
         google()
         mavenCentral()
     }
-    configurations.configureEach {
-        resolutionStrategy.eachDependency {
-            if (requested.group == "app.cash.sqldelight") {
-                useTarget("com.wire:${requested.name}:${requested.version}")
-                because("Use the Wire SQLDelight fork consistently to avoid duplicate app.cash.sqldelight classes")
-            }
-        }
-    }
 }
 
 // We only want coverage reports of actual Kalium
