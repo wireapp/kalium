@@ -132,7 +132,9 @@ internal interface CallRepository {
     suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>)
     fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: Map<UserId, List<String>>)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
-    suspend fun updateOpenCallsToClosedStatus()
+    suspend fun updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards: Boolean = true)
+    fun setStaleOpenCallsCleanupFinished()
+    fun observeStaleOpenCallsCleanupFinished(): Flow<Boolean>
     suspend fun leavePreviouslyJoinedMlsConferences()
     suspend fun persistMissedCall(conversationId: ConversationId)
     suspend fun joinMlsConference(
@@ -186,6 +188,7 @@ internal class CallDataSource(
     private val _recentlyEndedCallFlow = MutableSharedFlow<RecentlyEndedCallMetadata>(
         extraBufferCapacity = 1
     )
+    private val staleOpenCallsCleanupFinishedFlow = MutableStateFlow(false)
 
     override suspend fun updateRecentlyEndedCallMetadata(recentlyEndedCallMetadata: RecentlyEndedCallMetadata) {
         _recentlyEndedCallFlow.emit(recentlyEndedCallMetadata)
@@ -283,6 +286,7 @@ internal class CallDataSource(
                     "| status: [$status] | isCallInCurrentSession: [$isCallInCurrentSession]"
         )
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
+            // Save into metadata
             _callMetadataProfile.update { callMetadataProfile ->
                 callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
             }
@@ -319,14 +323,14 @@ internal class CallDataSource(
                 }
             } else if (lastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
                 callingLogger.i("[CallRepository][createCall] -> Insert Call")
-                // Save into database
-                wrapStorageRequest {
-                    callDAO.insertCall(call = callEntity)
-                }
-
                 // Save into metadata
                 _callMetadataProfile.update { callMetadataProfile ->
                     callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
+                }
+
+                // Save into database
+                wrapStorageRequest {
+                    callDAO.insertCall(call = callEntity)
                 }
             }
         }
@@ -543,10 +547,21 @@ internal class CallDataSource(
             )
         )
 
-    override suspend fun updateOpenCallsToClosedStatus() {
+    override suspend fun updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards: Boolean) {
         leavePreviouslyJoinedMlsConferences()
+        val count = callDAO.observeEstablishedCalls().first().size
+        callingLogger.i("Updating open calls to closed status if there are any $count")
         callDAO.updateOpenCallsToClosedStatus()
+        if (setStaleOpenCallsCleanupFinishedAfterwards) {
+            setStaleOpenCallsCleanupFinished()
+        }
     }
+
+    override fun setStaleOpenCallsCleanupFinished() {
+        staleOpenCallsCleanupFinishedFlow.value = true
+        callingLogger.i("Stale open calls cleanup is done")
+    }
+    override fun observeStaleOpenCallsCleanupFinished(): Flow<Boolean> = staleOpenCallsCleanupFinishedFlow
 
     override suspend fun establishedCallConversationId(): ConversationId? =
         callDAO

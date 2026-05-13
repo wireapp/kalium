@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
-import app.cash.paging.Pager
-import app.cash.paging.PagingConfig
-import app.cash.paging.PagingData
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.cells.domain.paging.ConversationPagingSource
