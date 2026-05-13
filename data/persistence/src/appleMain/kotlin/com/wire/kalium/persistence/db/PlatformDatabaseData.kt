@@ -31,7 +31,6 @@ import platform.posix.fopen
 import platform.posix.fputs
 import platform.posix.getenv
 
-// TODO encrypt database using sqlcipher
 actual data class PlatformDatabaseData(
     val storageData: StorageData,
     val useGradleSafeSqliterLogging: Boolean = false
@@ -46,10 +45,19 @@ fun databaseDriver(
     driverUri: String?,
     dbName: String,
     schema: SqlSchema<QueryResult.Value<Unit>>,
+    passphrase: ByteArray? = null,
     config: DriverConfigurationBuilder.() -> Unit = {}
 ): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
     val inMemory = driverUri == null
+    if (!inMemory) {
+        prepareEncryptedDatabaseIfNeeded(
+            basePath = driverUri,
+            dbName = dbName,
+            passphrase = passphrase,
+            useGradleSafeSqliterLogging = driverConfiguration.useGradleSafeSqliterLogging
+        )
+    }
     val configuration = DatabaseConfiguration(
         name = dbName,
         version = schema.version.toInt(),
@@ -65,7 +73,8 @@ fun databaseDriver(
         },
         upgrade = { connection, oldVersion, newVersion ->
             wrapConnection(connection) { schema.migrate(it, oldVersion.toLong(), newVersion.toLong()) }
-        }
+        },
+        encryptionConfig = DatabaseConfiguration.Encryption(passphrase?.toSqlCipherKey())
     ).copy(
         extendedConfig = if (inMemory) DatabaseConfiguration.Extended(
             foreignKeyConstraints = driverConfiguration.areForeignKeyConstraintsEnforced
@@ -77,7 +86,24 @@ fun databaseDriver(
     return NativeSqliteDriver(configuration, maxReaderConnections = NATIVE_MAX_READER_CONNECTIONS)
 }
 
-private object GradleSafeSqliterLogger : Logger {
+fun databaseDriverByPath(
+    path: String,
+    schema: SqlSchema<QueryResult.Value<Unit>>,
+    passphrase: ByteArray? = null,
+    config: DriverConfigurationBuilder.() -> Unit = {}
+): SqlDriver {
+    val basePath = path.substringBeforeLast(PATH_SEPARATOR, missingDelimiterValue = "")
+    val dbName = path.substringAfterLast(PATH_SEPARATOR)
+    return databaseDriver(
+        driverUri = basePath.ifBlank { CURRENT_DIRECTORY },
+        dbName = dbName,
+        schema = schema,
+        passphrase = passphrase,
+        config = config
+    )
+}
+
+internal object GradleSafeSqliterLogger : Logger {
     override fun trace(message: String) = Unit
     override val vActive: Boolean = false
     override fun vWrite(message: String) = Unit
@@ -99,6 +125,8 @@ private object GradleSafeSqliterLogger : Logger {
 private const val SQLITER_FULL_TRACES_ENV = "KALIUM_SQLITER_FULL_TRACES"
 private const val SQLITER_TRACE_FILE_ENV = "KALIUM_SQLITER_TRACE_FILE"
 private const val NATIVE_MAX_READER_CONNECTIONS = 32
+private const val PATH_SEPARATOR = "/"
+private const val CURRENT_DIRECTORY = "."
 
 private fun isSqliterFullTracesEnabled(): Boolean {
     val value = getenv(SQLITER_FULL_TRACES_ENV)?.toKString()?.lowercase() ?: return false

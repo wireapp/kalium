@@ -49,6 +49,10 @@ sqldelight {
             schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
         }
     }
+    linkSqlite = providers.systemProperty("kalium.apple.linkSqlite")
+        .orNull
+        ?.toBooleanStrictOrNull()
+        ?: true
 }
 
 kotlin {

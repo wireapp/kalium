@@ -39,7 +39,9 @@ fun KotlinMultiplatformExtension.commonAppleMultiplatformConfig() {
         .filterIsInstance<KotlinNativeTarget>()
         .flatMap { it.binaries }
         .forEach { compilationUnit ->
-            compilationUnit.linkerOpts("-lsqlite3")
+            if (shouldLinkAppleSqlite()) {
+                compilationUnit.linkerOpts("-lsqlite3")
+            }
             // Configure Stop-The-World with Mark and Sweep GC for iOS Simulator ARM64 tests
             // to work around test execution issues
             if (compilationUnit is TestExecutable && compilationUnit.target.name == "iosSimulatorArm64") {
@@ -47,3 +49,6 @@ fun KotlinMultiplatformExtension.commonAppleMultiplatformConfig() {
             }
         }
 }
+
+private fun shouldLinkAppleSqlite(): Boolean =
+    System.getProperty("kalium.apple.linkSqlite")?.toBooleanStrictOrNull() ?: true

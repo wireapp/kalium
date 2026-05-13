@@ -35,6 +35,10 @@ kaliumLibrary {
 
 val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
     ?: error("USE_UNIFIED_CORE_CRYPTO not set")
+val shouldLinkAppleSqlite: Boolean = providers.systemProperty("kalium.apple.linkSqlite")
+    .orNull
+    ?.toBooleanStrictOrNull()
+    ?: true
 
 kotlin {
     explicitApi()
@@ -45,7 +49,9 @@ kotlin {
         it.binaries.framework {
             baseName = "KaliumLogic"
             freeCompilerArgs += "-Xbinary=bundleId=com.wire.kalium.logic"
-            linkerOpts.add("-lsqlite3")
+            if (shouldLinkAppleSqlite) {
+                linkerOpts.add("-lsqlite3")
+            }
             xcf.add(this)
         }
     }

@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
@@ -60,6 +61,7 @@ internal actual open class UserSessionScopeProviderImpl(
 ),
     UserSessionScopeProvider {
     override fun create(userId: UserId): UserSessionScope {
+        val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
         val rootAccountPath = rootPathsProvider.rootAccountPath(userId)
         val rootStoragePath = "$rootAccountPath/storage"
         val rootFileSystemPath = AssetsStorageFolder("$rootStoragePath/files")
@@ -67,7 +69,9 @@ internal actual open class UserSessionScopeProviderImpl(
         val dbPath = DBFolder("$rootAccountPath/database")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
         return UserSessionScope(
-            PlatformUserStorageProperties(rootPathsProvider.rootPath, rootStoragePath),
+            PlatformUserStorageProperties(rootPathsProvider.rootPath, rootStoragePath) { userId ->
+                securityHelper.userDBSecret(userId)
+            },
             userId,
             globalScope,
             globalCallManager,

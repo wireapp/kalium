@@ -21,7 +21,6 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
-import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -46,7 +45,12 @@ actual fun userDatabaseBuilder(
                 null,
                 null
             )
-            databaseDriver(platformDatabaseData.storageData.storePath, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
+            databaseDriver(
+                driverUri = platformDatabaseData.storageData.storePath,
+                dbName = FileNameUtil.userDBName(userId),
+                schema = UserDatabase.Schema,
+                passphrase = passphrase?.value
+            ) {
                 isWALEnabled = enableWAL
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }
@@ -85,10 +89,10 @@ actual fun userDatabaseDriverByPath(
     passphrase: UserDBSecret?,
     enableWAL: Boolean
 ): SqlDriver {
-    return NativeSqliteDriver(
-        UserDatabase.Schema,
-        path
-    )
+    return databaseDriverByPath(path, UserDatabase.Schema, passphrase?.value) {
+        isWALEnabled = enableWAL
+        useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
+    }
 }
 
 /**
