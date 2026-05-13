@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import app.cash.paging.PagingConfig
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationQueryConfig
 import com.wire.kalium.logic.data.conversation.ConversationRepository

@@ -17,12 +17,11 @@
  */
 package com.wire.kalium.cells.domain.paging
 
+import androidx.paging.PagingConfig
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
-import app.cash.paging.PagingSourceLoadParamsAppend
-import app.cash.paging.PagingSourceLoadParamsRefresh
-import app.cash.paging.PagingSourceLoadResultError
-import app.cash.paging.PagingSourceLoadResultPage
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.error.StorageFailure
@@ -70,7 +69,7 @@ class ConversationPagingSourceTest {
 
         val result = pagingSource.load(refreshParams(null, PAGE_SIZE))
 
-        assertIs<PagingSourceLoadResultPage<Int, CellConversation>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, CellConversation>>(result)
         assertEquals(listOf(CONVERSATION_1), result.data)
     }
 
@@ -83,7 +82,7 @@ class ConversationPagingSourceTest {
 
         val result = pagingSource.load(refreshParams(null, PAGE_SIZE))
 
-        assertIs<PagingSourceLoadResultPage<Int, CellConversation>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, CellConversation>>(result)
         assertEquals(PAGE_SIZE, result.nextKey)
     }
 
@@ -95,7 +94,7 @@ class ConversationPagingSourceTest {
 
         val result = pagingSource.load(refreshParams(null, PAGE_SIZE))
 
-        assertIs<PagingSourceLoadResultPage<Int, CellConversation>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, CellConversation>>(result)
         assertNull(result.nextKey)
     }
 
@@ -107,7 +106,7 @@ class ConversationPagingSourceTest {
 
         val result = pagingSource.load(refreshParams(null, PAGE_SIZE))
 
-        assertIs<PagingSourceLoadResultPage<Int, CellConversation>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, CellConversation>>(result)
         assertNull(result.nextKey)
     }
 
@@ -120,7 +119,7 @@ class ConversationPagingSourceTest {
 
         val result = pagingSource.load(appendParams(PAGE_SIZE, PAGE_SIZE))
 
-        assertIs<PagingSourceLoadResultPage<Int, CellConversation>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, CellConversation>>(result)
         assertEquals(listOf(CONVERSATION_3), result.data)
         assertNull(result.nextKey)
     }
@@ -134,7 +133,7 @@ class ConversationPagingSourceTest {
 
         val result = pagingSource.load(refreshParams(null, PAGE_SIZE))
 
-        assertIs<PagingSourceLoadResultPage<Int, CellConversation>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, CellConversation>>(result)
         assertNull(result.prevKey)
     }
 
@@ -146,7 +145,7 @@ class ConversationPagingSourceTest {
 
         val result = pagingSource.load(refreshParams(null, PAGE_SIZE))
 
-        assertIs<PagingSourceLoadResultError<Int, CellConversation>>(result)
+        assertIs<PagingSource.LoadResult.Error<Int, CellConversation>>(result)
     }
 
     @Test
@@ -159,7 +158,7 @@ class ConversationPagingSourceTest {
         val pagingSource = ConversationPagingSource(pageSize = 20, repository = repo)
         val result = pagingSource.load(refreshParams(null, 20))
 
-        assertIs<PagingSourceLoadResultPage<Int, CellConversation>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, CellConversation>>(result)
         assertEquals(listOf(CONVERSATION_1), result.data)
     }
 
@@ -168,10 +167,10 @@ class ConversationPagingSourceTest {
         val (_, pagingSource) = Arrangement().arrange()
 
         val refreshKey = pagingSource.getRefreshKey(
-            app.cash.paging.PagingState(
+            PagingState(
                 pages = emptyList(),
                 anchorPosition = null,
-                config = app.cash.paging.PagingConfig(PAGE_SIZE),
+                config = PagingConfig(PAGE_SIZE),
                 leadingPlaceholderCount = 0,
             )
         )
@@ -200,13 +199,8 @@ class ConversationPagingSourceTest {
     }
 }
 
-// Helpers — PagingSourceLoadParamsRefresh/Append are not declared as subtypes of
-// PagingSourceLoadParams in the KMP common expect declarations; the relationship
-// only exists in the JVM/Android actual typealiases. The casts are safe at runtime.
-@Suppress("UNCHECKED_CAST")
-private fun refreshParams(key: Int?, loadSize: Int): app.cash.paging.PagingSourceLoadParams<Int> =
-    PagingSourceLoadParamsRefresh<Int>(key, loadSize, false) as app.cash.paging.PagingSourceLoadParams<Int>
+private fun refreshParams(key: Int?, loadSize: Int): PagingSource.LoadParams<Int> =
+    PagingSource.LoadParams.Refresh(key, loadSize, false)
 
-@Suppress("UNCHECKED_CAST")
-private fun appendParams(key: Int, loadSize: Int): app.cash.paging.PagingSourceLoadParams<Int> =
-    PagingSourceLoadParamsAppend<Int>(key, loadSize, false) as app.cash.paging.PagingSourceLoadParams<Int>
+private fun appendParams(key: Int, loadSize: Int): PagingSource.LoadParams<Int> =
+    PagingSource.LoadParams.Append(key, loadSize, false)
