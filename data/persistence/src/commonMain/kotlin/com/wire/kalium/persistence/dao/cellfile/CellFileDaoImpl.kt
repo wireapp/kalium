@@ -65,7 +65,7 @@ internal class CellFileDaoImpl(
     }
 
     override suspend fun getAllWithLocalPath(): List<Pair<String, String>> = withContext(readDispatcher.value) {
-        queries.getAllWithLocalPath { uuid, localPath -> uuid to localPath!! }.executeAsList()
+        queries.getAllWithLocalPath { uuid, localPath -> uuid to localPath }.executeAsList()
     }
 
     @Suppress("LongParameterList")

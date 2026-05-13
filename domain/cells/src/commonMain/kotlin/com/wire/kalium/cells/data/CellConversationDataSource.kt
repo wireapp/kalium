@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.cells.util.toQualifiedIdOrNull
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.firstOrNull
@@ -44,6 +45,7 @@ internal class CellConversationDataSource(
             }
         }
 
+
     override suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>> =
         withContext(dispatchers.io) {
             wrapStorageRequest {
@@ -52,6 +54,15 @@ internal class CellConversationDataSource(
                         conv.id.toString() to name
                     }
                 } ?: emptyList()
+            }
+        }
+
+    override suspend fun getConversationNameById(conversationId: String): Either<StorageFailure, String?> =
+        withContext(dispatchers.io) {
+            wrapStorageRequest {
+                conversationId.toQualifiedIdOrNull()?.let { qualifiedId ->
+                    conversationDao.getConversationById(qualifiedId)?.name
+                }
             }
         }
 

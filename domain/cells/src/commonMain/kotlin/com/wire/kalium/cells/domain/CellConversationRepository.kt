@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 internal interface CellConversationRepository {
     suspend fun getCellName(conversationId: QualifiedIDEntity): Either<StorageFailure, String?>
     suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>>
+    suspend fun getConversationNameById(conversationId: String): Either<StorageFailure, String?>
     suspend fun hasConversationWithCell(): Either<StorageFailure, Boolean>
     suspend fun getCellGroupConversations(): Either<StorageFailure, List<CellConversation>>
     suspend fun getPaginatedCellGroupConversations(

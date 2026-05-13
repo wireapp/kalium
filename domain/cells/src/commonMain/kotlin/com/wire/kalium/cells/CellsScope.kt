@@ -127,6 +127,10 @@ import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCase
 import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.offline.DeleteOfflineFileUseCase
 import com.wire.kalium.cells.domain.usecase.offline.DeleteOfflineFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetConversationNameUseCase
+import com.wire.kalium.cells.domain.usecase.GetConversationNameUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetUserNameUseCase
+import com.wire.kalium.cells.domain.usecase.GetUserNameUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCase
 import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesUseCase
@@ -433,5 +437,13 @@ public class CellsScope(
 
     public val getOfflineFile: GetOfflineFileUseCase by lazy {
         GetOfflineFileUseCaseImpl(cellFileRepository)
+    }
+
+    public val getConversationNames: GetConversationNameUseCase by lazy {
+        GetConversationNameUseCaseImpl(cellsConversationRepository)
+    }
+
+    public val getUserNames: GetUserNameUseCase by lazy {
+        GetUserNameUseCaseImpl(usersRepository)
     }
 }

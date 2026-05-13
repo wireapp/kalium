@@ -18,6 +18,7 @@
 package com.wire.kalium.cells.domain.usecase.offline
 
 import com.wire.kalium.cells.domain.CellFileRepository
+import com.wire.kalium.persistence.dao.cellfile.CellFileEntity
 import kotlinx.coroutines.flow.Flow
 
 public data class OfflineFileInfo(
