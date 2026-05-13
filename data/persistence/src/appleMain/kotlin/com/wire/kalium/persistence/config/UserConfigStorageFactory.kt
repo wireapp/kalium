@@ -34,17 +34,18 @@ actual class UserConfigStorageFactory actual constructor() {
      * Creates a [UserConfigStorage] instance for Apple platforms.
      * @param userId The user ID entity
      * @param shouldEncryptData Whether to encrypt the data (ignored on Apple, uses Keychain)
-     * @param platformParam Must be a [String] representing the service name for Keychain
+     * @param platformParam Ignored on Apple — the Keychain service name is derived from the
+     *  host app's bundle identifier so it stays stable across container path changes.
      */
+    @Suppress("UNUSED_PARAMETER")
     actual fun create(
         userId: UserIDEntity,
         shouldEncryptData: Boolean,
         platformParam: Any
     ): UserConfigStorage {
-        require(platformParam is String) { "platformParam must be a String (service name)" }
         val settings = buildSettings(
             SettingOptions.UserSettings(shouldEncryptData, userId),
-            EncryptedSettingsPlatformParam(platformParam)
+            EncryptedSettingsPlatformParam()
         )
         return UserConfigStorageImpl(KaliumPreferencesSettings(settings))
     }

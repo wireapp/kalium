@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
 
 actual class GlobalPrefProvider(
+    @Suppress("UNUSED_PARAMETER", "unused")
     rootPath: String,
     shouldEncryptData: Boolean = true
 ) {
@@ -33,7 +34,7 @@ actual class GlobalPrefProvider(
         KaliumPreferencesSettings(
             buildSettings(
                 SettingOptions.AppSettings(shouldEncryptData),
-                EncryptedSettingsPlatformParam(rootPath)
+                EncryptedSettingsPlatformParam()
             )
         )
 
