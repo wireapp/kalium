@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-import app.cash.paging.PagingConfig
-import app.cash.paging.PagingData
-import app.cash.paging.map
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig

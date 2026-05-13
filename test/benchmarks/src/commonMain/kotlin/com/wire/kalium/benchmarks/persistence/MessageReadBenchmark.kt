@@ -2,8 +2,8 @@
 
 package com.wire.kalium.benchmarks.persistence
 
-import app.cash.paging.PagingConfig
-import app.cash.paging.PagingSourceLoadResultPage
+import androidx.paging.PagingConfig
+import androidx.paging.PagingSource
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
@@ -125,7 +125,7 @@ class MessageReadBenchmark {
             }
         }
 
-        suspend fun loadInboxPage(startingOffset: Long): PagingSourceLoadResultPage<Int, ConversationDetailsWithEventsEntity> {
+        suspend fun loadInboxPage(startingOffset: Long): PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity> {
             val pagingSource = db.conversationDAO.platformExtensions.getPagerForConversationDetailsWithEventsSearch(
                 queryConfig = ConversationExtensions.QueryConfig(
                     fromArchive = false,
@@ -141,7 +141,7 @@ class MessageReadBenchmark {
             return pagingSource.loadRefreshPage()
         }
 
-        suspend fun loadHotConversationPage(startingOffset: Long): PagingSourceLoadResultPage<Int, MessageEntity> {
+        suspend fun loadHotConversationPage(startingOffset: Long): PagingSource.LoadResult.Page<Int, MessageEntity> {
             val pagingSource = db.messageDAO.platformExtensions.getPagerForConversation(
                 conversationId = hotConversationId,
                 visibilities = listOf(MessageEntity.Visibility.VISIBLE),

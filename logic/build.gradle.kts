@@ -87,6 +87,7 @@ kotlin {
                 implementation(libs.okio.core)
 
                 implementation(libs.sqldelight.androidxPaging)
+                api(libs.paging.common)
                 // Concurrent collections
                 implementation(libs.concurrentCollections)
                 implementation(libs.statelyCommons)
