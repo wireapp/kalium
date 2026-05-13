@@ -21,17 +21,11 @@ package com.wire.kalium.persistence.kmmSettings
 import com.russhwolf.settings.ExperimentalSettingsImplementation
 import com.russhwolf.settings.KeychainSettings
 import com.russhwolf.settings.Settings
-import platform.Foundation.NSBundle
 
 @OptIn(ExperimentalSettingsImplementation::class)
 internal actual fun buildSettings(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
-): Settings = KeychainSettings(stableKeychainServiceName())
+): Settings = KeychainSettings(param.keychainConfig.serviceName)
 
-internal actual class EncryptedSettingsPlatformParam
-
-private const val FALLBACK_KEYCHAIN_SERVICE_NAME = "com.wire.kalium.keychain"
-
-private fun stableKeychainServiceName(): String =
-    NSBundle.mainBundle.bundleIdentifier ?: FALLBACK_KEYCHAIN_SERVICE_NAME
+internal actual class EncryptedSettingsPlatformParam(val keychainConfig: ApplePersistenceConfig)
