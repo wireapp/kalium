@@ -2931,7 +2931,7 @@ public class UserSessionScope internal constructor(
             } catch (exception: Exception) {
                 userScopedLogger.e("Unable to run startup migrations and reset tasks", exception)
             } finally {
-                callRepository.setStaleOpenCallsCleanupDone()
+                callRepository.setStaleOpenCallsCleanupFinished()
             }
         }
 

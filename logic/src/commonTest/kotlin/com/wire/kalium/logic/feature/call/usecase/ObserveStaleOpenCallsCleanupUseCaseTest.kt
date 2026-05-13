@@ -35,7 +35,7 @@ class ObserveStaleOpenCallsCleanupUseCaseTest {
     fun givenCallRepositoryEmitsCleanupStates_whenInvokingUseCase_thenCleanupStatesAreEmitted() = runTest {
         val flow = MutableStateFlow(false)
         val (_, useCase) = Arrangement()
-            .withObserveStaleOpenCallsCleanupDoneReturning(flow)
+            .withObserveStaleOpenCallsCleanupFinishedReturning(flow)
             .arrange()
 
         useCase().test {
@@ -51,10 +51,10 @@ class ObserveStaleOpenCallsCleanupUseCaseTest {
     private class Arrangement {
         private val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
-        fun withObserveStaleOpenCallsCleanupDoneReturning(cleanupDoneFlow: Flow<Boolean>) = apply {
+        fun withObserveStaleOpenCallsCleanupFinishedReturning(cleanupFinishedFlow: Flow<Boolean>) = apply {
             every {
-                callRepository.observeStaleOpenCallsCleanupDone()
-            } returns cleanupDoneFlow
+                callRepository.observeStaleOpenCallsCleanupFinished()
+            } returns cleanupFinishedFlow
         }
 
         fun arrange() = this to ObserveStaleOpenCallsCleanupUseCaseImpl(callRepository)

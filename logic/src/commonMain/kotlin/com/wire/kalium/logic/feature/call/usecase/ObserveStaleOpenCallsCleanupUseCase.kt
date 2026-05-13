@@ -31,5 +31,5 @@ public interface ObserveStaleOpenCallsCleanupUseCase {
 }
 
 internal class ObserveStaleOpenCallsCleanupUseCaseImpl(private val callRepository: CallRepository) : ObserveStaleOpenCallsCleanupUseCase {
-    override fun invoke(): Flow<Boolean> = callRepository.observeStaleOpenCallsCleanupDone()
+    override fun invoke(): Flow<Boolean> = callRepository.observeStaleOpenCallsCleanupFinished()
 }

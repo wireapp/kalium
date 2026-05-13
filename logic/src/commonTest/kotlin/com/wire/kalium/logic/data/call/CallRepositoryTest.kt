@@ -1503,11 +1503,11 @@ class CallRepositoryTest {
         // given
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
 
-        callRepository.observeStaleOpenCallsCleanupDone().test {
+        callRepository.observeStaleOpenCallsCleanupFinished().test {
             assertEquals(false, awaitItem())
 
             // when
-            callRepository.setStaleOpenCallsCleanupDone()
+            callRepository.setStaleOpenCallsCleanupFinished()
 
             // then
             assertEquals(true, awaitItem())
@@ -1516,18 +1516,18 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenOpenCallsCleanupShouldNotBeMarkedDone_whenClosingOpenCalls_thenCleanupDoneIsNotEmitted() = runTest {
+    fun givenOpenCallsCleanupShouldNotBeMarkedDone_whenClosingOpenCalls_thenCleanupFinishedIsNotEmitted() = runTest {
         // given
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .givenObserveEstablishedCallsReturns(flowOf(emptyList()))
             .arrange()
 
-        callRepository.observeStaleOpenCallsCleanupDone().test {
+        callRepository.observeStaleOpenCallsCleanupFinished().test {
             // then
             assertEquals(false, awaitItem())
 
             // when
-            callRepository.updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupDoneAfterwards = false)
+            callRepository.updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards = false)
 
             // then
             expectNoEvents()
@@ -1535,13 +1535,13 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenOpenCallsCleanupShouldBeMarkedDone_whenClosingOpenCalls_thenCleanupDoneIsEmitted() = runTest {
+    fun givenOpenCallsCleanupShouldBeMarkedDone_whenClosingOpenCalls_thenCleanupFinishedIsEmitted() = runTest {
         // given
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .givenObserveEstablishedCallsReturns(flowOf(emptyList()))
             .arrange()
 
-        callRepository.observeStaleOpenCallsCleanupDone().test {
+        callRepository.observeStaleOpenCallsCleanupFinished().test {
             // then
             assertEquals(false, awaitItem())
 
