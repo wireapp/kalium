@@ -31,7 +31,7 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:${libs.versions.agp.get()}")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
-        classpath("app.cash.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
+        classpath("com.wire.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:${libs.versions.dokka.get()}")
         classpath("com.google.protobuf:protobuf-gradle-plugin:${libs.versions.protobufCodegen.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${libs.versions.detekt.get()}")
@@ -123,6 +123,14 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+    configurations.configureEach {
+        resolutionStrategy.eachDependency {
+            if (requested.group == "app.cash.sqldelight") {
+                useTarget("com.wire:${requested.name}:${requested.version}")
+                because("Use the Wire SQLDelight fork consistently to avoid duplicate app.cash.sqldelight classes")
+            }
+        }
     }
 }
 
