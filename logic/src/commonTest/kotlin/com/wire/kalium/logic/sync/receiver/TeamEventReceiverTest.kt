@@ -24,14 +24,15 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -55,15 +56,15 @@ class TeamEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessageUseCase.invoke(any())
-        }.wasInvoked(exactly = once)
+        }
 
     }
 
     private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val persistMessageUseCase = mock(PersistMessageUseCase::class)
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val persistMessageUseCase = mock<PersistMessageUseCase>()
 
         private val teamEventReceiver: TeamEventReceiver = TeamEventReceiverImpl(
             userRepository,
@@ -72,9 +73,9 @@ class TeamEventReceiverTest {
         )
 
         suspend fun withPersistMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 persistMessageUseCase.invoke(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = { }) = run {

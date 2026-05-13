@@ -18,20 +18,23 @@
 package com.wire.kalium.logic.feature.conversation.guestroomlink
 
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangement
-import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangementImpl
+import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.model.QualifiedID
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -62,13 +65,13 @@ class GenerateGuestRoomLinkUseCaseTest {
             assertIs<GenerateGuestRoomLinkResult.Success>(result)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.generateGuestRoomLink(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.codeUpdatedHandler.handle(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -82,31 +85,39 @@ class GenerateGuestRoomLinkUseCaseTest {
             assertIs<GenerateGuestRoomLinkResult.Failure>(result)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.generateGuestRoomLink(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.codeUpdatedHandler.handle(any())
-        }.wasNotInvoked()
+        }
     }
 
     companion object {
         private val conversationId = ConversationId("value", "domain")
     }
 
-    private class Arrangement :
-        ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
-        CodeUpdatedHandlerArrangement by CodeUpdatedHandlerArrangementImpl() {
+    private class Arrangement {
+        val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
+        val codeUpdatedHandler = mock<CodeUpdatedHandler>(mode = MockMode.autoUnit)
 
         private val generateGuestRoomLink: GenerateGuestRoomLinkUseCase = GenerateGuestRoomLinkUseCaseImpl(
             conversationGroupRepository,
             codeUpdatedHandler
         )
 
-        fun arrange(block: suspend Arrangement.() -> Unit) = run {
-            runBlocking { block() }
+        suspend fun arrange(block: suspend Arrangement.() -> Unit) = run {
+            block()
             this to generateGuestRoomLink
+        }
+
+        suspend fun withGenerateGuestRoomLink(result: Either<NetworkFailure, EventContentDTO.Conversation.CodeUpdated>) {
+            everySuspend { conversationGroupRepository.generateGuestRoomLink(any(), any()) } returns result
+        }
+
+        suspend fun withHandleCodeUpdatedEvent(result: Either<StorageFailure, Unit>) {
+            everySuspend { codeUpdatedHandler.handle(any<Event.Conversation.CodeUpdated>()) } returns result
         }
     }
 }

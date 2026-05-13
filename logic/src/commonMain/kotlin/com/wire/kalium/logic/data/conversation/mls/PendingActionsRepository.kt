@@ -23,12 +23,10 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionType
-import io.mockative.Mockable
 import kotlinx.datetime.Clock
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-@Mockable
 internal interface PendingActionsRepository {
     suspend fun enqueuePendingOneOnOneResolution(userId: UserId)
     suspend fun getPendingOneOnOneResolutions(): List<UserId>

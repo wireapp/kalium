@@ -32,9 +32,11 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -46,16 +48,16 @@ class MembersToMentionUseCaseTest {
 
         private val selfUserId = SELF_USER.id
 
-        private val observeConversationMembers = mock(ObserveConversationMembersUseCase::class)
+        private val observeConversationMembers = mock<ObserveConversationMembersUseCase>(mode = MockMode.autoUnit)
 
     private lateinit var membersToMention: MembersToMentionUseCase
 
     @BeforeTest
     fun setup() = runBlocking {
         membersToMention = MembersToMentionUseCase(observeConversationMembers, selfUserId = selfUserId, TestKaliumDispatcher)
-        coEvery {
+        everySuspend {
             observeConversationMembers.invoke(any())
-        }.returns(flowOf(members))
+        } returns flowOf(members)
     }
 
     @Test

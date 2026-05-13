@@ -21,27 +21,26 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface CodeUpdatedHandlerArrangement {
     val codeUpdatedHandler: CodeUpdatedHandler
 
     suspend fun withHandleCodeUpdatedEvent(
         result: Either<StorageFailure, Unit>,
-        event: Matcher<Event.Conversation.CodeUpdated> = AnyMatcher(valueOf())
+        event: (Event.Conversation.CodeUpdated) -> Boolean = { true }
     ) {
-        coEvery {
-            codeUpdatedHandler.handle(matches { event.matches(it) })
+        everySuspend {
+            codeUpdatedHandler.handle(matches { event(it) })
         }.returns(result)
     }
 }
 
 internal class CodeUpdatedHandlerArrangementImpl : CodeUpdatedHandlerArrangement {
 
-    override val codeUpdatedHandler = mock(CodeUpdatedHandler::class)
+    override val codeUpdatedHandler = mock<CodeUpdatedHandler>(mode = MockMode.autoUnit)
 }

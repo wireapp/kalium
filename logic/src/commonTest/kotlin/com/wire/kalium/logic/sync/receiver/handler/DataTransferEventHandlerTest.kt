@@ -18,16 +18,18 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -49,9 +51,9 @@ class DataTransferEventHandlerTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -68,9 +70,9 @@ class DataTransferEventHandlerTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -87,9 +89,9 @@ class DataTransferEventHandlerTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -112,13 +114,13 @@ class DataTransferEventHandlerTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setPreviousTrackingIdentifier(currentIdentifier)
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setCurrentTrackingIdentifier(newIdentifier)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -135,13 +137,13 @@ class DataTransferEventHandlerTest {
         )
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setPreviousTrackingIdentifier(any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
-        }.wasNotInvoked()
+        }
     }
 
     private companion object {
@@ -167,14 +169,24 @@ class DataTransferEventHandlerTest {
         )
     }
 
-    private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
+    private class Arrangement {
+        val userConfigRepository: UserConfigRepository = mock(mode = MockMode.autoUnit)
+
         private val handler: DataTransferEventHandler = DataTransferEventHandlerImpl(
             selfUserId = SELF_USER_ID,
             userConfigRepository = userConfigRepository
         )
 
-        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DataTransferEventHandler> {
-            runBlocking { block() }
+        suspend fun withSetTrackingIdentifier() = apply {
+            everySuspend { userConfigRepository.setCurrentTrackingIdentifier(any()) } returns Unit
+        }
+
+        suspend fun withGetTrackingIdentifier(result: String?) = apply {
+            everySuspend { userConfigRepository.getCurrentTrackingIdentifier() } returns result
+        }
+
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DataTransferEventHandler> {
+            block()
             return this to handler
         }
     }

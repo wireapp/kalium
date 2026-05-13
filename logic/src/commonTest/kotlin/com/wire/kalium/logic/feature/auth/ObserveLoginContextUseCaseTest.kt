@@ -25,11 +25,12 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -50,7 +51,7 @@ class ObserveLoginContextUseCaseTest {
             assertEquals(LoginContext.FallbackLogin, awaitItem())
             cancelAndConsumeRemainingEvents()
         }
-        coVerify { arrangement.serverConfigRepository.observeServerConfigByLinks(eq(ServerConfig.DUMMY)) }
+        verifySuspend { arrangement.serverConfigRepository.observeServerConfigByLinks(ServerConfig.DUMMY) }
     }
 
     @Test
@@ -78,7 +79,7 @@ class ObserveLoginContextUseCaseTest {
             assertEquals(LoginContext.FallbackLogin, awaitItem())
             cancelAndConsumeRemainingEvents()
         }
-        coVerify { arrangement.serverConfigRepository.observeServerConfigByLinks(eq(ServerConfig.DUMMY)) }
+        verifySuspend { arrangement.serverConfigRepository.observeServerConfigByLinks(ServerConfig.DUMMY) }
     }
 
     @Test
@@ -103,7 +104,7 @@ class ObserveLoginContextUseCaseTest {
             assertEquals(LoginContext.EnterpriseLogin, awaitItem())
             cancelAndConsumeRemainingEvents()
         }
-        coVerify { arrangement.serverConfigRepository.observeServerConfigByLinks(eq(ServerConfig.DUMMY)) }
+        verifySuspend { arrangement.serverConfigRepository.observeServerConfigByLinks(ServerConfig.DUMMY) }
     }
 
     @Test
@@ -114,15 +115,15 @@ class ObserveLoginContextUseCaseTest {
 
         useCase(ServerConfig.DUMMY)
 
-        coVerify { arrangement.serverConfigRepository.observeServerConfigByLinks(eq(ServerConfig.DUMMY)) }
+        verifySuspend { arrangement.serverConfigRepository.observeServerConfigByLinks(ServerConfig.DUMMY) }
     }
 
     private class Arrangement {
 
-        val serverConfigRepository: CustomServerConfigRepository = mock(CustomServerConfigRepository::class)
+        val serverConfigRepository: CustomServerConfigRepository = mock(mode = MockMode.autoUnit)
 
         suspend fun withObserveServerConfigByLinks(result: Flow<Either<NetworkFailure, ServerConfig>>) = apply {
-            coEvery { serverConfigRepository.observeServerConfigByLinks(any()) }.returns(result)
+            everySuspend { serverConfigRepository.observeServerConfigByLinks(any()) } returns result
         }
 
         fun arrange() = this to ObserveLoginContextUseCase(serverConfigRepository)

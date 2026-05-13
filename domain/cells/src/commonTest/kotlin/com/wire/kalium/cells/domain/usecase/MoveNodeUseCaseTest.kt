@@ -17,16 +17,18 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -45,9 +47,9 @@ class MoveNodeUseCaseTest {
         val result = useCase.invoke(uuid, path, targetPath)
 
         assertEquals(Unit.right(), result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.moveNode(uuid, path, targetPath)
-        }.wasInvoked(once)
+        }
     }
 
 
@@ -64,17 +66,17 @@ class MoveNodeUseCaseTest {
         val result = useCase.invoke(uuid, path, targetPath)
 
         assertEquals(failure.left(), result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.moveNode(uuid, path, targetPath)
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
 
-        val cellsRepository = mock(CellsRepository::class)
+        val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
 
         suspend fun withRepositoryReturning(result: Either<NetworkFailure, Unit>) = apply {
-            coEvery { cellsRepository.moveNode(any(), any(), any()) }.returns(result)
+            everySuspend { cellsRepository.moveNode(any(), any(), any()) }.returns(result)
         }
 
         fun arrange() = this to MoveNodeUseCaseImpl(

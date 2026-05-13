@@ -19,8 +19,10 @@ package com.wire.kalium.logic.util.arrangement.usecase
 
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.util.DelicateKaliumApi
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 @OptIn(DelicateKaliumApi::class)
 internal interface IsAllowedToRegisterMLSClientUseCaseArrangement {
@@ -33,10 +35,10 @@ internal interface IsAllowedToRegisterMLSClientUseCaseArrangement {
 @OptIn(DelicateKaliumApi::class)
 internal class IsAllowedToRegisterMLSClientUseCaseArrangementImpl : IsAllowedToRegisterMLSClientUseCaseArrangement {
 
-    override val isAllowedToRegisterMLSClientUseCase: IsAllowedToRegisterMLSClientUseCase = mock(IsAllowedToRegisterMLSClientUseCase::class)
+    override val isAllowedToRegisterMLSClientUseCase: IsAllowedToRegisterMLSClientUseCase = mock<IsAllowedToRegisterMLSClientUseCase>(mode = MockMode.autoUnit)
 
     override suspend fun withIsAllowedToRegisterMLSClient(isAllowed: Boolean) {
-        coEvery { isAllowedToRegisterMLSClientUseCase() }.returns(isAllowed)
+        everySuspend { isAllowedToRegisterMLSClientUseCase() }.returns(isAllowed)
     }
 
 }

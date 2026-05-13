@@ -23,12 +23,14 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -45,9 +47,9 @@ class RemoveMemberFromConversationUseCaseTest {
 
         assertIs<RemoveMemberFromConversationUseCase.Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.deleteMember(eq(TestConversation.USER_1), eq(TestConversation.ID))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -59,23 +61,23 @@ class RemoveMemberFromConversationUseCaseTest {
         val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
         assertIs<RemoveMemberFromConversationUseCase.Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.deleteMember(eq(TestConversation.USER_1), eq(TestConversation.ID))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val conversationGroupRepository = mock(ConversationGroupRepository::class)
+        val conversationGroupRepository = mock<ConversationGroupRepository>(mode = MockMode.autoUnit)
 
         private val removeMemberUseCase = RemoveMemberFromConversationUseCaseImpl(
             conversationGroupRepository
         )
 
         suspend fun withRemoveMemberGroupIs(either: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationGroupRepository.deleteMember(any(), any())
-            }.returns(either)
+            } returns either
         }
 
         fun arrange() = this to removeMemberUseCase

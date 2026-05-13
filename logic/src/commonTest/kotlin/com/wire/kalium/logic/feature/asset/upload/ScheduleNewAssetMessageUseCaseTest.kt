@@ -36,13 +36,15 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -108,13 +110,13 @@ class ScheduleNewAssetMessageUseCaseTest {
 //             // Then
 //             assertTrue(result is ScheduleNewAssetMessageResult.Success)
 //
-//             coVerify {
+//             verifySuspend(VerifyMode.exactly(1)) {
 //                 arrangement.updateTransferStatus(
-//                     transferStatus = eq(AssetTransferStatus.FAILED_UPLOAD),
-//                     conversationId = eq(conversationId),
+//                     transferStatus = AssetTransferStatus.FAILED_UPLOAD,
+//                     conversationId = conversationId,
 //                     messageId = any(),
 //                 )
-//             }.wasInvoked(once)
+//             }
 //         }
 
     @Test
@@ -147,14 +149,13 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Failure.RestrictedFileType)
 
-        coVerify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateAssetMimeTypeUseCase(
-                fileName = eq("some-asset.txt"),
-                mimeType = eq("text/plain"),
-                allowedExtension = eq(listOf("png"))
+                fileName = "some-asset.txt",
+                mimeType = "text/plain",
+                allowedExtension = listOf("png")
             )
         }
-            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -180,42 +181,41 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Success)
 
-        coVerify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.validateAssetMimeTypeUseCase(
-                fileName = eq("some-asset.png"),
-                mimeType = eq("image/png"),
-                allowedExtension = eq(listOf("png"))
+                fileName = "some-asset.png",
+                mimeType = "image/png",
+                allowedExtension = listOf("png")
             )
         }
-            .wasInvoked(exactly = once)
     }
 
     private class Arrangement(val coroutineScope: CoroutineScope) {
-        val persistNewAssetMessage = mock(PersistNewAssetMessageUseCase::class)
-        val uploadAsset = mock(UploadAssetUseCase::class)
-        private val slowSyncRepository = mock(SlowSyncRepository::class)
-        val updateTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
-        private val messageRepository: MessageRepository = mock(MessageRepository::class)
-        val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase = mock(ValidateAssetFileTypeUseCase::class)
-        val observerFileSharingStatusUseCase: ObserveFileSharingStatusUseCase = mock(ObserveFileSharingStatusUseCase::class)
-        val messageSendFailureHandler: MessageSendFailureHandler = mock(MessageSendFailureHandler::class)
+        val persistNewAssetMessage = mock<PersistNewAssetMessageUseCase>(mode = MockMode.autoUnit)
+        val uploadAsset = mock<UploadAssetUseCase>(mode = MockMode.autoUnit)
+        private val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
+        val updateTransferStatus = mock<UpdateAssetMessageTransferStatusUseCase>(mode = MockMode.autoUnit)
+        private val messageRepository: MessageRepository = mock(mode = MockMode.autoUnit)
+        val validateAssetMimeTypeUseCase: ValidateAssetFileTypeUseCase = mock(mode = MockMode.autoUnit)
+        val observerFileSharingStatusUseCase: ObserveFileSharingStatusUseCase = mock(mode = MockMode.autoUnit)
+        val messageSendFailureHandler: MessageSendFailureHandler = mock(mode = MockMode.autoUnit)
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
         suspend fun withAssetMessagePersistSuccess() = apply {
-            coEvery {
+            everySuspend {
                 persistNewAssetMessage.invoke(any(), any(), any())
             } returns Pair(uploadMetadata, TestMessage.assetMessage()).right()
         }
 
         suspend fun withUploadSuccess() = apply {
-            coEvery {
+            everySuspend {
                 uploadAsset.invoke(any(), any())
             } returns Unit.right()
         }
 
         suspend fun withUploadFailure() = apply {
-            coEvery {
+            everySuspend {
                 uploadAsset.invoke(any(), any())
             } returns CoreFailure.Unknown(TestNetworkException.missingAuth).left()
         }
@@ -223,19 +223,19 @@ class ScheduleNewAssetMessageUseCaseTest {
         fun withValidateAsseMimeTypeResult(result: Boolean) = apply {
             every {
                 validateAssetMimeTypeUseCase.invoke(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         fun withObserveFileSharingStatusResult(result: FileSharingStatus.Value) = apply {
             every {
                 observerFileSharingStatusUseCase.invoke()
-            }.returns(flowOf(FileSharingStatus(result, false)))
+            } returns flowOf(FileSharingStatus(result, false))
         }
 
         suspend fun withMessageDeleted() = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.observeMessageVisibility(any(), any())
-            }.returns(flowOf(MessageEntity.Visibility.DELETED.right()))
+            } returns flowOf(MessageEntity.Visibility.DELETED.right())
         }
 
         fun arrange() = this to ScheduleNewAssetMessageUseCaseImpl(
@@ -251,8 +251,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             coroutineScope,
             testDispatcher
         ).also {
-            every { slowSyncRepository.slowSyncStatus }
-                .returns(completeStateFlow)
+            every { slowSyncRepository.slowSyncStatus } returns completeStateFlow
         }
     }
 

@@ -35,17 +35,19 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationMember
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import kotlin.test.Test
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlin.test.Test
 
 class NewGroupConversationSystemMessagesCreatorTest {
 
@@ -61,13 +63,13 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
                 matches {
                     (it.content is MessageContent.System && it.content is MessageContent.ConversationCreated)
                 }
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -85,13 +87,13 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(
                 matches {
                     (it.content is MessageContent.System && it.content is MessageContent.ConversationCreated && it.date == currentTime)
                 }
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -106,11 +108,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.ConversationCreated)
             })
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -125,11 +127,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode && it.date == timestampIso)
             })
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -148,11 +150,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode && it.date == timestampIso)
             })
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -168,11 +170,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
             })
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -186,11 +188,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
             })
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -208,13 +210,13 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
             result.shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System
                             && it.content is MessageContent.NewConversationReceiptMode
                             && it.date == timestampIso)
                 })
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -230,13 +232,13 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
             result.shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System
                             && it.content is MessageContent.NewConversationReceiptMode
                             && it.date == timestampIso)
                 })
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -254,17 +256,17 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
             result.shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.CreationAdded)
                 })
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
                 })
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -289,17 +291,17 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
             result.shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.CreationAdded)
                 })
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
                 })
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -315,11 +317,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
             result.shouldSucceed()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
                 })
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -334,17 +336,17 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.ConversationStartedUnverifiedWarning)
             })
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
-                val persistMessage = mock(PersistMessageUseCase::class)
-        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val qualifiedIdMapper = mock(QualifiedIdMapper::class)
+                val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
+        val selfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
+        val qualifiedIdMapper = mock<QualifiedIdMapper>(mode = MockMode.autoUnit)
 
         init {
             every {
@@ -353,13 +355,13 @@ class NewGroupConversationSystemMessagesCreatorTest {
         }
 
         suspend fun withPersistMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 persistMessage.invoke(any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withIsASelfTeamMember(isMember: Boolean = true) = apply {
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider.invoke()
             }.returns(if (isMember) Either.Right(TestTeam.TEAM_ID) else Either.Right(null))
         }

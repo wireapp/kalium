@@ -35,20 +35,21 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -62,13 +63,13 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -78,13 +79,13 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -94,9 +95,9 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasInvoked(twice)
+        }
     }
 
     @Test
@@ -106,13 +107,13 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasInvoked(twice)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(any())
-        }.wasInvoked(twice)
+        }
     }
 
     @Test
@@ -128,9 +129,9 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(eq(Arrangement.MLS_CONVERSATION1.id))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -146,9 +147,9 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionsRepository.enqueuePendingMLSGroupJoin(eq(Arrangement.MLS_CONVERSATION1.id))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -159,9 +160,9 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldFail {
             assertIs<NetworkFailure>(it)
         }
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasInvoked(twice)
+        }
     }
 
     @Test
@@ -171,9 +172,9 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasInvoked(twice)
+        }
     }
 
     @Test
@@ -187,13 +188,13 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasInvoked(twice)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -209,9 +210,9 @@ class JoinExistingMLSConversationsUseCaseTest {
             assertIs<NetworkFailure.ServerMiscommunication>(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -230,9 +231,9 @@ class JoinExistingMLSConversationsUseCaseTest {
             assertIs<NetworkFailure.ServerMiscommunication>(it)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(3)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasInvoked(exactly = 3)
+        }
     }
 
     @Test
@@ -246,22 +247,22 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         joinExistingMLSConversationsUseCase(allowJoinByExternalCommit = false).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), eq(false))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement(
         private val maxConcurrentJoins: Int = 4,
         private val maxThrottleRetries: Int = 3,
         private val throttleRetryDelayMs: Long = 250L,
-    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val featureSupport = mock(FeatureSupport::class)
-        val clientRepository = mock(ClientRepository::class)
-        val conversationRepository = mock(ConversationRepository::class)
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val joinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
-        val pendingActionsRepository = mock(PendingActionsRepository::class)
+    ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        val joinExistingMLSConversationUseCase = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
+        val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = this to JoinExistingMLSConversationsUseCaseImpl(
             featureSupport = featureSupport,
@@ -275,60 +276,60 @@ class JoinExistingMLSConversationsUseCaseTest {
             throttleRetryDelayMs = throttleRetryDelayMs,
         ).also {
             withTransactionReturning(Either.Right(Unit))
-            coEvery { pendingActionsRepository.enqueuePendingMLSGroupJoin(any()) }.returns(Unit)
+            everySuspend { pendingActionsRepository.enqueuePendingMLSGroupJoin(any()) } returns Unit
         }
 
         @Suppress("MaxLineLength")
         suspend fun withGetConversationsByGroupStateSuccessful(
             conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationsByGroupState(any())
-            }.returns(Either.Right(conversations))
+            } returns Either.Right(conversations)
         }
 
         suspend fun withJoinExistingMLSConversationSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withJoinExistingMLSConversationNetworkFailure() = apply {
-            coEvery {
+            everySuspend {
                 joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-            }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+            } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
         suspend fun withJoinExistingMLSConversationFailure(
             failure: CoreFailure = CoreFailure.NotSupportedByProteus
         ) = apply {
-            coEvery {
+            everySuspend {
                 joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-            }.returns(Either.Left(failure))
+            } returns Either.Left(failure)
         }
 
         suspend fun withNoKeyPackagesAvailable() = apply {
-            coEvery {
+            everySuspend {
                 joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-            }.returns(Either.Left(CoreFailure.MissingKeyPackages(setOf())))
+            } returns Either.Left(CoreFailure.MissingKeyPackages(setOf()))
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
             every {
                 featureSupport.isMLSSupported
-            }.returns(supported)
+            } returns supported
         }
 
         suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.hasRegisteredMLSClient()
-            }.returns(Either.Right(result))
+            } returns Either.Right(result)
         }
 
         suspend fun withJoinExistingMLSConversationReturningInvalidRequestServerMiscommunication() = apply {
-            coEvery {
+            everySuspend {
                 joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-            }.returns(
+            } returns(
                 Either.Left(
                     NetworkFailure.ServerMiscommunication(
                         KaliumException.InvalidRequestError(
@@ -340,9 +341,9 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
 
         suspend fun withJoinExistingMLSConversationReturningThrottleServerMiscommunication() = apply {
-            coEvery {
+            everySuspend {
                 joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-            }.returns(
+            } returns(
                 Either.Left(
                     NetworkFailure.ServerMiscommunication(
                         KaliumException.InvalidRequestError(

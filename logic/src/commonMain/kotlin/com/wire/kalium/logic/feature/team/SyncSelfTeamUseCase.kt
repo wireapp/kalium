@@ -26,9 +26,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
-import io.mockative.Mockable
 
-@Mockable
 internal interface SyncSelfTeamUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }

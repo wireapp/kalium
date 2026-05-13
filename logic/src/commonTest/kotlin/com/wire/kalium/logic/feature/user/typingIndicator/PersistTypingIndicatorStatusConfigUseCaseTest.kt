@@ -20,10 +20,11 @@ package com.wire.kalium.logic.feature.user.typingIndicator
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -38,9 +39,9 @@ class PersistTypingIndicatorStatusConfigUseCaseTest {
 
         val actual = persistTypingIndicatorStatusConfig(true)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertyRepository.setTypingIndicatorEnabled()
-        }.wasInvoked(once)
+        }
         assertTrue(actual is TypingIndicatorConfigResult.Success)
     }
 
@@ -52,9 +53,9 @@ class PersistTypingIndicatorStatusConfigUseCaseTest {
 
         val actual = persistTypingIndicatorStatusConfig(false)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertyRepository.removeTypingIndicatorProperty()
-        }.wasInvoked(once)
+        }
 
         assertTrue(actual is TypingIndicatorConfigResult.Success)
     }
@@ -67,39 +68,39 @@ class PersistTypingIndicatorStatusConfigUseCaseTest {
 
         val actual = persistTypingIndicatorStatusConfig(true)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userPropertyRepository.setTypingIndicatorEnabled()
-        }.wasInvoked(once)
+        }
 
         assertTrue(actual is TypingIndicatorConfigResult.Failure)
     }
 
     private class Arrangement {
 
-        val userPropertyRepository = mock(UserPropertyRepository::class)
+        val userPropertyRepository = mock<UserPropertyRepository>()
 
         val persistTypingIndicatorStatusConfig = PersistTypingIndicatorStatusConfigUseCaseImpl(userPropertyRepository)
 
         suspend fun withSuccessfulCall() = apply {
-            coEvery {
+            everySuspend {
                 userPropertyRepository.setTypingIndicatorEnabled()
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
 
             return this
         }
 
         suspend fun withSuccessfulCallToDelete() = apply {
-            coEvery {
+            everySuspend {
                 userPropertyRepository.removeTypingIndicatorProperty()
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
 
             return this
         }
 
         suspend fun withFailureCallToRepo() = apply {
-            coEvery {
+            everySuspend {
                 userPropertyRepository.setTypingIndicatorEnabled()
-            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+            } returns Either.Left(CoreFailure.Unknown(RuntimeException("Some error")))
 
             return this
         }

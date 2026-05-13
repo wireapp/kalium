@@ -27,13 +27,11 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
 /**
  * Refresh conversations without metadata, only if necessary.
  */
-@Mockable
 public interface RefreshConversationsWithoutMetadataUseCase {
     public suspend operator fun invoke()
 }

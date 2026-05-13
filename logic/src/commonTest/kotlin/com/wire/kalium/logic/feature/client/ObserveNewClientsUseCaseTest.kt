@@ -31,12 +31,14 @@ import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -99,9 +101,9 @@ class ObserveNewClientsUseCaseTest {
                 awaitItem()
             )
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.observeValidAccounts.invoke()
-            }.wasInvoked(exactly = once)
+            }
 
             awaitComplete()
         }
@@ -196,29 +198,25 @@ class ObserveNewClientsUseCaseTest {
 
     private class Arrangement {
 
-        val observeValidAccounts = mock(ObserveValidAccountsUseCase::class)
-        val sessionRepository = mock(SessionRepository::class)
-        val clientRepository1 = mock(ClientRepository::class)
-        val clientRepository2 = mock(ClientRepository::class)
-        val userClientRepositoryProvider = mock(UserClientRepositoryProvider::class)
+        val observeValidAccounts = mock<ObserveValidAccountsUseCase>(mode = MockMode.autoUnit)
+        val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
+        val clientRepository1 = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val clientRepository2 = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val userClientRepositoryProvider = mock<UserClientRepositoryProvider>(mode = MockMode.autoUnit)
 
         init {
             runBlocking {
-                coEvery {
+                everySuspend {
                     observeValidAccounts.invoke()
-                }.returns(flowOf(listOf()))
+                } returns flowOf(listOf())
 
                 every {
-
                     userClientRepositoryProvider.provide(eq(TestUser.USER_ID))
-
-                }.returns(clientRepository1)
+                } returns clientRepository1
 
                 every {
-
                     userClientRepositoryProvider.provide(eq(TestUser.OTHER_USER_ID))
-
-                }.returns(clientRepository2)
+                } returns clientRepository2
             }
         }
 
@@ -226,33 +224,33 @@ class ObserveNewClientsUseCaseTest {
             ObserveNewClientsUseCaseImpl(sessionRepository, observeValidAccounts, userClientRepositoryProvider)
 
         suspend fun withCurrentSession(result: Either<StorageFailure, AccountInfo>) = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.currentSession()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withNewClientsForUser1(result: List<Client>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository1.observeNewClients()
-            }.returns(flowOf(Either.Right(result)))
+            } returns flowOf(Either.Right(result))
         }
 
         suspend fun withNewClientsForUser2(result: List<Client>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository2.observeNewClients()
-            }.returns(flowOf(Either.Right(result)))
+            } returns flowOf(Either.Right(result))
         }
 
         suspend fun withValidAccounts(result: List<Pair<SelfUser, Team?>>) = apply {
-            coEvery {
+            everySuspend {
                 observeValidAccounts.invoke()
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
 
         suspend fun withValidAccountsFlow(flowResult: Flow<List<Pair<SelfUser, Team?>>>) = apply {
-            coEvery {
+            everySuspend {
                 observeValidAccounts.invoke()
-            }.returns(flowResult)
+            } returns flowResult
         }
 
         fun arrange() = this to observeNewClientsUseCase

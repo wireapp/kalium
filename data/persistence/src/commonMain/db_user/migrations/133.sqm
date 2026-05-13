@@ -1,0 +1,18 @@
+CREATE INDEX IF NOT EXISTS conversation_keying_material_update_index ON Conversation(
+    mls_group_state,
+    deleted_locally,
+    protocol,
+    mls_last_keying_material_update_date,
+    qualified_id,
+    mls_group_id
+) WHERE mls_group_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS conversation_proposal_timer_index ON Conversation(
+    deleted_locally,
+    protocol,
+    qualified_id,
+    mls_group_id,
+    mls_proposal_timer
+) WHERE mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
+
+PRAGMA optimize;

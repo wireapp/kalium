@@ -41,9 +41,7 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.Mockable
 
-@Mockable
 internal interface NewConversationEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation)
 }

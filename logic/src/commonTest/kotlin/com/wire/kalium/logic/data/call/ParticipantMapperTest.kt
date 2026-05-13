@@ -23,21 +23,23 @@ import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import io.mockative.any
-import io.mockative.every
-import io.mockative.mock
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.test.runTest
 
 class ParticipantMapperTest {
 
-        private val videoStateChecker = mock(VideoStateChecker::class)
+    private val videoStateChecker = mock<VideoStateChecker>(mode = MockMode.autoUnit)
 
-        private val callMapper = mock(CallMapper::class)
+    private val callMapper = mock<CallMapper>(mode = MockMode.autoUnit)
 
-        private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
+    private val qualifiedIdMapper = mock<QualifiedIdMapper>(mode = MockMode.autoUnit)
 
     private val participantMapperImpl = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper)
 

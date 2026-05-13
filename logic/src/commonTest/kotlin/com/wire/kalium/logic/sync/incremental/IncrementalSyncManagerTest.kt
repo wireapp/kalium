@@ -28,14 +28,16 @@ import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -69,9 +71,9 @@ class IncrementalSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.incrementalSyncWorker.processEventsFlow()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -87,9 +89,9 @@ class IncrementalSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.exponentialDurationHelper.reset()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -135,13 +137,13 @@ class IncrementalSyncManagerTest {
 
         incrementalSyncManager.performSyncFlow().test {
             advanceUntilIdle()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.incrementalSyncRecoveryHandler.recover(any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(2)) {
                 arrangement.incrementalSyncWorker.processEventsFlow()
-            }.wasInvoked(exactly = twice)
+            }
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -156,9 +158,9 @@ class IncrementalSyncManagerTest {
 
         incrementalSyncManager.performSyncFlow().test {
             advanceUntilIdle()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.incrementalSyncWorker.processEventsFlow()
-            }.wasInvoked(exactly = once)
+            }
             cancelAndIgnoreRemainingEvents()
         }
 
@@ -167,9 +169,9 @@ class IncrementalSyncManagerTest {
             recoverJob.complete()
             advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.incrementalSyncWorker.processEventsFlow()
-            }.wasInvoked(exactly = once)
+            }
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -184,13 +186,13 @@ class IncrementalSyncManagerTest {
 
         incrementalSyncManager.performSyncFlow().test {
             advanceUntilIdle()
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.incrementalSyncRecoveryHandler.recover(any(), any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.incrementalSyncWorker.processEventsFlow()
-            }.wasInvoked(exactly = once)
+            }
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -244,9 +246,9 @@ class IncrementalSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        verify {
+        verify(VerifyMode.exactly(2)) {
             arrangement.exponentialDurationHelper.reset()
-        }.wasInvoked(exactly = twice)
+        }
         // IncrementalSyncManager resets when it starts as well
     }
 
@@ -264,9 +266,9 @@ class IncrementalSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.userSessionWorkScheduler.resetBackoffForPeriodicUserConfigSync()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -282,9 +284,9 @@ class IncrementalSyncManagerTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.exponentialDurationHelper.next()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -297,21 +299,21 @@ class IncrementalSyncManagerTest {
 
         incrementalSyncManager.performSyncFlow().test {
             advanceUntilIdle()
-            verify {
+            verify(VerifyMode.exactly(1)) {
                 arrangement.exponentialDurationHelper.reset()
-            }.wasInvoked(exactly = once)
+            }
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     private class Arrangement {
 
-        val incrementalSyncWorker = mock(IncrementalSyncWorker::class)
+        val incrementalSyncWorker = mock<IncrementalSyncWorker>()
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
-        val incrementalSyncRecoveryHandler = mock(IncrementalSyncRecoveryHandler::class)
-        val networkStateObserver: NetworkStateObserver = mock(NetworkStateObserver::class)
-        val exponentialDurationHelper: ExponentialDurationHelper = mock(ExponentialDurationHelper::class)
-        val userSessionWorkScheduler: UserSessionWorkScheduler = mock(UserSessionWorkScheduler::class)
+        val incrementalSyncRecoveryHandler = mock<IncrementalSyncRecoveryHandler>()
+        val networkStateObserver: NetworkStateObserver = mock(mode = MockMode.autoUnit)
+        val exponentialDurationHelper: ExponentialDurationHelper = mock(mode = MockMode.autoUnit)
+        val userSessionWorkScheduler: UserSessionWorkScheduler = mock(mode = MockMode.autoUnit)
 
         init {
             withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
@@ -319,16 +321,16 @@ class IncrementalSyncManagerTest {
         }
 
         suspend fun withWorkerReturning(sourceFlow: Flow<EventSource>) = apply {
-            coEvery {
+            everySuspend {
                 incrementalSyncWorker.processEventsFlow()
-            }.returns(sourceFlow)
+            } returns sourceFlow
         }
 
         suspend fun withRecoveringFromFailure(onRecover: suspend (OnIncrementalSyncRetryCallback) -> Unit = { it.retry() }) = apply {
-            coEvery {
+            everySuspend {
                 incrementalSyncRecoveryHandler.recover(any(), any())
-            }.invokes { args ->
-                val onRetryCallback = args[1] as OnIncrementalSyncRetryCallback
+            } calls { invocation ->
+                val onRetryCallback = invocation.args[1] as OnIncrementalSyncRetryCallback
                 onRecover(onRetryCallback)
             }
         }
@@ -336,13 +338,13 @@ class IncrementalSyncManagerTest {
         fun withNetworkState(networkStateFlow: StateFlow<NetworkState>) = apply {
             every {
                 networkStateObserver.observeNetworkState()
-            }.returns(networkStateFlow)
+            } returns networkStateFlow
         }
 
         fun withNextExponentialDuration(duration: Duration) = apply {
             every {
                 exponentialDurationHelper.next()
-            }.returns(duration)
+            } returns duration
         }
 
         fun arrange() = this to IncrementalSyncManager(

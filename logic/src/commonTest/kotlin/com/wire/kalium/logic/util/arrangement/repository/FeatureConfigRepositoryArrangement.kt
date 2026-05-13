@@ -21,8 +21,10 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface FeatureConfigRepositoryArrangement {
 
@@ -33,10 +35,10 @@ internal interface FeatureConfigRepositoryArrangement {
 
 internal class FeatureConfigRepositoryArrangementImpl : FeatureConfigRepositoryArrangement {
 
-    override val featureConfigRepository: FeatureConfigRepository = mock(FeatureConfigRepository::class)
+    override val featureConfigRepository: FeatureConfigRepository = mock<FeatureConfigRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withGetFeatureConfigsReturning(result: Either<NetworkFailure, FeatureConfigModel>) {
-        coEvery {
+        everySuspend {
             featureConfigRepository.getFeatureConfigs()
         }.returns(result)
     }

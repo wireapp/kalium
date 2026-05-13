@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import kotlin.uuid.Uuid
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellsRepository
@@ -26,11 +28,11 @@ import com.wire.kalium.cells.domain.model.AttachmentUploadStatus
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -49,9 +51,9 @@ class RemoveAttachmentDraftUseCaseTest {
 
         removeAttachment(uuid)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.uploadManager.cancelUpload(uuid)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -66,9 +68,9 @@ class RemoveAttachmentDraftUseCaseTest {
 
         removeAttachment(uuid)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.remove(uuid)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -83,9 +85,9 @@ class RemoveAttachmentDraftUseCaseTest {
 
         removeAttachment(uuid)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.cellsRepository.cancelDraft(uuid, "")
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -100,9 +102,9 @@ class RemoveAttachmentDraftUseCaseTest {
 
         removeAttachment(uuid)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.remove(uuid)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -117,9 +119,9 @@ class RemoveAttachmentDraftUseCaseTest {
 
         removeAttachment(uuid)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.attachmentsRepository.remove(uuid)
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -139,24 +141,24 @@ class RemoveAttachmentDraftUseCaseTest {
 
     private class Arrangement {
 
-        val attachmentsRepository = mock(MessageAttachmentDraftRepository::class)
-        val cellsRepository = mock(CellsRepository::class)
-        val uploadManager = mock(CellUploadManager::class)
+        val attachmentsRepository = mock<MessageAttachmentDraftRepository>(mode = MockMode.autoUnit)
+        val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
+        val uploadManager = mock<CellUploadManager>(mode = MockMode.autoUnit)
 
         suspend fun withRepository() = apply {
-            coEvery { attachmentsRepository.remove(any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.remove(any()) }.returns(Unit.right())
         }
 
         suspend fun withCellsRepository() = apply {
-            coEvery { cellsRepository.cancelDraft(any(), any()) }.returns(Unit.right())
+            everySuspend { cellsRepository.cancelDraft(any(), any()) }.returns(Unit.right())
         }
 
         suspend fun withUploadManager() = apply {
-            coEvery { uploadManager.cancelUpload(any()) }.returns(Unit)
+            everySuspend { uploadManager.cancelUpload(any()) }.returns(Unit)
         }
 
         suspend fun withAttachment(uuid: String, status: AttachmentUploadStatus) = apply {
-            coEvery { attachmentsRepository.get(any()) }.returns(
+            everySuspend { attachmentsRepository.get(any()) }.returns(
                 AttachmentDraft(
                     uuid = uuid,
                     versionId = "",
@@ -174,7 +176,7 @@ class RemoveAttachmentDraftUseCaseTest {
         }
 
         suspend fun withNoAttachment() = apply {
-            coEvery { attachmentsRepository.get(any()) }.returns(null.right())
+            everySuspend { attachmentsRepository.get(any()) }.returns(null.right())
         }
 
         fun arrange() = this to RemoveAttachmentDraftUseCaseImpl(uploadManager, attachmentsRepository, cellsRepository)

@@ -23,12 +23,10 @@ import com.wire.kalium.logic.data.call.CallStatus
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
-import io.mockative.Mockable
 
 /**
  * This use case is responsible for observing the ongoing and incoming calls.
  */
-@Mockable
 internal interface ObserveOngoingAndIncomingCallsUseCase {
     suspend operator fun invoke(): Flow<List<Call>>
 }

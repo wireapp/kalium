@@ -33,17 +33,18 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -62,13 +63,13 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(conversations.size)) {
             arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
-        }.wasInvoked(conversations.size)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(conversations.size)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasInvoked(conversations.size)
+        }
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
     }
@@ -86,13 +87,13 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(conversations.size)) {
             arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
-        }.wasInvoked(conversations.size)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(conversations.size)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasInvoked(conversations.size)
+        }
 
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
     }
@@ -110,13 +111,13 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
     }
@@ -134,13 +135,13 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
-        }.wasInvoked(twice)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasInvoked(once)
+        }
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
     }
@@ -160,24 +161,20 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
-        // Both groups should have epoch check attempted
-        coVerify {
+        verifySuspend(VerifyMode.exactly(conversations.size)) {
             arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
-        }.wasInvoked(conversations.size)
+        }
 
-        // First group should be marked as PENDING_AFTER_RESET so it can be re-joined on next sync
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateConversationGroupState(
                 eq(Arrangement.GROUP_ID1), eq(GroupState.PENDING_AFTER_RESET)
             )
-        }.wasInvoked(once)
+        }
 
-        // Only the second group should be joined (first was marked pending due to ConversationNotFound)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(Arrangement.MLS_CONVERSATION2.id), any(), any())
-        }.wasInvoked(once)
+        }
 
-        // Overall result should be Success since ConversationNotFound is non-fatal
         assertIs<RecoverMLSConversationsResult.Success>(actual)
     }
 
@@ -196,17 +193,15 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
-        // Both groups should be marked as PENDING_AFTER_RESET
-        coVerify {
+        verifySuspend(VerifyMode.exactly(conversations.size)) {
             arrangement.conversationRepository.updateConversationGroupState(
                 any(), eq(GroupState.PENDING_AFTER_RESET)
             )
-        }.wasInvoked(conversations.size)
+        }
 
-        // No groups should be joined since all were marked pending
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-        }.wasNotInvoked()
+        }
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
     }
@@ -223,19 +218,19 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase(arrangement.transactionContext)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.isLocalGroupEpochStale(any(), any(), any())
-        }.wasNotInvoked()
+        }
 
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val mlsConversationRepository = mock(MLSConversationRepository::class)
-        val featureSupport = mock(FeatureSupport::class)
-        val joinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
-        val clientRepository = mock(ClientRepository::class)
-        val conversationRepository = mock(ConversationRepository::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
+        val joinExistingMLSConversationUseCase = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
 
         private var recoverMLSConversationsUseCase = RecoverMLSConversationsUseCaseImpl(
             featureSupport,
@@ -248,61 +243,61 @@ class RecoverMLSConversationsUseCaseTests {
         fun withIsMLSSupported(supported: Boolean) = apply {
             every {
                 featureSupport.isMLSSupported
-            }.returns(supported)
+            } returns supported
         }
 
         suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.hasRegisteredMLSClient()
-            }.returns(Either.Right(result))
+            } returns Either.Right(result)
         }
 
         suspend fun withConversationsByGroupStateReturns(either: Either<StorageFailure, List<Conversation>>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationsByGroupState(any())
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withJoinExistingMLSConversationUseCaseSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withConversationIsOutOfSyncReturnsTrueFor(groupIds: List<GroupID>) = apply {
-            coEvery {
-                mlsConversationRepository.isLocalGroupEpochStale(any(), matches { it in groupIds }, any())
-            }.returns(Either.Right(true))
+            everySuspend {
+                mlsConversationRepository.isLocalGroupEpochStale(any(), matching { it in groupIds }, any())
+            } returns Either.Right(true)
         }
 
         suspend fun withConversationIsOutOfSyncReturnsFalseFor(groupID: GroupID) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.isLocalGroupEpochStale(any(), eq(groupID), any())
-            }.returns(Either.Right(false))
-            coEvery {
-                mlsConversationRepository.isLocalGroupEpochStale(any(), matches { it != groupID }, any())
-            }.returns(Either.Right(true))
+            } returns Either.Right(false)
+            everySuspend {
+                mlsConversationRepository.isLocalGroupEpochStale(any(), matching { it != groupID }, any())
+            } returns Either.Right(true)
         }
 
         suspend fun withUpdateConversationGroupStateSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateConversationGroupState(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withEpochCheckFailsWithConversationNotFoundFor(groupID: GroupID) = apply {
-            coEvery {
+            everySuspend {
                 mlsConversationRepository.isLocalGroupEpochStale(any(), eq(groupID), any())
-            }.returns(Either.Left(MLSFailure.ConversationNotFound))
+            } returns Either.Left(MLSFailure.ConversationNotFound)
         }
 
         suspend fun withJoinExistingMLSConversationUseCaseFailsFor(failedGroupId: ConversationId) = apply {
-            coEvery {
+            everySuspend {
                 joinExistingMLSConversationUseCase.invoke(any(), eq(failedGroupId), any(), any())
-            }.returns(Either.Left(StorageFailure.DataNotFound))
-            coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), matches { it != failedGroupId }, any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Left(StorageFailure.DataNotFound)
+            everySuspend {
+                joinExistingMLSConversationUseCase.invoke(any(), matching { it != failedGroupId }, any(), any())
+            } returns Either.Right(Unit)
         }
 
         fun arrange() = this to recoverMLSConversationsUseCase

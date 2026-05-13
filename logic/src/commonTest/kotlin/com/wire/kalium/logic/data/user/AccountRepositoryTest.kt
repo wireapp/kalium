@@ -25,16 +25,18 @@ import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.UserDAO
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import kotlin.test.Test
 import kotlinx.coroutines.test.runTest
 import okio.IOException
-import kotlin.test.Test
 
 class AccountRepositoryTest {
 
@@ -46,12 +48,12 @@ class AccountRepositoryTest {
 
         userRepository.updateSelfDisplayName("newDisplayName").shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfApi.updateSelf(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.userDAO.updateUserDisplayName(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -62,12 +64,12 @@ class AccountRepositoryTest {
 
         userRepository.updateSelfDisplayName("newDisplayName").shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfApi.updateSelf(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.updateUserDisplayName(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -78,9 +80,9 @@ class AccountRepositoryTest {
 
         userRepository.updateSelfEmail("newEmail").shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfApi.updateEmailAddress(eq("newEmail"))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -93,9 +95,9 @@ class AccountRepositoryTest {
 
         with(result) {
             shouldFail()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.selfApi.updateEmailAddress(eq("newEmail"))
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -108,9 +110,9 @@ class AccountRepositoryTest {
 
         userRepository.deleteAccount(null).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfApi.deleteAccount(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -122,9 +124,9 @@ class AccountRepositoryTest {
 
         userRepository.deleteAccount(null).shouldFail()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfApi.deleteAccount(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -135,8 +137,8 @@ class AccountRepositoryTest {
 
         userRepository.updateSelfAccentColor(5).shouldFail()
 
-        coVerify { arrangement.selfApi.updateSelf(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.userDAO.updateUserAccentColor(any(), any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.selfApi.updateSelf(any()) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.userDAO.updateUserAccentColor(any(), any()) }
     }
 
     @Test
@@ -147,14 +149,14 @@ class AccountRepositoryTest {
 
         userRepository.updateSelfAccentColor(7).shouldSucceed()
 
-        coVerify { arrangement.selfApi.updateSelf(any()) }.wasInvoked(exactly = once)
-        coVerify { arrangement.userDAO.updateUserAccentColor(any(), eq(7)) }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.selfApi.updateSelf(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userDAO.updateUserAccentColor(any(), eq(7)) }
     }
 
     private class Arrangement {
 
-        val userDAO = mock(UserDAO::class)
-        val selfApi = mock(SelfApi::class)
+        val userDAO = mock<UserDAO>(mode = MockMode.autoUnit)
+        val selfApi = mock<SelfApi>(mode = MockMode.autoUnit)
 
         val selfUserId = TestUser.SELF.id
 
@@ -167,25 +169,25 @@ class AccountRepositoryTest {
         }
 
         suspend fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
-            coEvery {
+            everySuspend {
                 selfApi.updateSelf(any())
             }.returns(response)
         }
 
         suspend fun withRemoteUpdateEmail(result: NetworkResponse<Boolean>) = apply {
-            coEvery {
+            everySuspend {
                 selfApi.updateEmailAddress(any())
             }.returns(result)
         }
 
         suspend fun withDeleteAccountRequest(result: NetworkResponse<Unit> = NetworkResponse.Success(Unit, mapOf(), 200)) = apply {
-            coEvery {
+            everySuspend {
                 selfApi.deleteAccount(any())
             }.returns(result)
         }
 
         suspend fun withUpdateAccentApiRequestResponse(response: NetworkResponse<Unit>) = apply {
-            coEvery { selfApi.updateSelf(any()) }.returns(response)
+            everySuspend { selfApi.updateSelf(any()) }.returns(response)
         }
 
         fun arrange() = this to accountRepo

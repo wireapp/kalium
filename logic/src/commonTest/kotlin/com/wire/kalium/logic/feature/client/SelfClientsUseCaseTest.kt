@@ -26,8 +26,10 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import kotlinx.io.IOException
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -38,26 +40,26 @@ import kotlin.test.assertIs
 
 class SelfClientsUseCaseTest {
 
-        private val clientRepository = mock(ClientRepository::class)
+        private val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
 
-        private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+        private val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
     private lateinit var fetchSelfClientsFromRemoteUseCase: FetchSelfClientsFromRemoteUseCase
 
     @BeforeTest
     fun setup() = runBlocking {
         fetchSelfClientsFromRemoteUseCase =
             FetchSelfClientsFromRemoteUseCaseImpl(clientRepository, provideClientId = currentClientIdProvider)
-        coEvery {
+        everySuspend {
             currentClientIdProvider.invoke()
-        }.returns(Either.Right(CLIENT.id))
+        } returns Either.Right(CLIENT.id)
     }
 
     @Test
     fun givenSelfListOfClientsSuccess_thenTheSuccessPropagated() = runTest {
         val expected = CLIENTS_LIST
-        coEvery {
+        everySuspend {
             clientRepository.selfListOfClients()
-        }.returns(Either.Right(expected))
+        } returns Either.Right(expected)
 
         val actual = fetchSelfClientsFromRemoteUseCase.invoke()
         assertIs<SelfClientsResult.Success>(actual)
@@ -65,27 +67,24 @@ class SelfClientsUseCaseTest {
 
     @Test
     fun givenSelfListOfClientsSuccess_whenGettingListOfSelfClients_thenTheListIsSortedReverseChronologically() = runTest {
-        // given
         val list = listOf(
             CLIENT.copy(registrationTime = Instant.parse("2021-05-12T10:52:02.671Z")),
             CLIENT.copy(registrationTime = Instant.parse("2022-05-12T10:52:02.671Z"))
         )
         val sorted = listOf(list[1], list[0])
-        coEvery {
+        everySuspend {
             clientRepository.selfListOfClients()
-        }.returns(Either.Right(list))
-        // when
+        } returns Either.Right(list)
         val actual = (fetchSelfClientsFromRemoteUseCase.invoke() as SelfClientsResult.Success)
-        // then
         assertEquals(sorted, actual.clients)
     }
 
     @Test
     fun givenSelfListOfClientsFail_thenTheErrorPropagated() = runTest {
         val expected = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("some error")))
-        coEvery {
+        everySuspend {
             clientRepository.selfListOfClients()
-        }.returns(Either.Left(expected))
+        } returns Either.Left(expected)
 
         val actual = fetchSelfClientsFromRemoteUseCase.invoke()
         assertIs<SelfClientsResult.Failure.Generic>(actual)

@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferences
-import io.mockative.Mockable
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -39,7 +38,6 @@ data class ProxyCredentialsEntity(
     @SerialName("password") val password: String,
 )
 
-@Mockable
 interface AuthTokenStorage {
     fun addOrReplace(authTokenEntity: AuthTokenEntity, proxyCredentialsEntity: ProxyCredentialsEntity?)
     fun updateToken(

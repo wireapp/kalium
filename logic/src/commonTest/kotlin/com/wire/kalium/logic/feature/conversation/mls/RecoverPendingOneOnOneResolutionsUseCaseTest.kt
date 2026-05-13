@@ -26,13 +26,15 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -45,8 +47,8 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
 
         useCase()
 
-        coVerify { arrangement.pendingActionsRepository.getPendingOneOnOneResolutions() }.wasNotInvoked()
-        coVerify { arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.getPendingOneOnOneResolutions() }
+        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(any()) }
     }
 
     @Test
@@ -60,9 +62,9 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(eq(pendingUserIds))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -76,7 +78,7 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
 
         useCase()
 
-        coVerify { arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(any()) }
     }
 
     @Test
@@ -93,46 +95,46 @@ class RecoverPendingOneOnOneResolutionsUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionsRepository.acknowledgePendingOneOnOneResolutions(eq(listOf(successfulUserId)))
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
-        val pendingActionsRepository = mock(PendingActionsRepository::class)
-        val syncStateObserver = mock(SyncStateObserver::class)
-        val oneOnOneResolver = mock(OneOnOneResolver::class)
+        val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
+        val syncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
+        val oneOnOneResolver = mock<OneOnOneResolver>(mode = MockMode.autoUnit)
 
         suspend fun withSyncWaitResult(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { syncStateObserver.waitUntilLiveOrFailure() }.returns(result)
+            everySuspend { syncStateObserver.waitUntilLiveOrFailure() } returns result
         }
 
         suspend fun withPendingUserIds(userIds: List<UserId>) = apply {
-            coEvery { pendingActionsRepository.getPendingOneOnOneResolutions() }.returns(userIds)
-            coEvery { pendingActionsRepository.acknowledgePendingOneOnOneResolutions(any()) }.returns(Unit)
+            everySuspend { pendingActionsRepository.getPendingOneOnOneResolutions() } returns userIds
+            everySuspend { pendingActionsRepository.acknowledgePendingOneOnOneResolutions(any()) } returns Unit
         }
 
         suspend fun withResolveResult(result: Either<CoreFailure, ConversationId>) = apply {
             withTransactionReturning(Either.Right(Unit))
-            coEvery {
+            everySuspend {
                 oneOnOneResolver.resolveOneOnOneConversationWithUserId(
                     transactionContext = any(),
                     userId = any(),
                     invalidateCurrentKnownProtocols = eq(true)
                 )
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withResolveResultForUser(userId: UserId, result: Either<CoreFailure, ConversationId>) = apply {
-            coEvery {
+            everySuspend {
                 oneOnOneResolver.resolveOneOnOneConversationWithUserId(
                     transactionContext = any(),
                     userId = eq(userId),
                     invalidateCurrentKnownProtocols = eq(true)
                 )
-            }.returns(result)
+            } returns result
         }
 
         suspend fun arrange(): Pair<Arrangement, RecoverPendingOneOnOneResolutionsUseCase> = this to

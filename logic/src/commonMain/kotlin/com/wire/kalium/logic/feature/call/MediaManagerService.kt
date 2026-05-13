@@ -18,10 +18,8 @@
 
 package com.wire.kalium.logic.feature.call
 
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 
-@Mockable
 internal interface MediaManagerService {
     suspend fun turnLoudSpeakerOn()
     suspend fun turnLoudSpeakerOff()

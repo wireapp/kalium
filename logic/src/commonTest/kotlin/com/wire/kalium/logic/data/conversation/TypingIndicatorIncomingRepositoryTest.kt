@@ -22,13 +22,16 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.test.runTest
 
 class TypingIndicatorIncomingRepositoryTest {
 
@@ -46,9 +49,9 @@ class TypingIndicatorIncomingRepositoryTest {
                 setOf(expectedUserTypingOne, expectedUserTypingTwo),
                 typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it }?.toSet()
             )
-            coVerify {
+            verifySuspend(VerifyMode.atLeast(1)) {
                 arrangement.userPropertyRepository.getTypingIndicatorStatus()
-            }.wasInvoked()
+            }
         }
 
     @Test
@@ -65,9 +68,9 @@ class TypingIndicatorIncomingRepositoryTest {
                 expectedUserTyping,
                 typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it }?.toSet()
             )
-            coVerify {
+            verifySuspend(VerifyMode.atLeast(1)) {
                 arrangement.userPropertyRepository.getTypingIndicatorStatus()
-            }.wasInvoked()
+            }
         }
 
     @Test
@@ -85,9 +88,9 @@ class TypingIndicatorIncomingRepositoryTest {
                 setOf(expectedUserTypingTwo),
                 typingIndicatorRepository.observeUsersTyping(conversationTwo).firstOrNull()?.map { it }?.toSet()
             )
-            coVerify {
+            verifySuspend(VerifyMode.atLeast(1)) {
                 arrangement.userPropertyRepository.getTypingIndicatorStatus()
-            }.wasInvoked()
+            }
         }
 
     @Test
@@ -108,10 +111,10 @@ class TypingIndicatorIncomingRepositoryTest {
         }
 
     private class Arrangement {
-                val userPropertyRepository: UserPropertyRepository = mock(UserPropertyRepository::class)
+        val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
 
         suspend fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {
-            coEvery {
+            everySuspend {
                 userPropertyRepository.getTypingIndicatorStatus()
             }.returns(enabled)
         }

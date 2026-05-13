@@ -18,8 +18,8 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import app.cash.paging.Pager
-import app.cash.paging.PagingConfig
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessagesQueries
@@ -27,9 +27,7 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.kaliumLogger
-import io.mockative.Mockable
 
-@Mockable
 interface MessageExtensions {
     fun getPagerForConversation(
         conversationId: ConversationIDEntity,

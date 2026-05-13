@@ -43,11 +43,14 @@ import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -82,9 +85,9 @@ class RestoreBackupUseCaseTest {
 
         // then
         assertIs<RestoreBackupResult.Success>(result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.databaseImporter.importFromFile(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -106,9 +109,9 @@ class RestoreBackupUseCaseTest {
         assertIs<RestoreBackupResult.Failure>(result)
         assertIs<RestoreBackupResult.BackupRestoreFailure.InvalidUserId>(result.failure)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.databaseImporter.importFromFile(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -128,9 +131,9 @@ class RestoreBackupUseCaseTest {
         assertIs<RestoreBackupResult.Failure>(result)
         assertIs<RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup>(result.failure)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.databaseImporter.importFromFile(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -152,9 +155,9 @@ class RestoreBackupUseCaseTest {
         // then
         assertIs<RestoreBackupResult.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.databaseImporter.importFromFile(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Ignore
@@ -177,9 +180,9 @@ class RestoreBackupUseCaseTest {
         // then
         assertTrue(result is RestoreBackupResult.Failure)
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.databaseImporter.importFromFile(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Ignore
@@ -202,9 +205,9 @@ class RestoreBackupUseCaseTest {
         // then
         assertTrue(result is RestoreBackupResult.Failure)
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.databaseImporter.importFromFile(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -226,15 +229,15 @@ class RestoreBackupUseCaseTest {
         // then
         assertIs<RestoreBackupResult.Failure>(result)
         assertIs<RestoreBackupResult.BackupRestoreFailure.BackupIOFailure>(result.failure)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.databaseImporter.importFromFile(any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     private inner class Arrangement {
-        val databaseImporter = mock(DatabaseImporter::class)
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val userRepository = mock(UserRepository::class)
+        val databaseImporter = mock<DatabaseImporter>(mode = MockMode.autoUnit)
+        val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
 
         val fakeDBFileName = BACKUP_USER_DB_NAME
         private val selfUserId = currentTestUserId
@@ -314,27 +317,27 @@ class RestoreBackupUseCaseTest {
         }
 
         suspend fun withCorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
-            coEvery {
+            everySuspend {
                 databaseImporter.importFromFile(any(), any())
-            }.returns(Unit)
+            } returns (Unit)
         }
 
         suspend fun withIncorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
-            coEvery {
+            everySuspend {
                 databaseImporter.importFromFile(any(), any())
-            }.throws(RuntimeException("DB import failed"))
+            } throws RuntimeException("DB import failed")
         }
 
         suspend fun withCurrentClientId(clientId: ClientId = currentTestClientId) = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(Either.Right(clientId))
+            } returns (Either.Right(clientId))
         }
 
         suspend fun withSelfUser(selfUser: SelfUser) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.getSelfUser()
-            }.returns(selfUser.right())
+            } returns (selfUser.right())
         }
 
         lateinit var extractZipFile: (

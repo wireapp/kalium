@@ -44,12 +44,13 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
@@ -70,7 +71,7 @@ class ReceiptMessageHandlerTest {
     private val userDatabase = TestUserDatabase(SELF_USER_ID_ENTITY, testDispatcher)
     private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
 
-        private val messageRepository: MessageRepository = mock(MessageRepository::class)
+    private val messageRepository: MessageRepository = mock()
 
     private val receiptMessageHandler = ReceiptMessageHandlerImpl(
         SELF_USER_ID, receiptRepository, messageRepository, NoOpPersistenceEventHookNotifier
@@ -104,9 +105,9 @@ class ReceiptMessageHandlerTest {
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
-        coEvery {
+        everySuspend {
             messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -126,9 +127,9 @@ class ReceiptMessageHandlerTest {
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
-        coEvery {
+        everySuspend {
             messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -153,9 +154,9 @@ class ReceiptMessageHandlerTest {
         val senderUserId = SELF_USER_ID
         val type = ReceiptType.READ
 
-        coEvery {
+        everySuspend {
             messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -176,9 +177,9 @@ class ReceiptMessageHandlerTest {
         // Delivery != Read
         val type = ReceiptType.DELIVERED
 
-        coEvery {
+        everySuspend {
             messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -196,17 +197,17 @@ class ReceiptMessageHandlerTest {
         val type = ReceiptType.DELIVERED
         val messageUuids = listOf("1", "2", "3")
 
-        coEvery {
+        everySuspend {
             messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
 
         // when
         handleNewReceipt(type, date, senderUserId, messageUuids)
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             messageRepository.updateMessagesStatusIfNotRead(eq(MessageEntity.Status.DELIVERED), any(), eq(messageUuids))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -219,9 +220,9 @@ class ReceiptMessageHandlerTest {
         insertTestData()
         val date = DateTimeUtil.currentInstant()
 
-        coEvery {
+        everySuspend {
             messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
 
         val readContent = MessageContent.Receipt(type = ReceiptType.READ, messageIds = listOf(MESSAGE_ID))
         handler.handle(
@@ -256,9 +257,9 @@ class ReceiptMessageHandlerTest {
         )
         val date = DateTimeUtil.currentInstant()
 
-        coEvery {
+        everySuspend {
             messageRepository.updateMessagesStatusIfNotRead(any(), any(), any())
-        }.returns(Either.Right(Unit))
+        } returns Either.Right(Unit)
 
         val deliveredContent = MessageContent.Receipt(type = ReceiptType.DELIVERED, messageIds = listOf(MESSAGE_ID))
         handler.handle(

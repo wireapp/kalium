@@ -30,7 +30,9 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
+import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
@@ -38,21 +40,17 @@ import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventH
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
-import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -72,9 +70,9 @@ class UserEventReceiverTest {
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.logoutUseCase.invoke(eq(LogoutReason.REMOVED_CLIENT), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -87,9 +85,9 @@ class UserEventReceiverTest {
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.logoutUseCase.invoke(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -101,9 +99,9 @@ class UserEventReceiverTest {
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.logoutUseCase.invoke(eq(LogoutReason.DELETED_ACCOUNT), eq(true))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -111,15 +109,13 @@ class UserEventReceiverTest {
         val event = TestEvent.userDelete(userId = OTHER_USER_ID)
         val (arrangement, eventReceiver) = arrange {
             withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
-                result = emptyList(),
-                userIdMatcher = AnyMatcher(valueOf())
+                result = emptyList()
             )
         }
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        coVerify { arrangement.userRepository.markUserAsDeletedAndRemoveFromGroupConversations(any()) }
-            .wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userRepository.markUserAsDeletedAndRemoveFromGroupConversations(any()) }
     }
 
     @Test
@@ -132,9 +128,9 @@ class UserEventReceiverTest {
         val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         assertIs<Either.Right<Unit>>(result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.updateUserFromEvent(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -168,9 +164,9 @@ class UserEventReceiverTest {
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.saveNewClientEvent(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -180,9 +176,9 @@ class UserEventReceiverTest {
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.clientRepository.saveNewClientEvent(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -195,9 +191,9 @@ class UserEventReceiverTest {
         val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         assertIs<Either.Right<Unit>>(result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRefreshSuggestedEventHandler.handle(eq(event))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -224,9 +220,9 @@ class UserEventReceiverTest {
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.insertConnectionFromEvent(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -240,9 +236,9 @@ class UserEventReceiverTest {
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -257,9 +253,9 @@ class UserEventReceiverTest {
 
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), eq(event.connection.qualifiedToId), eq(ZERO))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -277,13 +273,13 @@ class UserEventReceiverTest {
             eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             advanceUntilIdle()
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
                     any(),
                     eq(event.connection.qualifiedToId),
                     eq(3.seconds)
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -300,12 +296,12 @@ class UserEventReceiverTest {
             // when
             eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
                     eq(event.connection.qualifiedConversationId),
                     any()
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -322,12 +318,12 @@ class UserEventReceiverTest {
             // when
             eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             // then
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
                     eq(event.connection.qualifiedConversationId),
                     any()
                 )
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -344,9 +340,9 @@ class UserEventReceiverTest {
             // when
             eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.legalHoldHandler.handleNewConnection(eq(event))
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -370,9 +366,9 @@ class UserEventReceiverTest {
         // when
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -389,26 +385,26 @@ class UserEventReceiverTest {
         // when
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
                 eq(event.connection.qualifiedConversationId),
                 any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val connectionRepository = mock(ConnectionRepository::class)
-        val logoutUseCase = mock(LogoutUseCase::class)
-        private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
-        val clientRepository = mock(ClientRepository::class)
-        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
-        val legalHoldRequestHandler = mock(LegalHoldRequestHandler::class)
-        val legalHoldHandler = mock(LegalHoldHandler::class)
-        val sessionRefreshSuggestedEventHandler = mock(SessionRefreshSuggestedEventHandler::class)
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val userRepository = mock<UserRepository>()
+        val oneOnOneResolver = mock<OneOnOneResolver>()
+        val connectionRepository = mock<ConnectionRepository>()
+        val logoutUseCase = mock<LogoutUseCase>()
+        private val currentClientIdProvider = mock<CurrentClientIdProvider>()
+        val clientRepository = mock<ClientRepository>()
+        val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>()
+        val legalHoldRequestHandler = mock<LegalHoldRequestHandler>()
+        val legalHoldHandler = mock<LegalHoldHandler>()
+        val sessionRefreshSuggestedEventHandler = mock<SessionRefreshSuggestedEventHandler>()
 
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
             clientRepository,
@@ -425,51 +421,81 @@ class UserEventReceiverTest {
         )
 
         suspend fun withInsertConnectionFromEventSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 connectionRepository.insertConnectionFromEvent(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSaveNewClientSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.saveNewClientEvent(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withCurrentClientIdIs(clientId: ClientId) = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(Either.Right(clientId))
+            } returns Either.Right(clientId)
         }
 
         suspend fun withLogoutUseCaseSucceed() = apply {
-            coEvery {
+            everySuspend {
                 logoutUseCase.invoke(any(), any())
-            }.returns(Unit)
+            } returns Unit
         }
 
         suspend fun withHandleLegalHoldNewConnectionSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 legalHoldHandler.handleNewConnection(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSessionRefreshSuggestedHandlerResult(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 sessionRefreshSuggestedEventHandler.handle(any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withGetConnectionResult(result: Either<StorageFailure, ConversationDetails.Connection>) = apply {
-            coEvery {
+            everySuspend {
                 connectionRepository.getConnection(any())
-            }.returns(result)
+            } returns result
+        }
+
+        suspend fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(result: List<com.wire.kalium.logic.data.id.ConversationId>) = apply {
+            everySuspend {
+                userRepository.markUserAsDeletedAndRemoveFromGroupConversations(any())
+            } returns Either.Right(result)
+        }
+
+        suspend fun withUpdateUserSuccess() = apply {
+            everySuspend {
+                userRepository.updateUserFromEvent(any())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withUpdateUserFailure(coreFailure: CoreFailure) = apply {
+            everySuspend {
+                userRepository.updateUserFromEvent(any())
+            } returns Either.Left(coreFailure)
+        }
+
+        suspend fun withFetchUserInfoReturning(result: Either<CoreFailure, Unit>) = apply {
+            everySuspend {
+                userRepository.fetchUserInfo(any())
+            } returns result
+        }
+
+        suspend fun withScheduleResolveOneOnOneConversationWithUserId() = apply {
+            everySuspend {
+                oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any(), any())
+            } returns Job()
         }
 
         suspend fun arrange() = run {

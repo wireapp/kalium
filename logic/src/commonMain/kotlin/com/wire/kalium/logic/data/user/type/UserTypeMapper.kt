@@ -21,7 +21,6 @@ package com.wire.kalium.logic.data.user.type
 import com.wire.kalium.logic.data.team.TeamRole
 import com.wire.kalium.network.api.model.UserTypeDTO
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import io.mockative.Mockable
 
 internal class UserEntityTypeMapperImpl : UserEntityTypeMapper {
 
@@ -182,7 +181,6 @@ internal interface UserEntityTypeMapper : UserTypeMapper<UserTypeEntity> {
     ): UserTypeEntity
 }
 
-@Mockable
 internal interface DomainUserTypeMapper : UserTypeMapper<UserType> {
     fun fromUserTypeEntity(userTypeEntity: UserTypeEntity?): UserTypeInfo
 }

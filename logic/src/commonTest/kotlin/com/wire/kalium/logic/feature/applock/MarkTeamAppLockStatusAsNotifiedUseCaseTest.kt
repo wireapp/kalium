@@ -19,10 +19,12 @@ package com.wire.kalium.logic.feature.applock
 
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -36,23 +38,23 @@ internal class MarkTeamAppLockStatusAsNotifiedUseCaseTest {
 
         useCase.invoke()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setTeamAppLockAsNotified()
-        }.wasInvoked(once)
+        }
     }
 
     class Arrangement {
 
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
         fun arrange() = this to MarkTeamAppLockStatusAsNotifiedUseCaseImpl(
             userConfigRepository = userConfigRepository
         )
 
         suspend fun withSuccess() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setTeamAppLockAsNotified()
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
     }
 }

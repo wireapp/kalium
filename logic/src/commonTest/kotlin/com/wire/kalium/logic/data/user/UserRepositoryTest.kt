@@ -41,7 +41,6 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
 import com.wire.kalium.logic.test_util.TestNetworkException.generic
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
-import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
@@ -70,23 +69,26 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.sequentiallyReturns
+import dev.mokkery.answering.throws
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.http.HttpStatusCode
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
-import io.mockative.verify
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 
 class UserRepositoryTest {
 
@@ -104,15 +106,15 @@ class UserRepositoryTest {
             .withSuccessfulGetUsersByQualifiedIdList(knownUserEntities)
             .arrange()
 
-        coEvery {
+        everySuspend {
             arrangement.userDAO.getUsersDetailsByQualifiedIDList(any())
         }.returns(knownUserEntities)
 
         userRepository.fetchUsersIfUnknownByIds(requestedUserIds).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.userDetailsApi.getMultipleUsers(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -128,11 +130,11 @@ class UserRepositoryTest {
 
         userRepository.fetchUsersIfUnknownByIds(requestedUserIds).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getMultipleUsers(matches { request: ListUserRequest ->
                 (request as QualifiedUserIdListRequest).qualifiedIds.first() == missingUserId.toApi()
             })
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -145,9 +147,9 @@ class UserRepositoryTest {
 
         with(result) {
             shouldSucceed()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userDAO.updateUser(any<PartialUserEntity>())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -166,9 +168,9 @@ class UserRepositoryTest {
         // when
         userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.userDetailsApi.getMultipleUsers(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -181,12 +183,12 @@ class UserRepositoryTest {
         // when
         userRepository.fetchUsersByIds(requestedUserIds).shouldFail()
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(listOf(TestUser.OTHER_USER_ID.toApi()))))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -203,9 +205,9 @@ class UserRepositoryTest {
         // when
         userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getMultipleUsers(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -225,9 +227,9 @@ class UserRepositoryTest {
         // when
         userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getMultipleUsers(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -247,9 +249,9 @@ class UserRepositoryTest {
         // when
         userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(2)) {
             arrangement.userDetailsApi.getMultipleUsers(any())
-        }.wasInvoked(exactly = twice)
+        }
     }
 
     @Test
@@ -263,9 +265,9 @@ class UserRepositoryTest {
         // then
         with(result) {
             shouldFail { it is SelfUserDeleted }
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.selfApi.getSelfInfo()
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -287,13 +289,13 @@ class UserRepositoryTest {
         userRepository.fetchAllOtherUsers().shouldSucceed()
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.allOtherUsersId()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getMultipleUsers(eq(ListUserRequest.qualifiedIds(knownUserIds.map { userId -> userId.toApi() })))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -315,13 +317,13 @@ class UserRepositoryTest {
                 label = "bad-request"
             )
         )
-        coEvery {
+        everySuspend {
             arrangement.userDetailsApi.getMultipleUsers(any())
-        }.thenReturnSequentially(
+        } sequentiallyReturns listOf(
             NetworkResponse.Error(malformedQualifiedIdsError),
             NetworkResponse.Success(LIST_USERS_DTO, mapOf(), 200)
         )
-        coEvery {
+        everySuspend {
             arrangement.userDAO.deleteUserByQualifiedID(any())
         }.returns(Unit)
 
@@ -329,12 +331,12 @@ class UserRepositoryTest {
         userRepository.fetchAllOtherUsers().shouldSucceed()
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.deleteUserByQualifiedID(eq(UserIDEntity(value = "id2", domain = "")))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getMultipleUsers(eq(ListUserRequest.qualifiedIds(expectedRequestIds)))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -356,13 +358,13 @@ class UserRepositoryTest {
                 label = "bad-request"
             )
         )
-        coEvery {
+        everySuspend {
             arrangement.userDetailsApi.getMultipleUsers(any())
-        }.thenReturnSequentially(
+        } sequentiallyReturns listOf(
             NetworkResponse.Error(malformedQualifiedIdsError),
             NetworkResponse.Success(LIST_USERS_DTO, mapOf(), 200)
         )
-        coEvery {
+        everySuspend {
             arrangement.userDAO.deleteUserByQualifiedID(any())
         }.returns(Unit)
 
@@ -370,12 +372,12 @@ class UserRepositoryTest {
         userRepository.fetchAllOtherUsers().shouldSucceed()
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.deleteUserByQualifiedID(eq(UserIDEntity(value = "id2", domain = "")))
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getMultipleUsers(eq(ListUserRequest.qualifiedIds(expectedRequestIds)))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -397,7 +399,7 @@ class UserRepositoryTest {
                 label = "bad-request"
             )
         )
-        coEvery {
+        everySuspend {
             arrangement.userDetailsApi.getMultipleUsers(any())
         }.returns(NetworkResponse.Error(genericBadRequestError))
 
@@ -405,9 +407,9 @@ class UserRepositoryTest {
         userRepository.fetchAllOtherUsers().shouldFail()
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.userDAO.deleteUserByQualifiedID(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -423,14 +425,14 @@ class UserRepositoryTest {
             .shouldSucceed()
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getMultipleUsers(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.upsertUsers(
                 matches { it.firstOrNull()?.name != null },
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -445,12 +447,12 @@ class UserRepositoryTest {
             .shouldSucceed()
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.userDetailsApi.getMultipleUsers(any())
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.userDAO.upsertUsers(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -465,9 +467,9 @@ class UserRepositoryTest {
         userRepository.removeUserBrokenAsset(qualifiedIdToRemove).shouldSucceed()
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.userDAO.removeUserAsset(any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -494,9 +496,9 @@ class UserRepositoryTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.observeAllUsersDetailsByConnectionStatus(any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -522,9 +524,9 @@ class UserRepositoryTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.userDAO.observeUsersDetailsNotInConversation(any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -538,9 +540,9 @@ class UserRepositoryTest {
         userRepository.defederateUser(TestUser.OTHER_FEDERATED_USER_ID).shouldSucceed()
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.markUserAsDefederated(eq(TestUser.OTHER_FEDERATED_USER_ID.toDao()))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -562,9 +564,9 @@ class UserRepositoryTest {
         userRepository.getUsersSummaryByIds(requestedUserIds).shouldSucceed()
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.getUsersDetailsByQualifiedIDList(any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -578,12 +580,12 @@ class UserRepositoryTest {
 
         with(result) {
             shouldSucceed()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.selfApi.updateSupportedProtocols(any())
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userDAO.updateUserSupportedProtocols(any(), any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -597,12 +599,12 @@ class UserRepositoryTest {
 
         with(result) {
             shouldFail()
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.selfApi.updateSupportedProtocols(any())
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(0)) {
                 arrangement.userDAO.updateUserSupportedProtocols(any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -620,9 +622,9 @@ class UserRepositoryTest {
             conversationId
         ).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.updateActiveOneOnOneConversation(eq(userId.toDao()), eq(conversationId.toDao()))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -669,9 +671,9 @@ class UserRepositoryTest {
 
         val result = userRepository.getKnownUserMinimized(TestUser.USER_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.getUserMinimizedByQualifiedID(any())
-        }.wasInvoked(exactly = once)
+        }
         result.shouldSucceed {
             assertIs<OtherUserMinimized>(it)
         }
@@ -688,18 +690,18 @@ class UserRepositoryTest {
         val result = userRepository.fetchUserInfo(TestUser.USER_ID)
 
         assertIs<Either.Right<Unit>>(result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getUserInfo(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.upsertUsers(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.upsertConnectionStatuses(any())
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.userDAO.upsertUsers(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -710,9 +712,9 @@ class UserRepositoryTest {
 
         userRepository.fetchUserInfo(TestUser.USER_ID)
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.userDAO.insertOrIgnoreIncompleteUsers(any())
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -744,9 +746,9 @@ class UserRepositoryTest {
         result.shouldSucceed {
             assertEquals(expectedResult, it)
         }
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -760,9 +762,9 @@ class UserRepositoryTest {
         val result = userRepository.fetchUsersLegalHoldConsent(requestedUserIds)
         // then
         result.shouldFail()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -776,9 +778,9 @@ class UserRepositoryTest {
         val result = userRepository.migrateUserToTeam("teamName")
         // then
         result.shouldSucceed()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.upgradePersonalToTeamApi.migrateToTeam(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -791,9 +793,9 @@ class UserRepositoryTest {
         val result = userRepository.migrateUserToTeam("teamName")
         // then
         result.shouldFail()
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.upgradePersonalToTeamApi.migrateToTeam(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -805,9 +807,9 @@ class UserRepositoryTest {
 
         userRepository.insertSelfIncompleteUserWithOnlyEmail(email).shouldSucceed()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(eq(arrangement.selfUserId.toDao()), eq(email))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -826,17 +828,17 @@ class UserRepositoryTest {
 
     private class Arrangement {
 
-        val userDAO = mock(UserDAO::class)
-        val clientDAO = mock(ClientDAO::class)
-        val memberDAO = mock(MemberDAO::class)
-        val appDAO = mock(AppDAO::class)
-        val selfApi = mock(SelfApi::class)
-        val userDetailsApi = mock(UserDetailsApi::class)
-        val teamsApi = mock(TeamsApi::class)
-        val sessionRepository = mock(SessionRepository::class)
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
-        val upgradePersonalToTeamApi: UpgradePersonalToTeamApi = mock(UpgradePersonalToTeamApi::class)
+        val userDAO = mock<UserDAO>(mode = MockMode.autoUnit)
+        val clientDAO = mock<ClientDAO>(mode = MockMode.autoUnit)
+        val memberDAO = mock<MemberDAO>(mode = MockMode.autoUnit)
+        val appDAO = mock<AppDAO>(mode = MockMode.autoUnit)
+        val selfApi = mock<SelfApi>(mode = MockMode.autoUnit)
+        val userDetailsApi = mock<UserDetailsApi>(mode = MockMode.autoUnit)
+        val teamsApi = mock<TeamsApi>(mode = MockMode.autoUnit)
+        val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
+        val selfTeamIdProvider: SelfTeamIdProvider = mock<SelfTeamIdProvider>(mode = MockMode.autoUnit)
+        val legalHoldHandler: LegalHoldHandler = mock<LegalHoldHandler>(mode = MockMode.autoUnit)
+        val upgradePersonalToTeamApi: UpgradePersonalToTeamApi = mock<UpgradePersonalToTeamApi>(mode = MockMode.autoUnit)
 
         val selfUserId = TestUser.SELF.id
 
@@ -858,13 +860,13 @@ class UserRepositoryTest {
         }
 
         suspend fun withUserDAOReturning(value: UserEntityMinimized?) = apply {
-            coEvery {
+            everySuspend {
                 userDAO.getUserMinimizedByQualifiedID(any())
             }.returns(value)
         }
 
         suspend fun withDaoObservingByConnectionStatusReturning(userEntities: List<UserDetailsEntity>) = apply {
-            coEvery {
+            everySuspend {
                 userDAO.observeAllUsersDetailsByConnectionStatus(any())
             }.returns(flowOf(userEntities))
         }
@@ -876,103 +878,103 @@ class UserRepositoryTest {
         }
 
         suspend fun withUpdateUserReturning() = apply {
-            coEvery {
+            everySuspend {
                 userDAO.updateUser(any<PartialUserEntity>())
             }.returns(Unit)
         }
 
         suspend fun withSuccessfulGetUsersInfo(result: UserProfileDTO = TestUser.USER_PROFILE_DTO) = apply {
-            coEvery {
+            everySuspend {
                 userDetailsApi.getUserInfo(any())
             }.returns(NetworkResponse.Success(result, mapOf(), 200))
         }
 
         suspend fun withFailingGetUserInfo() = apply {
-            coEvery {
+            everySuspend {
                 userDetailsApi.getUserInfo(any())
             }.returns(NetworkResponse.Error(TestNetworkException.generic))
         }
 
         suspend fun withSuccessfulFetchTeamMembersByIds(result: List<TeamMemberDTO>) = apply {
-            coEvery {
+            everySuspend {
                 teamsApi.getTeamMembersByIds(any(), any())
             }.returns(NetworkResponse.Success(TeamMemberListNonPaginated(false, result), mapOf(), 200))
         }
 
         suspend fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserDetailsEntity>) = apply {
-            coEvery {
+            everySuspend {
                 userDAO.getUsersDetailsByQualifiedIDList(any())
             }.returns(knownUserEntities)
         }
 
         suspend fun withUserDaoReturning(userEntity: UserDetailsEntity? = TestUser.DETAILS_ENTITY) = apply {
-            coEvery {
+            everySuspend {
                 userDAO.observeUserDetailsByQualifiedID(any())
             }.returns(flowOf(userEntity))
         }
 
         suspend fun withDaoReturningNoMetadataUsers(userEntity: List<UserDetailsEntity> = emptyList()) = apply {
-            coEvery {
+            everySuspend {
                 userDAO.getUsersDetailsWithoutMetadata()
             }.returns(userEntity)
         }
 
         suspend fun withRemoteGetSelfReturningDeletedUser(): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 selfApi.getSelfInfo()
             }.returns(NetworkResponse.Success(TestUser.SELF_USER_DTO.copy(deleted = true), mapOf(), 200))
         }
 
         suspend fun withSuccessfulGetMultipleUsersApiRequest(result: ListUsersDTO) = apply {
-            coEvery {
+            everySuspend {
                 userDetailsApi.getMultipleUsers(any())
             }.returns(NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value))
         }
 
         suspend fun withGetMultipleUsersApiRequestFederationNotEnabledError() = apply {
-            coEvery {
+            everySuspend {
                 userDetailsApi.getMultipleUsers(any())
             }.returns(NetworkResponse.Error(federationNotEnabled))
         }
 
         suspend fun withGetMultipleUsersApiRequestGenericError() = apply {
-            coEvery {
+            everySuspend {
                 userDetailsApi.getMultipleUsers(any())
             }.returns(NetworkResponse.Error(generic))
         }
 
         suspend fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
-            coEvery {
+            everySuspend {
                 selfApi.updateSelf(any())
             }.returns(response)
         }
 
         suspend fun withUpdateSupportedProtocolsApiRequestResponse(response: NetworkResponse<Unit>) = apply {
-            coEvery {
+            everySuspend {
                 selfApi.updateSupportedProtocols(any())
             }.returns(response)
         }
 
         suspend fun withRemoteUpdateEmail(result: NetworkResponse<Boolean>) = apply {
-            coEvery {
+            everySuspend {
                 selfApi.updateEmailAddress(any())
             }.returns(result)
         }
 
         suspend fun withSuccessfulRemoveUserAsset() = apply {
-            coEvery {
+            everySuspend {
                 userDAO.removeUserAsset(any())
             }.returns(Unit)
         }
 
         suspend fun withSuccessfulGetAllUsers(userEntities: List<UserDetailsEntity>) = apply {
-            coEvery {
+            everySuspend {
                 userDAO.getAllUsersDetails()
             }.returns(flowOf(userEntities))
         }
 
         suspend fun withSuccessfulGetMultipleUsers() = apply {
-            coEvery {
+            everySuspend {
                 userDetailsApi.getMultipleUsers(any())
             }.returns(NetworkResponse.Success(value = LIST_USERS_DTO, headers = mapOf(), httpCode = 200))
         }
@@ -980,43 +982,43 @@ class UserRepositoryTest {
         suspend fun withAllOtherUsersIdSuccess(
             result: List<UserIDEntity>,
         ) {
-            coEvery {
+            everySuspend {
                 userDAO.allOtherUsersId()
             }.returns(result)
         }
 
         suspend fun withMarkUserAsDefederated() = apply {
-            coEvery {
+            everySuspend {
                 userDAO.markUserAsDefederated(any())
             }.returns(Unit)
         }
 
         suspend fun withUpdateOneOnOneConversationSuccess() = apply {
-            coEvery {
+            everySuspend {
                 userDAO.updateActiveOneOnOneConversation(any(), any())
             }.returns(Unit)
         }
 
         suspend fun withUpdateOneOnOneConversationFailing(exception: Throwable) = apply {
-            coEvery {
+            everySuspend {
                 userDAO.updateActiveOneOnOneConversation(any(), any())
             }.throws(exception)
         }
 
         suspend fun withInsertOrIgnoreUsers() {
-            coEvery {
+            everySuspend {
                 userDAO.insertOrIgnoreIncompleteUsers(any())
             }.returns(Unit)
         }
 
         suspend fun withGetTeamMemberSuccess(result: TeamMemberDTO) = apply {
-            coEvery {
+            everySuspend {
                 teamsApi.getTeamMember(any(), any())
             }.returns(NetworkResponse.Success(result, mapOf(), 200))
         }
 
         suspend fun withMigrateUserToTeamSuccess() = apply {
-            coEvery {
+            everySuspend {
                 upgradePersonalToTeamApi.migrateToTeam(any())
             }.returns(
                 NetworkResponse.Success(
@@ -1028,36 +1030,36 @@ class UserRepositoryTest {
         }
 
         suspend fun withMigrateUserToTeamFailure() = apply {
-            coEvery {
+            everySuspend {
                 upgradePersonalToTeamApi.migrateToTeam(any())
             }.returns(NetworkResponse.Error(generic))
         }
 
         suspend fun withInsertOrIgnoreIncompleteUserWithOnlyEmailSuccess() = apply {
-            coEvery {
+            everySuspend {
                 userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(any(), any())
             }.returns(Unit)
         }
 
         suspend fun withInsertOrIgnoreIncompleteUserWithOnlyEmailFailing(exception: Throwable) = apply {
-            coEvery {
+            everySuspend {
                 userDAO.insertOrIgnoreIncompleteUserWithOnlyEmail(any(), any())
             }.throws(exception)
         }
 
         suspend inline fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {
-            coEvery {
+            everySuspend {
                 userDAO.observeUserDetailsByQualifiedID(any())
             }.returns(flowOf(TestUser.DETAILS_ENTITY))
 
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider()
             }.returns(Either.Right(TestTeam.TEAM_ID))
-            coEvery {
+            everySuspend {
                 sessionRepository.updateSsoIdAndScimInfo(any(), any(), any())
             }.returns(Either.Right(Unit))
             withGetTeamMemberSuccess(TestTeam.memberDTO(selfUserId.value))
-            coEvery {
+            everySuspend {
                 legalHoldHandler.handleUserFetch(any(), any())
             }.returns(Either.Right(Unit))
             apply(block)

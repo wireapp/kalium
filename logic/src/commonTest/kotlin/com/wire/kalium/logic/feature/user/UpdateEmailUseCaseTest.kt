@@ -22,12 +22,13 @@ import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
@@ -43,9 +44,9 @@ class UpdateEmailUseCaseTest {
         val result = useCase("email")
         assertIs<UpdateEmailUseCase.Result.Success.VerificationEmailSent>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.accountRepository.updateSelfEmail(eq("email"))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -56,9 +57,9 @@ class UpdateEmailUseCaseTest {
         val result = useCase("email")
         assertIs<UpdateEmailUseCase.Result.Success.NoChange>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.accountRepository.updateSelfEmail(eq("email"))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -69,9 +70,9 @@ class UpdateEmailUseCaseTest {
         val result = useCase("email")
         assertIs<UpdateEmailUseCase.Result.Failure.GenericFailure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.accountRepository.updateSelfEmail(eq("email"))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -92,9 +93,9 @@ class UpdateEmailUseCaseTest {
         val result = useCase("email")
         assertIs<UpdateEmailUseCase.Result.Failure.EmailAlreadyInUse>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.accountRepository.updateSelfEmail(eq("email"))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -115,26 +116,26 @@ class UpdateEmailUseCaseTest {
         val result = useCase("email")
         assertIs<UpdateEmailUseCase.Result.Failure.InvalidEmail>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrange.accountRepository.updateSelfEmail(eq("email"))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-                val accountRepository = mock(AccountRepository::class)
+                val accountRepository = mock<AccountRepository>()
 
         private val useCase = UpdateEmailUseCase(accountRepository)
 
         suspend fun withUpdateSelfEmailSuccess(isEmailUpdated: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 accountRepository.updateSelfEmail(any())
-            }.returns(Either.Right(isEmailUpdated))
+            } returns Either.Right(isEmailUpdated)
         }
 
         suspend fun withUpdateSelfEmailFailure(error: NetworkFailure) = apply {
-            coEvery {
+            everySuspend {
                 accountRepository.updateSelfEmail(any())
-            }.returns(Either.Left(error))
+            } returns Either.Left(error)
         }
 
         fun arrange() = this to useCase

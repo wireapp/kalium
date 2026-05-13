@@ -26,13 +26,13 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.notification.LocalNotification
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
+import kotlinx.datetime.Instant
 
 internal interface MessageRepositoryArrangement {
 
@@ -41,43 +41,43 @@ internal interface MessageRepositoryArrangement {
 
     suspend fun withGetMessageById(
         result: Either<StorageFailure, Message>,
-        messageID: Matcher<String> = AnyMatcher(valueOf()),
-        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
+        messageID: (String) -> Boolean = { true },
+        conversationId: (ConversationId) -> Boolean = { true }
     )
 
     suspend fun withDeleteMessage(
         result: Either<CoreFailure, Unit>,
-        messageID: Matcher<String> = AnyMatcher(valueOf()),
-        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
+        messageID: (String) -> Boolean = { true },
+        conversationId: (ConversationId) -> Boolean = { true }
     )
 
     suspend fun withMarkAsDeleted(
         result: Either<StorageFailure, Unit>,
-        messageID: Matcher<String> = AnyMatcher(valueOf()),
-        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
+        messageID: (String) -> Boolean = { true },
+        conversationId: (ConversationId) -> Boolean = { true }
     )
 
     suspend fun withLocalNotifications(list: Either<CoreFailure, List<LocalNotification>>)
 
     suspend fun withMoveMessagesToAnotherConversation(
         result: Either<StorageFailure, Unit>,
-        originalConversation: Matcher<ConversationId> = AnyMatcher(valueOf()),
-        targetConversation: Matcher<ConversationId> = AnyMatcher(valueOf())
+        originalConversation: (ConversationId) -> Boolean = { true },
+        targetConversation: (ConversationId) -> Boolean = { true }
     )
 
     suspend fun withEditCompositeMessage(
         result: Either<StorageFailure, Unit>,
-        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()),
-        content: Matcher<MessageContent.CompositeEdited> = AnyMatcher(valueOf()),
-        messageId: Matcher<String> = AnyMatcher(valueOf()),
-        date: Matcher<Long> = AnyMatcher(valueOf())
+        conversationId: (ConversationId) -> Boolean = { true },
+        content: (MessageContent.CompositeEdited) -> Boolean = { true },
+        messageId: (String) -> Boolean = { true },
+        date: (Instant) -> Boolean = { true }
     ) {
-        coEvery {
+        everySuspend {
             messageRepository.updateCompositeMessage(
-                matches { conversationId.matches(it) },
-                matches { content.matches(it) },
-                matches { messageId.matches(it) },
-                matches { date.matches(it) }
+                matches { conversationId(it) },
+                matches { content(it) },
+                matches { messageId(it) },
+                matches { date(it) }
             )
         }.returns(result)
     }
@@ -85,80 +85,80 @@ internal interface MessageRepositoryArrangement {
 
 internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangement {
 
-    override val messageRepository: MessageRepository = mock(MessageRepository::class)
-    override val systemMessageInserter = mock(SystemMessageInserter::class)
+    override val messageRepository: MessageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
+    override val systemMessageInserter = mock<SystemMessageInserter>(mode = MockMode.autoUnit)
 
     override suspend fun withGetMessageById(
         result: Either<StorageFailure, Message>,
-        messageID: Matcher<String>,
-        conversationId: Matcher<ConversationId>
+        messageID: (String) -> Boolean,
+        conversationId: (ConversationId) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             messageRepository.getMessageById(
-                matches { conversationId.matches(it) },
-                matches { messageID.matches(it) }
+                matches { conversationId(it) },
+                matches { messageID(it) }
             )
         }.returns(result)
     }
 
     override suspend fun withDeleteMessage(
         result: Either<CoreFailure, Unit>,
-        messageID: Matcher<String>,
-        conversationId: Matcher<ConversationId>
+        messageID: (String) -> Boolean,
+        conversationId: (ConversationId) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             messageRepository.deleteMessage(
-                matches { messageID.matches(it) },
-                matches { conversationId.matches(it) }
+                matches { messageID(it) },
+                matches { conversationId(it) }
             )
         }.returns(result)
     }
 
     override suspend fun withMarkAsDeleted(
         result: Either<StorageFailure, Unit>,
-        messageID: Matcher<String>,
-        conversationId: Matcher<ConversationId>
+        messageID: (String) -> Boolean,
+        conversationId: (ConversationId) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             messageRepository.markMessageAsDeleted(
-                matches { messageID.matches(it) },
-                matches { conversationId.matches(it) }
+                matches { messageID(it) },
+                matches { conversationId(it) }
             )
         }.returns(result)
     }
 
     override suspend fun withLocalNotifications(list: Either<CoreFailure, List<LocalNotification>>) {
-        coEvery {
+        everySuspend {
             messageRepository.getNotificationMessage(any())
         }.returns(list)
     }
 
     override suspend fun withMoveMessagesToAnotherConversation(
         result: Either<StorageFailure, Unit>,
-        originalConversation: Matcher<ConversationId>,
-        targetConversation: Matcher<ConversationId>
+        originalConversation: (ConversationId) -> Boolean,
+        targetConversation: (ConversationId) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             messageRepository.moveMessagesToAnotherConversation(
-                matches { originalConversation.matches(it) },
-                matches { targetConversation.matches(it) }
+                matches { originalConversation(it) },
+                matches { targetConversation(it) }
             )
         }.returns(result)
     }
 
     override suspend fun withEditCompositeMessage(
         result: Either<StorageFailure, Unit>,
-        conversationId: Matcher<ConversationId>,
-        content: Matcher<MessageContent.CompositeEdited>,
-        messageId: Matcher<String>,
-        date: Matcher<Long>
+        conversationId: (ConversationId) -> Boolean,
+        content: (MessageContent.CompositeEdited) -> Boolean,
+        messageId: (String) -> Boolean,
+        date: (Instant) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             messageRepository.updateCompositeMessage(
-                matches { conversationId.matches(it) },
-                matches { content.matches(it) },
-                matches { messageId.matches(it) },
-                matches { date.matches(it) }
+                matches { conversationId(it) },
+                matches { content(it) },
+                matches { messageId(it) },
+                matches { date(it) }
             )
         }.returns(result)
     }

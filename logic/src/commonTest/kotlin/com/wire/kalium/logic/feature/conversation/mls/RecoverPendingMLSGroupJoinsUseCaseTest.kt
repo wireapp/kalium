@@ -25,13 +25,15 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -44,8 +46,8 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
         useCase()
 
-        coVerify { arrangement.pendingActionsRepository.getPendingMLSGroupJoins() }.wasNotInvoked()
-        coVerify { arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.getPendingMLSGroupJoins() }
+        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any()) }
     }
 
     @Test
@@ -59,9 +61,9 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(eq(pendingConversationIds))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -75,7 +77,7 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
         useCase()
 
-        coVerify { arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any()) }.wasNotInvoked()
+        verifySuspend(VerifyMode.not) { arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(any()) }
     }
 
     @Test
@@ -92,48 +94,48 @@ class RecoverPendingMLSGroupJoinsUseCaseTest {
 
         useCase()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.pendingActionsRepository.acknowledgePendingMLSGroupJoins(eq(listOf(successfulConversationId)))
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement :
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
-        val pendingActionsRepository = mock(PendingActionsRepository::class)
-        val syncStateObserver = mock(SyncStateObserver::class)
-        val joinExistingMLSConversation = mock(JoinExistingMLSConversationUseCase::class)
+        val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
+        val syncStateObserver = mock<SyncStateObserver>(mode = MockMode.autoUnit)
+        val joinExistingMLSConversation = mock<JoinExistingMLSConversationUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withSyncWaitResult(result: Either<CoreFailure, Unit>) = apply {
-            coEvery { syncStateObserver.waitUntilLiveOrFailure() }.returns(result)
+            everySuspend { syncStateObserver.waitUntilLiveOrFailure() } returns result
         }
 
         suspend fun withPendingConversationIds(conversationIds: List<ConversationId>) = apply {
-            coEvery { pendingActionsRepository.getPendingMLSGroupJoins() }.returns(conversationIds)
-            coEvery { pendingActionsRepository.acknowledgePendingMLSGroupJoins(any()) }.returns(Unit)
+            everySuspend { pendingActionsRepository.getPendingMLSGroupJoins() } returns conversationIds
+            everySuspend { pendingActionsRepository.acknowledgePendingMLSGroupJoins(any()) } returns Unit
         }
 
         suspend fun withJoinResult(result: Either<CoreFailure, Unit>) = apply {
             withTransactionReturning(Either.Right(Unit))
-            coEvery {
+            everySuspend {
                 joinExistingMLSConversation.invoke(
                     transactionContext = any(),
                     conversationId = any(),
                     mlsPublicKeys = any(),
                     allowJoinByExternalCommit = eq(true)
                 )
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withJoinResultForConversation(conversationId: ConversationId, result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 joinExistingMLSConversation.invoke(
                     transactionContext = any(),
                     conversationId = eq(conversationId),
                     mlsPublicKeys = any(),
                     allowJoinByExternalCommit = eq(true)
                 )
-            }.returns(result)
+            } returns result
         }
 
         suspend fun arrange(): Pair<Arrangement, RecoverPendingMLSGroupJoinsUseCase> = this to

@@ -23,9 +23,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.configuration.server.isProductionApi
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.Mockable
 
-@Mockable
 internal interface AssetAuditFeatureHandler {
     suspend fun isAssetAuditLogEnabled(): Boolean
 }

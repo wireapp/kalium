@@ -60,7 +60,6 @@ import com.wire.kalium.persistence.dao.event.EventDAO
 import com.wire.kalium.persistence.dao.event.NewEventEntity
 import io.ktor.http.HttpStatusCode
 import kotlinx.io.IOException
-import io.mockative.Mockable
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -77,7 +76,6 @@ import kotlinx.serialization.json.Json
 import kotlin.coroutines.coroutineContext
 import kotlin.uuid.Uuid
 
-@Mockable
 internal interface EventRepository {
 
     /**

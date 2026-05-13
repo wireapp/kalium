@@ -19,10 +19,13 @@ package com.wire.kalium.logic.feature.conversation.createconversation
 
 import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.framework.TestConversation
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -37,7 +40,7 @@ class CreateChannelUseCaseTest {
 
         createChannel.invoke(channelName, emptyList(), CreateConversationParam())
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.groupConversationCreator(
                 name = channelName,
                 userIdList = emptyList(),
@@ -50,12 +53,12 @@ class CreateChannelUseCaseTest {
 
     private class Arrangement {
 
-        val groupConversationCreator = mock(GroupConversationCreator::class)
+        val groupConversationCreator = mock<GroupConversationCreator>(mode = MockMode.autoUnit)
 
         private val createChannel = CreateChannelUseCase(groupConversationCreator)
 
         suspend fun withGroupConversationCreator() = apply {
-            coEvery { groupConversationCreator(any(), any(), any()) }.returns(ConversationCreationResult.Success(TestConversation.GROUP()))
+            everySuspend { groupConversationCreator(any(), any(), any()) } returns ConversationCreationResult.Success(TestConversation.GROUP())
         }
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to createChannel }

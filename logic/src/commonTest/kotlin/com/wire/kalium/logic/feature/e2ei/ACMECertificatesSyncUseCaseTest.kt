@@ -17,14 +17,16 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.E2EIRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.E2EIRepositoryArrangementImpl
-import io.mockative.coVerify
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -42,9 +44,9 @@ class ACMECertificatesSyncUseCaseTest {
         useCase()
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.e2eiRepository.fetchFederationCertificates()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -58,27 +60,36 @@ class ACMECertificatesSyncUseCaseTest {
         useCase()
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.e2eiRepository.fetchFederationCertificates()
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement(
         private val configure: suspend Arrangement.() -> Unit
-    ) : E2EIRepositoryArrangement by E2EIRepositoryArrangementImpl(),
-        IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
+    ) {
+        val e2eiRepository = mock<E2EIRepository>(mode = MockMode.autoUnit)
+        val isE2EIEnabledUseCase = mock<IsE2EIEnabledUseCase>(mode = MockMode.autoUnit)
 
-        fun arrange(): Pair<Arrangement, ACMECertificatesSyncUseCase> = run {
-            runBlocking { configure() }
+        suspend fun arrange(): Pair<Arrangement, ACMECertificatesSyncUseCase> = run {
+            configure()
             this@Arrangement to ACMECertificatesSyncUseCaseImpl(
                 e2eiRepository = e2eiRepository,
                 isE2EIEnabledUseCase = isE2EIEnabledUseCase,
                 kaliumLogger = kaliumLogger
             )
         }
+
+        suspend fun withE2EIEnabledAndMLSEnabled(result: Boolean) {
+            everySuspend { isE2EIEnabledUseCase.invoke() } returns result
+        }
+
+        suspend fun withFetchACMECertificates() {
+            everySuspend { e2eiRepository.fetchFederationCertificates() } returns Either.Right(Unit)
+        }
     }
 
     private companion object {
-        fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
+        suspend fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
     }
 }

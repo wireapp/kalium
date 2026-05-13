@@ -22,10 +22,12 @@ import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCase.AssetSizeLim
 import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCase.AssetSizeLimits.IMAGE_SIZE_LIMIT_BYTES
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -62,9 +64,9 @@ class GetAssetSizeLimitUseCaseTest {
         advanceUntilIdle()
 
         assertEquals(assetLimit, IMAGE_SIZE_LIMIT_BYTES)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.isSelfATeamMember.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -79,9 +81,9 @@ class GetAssetSizeLimitUseCaseTest {
         advanceUntilIdle()
 
         assertEquals(assetLimit, ASSET_SIZE_DEFAULT_LIMIT_BYTES)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.isSelfATeamMember.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -96,18 +98,18 @@ class GetAssetSizeLimitUseCaseTest {
         advanceUntilIdle()
 
         assertEquals(assetLimit, ASSET_SIZE_TEAM_USER_LIMIT_BYTES)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.isSelfATeamMember.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-        val isSelfATeamMember = mock(IsSelfATeamMemberUseCase::class)
+        val isSelfATeamMember = mock<IsSelfATeamMemberUseCase>(mode = MockMode.autoUnit)
 
         suspend fun withIsSelfATeamMember(hasUserTeam: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 isSelfATeamMember.invoke()
-            }.returns(hasUserTeam)
+            } returns hasUserTeam
         }
 
         fun arrange() = this to GetAssetSizeLimitUseCaseImpl(isSelfATeamMember, dispatcher)

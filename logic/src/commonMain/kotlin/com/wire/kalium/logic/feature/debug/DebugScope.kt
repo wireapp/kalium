@@ -273,7 +273,8 @@ public class DebugScope internal constructor(
 
     public val observeDatabaseLoggerState: ObserveDatabaseLoggerStateUseCase get() = ObserveDatabaseLoggerStateUseCase(userStorage)
 
-    internal val optimizeDatabase get(): OptimizeDatabaseUseCase = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
+    public val optimizeDatabase: OptimizeDatabaseUseCase
+        get() = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
 
     public val debugFeedConversationUseCase: DebugFeedConversationUseCase
         get(): DebugFeedConversationUseCase = DebugFeedConversationUseCaseImpl(

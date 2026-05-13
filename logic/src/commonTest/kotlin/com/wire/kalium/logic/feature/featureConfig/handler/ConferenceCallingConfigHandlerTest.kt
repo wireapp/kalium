@@ -24,11 +24,13 @@ import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ConferenceCallingModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -45,13 +47,13 @@ class ConferenceCallingConfigHandlerTest {
 
         val result = conferenceCallingConfigHandler.handle(conferenceCallingModel)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setConferenceCallingEnabled(conferenceCallingModel.status.toBoolean())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(any())
-        }.wasNotInvoked()
+        }
 
         assertTrue { result.isLeft() }
     }
@@ -66,13 +68,13 @@ class ConferenceCallingConfigHandlerTest {
 
         val result = conferenceCallingConfigHandler.handle(conferenceCallingModel)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setConferenceCallingEnabled(conferenceCallingModel.status.toBoolean())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(any())
-        }.wasInvoked(exactly = once)
+        }
 
         assertTrue { result.isLeft() }
     }
@@ -87,20 +89,20 @@ class ConferenceCallingConfigHandlerTest {
 
         val result = conferenceCallingConfigHandler.handle(conferenceCallingModel)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setConferenceCallingEnabled(conferenceCallingModel.status.toBoolean())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(any())
-        }.wasInvoked(exactly = once)
+        }
 
         assertTrue { result.isRight() }
     }
 
     private class Arrangement {
 
-        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository: UserConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
         fun arrange() = run {
             this@Arrangement to ConferenceCallingConfigHandler(
@@ -110,35 +112,35 @@ class ConferenceCallingConfigHandlerTest {
 
         init {
             runBlocking {
-                coEvery {
+                everySuspend {
                     userConfigRepository.setAppLockStatus(any(), any(), any())
-                }.returns(Either.Right(Unit))
+                } returns Either.Right(Unit)
             }
 
         }
 
         suspend fun withSetConferenceCallingEnabledFailure() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setConferenceCallingEnabled(any())
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            } returns Either.Left(StorageFailure.DataNotFound)
         }
 
         suspend fun withSetConferenceCallingEnabledSuccess() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setConferenceCallingEnabled(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSetUseSFTForOneOnOneCallsFailure() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setUseSFTForOneOnOneCalls(any())
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            } returns Either.Left(StorageFailure.DataNotFound)
         }
 
         suspend fun withSetUseSFTForOneOnOneCallsSuccess() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setUseSFTForOneOnOneCalls(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
     }
 }

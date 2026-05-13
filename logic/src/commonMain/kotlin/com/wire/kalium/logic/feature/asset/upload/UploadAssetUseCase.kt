@@ -36,11 +36,9 @@ import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.Mockable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 
-@Mockable
 internal interface UploadAssetUseCase {
     suspend operator fun invoke(message: Message.Regular, metadata: UploadAssetMessageMetadata): Either<CoreFailure, Unit>
 }

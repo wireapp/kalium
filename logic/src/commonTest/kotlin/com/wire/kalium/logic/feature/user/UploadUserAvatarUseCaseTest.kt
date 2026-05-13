@@ -24,12 +24,13 @@ import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -55,13 +56,13 @@ class UploadUserAvatarUseCaseTest {
         assertEquals(expected.key, (actual as UploadAvatarResult.Success).userAssetId.value)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 assetRepository.uploadAndPersistPublicAsset(any(), any(), any(), any(), any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 userRepository.updateSelfUser(eq<String?>(null), eq<Int?>(null), eq(expected.key))
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -81,13 +82,13 @@ class UploadUserAvatarUseCaseTest {
         assertEquals(CoreFailure.Unknown::class, (actual as UploadAvatarResult.Failure).coreFailure::class)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 assetRepository.uploadAndPersistPublicAsset(any(), any(), any(), any(), any(), any())
-            }.wasInvoked(exactly = once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 userRepository.updateSelfUser(eq<String?>(null), eq<Int?>(null), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -104,7 +105,7 @@ class UploadUserAvatarUseCaseTest {
         uploadUserAvatar(avatarPath, avatarImage.size.toLong())
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 assetRepository.uploadAndPersistPublicAsset(
                     mimeType = eq("image/jpg"),
                     assetDataPath = any(),
@@ -113,13 +114,13 @@ class UploadUserAvatarUseCaseTest {
                     filename = eq("profile-picture"),
                     filetype = eq("image/jpg")
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
     private class Arrangement {
-        val assetRepository = mock(AssetRepository::class)
-        val userRepository = mock(UserRepository::class)
+        val assetRepository = mock<AssetRepository>()
+        val userRepository = mock<UserRepository>()
 
         val dispatcher = KaliumDispatcherImpl
 
@@ -139,20 +140,20 @@ class UploadUserAvatarUseCaseTest {
         }
 
         suspend fun withSuccessfulUploadResponse(expectedResponse: UploadedAssetId): Arrangement {
-            coEvery {
+            everySuspend {
                 assetRepository.uploadAndPersistPublicAsset(any(), any(), any(), any(), any(), any())
-            }.returns(Either.Right(expectedResponse))
+            } returns Either.Right(expectedResponse)
 
-            coEvery {
+            everySuspend {
                 userRepository.updateSelfUser(eq<String?>(null), eq<Int?>(null), eq(expectedResponse.key))
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
             return this
         }
 
         suspend fun withErrorResponse(expectedError: CoreFailure): Arrangement {
-            coEvery {
+            everySuspend {
                 assetRepository.uploadAndPersistPublicAsset(any(), any(), any(), any(), any(), any())
-            }.returns(Either.Left(expectedError))
+            } returns Either.Left(expectedError)
             return this
         }
 

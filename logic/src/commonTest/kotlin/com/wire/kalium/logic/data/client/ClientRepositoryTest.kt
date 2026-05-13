@@ -19,9 +19,10 @@
 package com.wire.kalium.logic.data.client
 
 import app.cash.turbine.test
-import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
@@ -33,7 +34,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.client.ClientDTO
@@ -42,36 +42,38 @@ import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.util.DelicateKaliumApi
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.util.encodeBase64
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlin.test.Test
-import kotlin.test.assertContentEquals
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
-import kotlin.test.assertSame
-import com.wire.kalium.network.api.model.UserId as UserIdDTO
-import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 @ExperimentalCoroutinesApi
 class ClientRepositoryTest {
@@ -84,17 +86,17 @@ class ClientRepositoryTest {
 
         clientRepository.registerMLSClient(CLIENT_ID, MLS_PUBLIC_KEY, MLS_CIPHER_SUITE)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRemoteRepository.registerMLSClient(
                 eq(CLIENT_ID),
                 eq(MLS_PUBLIC_KEY.encodeBase64()),
                 eq(MLS_CIPHER_SUITE)
             )
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRegistrationStorage.setHasRegisteredMLSClient()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -106,9 +108,9 @@ class ClientRepositoryTest {
 
         clientRepository.registerClient(REGISTER_CLIENT_PARAMS)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRemoteRepository.registerClient(eq(REGISTER_CLIENT_PARAMS))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -150,9 +152,9 @@ class ClientRepositoryTest {
 
         clientRepository.persistClientId(clientId)
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.clientRegistrationStorage.setRegisteredClientId(clientId.value)
-        }.wasInvoked()
+        }
     }
 
     @OptIn(DelicateKaliumApi::class)
@@ -195,9 +197,9 @@ class ClientRepositoryTest {
 
         clientRepository.persistRetainedClientId(clientId)
 
-        coVerify {
+        verifySuspend(VerifyMode.atLeast(1)) {
             arrangement.clientRegistrationStorage.setRetainedClientId(clientId.value)
-        }.wasInvoked()
+        }
     }
 
     @Test
@@ -214,12 +216,12 @@ class ClientRepositoryTest {
 
         actual.shouldFail { expected.value }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRemoteRepository.deleteClient(param)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.clientDAO.deleteClient(selfUserId.toDao(), param.clientId.value)
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -235,12 +237,12 @@ class ClientRepositoryTest {
 
         actual.shouldSucceed()
 
-        coVerify {
-            clientRepository.deleteClient(param)
-        }.wasInvoked(exactly = once)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clientRemoteRepository.deleteClient(param)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientDAO.deleteClient(selfUserId.toDao(), param.clientId.value)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     // selfListOfClients
@@ -414,9 +416,9 @@ class ClientRepositoryTest {
 
         repository.saveNewClientEvent(newClientEvent)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newClientDAO.insertNewClient(eq(insertClientParam))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -425,9 +427,9 @@ class ClientRepositoryTest {
 
         repository.clearNewClients()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newClientDAO.clearNewClients()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -494,11 +496,11 @@ class ClientRepositoryTest {
 
     private class Arrangement {
 
-        val clientApi = mock(ClientApi::class)
-        val clientRemoteRepository = mock(ClientRemoteRepository::class)
-        val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
-        val clientDAO = mock(ClientDAO::class)
-        val newClientDAO = mock(NewClientDAO::class)
+        val clientApi = mock<ClientApi>(mode = MockMode.autoUnit)
+        val clientRemoteRepository = mock<ClientRemoteRepository>(mode = MockMode.autoUnit)
+        val clientRegistrationStorage = mock<ClientRegistrationStorage>(mode = MockMode.autoUnit)
+        val clientDAO = mock<ClientDAO>(mode = MockMode.autoUnit)
+        val newClientDAO = mock<NewClientDAO>(mode = MockMode.autoUnit)
 
         val clientMapper = MapperProvider.clientMapper()
 
@@ -507,25 +509,25 @@ class ClientRepositoryTest {
         )
 
         suspend fun withObserveRegisteredClientId(values: Flow<String?>) = apply {
-            coEvery {
+            everySuspend {
                 clientRegistrationStorage.observeRegisteredClientId()
             }.returns(values)
         }
 
         suspend fun withFetchSelfUserClient(result: NetworkResponse<List<ClientDTO>>) = apply {
-            coEvery {
+            everySuspend {
                 clientApi.fetchSelfUserClient()
             }.returns(result)
         }
 
         suspend fun withObserveClientsList(result: List<ClientEntity>) = apply {
-            coEvery {
+            everySuspend {
                 clientDAO.observeClientsByUserId(any())
             }.returns(flowOf(result))
         }
 
         suspend fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) = apply {
-            coEvery {
+            everySuspend {
                 clientApi.listClientsOfUsers(any())
             }.returns(
                 NetworkResponse.Success(expectedResponse, mapOf(), 200)
@@ -533,7 +535,7 @@ class ClientRepositoryTest {
         }
 
         suspend fun withErrorResponse(kaliumException: KaliumException) = apply {
-            coEvery {
+            everySuspend {
                 clientApi.listClientsOfUsers(any())
             }.returns(
                 NetworkResponse.Error(
@@ -543,37 +545,37 @@ class ClientRepositoryTest {
         }
 
         suspend fun withDeleteClientReportedly(resultL: Either<NetworkFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 clientRemoteRepository.deleteClient(any())
             }.returns(resultL)
         }
 
         suspend fun witGgetRegisteredClientId(result: String?) = apply {
-            coEvery {
+            everySuspend {
                 clientRegistrationStorage.getRegisteredClientId()
             }.returns(result)
         }
 
         suspend fun withRegisterClient(result: Either<NetworkFailure, Client>) = apply {
-            coEvery {
+            everySuspend {
                 clientRemoteRepository.registerClient(any())
             }.returns(result)
         }
 
         suspend fun withRegisterMLSClient(result: Either<NetworkFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 clientRemoteRepository.registerMLSClient(any(), any(), any())
             }.returns(result)
         }
 
         suspend fun withDeleteClientLocally() = apply {
-            coEvery {
+            everySuspend {
                 clientDAO.deleteClient(any(), any())
             }.returns(Unit)
         }
 
         suspend fun withGetClientsOfConversation(result: Map<QualifiedIDEntity, List<ClientEntity>>) = apply {
-            coEvery {
+            everySuspend {
                 clientDAO.getClientsOfConversation(any())
             }.returns(result)
         }

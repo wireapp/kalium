@@ -20,15 +20,16 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verify
 import io.ktor.util.encodeBase64
-import io.mockative.any
-import io.mockative.doesNothing
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
 import kotlin.test.BeforeTest
@@ -38,7 +39,7 @@ import kotlin.test.assertTrue
 
 class SecurityHelperTest {
 
-        private val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
+        private val passphraseStorage: PassphraseStorage = mock(mode = MockMode.autoUnit)
 
     private lateinit var securityHelper: SecurityHelper
 
@@ -61,7 +62,7 @@ class SecurityHelperTest {
         every {
             passphraseStorage.getPassphrase(any())
         }.returns(null)
-        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+        every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
         val secret1 = securityHelper.globalDBSecret()
         every {
             passphraseStorage.getPassphrase(any())
@@ -70,12 +71,12 @@ class SecurityHelperTest {
         val secret2 = securityHelper.globalDBSecret()
         assertTrue(secret1.value.contentEquals(secret2.value))
 
-        verify {
+        verify(VerifyMode.exactly(2)) {
             passphraseStorage.getPassphrase(any())
-        }.wasInvoked(exactly = twice)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             passphraseStorage.setPassphrase(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -83,7 +84,7 @@ class SecurityHelperTest {
         every {
             passphraseStorage.getPassphrase(any())
         }.returns(null)
-        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+        every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
         val userId = UserId("df8703fb-bbab-4b10-a369-0ef781a17cf5", "wire.com")
         val secret1 = securityHelper.userDBSecret(userId)
         every {
@@ -92,12 +93,12 @@ class SecurityHelperTest {
 
         val secret2 = securityHelper.userDBSecret(userId)
         assertTrue(secret1.value.contentEquals(secret2.value))
-        verify {
+        verify(VerifyMode.exactly(2)) {
             passphraseStorage.getPassphrase(any())
-        }.wasInvoked(exactly = twice)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             passphraseStorage.setPassphrase(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -105,7 +106,7 @@ class SecurityHelperTest {
         val userId = UserId("df8703fb-bbab-4b10-a369-0ef781a17cf5", "wire.com")
 
         val oldKeyBytes = ByteArray(32) { 0 }
-        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+        every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
         setupSequencedGetPassphrase(mlsV2Alias, listOf(oldKeyBytes.encodeBase64(), oldKeyBytes.encodeBase64()))
         setupSequencedGetPassphrase(mlsV1Alias, listOf(null, "oldKeyBase64"))
 
@@ -114,7 +115,7 @@ class SecurityHelperTest {
 
         assertTrue(secret1.passphrase.contentEquals(secret2.passphrase))
 
-        verify { passphraseStorage.setPassphrase(any(), any()) }.wasNotInvoked()
+        verify(VerifyMode.not) { passphraseStorage.setPassphrase(any(), any()) }
     }
 
     @Test
@@ -122,12 +123,12 @@ class SecurityHelperTest {
         val v2b64 = Base64.encode("newBase64".encodeToByteArray())
 
         setupSequencedGetPassphrase(mlsV2Alias, listOf(v2b64))
-        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+        every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
 
         val secret = securityHelper.mlsDBSecret(userId, rootPath)
 
         assertTrue(secret.passphrase.contentEquals(Base64.decode(v2b64)))
-        verify { passphraseStorage.setPassphrase(any(), any()) }.wasNotInvoked()
+        verify(VerifyMode.not) { passphraseStorage.setPassphrase(any(), any()) }
     }
 
     @Test
@@ -149,9 +150,9 @@ class SecurityHelperTest {
 
     private fun setupSequencedSetPassphrase(key: String, capturedValues: MutableList<String>) = apply {
         every { passphraseStorage.setPassphrase(any(), any()) }
-            .invokes { args ->
-                val receivedKey = args[0] as String
-                val receivedValue = args[1] as String
+            .calls {
+                val receivedKey = it.args[0] as String
+                val receivedValue = it.args[1] as String
                 if (receivedKey == key) {
                     capturedValues.add(receivedValue)
                 }
@@ -161,7 +162,7 @@ class SecurityHelperTest {
     private fun setupSequencedGetPassphrase(key: String, returnList: List<String?>) = apply {
         var invocationCounter = 0
         every { passphraseStorage.getPassphrase(key) }
-            .invokes { _ ->
+            .calls {
                 if (invocationCounter < returnList.size) {
                     val returnValue = returnList[invocationCounter]
                     invocationCounter++
@@ -176,12 +177,12 @@ class SecurityHelperTest {
     fun givenNeitherV1NorV2Exist_whenCallingMlsDBSecret_thenGeneratesNewV2Secret() = runTest {
         setupSequencedGetPassphrase(mlsV2Alias, listOf(null, null))
         setupSequencedGetPassphrase(mlsV1Alias, listOf(null))
-        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+        every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
 
         val secret = securityHelper.mlsDBSecret(userId, rootPath)
 
         assertEquals(32, secret.passphrase.size)
-        verify { passphraseStorage.setPassphrase(eq(mlsV2Alias), any()) }.wasInvoked(exactly = once)
+        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphrase(eq(mlsV2Alias), any()) }
     }
 
     // PROTEUS DB SECRET TESTS
@@ -191,12 +192,12 @@ class SecurityHelperTest {
         val v2b64 = Base64.encode("proteusV2Secret".encodeToByteArray())
 
         setupSequencedGetPassphrase(proteusV2Alias, listOf(v2b64))
-        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+        every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
 
         val secret = securityHelper.proteusDBSecret(userId, rootPath)
 
         assertTrue(secret.passphrase.contentEquals(Base64.decode(v2b64)))
-        verify { passphraseStorage.setPassphrase(any(), any()) }.wasNotInvoked()
+        verify(VerifyMode.not) { passphraseStorage.setPassphrase(any(), any()) }
     }
 
     @Test
@@ -220,19 +221,19 @@ class SecurityHelperTest {
     fun givenNeitherV1NorV2Exist_whenCallingProteusDBSecret_thenGeneratesNewV2Secret() = runTest {
         setupSequencedGetPassphrase(proteusV2Alias, listOf(null, null))
         setupSequencedGetPassphrase(proteusV1Alias, listOf(null))
-        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+        every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
 
         val secret = securityHelper.proteusDBSecret(userId, rootPath)
 
         assertEquals(32, secret.passphrase.size)
-        verify { passphraseStorage.setPassphrase(eq(proteusV2Alias), any()) }.wasInvoked(exactly = once)
+        verify(VerifyMode.exactly(1)) { passphraseStorage.setPassphrase(eq(proteusV2Alias), any()) }
     }
 
     @Test
     fun whenCallingProteusDBSecretTwiceForSameUser_thenReturnsSameValue() = runTest {
         val secretB64 = Base64.encode("proteusSecretValue".encodeToByteArray())
         setupSequencedGetPassphrase(proteusV2Alias, listOf(secretB64, secretB64))
-        every { passphraseStorage.setPassphrase(any(), any()) }.doesNothing()
+        every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
 
         val secret1 = securityHelper.proteusDBSecret(userId, rootPath)
         val secret2 = securityHelper.proteusDBSecret(userId, rootPath)

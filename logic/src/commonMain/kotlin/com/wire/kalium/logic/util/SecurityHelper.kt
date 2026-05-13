@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import io.ktor.util.encodeBase64
-import io.mockative.Mockable
 import kotlin.io.encoding.Base64
 
 internal expect class SecureRandom internal constructor() {
@@ -34,7 +33,6 @@ internal expect class SecureRandom internal constructor() {
     fun nextInt(bound: Int): Int
 }
 
-@Mockable
 internal interface SecurityHelper {
     fun globalDBSecret(): GlobalDatabaseSecret
     fun userDBSecret(userId: UserId): UserDBSecret

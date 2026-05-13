@@ -21,12 +21,14 @@ import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.feature.call.CallManager
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -34,7 +36,7 @@ import kotlin.test.Test
 
 class SetTestRemoteVideoStatesUseCaseTest {
 
-        private val callManager = mock(CallManager::class)
+        private val callManager = mock<CallManager>(mode = MockMode.autoUnit)
 
     private lateinit var setTestRemoteVideoStates: SetTestRemoteVideoStatesUseCase
 
@@ -42,18 +44,18 @@ class SetTestRemoteVideoStatesUseCaseTest {
     fun setup() = runBlocking {
         setTestRemoteVideoStates = SetTestRemoteVideoStatesUseCase(lazy { callManager })
 
-        coEvery {
+        everySuspend {
             callManager.setTestPreviewActive(any())
-        }.returns(Unit)
+        } returns (Unit)
     }
 
     @Test
     fun givenWhenSetTestRemoteVideoStates_thenUpdateTestRemoteVideoStates() = runTest {
         setTestRemoteVideoStates(CONVERSATION_ID, listOf(DUMMY_PARTICIPANT))
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             callManager.setTestRemoteVideoStates(eq(CONVERSATION_ID), eq(listOf(DUMMY_PARTICIPANT)))
-        }.wasInvoked(once)
+        }
     }
 
     companion object {

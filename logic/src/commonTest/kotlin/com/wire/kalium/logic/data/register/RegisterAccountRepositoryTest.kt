@@ -29,30 +29,32 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 import com.wire.kalium.network.api.unauthenticated.register.ActivationParam
 import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
 import com.wire.kalium.network.api.unauthenticated.register.RequestActivationCodeParam
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import com.wire.kalium.network.api.model.UserId as UserIdDTO
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterAccountRepositoryTest {
-    private val registerApi: RegisterApi = mock(RegisterApi::class)
+    private val registerApi = mock<RegisterApi>(mode = MockMode.autoUnit)
 
-    private val sessionMapper = mock(SessionMapper::class)
+    private val sessionMapper = mock<SessionMapper>(mode = MockMode.autoUnit)
 
     private lateinit var registerAccountRepository: RegisterAccountRepository
 
@@ -65,7 +67,7 @@ class RegisterAccountRepositoryTest {
     fun givenApiRequestSuccess_whenRequestingActivationCodeForAnEmail_thenSuccessIsPropagated() = runTest {
         val expected = Unit
         val email = "user@domain.de"
-        coEvery {
+        everySuspend {
             registerApi.requestActivationCode(RequestActivationCodeParam.Email(email))
         }.returns(NetworkResponse.Success(expected, mapOf(), 200))
 
@@ -74,16 +76,16 @@ class RegisterAccountRepositoryTest {
         assertIs<Either.Right<Unit>>(actual)
         assertEquals(expected, actual.value)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             registerApi.requestActivationCode(RequestActivationCodeParam.Email(email))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
     fun givenApiRequestFail_whenRequestingActivationCodeForAnEmail_thenNetworkFailureIsPropagated() = runTest {
         val expected = TestNetworkException.generic
         val email = "user@domain.de"
-        coEvery {
+        everySuspend {
             registerApi.requestActivationCode(RequestActivationCodeParam.Email(email))
         }.returns(NetworkResponse.Error(expected))
 
@@ -91,9 +93,9 @@ class RegisterAccountRepositoryTest {
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             registerApi.requestActivationCode(RequestActivationCodeParam.Email(email))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -101,7 +103,7 @@ class RegisterAccountRepositoryTest {
         val expected = Unit
         val email = "user@domain.de"
         val code = "123456"
-        coEvery {
+        everySuspend {
             registerApi.activate(ActivationParam.Email(email, code))
         }.returns(NetworkResponse.Success(expected, mapOf(), 200))
 
@@ -110,9 +112,9 @@ class RegisterAccountRepositoryTest {
         assertIs<Either.Right<Unit>>(actual)
         assertEquals(expected, actual.value)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             registerApi.activate(ActivationParam.Email(email, code))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -120,7 +122,7 @@ class RegisterAccountRepositoryTest {
         val expected = TestNetworkException.generic
         val email = "user@domain.de"
         val code = "123456"
-        coEvery {
+        everySuspend {
             registerApi.activate(ActivationParam.Email(email, code))
         }.returns(NetworkResponse.Error(expected))
 
@@ -129,9 +131,9 @@ class RegisterAccountRepositoryTest {
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             registerApi.activate(ActivationParam.Email(email, code))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -155,7 +157,7 @@ class RegisterAccountRepositoryTest {
         }
         val expected = Pair(ssoId, accountTokens)
 
-        coEvery {
+        everySuspend {
             registerApi.register(
                 RegisterParam.PersonalAccount(
                     email = email,
@@ -182,7 +184,7 @@ class RegisterAccountRepositoryTest {
         assertIs<Either.Right<Pair<SsoId?, AccountTokens>>>(actual)
         assertEquals(expected, actual.value)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             registerApi.register(
                 RegisterParam.PersonalAccount(
                     email = email,
@@ -192,10 +194,10 @@ class RegisterAccountRepositoryTest {
                     cookieLabel = cookieLabel
                 )
             )
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             sessionMapper.fromSessionDTO(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Suppress("LongMethod")
@@ -223,7 +225,7 @@ class RegisterAccountRepositoryTest {
             }
         val expected = Pair(ssoId, accountTokens)
 
-        coEvery {
+        everySuspend {
             registerApi.register(
                 RegisterParam.TeamAccount(
                     email = email,
@@ -256,7 +258,7 @@ class RegisterAccountRepositoryTest {
         assertIs<Either.Right<Pair<SsoId?, AccountTokens>>>(actual)
         assertEquals(expected, actual.value)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             registerApi.register(
                 RegisterParam.TeamAccount(
                     email = email,
@@ -268,8 +270,8 @@ class RegisterAccountRepositoryTest {
                     cookieLabel = cookieLabel
                 )
             )
-        }.wasInvoked(exactly = once)
-        verify { sessionMapper.fromSessionDTO(SESSION) }.wasInvoked(exactly = once)
+        }
+        verify(VerifyMode.exactly(1)) { sessionMapper.fromSessionDTO(SESSION) }
     }
 
     @Test
@@ -280,7 +282,7 @@ class RegisterAccountRepositoryTest {
         val name = NAME
         val expected = TestNetworkException.generic
         val cookieLabel = "COOKIE_LABEL"
-        coEvery {
+        everySuspend {
             registerApi.register(
                 RegisterParam.PersonalAccount(
                     email = email,
@@ -303,7 +305,7 @@ class RegisterAccountRepositoryTest {
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             registerApi.register(
                 RegisterParam.PersonalAccount(
                     email = email,
@@ -313,10 +315,10 @@ class RegisterAccountRepositoryTest {
                     cookieLabel = cookieLabel
                 )
             )
-        }.wasInvoked(exactly = once)
-        verify {
+        }
+        verify(VerifyMode.exactly(0)) {
             sessionMapper.fromSessionDTO(any())
-        }.wasNotInvoked()
+        }
     }
 
     private companion object {

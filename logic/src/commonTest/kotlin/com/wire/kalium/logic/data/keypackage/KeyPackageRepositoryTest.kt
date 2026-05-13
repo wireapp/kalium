@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepositoryTest.Arrangemen
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
@@ -41,13 +41,14 @@ import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import io.ktor.util.encodeBase64
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -64,9 +65,9 @@ internal class KeyPackageRepositoryTest {
 
         keyPackageRepository.uploadNewKeyPackages(arrangement.mlsContext, Arrangement.SELF_CLIENT_ID, 1)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.keyPackageApi.uploadKeyPackages(eq(Arrangement.SELF_CLIENT_ID.value), eq(Arrangement.KEY_PACKAGES_BASE64))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -224,11 +225,11 @@ internal class KeyPackageRepositoryTest {
         val result = keyPackageRepository.claimKeyPackages(listOf(user1, user2), CIPHER_SUITE)
 
         result.shouldFail { assertIs<NetworkFailure.NoNetworkConnection>(it) }
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.keyPackageApi.claimKeyPackages(
                 eq(KeyPackageApi.Param.SkipOwnClient(user2.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
             )
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -248,36 +249,36 @@ internal class KeyPackageRepositoryTest {
         }
     }
 
-    class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val keyPackageApi = mock(KeyPackageApi::class)
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+    class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val keyPackageApi = mock<KeyPackageApi>()
+        val currentClientIdProvider = mock<CurrentClientIdProvider>()
 
         suspend fun withCurrentClientId() = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
             }.returns(Either.Right(SELF_CLIENT_ID))
         }
 
         suspend fun withGeneratingKeyPackagesSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 mlsContext.generateKeyPackages(eq(1))
             }.returns(KEY_PACKAGES)
         }
 
         suspend fun withUploadingKeyPackagesSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 keyPackageApi.uploadKeyPackages(any(), any())
             }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
         }
 
         suspend fun withGetAvailableKeyPackageCountSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 keyPackageApi.getAvailableKeyPackageCount(eq(SELF_CLIENT_ID.value), any())
             }.returns(NetworkResponse.Success(KEY_PACKAGE_COUNT_DTO, mapOf(), 200))
         }
 
         suspend fun withClaimKeyPackagesSuccessful(userId: UserId) = apply {
-            coEvery {
+            everySuspend {
                 keyPackageApi.claimKeyPackages(
                     eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
                 )
@@ -285,7 +286,7 @@ internal class KeyPackageRepositoryTest {
         }
 
         suspend fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
-            coEvery {
+            everySuspend {
                 keyPackageApi.claimKeyPackages(
                     eq(
                         KeyPackageApi.Param.SkipOwnClient(
@@ -299,7 +300,7 @@ internal class KeyPackageRepositoryTest {
         }
 
         suspend fun withClaimKeyPackagesFederationError(userId: UserId) = apply {
-            coEvery {
+            everySuspend {
                 keyPackageApi.claimKeyPackages(
                     eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
                 )
@@ -311,7 +312,7 @@ internal class KeyPackageRepositoryTest {
         }
 
         suspend fun withClaimKeyPackagesNoNetworkError(userId: UserId) = apply {
-            coEvery {
+            everySuspend {
                 keyPackageApi.claimKeyPackages(
                     eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
                 )
@@ -319,7 +320,7 @@ internal class KeyPackageRepositoryTest {
         }
 
         suspend fun withClaimKeyPackagesServerError(userId: UserId) = apply {
-            coEvery {
+            everySuspend {
                 keyPackageApi.claimKeyPackages(
                     eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
                 )

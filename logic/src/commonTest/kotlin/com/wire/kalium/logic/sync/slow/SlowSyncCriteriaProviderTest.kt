@@ -24,8 +24,9 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.framework.TestClient
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.consumeAsFlow
@@ -167,33 +168,33 @@ class SlowSyncCriteriaProviderTest {
     }
 
     private class Arrangement {
-        private val clientRepository = mock(ClientRepository::class)
-        private val logoutRepository = mock(LogoutRepository::class)
+        private val clientRepository = mock<ClientRepository>()
+        private val logoutRepository = mock<LogoutRepository>()
 
         private val syncCriteriaProvider = SlowSlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)
 
         suspend fun withObserveClientReturning(flow: Flow<ClientId?>) = apply {
-            coEvery {
+            everySuspend {
                 clientRepository.observeCurrentClientId()
-            }.returns(flow)
+            } returns flow
         }
 
         suspend fun withObserveIsClientRegistrationBlockedByE2EIReturning(flow: Flow<Boolean?>) = apply {
-            coEvery {
-                clientRepository::observeIsClientRegistrationBlockedByE2EI.invoke()
-            }.returns(flow)
+            everySuspend {
+                clientRepository.observeIsClientRegistrationBlockedByE2EI()
+            } returns flow
         }
 
         suspend fun withObserveLogoutReturning(flow: Flow<LogoutReason>) = apply {
-            coEvery {
+            everySuspend {
                 logoutRepository.observeLogout()
-            }.returns(flow)
+            } returns flow
         }
 
         suspend fun withNoLogouts() = apply {
-            coEvery {
+            everySuspend {
                 logoutRepository.observeLogout()
-            }.returns(emptyFlow())
+            } returns emptyFlow()
         }
 
         fun arrange() = this to syncCriteriaProvider

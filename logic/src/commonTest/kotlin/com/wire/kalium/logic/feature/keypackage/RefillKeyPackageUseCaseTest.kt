@@ -29,19 +29,17 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -63,13 +61,13 @@ class RefillKeyPackageUseCaseTest {
 
         val actual = refillKeyPackagesUseCase(arrangement.mlsContext)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.keyPackageRepository.uploadNewKeyPackages(
                 any(),
                 eq(TestClient.CLIENT_ID),
                 eq(Arrangement.KEY_PACKAGE_LIMIT - keyPackageCount)
             )
-        }.wasInvoked(once)
+        }
 
         assertIs<RefillKeyPackagesResult.Success>(actual)
     }
@@ -107,10 +105,10 @@ class RefillKeyPackageUseCaseTest {
         assertEquals(actual.failure, networkFailure)
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val keyPackageRepository = mock(KeyPackageRepository::class)
-        val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
-        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        val keyPackageRepository: KeyPackageRepository = mock()
+        val keyPackageLimitsProvider: KeyPackageLimitsProvider = mock()
+        val currentClientIdProvider: CurrentClientIdProvider = mock()
 
         private var refillKeyPackageUseCase = RefillKeyPackagesUseCaseImpl(
             keyPackageRepository,
@@ -123,48 +121,40 @@ class RefillKeyPackageUseCaseTest {
         fun withDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
             every {
                 mlsContext.getDefaultCipherSuite()
-            }.returns(cipherSuite.toCrypto())
+            } returns cipherSuite.toCrypto()
         }
 
         suspend fun withExistingSelfClientId() = apply {
-            coEvery {
+            everySuspend {
                 currentClientIdProvider.invoke()
-            }.returns(Either.Right(TestClient.CLIENT_ID))
+            } returns Either.Right(TestClient.CLIENT_ID)
         }
 
         fun withKeyPackageLimits(needRefill: Boolean, refillAmount: Int) = apply {
             every {
                 keyPackageLimitsProvider.needsRefill(any())
-            }.returns(needRefill)
+            } returns needRefill
             every {
                 keyPackageLimitsProvider.refillAmount()
-            }.returns(refillAmount)
+            } returns refillAmount
         }
 
-        suspend fun withKeyPackageCount(
-            count: Int,
-            clientId: AnyMatcher<ClientId> = AnyMatcher(valueOf()),
-            cipherSuite: AnyMatcher<CipherSuite> = AnyMatcher(valueOf()),
-        ) = apply {
-            coEvery {
-                keyPackageRepository.getAvailableKeyPackageCount(matches { clientId.matches(it) }, matches { cipherSuite.matches(it) })
-            }.returns(Either.Right(KeyPackageCountDTO(count)))
+        suspend fun withKeyPackageCount(count: Int) = apply {
+            everySuspend {
+                keyPackageRepository.getAvailableKeyPackageCount(any(), any())
+            } returns Either.Right(KeyPackageCountDTO(count))
         }
 
         suspend fun withUploadKeyPackagesSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 keyPackageRepository.uploadNewKeyPackages(any(), eq(TestClient.CLIENT_ID), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
-        suspend fun withGetAvailableKeyPackagesFailing(
-            failure: NetworkFailure,
-            clientId: AnyMatcher<ClientId> = AnyMatcher(valueOf()),
-            cipherSuite: AnyMatcher<CipherSuite> = AnyMatcher(valueOf()),
-        ) = apply {
-            coEvery {
-                keyPackageRepository.getAvailableKeyPackageCount(matches { clientId.matches(it) }, matches { cipherSuite.matches(it) })
-            }.returns(Either.Left(failure))
+        suspend fun withGetAvailableKeyPackagesFailing(failure: NetworkFailure) = apply {
+            everySuspend {
+                keyPackageRepository.getAvailableKeyPackageCount(any(), any())
+            } returns Either.Left(failure)
         }
 
         suspend fun arrange() = apply {

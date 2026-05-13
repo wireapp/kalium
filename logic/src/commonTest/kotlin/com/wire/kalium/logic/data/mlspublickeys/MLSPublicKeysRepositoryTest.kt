@@ -26,17 +26,20 @@ import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicK
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlinx.coroutines.test.runTest
 
 class MLSPublicKeysRepositoryTest {
 
@@ -51,9 +54,9 @@ class MLSPublicKeysRepositoryTest {
         // when
         repository.getKeys()
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
-        }.wasInvoked(exactly = 1)
+        }
         assertIs<Either.Right<MLSPublicKeys>>(repository.getKeys()).let {
             assertEquals(mlsPublicKeys, it.value)
         }
@@ -68,9 +71,9 @@ class MLSPublicKeysRepositoryTest {
         // when
         val result = repository.getKeys()
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
-        }.wasNotInvoked()
+        }
         assertIs<Either.Right<MLSPublicKeys>>(result).let {
             assertEquals(mlsPublicKeys, it.value)
         }
@@ -87,9 +90,9 @@ class MLSPublicKeysRepositoryTest {
         // when
         val result = repository.getKeys()
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
-        }.wasInvoked(exactly = 1)
+        }
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(result).let {
             assertEquals(error, it.value.kaliumException)
         }
@@ -109,9 +112,9 @@ class MLSPublicKeysRepositoryTest {
         // when
         val result = repository.getKeyForCipherSuite(cipherSuite)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
-        }.wasInvoked(exactly = 1)
+        }
         assertIs<Either.Right<ByteArray>>(result).let {
             assertContentEquals(Base64.decode(key), it.value)
         }
@@ -131,9 +134,9 @@ class MLSPublicKeysRepositoryTest {
         // when
         val result = repository.getKeyForCipherSuite(cipherSuite)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
-        }.wasNotInvoked()
+        }
         assertIs<Either.Right<ByteArray>>(result).let {
             assertContentEquals(Base64.decode(key), it.value)
         }
@@ -155,9 +158,9 @@ class MLSPublicKeysRepositoryTest {
         // when
         val result = repository.getKeyForCipherSuite(cipherSuite)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
-        }.wasInvoked(exactly = 1)
+        }
         assertIs<Either.Right<ByteArray>>(result).let {
             assertContentEquals(Base64.decode(key), it.value)
         }
@@ -177,20 +180,20 @@ class MLSPublicKeysRepositoryTest {
         // when
         val result = repository.getKeyForCipherSuite(cipherSuite)
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsPublicKeyApi.getMLSPublicKeys()
-        }.wasInvoked(exactly = 1)
+        }
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(result).let {
             assertEquals(error, it.value.kaliumException)
         }
     }
 
     inner class Arrangement(private val initialPublicKeys: MLSPublicKeys? = null) {
-        internal val mlsPublicKeyApi: MLSPublicKeyApi = mock(MLSPublicKeyApi::class)
-        internal val mlsPublicKeysMapper: MLSPublicKeysMapper = mock(MLSPublicKeysMapper::class)
+        internal val mlsPublicKeyApi = mock<MLSPublicKeyApi>(mode = MockMode.autoUnit)
+        internal val mlsPublicKeysMapper = mock<MLSPublicKeysMapper>(mode = MockMode.autoUnit)
 
         internal suspend fun withGetMLSPublicKeysApiReturning(result: NetworkResponse<MLSPublicKeysDTO>) = apply {
-            coEvery {
+            everySuspend {
                 mlsPublicKeyApi.getMLSPublicKeys()
             }.returns(result)
         }

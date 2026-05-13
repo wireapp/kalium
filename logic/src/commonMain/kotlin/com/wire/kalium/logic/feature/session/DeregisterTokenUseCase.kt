@@ -26,12 +26,10 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFound
-import io.mockative.Mockable
 
 /**
  * This use case will deregister the current push notification token.
  */
-@Mockable
 internal interface DeregisterTokenUseCase {
     suspend operator fun invoke(): Result
 

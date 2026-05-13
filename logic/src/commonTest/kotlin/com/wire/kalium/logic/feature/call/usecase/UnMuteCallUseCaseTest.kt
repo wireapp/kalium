@@ -25,14 +25,15 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestCall
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.doesNothing
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.every
+import dev.mokkery.mock
+import dev.mokkery.verify
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -40,9 +41,9 @@ import kotlin.test.Test
 
 class UnMuteCallUseCaseTest {
 
-        private val callManager = mock(CallManager::class)
+        private val callManager = mock<CallManager>(mode = MockMode.autoUnit)
 
-        private val callRepository = mock(CallRepository::class)
+        private val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
     private lateinit var unMuteCall: UnMuteCallUseCase
 
@@ -50,12 +51,11 @@ class UnMuteCallUseCaseTest {
     fun setup() = runBlocking {
         unMuteCall = UnMuteCallUseCaseImpl(lazy { callManager }, callRepository)
 
-        coEvery {
+        everySuspend {
             callManager.muteCall(eq(isMuted))
-        }.returns(Unit)
+        } returns (Unit)
 
-        every { callRepository.updateIsMutedById(eq(conversationId), eq(isMuted)) }
-            .doesNothing()
+        every { callRepository.updateIsMutedById(eq(conversationId), eq(isMuted)) } returns (Unit)
     }
 
     @Test
@@ -64,13 +64,13 @@ class UnMuteCallUseCaseTest {
 
         unMuteCall(conversationId, shouldApplyOnDeviceMicrophone)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             callRepository.updateIsMutedById(eq(conversationId), eq(isMuted))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             callManager.muteCall(eq(isMuted))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -79,13 +79,13 @@ class UnMuteCallUseCaseTest {
 
         unMuteCall(conversationId, shouldApplyOnDeviceMicrophone)
 
-        verify {
+        verify(VerifyMode.exactly(1)) {
             callRepository.updateIsMutedById(eq(conversationId), eq(isMuted))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             callManager.muteCall(eq(isMuted))
-        }.wasNotInvoked()
+        }
     }
 
     companion object {

@@ -24,9 +24,7 @@ import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.Mockable
 
-@Mockable
 internal interface ButtonActionHandler {
     suspend fun handle(
         conversationId: ConversationId,

@@ -31,14 +31,16 @@ import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.persistence.TestUserDatabase
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -66,9 +68,9 @@ class IncrementalSyncWorkerTest {
         worker.processEventsFlow().collect()
 
         // Then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.eventProcessor.processEvent(any(), eq(envelope))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -157,9 +159,9 @@ class IncrementalSyncWorkerTest {
 
         worker.processEventsFlow().collect()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.eventRepository.setEventsAsProcessed(eq(listOf(eventId)))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -173,9 +175,9 @@ class IncrementalSyncWorkerTest {
 
         worker.processEventsFlow().collect()
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.eventRepository.setEventsAsProcessed(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -190,9 +192,9 @@ class IncrementalSyncWorkerTest {
             .withSetEventsAsProcessedReturning(Either.Right(Unit))
             .arrange()
 
-        coEvery {
+        everySuspend {
             arrangement.eventProcessor.processEvent(any(), eq(envelope))
-        }.invokes {
+        } calls {
             processingStarted.complete(Unit)
             allowProcessingToFinish.await()
             Either.Right(eventId)
@@ -207,15 +209,15 @@ class IncrementalSyncWorkerTest {
         allowProcessingToFinish.complete(Unit)
         job.join()
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.eventRepository.setEventsAsProcessed(eq(listOf(eventId)))
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val eventProcessor: EventProcessor = mock(EventProcessor::class)
-        val eventGatherer: EventGatherer = mock(EventGatherer::class)
-        val eventRepository: EventRepository = mock(EventRepository::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val eventProcessor: EventProcessor = mock()
+        val eventGatherer: EventGatherer = mock()
+        val eventRepository: EventRepository = mock()
         val database = TestUserDatabase(
             userId = QualifiedID("value", "domain").toDao(),
             dispatcher = TestKaliumDispatcher.default
@@ -229,18 +231,18 @@ class IncrementalSyncWorkerTest {
         }
 
         suspend fun withEventGathererReturning(eventFlow: Flow<EventStreamData>) = apply {
-            coEvery {
+            everySuspend {
                 eventGatherer.gatherEvents()
-            }.returns(eventFlow)
+            } returns eventFlow
         }
 
         suspend fun withEventProcessorReturning(result: Either<CoreFailure, String?>) = apply {
-            coEvery {
+            everySuspend {
                 eventProcessor.processEvent(any(), any())
-            }.returns(result)
-            coEvery {
+            } returns result
+            everySuspend {
                 eventProcessor.flushPendingSideEffects()
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withEventProcessorSucceeding() = withEventProcessorReturning(Either.Right(null))
@@ -248,7 +250,7 @@ class IncrementalSyncWorkerTest {
         suspend fun withEventProcessorFailingWith(failure: CoreFailure) = withEventProcessorReturning(Either.Left(failure))
 
         suspend fun withSetEventsAsProcessedReturning(result: Either<StorageFailure, Unit>) = apply {
-            coEvery { eventRepository.setEventsAsProcessed(any()) }.returns(result)
+            everySuspend { eventRepository.setEventsAsProcessed(any()) } returns result
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {

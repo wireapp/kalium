@@ -31,14 +31,15 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.twice
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.every
+import dev.mokkery.mock
+import dev.mokkery.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
@@ -72,13 +73,13 @@ class OnParticipantListChangedTest {
             )
             yield()
 
-            verify {
+            verify(VerifyMode.exactly(2)) {
                 arrangement.participantMapper.fromCallMemberToParticipantMinimized(any())
-            }.wasInvoked(exactly = twice)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.callRepository.updateCallParticipants(any(), any())
-            }.wasInvoked(exactly = once)
+            }
         }
 
     @Test
@@ -121,9 +122,9 @@ class OnParticipantListChangedTest {
 
 
     internal class Arrangement {
-        val callRepository = mock(CallRepository::class)
-        val participantMapper = mock(ParticipantMapper::class)
-        val callHelper = mock(CallHelper::class)
+        val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
+        val participantMapper = mock<ParticipantMapper>(mode = MockMode.autoUnit)
+        val callHelper = mock<CallHelper>(mode = MockMode.autoUnit)
 
         var isEndCallInvoked = false
 
@@ -143,25 +144,25 @@ class OnParticipantListChangedTest {
         fun withParticipantMapper() = apply {
             every {
                 participantMapper.fromCallMemberToParticipantMinimized(any())
-            }.returns(participant)
+            } returns (participant)
         }
 
         fun withProtocol() = apply {
             every {
                 callRepository.currentCallProtocol(any())
-            }.returns(mlsProtocolInfo)
+            } returns (mlsProtocolInfo)
         }
 
         suspend fun withEstablishedCall() = apply {
-            coEvery {
+            everySuspend {
                 callRepository.establishedCallsFlow()
-            }.returns(flowOf(listOf(call)))
+            } returns (flowOf(listOf(call)))
         }
 
         suspend fun withShouldEndSFTOneOnOneCall(result: Boolean) = apply {
-            coEvery {
+            everySuspend {
                 callHelper.shouldEndSFTOneOnOneCall(any(), any())
-            }.returns(result)
+            } returns (result)
         }
     }
 

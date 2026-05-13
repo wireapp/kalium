@@ -30,10 +30,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import io.mockative.Mockable
 import kotlinx.datetime.Instant
 
-@Mockable
 internal interface RenamedConversationEventHandler {
     suspend fun handle(event: Event.Conversation.RenamedConversation)
 }

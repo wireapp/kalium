@@ -23,11 +23,13 @@ import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,9 +52,9 @@ class StoreServerConfigUseCaseTest {
             assertEquals(expected, it.serverConfig)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.customServerConfigRepository.storeConfig(links, versionInfo)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -70,13 +72,13 @@ class StoreServerConfigUseCaseTest {
             assertEquals(expected, it.serverConfig)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.customServerConfigRepository.storeConfig(expected.links, versionInfo)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
-                val customServerConfigRepository = mock(CustomServerConfigRepository::class)
+                val customServerConfigRepository = mock<CustomServerConfigRepository>(mode = MockMode.autoUnit)
         private val useCase = StoreServerConfigUseCaseImpl(customServerConfigRepository)
 
         suspend fun withStoreConfig(
@@ -84,8 +86,7 @@ class StoreServerConfigUseCaseTest {
             versionInfo: ServerConfig.VersionInfo,
             result: Either<StorageFailure, ServerConfig>
         ) = apply {
-            coEvery { customServerConfigRepository.storeConfig(eq(links), eq(versionInfo)) }
-                .returns(result)
+            everySuspend { customServerConfigRepository.storeConfig(eq(links), eq(versionInfo)) } returns result
         }
 
         fun arrange() = this to useCase

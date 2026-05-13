@@ -32,9 +32,13 @@ import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -199,9 +203,9 @@ class GetIncomingCallsUseCaseTest {
     }
 
     private class Arrangement {
-        val userRepository: UserRepository = mock(UserRepository::class)
-        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
-        val callRepository: CallRepository = mock(CallRepository::class)
+        val userRepository: UserRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val conversationRepository: ConversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val callRepository: CallRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
         val getIncomingCallsUseCase: GetIncomingCallsUseCase = GetIncomingCallsUseCaseImpl(
             userRepository = userRepository,
@@ -210,32 +214,31 @@ class GetIncomingCallsUseCaseTest {
         )
 
         suspend fun withIncomingCalls(calls: List<Call>): Arrangement {
-            coEvery {
+            everySuspend {
                 callRepository.incomingCallsFlow()
-            }.returns(MutableStateFlow(calls))
+            } returns (MutableStateFlow(calls))
 
             return this
         }
 
         suspend fun withIncomingCallsFlow(callsFlow: Flow<List<Call>>): Arrangement = apply {
-            coEvery {
+            everySuspend {
                 callRepository.incomingCallsFlow()
-            }.returns(callsFlow)
+            } returns (callsFlow)
         }
 
         suspend fun withSelfUserStatus(status: UserAvailabilityStatus): Arrangement {
-            coEvery {
+            everySuspend {
                 userRepository.observeSelfUser()
-            }.returns(flowOf(selfUserWithStatus(status)))
+            } returns (flowOf(selfUserWithStatus(status)))
 
             return this
         }
 
         suspend fun withConversationDetails(detailsGetter: (ConversationId) -> Either<StorageFailure, Conversation>): Arrangement {
-            coEvery { conversationRepository.getConversationById(any()) }
-            coEvery {
+            everySuspend {
                 conversationRepository.getConversationById(any())
-            }.invokes { id -> detailsGetter(id.first() as ConversationId) }
+            } calls { invocation -> detailsGetter(invocation.args.first() as ConversationId) }
             return this
         }
 

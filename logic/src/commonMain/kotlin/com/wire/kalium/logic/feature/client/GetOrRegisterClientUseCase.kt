@@ -30,13 +30,11 @@ import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
-import io.mockative.Mockable
 
 /**
  * This use case is responsible for getting the client.
  * If the client is not found, it will be registered.
  */
-@Mockable
 public interface GetOrRegisterClientUseCase {
     public suspend operator fun invoke(
         registerClientParam: RegisterClientParam

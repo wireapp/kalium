@@ -35,7 +35,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isTooManyRequests
-import io.mockative.Mockable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -44,7 +43,6 @@ import kotlinx.coroutines.delay
  * Send an external commit to join all MLS conversations for which the user is a member,
  * but has not yet joined the corresponding MLS group.
  */
-@Mockable
 internal interface JoinExistingMLSConversationsUseCase {
     suspend operator fun invoke(
         keepRetryingOnFailure: Boolean = true,

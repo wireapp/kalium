@@ -23,10 +23,11 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -47,9 +48,9 @@ class IsSelfATeamMemberUseCaseTest {
             assertTrue(actual)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfTeamIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -63,15 +64,15 @@ class IsSelfATeamMemberUseCaseTest {
             assertFalse(actual)
         }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.selfTeamIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
+        val selfTeamIdProvider: SelfTeamIdProvider = mock()
+        val slowSyncRepository: SlowSyncRepository = mock()
 
         private val isSelfATeamMember: IsSelfATeamMemberUseCaseImpl = IsSelfATeamMemberUseCaseImpl(
             selfTeamIdProvider = selfTeamIdProvider,
@@ -79,13 +80,13 @@ class IsSelfATeamMemberUseCaseTest {
         )
 
         suspend fun withLastSlowSyncCompletionInstant(result: Instant?) = apply {
-            coEvery { slowSyncRepository.observeLastSlowSyncCompletionInstant() }.returns(flowOf(result))
+            everySuspend { slowSyncRepository.observeLastSlowSyncCompletionInstant() } returns flowOf(result)
         }
 
         suspend fun withSelfTeamId(result: Either<CoreFailure, TeamId?>) = apply {
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider.invoke()
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to isSelfATeamMember

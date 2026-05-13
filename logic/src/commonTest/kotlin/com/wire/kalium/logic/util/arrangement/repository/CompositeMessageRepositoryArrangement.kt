@@ -23,12 +23,11 @@ import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface CompositeMessageRepositoryArrangement {
 
@@ -36,46 +35,46 @@ internal interface CompositeMessageRepositoryArrangement {
 
     suspend fun withMarkSelected(
         result: Either<StorageFailure, Unit>,
-        messageId: Matcher<MessageId> = AnyMatcher(valueOf()),
-        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()),
-        buttonId: Matcher<MessageButtonId> = AnyMatcher(valueOf())
+        messageId: (MessageId) -> Boolean = { true },
+        conversationId: (ConversationId) -> Boolean = { true },
+        buttonId: (MessageButtonId) -> Boolean = { true }
     )
 
     suspend fun withClearSelection(
         result: Either<StorageFailure, Unit>,
-        messageId: Matcher<MessageId> = AnyMatcher(valueOf()),
-        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
+        messageId: (MessageId) -> Boolean = { true },
+        conversationId: (ConversationId) -> Boolean = { true }
     )
 }
 
 internal class CompositeMessageRepositoryArrangementImpl : CompositeMessageRepositoryArrangement {
 
-    override val compositeMessageRepository: CompositeMessageRepository = mock(CompositeMessageRepository::class)
+    override val compositeMessageRepository: CompositeMessageRepository = mock<CompositeMessageRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withMarkSelected(
         result: Either<StorageFailure, Unit>,
-        messageId: Matcher<MessageId>,
-        conversationId: Matcher<ConversationId>,
-        buttonId: Matcher<MessageButtonId>
+        messageId: (MessageId) -> Boolean,
+        conversationId: (ConversationId) -> Boolean,
+        buttonId: (MessageButtonId) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             compositeMessageRepository.markSelected(
-                matches { messageId.matches(it) },
-                matches { conversationId.matches(it) },
-                matches { buttonId.matches(it) }
+                matches { messageId(it) },
+                matches { conversationId(it) },
+                matches { buttonId(it) }
             )
         }.returns(result)
     }
 
     override suspend fun withClearSelection(
         result: Either<StorageFailure, Unit>,
-        messageId: Matcher<MessageId>,
-        conversationId: Matcher<ConversationId>
+        messageId: (MessageId) -> Boolean,
+        conversationId: (ConversationId) -> Boolean
     ) {
-        coEvery {
+        everySuspend {
             compositeMessageRepository.resetSelection(
-                matches { messageId.matches(it) },
-                matches { conversationId.matches(it) }
+                matches { messageId(it) },
+                matches { conversationId(it) }
             )
         }.returns(result)
     }

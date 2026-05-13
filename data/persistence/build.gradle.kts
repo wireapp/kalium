@@ -22,7 +22,7 @@ plugins {
     id(libs.plugins.sqldelight.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
-    alias(libs.plugins.mockative)
+    alias(libs.plugins.mokkery)
 }
 
 kaliumLibrary {
@@ -39,6 +39,7 @@ sqldelight {
             val sourceFolderName = "db_user"
             srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))
             schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
+            enableCustomQueryKeys.set(true)
         }
 
         create("GlobalDatabase") {
@@ -67,6 +68,7 @@ kotlin {
                 implementation(libs.settings.kmp)
                 implementation(libs.ktxDateTime)
                 implementation(libs.sqldelight.androidxPaging)
+                api(libs.paging.common)
 
                 implementation(projects.core.util)
                 api(projects.core.logger)

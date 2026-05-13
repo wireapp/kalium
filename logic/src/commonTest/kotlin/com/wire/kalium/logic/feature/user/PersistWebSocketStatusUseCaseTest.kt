@@ -23,11 +23,12 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.webSocketStatus.PersistPersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -56,30 +57,30 @@ class PersistWebSocketStatusUseCaseTest {
         // When
         persistPersistentWebSocketConnectionStatusUseCase(true)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.sessionRepository.updatePersistentWebSocketStatus(any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val sessionRepository = mock(SessionRepository::class)
+        val sessionRepository = mock<SessionRepository>()
 
         val persistPersistentWebSocketConnectionStatusUseCaseImpl =
             PersistPersistentWebSocketConnectionStatusUseCaseImpl(UserId("test", "domain"), sessionRepository)
 
         suspend fun withSuccessfulResponse(): Arrangement {
-            coEvery {
+            everySuspend {
                 sessionRepository.updatePersistentWebSocketStatus(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
 
             return this
         }
 
         suspend fun withPersistWebSocketErrorResponse(storageFailure: StorageFailure): Arrangement {
-            coEvery {
+            everySuspend {
                 sessionRepository.updatePersistentWebSocketStatus(any(), any())
-            }.returns(Either.Left(storageFailure))
+            } returns Either.Left(storageFailure)
             return this
         }
 

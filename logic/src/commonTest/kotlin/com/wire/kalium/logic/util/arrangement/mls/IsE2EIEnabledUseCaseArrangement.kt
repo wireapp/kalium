@@ -18,9 +18,11 @@
 package com.wire.kalium.logic.util.arrangement.mls
 
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
-import io.mockative.coEvery
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.every
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface IsE2EIEnabledUseCaseArrangement {
     val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
@@ -29,10 +31,10 @@ internal interface IsE2EIEnabledUseCaseArrangement {
 }
 
 internal class IsE2EIEnabledUseCaseArrangementImpl : IsE2EIEnabledUseCaseArrangement {
-        override val isE2EIEnabledUseCase: IsE2EIEnabledUseCase = mock(IsE2EIEnabledUseCase::class)
+        override val isE2EIEnabledUseCase: IsE2EIEnabledUseCase = mock<IsE2EIEnabledUseCase>(mode = MockMode.autoUnit)
 
     override suspend fun withE2EIEnabledAndMLSEnabled(result: Boolean) {
-        coEvery {
+        everySuspend {
             isE2EIEnabledUseCase.invoke()
         }.returns(result)
     }
