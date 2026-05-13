@@ -1,2 +1,0 @@
-ALTER TABLE CellFile ADD COLUMN conversationId TEXT;
-ALTER TABLE CellFile ADD COLUMN modifiedTime TEXT;
