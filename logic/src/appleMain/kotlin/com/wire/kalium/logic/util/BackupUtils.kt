@@ -85,9 +85,9 @@ internal actual fun createCompressedFile(files: List<Pair<Source, String>>, outp
                 name = sanitizedFileName,
                 compressionMethod = COMPRESSION_METHOD_DEFLATE,
                 crc = deflateResult.crc,
-                compressedSize = deflateResult.compressedSize.toZip32Int("compressed size"),
-                uncompressedSize = deflateResult.uncompressedSize.toZip32Int("uncompressed size"),
-                localHeaderOffset = localHeaderOffset.toZip32Int("local header offset"),
+                compressedSize = deflateResult.compressedSize,
+                uncompressedSize = deflateResult.uncompressedSize,
+                localHeaderOffset = localHeaderOffset,
             )
         }
 
@@ -97,10 +97,15 @@ internal actual fun createCompressedFile(files: List<Pair<Source, String>>, outp
             centralDirectorySize += sink.writeCentralDirectoryHeader(entry)
         }
         bytesWritten += centralDirectorySize
+        bytesWritten += sink.writeZip64EndOfCentralDirectoryIfNeeded(
+            entryCount = centralDirectoryEntries.size,
+            centralDirectorySize = centralDirectorySize,
+            centralDirectoryOffset = centralDirectoryOffset,
+        )
         bytesWritten += sink.writeEndOfCentralDirectory(
             entryCount = centralDirectoryEntries.size,
-            centralDirectorySize = centralDirectorySize.toZip32Int("central directory size"),
-            centralDirectoryOffset = centralDirectoryOffset.toZip32Int("central directory offset"),
+            centralDirectorySize = centralDirectorySize,
+            centralDirectoryOffset = centralDirectoryOffset,
         )
     }
     Either.Right(bytesWritten)
@@ -181,17 +186,17 @@ private data class ZipEntryMetadata(
     val name: String,
     val compressionMethod: Int,
     val crc: UInt,
-    val compressedSize: Int,
-    val uncompressedSize: Int,
-    val localHeaderOffset: Int,
+    val compressedSize: Long,
+    val uncompressedSize: Long,
+    val localHeaderOffset: Long,
 )
 
 private data class LocalFileHeader(
     val generalPurposeFlag: Int,
     val compressionMethod: Int,
     val crc: UInt,
-    val compressedSize: Int,
-    val uncompressedSize: Int,
+    val compressedSize: Long,
+    val uncompressedSize: Long,
     val name: String,
 ) {
     val hasDataDescriptor: Boolean
@@ -224,48 +229,106 @@ private fun BufferedSink.writeStreamingLocalHeader(name: String): Long {
 private fun BufferedSink.writeDataDescriptor(crc: UInt, compressedSize: Long, uncompressedSize: Long): Long {
     writeIntLe(DATA_DESCRIPTOR_SIGNATURE)
     writeIntLe(crc.toInt())
-    writeIntLe(compressedSize.toZip32Int("compressed size"))
-    writeIntLe(uncompressedSize.toZip32Int("uncompressed size"))
-    return DATA_DESCRIPTOR_SIZE.toLong()
+    return if (compressedSize.requiresZip64() || uncompressedSize.requiresZip64()) {
+        writeLongLe(compressedSize)
+        writeLongLe(uncompressedSize)
+        ZIP64_DATA_DESCRIPTOR_SIZE.toLong()
+    } else {
+        writeIntLe(compressedSize.toInt())
+        writeIntLe(uncompressedSize.toInt())
+        DATA_DESCRIPTOR_SIZE.toLong()
+    }
 }
 
 private fun BufferedSink.writeCentralDirectoryHeader(entry: ZipEntryMetadata): Long {
     val fileName = entry.name.encodeToByteArray()
+    val zip64Extra = entry.zip64CentralDirectoryExtraField()
     writeIntLe(CENTRAL_DIRECTORY_HEADER_SIGNATURE)
-    writeShortLe(ZIP_VERSION_MADE_BY)
-    writeShortLe(ZIP_VERSION_NEEDED)
+    writeShortLe(if (zip64Extra.isEmpty()) ZIP_VERSION_MADE_BY else ZIP64_VERSION_MADE_BY)
+    writeShortLe(if (zip64Extra.isEmpty()) ZIP_VERSION_NEEDED else ZIP64_VERSION_NEEDED)
     writeShortLe(GENERAL_PURPOSE_UTF8_FLAG or GENERAL_PURPOSE_DATA_DESCRIPTOR_FLAG)
     writeShortLe(entry.compressionMethod)
     writeShortLe(0)
     writeShortLe(0)
     writeIntLe(entry.crc.toInt())
-    writeIntLe(entry.compressedSize)
-    writeIntLe(entry.uncompressedSize)
+    writeIntLe(entry.compressedSize.toZip32Field())
+    writeIntLe(entry.uncompressedSize.toZip32Field())
     writeShortLe(fileName.size)
-    writeShortLe(0)
+    writeShortLe(zip64Extra.size)
     writeShortLe(0)
     writeShortLe(0)
     writeShortLe(0)
     writeIntLe(0)
-    writeIntLe(entry.localHeaderOffset)
+    writeIntLe(entry.localHeaderOffset.toZip32Field())
     write(fileName)
-    return (CENTRAL_DIRECTORY_FIXED_SIZE + fileName.size).toLong()
+    write(zip64Extra)
+    return (CENTRAL_DIRECTORY_FIXED_SIZE + fileName.size + zip64Extra.size).toLong()
+}
+
+private fun ZipEntryMetadata.zip64CentralDirectoryExtraField(): ByteArray {
+    val needsUncompressedSize = uncompressedSize.requiresZip64()
+    val needsCompressedSize = compressedSize.requiresZip64()
+    val needsLocalHeaderOffset = localHeaderOffset.requiresZip64()
+    if (!needsUncompressedSize && !needsCompressedSize && !needsLocalHeaderOffset) return ByteArray(0)
+
+    val extra = Buffer()
+    if (needsUncompressedSize) extra.writeLongLe(uncompressedSize)
+    if (needsCompressedSize) extra.writeLongLe(compressedSize)
+    if (needsLocalHeaderOffset) extra.writeLongLe(localHeaderOffset)
+
+    val payload = extra.readByteArray()
+    return Buffer()
+        .writeShortLe(ZIP64_EXTRA_FIELD_ID)
+        .writeShortLe(payload.size)
+        .write(payload)
+        .readByteArray()
 }
 
 private fun BufferedSink.writeEndOfCentralDirectory(
     entryCount: Int,
-    centralDirectorySize: Int,
-    centralDirectoryOffset: Int,
+    centralDirectorySize: Long,
+    centralDirectoryOffset: Long,
 ): Long {
     writeIntLe(END_OF_CENTRAL_DIRECTORY_SIGNATURE)
     writeShortLe(0)
     writeShortLe(0)
-    writeShortLe(entryCount)
-    writeShortLe(entryCount)
-    writeIntLe(centralDirectorySize)
-    writeIntLe(centralDirectoryOffset)
+    writeShortLe(entryCount.toZip16Field())
+    writeShortLe(entryCount.toZip16Field())
+    writeIntLe(centralDirectorySize.toZip32Field())
+    writeIntLe(centralDirectoryOffset.toZip32Field())
     writeShortLe(0)
     return EOCD_FIXED_SIZE.toLong()
+}
+
+private fun BufferedSink.writeZip64EndOfCentralDirectoryIfNeeded(
+    entryCount: Int,
+    centralDirectorySize: Long,
+    centralDirectoryOffset: Long,
+): Long {
+    val needsZip64 = entryCount > ZIP16_MAX_VALUE ||
+            centralDirectorySize.requiresZip64() ||
+            centralDirectoryOffset.requiresZip64()
+    if (!needsZip64) return 0L
+
+    val zip64EndOfCentralDirectoryOffset = centralDirectoryOffset + centralDirectorySize
+
+    writeIntLe(ZIP64_END_OF_CENTRAL_DIRECTORY_SIGNATURE)
+    writeLongLe(ZIP64_EOCD_RECORD_SIZE)
+    writeShortLe(ZIP64_VERSION_MADE_BY)
+    writeShortLe(ZIP64_VERSION_NEEDED)
+    writeIntLe(0)
+    writeIntLe(0)
+    writeLongLe(entryCount.toLong())
+    writeLongLe(entryCount.toLong())
+    writeLongLe(centralDirectorySize)
+    writeLongLe(centralDirectoryOffset)
+
+    writeIntLe(ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR_SIGNATURE)
+    writeIntLe(0)
+    writeLongLe(zip64EndOfCentralDirectoryOffset)
+    writeIntLe(1)
+
+    return ZIP64_EOCD_TOTAL_SIZE.toLong()
 }
 
 private class StreamingZipReader(private val source: BufferedSource) {
@@ -316,6 +379,19 @@ private class StreamingZipReader(private val source: BufferedSource) {
         head.write(data, offset, length)
         head.write(existing)
     }
+
+    fun unreadIntLe(value: Int) {
+        unread(
+            byteArrayOf(
+                value.toByte(),
+                (value shr BITS_PER_BYTE).toByte(),
+                (value shr (BITS_PER_BYTE * BYTE_2)).toByte(),
+                (value shr (BITS_PER_BYTE * BYTE_3)).toByte(),
+            ),
+            0,
+            Int.SIZE_BYTES,
+        )
+    }
 }
 
 private fun StreamingZipReader.readLocalFileHeader(): LocalFileHeader {
@@ -325,18 +401,22 @@ private fun StreamingZipReader.readLocalFileHeader(): LocalFileHeader {
     readShortLe()
     readShortLe()
     val crc = readIntLe().toUInt()
-    val compressedSize = readIntLe()
-    val uncompressedSize = readIntLe()
+    val compressedSize = readIntLe().toUnsignedLong()
+    val uncompressedSize = readIntLe().toUnsignedLong()
     val fileNameLength = readShortLe()
     val extraFieldLength = readShortLe()
     val nameBytes = readByteArray(fileNameLength)
-    if (extraFieldLength > 0) skip(extraFieldLength)
+    val extraFields = if (extraFieldLength > 0) readByteArray(extraFieldLength) else ByteArray(0)
+    val zip64Extra = extraFields.readZip64ExtraField(
+        compressedSize = compressedSize,
+        uncompressedSize = uncompressedSize,
+    )
     return LocalFileHeader(
         generalPurposeFlag = generalPurposeFlag,
         compressionMethod = compressionMethod,
         crc = crc,
-        compressedSize = compressedSize,
-        uncompressedSize = uncompressedSize,
+        compressedSize = zip64Extra?.compressedSize ?: compressedSize,
+        uncompressedSize = zip64Extra?.uncompressedSize ?: uncompressedSize,
         name = nameBytes.decodeToString(),
     )
 }
@@ -353,7 +433,7 @@ private fun extractEntry(reader: StreamingZipReader, output: BufferedSink?, head
 
 private fun copyStored(reader: StreamingZipReader, output: BufferedSink?, header: LocalFileHeader): Long {
     val buf = ByteArray(STREAMING_BUFFER_SIZE)
-    var remaining = header.compressedSize.toLong()
+    var remaining = header.compressedSize
     var crc = 0u
     while (remaining > 0) {
         val toRead = minOf(remaining, buf.size.toLong()).toInt()
@@ -364,7 +444,7 @@ private fun copyStored(reader: StreamingZipReader, output: BufferedSink?, header
         remaining -= n
     }
     require(crc == header.crc) { "Invalid CRC for ZIP entry ${header.name}" }
-    return header.uncompressedSize.toLong()
+    return header.uncompressedSize
 }
 
 private fun inflateEntry(reader: StreamingZipReader, output: BufferedSink?, header: LocalFileHeader): Long = memScoped {
@@ -416,17 +496,12 @@ private fun inflateEntry(reader: StreamingZipReader, output: BufferedSink?, head
         }
 
         if (header.hasDataDescriptor) {
-            val first = reader.readIntLe()
-            val descriptorCrc: UInt = if (first == DATA_DESCRIPTOR_SIGNATURE) {
-                reader.readIntLe().toUInt()
-            } else {
-                first.toUInt()
-            }
-            reader.readIntLe()
-            reader.readIntLe()
-            require(crc == descriptorCrc) { "Invalid CRC for ZIP entry ${header.name}" }
+            val descriptor = reader.readDataDescriptor()
+            require(crc == descriptor.crc) { "Invalid CRC for ZIP entry ${header.name}" }
+            require(uncompressedSize == descriptor.uncompressedSize) { "Invalid size for ZIP entry ${header.name}" }
         } else {
             require(crc == header.crc) { "Invalid CRC for ZIP entry ${header.name}" }
+            require(uncompressedSize == header.uncompressedSize) { "Invalid size for ZIP entry ${header.name}" }
         }
 
         uncompressedSize
@@ -519,11 +594,103 @@ private fun crc32Update(prev: UInt, data: ByteArray, offset: Int, length: Int): 
     }
 }
 
-private fun Long.toZip32Int(fieldName: String): Int {
-    require(this in 0..ZIP32_MAX_VALUE) {
-        "ZIP64 is not supported; $fieldName exceeds ZIP32 limit: $this"
+private data class Zip64ExtraField(
+    val compressedSize: Long?,
+    val uncompressedSize: Long?,
+)
+
+private data class DataDescriptor(
+    val crc: UInt,
+    val compressedSize: Long,
+    val uncompressedSize: Long,
+)
+
+private fun StreamingZipReader.readDataDescriptor(): DataDescriptor {
+    val first = readIntLe()
+    val descriptorCrc: UInt = if (first == DATA_DESCRIPTOR_SIGNATURE) {
+        readIntLe().toUInt()
+    } else {
+        first.toUInt()
     }
-    return toInt()
+
+    val compressedSize32 = readIntLe()
+    val secondSizeOrCompressedHigh = readIntLe()
+    val next = readIntLe()
+    return if (next.isZipHeaderSignature()) {
+        unreadIntLe(next)
+        DataDescriptor(
+            crc = descriptorCrc,
+            compressedSize = compressedSize32.toUnsignedLong(),
+            uncompressedSize = secondSizeOrCompressedHigh.toUnsignedLong(),
+        )
+    } else {
+        val uncompressedHigh = readIntLe()
+        DataDescriptor(
+            crc = descriptorCrc,
+            compressedSize = compressedSize32.toUnsignedLong() or (secondSizeOrCompressedHigh.toUnsignedLong() shl INT_BITS),
+            uncompressedSize = next.toUnsignedLong() or (uncompressedHigh.toUnsignedLong() shl INT_BITS),
+        )
+    }
+}
+
+private fun ByteArray.readZip64ExtraField(compressedSize: Long, uncompressedSize: Long): Zip64ExtraField? {
+    var offset = 0
+    while (offset + ZIP_EXTRA_FIELD_HEADER_SIZE <= size) {
+        val headerId = readUInt16Le(offset)
+        val dataSize = readUInt16Le(offset + Short.SIZE_BYTES)
+        offset += ZIP_EXTRA_FIELD_HEADER_SIZE
+        if (offset + dataSize > size) return null
+        if (headerId == ZIP64_EXTRA_FIELD_ID) {
+            var zip64Offset = offset
+            val zip64UncompressedSize = if (uncompressedSize == ZIP32_MAX_VALUE) {
+                readInt64Le(zip64Offset).also { zip64Offset += Long.SIZE_BYTES }
+            } else {
+                null
+            }
+            val zip64CompressedSize = if (compressedSize == ZIP32_MAX_VALUE) {
+                readInt64Le(zip64Offset)
+            } else {
+                null
+            }
+            return Zip64ExtraField(
+                compressedSize = zip64CompressedSize,
+                uncompressedSize = zip64UncompressedSize,
+            )
+        }
+        offset += dataSize
+    }
+    return null
+}
+
+private fun Long.requiresZip64(): Boolean = this > ZIP32_MAX_VALUE
+
+private fun Long.toZip32Field(): Int =
+    if (requiresZip64()) ZIP32_MAX_VALUE.toInt() else toInt()
+
+private fun Int.toZip16Field(): Int =
+    if (this > ZIP16_MAX_VALUE) ZIP16_MAX_VALUE else this
+
+private fun Int.toUnsignedLong(): Long = toUInt().toLong()
+
+private fun Int.isZipHeaderSignature(): Boolean =
+    this == LOCAL_FILE_HEADER_SIGNATURE ||
+            this == CENTRAL_DIRECTORY_HEADER_SIGNATURE ||
+            this == END_OF_CENTRAL_DIRECTORY_SIGNATURE ||
+            this == ZIP64_END_OF_CENTRAL_DIRECTORY_SIGNATURE ||
+            this == ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR_SIGNATURE
+
+private fun ByteArray.readUInt16Le(offset: Int): Int =
+    (this[offset].toInt() and BYTE_MASK) or
+            ((this[offset + BYTE_1].toInt() and BYTE_MASK) shl BITS_PER_BYTE)
+
+private fun ByteArray.readInt64Le(offset: Int): Long {
+    require(offset + Long.SIZE_BYTES <= size) { "Invalid ZIP64 extra field" }
+    var result = 0L
+    repeat(Long.SIZE_BYTES) { index ->
+        result = result or ((this[offset + index].toLong() and BYTE_MASK.toLong()) shl (BITS_PER_BYTE * index))
+    }
+    require(result >= 0) { "ZIP64 value exceeds supported signed 64-bit range" }
+    return result
 }
 
 private fun sanitizeFileName(fileName: String): String {
@@ -536,19 +703,35 @@ private const val LOCAL_FILE_HEADER_SIGNATURE = 0x04034b50
 private const val CENTRAL_DIRECTORY_HEADER_SIGNATURE = 0x02014b50
 private const val END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06054b50
 private const val DATA_DESCRIPTOR_SIGNATURE = 0x08074b50
+private const val ZIP64_END_OF_CENTRAL_DIRECTORY_SIGNATURE = 0x06064b50
+private const val ZIP64_END_OF_CENTRAL_DIRECTORY_LOCATOR_SIGNATURE = 0x07064b50
 
 private const val ZIP_VERSION_MADE_BY = 0x0314
 private const val ZIP_VERSION_NEEDED = 20
+private const val ZIP64_VERSION_MADE_BY = 0x032d
+private const val ZIP64_VERSION_NEEDED = 45
 private const val GENERAL_PURPOSE_UTF8_FLAG = 0x0800
 private const val GENERAL_PURPOSE_DATA_DESCRIPTOR_FLAG = 0x0008
 private const val COMPRESSION_METHOD_STORED = 0
 private const val COMPRESSION_METHOD_DEFLATE = 8
 private const val ZLIB_MEMORY_LEVEL = 8
+private const val BYTE_MASK = 0xff
+private const val BITS_PER_BYTE = 8
+private const val BYTE_1 = 1
+private const val BYTE_2 = 2
+private const val BYTE_3 = 3
+private const val INT_BITS = 32
 private const val SHORT_MASK = 0xFFFF
 private const val STREAMING_BUFFER_SIZE = 8192
 private const val ZIP32_MAX_VALUE = 0xFFFF_FFFFL
+private const val ZIP16_MAX_VALUE = 0xFFFF
+private const val ZIP64_EXTRA_FIELD_ID = 0x0001
+private const val ZIP_EXTRA_FIELD_HEADER_SIZE = 4
 
 private const val LOCAL_FILE_HEADER_FIXED_SIZE = 30
 private const val CENTRAL_DIRECTORY_FIXED_SIZE = 46
 private const val EOCD_FIXED_SIZE = 22
 private const val DATA_DESCRIPTOR_SIZE = 16
+private const val ZIP64_DATA_DESCRIPTOR_SIZE = 24
+private const val ZIP64_EOCD_RECORD_SIZE = 44L
+private const val ZIP64_EOCD_TOTAL_SIZE = 76

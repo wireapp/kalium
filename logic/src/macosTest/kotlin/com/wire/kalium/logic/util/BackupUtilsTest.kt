@@ -146,6 +146,24 @@ class BackupUtilsTest {
         assertTrue(!fileSystem.exists(outputDir / "skip.txt"))
     }
 
+    @Test
+    fun givenZip64StoredFixture_whenExtractingAll_thenFileIsExtracted() {
+        val content = "zip64 stored content"
+        val outputDir = testDir / "zip64-stored"
+
+        val result = extractCompressedFile(
+            inputSource = zip64StoredFixture("payload.txt", content.encodeToByteArray()),
+            outputRootPath = outputDir,
+            param = ExtractFilesParam.All,
+            fileSystem = testKaliumFileSystem,
+        )
+
+        assertIs<Either.Right<Long>>(result)
+        assertEquals(content.length.toLong(), result.value)
+        val extractedContent = fileSystem.source(outputDir / "payload.txt").buffer().use { it.readUtf8() }
+        assertEquals(content, extractedContent)
+    }
+
     // endregion
 
     // region round-trip
@@ -268,6 +286,33 @@ class BackupUtilsTest {
         return result.stdout.lines().filter { it.isNotBlank() }
     }
 
+    private fun zip64StoredFixture(fileName: String, content: ByteArray): Source {
+        val fileNameBytes = fileName.encodeToByteArray()
+        val extra = Buffer()
+            .writeShortLe(ZIP64_EXTRA_FIELD_ID)
+            .writeShortLe(Long.SIZE_BYTES * 2)
+            .writeLongLe(content.size.toLong())
+            .writeLongLe(content.size.toLong())
+            .readByteArray()
+
+        return Buffer()
+            .writeIntLe(LOCAL_FILE_HEADER_SIGNATURE)
+            .writeShortLe(ZIP64_VERSION_NEEDED)
+            .writeShortLe(GENERAL_PURPOSE_UTF8_FLAG)
+            .writeShortLe(COMPRESSION_METHOD_STORED)
+            .writeShortLe(0)
+            .writeShortLe(0)
+            .writeIntLe(ZIP64_STORED_CONTENT_CRC)
+            .writeIntLe(ZIP32_MAX_FIELD)
+            .writeIntLe(ZIP32_MAX_FIELD)
+            .writeShortLe(fileNameBytes.size)
+            .writeShortLe(extra.size)
+            .write(fileNameBytes)
+            .write(extra)
+            .write(content)
+            .writeIntLe(CENTRAL_DIRECTORY_HEADER_SIGNATURE)
+    }
+
     /**
      * A KaliumFileSystem backed by the real filesystem for integration testing.
      * Required because the test verifies interoperability with the system unzip tool.
@@ -313,5 +358,13 @@ class BackupUtilsTest {
 
     private companion object {
         const val LARGE_TEST_SIZE_BYTES = 5 * 1024 * 1024
+        const val LOCAL_FILE_HEADER_SIGNATURE = 0x04034b50
+        const val CENTRAL_DIRECTORY_HEADER_SIGNATURE = 0x02014b50
+        const val GENERAL_PURPOSE_UTF8_FLAG = 0x0800
+        const val COMPRESSION_METHOD_STORED = 0
+        const val ZIP64_VERSION_NEEDED = 45
+        const val ZIP64_EXTRA_FIELD_ID = 0x0001
+        const val ZIP32_MAX_FIELD = -1
+        const val ZIP64_STORED_CONTENT_CRC = 0x64dad28d
     }
 }
