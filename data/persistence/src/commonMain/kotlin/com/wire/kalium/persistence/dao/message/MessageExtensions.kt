@@ -18,8 +18,8 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import app.cash.paging.Pager
-import app.cash.paging.PagingConfig
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity

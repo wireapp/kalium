@@ -18,16 +18,8 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import app.cash.paging.PagingSource
-import app.cash.paging.PagingSourceLoadParams
-import app.cash.paging.PagingSourceLoadParamsAppend
-import app.cash.paging.PagingSourceLoadParamsPrepend
-import app.cash.paging.PagingSourceLoadParamsRefresh
-import app.cash.paging.PagingSourceLoadResult
-import app.cash.paging.PagingSourceLoadResultError
-import app.cash.paging.PagingSourceLoadResultInvalid
-import app.cash.paging.PagingSourceLoadResultPage
-import app.cash.paging.PagingState
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
 import app.cash.sqldelight.Query
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
@@ -58,19 +50,19 @@ internal class AsyncQueryPagingSource<RowType : Any>(
     override fun queryResultsChanged() = invalidate()
 
     @Suppress("CyclomaticComplexMethod", "TooGenericExceptionCaught")
-    override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, RowType> =
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, RowType> =
         withContext(context) {
             try {
                 val key = params.key?.toLong() ?: initialOffset
                 val limit = when (params) {
-                    is PagingSourceLoadParamsPrepend<*> -> minOf(key, params.loadSize.toLong())
+                    is LoadParams.Prepend<*> -> minOf(key, params.loadSize.toLong())
                     else -> params.loadSize.toLong()
                 }
                 val count = countQuery.awaitAsOne().toInt()
                 val offset = when (params) {
-                    is PagingSourceLoadParamsPrepend<*> -> maxOf(0, key - params.loadSize).toInt()
-                    is PagingSourceLoadParamsAppend<*> -> key.toInt()
-                    is PagingSourceLoadParamsRefresh<*> ->
+                    is LoadParams.Prepend<*> -> maxOf(0, key - params.loadSize).toInt()
+                    is LoadParams.Append<*> -> key.toInt()
+                    is LoadParams.Refresh<*> ->
                         if (key >= count - params.loadSize) maxOf(0, count - params.loadSize) else key.toInt()
                     else -> error("Unknown PagingSourceLoadParams ${params::class}")
                 }
@@ -80,9 +72,9 @@ internal class AsyncQueryPagingSource<RowType : Any>(
                 val nextPosition = offset + data.size
 
                 if (invalid) {
-                    PagingSourceLoadResultInvalid()
+                    LoadResult.Invalid()
                 } else {
-                    PagingSourceLoadResultPage(
+                    LoadResult.Page(
                         data = data,
                         prevKey = offset.takeIf { it > 0 && data.isNotEmpty() },
                         nextKey = nextPosition.takeIf { data.isNotEmpty() && data.size >= limit && it < count },
@@ -91,7 +83,7 @@ internal class AsyncQueryPagingSource<RowType : Any>(
                     )
                 }
             } catch (exception: Exception) {
-                PagingSourceLoadResultError(exception)
+                LoadResult.Error(exception)
             }
         }
 

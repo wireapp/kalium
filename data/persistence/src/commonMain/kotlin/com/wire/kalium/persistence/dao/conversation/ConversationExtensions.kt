@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.persistence.dao.conversation
 
-import app.cash.paging.Pager
-import app.cash.paging.PagingConfig
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.AsyncQueryPagingSource
