@@ -1,8 +1,6 @@
 package com.wire.kalium.benchmarks.persistence
 
-import app.cash.paging.PagingSource
-import app.cash.paging.PagingSourceLoadParamsRefresh
-import app.cash.paging.PagingSourceLoadResultPage
+import androidx.paging.PagingSource
 import com.wire.kalium.persistence.dao.message.KaliumPager
 
 @Suppress("UNCHECKED_CAST")
@@ -14,11 +12,11 @@ internal fun <Value : Any> KaliumPager<Value>.extractPagingSource(): PagingSourc
 
 internal suspend fun <Value : Any> KaliumPager<Value>.loadRefreshPage(
     pageSize: Int = MessageReadBenchmarkData.PageSize
-): PagingSourceLoadResultPage<Int, Value> {
+): PagingSource.LoadResult.Page<Int, Value> {
     return when (
-        val result = extractPagingSource().load(PagingSourceLoadParamsRefresh<Int>(null, pageSize, false))
+        val result = extractPagingSource().load(PagingSource.LoadParams.Refresh(null, pageSize, false))
     ) {
-        is PagingSourceLoadResultPage<Int, Value> -> result
+        is PagingSource.LoadResult.Page<Int, Value> -> result
         else -> error("Unexpected paging result: $result")
     }
 }

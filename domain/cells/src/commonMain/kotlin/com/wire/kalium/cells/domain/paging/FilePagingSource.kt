@@ -17,12 +17,8 @@
  */
 package com.wire.kalium.cells.domain.paging
 
-import app.cash.paging.PagingSource
-import app.cash.paging.PagingSourceLoadParams
-import app.cash.paging.PagingSourceLoadResult
-import app.cash.paging.PagingSourceLoadResultError
-import app.cash.paging.PagingSourceLoadResultPage
-import app.cash.paging.PagingState
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
 import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.data.SortingCriteria
 import com.wire.kalium.cells.data.SortingSpec
@@ -46,7 +42,7 @@ internal class FilePagingSource(
 
     private val nodeUuids = mutableSetOf<String>()
 
-    override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, Node> =
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Node> =
         getPaginatedNodesUseCase(
             conversationId = conversationId,
             query = query,
@@ -56,16 +52,16 @@ internal class FilePagingSource(
             sortingSpec = sortingSpec,
         ).fold(
             { error ->
-                PagingSourceLoadResultError<Int, Node>(
+                LoadResult.Error(
                     throwable = FileListLoadError(error is NetworkFailure.NoNetworkConnection)
-                ) as PagingSourceLoadResult<Int, Node>
+                )
             },
             { files ->
-                PagingSourceLoadResultPage(
+                LoadResult.Page(
                     data = files.data.removeDuplicates(),
                     prevKey = null,
                     nextKey = files.pagination?.nextOffset
-                ) as PagingSourceLoadResult<Int, Node>
+                )
             }
         )
 

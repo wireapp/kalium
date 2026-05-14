@@ -17,12 +17,8 @@
  */
 package com.wire.kalium.cells.domain.paging
 
-import app.cash.paging.PagingSource
-import app.cash.paging.PagingSourceLoadParams
-import app.cash.paging.PagingSourceLoadResult
-import app.cash.paging.PagingSourceLoadResultError
-import app.cash.paging.PagingSourceLoadResultPage
-import app.cash.paging.PagingState
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.functional.fold
@@ -33,7 +29,7 @@ internal class ConversationPagingSource(
     private val query: String = "",
 ) : PagingSource<Int, CellConversation>() {
 
-    override suspend fun load(params: PagingSourceLoadParams<Int>): PagingSourceLoadResult<Int, CellConversation> {
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, CellConversation> {
         val offset = params.key ?: 0
         return repository.getPaginatedCellGroupConversations(
             limit = pageSize,
@@ -41,17 +37,17 @@ internal class ConversationPagingSource(
             query = query,
         ).fold(
             { error ->
-                PagingSourceLoadResultError<Int, CellConversation>(
+                LoadResult.Error(
                     throwable = Throwable("Failed to load conversations: $error")
-                ) as PagingSourceLoadResult<Int, CellConversation>
+                )
             },
             { conversations ->
                 val nextOffset = if (conversations.size < pageSize) null else offset + pageSize
-                PagingSourceLoadResultPage(
+                LoadResult.Page(
                     data = conversations,
                     prevKey = null,
                     nextKey = nextOffset,
-                ) as PagingSourceLoadResult<Int, CellConversation>
+                )
             }
         )
     }

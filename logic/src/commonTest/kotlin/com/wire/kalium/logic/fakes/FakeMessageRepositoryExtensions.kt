@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.fakes
 
-import app.cash.paging.PagingConfig
-import app.cash.paging.PagingData
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message

@@ -2,8 +2,8 @@
 
 package com.wire.kalium.benchmarks.persistence
 
-import app.cash.paging.PagingConfig
-import app.cash.paging.PagingSourceLoadResultPage
+import androidx.paging.PagingConfig
+import androidx.paging.PagingSource
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -205,7 +205,7 @@ internal object MessageReadBenchmarkData {
         db: UserDatabaseBuilder,
         conversationId: ConversationIDEntity,
         offset: Int,
-    ): PagingSourceLoadResultPage<Int, MessageEntity> {
+    ): PagingSource.LoadResult.Page<Int, MessageEntity> {
         val pagingSource = db.messageDAO.platformExtensions.getPagerForConversation(
             conversationId = conversationId,
             visibilities = listOf(MessageEntity.Visibility.VISIBLE),
@@ -214,7 +214,7 @@ internal object MessageReadBenchmarkData {
         )
 
         val result = pagingSource.loadRefreshPage(PageSize)
-        check(result is PagingSourceLoadResultPage<Int, MessageEntity>) {
+        check(result is PagingSource.LoadResult.Page<Int, MessageEntity>) {
             "Expected a page result for message load, got $result"
         }
         return result

@@ -18,9 +18,9 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import app.cash.paging.Pager
-import app.cash.paging.PagingData
-import app.cash.paging.PagingSource
+import androidx.paging.Pager
+import androidx.paging.PagingData
+import androidx.paging.PagingSource
 import com.wire.kalium.persistence.db.ReadDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn

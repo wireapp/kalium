@@ -39,6 +39,7 @@ kotlin {
                 implementation(libs.ktor.authClient)
                 implementation(libs.okio.core)
                 implementation(libs.sqldelight.androidxPaging)
+                api(libs.paging.common)
                 implementation(libs.wire.cells.sdk)
             }
         }
