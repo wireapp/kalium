@@ -112,3 +112,4 @@ libs/
 generated/
 
 .claude
+.venv
