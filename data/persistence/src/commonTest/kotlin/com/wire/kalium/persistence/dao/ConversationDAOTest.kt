@@ -1146,6 +1146,33 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenOneOnOneConversationWithOtherUserAndSelfMember_whenGettingAllWithOtherUserName_thenReturnsNameAndMembership() = runTest {
+        val conversation = conversationEntity1.copy(name = null)
+        conversationDAO.insertConversation(conversation)
+        userDAO.upsertUser(user1.copy(name = "Other User", activeOneOnOneConversationId = conversation.id))
+        memberDAO.insertMember(MemberEntity(user1.id, MemberEntity.Role.Member), conversation.id)
+        insertSelfMember(conversation.id)
+
+        val result = conversationDAO.getAllConversationsWithOtherUserName(selfUserId).first()
+
+        assertEquals(1, result.size)
+        assertEquals(conversation.id, result.first().conversation.id)
+        assertEquals("Other User", result.first().otherUserName)
+        assertEquals(true, result.first().selfIsMember)
+    }
+
+    @Test
+    fun givenConversationWithoutSelfMember_whenGettingAllWithOtherUserName_thenReturnsFalseMembership() = runTest {
+        conversationDAO.insertConversation(conversationEntity4)
+
+        val result = conversationDAO.getAllConversationsWithOtherUserName(selfUserId).first()
+
+        assertEquals(1, result.size)
+        assertEquals(conversationEntity4.id, result.first().conversation.id)
+        assertEquals(false, result.first().selfIsMember)
+    }
+
+    @Test
     fun givenConnectionRequestAndUserWithName_whenSelectingAllConversationDetails_thenShouldReturnConnectionRequest() = runTest {
         val fromArchive = false
         val conversationId = QualifiedIDEntity("connection-conversationId", "domain")

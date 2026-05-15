@@ -73,6 +73,7 @@ interface ConversationDAO {
     )
     suspend fun updateAllConversationsNotificationDate()
     suspend fun getAllConversations(): Flow<List<ConversationEntity>>
+    suspend fun getAllConversationsWithOtherUserName(selfUserId: QualifiedIDEntity): Flow<List<ConversationWithOtherUserNameEntity>>
     suspend fun getAllConversationDetails(
         fromArchive: Boolean,
         filter: ConversationFilterEntity,
@@ -192,6 +193,12 @@ interface ConversationDAO {
 data class NameAndHandleEntity(
     val name: String?,
     val handle: String?
+)
+
+data class ConversationWithOtherUserNameEntity(
+    val conversation: ConversationEntity,
+    val otherUserName: String?,
+    val selfIsMember: Boolean,
 )
 
 data class EpochChangesDataEntity(
