@@ -1,0 +1,70 @@
+services:
+    monkeys-controller:
+        platform: linux/amd64
+        build:
+            context: ../../
+            dockerfile: ./monkeys/docker/Dockerfile
+        image: monkeys
+        networks:
+            - monkeys
+        depends_on:
+            - postgres
+        volumes:
+            - ./config:/config
+            - /var/run/docker.sock:/var/run/docker.sock
+        entrypoint:
+            - /opt/app/bin/monkeys
+        command:
+            # comment-delete below line (--sequential-warmup) when kalium fixes concurrency issue for global db and sever config
+            - --sequential-warmup
+            - /config/${CONFIG:-config.json}
+    postgres:
+        image: postgres
+        restart: unless-stopped
+        networks:
+            - monkeys
+        environment:
+            POSTGRES_PASSWORD: monkeys
+            POSTGRES_USER: monkeys
+            POSTGRES_DB: monkeys
+        ports:
+            - 5432:5432
+    prometheus:
+        image: prom/prometheus
+        command:
+            - '--config.file=/etc/prometheus/prometheus.yml'
+        restart: unless-stopped
+        networks:
+            - monkeys
+        ports:
+            - 9090:9090
+        volumes:
+            - ./prometheus:/etc/prometheus
+            - prom_data:/prometheus
+    grafana:
+        image: grafana/grafana
+        ports:
+            - 3000:3000
+        restart: unless-stopped
+        networks:
+            - monkeys
+        environment:
+            - GF_SECURITY_ADMIN_USER=admin
+            - GF_SECURITY_ADMIN_PASSWORD=grafana
+            - GF_AUTH_ANONYMOUS_ENABLED=true
+            - GF_AUTH_DISABLE_LOGIN_FORM=true
+            - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+            - GF_AUTH_DISABLE_SIGNOUT_MENU=true
+            - GF_AUTH_BASIC_ENABLED=false
+            - GF_SECURITY_ALLOW_EMBEDDING=true
+            - GF_EXPLORE_ENABLED=false
+            - GF_PROFILE_ENABLED=false
+            - GF_NEWS_ENABLED=false
+            - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/monkeys.json
+        volumes:
+            - ./grafana/provisioning:/etc/grafana/provisioning
+            - ./grafana/dashboards:/var/lib/grafana/dashboards
+volumes:
+    prom_data:
+networks:
+    monkeys:
