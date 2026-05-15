@@ -67,7 +67,6 @@ kotlin {
                 implementation(libs.ktxSerialization)
                 implementation(libs.settings.kmp)
                 implementation(libs.ktxDateTime)
-                implementation(libs.sqldelight.androidxPaging)
                 api(libs.paging.common)
 
                 implementation(projects.core.util)
