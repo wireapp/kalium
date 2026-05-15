@@ -1959,9 +1959,10 @@ public class UserSessionScope internal constructor(
         )
     private val memberChangeHandler: MemberChangeEventHandler
         get() = MemberChangeEventHandlerImpl(
-            conversationRepository,
-            fetchConversationIfUnknownUseCase
-
+            conversationRepository = conversationRepository,
+            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase,
+            persistMessage = persistMessage,
+            selfUserId = userId,
         )
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
