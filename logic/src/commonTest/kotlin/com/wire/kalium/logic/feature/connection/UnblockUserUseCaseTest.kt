@@ -27,13 +27,14 @@ import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -49,13 +50,13 @@ class UnblockUserUseCaseTest {
         val result = unblockUser(TestUser.USER_ID)
 
         assertTrue(result is UnblockUserResult.Failure)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.updateConnectionStatus(
                 any(),
                 eq(TestUser.USER_ID),
                 eq(ConnectionState.ACCEPTED)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -67,25 +68,25 @@ class UnblockUserUseCaseTest {
         val result = unblockUser(TestUser.USER_ID)
 
         assertTrue(result is UnblockUserResult.Success)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.connectionRepository.updateConnectionStatus(
                 any(),
                 eq(TestUser.USER_ID),
                 eq(ConnectionState.ACCEPTED)
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
-        val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
+        val connectionRepository: ConnectionRepository = mock()
 
         val unblockUser = UnblockUserUseCaseImpl(connectionRepository, cryptoTransactionProvider)
 
         suspend fun withBlockResult(result: Either<CoreFailure, Connection>) = apply {
-            coEvery {
+            everySuspend {
                 connectionRepository.updateConnectionStatus(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun arrange() = this to unblockUser.also {

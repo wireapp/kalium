@@ -170,13 +170,17 @@ internal class AssetMapperImpl(
                 mimeType = original?.mimeType ?: "*/*",
                 metadata = when (val metadataType = original?.metaData) {
                     is Asset.Original.MetaData.Image -> Image(width = metadataType.value.width, height = metadataType.value.height)
+                    is Asset.Original.MetaData.Video -> Video(
+                        width = metadataType.value.width,
+                        height = metadataType.value.height,
+                        durationMs = metadataType.value.durationInMillis
+                        )
                     is Asset.Original.MetaData.Audio -> Audio(
                         durationMs = metadataType.value.durationInMillis,
                         normalizedLoudness = metadataType.value.normalizedLoudness?.array
                     )
 
                     null -> null
-                    else -> null
                 },
                 remoteData = status?.run {
                     when (this) {
@@ -223,6 +227,14 @@ internal class AssetMapperImpl(
                             audio = Asset.AudioMetaData(
                                 durationInMillis = it.durationMs,
                                 normalizedLoudness = it.normalizedLoudness?.let { ByteArr(it) }
+                            )
+                        )
+
+                        is Video -> Asset.Original.MetaData.Video(
+                            Asset.VideoMetaData(
+                                width = it.width,
+                                height = it.height,
+                                durationInMillis = it.durationMs,
                             )
                         )
 

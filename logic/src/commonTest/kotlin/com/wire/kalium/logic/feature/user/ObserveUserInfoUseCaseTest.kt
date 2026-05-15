@@ -28,12 +28,13 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -57,9 +58,9 @@ class ObserveUserInfoUseCaseTest {
             assertEquals(TestUser.OTHER, (result as GetUserInfoResult.Success).otherUser)
 
             with(arrangement) {
-                coVerify {
+                verifySuspend(VerifyMode.not) {
                     userRepository.fetchUsersByIds(any())
-                }.wasNotInvoked()
+                }
             }
 
             awaitComplete()
@@ -79,9 +80,9 @@ class ObserveUserInfoUseCaseTest {
             awaitComplete()
 
             with(arrangement) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     userRepository.fetchUsersByIds(any())
-                }.wasInvoked(once)
+                }
             }
 
         }
@@ -102,9 +103,9 @@ class ObserveUserInfoUseCaseTest {
             assertIs<GetUserInfoResult.Failure>(result)
 
             with(arrangement) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     userRepository.fetchUsersByIds(any())
-                }.wasInvoked(once)
+                }
             }
 
             awaitComplete()
@@ -126,13 +127,13 @@ class ObserveUserInfoUseCaseTest {
             assertEquals(TestUser.OTHER.copy(teamId = null), (result as GetUserInfoResult.Success).otherUser)
 
             with(arrangement) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     userRepository.getKnownUser(eq(userId))
-                }.wasInvoked(once)
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.not) {
                     teamRepository.getTeam(any())
-                }.wasNotInvoked()
+                }
             }
             awaitComplete()
         }
@@ -157,17 +158,17 @@ class ObserveUserInfoUseCaseTest {
             )
 
             with(arrangement) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     userRepository.getKnownUser(eq(userId))
-                }.wasInvoked(once)
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     teamRepository.getTeam(any())
-                }.wasInvoked(once)
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     teamRepository.fetchTeamById(any())
-                }.wasInvoked(once)
+                }
             }
             awaitComplete()
         }
@@ -185,17 +186,17 @@ class ObserveUserInfoUseCaseTest {
             // when
             useCase(userId).test {
                 with(arrangement) {
-                    coVerify {
+                    verifySuspend(VerifyMode.exactly(1)) {
                         userRepository.getKnownUser(eq(userId))
-                    }.wasInvoked(once)
+                    }
 
-                    coVerify {
+                    verifySuspend(VerifyMode.not) {
                         teamRepository.getTeam(any())
-                    }.wasNotInvoked()
+                    }
 
-                    coVerify {
+                    verifySuspend(VerifyMode.not) {
                         teamRepository.fetchTeamById(any())
-                    }.wasNotInvoked()
+                    }
                 }
                 awaitComplete()
             }
@@ -218,17 +219,17 @@ class ObserveUserInfoUseCaseTest {
             assertIs<GetUserInfoResult.Failure>(result)
 
             with(arrangement) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     userRepository.getKnownUser(eq(userId))
-                }.wasInvoked(once)
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     teamRepository.getTeam(any())
-                }.wasInvoked(once)
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     teamRepository.fetchTeamById(any())
-                }.wasInvoked(once)
+                }
             }
             awaitComplete()
         }
@@ -251,9 +252,9 @@ class ObserveUserInfoUseCaseTest {
             assertIs<GetUserInfoResult.Failure>(result)
 
             with(arrangement) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     userRepository.fetchUsersByIds(any())
-                }.wasInvoked(once)
+                }
             }
 
             awaitComplete()
@@ -262,16 +263,16 @@ class ObserveUserInfoUseCaseTest {
 
     private class ObserveUserInfoUseCaseTestArrangement {
 
-        val userRepository: UserRepository = mock(UserRepository::class)
-        val teamRepository: TeamRepository = mock(TeamRepository::class)
+        val userRepository: UserRepository = mock()
+        val teamRepository: TeamRepository = mock()
 
         suspend fun withSuccessfulUserRetrieveFromDB(
             hasTeam: Boolean = true,
             userType: UserTypeInfo = UserTypeInfo.Regular(UserType.EXTERNAL)
         ): ObserveUserInfoUseCaseTestArrangement {
-            coEvery {
+            everySuspend {
                 userRepository.getKnownUser(any())
-            }.returns(
+            } returns(
                 flowOf(
                     if (hasTeam) TestUser.OTHER.copy(userType = userType) else TestUser.OTHER.copy(
                         teamId = null,
@@ -284,33 +285,33 @@ class ObserveUserInfoUseCaseTest {
         }
 
         suspend fun withFailingUserRetrieveFromDB(): ObserveUserInfoUseCaseTestArrangement {
-            coEvery {
+            everySuspend {
                 userRepository.getKnownUser(any())
-            }.returns(flowOf(null))
+            } returns(flowOf(null))
 
             return this
         }
 
         suspend fun withFailingUserFetching(): ObserveUserInfoUseCaseTestArrangement {
-            coEvery {
+            everySuspend {
                 userRepository.fetchUsersByIds(any())
-            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("fetchUsersByIds error"))))
+            } returns(Either.Left(CoreFailure.Unknown(RuntimeException("fetchUsersByIds error"))))
 
             return this
         }
 
         suspend fun withSuccessfulUserFetching(): ObserveUserInfoUseCaseTestArrangement {
-            coEvery {
+            everySuspend {
                 userRepository.fetchUsersByIds(any())
-            }.returns(Either.Right(true))
+            } returns(Either.Right(true))
 
             return this
         }
 
         suspend fun withSuccessfulUserFetchingNoUsersFound(): ObserveUserInfoUseCaseTestArrangement {
-            coEvery {
+            everySuspend {
                 userRepository.fetchUsersByIds(any())
-            }.returns(Either.Right(false))
+            } returns(Either.Right(false))
 
             return this
         }
@@ -318,9 +319,9 @@ class ObserveUserInfoUseCaseTest {
         suspend fun withSuccessfulTeamRetrieve(
             localTeamPresent: Boolean = true,
         ): ObserveUserInfoUseCaseTestArrangement {
-            coEvery {
+            everySuspend {
                 teamRepository.getTeam(any())
-            }.returns(
+            } returns(
                 flowOf(
                     if (!localTeamPresent) null
                     else TestTeam.TEAM
@@ -328,22 +329,22 @@ class ObserveUserInfoUseCaseTest {
             )
 
             if (!localTeamPresent) {
-                coEvery {
+                everySuspend {
                     teamRepository.fetchTeamById(any())
-                }.returns(Either.Right(TestTeam.TEAM))
+                } returns(Either.Right(TestTeam.TEAM))
             }
 
             return this
         }
 
         suspend fun withFailingTeamRetrieve(): ObserveUserInfoUseCaseTestArrangement {
-            coEvery {
+            everySuspend {
                 teamRepository.getTeam(any())
-            }.returns(flowOf(null))
+            } returns(flowOf(null))
 
-            coEvery {
+            everySuspend {
                 teamRepository.fetchTeamById(any())
-            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+            } returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
 
             return this
         }

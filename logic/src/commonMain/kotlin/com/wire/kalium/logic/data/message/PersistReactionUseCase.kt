@@ -25,10 +25,8 @@ import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ReactionEventData
-import io.mockative.Mockable
 import kotlinx.datetime.Instant
 
-@Mockable
 internal interface PersistReactionUseCase {
     suspend operator fun invoke(
         reaction: MessageContent.Reaction,

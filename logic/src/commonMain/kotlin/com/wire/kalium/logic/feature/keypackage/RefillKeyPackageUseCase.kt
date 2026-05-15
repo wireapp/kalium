@@ -32,7 +32,6 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.CryptoStateChangeHookNotifier
-import io.mockative.Mockable
 
 internal sealed class RefillKeyPackagesResult {
 
@@ -45,7 +44,6 @@ internal sealed class RefillKeyPackagesResult {
  * This use case will check if the number of key packages is below the minimum threshold and will
  * upload new key packages if needed.
  */
-@Mockable
 internal interface RefillKeyPackagesUseCase {
 
     suspend operator fun invoke(mlsContext: MlsCoreCryptoContext): RefillKeyPackagesResult

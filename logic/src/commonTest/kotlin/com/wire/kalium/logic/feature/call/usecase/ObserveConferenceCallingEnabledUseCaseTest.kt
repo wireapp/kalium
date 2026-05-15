@@ -20,9 +20,12 @@ package com.wire.kalium.logic.feature.call.usecase
 import app.cash.turbine.test
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.everySuspend
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -113,12 +116,12 @@ class ObserveConferenceCallingEnabledUseCaseTest {
 
     private class Arrangement {
 
-        val userConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
         suspend fun withDefaultValue(values: List<Boolean>) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.observeConferenceCallingEnabled()
-            }.returns(values.map { Either.Right(it) }.asFlow())
+            } returns (values.map { Either.Right(it) }.asFlow())
         }
 
         fun arrange(): Pair<Arrangement, ObserveConferenceCallingEnabledUseCase> =

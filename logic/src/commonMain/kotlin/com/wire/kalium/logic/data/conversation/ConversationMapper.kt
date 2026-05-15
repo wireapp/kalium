@@ -64,13 +64,11 @@ import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.util.requireField
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.Mockable
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-@Mockable
 internal interface ConversationMapper {
     fun fromApiModelToDaoModel(
         apiModel: ConversationResponse,

@@ -18,23 +18,25 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
-import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -51,14 +53,14 @@ class MessageTextEditHandlerTest {
         messageTextEditHandler.handle(EDIT_MESSAGE.copy(senderUserId = ORIGINAL_SENDER_USER_ID), EDIT_CONTENT)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageRepository.updateTextMessage(
                     eq(EDIT_MESSAGE.conversationId),
                     eq(EDIT_CONTENT),
                     eq(EDIT_MESSAGE.id),
                     eq(EDIT_MESSAGE.date)
                 )
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -71,9 +73,9 @@ class MessageTextEditHandlerTest {
         messageTextEditHandler.handle(EDIT_MESSAGE.copy(senderUserId = TestUser.OTHER_USER_ID), EDIT_CONTENT)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 messageRepository.updateTextMessage(any(), any(), any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -98,20 +100,20 @@ class MessageTextEditHandlerTest {
         messageTextEditHandler.handle(editMessage, editContent)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageRepository.updateTextMessage(
                     eq(editMessage.conversationId),
                     eq(editContent),
                     eq(editMessage.id),
                     eq(editMessage.date)
                 )
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageRepository.updateMessageStatus(eq(MessageEntity.Status.SENT), eq(editMessage.conversationId), eq(editMessage.id))
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 notificationEventsManager.scheduleEditMessageNotification(eq(editMessage), eq(editContent))
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -142,12 +144,12 @@ class MessageTextEditHandlerTest {
         messageTextEditHandler.handle(editMessage, editContent)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageRepository.updateTextMessage(any(), eq(expectedContent), eq(editMessage.id), eq(originalEditStatus.lastEditInstant))
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.not) {
                 messageRepository.updateMessageStatus(any(), any(), any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -177,12 +179,12 @@ class MessageTextEditHandlerTest {
         messageTextEditHandler.handle(editMessage, editContent)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageRepository.updateTextMessage(any(), eq(expectedContent), eq(editMessage.id), eq(editMessage.date))
-            }.wasInvoked(exactly = once)
-            coVerify {
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
                 messageRepository.updateMessageStatus(any(), any(), any())
-            }.wasInvoked(exactly = once)
+            }
         }
     }
 
@@ -190,20 +192,27 @@ class MessageTextEditHandlerTest {
 
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
-    ) : MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
-        NotificationEventsManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
+    ) {
+        val messageRepository = mock<MessageRepository>()
+        val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
 
         suspend fun arrange() = block().run {
-            coEvery {
+            everySuspend {
                 messageRepository.updateTextMessage(any(), any(), any(), any())
-            }.returns(Either.Right(Unit))
-            coEvery {
+            } returns Either.Right(Unit)
+            everySuspend {
                 messageRepository.updateMessageStatus(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
             this@Arrangement to MessageTextEditHandlerImpl(
                 messageRepository = messageRepository,
                 notificationEventsManager = notificationEventsManager,
             )
+        }
+
+        suspend fun withGetMessageById(result: Either<StorageFailure, Message>) {
+            everySuspend {
+                messageRepository.getMessageById(any(), any())
+            } returns result
         }
 
     }

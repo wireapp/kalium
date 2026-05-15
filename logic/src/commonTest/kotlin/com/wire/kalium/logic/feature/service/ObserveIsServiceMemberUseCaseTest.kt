@@ -22,9 +22,11 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
-import io.mockative.coEvery
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -36,7 +38,6 @@ class ObserveIsServiceMemberUseCaseTest {
 
     @Test
     fun givenServiceIdAndConversationId_whenObservingServiceDetails_thenResultIsObservedServiceDetails() = runTest {
-        // given
         val (_, observeServiceDetails) = Arrangement()
             .withObserveIsServiceMemberSuccess(
                 serviceId = Arrangement.serviceId,
@@ -44,7 +45,6 @@ class ObserveIsServiceMemberUseCaseTest {
             )
             .arrange()
 
-        // when
         val result = observeServiceDetails.invoke(
             serviceId = Arrangement.serviceId,
             conversationId = Arrangement.conversationId
@@ -55,7 +55,7 @@ class ObserveIsServiceMemberUseCaseTest {
     }
 
     private class Arrangement {
-        private val serviceRepository = mock(ServiceRepository::class)
+        private val serviceRepository = mock<ServiceRepository>(mode = MockMode.autoUnit)
 
         private val observeIsServiceMember = ObserveIsServiceMemberUseCaseImpl(
             serviceRepository = serviceRepository
@@ -67,9 +67,9 @@ class ObserveIsServiceMemberUseCaseTest {
             serviceId: ServiceId,
             conversationId: ConversationId
         ) = apply {
-            coEvery {
+            everySuspend {
                 serviceRepository.observeIsServiceMember(eq(serviceId), eq(conversationId))
-            }.returns(flowOf(Either.Right(userId)))
+            } returns flowOf(Either.Right(userId))
         }
 
         companion object {

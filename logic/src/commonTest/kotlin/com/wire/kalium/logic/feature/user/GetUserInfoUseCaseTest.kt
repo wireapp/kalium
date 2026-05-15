@@ -22,10 +22,10 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import com.wire.kalium.logic.framework.TestUser.OTHER
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,13 +50,13 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER, (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 userRepository.getKnownUser(eq(userId))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 userRepository.userById(eq(userId))
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -75,13 +75,13 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER, (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 userRepository.getKnownUser(eq(userId))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 userRepository.userById(eq(userId))
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -100,13 +100,13 @@ class GetUserInfoUseCaseTest {
         assertEquals(GetUserInfoResult.Failure, result)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 userRepository.getKnownUser(eq(userId))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 userRepository.userById(eq(userId))
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -124,13 +124,13 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER.copy(teamId = null), (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 userRepository.getKnownUser(eq(userId))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 teamRepository.getTeam(any())
-            }.wasNotInvoked()
+            }
         }
     }
 
@@ -149,17 +149,17 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER.copy(userType = UserTypeInfo.Regular(UserType.INTERNAL)), (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 userRepository.getKnownUser(eq(userId))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 teamRepository.getTeam(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 teamRepository.fetchTeamById(any())
-            }.wasInvoked(once)
+            }
         }
     }
 
@@ -178,21 +178,21 @@ class GetUserInfoUseCaseTest {
             assertIs<GetUserInfoResult.Failure>(result)
 
             with(arrangement) {
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     userRepository.getKnownUser(eq(userId))
-                }.wasInvoked(once)
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.exactly(1)) {
                     userRepository.userById(any())
-                }.wasInvoked(once)
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.not) {
                     teamRepository.getTeam(any())
-                }.wasNotInvoked()
+                }
 
-                coVerify {
+                verifySuspend(VerifyMode.not) {
                     teamRepository.fetchTeamById(any())
-                }.wasNotInvoked()
+                }
             }
         }
 
@@ -212,17 +212,17 @@ class GetUserInfoUseCaseTest {
         assertIs<GetUserInfoResult.Failure>(result)
 
         with(arrangement) {
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 userRepository.getKnownUser(eq(userId))
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 teamRepository.getTeam(any())
-            }.wasInvoked(once)
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 teamRepository.fetchTeamById(any())
-            }.wasInvoked(once)
+            }
         }
     }
 

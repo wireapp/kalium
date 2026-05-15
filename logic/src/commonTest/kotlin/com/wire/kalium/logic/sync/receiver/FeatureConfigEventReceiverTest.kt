@@ -51,15 +51,16 @@ import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldSucceed
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -81,9 +82,9 @@ class FeatureConfigEventReceiverTest {
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setFileSharingStatus(eq(true), eq(true))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -99,9 +100,9 @@ class FeatureConfigEventReceiverTest {
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setFileSharingStatus(eq(false), eq(true))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -117,9 +118,9 @@ class FeatureConfigEventReceiverTest {
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setFileSharingStatus(eq(false), eq(false))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -135,13 +136,13 @@ class FeatureConfigEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setConferenceCallingEnabled(eq(true))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(eq(false))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -157,13 +158,13 @@ class FeatureConfigEventReceiverTest {
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setConferenceCallingEnabled(eq(false))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(eq(true))
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -187,11 +188,11 @@ class FeatureConfigEventReceiverTest {
             TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
-            arrangement.userConfigRepository.setTeamSettingsSelfDeletionStatus(matches {
-                it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
-            })
-        }.wasInvoked(once)
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.userConfigRepository.setTeamSettingsSelfDeletionStatus(matches {
+                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
+                })
+            }
     }
 
     @Test
@@ -214,11 +215,11 @@ class FeatureConfigEventReceiverTest {
                 TestEvent.liveDeliveryInfo
             )
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userConfigRepository.setTeamSettingsSelfDeletionStatus(matches {
                     it.hasFeatureChanged == false && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Enabled
                 })
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -242,12 +243,12 @@ class FeatureConfigEventReceiverTest {
                 TestEvent.liveDeliveryInfo
             )
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userConfigRepository.setTeamSettingsSelfDeletionStatus(matches {
                     it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Enforced
                             && (it.enforcedSelfDeletionTimer as TeamSelfDeleteTimer.Enforced).enforcedDuration == newEnforcedDuration
                 })
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -267,11 +268,11 @@ class FeatureConfigEventReceiverTest {
                 TestEvent.liveDeliveryInfo
             )
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userConfigRepository.setTeamSettingsSelfDeletionStatus(matches {
                     it.hasFeatureChanged == false && it.enforcedSelfDeletionTimer !is TeamSelfDeleteTimer.Disabled
                 })
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -291,11 +292,11 @@ class FeatureConfigEventReceiverTest {
                 TestEvent.liveDeliveryInfo
             )
 
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.userConfigRepository.setTeamSettingsSelfDeletionStatus(matches {
                     it.hasFeatureChanged == false && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
                 })
-            }.wasInvoked(once)
+            }
         }
 
     @Test
@@ -314,13 +315,13 @@ class FeatureConfigEventReceiverTest {
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setTeamSettingsSelfDeletionStatus(
                 matches {
                     it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
                 }
             )
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -343,12 +344,12 @@ class FeatureConfigEventReceiverTest {
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), any())
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -370,12 +371,12 @@ class FeatureConfigEventReceiverTest {
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(arrangement.transactionContext), any())
-        }.wasInvoked(once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.cryptoTransactionProvider.transaction<Any>(any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -391,12 +392,12 @@ class FeatureConfigEventReceiverTest {
         ).shouldSucceed()
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
         var kaliumConfigs = KaliumConfigs()
 
-        val userConfigRepository = mock(UserConfigRepository::class)
-        val updateSupportedProtocolsAndResolveOneOnOnes = mock(UpdateSupportedProtocolsAndResolveOneOnOnesUseCase::class)
+        val userConfigRepository = mock<UserConfigRepository>()
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>()
 
         private val featureConfigEventReceiver: FeatureConfigEventReceiver by lazy {
             FeatureConfigEventReceiverImpl(
@@ -417,79 +418,79 @@ class FeatureConfigEventReceiverTest {
         }
 
         suspend fun withSettingFileSharingEnabledSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setFileSharingStatus(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSettingConferenceCallingEnabledSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setConferenceCallingEnabled(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSetUseSFTForOneOnOneCallsSuccessful() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setUseSFTForOneOnOneCalls(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withIsFileSharingEnabled(result: Either<StorageFailure, FileSharingStatus>) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.isFileSharingEnabled()
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withSelfDeletingMessages(currentSelfDeletingMessagesStatus: TeamSettingsSelfDeletionStatus) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getTeamSettingsSelfDeletionStatus()
-            }.returns(Either.Right(currentSelfDeletingMessagesStatus))
-            coEvery {
+            } returns Either.Right(currentSelfDeletingMessagesStatus)
+            everySuspend {
                 userConfigRepository.setTeamSettingsSelfDeletionStatus(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withStoredTeamSettingsSelfDeletionStatusError() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getTeamSettingsSelfDeletionStatus()
-            }.returns(Either.Left(StorageFailure.DataNotFound))
-            coEvery {
+            } returns Either.Left(StorageFailure.DataNotFound)
+            everySuspend {
                 userConfigRepository.setTeamSettingsSelfDeletionStatus(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withMLSConfigSetup() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.getSupportedProtocols()
-            }.returns(Either.Right(setOf(SupportedProtocol.PROTEUS)))
-            coEvery {
+            } returns Either.Right(setOf(SupportedProtocol.PROTEUS))
+            everySuspend {
                 userConfigRepository.setMLSEnabled(any())
-            }.returns(Either.Right(Unit))
-            coEvery {
+            } returns Either.Right(Unit)
+            everySuspend {
                 userConfigRepository.setDefaultProtocol(any())
-            }.returns(Either.Right(Unit))
-            coEvery {
+            } returns Either.Right(Unit)
+            everySuspend {
                 userConfigRepository.setSupportedProtocols(any())
-            }.returns(Either.Right(Unit))
-            coEvery {
+            } returns Either.Right(Unit)
+            everySuspend {
                 updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withMLSMigrationConfigSetup() = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.setMigrationConfiguration(any())
-            }.returns(Either.Right(Unit))
-            coEvery {
+            } returns Either.Right(Unit)
+            everySuspend {
                 updateSupportedProtocolsAndResolveOneOnOnes.invoke(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withDisabledKaliumConfigFlag() = apply {
             kaliumConfigs = kaliumConfigs.copy(selfDeletingMessages = false)
-            coEvery {
+            everySuspend {
                 userConfigRepository.setTeamSettingsSelfDeletionStatus(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         fun newFileSharingUpdatedEvent(

@@ -32,7 +32,6 @@ import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncStateObserver
-import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -40,7 +39,6 @@ import kotlinx.datetime.Clock
 /**
  * Orchestrates the migration from proteus to MLS.
  */
-@Mockable
 internal interface MLSMigrationManager {
     suspend operator fun invoke()
 }

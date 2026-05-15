@@ -22,7 +22,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.isLeft
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.Mockable
 
 /**
  * Use case responsible for ensuring that a conversation is available locally.
@@ -30,7 +29,6 @@ import io.mockative.Mockable
  * If the conversation with the given ID is not available in the local database,
  * it will be fetched from the backend using [FetchConversationUseCase].
  */
-@Mockable
 internal interface FetchConversationIfUnknownUseCase {
     suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,

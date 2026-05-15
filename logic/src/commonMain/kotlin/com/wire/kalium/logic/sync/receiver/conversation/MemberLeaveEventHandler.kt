@@ -47,9 +47,7 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCu
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.member.MemberDAO
-import io.mockative.Mockable
 
-@Mockable
 internal interface MemberLeaveEventHandler {
     suspend fun handle(
         transactionContext: CryptoTransactionContext,
@@ -142,8 +140,8 @@ internal class MemberLeaveEventHandlerImpl(
     }
 
     private suspend fun wipeMLSConversationIfNeeded(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberLeave) {
-        val isSelfUserLeftConversation = event.removedList == listOf(selfUserId) && event.reason == MemberLeaveReason.Left
-        if (!isSelfUserLeftConversation) return
+        val isSelfUserNoLongerMember = selfUserId in event.removedList
+        if (!isSelfUserNoLongerMember) return
 
         conversationRepository.getConversationProtocolInfo(event.conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {

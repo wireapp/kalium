@@ -18,10 +18,10 @@
 
 package com.wire.kalium.logic.data.conversation
 
-import app.cash.paging.Pager
-import app.cash.paging.PagingConfig
-import app.cash.paging.PagingSource
-import app.cash.paging.PagingState
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestMessage
@@ -30,16 +30,18 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEvent
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.db.ReadDispatcher
-import io.mockative.any
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import kotlin.test.Test
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Test
 
 class ConversationRepositoryExtensionsTest {
     private val fakePagingSource = object : PagingSource<Int, ConversationDetailsWithEventsEntity>() {
@@ -69,7 +71,7 @@ class ConversationRepositoryExtensionsTest {
             startingOffset = 0L,
             strictMlsFilter = false
         )
-        verify {
+        verify(VerifyMode.exactly(1)) {
             arrangement.conversationDaoExtensions
                 .getPagerForConversationDetailsWithEventsSearch(
                     queryConfig = matches {
@@ -78,15 +80,15 @@ class ConversationRepositoryExtensionsTest {
                     pagingConfig = eq(pagingConfig),
                     startingOffset = any()
                 )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
 
-        val conversationDaoExtensions: ConversationExtensions = mock(ConversationExtensions::class)
-        private val conversationDAO: ConversationDAO = mock(ConversationDAO::class)
-        private val conversationMapper: ConversationMapper = mock(ConversationMapper::class)
-        private val messageMapper: MessageMapper = mock(MessageMapper::class)
+        val conversationDaoExtensions = mock<ConversationExtensions>(mode = MockMode.autoUnit)
+        private val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
+        private val conversationMapper = mock<ConversationMapper>(mode = MockMode.autoUnit)
+        private val messageMapper = mock<MessageMapper>(mode = MockMode.autoUnit)
         private val conversationRepositoryExtensions: ConversationRepositoryExtensions by lazy {
             ConversationRepositoryExtensionsImpl(conversationDAO, conversationMapper)
         }

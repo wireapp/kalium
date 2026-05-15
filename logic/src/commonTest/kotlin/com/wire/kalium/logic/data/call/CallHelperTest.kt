@@ -25,14 +25,16 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.coEvery
-import io.mockative.mock
-import io.mockative.of
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
 
 class CallHelperTest {
 
@@ -99,20 +101,20 @@ class CallHelperTest {
 
     private class Arrangement {
 
-        val userConfigRepository = mock(of<UserConfigRepository>())
-        val callRepository = mock(of<CallRepository>())
+        val userConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
+        val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
         private val mLSCallHelper: CallHelper = CallHelperImpl(userConfigRepository, callRepository)
 
         fun arrange() = this to mLSCallHelper
 
         suspend fun withShouldUseSFTForOneOnOneCallsReturning(result: Either<StorageFailure, Boolean>) = apply {
-            coEvery {
+            everySuspend {
                 userConfigRepository.shouldUseSFTForOneOnOneCalls()
             }.returns(result)
         }
 
         suspend fun withEstablishedCallsFlowReturning(calls: List<Call>) = apply {
-            coEvery {
+            everySuspend {
                 callRepository.establishedCallsFlow()
             }.returns(flowOf(calls))
         }

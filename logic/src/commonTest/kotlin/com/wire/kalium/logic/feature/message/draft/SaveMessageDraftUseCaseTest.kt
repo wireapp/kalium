@@ -25,10 +25,12 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -44,13 +46,13 @@ class SaveMessageDraftUseCaseTest {
 
         saveMessageDraft(MESSAGE_DRAFT)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageDraftRepository.saveMessageDraft(MESSAGE_DRAFT)
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private inner class Arrangement {
-        val messageDraftRepository: MessageDraftRepository = mock(MessageDraftRepository::class)
+        val messageDraftRepository: MessageDraftRepository = mock<MessageDraftRepository>(mode = MockMode.autoUnit)
 
         private val saveMessageDraft by lazy {
             SaveMessageDraftUseCaseImpl(messageDraftRepository, testDispatchers)
@@ -60,9 +62,9 @@ class SaveMessageDraftUseCaseTest {
             messageDraft: MessageDraft,
             response: Either<StorageFailure, Unit>
         ) = apply {
-            coEvery {
+            everySuspend {
                 messageDraftRepository.saveMessageDraft(messageDraft)
-            }.returns(response)
+            } returns response
         }
 
         fun arrange() = this to saveMessageDraft

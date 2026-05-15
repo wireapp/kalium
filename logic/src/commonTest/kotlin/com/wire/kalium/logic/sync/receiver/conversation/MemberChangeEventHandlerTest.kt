@@ -30,14 +30,15 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -56,9 +57,9 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversationIfUnknown(any(), eq(event.conversationId), eq(ConversationSyncReason.Other))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -73,9 +74,9 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateMutedStatusLocally(eq(event.conversationId), any(), any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -91,13 +92,13 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateArchivedStatusLocally(
                 eq(event.conversationId),
                 matches { it == isNewEventArchiving },
                 any()
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -113,9 +114,9 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -130,7 +131,7 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
         }
     }
@@ -147,20 +148,20 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.fetchConversationIfUnknown(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
-        val conversationRepository = mock(ConversationRepository::class)
-        private val userRepository = mock(UserRepository::class)
-        val fetchConversationIfUnknown = mock(FetchConversationIfUnknownUseCase::class)
+        val conversationRepository = mock<ConversationRepository>()
+        private val userRepository = mock<UserRepository>()
+        val fetchConversationIfUnknown = mock<FetchConversationIfUnknownUseCase>()
 
         private val memberChangeEventHandler: MemberChangeEventHandler = MemberChangeEventHandlerImpl(
             conversationRepository,
@@ -168,39 +169,39 @@ class MemberChangeEventHandlerTest {
         )
 
         suspend fun withFetchConversationIfUnknownSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 fetchConversationIfUnknown(any(), any(), eq(ConversationSyncReason.Other))
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
-            coEvery {
+            everySuspend {
                 fetchConversationIfUnknown(any(), any(), eq(ConversationSyncReason.Other))
-            }.returns(Either.Left(coreFailure))
+            } returns Either.Left(coreFailure)
         }
 
         suspend fun withUpdateMemberSucceeding() = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateMemberFromEvent(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withUpdateMutedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateMutedStatusLocally(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withUpdateArchivedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateArchivedStatusLocally(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withFetchUsersIfUnknownByIdsReturning(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.fetchUsersIfUnknownByIds(any())
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to memberChangeEventHandler

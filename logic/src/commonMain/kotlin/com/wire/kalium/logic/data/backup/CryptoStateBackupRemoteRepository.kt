@@ -28,11 +28,9 @@ import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyn
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoCryptoState
 import com.wire.kalium.network.exceptions.isUserNotFound
-import io.mockative.Mockable
 import okio.Sink
 import okio.Source
 
-@Mockable
 internal interface CryptoStateBackupRemoteRepository {
     suspend fun uploadCryptoState(clientId: String, sourceProvider: () -> Source, size: Long): Either<NetworkFailure, Unit>
     suspend fun downloadCryptoState(tempBackupFileSink: Sink): Either<CoreFailure, Unit>

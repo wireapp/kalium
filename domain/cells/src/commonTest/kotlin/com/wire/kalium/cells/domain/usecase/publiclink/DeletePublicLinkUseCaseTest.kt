@@ -17,14 +17,17 @@
  */
 package com.wire.kalium.cells.domain.usecase.publiclink
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -38,9 +41,9 @@ class DeletePublicLinkUseCaseTest {
 
         useCase("link")
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.repository.clearPublicLinkPassword("link")
-        }.wasInvoked(exactly = 1)
+        }
     }
 
     @Test
@@ -51,21 +54,21 @@ class DeletePublicLinkUseCaseTest {
 
         useCase("link")
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.repository.clearPublicLinkPassword("link")
-        }.wasInvoked(exactly = 0)
+        }
     }
 
     private class Arrangement() {
 
-        val repository = mock(CellsRepository::class)
+        val repository = mock<CellsRepository>(mode = MockMode.autoUnit)
 
         suspend fun withDeleteLinkSuccess() = apply {
-            coEvery { repository.deletePublicLink(any()) } returns Unit.right()
+            everySuspend { repository.deletePublicLink(any()) } returns Unit.right()
         }
 
         suspend fun withDeleteLinkFailure() = apply {
-            coEvery { repository.deletePublicLink(any()) } returns
+            everySuspend { repository.deletePublicLink(any()) } returns
                     NetworkFailure.ServerMiscommunication(IllegalStateException()).left()
         }
 

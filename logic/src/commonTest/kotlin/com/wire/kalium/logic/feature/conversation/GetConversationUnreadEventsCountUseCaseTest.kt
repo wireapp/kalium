@@ -22,16 +22,18 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class GetConversationUnreadEventsCountUseCaseTest {
-        private val conversationRepository = mock(ConversationRepository::class)
+        private val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
 
     private lateinit var getConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
 
@@ -45,29 +47,23 @@ class GetConversationUnreadEventsCountUseCaseTest {
 
     @Test
     fun givenGettingUnreadEventsCountSucceed_whenItIsRequested_thenSuccessResultReturned() = runTest(TestKaliumDispatcher.main) {
-        // given
-        coEvery {
+        everySuspend {
             conversationRepository.getConversationUnreadEventsCount(any())
-        }.returns(Either.Right(1))
+        } returns Either.Right(1)
 
-        // when
         val result = getConversationUnreadEventsCountUseCase(ConversationId(value = "convId", domain = "domainId"))
 
-        // then
         assertEquals(GetConversationUnreadEventsCountUseCase.Result.Success(1), result)
     }
 
     @Test
     fun givenGettingUnreadEventsCountFailed_whenItIsRequested_thenFailureResultReturned() = runTest(TestKaliumDispatcher.main) {
-        // given
-        coEvery {
+        everySuspend {
             conversationRepository.getConversationUnreadEventsCount(any())
-        }.returns(Either.Left(StorageFailure.DataNotFound))
+        } returns Either.Left(StorageFailure.DataNotFound)
 
-        // when
         val result = getConversationUnreadEventsCountUseCase(ConversationId(value = "convId", domain = "domainId"))
 
-        // then
         assertEquals(GetConversationUnreadEventsCountUseCase.Result.Failure(StorageFailure.DataNotFound), result)
     }
 }

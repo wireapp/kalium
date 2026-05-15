@@ -21,7 +21,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
-import io.mockative.Mockable
 
 /**
  * Responsible for orchestrating all the pieces necessary
@@ -32,7 +31,6 @@ import io.mockative.Mockable
  *
  * @see MessageSenderImpl
  */
-@Mockable
 interface MessageSender {
     /**
      * Given the [ConversationId] and UUID of a message that

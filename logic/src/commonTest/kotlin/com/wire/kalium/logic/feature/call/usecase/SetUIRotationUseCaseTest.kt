@@ -19,9 +19,11 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.feature.call.FlowManagerService
 import com.wire.kalium.logic.util.mockPlatformRotation
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -37,13 +39,13 @@ class SetUIRotationUseCaseTest {
         useCase(rotation)
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.flowManagerService.setUIRotation(rotation)
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
-        val flowManagerService = mock(FlowManagerService::class)
+        val flowManagerService = mock<FlowManagerService>(mode = MockMode.autoUnit)
         fun arrange() = this to SetUIRotationUseCase(flowManagerService = flowManagerService)
     }
 }

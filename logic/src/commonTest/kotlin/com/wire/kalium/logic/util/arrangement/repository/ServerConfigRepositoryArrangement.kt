@@ -22,12 +22,11 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.fake.valueOf
-import io.mockative.matchers.AnyMatcher
-import io.mockative.matchers.Matcher
-import io.mockative.matches
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.matches
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface ServerConfigRepositoryArrangement {
 
@@ -35,15 +34,15 @@ internal interface ServerConfigRepositoryArrangement {
 
     suspend fun withServerConfigForUser(
         result: Either<StorageFailure, ServerConfig>,
-        userId: Matcher<UserId> = AnyMatcher(valueOf())
+        userId: (UserId) -> Boolean = { true }
     ) {
-        coEvery {
-            serverConfigRepository.configForUser(matches { userId.matches(it) })
+        everySuspend {
+            serverConfigRepository.configForUser(matches { userId(it) })
         }.returns(result)
     }
 }
 
 internal class ServerConfigRepositoryArrangementImpl : ServerConfigRepositoryArrangement {
 
-    override val serverConfigRepository: ServerConfigRepository = mock(ServerConfigRepository::class)
+    override val serverConfigRepository: ServerConfigRepository = mock<ServerConfigRepository>(mode = MockMode.autoUnit)
 }

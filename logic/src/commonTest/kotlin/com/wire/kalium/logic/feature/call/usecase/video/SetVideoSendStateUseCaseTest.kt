@@ -20,11 +20,13 @@ package com.wire.kalium.logic.feature.call.usecase.video
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestConversation
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.verifySuspend
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -37,13 +39,13 @@ class SetVideoSendStateUseCaseTest {
 
         setVideoSendState.invoke(TestConversation.ID, VideoState.STARTED)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callManager.setVideoSendState(any(), eq(VideoState.STARTED))
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
-        val callManager = mock(CallManager::class)
+        val callManager = mock<CallManager>(mode = MockMode.autoUnit)
 
         val setVideoSendState = SetVideoSendStateUseCase(lazy { callManager })
 

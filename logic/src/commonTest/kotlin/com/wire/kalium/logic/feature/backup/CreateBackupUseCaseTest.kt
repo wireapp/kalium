@@ -37,12 +37,14 @@ import com.wire.kalium.logic.util.SecurityHelper
 import com.wire.kalium.logic.util.extractCompressedFile
 import com.wire.kalium.persistence.backup.DatabaseExporter
 import com.wire.kalium.persistence.db.UserDBSecret
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -99,9 +101,9 @@ class CreateBackupUseCaseTest {
         // Then
         assertTrue(result is CreateBackupResult.Success)
         assertTrue(result.backupFilePath.name.contains(".zip"))
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientIdProvider.invoke()
-        }.wasInvoked(once)
+        }
 
         // Check that there is a metadata file and a db file whose content is the same as the one we provided
         with(fakeFileSystem) {
@@ -139,9 +141,9 @@ class CreateBackupUseCaseTest {
         // Then
         assertTrue(result is CreateBackupResult.Failure)
         assertTrue(result.coreFailure is StorageFailure.DataNotFound)
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.clientIdProvider.invoke()
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -166,9 +168,9 @@ class CreateBackupUseCaseTest {
 
         // Then
         assertIs<CreateBackupResult.Success>(result)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientIdProvider.invoke()
-        }.wasInvoked(once)
+        }
 
         // Check there is only one .cc20 file in the backup file
         with(fakeFileSystem) {
@@ -184,21 +186,21 @@ class CreateBackupUseCaseTest {
     private inner class Arrangement {
         private var userId = UserId("some-user-id", "some-user-domain")
 
-        val clientIdProvider = mock(CurrentClientIdProvider::class)
-        val userRepository = mock(UserRepository::class)
-        val databaseExporter = mock(DatabaseExporter::class)
-        val securityHelper = mock(SecurityHelper::class)
+        val clientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
+        val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        val databaseExporter = mock<DatabaseExporter>(mode = MockMode.autoUnit)
+        val securityHelper = mock<SecurityHelper>(mode = MockMode.autoUnit)
 
         fun withUserDBPassphrase(passphrase: UserDBSecret?) = apply {
             every {
                 securityHelper.userDBOrSecretNull(any())
-            }.returns(passphrase)
+            } returns (passphrase)
         }
 
         suspend fun withObservedClientId(clientId: ClientId?) = apply {
-            coEvery {
+            everySuspend {
                 clientIdProvider.invoke()
-            }.returns(clientId?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound))
+            } returns (clientId?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound))
         }
 
         fun withExportedDB(dbName: String?, dbData: ByteArray) = apply {
@@ -207,26 +209,26 @@ class CreateBackupUseCaseTest {
                 sink(exportedDBPath).buffer().use { it.write(dbData) }
                 every {
                     databaseExporter.exportToPlainDB(any())
-                }.returns(exportedDBPath.toString())
+                } returns (exportedDBPath.toString())
             }
         }
 
         fun withExportedDBError() = apply {
             every {
                 databaseExporter.exportToPlainDB(any())
-            }.returns(null)
+            } returns (null)
         }
 
         fun withDeleteBackupDB(result: Boolean) = apply {
             every {
                 databaseExporter.deleteBackupDBFile()
-            }.returns(result)
+            } returns (result)
         }
 
         suspend fun withUserHandle(selfUser: SelfUser) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.getSelfUser()
-            }.returns(selfUser.right())
+            } returns (selfUser.right())
         }
 
         fun arrange(): Pair<Arrangement, CreateBackupUseCase> =

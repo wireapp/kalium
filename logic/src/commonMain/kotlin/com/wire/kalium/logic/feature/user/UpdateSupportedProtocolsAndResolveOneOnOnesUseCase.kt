@@ -22,14 +22,12 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import io.mockative.Mockable
 
 /**
  * Update self supported protocols, and if the supported protocols
  * did change we also resolve the active protocol for all one-on-one
  * conversations.
  */
-@Mockable
 internal interface UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
 
     /**

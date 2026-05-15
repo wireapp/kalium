@@ -29,9 +29,7 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationAssetsLocally
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.messaging.hooks.ConversationClearEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import io.mockative.Mockable
 
-@Mockable
 internal interface ClearConversationContentHandler {
     suspend fun handle(
         transactionContext: CryptoTransactionContext,

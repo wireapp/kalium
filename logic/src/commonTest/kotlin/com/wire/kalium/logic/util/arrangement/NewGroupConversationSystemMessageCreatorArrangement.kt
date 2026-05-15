@@ -20,9 +20,11 @@ package com.wire.kalium.logic.util.arrangement
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 
 internal interface NewGroupConversationSystemMessageCreatorArrangement {
     val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
@@ -32,12 +34,12 @@ internal interface NewGroupConversationSystemMessageCreatorArrangement {
 
 internal class NewGroupConversationSystemMessageCreatorArrangementImpl : NewGroupConversationSystemMessageCreatorArrangement {
     override val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator =
-        mock(NewGroupConversationSystemMessagesCreator::class)
+        mock<NewGroupConversationSystemMessagesCreator>(mode = MockMode.autoUnit)
 
-    val persistMessage = mock(PersistMessageUseCase::class)
+    val persistMessage = mock<PersistMessageUseCase>(mode = MockMode.autoUnit)
 
     override suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
-        coEvery {
+        everySuspend {
             newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
         }.returns(Either.Right(Unit))
     }

@@ -21,15 +21,13 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
-import io.mockative.Mockable
 
 /**
  * Syncs the current user's contacts.
  */
-@Mockable
 internal interface SyncContactsUseCase {
     /**
-     * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
+     * @return [Either] [CoreFailure] or [Unit]
      */
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }

@@ -31,9 +31,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.sync.SyncStateObserver
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFound
-import io.mockative.Mockable
 
-@Mockable
 internal interface RecoverPendingMLSGroupJoinsUseCase {
     suspend operator fun invoke()
 }

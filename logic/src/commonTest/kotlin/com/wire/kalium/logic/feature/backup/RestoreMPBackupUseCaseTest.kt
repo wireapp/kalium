@@ -38,19 +38,22 @@ import com.wire.kalium.logic.feature.backup.mapper.toBackupConversation
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
 import com.wire.kalium.logic.feature.backup.provider.BackupImporter
-import com.wire.kalium.logic.feature.backup.provider.ImportDataPagerMockable
+import com.wire.kalium.logic.feature.backup.provider.ImportDataPagerForMocking
 import com.wire.kalium.logic.feature.backup.provider.ImportResult
-import com.wire.kalium.logic.feature.backup.provider.ImportResultPagerMockable
+import com.wire.kalium.logic.feature.backup.provider.ImportResultPagerForMocking
 import com.wire.kalium.logic.feature.backup.provider.MPBackupImporterProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.of
+import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
+import dev.mokkery.answering.returns
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.resetMain
@@ -88,10 +91,10 @@ class RestoreMPBackupUseCaseTest {
 
         useCase(arrangement.storedPath, null) {}
 
-        coVerify { arrangement.backupRepository.insertUsers(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.backupRepository.insertConversations(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.backupRepository.insertMessages(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.backupRepository.insertReactions(any()) }.wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
     }
 
     @Test
@@ -103,10 +106,10 @@ class RestoreMPBackupUseCaseTest {
 
         useCase(arrangement.storedPath, "test_password") {}
 
-        coVerify { arrangement.backupRepository.insertUsers(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.backupRepository.insertConversations(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.backupRepository.insertMessages(any()) }.wasInvoked(exactly = 1)
-        coVerify { arrangement.backupRepository.insertReactions(any()) }.wasInvoked(exactly = 1)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertUsers(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertConversations(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertMessages(any()) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.backupRepository.insertReactions(any()) }
     }
 
     @Test
@@ -211,14 +214,14 @@ class RestoreMPBackupUseCaseTest {
 
     private inner class Arrangement {
 
-        val backupRepository = mock(BackupRepository::class)
-        val importerProvider = mock(MPBackupImporterProvider::class)
-        val resultPager = mock(ImportResultPagerMockable::class)
-        val usersPager = mock(of<ImportDataPagerMockable<BackupUser>>())
-        val conversationsPager = mock(of<ImportDataPagerMockable<BackupConversation>>())
-        val messagesPager = mock(of<ImportDataPagerMockable<BackupMessage>>())
-        val reactionsPager = mock(of<ImportDataPagerMockable<BackupReaction>>())
-        val importer = mock(BackupImporter::class)
+        val backupRepository = mock<BackupRepository>(mode = MockMode.autoUnit)
+        val importerProvider = mock<MPBackupImporterProvider>(mode = MockMode.autoUnit)
+        val resultPager = mock<ImportResultPagerForMocking>(mode = MockMode.autoUnit)
+        val usersPager = mock<ImportDataPagerForMocking<BackupUser>>(mode = MockMode.autoUnit)
+        val conversationsPager = mock<ImportDataPagerForMocking<BackupConversation>>(mode = MockMode.autoUnit)
+        val messagesPager = mock<ImportDataPagerForMocking<BackupMessage>>(mode = MockMode.autoUnit)
+        val reactionsPager = mock<ImportDataPagerForMocking<BackupReaction>>(mode = MockMode.autoUnit)
+        val importer = mock<BackupImporter>(mode = MockMode.autoUnit)
         var usersPages: List<Array<BackupUser>> = listOf(arrayOf(testUser.toBackupUser()))
         var usersInsertStubConfigured = false
         var conversationsInsertStubConfigured = false
@@ -227,32 +230,32 @@ class RestoreMPBackupUseCaseTest {
         val storedPath = "testPath/backupFile.zip".toPath()
 
         suspend fun withSuccessImport() = apply {
-            coEvery { importer.importFromFile(any(), any()) }.returns(
+            everySuspend { importer.importFromFile(any(), any()) } returns (
                 ImportResult.Success(resultPager)
             )
         }
 
         suspend fun withInvalidPassword() = apply {
-            coEvery { importer.importFromFile(any(), any()) }.returns(
+            everySuspend { importer.importFromFile(any(), any()) } returns (
                 ImportResult.Failure.MissingOrWrongPassphrase
             )
         }
 
         suspend fun withParsingFailure() = apply {
-            coEvery { importer.importFromFile(any(), any()) }.returns(
+            everySuspend { importer.importFromFile(any(), any()) } returns (
                 ImportResult.Failure.ParsingFailure
             )
         }
 
         suspend fun withUnzipFailure() = apply {
-            coEvery { importer.importFromFile(any(), any()) }.returns(
+            everySuspend { importer.importFromFile(any(), any()) } returns (
                 ImportResult.Failure.UnzippingError("Unzipping error")
             )
         }
 
 
         suspend fun withOtherFailure() = apply {
-            coEvery { importer.importFromFile(any(), any()) }.returns(
+            everySuspend { importer.importFromFile(any(), any()) } returns (
                 ImportResult.Failure.UnknownError("Unknown error")
             )
         }
@@ -263,9 +266,9 @@ class RestoreMPBackupUseCaseTest {
 
         suspend fun captureInsertedUsers(captured: MutableList<List<OtherUser>>) = apply {
             usersInsertStubConfigured = true
-            coEvery { backupRepository.insertUsers(any()) }.invokes { args ->
+            everySuspend { backupRepository.insertUsers(any()) } calls { invocation ->
                 @Suppress("UNCHECKED_CAST")
-                val insertedUsers = args[0] as List<OtherUser>
+                val insertedUsers = invocation.args[0] as List<OtherUser>
                 captured.add(insertedUsers)
                 Unit.right()
             }
@@ -273,9 +276,9 @@ class RestoreMPBackupUseCaseTest {
 
         suspend fun captureInsertedConversations(captured: MutableList<List<Conversation>>) = apply {
             conversationsInsertStubConfigured = true
-            coEvery { backupRepository.insertConversations(any()) }.invokes { args ->
+            everySuspend { backupRepository.insertConversations(any()) } calls { invocation ->
                 @Suppress("UNCHECKED_CAST")
-                val insertedConversations = args[0] as List<Conversation>
+                val insertedConversations = invocation.args[0] as List<Conversation>
                 captured.add(insertedConversations)
                 Unit.right()
             }
@@ -283,9 +286,9 @@ class RestoreMPBackupUseCaseTest {
 
         suspend fun captureInsertedMessages(captured: MutableList<List<Message.Standalone>>) = apply {
             messagesInsertStubConfigured = true
-            coEvery { backupRepository.insertMessages(any()) }.invokes { args ->
+            everySuspend { backupRepository.insertMessages(any()) } calls { invocation ->
                 @Suppress("UNCHECKED_CAST")
-                val insertedMessages = args[0] as List<Message.Standalone>
+                val insertedMessages = invocation.args[0] as List<Message.Standalone>
                 captured.add(insertedMessages)
                 Unit.right()
             }
@@ -293,38 +296,43 @@ class RestoreMPBackupUseCaseTest {
 
         suspend fun arrange(): Pair<Arrangement, RestoreMPBackupUseCase> {
 
-            every { importerProvider.providePeekImporter() }.returns(importer)
-            every { importerProvider.provideImporter(any(), any()) }.returns(importer)
+            every { importerProvider.providePeekImporter() } returns (importer)
+            every { importerProvider.provideImporter(any(), any()) } returns (importer)
 
             if (!usersInsertStubConfigured) {
-                coEvery { backupRepository.insertUsers(any()) }.returns(Unit.right())
+                everySuspend { backupRepository.insertUsers(any()) } returns (Unit.right())
             }
             if (!conversationsInsertStubConfigured) {
-                coEvery { backupRepository.insertConversations(any()) }.returns(Unit.right())
+                everySuspend { backupRepository.insertConversations(any()) } returns (Unit.right())
             }
             if (!messagesInsertStubConfigured) {
-                coEvery { backupRepository.insertMessages(any()) }.returns(Unit.right())
+                everySuspend { backupRepository.insertMessages(any()) } returns (Unit.right())
             }
-            coEvery { backupRepository.insertReactions(any()) }.returns(Unit.right())
+            everySuspend { backupRepository.insertReactions(any()) } returns (Unit.right())
 
             val usersHasMorePagesValues = MutableList(usersPages.size) { true } + false
-            every { usersPager.hasMorePages() }.returnsMany(*usersHasMorePagesValues.toTypedArray())
-            every { usersPager.nextPage() }.returnsMany(*usersPages.toTypedArray())
+            var usersHasMorePagesIndex = 0
+            var usersPageIndex = 0
+            every { usersPager.hasMorePages() } calls { usersHasMorePagesValues[usersHasMorePagesIndex++] }
+            every { usersPager.nextPage() } calls { usersPages[usersPageIndex++] }
 
-            every { conversationsPager.hasMorePages() }.returnsMany(true, false)
-            every { conversationsPager.nextPage() }.returnsMany(arrayOf(TestConversation.CONVERSATION.toBackupConversation()))
+            var conversationsHasMorePagesIndex = 0
+            every { conversationsPager.hasMorePages() } calls { conversationsHasMorePagesIndex++ == 0 }
+            every { conversationsPager.nextPage() } returns (arrayOf(TestConversation.CONVERSATION.toBackupConversation()))
 
-            every { messagesPager.hasMorePages() }.returnsMany(true, false)
-            every { messagesPager.nextPage() }.returnsMany(arrayOf(TestMessage.TEXT_MESSAGE.toBackupMessage()!!))
+            var messagesHasMorePagesIndex = 0
+            every { messagesPager.hasMorePages() } calls { messagesHasMorePagesIndex++ == 0 }
+            every { messagesPager.nextPage() } returns (arrayOf(TestMessage.TEXT_MESSAGE.toBackupMessage()!!))
 
-            every { reactionsPager.hasMorePages() }.returnsMany(true, false)
-            every { reactionsPager.nextPage() }.returnsMany(arrayOf(testReaction))
+            var reactionsHasMorePagesIndex = 0
+            every { reactionsPager.hasMorePages() } calls { reactionsHasMorePagesIndex++ == 0 }
+            every { reactionsPager.nextPage() } returns (arrayOf(testReaction))
 
-            every { resultPager.usersPager }.returns(usersPager)
-            every { resultPager.conversationsPager }.returns(conversationsPager)
-            every { resultPager.messagesPager }.returns(messagesPager)
-            every { resultPager.reactionsPager }.returns(reactionsPager)
-            every { resultPager.totalPagesCount }.returns(1)
+            every { resultPager.usersPager } returns (usersPager)
+            every { resultPager.conversationsPager } returns (conversationsPager)
+            every { resultPager.messagesPager } returns (messagesPager)
+            every { resultPager.reactionsPager } returns (reactionsPager)
+            every { resultPager.totalPagesCount } returns (1)
 
             return this to RestoreMPBackupUseCaseImpl(
                 selfUserId = selfUserId,

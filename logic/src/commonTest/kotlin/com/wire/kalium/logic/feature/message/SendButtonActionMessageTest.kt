@@ -21,23 +21,21 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.CompositeMessageRepository
+import com.wire.kalium.logic.data.message.MessageMetadataRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
-import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
-import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.SyncManagerArrangement
-import com.wire.kalium.logic.util.arrangement.SyncManagerArrangementImpl
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.CompositeMessageRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangementImpl
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.once
-import kotlinx.coroutines.runBlocking
+import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.messaging.sending.MessageSender
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -60,21 +58,21 @@ class SendButtonActionMessageTest {
 
         assertIs<SendButtonActionMessageUseCase.Result.Failure>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.messageMetadataRepository.originalSenderId(any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.currentClientIdProvider.invoke()
-        }.wasNotInvoked()
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.syncManager.waitUntilLiveOrFailure()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -98,21 +96,21 @@ class SendButtonActionMessageTest {
 
         assertIs<SendButtonActionMessageUseCase.Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageMetadataRepository.originalSenderId(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.currentClientIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.syncManager.waitUntilLiveOrFailure()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -136,38 +134,38 @@ class SendButtonActionMessageTest {
 
         assertIs<SendButtonActionMessageUseCase.Result.Success>(result)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageMetadataRepository.originalSenderId(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.currentClientIdProvider.invoke()
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.syncManager.waitUntilLiveOrFailure()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private companion object {
         val SELF_USER_ID: UserId = UserId("self-user-id", "self-user-domain")
     }
 
-    private class Arrangement :
-        MessageMetadataRepositoryArrangement by MessageMetadataRepositoryArrangementImpl(),
-        MessageSenderArrangement by MessageSenderArrangementImpl(),
-        SyncManagerArrangement by SyncManagerArrangementImpl(),
-        CompositeMessageRepositoryArrangement by CompositeMessageRepositoryArrangementImpl(),
-        CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
+    private class Arrangement {
+        val messageMetadataRepository = mock<MessageMetadataRepository>(mode = MockMode.autoUnit)
+        val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
+        val syncManager = mock<SyncManager>(mode = MockMode.autoUnit)
+        val compositeMessageRepository = mock<CompositeMessageRepository>(mode = MockMode.autoUnit)
+        val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
 
         private lateinit var useCase: SendButtonActionMessageUseCase
 
-        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, SendButtonActionMessageUseCase> {
-            runBlocking { block() }
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, SendButtonActionMessageUseCase> {
+            block()
             useCase = SendButtonActionMessageUseCase(
                 messageMetadataRepository = messageMetadataRepository,
                 messageSender = messageSender,
@@ -178,6 +176,26 @@ class SendButtonActionMessageTest {
             )
 
             return this to useCase
+        }
+
+        suspend fun withWaitUntilLiveOrFailure(result: Either<com.wire.kalium.common.error.CoreFailure, Unit>) {
+            everySuspend { syncManager.waitUntilLiveOrFailure() } returns result
+        }
+
+        suspend fun withCurrentClientIdSuccess(currentClientId: ClientId) {
+            everySuspend { currentClientIdProvider.invoke() } returns Either.Right(currentClientId)
+        }
+
+        suspend fun withMessageOriginalSender(result: Either<StorageFailure, UserId>) {
+            everySuspend { messageMetadataRepository.originalSenderId(any(), any()) } returns result
+        }
+
+        suspend fun withMarkSelected(result: Either<StorageFailure, Unit>) {
+            everySuspend { compositeMessageRepository.markSelected(any(), any(), any()) } returns result
+        }
+
+        suspend fun withSendMessageSucceed() {
+            everySuspend { messageSender.sendMessage(any(), any()) } returns Either.Right(Unit)
         }
     }
 }

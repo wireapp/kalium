@@ -21,14 +21,12 @@ package com.wire.kalium.logic.data.sync
 import app.cash.turbine.test
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.common.functional.Either
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.mock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toCollection
 import kotlinx.coroutines.launch
@@ -49,7 +47,7 @@ internal class IncrementalSyncRepositoryTest {
 
     private lateinit var incrementalSyncRepository: IncrementalSyncRepository
 
-    val sessionRepository = mock(SessionRepository::class)
+    val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
 
     @BeforeTest
     fun setup() {

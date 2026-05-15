@@ -62,7 +62,7 @@ jobs:
 
       - name: Test with Gradle
         run: |
-          ./gradlew jvmTest koverXmlReport -Djava.library.path=$LD_LIBRARY_PATH
+          ./gradlew jvmTest koverXmlReportJvmOnly -Djava.library.path=$LD_LIBRARY_PATH
           ./gradlew jsTest -PUSE_UNIFIED_CORE_CRYPTO=true
 
       - name: Archive Test Reports
@@ -95,16 +95,16 @@ jobs:
         run: apt-get update && apt-get install -y -qq git
 
       - name: Upload test report to codecov
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: "build/reports/kover/report.xml"
+          files: "build/reports/kover/reportJvmOnly.xml"
 
       - name: Archive Kover report
         uses: actions/upload-artifact@v7
         with:
           name: kover-report
-          path: build/reports/kover/report.xml
+          path: build/reports/kover/reportJvmOnly.xml
 
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.

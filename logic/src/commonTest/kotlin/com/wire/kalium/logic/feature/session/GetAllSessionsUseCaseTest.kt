@@ -23,8 +23,10 @@ import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -77,15 +79,15 @@ class GetAllSessionsUseCaseTest {
 
     class Arrangement {
 
-        private val sessionRepository = mock(SessionRepository::class)
+        private val sessionRepository = mock<SessionRepository>(mode = MockMode.autoUnit)
         private val useCase: GetAllSessionsUseCase by lazy {
             GetAllSessionsUseCase(sessionRepository)
         }
 
         suspend fun withAllSessions(result: Either<StorageFailure, List<AccountInfo>>) = apply {
-            coEvery {
+            everySuspend {
                 sessionRepository.allSessions()
-            }.returns(result)
+            } returns result
         }
 
         fun arrange() = this to useCase

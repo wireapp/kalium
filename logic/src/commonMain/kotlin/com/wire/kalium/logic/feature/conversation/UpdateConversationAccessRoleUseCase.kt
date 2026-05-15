@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.sync.SyncManager
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
 /**
@@ -48,7 +47,6 @@ import kotlinx.coroutines.flow.first
  *
  * @see Conversation.Access
  */
-@Mockable
 public interface UpdateConversationAccessRoleUseCase {
     /**
      * @param conversationId the id of the conversation

@@ -23,29 +23,32 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
+import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.api.unauthenticated.domainLookup.DomainLookupResponse
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
-import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
+import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runTest
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SSOLoginRepositoryTest {
 
-        val ssoLogin = mock(SSOLoginApi::class)
+    val ssoLogin = mock<SSOLoginApi>(mode = MockMode.autoUnit)
 
-        val domainLookup = mock(DomainLookupApi::class)
+    val domainLookup = mock<DomainLookupApi>(mode = MockMode.autoUnit)
 
     private lateinit var ssoLoginRepository: SSOLoginRepository
 
@@ -55,76 +58,137 @@ class SSOLoginRepositoryTest {
     }
 
     @Test
-    fun givenApiRequestSuccess_whenInitiatingWithoutRedirects_thenSuccessIsPropagated() =
-        givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(InitiateParam.WithoutRedirect(TEST_CODE)) },
-            "wire/response",
-            { ssoLoginRepository.initiate(TEST_CODE) }
-        )
+    fun givenApiRequestSuccess_whenInitiatingWithoutRedirects_thenSuccessIsPropagated() = runTest {
+        val expected = "wire/response"
+        everySuspend {
+            ssoLogin.initiate(InitiateParam.WithoutRedirect(TEST_CODE))
+        }.returns(NetworkResponse.Success(expected, mapOf(), 200))
+
+        val actual = ssoLoginRepository.initiate(TEST_CODE)
+
+        assertSuccessIsPropagated(expected, actual)
+        verifySuspend(VerifyMode.exactly(1)) {
+            ssoLogin.initiate(InitiateParam.WithoutRedirect(TEST_CODE))
+        }
+    }
 
     @Test
-    fun givenApiRequestSuccess_whenInitiatingWithRedirects_thenSuccessIsPropagated() =
-        givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(InitiateParam.WithRedirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE)) },
-            "wire/response",
-            { ssoLoginRepository.initiate(TEST_CODE, TEST_SUCCESS, TEST_ERROR) }
-        )
+    fun givenApiRequestSuccess_whenInitiatingWithRedirects_thenSuccessIsPropagated() = runTest {
+        val expected = "wire/response"
+        val initiateParam = InitiateParam.WithRedirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE)
+        everySuspend {
+            ssoLogin.initiate(initiateParam)
+        }.returns(NetworkResponse.Success(expected, mapOf(), 200))
+
+        val actual = ssoLoginRepository.initiate(TEST_CODE, TEST_SUCCESS, TEST_ERROR)
+
+        assertSuccessIsPropagated(expected, actual)
+        verifySuspend(VerifyMode.exactly(1)) {
+            ssoLogin.initiate(initiateParam)
+        }
+    }
 
     @Test
-    fun givenApiRequestFail_whenInitiating_thenNetworkFailureIsPropagated() =
-        givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            { initiate(InitiateParam.WithoutRedirect(TEST_CODE)) },
-            expected = TestNetworkException.generic,
-            { ssoLoginRepository.initiate(TEST_CODE) }
-        )
+    fun givenApiRequestFail_whenInitiating_thenNetworkFailureIsPropagated() = runTest {
+        everySuspend {
+            ssoLogin.initiate(InitiateParam.WithoutRedirect(TEST_CODE))
+        }.returns(NetworkResponse.Error(TestNetworkException.generic))
+
+        val actual = ssoLoginRepository.initiate(TEST_CODE)
+
+        assertNetworkFailureIsPropagated(TestNetworkException.generic, actual)
+        verifySuspend(VerifyMode.exactly(1)) {
+            ssoLogin.initiate(InitiateParam.WithoutRedirect(TEST_CODE))
+        }
+    }
 
     @Test
-    fun givenApiRequestSuccess_whenFinalizing_thenSuccessIsPropagated() =
-        givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            apiCoroutineBlock = { finalize(TEST_COOKIE) },
-            expected = "wire/response",
-            repositoryCoroutineBlock = { finalize(TEST_COOKIE) }
-        )
+    fun givenApiRequestSuccess_whenFinalizing_thenSuccessIsPropagated() = runTest {
+        val expected = "wire/response"
+        everySuspend {
+            ssoLogin.finalize(TEST_COOKIE)
+        }.returns(NetworkResponse.Success(expected, mapOf(), 200))
+
+        val actual = ssoLoginRepository.finalize(TEST_COOKIE)
+
+        assertSuccessIsPropagated(expected, actual)
+        verifySuspend(VerifyMode.exactly(1)) {
+            ssoLogin.finalize(TEST_COOKIE)
+        }
+    }
 
     @Test
-    fun givenApiRequestFail_whenFinalizing_thenNetworkFailureIsPropagated() =
-        givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            apiCoroutineBlock = { finalize(TEST_COOKIE) },
-            expected = TestNetworkException.generic,
-            repositoryCoroutineBlock = { finalize(TEST_COOKIE) }
-        )
+    fun givenApiRequestFail_whenFinalizing_thenNetworkFailureIsPropagated() = runTest {
+        everySuspend {
+            ssoLogin.finalize(TEST_COOKIE)
+        }.returns(NetworkResponse.Error(TestNetworkException.generic))
+
+        val actual = ssoLoginRepository.finalize(TEST_COOKIE)
+
+        assertNetworkFailureIsPropagated(TestNetworkException.generic, actual)
+        verifySuspend(VerifyMode.exactly(1)) {
+            ssoLogin.finalize(TEST_COOKIE)
+        }
+    }
 
     @Test
-    fun givenApiRequestSuccess_whenRequestingMetaData_thenSuccessIsPropagated() =
-        givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            apiCoroutineBlock = { metaData() },
-            expected = "wire/response",
-            repositoryCoroutineBlock = { metaData() }
-        )
+    fun givenApiRequestSuccess_whenRequestingMetaData_thenSuccessIsPropagated() = runTest {
+        val expected = "wire/response"
+        everySuspend {
+            ssoLogin.metaData()
+        }.returns(NetworkResponse.Success(expected, mapOf(), 200))
+
+        val actual = ssoLoginRepository.metaData()
+
+        assertSuccessIsPropagated(expected, actual)
+        verifySuspend(VerifyMode.exactly(1)) {
+            ssoLogin.metaData()
+        }
+    }
 
     @Test
-    fun givenApiRequestFail_whenRequestingMetaData_thenNetworkFailureIsPropagated() =
-        givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            apiCoroutineBlock = { metaData() },
-            expected = TestNetworkException.generic,
-            repositoryCoroutineBlock = { metaData() }
-        )
+    fun givenApiRequestFail_whenRequestingMetaData_thenNetworkFailureIsPropagated() = runTest {
+        everySuspend {
+            ssoLogin.metaData()
+        }.returns(NetworkResponse.Error(TestNetworkException.generic))
+
+        val actual = ssoLoginRepository.metaData()
+
+        assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
+        assertEquals(TestNetworkException.generic, actual.value.kaliumException)
+        verifySuspend(VerifyMode.exactly(1)) {
+            ssoLogin.metaData()
+        }
+    }
 
     @Test
-    fun givenApiRequestSuccess_whenRequestingSettings_thenSuccessIsPropagated() =
-        givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            apiCoroutineBlock = { settings() },
-            expected = true,
-            repositoryCoroutineBlock = { settings() }
-        )
+    fun givenApiRequestSuccess_whenRequestingSettings_thenSuccessIsPropagated() = runTest {
+        val expected = SSOSettingsResponse("default_code")
+        everySuspend {
+            ssoLogin.settings()
+        }.returns(NetworkResponse.Success(expected, mapOf(), 200))
+
+        val actual = ssoLoginRepository.settings()
+
+        assertSuccessIsPropagated(expected, actual)
+        verifySuspend(VerifyMode.exactly(1)) {
+            ssoLogin.settings()
+        }
+    }
 
     @Test
-    fun givenApiRequestFail_whenRequestingSettings_thenNetworkFailureIsPropagated() =
-        givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            apiCoroutineBlock = { settings() },
-            expected = TestNetworkException.generic,
-            repositoryCoroutineBlock = { settings() }
-        )
+    fun givenApiRequestFail_whenRequestingSettings_thenNetworkFailureIsPropagated() = runTest {
+        everySuspend {
+            ssoLogin.settings()
+        }.returns(NetworkResponse.Error(TestNetworkException.generic))
+
+        val actual = ssoLoginRepository.settings()
+
+        assertNetworkFailureIsPropagated(TestNetworkException.generic, actual)
+        verifySuspend(VerifyMode.exactly(1)) {
+            ssoLogin.settings()
+        }
+    }
 
     @Test
     fun givenDomainLookupSuccess_thenSuccesIsPropagated() = runTest {
@@ -134,7 +198,7 @@ class SSOLoginRepositoryTest {
             webappWelcomeUrl = "https://test.com/welcome"
         )
 
-        coEvery {
+        everySuspend {
             domainLookup.lookup(domain)
         }.returns(NetworkResponse.Success(networkResponse, mapOf(), 200))
         val actual = ssoLoginRepository.domainLookup(domain)
@@ -148,41 +212,25 @@ class SSOLoginRepositoryTest {
             actual.value
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             domainLookup.lookup(any())
-        }.wasInvoked(exactly = once)
+        }
     }
 
-    private fun <T : Any> givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-        apiCoroutineBlock: suspend SSOLoginApi.() -> NetworkResponse<T>,
+    private fun <T : Any> assertSuccessIsPropagated(
         expected: T,
-        repositoryCoroutineBlock: suspend SSOLoginRepository.() -> Either<NetworkFailure, T>
-    ) = runTest {
-        coEvery {
-            ssoLogin.apiCoroutineBlock()
-        }.returns(NetworkResponse.Success(expected, mapOf(), 200))
-        val actual = repositoryCoroutineBlock(ssoLoginRepository)
+        actual: Either<NetworkFailure, T>
+    ) {
         assertIs<Either.Right<T>>(actual)
         assertEquals(expected, actual.value)
-        coVerify {
-            ssoLogin.apiCoroutineBlock()
-        }.wasInvoked(exactly = once)
     }
 
-    private fun <T : Any> givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-        apiCoroutineBlock: suspend SSOLoginApi.() -> NetworkResponse<T>,
+    private fun <T : Any> assertNetworkFailureIsPropagated(
         expected: KaliumException,
-        repositoryCoroutineBlock: suspend SSOLoginRepository.() -> Either<NetworkFailure, T>
-    ) = runTest {
-        coEvery {
-            ssoLogin.apiCoroutineBlock()
-        }.returns(NetworkResponse.Error(expected))
-        val actual = repositoryCoroutineBlock(ssoLoginRepository)
+        actual: Either<NetworkFailure, T>
+    ) {
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
-        coVerify {
-            ssoLogin.apiCoroutineBlock()
-        }.wasInvoked(exactly = once)
     }
 
     private companion object {

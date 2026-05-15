@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
@@ -27,7 +26,6 @@ import kotlinx.coroutines.flow.map
  * This use case is responsible for updating conversation clients in a call
  * Usually called when a member is removed from conversation
  */
-@Mockable
 public interface UpdateConversationClientsForCurrentCallUseCase {
     public suspend operator fun invoke(conversationId: ConversationId)
 }

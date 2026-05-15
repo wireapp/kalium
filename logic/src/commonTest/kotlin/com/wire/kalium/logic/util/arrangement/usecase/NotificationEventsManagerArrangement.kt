@@ -19,8 +19,10 @@ package com.wire.kalium.logic.util.arrangement.usecase
 
 import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.everySuspend
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -33,16 +35,16 @@ internal interface NotificationEventsManagerArrangement {
 
 internal open class EphemeralEventsNotificationManagerArrangementImpl : NotificationEventsManagerArrangement {
 
-        override val notificationEventsManager = mock(NotificationEventsManager::class)
+        override val notificationEventsManager = mock<NotificationEventsManager>(mode = MockMode.autoUnit)
 
     override suspend fun withEphemeralNotification(ephemeralsFlow: Flow<LocalNotification>) {
-        coEvery {
+        everySuspend {
             notificationEventsManager.observeEphemeralNotifications()
         }.returns(ephemeralsFlow)
     }
 
     override suspend fun withRegularNotificationsChecking(flow: Flow<Unit>) {
-        coEvery {
+        everySuspend {
             notificationEventsManager.observeRegularNotificationsChecking()
         }.returns(flow)
     }

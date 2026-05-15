@@ -33,7 +33,6 @@ import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
 import com.wire.kalium.logic.feature.session.DeregisterTokenUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
-import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -44,7 +43,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 /**
  * Logs out the user from the current session
  */
-@Mockable
 public interface LogoutUseCase {
     /**
      * @param reason the reason for the logout performed

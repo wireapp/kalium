@@ -37,7 +37,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.ConversationPersistenceApi
-import io.mockative.Mockable
 
 /**
  * Use case responsible for persisting a list of conversations in the local database.
@@ -50,7 +49,6 @@ import io.mockative.Mockable
  * @param invalidateMembers Whether the existing member list should be refreshed.
  * @param originatedFromEvent Whether the call originates from an event (affects MLS group state resolution).
  */
-@Mockable
 internal interface PersistConversationsUseCase {
     suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,

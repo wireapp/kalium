@@ -43,18 +43,20 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.every
-import io.mockative.matches
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matches
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -87,13 +89,13 @@ class NewConversationEventHandlerTest {
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistConversation(any(), eq(event.conversation), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.fetchUsersIfUnknownByIds(eq(members))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -121,9 +123,9 @@ class NewConversationEventHandlerTest {
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationRepository.updateConversationModifiedDate(eq(event.conversationId), matches { it.wasInTheLastSecond })
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -160,33 +162,33 @@ class NewConversationEventHandlerTest {
         eventHandler.handle(arrangement.transactionContext, event)
 
         // then
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStarted(any<UserId>(), eq(event.conversation), any())
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
                 eq(event.conversationId.toDao()),
                 eq(event.conversation.members.otherMembers.map { it.id.toModel() }),
                 eq(event.dateTime)
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
                 eq(event.conversation),
                 eq(event.dateTime)
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
                 eq(event.conversation.id.toModel()),
                 eq(event.dateTime)
             )
-        }.wasInvoked(exactly = once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
                 eq(event.id),
                 eq(event.conversation.id.toModel()),
@@ -194,7 +196,7 @@ class NewConversationEventHandlerTest {
                 eq(event.senderUserId),
                 eq(event.conversation.toConversationType(teamId))
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -229,24 +231,24 @@ class NewConversationEventHandlerTest {
             eventHandler.handle(arrangement.transactionContext, event)
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationStarted(any(), eq(event.conversation), any())
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
                     eq(event.conversationId.toDao()),
                     eq(event.conversation.members.otherMembers.map { it.id.toModel() }),
                     eq(event.dateTime)
                 )
-            }.wasNotInvoked()
+            }
 
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
                     eq(event.conversation),
                     eq(event.dateTime)
                 )
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -274,15 +276,15 @@ class NewConversationEventHandlerTest {
             eventHandler.handle(arrangement.transactionContext, event)
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.not) {
                 arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), eq(true))
-            }.wasNotInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.not) {
                 arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any(), any())
-            }.wasNotInvoked()
-            coVerify {
+            }
+            verifySuspend(VerifyMode.not) {
                 arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any(), any())
-            }.wasNotInvoked()
+            }
         }
 
     @Test
@@ -312,20 +314,31 @@ class NewConversationEventHandlerTest {
             eventHandler.handle(arrangement.transactionContext, event)
 
             // then
-            coVerify {
+            verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), eq(otherUserId), eq(true))
-            }.wasInvoked(exactly = once)
+            }
         }
 
-    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        val conversationRepository = mock(ConversationRepository::class)
-        val userRepository = mock(UserRepository::class)
-        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
-        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
-        private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
-        val oneOnOneResolver = mock(OneOnOneResolver::class)
-        val persistConversation = mock(PersistConversationUseCase::class)
+    private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val conversationRepository = mock<ConversationRepository>()
+        val userRepository = mock<UserRepository>()
+        val selfTeamIdProvider = mock<SelfTeamIdProvider>()
+        val newGroupConversationSystemMessagesCreator = mock<NewGroupConversationSystemMessagesCreator>()
+        private val qualifiedIdMapper = mock<QualifiedIdMapper>()
+        val oneOnOneResolver = mock<OneOnOneResolver>()
+        val persistConversation = mock<PersistConversationUseCase>()
 
+        init {
+            everySuspend {
+                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
+                    any<String>(),
+                    any<ConversationId>(),
+                    any<Boolean>(),
+                    any<UserId>(),
+                    any<ConversationEntity.Type>()
+                )
+            } returns Unit.right()
+        }
 
         private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(
             conversationRepository,
@@ -337,75 +350,75 @@ class NewConversationEventHandlerTest {
         )
 
         suspend fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.updateConversationModifiedDate(any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withPersistingConversations(result: Either<StorageFailure, Boolean>) = apply {
-            coEvery {
+            everySuspend {
                 persistConversation(any(), any(), any())
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withConversationStartedSystemMessage() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationStarted(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withConversationResolvedMembersSystemMessage() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withConversationUnverifiedWarningSystemMessage() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withFetchUsersIfUnknownIds(members: Set<QualifiedID>) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.fetchUsersIfUnknownByIds(eq(members))
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
-            coEvery {
+            everySuspend {
                 selfTeamIdProvider.invoke()
-            }.returns(either)
+            } returns either
         }
 
         suspend fun withReadReceiptsSystemMessage() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(any<ConversationResponse>(), any<Instant>())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         fun withQualifiedId(qualifiedId: QualifiedID) = apply {
             every {
                 qualifiedIdMapper.fromStringToQualifiedID(any())
-            }.returns(qualifiedId)
+            } returns qualifiedId
         }
 
         suspend fun withResolveOneOnOneConversationWithUserId(result: Either<CoreFailure, ConversationId>) = apply {
-            coEvery {
+            everySuspend {
                 oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), any(), eq(true))
-            }.returns(result)
+            } returns result
         }
 
         suspend fun withConversationAppsAccessIfEnabled() = apply {
-            coEvery {
+            everySuspend {
                 newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                    any<ConversationResponse.Type>()
+                    any<String>(),
+                    any<ConversationId>(),
+                    any<Boolean>(),
+                    any<UserId>(),
+                    any<ConversationEntity.Type>()
                 )
-            }.returns(Unit.right())
+            } returns Unit.right()
         }
 
         fun arrange() = this to newConversationEventHandler

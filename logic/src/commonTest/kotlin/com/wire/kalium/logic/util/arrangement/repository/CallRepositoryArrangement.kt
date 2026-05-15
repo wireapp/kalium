@@ -24,11 +24,12 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestCall
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.doesNothing
-import io.mockative.every
-import io.mockative.mock
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.every
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -39,37 +40,40 @@ internal interface CallRepositoryArrangement {
     suspend fun withEstablishedCall()
     suspend fun withoutAnyEstablishedCall()
     suspend fun withCallsFlow(flow: Flow<List<Call>>)
-    suspend fun withUpdateIsCameraOnById(conversationId: ConversationId = any<ConversationId>(), isCameraOn: Boolean = any())
+    suspend fun withUpdateIsCameraOnById(
+        conversationId: ConversationId = ConversationId("conversationId", "domain"),
+        isCameraOn: Boolean = false
+    )
 }
 
 internal open class CallRepositoryArrangementImpl : CallRepositoryArrangement {
 
-    override val callRepository: CallRepository = mock(CallRepository::class)
+    override val callRepository: CallRepository = mock<CallRepository>(mode = MockMode.autoUnit)
 
     override suspend fun withEstablishedCallsFlow(calls: List<Call>) {
-        coEvery {
+        everySuspend {
             callRepository.establishedCallsFlow()
         }.returns(flowOf(calls))
     }
 
     override suspend fun withEstablishedCall() {
-        coEvery {
+        everySuspend {
             callRepository.establishedCallsFlow()
         }.returns(flowOf(listOf(CallRepositoryArrangementImpl.call)))
     }
 
     override suspend fun withoutAnyEstablishedCall() {
-        coEvery {
+        everySuspend {
             callRepository.establishedCallsFlow()
         }.returns(flowOf(listOf()))
     }
 
     override suspend fun withCallsFlow(flow: Flow<List<Call>>) {
-        coEvery { callRepository.callsFlow() }.returns(flow)
+        everySuspend { callRepository.callsFlow() }.returns(flow)
     }
 
     override suspend fun withUpdateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean) {
-        every { callRepository.updateIsCameraOnById(conversationId, isCameraOn) }.doesNothing()
+        every { callRepository.updateIsCameraOnById(conversationId, isCameraOn) }.returns(Unit)
     }
 
     companion object {

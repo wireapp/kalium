@@ -22,10 +22,13 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -41,8 +44,8 @@ class ClearClientDataUseCaseTest {
 
         useCase()
 
-        coVerify { arrangement.proteusClientProvider.clearLocalFiles() }.wasInvoked(exactly = once)
-        coVerify { arrangement.mlsClientProvider.clearLocalFiles() }.wasInvoked(exactly = once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.proteusClientProvider.clearLocalFiles() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsClientProvider.clearLocalFiles() }
     }
 
     @Test
@@ -63,23 +66,23 @@ class ClearClientDataUseCaseTest {
     }
 
     private class Arrangement(private val dispatcher: KaliumDispatcher) {
-        val proteusClientProvider: ProteusClientProvider = mock(ProteusClientProvider::class)
-        val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
+        val proteusClientProvider: ProteusClientProvider = mock<ProteusClientProvider>(mode = MockMode.autoUnit)
+        val mlsClientProvider: MLSClientProvider = mock<MLSClientProvider>(mode = MockMode.autoUnit)
 
         suspend fun withProteusClientClearSuccess() = apply {
-            coEvery { proteusClientProvider.clearLocalFiles() }.returns(Unit)
+            everySuspend { proteusClientProvider.clearLocalFiles() } returns (Unit)
         }
 
         suspend fun withMLSClientClearSuccess() = apply {
-            coEvery { mlsClientProvider.clearLocalFiles() }.returns(Unit)
+            everySuspend { mlsClientProvider.clearLocalFiles() } returns (Unit)
         }
 
         suspend fun withProteusClientClearThrows() = apply {
-            coEvery { proteusClientProvider.clearLocalFiles() }.throws(RuntimeException("proteus clear failed"))
+            everySuspend { proteusClientProvider.clearLocalFiles() } throws RuntimeException("proteus clear failed")
         }
 
         suspend fun withMLSClientClearThrows() = apply {
-            coEvery { mlsClientProvider.clearLocalFiles() }.throws(RuntimeException("mls clear failed"))
+            everySuspend { mlsClientProvider.clearLocalFiles() } throws RuntimeException("mls clear failed")
         }
 
         fun arrange() = this to ClearClientDataUseCaseImpl(

@@ -194,8 +194,7 @@ The `:logic` module is the main SDK entry point that clients interact with.
 ## Testing
 
 **Frameworks:**
-- Mockative for mocking (`@Mock` for interfaces, `@Mockable` for classes; being phased out — do not use unless the test file already does)
-- Prefer Mokkery for mocking (`mock<SomeClass>()`; being phased in)
+- Mokkery for mocking (`mock<SomeClass>()`)
 - Turbine for Flow testing (`test {}` blocks)
 - Robolectric for Android unit tests
 - Use `:data:persistence-test` fixtures for in-memory database testing
@@ -241,7 +240,7 @@ fun givenEmailHasLeadingOrTrailingSpaces_whenLoggingIn_thenShouldBeTrimmed()
 - **iOS/JS builds fail** without `-PUSE_UNIFIED_CORE_CRYPTO=true`
 - **`kalium.providerCacheScope` has no default** — consumers must explicitly set `LOCAL` or `GLOBAL`
 - **`:logic` must NOT expose `Either<>` types** to callers — wrap results in concrete types
-- **Mokkery over Mockative:** use `mock<SomeClass>()` (Mokkery) for new tests; only use `@Mock`/`@Mockable` (Mockative) if the test file already does
+- **Mokkery only:** use `mock<SomeClass>()` for test mocks
 - **`shadowJar` service discovery:** requires `duplicatesStrategy = DuplicatesStrategy.INCLUDE` before `mergeServiceFiles()` in `tools/testservice/build.gradle.kts`
 
 ## Security Guidelines and Permissions

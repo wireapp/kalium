@@ -26,12 +26,10 @@ import com.wire.kalium.persistence.config.MLSMigrationEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.WireCellsConfigEntity
 import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.builtins.SetSerializer
 
-@Mockable
 interface UserConfigDAO {
 
     suspend fun getTeamSettingsSelfDeletionStatus(): TeamSettingsSelfDeletionStatusEntity?

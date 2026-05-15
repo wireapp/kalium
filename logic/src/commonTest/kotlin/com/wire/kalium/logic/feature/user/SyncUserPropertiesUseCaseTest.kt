@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -39,7 +40,7 @@ class SyncUserPropertiesUseCaseTest {
 
         useCase()
 
-        verifySuspend { arrangement.userPropertyRepository.syncPropertiesStatuses() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userPropertyRepository.syncPropertiesStatuses() }
     }
 
     @Test
@@ -51,7 +52,7 @@ class SyncUserPropertiesUseCaseTest {
 
         val result = useCase()
 
-        verifySuspend { arrangement.userPropertyRepository.syncPropertiesStatuses() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userPropertyRepository.syncPropertiesStatuses() }
         assertTrue(result is Either.Left)
     }
 

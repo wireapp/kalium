@@ -38,13 +38,15 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
+import kotlin.test.Test
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import kotlin.test.Test
 
 class FeatureConfigRepositoryTest {
 
@@ -115,9 +117,9 @@ class FeatureConfigRepositoryTest {
 
         // Then
         result.shouldSucceed { expectedSuccess.value }
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.featureConfigApi.featureConfigs()
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -133,9 +135,9 @@ class FeatureConfigRepositoryTest {
         // Then
         result.shouldFail { Either.Left(operationDeniedException).value }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.featureConfigApi.featureConfigs()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -151,9 +153,9 @@ class FeatureConfigRepositoryTest {
         // Then
         result.shouldFail { Either.Left(noTeamException).value }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.featureConfigApi.featureConfigs()
-        }.wasInvoked(exactly = once)
+        }
     }
 
     private class Arrangement {
@@ -204,19 +206,19 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.DISABLED),
         )
 
-        val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)
+        val featureConfigApi: FeatureConfigApi = mock<FeatureConfigApi>(mode = MockMode.autoUnit)
 
         var featureConfigRepository = FeatureConfigDataSource(featureConfigApi)
 
         suspend fun withSuccessfulResponse(): Arrangement {
-            coEvery {
+            everySuspend {
                 featureConfigApi.featureConfigs()
             }.returns(NetworkResponse.Success(featureConfigResponse, mapOf(), 200))
             return this
         }
 
         suspend fun withErrorResponse(kaliumException: KaliumException): Arrangement {
-            coEvery {
+            everySuspend {
                 featureConfigApi.featureConfigs()
             }.returns(NetworkResponse.Error(kaliumException))
             return this

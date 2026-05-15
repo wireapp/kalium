@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.sync.SyncState
-import io.mockative.Mockable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,7 +45,6 @@ import kotlinx.coroutines.launch
 @Deprecated("Use SyncStateObserver instead", ReplaceWith("SyncStateObserver"))
 public typealias SyncManager = SyncStateObserver
 
-@Mockable
 public interface SyncStateObserver {
 
     /**

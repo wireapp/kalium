@@ -28,7 +28,7 @@ jobs:
 
       - name: Restore Kotlin/Native tooling cache (.konan)
         id: konan-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: ~/.konan
           key: ${{ runner.os }}-${{ runner.arch }}-konan-${{ hashFiles('gradle.properties', 'gradle/libs.versions.toml') }}
@@ -81,7 +81,7 @@ jobs:
 
       - name: Save Kotlin/Native tooling cache (.konan)
         if: always() && steps.konan-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: ~/.konan
           key: ${{ steps.konan-cache.outputs.cache-primary-key }}

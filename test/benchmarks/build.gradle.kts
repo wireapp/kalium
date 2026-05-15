@@ -32,6 +32,7 @@ kotlin {
                 implementation(libs.kotlinx.benchmark.runtime)
                 implementation(libs.ktor.mock)
                 implementation(libs.sqldelight.androidxPaging)
+                implementation(libs.paging.common)
             }
         }
 

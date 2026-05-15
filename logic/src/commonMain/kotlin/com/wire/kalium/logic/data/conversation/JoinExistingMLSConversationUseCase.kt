@@ -48,14 +48,12 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
 /**
  * Send an external commit to join an MLS conversation for which the user is a member,
  * but has not yet joined the corresponding MLS group.
  */
-@Mockable
 internal interface JoinExistingMLSConversationUseCase {
     suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,

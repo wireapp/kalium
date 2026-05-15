@@ -23,9 +23,11 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -72,7 +74,7 @@ class ObserveConversationUnderLegalHoldNotifiedUseCaseTest {
 
     private class Arrangement {
 
-        val conversationRepository = mock(ConversationRepository::class)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
 
         private val useCase: ObserveConversationUnderLegalHoldNotifiedUseCase by lazy {
             ObserveConversationUnderLegalHoldNotifiedUseCaseImpl(conversationRepository)
@@ -82,17 +84,17 @@ class ObserveConversationUnderLegalHoldNotifiedUseCaseTest {
         suspend fun withObserveLegalHoldStatusForConversation(
             result: Either<StorageFailure, Conversation.LegalHoldStatus>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeLegalHoldStatus(any())
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
 
         suspend fun withObserveLegalHoldStatusChangeNotifiedForConversation(
             result: Either<StorageFailure, Boolean>
         ) = apply {
-            coEvery {
+            everySuspend {
                 conversationRepository.observeLegalHoldStatusChangeNotified(any())
-            }.returns(flowOf(result))
+            } returns flowOf(result)
         }
     }
 }

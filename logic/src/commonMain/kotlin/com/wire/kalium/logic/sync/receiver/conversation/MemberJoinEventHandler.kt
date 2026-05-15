@@ -39,9 +39,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
-import io.mockative.Mockable
 
-@Mockable
 internal interface MemberJoinEventHandler {
     suspend fun handle(
         transactionContext: CryptoTransactionContext,

@@ -21,10 +21,14 @@ package com.wire.kalium.logic.data.prekey
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.ClientMapper
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -34,30 +38,26 @@ import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangement
-import com.wire.kalium.logic.util.arrangement.usecase.FetchConversationUseCaseArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import io.mockative.any
-import io.mockative.eq
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.test.runTest
-import okio.IOException
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import com.wire.kalium.network.api.model.UserId as UserIdDTO
+import kotlinx.coroutines.test.runTest
+import okio.IOException
 
 internal class MessageSendFailureHandlerTest {
 
@@ -74,9 +74,9 @@ internal class MessageSendFailureHandlerTest {
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.fetchUsersByIds(eq(failureData.missingClientsOfUsers.keys))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -93,12 +93,14 @@ internal class MessageSendFailureHandlerTest {
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRemoteRepository.fetchOtherUserClients(eq(listOf(arrangement.userOne.first, arrangement.userTwo.first)))
-        }.wasInvoked(once)
-        coVerify {
-            arrangement.clientRepository.storeUserClientListAndRemoveRedundantClients(eq(arrangement.userOneInsertClientParams + arrangement.userTwoInsertClientParams))
-        }.wasInvoked(once)
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clientRepository.storeUserClientListAndRemoveRedundantClients(
+                eq(arrangement.userOneInsertClientParams + arrangement.userTwoInsertClientParams)
+            )
+        }
     }
 
     @Test
@@ -156,9 +158,9 @@ internal class MessageSendFailureHandlerTest {
             .withUpdateMessageStatusSuccess()
             .arrange()
         messageSendFailureHandler.handleFailureAndUpdateMessageStatus(failure, arrangement.conversationId, arrangement.messageId, "text")
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.FAILED_REMOTELY), any(), any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -174,12 +176,12 @@ internal class MessageSendFailureHandlerTest {
             messageType = "text",
             scheduleResendIfNoNetwork = false
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.FAILED), any(), any())
-        }.wasInvoked(once)
-        verify {
+        }
+        verify(VerifyMode.exactly(0)) {
             arrangement.messageSendingScheduler.scheduleSendingOfPendingMessages()
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -195,12 +197,12 @@ internal class MessageSendFailureHandlerTest {
             messageType = "text",
             scheduleResendIfNoNetwork = true
         )
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.messageRepository.updateMessageStatus(any(), any(), any())
-        }.wasNotInvoked()
-        verify {
+        }
+        verify(VerifyMode.exactly(1)) {
             arrangement.messageSendingScheduler.scheduleSendingOfPendingMessages()
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -225,13 +227,15 @@ internal class MessageSendFailureHandlerTest {
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failure, null)
 
-        coVerify {
-            arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(eq(mapOf(arrangement.userOne.first to arrangement.userOne.second)))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(
+                eq(mapOf(arrangement.userOne.first to arrangement.userOne.second))
+            )
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.fetchUsersByIds(eq(setOf(arrangement.userOne.first)))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -253,13 +257,15 @@ internal class MessageSendFailureHandlerTest {
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failure, null)
 
-        coVerify {
-            arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(eq(mapOf(arrangement.userOne.first to arrangement.userOne.second)))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(
+                eq(mapOf(arrangement.userOne.first to arrangement.userOne.second))
+            )
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(0)) {
             arrangement.userRepository.fetchUsersByIds(eq(setOf(arrangement.userOne.first)))
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -281,21 +287,23 @@ internal class MessageSendFailureHandlerTest {
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failure, null)
 
-        coVerify {
-            arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(eq(mapOf(arrangement.userTwo.first to arrangement.userTwo.second)))
-        }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clientRepository.removeClientsAndReturnUsersWithNoClients(
+                eq(mapOf(arrangement.userTwo.first to arrangement.userTwo.second))
+            )
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRemoteRepository.fetchOtherUserClients(eq(listOf(arrangement.userOne.first)))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.storeUserClientListAndRemoveRedundantClients(eq(arrangement.userOneInsertClientParams))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.fetchUsersByIds(eq(setOf(arrangement.userOne.first, arrangement.userTwo.first)))
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -311,13 +319,13 @@ internal class MessageSendFailureHandlerTest {
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, arrangement.conversationId)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.fetchUsersByIds(eq(failureData.missingClientsOfUsers.keys))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.fetchConversation(any(), any(), eq(ConversationSyncReason.Other))
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -332,13 +340,13 @@ internal class MessageSendFailureHandlerTest {
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userRepository.fetchUsersByIds(eq(failureData.missingClientsOfUsers.keys))
-        }.wasInvoked(once)
+        }
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.fetchConversation(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -355,19 +363,19 @@ internal class MessageSendFailureHandlerTest {
 
         messageSendFailureHandler.handleClientsHaveChangedFailure(arrangement.transactionContext, failureData, null)
 
-        coVerify {
+        verifySuspend(VerifyMode.not) {
             arrangement.fetchConversation(any(), any(), any())
-        }.wasNotInvoked()
+        }
     }
 
-    class Arrangement : ClientRepositoryArrangement by ClientRepositoryArrangementImpl(),
-        FetchConversationUseCaseArrangement by FetchConversationUseCaseArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
-        internal val userRepository = mock(UserRepository::class)
-        internal val messageRepository = mock(MessageRepository::class)
-        val messageSendingScheduler = mock(MessageSendingScheduler::class)
-        val conversationRepository = mock(ConversationRepository::class)
-        val clientRemoteRepository = mock(ClientRemoteRepository::class)
+    class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
+        val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
+        val fetchConversation = mock<FetchConversationUseCase>()
+        internal val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
+        internal val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
+        val messageSendingScheduler = mock<MessageSendingScheduler>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val clientRemoteRepository = mock<ClientRemoteRepository>(mode = MockMode.autoUnit)
 
         val clientMapper: ClientMapper = MapperProvider.clientMapper()
 
@@ -397,27 +405,49 @@ internal class MessageSendFailureHandlerTest {
         }
 
         suspend fun withFetchUsersByIdSuccess() = apply {
-            coEvery {
+            everySuspend {
                 userRepository.fetchUsersByIds(any())
             }.returns(Either.Right(true))
         }
 
         suspend fun withFetchUsersByIdFailure(failure: CoreFailure) = apply {
-            coEvery {
+            everySuspend {
                 userRepository.fetchUsersByIds(any())
             }.returns(Either.Left(failure))
         }
 
         suspend fun withUpdateMessageStatusSuccess() = apply {
-            coEvery {
+            everySuspend {
                 messageRepository.updateMessageStatus(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withFetchOtherUserClients(result: Either<NetworkFailure, Map<UserIdDTO, List<SimpleClientResponse>>>) = apply {
-            coEvery {
+            everySuspend {
                 clientRemoteRepository.fetchOtherUserClients(any())
             }.returns(result)
+        }
+
+        suspend fun withStoreUserClientListAndRemoveRedundantClients(
+            result: Either<StorageFailure, Unit>
+        ) = apply {
+            everySuspend {
+                clientRepository.storeUserClientListAndRemoveRedundantClients(any())
+            }.returns(result)
+        }
+
+        suspend fun withRemoveClientsAndReturnUsersWithNoClients(
+            result: Either<StorageFailure, List<UserId>>
+        ) = apply {
+            everySuspend {
+                clientRepository.removeClientsAndReturnUsersWithNoClients(any())
+            }.returns(result)
+        }
+
+        suspend fun withFetchConversationSucceeding() = apply {
+            everySuspend {
+                fetchConversation(any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
     }
 

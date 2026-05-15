@@ -28,11 +28,12 @@ import com.wire.kalium.logic.data.auth.login.DomainLookupResult
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,7 +48,7 @@ class GetLoginFlowForDomainUseCaseTest {
 
         val result = useCase(Arrangement.EMAIL)
 
-        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        verifySuspend { arrangement.loginRepository.getDomainRegistration(Arrangement.EMAIL) }
         assertEquals(EnterpriseLoginResult.Success(LoginRedirectPath.Default), result)
     }
 
@@ -59,7 +60,7 @@ class GetLoginFlowForDomainUseCaseTest {
 
         val result = useCase(Arrangement.EMAIL)
 
-        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        verifySuspend { arrangement.loginRepository.getDomainRegistration(Arrangement.EMAIL) }
         assertEquals(EnterpriseLoginResult.Failure.Generic::class, result::class)
     }
 
@@ -71,7 +72,7 @@ class GetLoginFlowForDomainUseCaseTest {
 
         val result = useCase(Arrangement.EMAIL)
 
-        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        verifySuspend { arrangement.loginRepository.getDomainRegistration(Arrangement.EMAIL) }
         assertEquals(EnterpriseLoginResult.Failure.NotSupported, result)
     }
 
@@ -87,9 +88,9 @@ class GetLoginFlowForDomainUseCaseTest {
 
         val result = useCase(Arrangement.EMAIL)
 
-        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
-        coVerify { arrangement.loginRepository.fetchDomainRedirectCustomBackendConfig(backendConfigUrl) }
-        coVerify { arrangement.customServerConfigRepository.fetchRemoteConfig(configJsonUrl) }
+        verifySuspend { arrangement.loginRepository.getDomainRegistration(Arrangement.EMAIL) }
+        verifySuspend { arrangement.loginRepository.fetchDomainRedirectCustomBackendConfig(backendConfigUrl) }
+        verifySuspend { arrangement.customServerConfigRepository.fetchRemoteConfig(configJsonUrl) }
         assertEquals(
             EnterpriseLoginResult.Success(LoginRedirectPath.CustomBackend(ServerConfig.DUMMY)),
             result,
@@ -105,25 +106,25 @@ class GetLoginFlowForDomainUseCaseTest {
 
         val result = useCase(Arrangement.EMAIL)
 
-        coVerify { arrangement.loginRepository.getDomainRegistration(eq(Arrangement.EMAIL)) }
+        verifySuspend { arrangement.loginRepository.getDomainRegistration(Arrangement.EMAIL) }
         assertEquals(EnterpriseLoginResult.Success(LoginRedirectPath.Default), result)
     }
 
     private class Arrangement {
 
-        val loginRepository: LoginRepository = mock(LoginRepository::class)
-        val customServerConfigRepository = mock(CustomServerConfigRepository::class)
+        val loginRepository: LoginRepository = mock(mode = MockMode.autoUnit)
+        val customServerConfigRepository = mock<CustomServerConfigRepository>(mode = MockMode.autoUnit)
 
         suspend fun withDomainRegistrationResult(result: Either<NetworkFailure, LoginDomainPath>) = apply {
-            coEvery { loginRepository.getDomainRegistration(any()) }.returns(result)
+            everySuspend { loginRepository.getDomainRegistration(any()) } returns result
         }
 
         suspend fun withDomainRedirectCustomBackendConfig(result: Either<NetworkFailure, DomainLookupResult>) = apply {
-            coEvery { loginRepository.fetchDomainRedirectCustomBackendConfig(any()) }.returns(result)
+            everySuspend { loginRepository.fetchDomainRedirectCustomBackendConfig(any()) } returns result
         }
 
         suspend fun withServerLinksResult(result: Either<NetworkFailure, ServerConfig.Links>) = apply {
-            coEvery { customServerConfigRepository.fetchRemoteConfig(any()) }.returns(result)
+            everySuspend { customServerConfigRepository.fetchRemoteConfig(any()) } returns result
         }
 
         fun arrange() = this to GetLoginFlowForDomainUseCase(loginRepository, customServerConfigRepository)

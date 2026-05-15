@@ -31,7 +31,7 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:${libs.versions.agp.get()}")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
-        classpath("app.cash.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
+        classpath("com.wire.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:${libs.versions.dokka.get()}")
         classpath("com.google.protobuf:protobuf-gradle-plugin:${libs.versions.protobufCodegen.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${libs.versions.detekt.get()}")
@@ -126,43 +126,30 @@ allprojects {
     }
 }
 
-kover {
-    useJacoco()
-}
-koverReport {
-    filters {
-        includes {
-            packages("com.wire.kalium")
-        }
-    }
-}
-
-fun Project.configureKover() {
-    pluginManager.apply("org.jetbrains.kotlinx.kover")
-
-    kover {
-        useJacoco()
-    }
-    koverReport {
-        filters {
-            includes {
-                packages("com.wire.kalium")
-            }
-        }
-    }
-}
-
 // We only want coverage reports of actual Kalium
 // Samples and other side-projects can have their own rules
-val modulesWithKover = subprojects.filter {
-    it.name !in setOf("buildSrc", "monkeys", "testservice", "cli", "android")
-}
-modulesWithKover.forEach {
-    it.configureKover()
-}
-dependencies {
-    modulesWithKover.forEach {
-        kover(project(it.path))
+val excludedFromCoverage = setOf("buildSrc", "monkeys", "testservice", "cli", "android")
+
+kover {
+    useJacoco()
+    merge {
+        // Aggregate coverage across all subprojects except samples/tools.
+        // Kover applies its plugin and configuration to each merged project automatically.
+        allProjects { project -> project.name !in excludedFromCoverage }
+        // Restrict the merged report to the JVM target only — Android variants would
+        // require the Android SDK at configuration time, which the JVM-only CI lacks.
+        createVariant("jvmOnly") {
+            add("jvm", optional = true)
+        }
+    }
+    reports {
+        variant("jvmOnly") {
+            filters {
+                includes {
+                    packages("com.wire.kalium")
+                }
+            }
+        }
     }
 }
 

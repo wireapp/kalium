@@ -21,13 +21,11 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.firstOrNull
 
 /**
  * Helper class to handle call related operations.
  */
-@Mockable
 internal interface CallHelper {
 
     /**

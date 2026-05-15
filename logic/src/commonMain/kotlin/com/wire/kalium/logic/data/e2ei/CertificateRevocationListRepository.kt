@@ -27,9 +27,7 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
-import io.mockative.Mockable
 
-@Mockable
 internal interface CertificateRevocationListRepository {
 
     /**

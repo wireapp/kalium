@@ -17,21 +17,20 @@
  */
 package com.wire.kalium.persistence.db
 
-import com.wire.kalium.util.DelicateKaliumApi
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
+import app.cash.sqldelight.db.SqlDriver
 import kotlinx.coroutines.withContext
 
-@DelicateKaliumApi("This class is used for debugging purposes only")
 class DatabaseOptimizer(
-    private val localDatabase: UserDatabaseBuilder,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val sqlDriver: SqlDriver,
+    private val writeDispatcher: WriteDispatcher
 ) {
-    suspend fun optimize() = withContext(dispatcher.io) {
-        localDatabase.sqlDriver.execute(
-            null,
-            "PRAGMA optimize;",
-            0
-        )
+    suspend fun optimizeAllTables() = optimize("PRAGMA optimize=0x10002")
+
+    suspend fun optimize() = optimize("PRAGMA optimize")
+
+    private suspend fun optimize(statement: String) {
+        withContext(writeDispatcher.value) {
+            sqlDriver.execute(null, statement, 0)
+        }
     }
 }

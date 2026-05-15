@@ -24,12 +24,14 @@ import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.ConfigsStatusModel
 import com.wire.kalium.logic.data.featureConfig.Status
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -44,9 +46,9 @@ class AppsFeatureHandlerTest {
 
         val result = appsFeatureHandler.handle(ConfigsStatusModel(Status.ENABLED))
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setAppsEnabled(eq(true))
-        }.wasInvoked(exactly = once)
+        }
 
         assertTrue { result.isLeft() }
     }
@@ -59,25 +61,24 @@ class AppsFeatureHandlerTest {
 
         val result = appsFeatureHandler.handle(ConfigsStatusModel(Status.DISABLED))
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.userConfigRepository.setAppsEnabled(eq(false))
-        }.wasInvoked(exactly = once)
+        }
 
         assertTrue { result.isRight() }
     }
 
     private class Arrangement {
-        val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
+        val userConfigRepository: UserConfigRepository = mock<UserConfigRepository>(mode = MockMode.autoUnit)
 
         fun arrange() = this to AppsFeatureHandler(userConfigRepository)
 
         suspend fun withSetAppsEnabledFailure() = apply {
-            coEvery { userConfigRepository.setAppsEnabled(any()) } returns Either.Left(StorageFailure.DataNotFound)
+            everySuspend { userConfigRepository.setAppsEnabled(any()) } returns Either.Left(StorageFailure.DataNotFound)
         }
 
         suspend fun withSetAppsEnabledSuccess() = apply {
-            coEvery { userConfigRepository.setAppsEnabled(any()) } returns Either.Right(Unit)
+            everySuspend { userConfigRepository.setAppsEnabled(any()) } returns Either.Right(Unit)
         }
     }
 }
-

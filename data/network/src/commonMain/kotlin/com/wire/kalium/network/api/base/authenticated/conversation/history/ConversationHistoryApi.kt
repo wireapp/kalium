@@ -23,9 +23,7 @@ import com.wire.kalium.network.api.authenticated.conversation.HistoryClientId
 import com.wire.kalium.network.api.base.authenticated.BaseApi
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.utils.NetworkResponse
-import io.mockative.Mockable
 
-@Mockable
 interface ConversationHistoryApi : BaseApi {
     suspend fun updateHistorySettingsForConversation(
         conversationId: ConversationId,

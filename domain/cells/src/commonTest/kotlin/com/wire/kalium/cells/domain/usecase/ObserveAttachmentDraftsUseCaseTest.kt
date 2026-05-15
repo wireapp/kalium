@@ -17,18 +17,20 @@
  */
 package com.wire.kalium.cells.domain.usecase
 
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
 import com.wire.kalium.cells.domain.model.AttachmentDraft
 import com.wire.kalium.cells.domain.model.AttachmentUploadStatus
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.id.ConversationId
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.every
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.matcher.any
+import dev.mokkery.everySuspend
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.every
+import dev.mokkery.mock
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -45,22 +47,22 @@ class ObserveAttachmentDraftsUseCaseTest {
 
         useCase.invoke(ConversationId("1", "test"))
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.repository.remove("1")
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement {
 
-        val repository = mock(MessageAttachmentDraftRepository::class)
-        val uploadManager = mock(CellUploadManager::class)
+        val repository = mock<MessageAttachmentDraftRepository>(mode = MockMode.autoUnit)
+        val uploadManager = mock<CellUploadManager>(mode = MockMode.autoUnit)
 
         fun withUploadManager() = apply {
             every { uploadManager.isUploading(any()) }.returns(false)
         }
 
         suspend fun withRepository() = apply {
-            coEvery { repository.getAll(any()) }.returns(listOf(
+            everySuspend { repository.getAll(any()) }.returns(listOf(
                 AttachmentDraft(
                     uuid = "1",
                     versionId = "1",
@@ -76,9 +78,9 @@ class ObserveAttachmentDraftsUseCaseTest {
                 )
             ).right())
 
-            coEvery { repository.remove(any()) }.returns(Unit.right())
+            everySuspend { repository.remove(any()) }.returns(Unit.right())
 
-            coEvery { repository.observe(any()) }.returns(emptyFlow())
+            everySuspend { repository.observe(any()) }.returns(emptyFlow())
         }
 
         fun arrange() = this to ObserveAttachmentDraftsUseCaseImpl(repository, uploadManager)

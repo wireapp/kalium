@@ -23,11 +23,12 @@ import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -43,9 +44,9 @@ class UpdateDisplayNameUseCaseTest {
         val result = updateDisplayName(NEW_DISPLAY_NAME)
 
         assertTrue(result is DisplayNameUpdateResult.Success)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.accountRepository.updateSelfDisplayName(any())
-        }.wasInvoked(once)
+        }
     }
 
     @Test
@@ -57,24 +58,24 @@ class UpdateDisplayNameUseCaseTest {
         val result = updateDisplayName(NEW_DISPLAY_NAME)
 
         assertTrue(result is DisplayNameUpdateResult.Failure)
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.accountRepository.updateSelfDisplayName(any())
-        }.wasInvoked(once)
+        }
     }
 
     private class Arrangement(private var dispatcher: KaliumDispatcher) {
-        val accountRepository = mock(AccountRepository::class)
+        val accountRepository = mock<AccountRepository>()
 
         suspend fun withSuccessfulUploadResponse() = apply {
-            coEvery {
+            everySuspend {
                 accountRepository.updateSelfDisplayName(any())
-            }.returns(Either.Right(Unit))
+            } returns Either.Right(Unit)
         }
 
         suspend fun withErrorResponse() = apply {
-            coEvery {
+            everySuspend {
                 accountRepository.updateSelfDisplayName(any())
-            }.returns(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
+            } returns Either.Left(CoreFailure.Unknown(Throwable("an error")))
         }
 
         fun arrange() = this to UpdateDisplayNameUseCaseImpl(accountRepository, dispatcher)

@@ -19,7 +19,6 @@ package com.wire.kalium.persistence.dao
 
 import com.wire.kalium.persistence.SearchQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
-import io.mockative.Mockable
 import kotlinx.coroutines.withContext
 
 data class UserSearchEntity(
@@ -55,7 +54,6 @@ private object UserSearchEntityMapper {
     }
 }
 
-@Mockable
 interface SearchDAO {
     suspend fun getKnownContacts(): List<UserSearchEntity>
     suspend fun searchList(query: String): List<UserSearchEntity>

@@ -18,12 +18,9 @@
 
 package com.wire.kalium.logic.feature.auth
 
-import io.mockative.Mockable
-
 /**
  * Validates an email address
  */
-@Mockable
 public interface ValidateEmailUseCase {
     /**
      * Validates an email address

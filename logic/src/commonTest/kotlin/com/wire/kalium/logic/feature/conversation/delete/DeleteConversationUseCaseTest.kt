@@ -18,25 +18,30 @@
 package com.wire.kalium.logic.feature.conversation.delete
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
-import io.mockative.any
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.once
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
+import dev.mokkery.every
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -44,7 +49,6 @@ class DeleteConversationUseCaseTest {
 
     @Test
     fun givenMlsConversation_WhenDeletingTheConversation_ThenShouldBeDeletedLocallyAndWiped() = runTest {
-        // given
         val (arrangement, useCase) = Arrangement()
             .arrange {
                 withGetConversationProtocolInfo(Either.Right(MLS_PROTOCOL_INFO))
@@ -52,36 +56,30 @@ class DeleteConversationUseCaseTest {
                 withDeletingConversationLocallySucceeding()
             }
 
-        // when
         val result = useCase(arrangement.transactionContext, CONVERSATION_ID)
 
-        // then
         result.shouldSucceed()
-        coVerify { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }.wasInvoked(once)
-        coVerify { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }
     }
 
     @Test
     fun givenMlsConversation_WhenDeletingConversationLocallyFails_ThenShouldNotWipeAndReturnError() = runTest {
-        // given
         val (arrangement, useCase) = Arrangement()
             .arrange {
                 withGetConversationProtocolInfo(Either.Right(MLS_PROTOCOL_INFO))
                 withDeletingConversationLocallyFailing()
             }
 
-        // when
         val result = useCase(arrangement.transactionContext, CONVERSATION_ID)
 
-        // then
         result.shouldFail()
-        coVerify { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }.wasInvoked(once)
-        coVerify { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }.wasNotInvoked()
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }
+        verifySuspend(VerifyMode.not) { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }
     }
 
     @Test
     fun givenMlsConversation_WhenWipingFails_ThenShouldReturnError() = runTest {
-        // given
         val (arrangement, useCase) = Arrangement()
             .arrange {
                 withGetConversationProtocolInfo(Either.Right(MLS_PROTOCOL_INFO))
@@ -89,23 +87,24 @@ class DeleteConversationUseCaseTest {
                 withFailedLeaveGroup(GROUP_ID)
             }
 
-        // when
         val result = useCase(arrangement.transactionContext, CONVERSATION_ID)
 
-        // then
         result.shouldFail()
-        coVerify { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }.wasInvoked(once)
-        coVerify { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }.wasInvoked(once)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.conversationRepository.deleteConversationLocally(eq(CONVERSATION_ID)) }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID)) }
     }
 
-    private class Arrangement :
-        ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+    private class Arrangement {
+
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
+        val transactionContext = mock<CryptoTransactionContext>(mode = MockMode.autoUnit)
+        private val mlsContext = mock<MlsCoreCryptoContext>(mode = MockMode.autoUnit)
 
         val persistenceEventHookNotifier: PersistenceEventHookNotifier = object : PersistenceEventHookNotifier {}
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteConversationUseCase> = run {
+            every { transactionContext.mls } returns mlsContext
             val useCase = DeleteConversationUseCaseImpl(
                 conversationRepository = conversationRepository,
                 mlsConversationRepository = mlsConversationRepository,
@@ -114,6 +113,28 @@ class DeleteConversationUseCaseTest {
             )
             block()
             return this to useCase
+        }
+
+        suspend fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) {
+            everySuspend { conversationRepository.getConversationProtocolInfo(any()) } returns result
+        }
+
+        suspend fun withDeletingConversationLocallySucceeding() {
+            everySuspend { conversationRepository.deleteConversationLocally(any()) } returns Either.Right(true)
+        }
+
+        suspend fun withDeletingConversationLocallyFailing() {
+            everySuspend {
+                conversationRepository.deleteConversationLocally(any())
+            } returns Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
+        }
+
+        suspend fun withSuccessfulLeaveGroup(groupId: GroupID) {
+            everySuspend { mlsConversationRepository.leaveGroup(any(), eq(groupId)) } returns Either.Right(Unit)
+        }
+
+        suspend fun withFailedLeaveGroup(groupId: GroupID) {
+            everySuspend { mlsConversationRepository.leaveGroup(any(), eq(groupId)) } returns Either.Left(CoreFailure.Unknown(null))
         }
     }
 

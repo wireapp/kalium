@@ -173,6 +173,9 @@ public class ConversationScope internal constructor(
     public val getMembersToMention: MembersToMentionUseCase
         get() = MembersToMentionUseCase(observeConversationMembers = observeConversationMembers, selfUserId = selfUserId)
 
+    public val observeEligibleMembersForConversationAdminRole: ObserveEligibleMembersForConversationAdminRoleUseCase
+        get() = ObserveEligibleMembersForConversationAdminRoleUseCaseImpl(observeConversationMembers, selfUserId)
+
     public val observeUserListById: ObserveUserListByIdUseCase
         get() = ObserveUserListByIdUseCase(userRepository)
 
@@ -301,6 +304,16 @@ public class ConversationScope internal constructor(
 
     public val leaveConversation: LeaveConversationUseCase
         get() = LeaveConversationUseCaseImpl(conversationGroupRepository, selfUserId)
+
+    public val promoteAdminAndLeaveConversation: PromoteAdminAndLeaveConversationUseCase
+        get() = PromoteAdminAndLeaveConversationUseCaseImpl(updateConversationMemberRole, leaveConversation)
+
+    public val checkConversationLeaveConditions: CheckConversationLeaveConditionsUseCase
+        get() = CheckConversationLeaveConditionsUseCaseImpl(
+            conversationRepository,
+            observeEligibleMembersForConversationAdminRole,
+            selfUserId
+        )
 
     public val renameConversation: RenameConversationUseCase
         get() = RenameConversationUseCaseImpl(
