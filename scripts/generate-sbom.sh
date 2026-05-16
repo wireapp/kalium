@@ -30,14 +30,19 @@ OUTPUT_DIR="build/sbom"
 SCANCODE_PROCESSES="${SCANCODE_PROCESSES:-8}"
 SBOM_GRADLE_EXTRA_ARGS="${SBOM_GRADLE_EXTRA_ARGS:-}"
 SKIP_EXTRACT=false
+SKIP_SCAN=false
 
 usage() {
     cat >&2 <<EOF
-Usage: $(basename "$0") [--skip-extract] [-h|--help]
+Usage: $(basename "$0") [--skip-extract] [--skip-scan] [-h|--help]
 
   --skip-extract   Reuse an existing $ARTIFACTS_DIR tree: skip Gradle artifact
                    collection and extractcode unpacking, run scancode directly.
                    Use this to re-scan after tweaking scancode flags.
+  --skip-scan      Reuse an existing $OUTPUT_DIR/scan.json: skip Gradle,
+                   extractcode, scancode, and the venv/toolchain setup.
+                   Only the post-scan license summaries are regenerated.
+                   Implies --skip-extract.
   -h, --help       Show this help.
 EOF
 }
@@ -45,13 +50,19 @@ EOF
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --skip-extract) SKIP_EXTRACT=true; shift ;;
+        --skip-scan) SKIP_SCAN=true; SKIP_EXTRACT=true; shift ;;
         -h|--help) usage; exit 0 ;;
         *) echo "ERROR: unknown argument: $1" >&2; usage; exit 1 ;;
     esac
 done
 
-if [[ "$SKIP_EXTRACT" == "true" && ! -d "$ARTIFACTS_DIR" ]]; then
+if [[ "$SKIP_EXTRACT" == "true" && "$SKIP_SCAN" != "true" && ! -d "$ARTIFACTS_DIR" ]]; then
     echo "ERROR: --skip-extract requires an existing $ARTIFACTS_DIR (none found)." >&2
+    exit 1
+fi
+
+if [[ "$SKIP_SCAN" == "true" && ! -f "$OUTPUT_DIR/scan.json" ]]; then
+    echo "ERROR: --skip-scan requires an existing $OUTPUT_DIR/scan.json (none found)." >&2
     exit 1
 fi
 
@@ -62,6 +73,10 @@ fi
 if [[ "$(uname -s)" == "Darwin" && "$SBOM_GRADLE_EXTRA_ARGS" != *"USE_UNIFIED_CORE_CRYPTO"* ]]; then
     SBOM_GRADLE_EXTRA_ARGS="-PUSE_UNIFIED_CORE_CRYPTO=true $SBOM_GRADLE_EXTRA_ARGS"
 fi
+
+if [[ "$SKIP_SCAN" == "true" ]]; then
+    echo "==> Skipping toolchain setup and scancode (--skip-scan); reusing $OUTPUT_DIR/scan.json"
+else
 
 echo "==> [1/4] Setting up VENV and ScanCode..."
 if [ ! -d ".venv" ]; then
@@ -141,8 +156,12 @@ else
         exit 1
     fi
 
-    echo "==> [3/4] Unpacking archives with extractcode"
-    extractcode --shallow "$ARTIFACTS_DIR"
+    echo "==> [3/4] Unpacking archives with extractcode (recursive)"
+    # Recursive (no --shallow) so nested archives like classes.jar inside an
+    # extracted .aar land on disk as plain files. ScanCode then skips the
+    # original archive blobs via --ignore and never has to peek inside them
+    # for package metadata, which is what inflated the scan count.
+    extractcode "$ARTIFACTS_DIR"
 fi
 
 echo "==> [4/4] Running scancode (this will take 30+ minutes)"
@@ -185,8 +204,92 @@ else
     echo "WARN: installed scancode lacks --cyclonedx; converting JSON afterwards (or skip)." >&2
 fi
 
+# Pre-scan diagnostic: count total files on disk, files matching any ignore
+# glob, and the top extensions of what's left. Lets us sanity-check the input
+# size before scancode burns hours on it.
+echo
+echo "  Pre-scan summary for $ARTIFACTS_DIR:"
+TOTAL_FILES=$(find "$ARTIFACTS_DIR" -type f | wc -l | tr -d ' ')
+IGNORE_FIND_EXPR=()
+for pattern in "${SCANCODE_IGNORES[@]}"; do
+    IGNORE_FIND_EXPR+=(-iname "$pattern" -o)
+done
+last_idx=$(( ${#IGNORE_FIND_EXPR[@]} - 1 ))
+unset "IGNORE_FIND_EXPR[$last_idx]"  # drop trailing -o
+IGNORED_FILES=$(find "$ARTIFACTS_DIR" -type f \( "${IGNORE_FIND_EXPR[@]}" \) | wc -l | tr -d ' ')
+TO_SCAN=$((TOTAL_FILES - IGNORED_FILES))
+printf "    total files on disk: %d\n" "$TOTAL_FILES"
+printf "    matched by --ignore: %d\n" "$IGNORED_FILES"
+printf "    will be scanned:     %d\n" "$TO_SCAN"
+echo "    top 10 extensions in the to-be-scanned set:"
+find "$ARTIFACTS_DIR" -type f ! \( "${IGNORE_FIND_EXPR[@]}" \) \
+    | sed -n 's/.*\.\([A-Za-z0-9]*\)$/\1/p' \
+    | sort | uniq -c | sort -rn | head -10 \
+    | awk '{printf "      %6d  .%s\n", $1, $2}'
+echo
+
 scancode "${SCANCODE_ARGS[@]}" "$ARTIFACTS_DIR"
+
+fi  # end --skip-scan branch
+
+# Plain-text license summary derived from scan.json. The bundled --html-app
+# viewer struggles with large data.js files; this gives a quick human-readable
+# rollup of license_expression -> file count without involving a browser.
+echo
+echo "==> Generating license summary from scan.json"
+if command -v jq >/dev/null 2>&1; then
+    # Rollup: license_expression -> file count, sorted descending.
+    jq -r '
+      .files
+      | map(select(.detected_license_expression != null))
+      | group_by(.detected_license_expression)
+      | map({license: .[0].detected_license_expression, files: length})
+      | sort_by(-.files)[]
+      | "\(.files)\t\(.license)"
+    ' "$OUTPUT_DIR/scan.json" > "$OUTPUT_DIR/scan-licenses.tsv"
+    LICENSE_COUNT=$(wc -l < "$OUTPUT_DIR/scan-licenses.tsv" | tr -d ' ')
+    echo "  Wrote $OUTPUT_DIR/scan-licenses.tsv ($LICENSE_COUNT distinct license expressions)"
+
+    # Detail: per license, list every file that carries it.
+    jq -r '
+      .files
+      | map(select(.detected_license_expression != null))
+      | group_by(.detected_license_expression)[]
+      | "## \(.[0].detected_license_expression) — \(length) files",
+        (.[].path | "  \(.)"),
+        ""
+    ' "$OUTPUT_DIR/scan.json" > "$OUTPUT_DIR/scan-licenses-by-file.txt"
+    echo "  Wrote $OUTPUT_DIR/scan-licenses-by-file.txt"
+
+    # Detail: per license, list every unpacked third-party package that carries it.
+    # Collapses many files inside e.g. slf4j-api-2.0.17.jar-extract/ down to that
+    # one package directory; falls back to the first three path segments for
+    # paths that aren't inside an extracted archive (npm modules, raw natives
+    # like artifacts/native/avs/...). Using scan (not capture) here so paths
+    # with no archive segment yield an empty stream instead of an error.
+    jq -r '
+      .files
+      | map(select(.detected_license_expression != null))
+      | map({
+          license: .detected_license_expression,
+          pkg: ([.path | scan("[^/]+\\.(?:jar|aar|klib|war|zip)-extract")][0]
+                // (.path | split("/")[0:3] | join("/")))
+        })
+      | unique_by({license, pkg})
+      | group_by(.license)[]
+      | "## \(.[0].license) — \(length) packages",
+        (.[].pkg | "  \(.)"),
+        ""
+    ' "$OUTPUT_DIR/scan.json" > "$OUTPUT_DIR/scan-licenses-by-package.txt"
+    echo "  Wrote $OUTPUT_DIR/scan-licenses-by-package.txt"
+else
+    echo "WARN: jq not found on PATH; skipping license summary. Install jq to enable." >&2
+fi
 
 echo
 echo "SBOM outputs:"
-ls -lh "$OUTPUT_DIR"/scan.* "$OUTPUT_DIR"/scan-summary.html 2>/dev/null || true
+ls -lh "$OUTPUT_DIR"/scan.* \
+       "$OUTPUT_DIR"/scan-summary.html \
+       "$OUTPUT_DIR"/scan-licenses.tsv \
+       "$OUTPUT_DIR"/scan-licenses-by-file.txt \
+       "$OUTPUT_DIR"/scan-licenses-by-package.txt 2>/dev/null || true
