@@ -4,12 +4,16 @@
 #
 # Pipeline:
 #   1. Gradle materialises every third-party runtime artifact (jars, AARs, klibs,
-#      resolved node_modules, native AVS libs) into build/sbom/artifacts/.
+#      resolved node_modules, native AVS libs) into build/sbom/artifacts/, and
+#      every external dependency's Maven POM into build/sbom/poms/.
 #   2. extractcode unpacks all archives recursively in place (this is what makes
 #      AAR contents — classes.jar, AndroidManifest.xml, META-INF/ — visible to
 #      ScanCode rather than being treated as opaque blobs).
 #   3. scancode walks the unpacked tree and emits JSON, SPDX, CycloneDX, and
 #      HTML reports under build/sbom/.
+#   4. POM <licenses> blocks are parsed into scan-pom-licenses.tsv — the
+#      authoritative metadata source for packages whose distribution doesn't
+#      bundle a LICENSE file (kotlin-stdlib, atomicfu, kermit, AndroidX, etc.).
 #
 # Requirements:
 #   - JDK 21 and the project's usual Gradle toolchain
@@ -191,7 +195,6 @@ SCANCODE_ARGS=(
     --processes "$SCANCODE_PROCESSES"
     --json-pp "$OUTPUT_DIR/scan.json"
     --spdx-tv "$OUTPUT_DIR/scan.spdx"
-    --html-app "$OUTPUT_DIR/scan-summary.html"
 )
 for pattern in "${SCANCODE_IGNORES[@]}"; do
     SCANCODE_ARGS+=(--ignore "$pattern")
@@ -286,10 +289,255 @@ else
     echo "WARN: jq not found on PATH; skipping license summary. Install jq to enable." >&2
 fi
 
+# License-file presence audit. Independent of scancode: walks the unpacked
+# artifact tree directly to flag third-party packages that do NOT ship a
+# LICENSE / NOTICE / COPYING file alongside their code. The missing list is
+# the punch list for the customer THIRD-PARTY-NOTICE.md — every entry needs
+# a manual fallback (POM <licenses>, upstream repo, etc.) before the
+# deliverable is complete.
+#
+# Dedup matters here: the same third-party jar (e.g. kotlin-stdlib-2.3.20.jar)
+# is resolved by every Kalium module that uses Kotlin and therefore appears
+# under many per-module paths in build/sbom/artifacts/. We collapse those to
+# one entry per unique package — basename for *-extract dirs, name (or
+# @scope/name) for npm packages, and a single "native/avs" entry for the
+# prebuilt AVS blob.
+echo
+echo "==> Auditing for LICENSE/NOTICE/COPYING files in each unique third-party package"
+if [[ -d "$ARTIFACTS_DIR" ]]; then
+    PACKAGE_DIRS=()
+
+    # 1) Top-level *-extract dirs (an extracted jar/aar/klib/zip/war). Skip
+    #    nested ones — e.g. classes.jar-extract inside an .aar-extract is
+    #    part of the parent package, not a separately-licensed unit.
+    while IFS= read -r dir; do
+        parent="$(dirname "$dir")"
+        is_nested=false
+        while [[ "$parent" != "$ARTIFACTS_DIR" && "$parent" != "/" && "$parent" != "." ]]; do
+            if [[ "$(basename "$parent")" == *-extract ]]; then
+                is_nested=true
+                break
+            fi
+            parent="$(dirname "$parent")"
+        done
+        if ! $is_nested; then
+            PACKAGE_DIRS+=("$dir")
+        fi
+    done < <(find "$ARTIFACTS_DIR" -type d -name '*-extract' 2>/dev/null)
+
+    # 2) NPM packages: every directory containing a package.json. Captures
+    #    both top-level node_modules entries and any nested transitive deps.
+    if [[ -d "$ARTIFACTS_DIR/npm" ]]; then
+        while IFS= read -r pj; do
+            PACKAGE_DIRS+=("$(dirname "$pj")")
+        done < <(find "$ARTIFACTS_DIR/npm" -name 'package.json' -type f 2>/dev/null)
+    fi
+
+    # 3) Prebuilt AVS native libs — opaque blob, audited as one unit.
+    if [[ -d "$ARTIFACTS_DIR/native/avs" ]]; then
+        PACKAGE_DIRS+=("$ARTIFACTS_DIR/native/avs")
+    fi
+
+    # Build (dedup-key, canonical-path) pairs and keep one path per key —
+    # alphabetically first via `sort`, then `awk '!seen[$1]++'`. Keys live in
+    # disjoint namespaces (basenames end in `-extract`, npm keys never do,
+    # AVS is a literal), so they cannot collide across sources.
+    DEDUP_MAP=$(mktemp)
+    trap 'rm -f "$DEDUP_MAP"' EXIT INT TERM
+    for pkg in "${PACKAGE_DIRS[@]}"; do
+        rel="${pkg#$ARTIFACTS_DIR/}"
+        case "$rel" in
+            native/avs*)
+                key="native/avs" ;;
+            npm/*/node_modules/*)
+                # Strip up to the LAST node_modules/ so deeply nested
+                # transitive deps (foo/node_modules/bar/node_modules/baz)
+                # collapse to just `baz`. Preserves @scope/name for scoped
+                # packages.
+                key="${rel##*/node_modules/}" ;;
+            *-extract)
+                key="$(basename "$pkg")" ;;
+            *)
+                key="$rel" ;;
+        esac
+        printf '%s\t%s\n' "$key" "$pkg"
+    done | sort | awk -F'\t' '!seen[$1]++' > "$DEDUP_MAP"
+
+    MISSING_FILE="$OUTPUT_DIR/scan-license-files-missing.txt"
+    FOUND_FILE="$OUTPUT_DIR/scan-license-files-found.txt"
+    : > "$MISSING_FILE"
+    : > "$FOUND_FILE"
+
+    MISSING_COUNT=0
+    FOUND_COUNT=0
+    while IFS=$'\t' read -r key canonical; do
+        # Case-insensitive prefix match. Catches LICENSE, LICENSE.txt,
+        # LICENCE-MIT, NOTICE.md, COPYING.LESSER, UNLICENSE, etc. Prefixes
+        # (not *LICENSE*) keep false positives like "JLicenseManager.kt"
+        # out — a false positive here would silently drop a notice from
+        # the customer report, which is worse than over-reporting misses.
+        matches=$(find "$canonical" -type f \
+            \( -iname 'LICENSE*' -o -iname 'LICENCE*' \
+               -o -iname 'NOTICE*' -o -iname 'COPYING*' \
+               -o -iname 'UNLICENSE*' \) 2>/dev/null)
+        if [[ -n "$matches" ]]; then
+            FOUND_COUNT=$((FOUND_COUNT + 1))
+            {
+                echo "## $key"
+                while IFS= read -r m; do
+                    echo "  ${m#$ARTIFACTS_DIR/}"
+                done <<< "$matches"
+                echo
+            } >> "$FOUND_FILE"
+        else
+            MISSING_COUNT=$((MISSING_COUNT + 1))
+            echo "$key" >> "$MISSING_FILE"
+        fi
+    done < "$DEDUP_MAP"
+
+    sort -o "$MISSING_FILE" "$MISSING_FILE"
+
+    TOTAL=$((FOUND_COUNT + MISSING_COUNT))
+    OCCURRENCES=${#PACKAGE_DIRS[@]}
+    printf "  Audited %d unique packages (from %d artifact occurrences):\n" \
+        "$TOTAL" "$OCCURRENCES"
+    printf "    %d have a LICENSE/NOTICE/COPYING file\n" "$FOUND_COUNT"
+    printf "    %d do not (see %s)\n" "$MISSING_COUNT" "$MISSING_FILE"
+    printf "  Wrote %s\n" "$FOUND_FILE"
+else
+    echo "  Skipped (no $ARTIFACTS_DIR on disk)"
+fi
+
+# POM-derived license metadata. Every Maven POM materialised by Sbom.kt is
+# parsed for its <licenses> block — the authoritative SPDX-equivalent source
+# for license name + URL per package. This fills the gap for packages that
+# don't bundle a LICENSE file in their jar/aar/klib and is the structured
+# feedstock for the eventual customer THIRD-PARTY-NOTICE.md.
+echo
+echo "==> Parsing POM <licenses> metadata"
+POMS_DIR="$OUTPUT_DIR/poms"
+if [[ ! -d "$POMS_DIR" ]]; then
+    echo "  Skipped (no $POMS_DIR — run Gradle artifact collection to materialise POMs)"
+elif ! command -v python3 >/dev/null 2>&1; then
+    echo "  Skipped (python3 not on PATH)"
+else
+    POM_TSV="$OUTPUT_DIR/scan-pom-licenses.tsv"
+    POM_NOLIC="$OUTPUT_DIR/scan-pom-no-licenses.txt"
+    OVERRIDE_TSV="scripts/sbom-license-overrides.tsv"
+    # Heredoc is single-quoted so $vars / f-strings survive verbatim into Python.
+    python3 - "$POMS_DIR" "$POM_TSV" "$POM_NOLIC" "$OVERRIDE_TSV" <<'PY'
+import csv
+import glob
+import os
+import sys
+import xml.etree.ElementTree as ET
+
+poms_dir, out_tsv, out_nolic, override_path = sys.argv[1:5]
+NS = '{http://maven.apache.org/POM/4.0.0}'
+
+
+def text(elem, tag):
+    """Inner text of <tag> directly under elem, stripped. '' if absent."""
+    if elem is None:
+        return ''
+    node = elem.find(NS + tag)
+    if node is None or not node.text:
+        return ''
+    return node.text.strip()
+
+
+def coord(root):
+    """Resolve groupId/artifactId/version, falling back to <parent> for the
+    inherited fields (common in POMs that omit groupId/version on the leaf)."""
+    parent = root.find(NS + 'parent')
+    gid = text(root, 'groupId') or text(parent, 'groupId')
+    aid = text(root, 'artifactId')
+    ver = text(root, 'version') or text(parent, 'version')
+    return gid, aid, ver
+
+
+def licenses(root):
+    block = root.find(NS + 'licenses')
+    if block is None:
+        return []
+    out = []
+    for lic in block.findall(NS + 'license'):
+        name = text(lic, 'name')
+        url = text(lic, 'url')
+        if name or url:
+            out.append((name, url))
+    return out
+
+
+def load_overrides(path):
+    """Read the manual override TSV. Keyed by 'groupId:artifactId' — entries
+    cover all versions of that artifact. Comments (#) and the header row are
+    ignored; missing file is non-fatal."""
+    table = {}
+    if not os.path.isfile(path):
+        print(f'  WARN: override table {path} not found; no overrides applied')
+        return table
+    with open(path) as f:
+        for row in csv.reader(f, delimiter='\t'):
+            if not row or not row[0] or row[0].lstrip().startswith('#'):
+                continue
+            if row[0] == 'groupId':
+                continue
+            if len(row) < 4:
+                continue
+            gid, aid, names, urls = (c.strip() for c in row[:4])
+            table[f'{gid}:{aid}'] = (names, urls)
+    return table
+
+
+overrides = load_overrides(override_path)
+pom_count = from_pom = from_override = unresolved = 0
+with open(out_tsv, 'w') as tsv, open(out_nolic, 'w') as nolic:
+    tsv.write('groupId\tartifactId\tversion\tlicense_names\tlicense_urls\tsource\n')
+    for pom in sorted(glob.iglob(os.path.join(poms_dir, '**/*.pom'), recursive=True)):
+        try:
+            root = ET.parse(pom).getroot()
+        except ET.ParseError:
+            continue
+        pom_count += 1
+        gid, aid, ver = coord(root)
+        # Override table wins over POM-declared metadata: it's curated and
+        # canonical, the POM is upstream-declared (sometimes inconsistent or
+        # ambiguous). Fall through to <licenses> only when no override matches.
+        hit = overrides.get(f'{gid}:{aid}')
+        if hit is not None:
+            from_override += 1
+            names, urls = hit
+            tsv.write(f'{gid}\t{aid}\t{ver}\t{names}\t{urls}\toverride\n')
+            continue
+        lics = licenses(root)
+        if lics:
+            from_pom += 1
+            names = ' | '.join(n for n, _ in lics)
+            urls = ' | '.join(u for _, u in lics)
+            tsv.write(f'{gid}\t{aid}\t{ver}\t{names}\t{urls}\tpom\n')
+        else:
+            unresolved += 1
+            nolic.write(f'{gid}:{aid}:{ver}\n')
+
+print(f'  Parsed {pom_count} POMs:')
+print(f'    {from_override} resolved via {override_path} (authoritative)')
+print(f'    {from_pom} fell through to POM <licenses>')
+print(f'    {unresolved} unresolved')
+print(f'  Wrote {out_tsv}')
+if unresolved:
+    print(f'  Wrote {out_nolic} ({unresolved} entries — add to {override_path})')
+PY
+fi
+
 echo
 echo "SBOM outputs:"
 ls -lh "$OUTPUT_DIR"/scan.* \
        "$OUTPUT_DIR"/scan-summary.html \
        "$OUTPUT_DIR"/scan-licenses.tsv \
        "$OUTPUT_DIR"/scan-licenses-by-file.txt \
-       "$OUTPUT_DIR"/scan-licenses-by-package.txt 2>/dev/null || true
+       "$OUTPUT_DIR"/scan-licenses-by-package.txt \
+       "$OUTPUT_DIR"/scan-license-files-found.txt \
+       "$OUTPUT_DIR"/scan-license-files-missing.txt \
+       "$OUTPUT_DIR"/scan-pom-licenses.tsv \
+       "$OUTPUT_DIR"/scan-pom-no-licenses.txt 2>/dev/null || true

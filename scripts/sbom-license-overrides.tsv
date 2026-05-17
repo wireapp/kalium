@@ -1,0 +1,29 @@
+# Manual license overrides for Maven coordinates. These entries are the
+# AUTHORITATIVE source — the POM parser (generate-sbom.sh) checks this table
+# FIRST and only falls back to the POM's <licenses> block when no override
+# matches. Use this to:
+#   - Pin a canonical name/URL for packages whose POMs use inconsistent
+#     wording ("The Apache Software License, Version 2.0" vs "Apache-2.0").
+#   - Disambiguate dual-licensed projects when Kalium ships under one option.
+#   - Cover packages whose POMs declare no <licenses> at all (the original
+#     trigger for this file — SLF4J, the listenablefuture stubs, etc.).
+#
+# Each entry covers ALL versions of <groupId>:<artifactId>. Rows emitted from
+# this table land in scan-pom-licenses.tsv with the `source` column set to
+# `override` so downstream consumers can audit provenance per package.
+#
+# How to update: when build/sbom/scan-pom-no-licenses.txt grows OR when the
+# POM-derived metadata for a known package is wrong, verify the license
+# against the upstream project's documentation (LICENSE file in the repo,
+# project website, etc.) and add a row here.
+#
+# Format: tab-separated, four columns.
+groupId	artifactId	license_names	license_urls
+com.google.auto.value	auto-value-annotations	The Apache Software License, Version 2.0	https://www.apache.org/licenses/LICENSE-2.0.txt
+com.google.guava	failureaccess	The Apache Software License, Version 2.0	https://www.apache.org/licenses/LICENSE-2.0.txt
+com.google.guava	guava	The Apache Software License, Version 2.0	https://www.apache.org/licenses/LICENSE-2.0.txt
+com.google.guava	listenablefuture	The Apache Software License, Version 2.0	https://www.apache.org/licenses/LICENSE-2.0.txt
+commons-io	commons-io	The Apache Software License, Version 2.0	https://www.apache.org/licenses/LICENSE-2.0.txt
+org.apache.commons	commons-math3	The Apache Software License, Version 2.0	https://www.apache.org/licenses/LICENSE-2.0.txt
+org.apache.tika	tika-core	The Apache Software License, Version 2.0	https://www.apache.org/licenses/LICENSE-2.0.txt
+org.slf4j	slf4j-api	MIT License	https://www.slf4j.org/license.html

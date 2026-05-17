@@ -19,9 +19,14 @@
 package com.wire.kalium.plugins
 
 import org.gradle.api.Project
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.gradle.api.artifacts.result.ResolvedArtifactResult
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.tasks.Copy
 import org.gradle.kotlin.dsl.register
+import org.gradle.maven.MavenModule
+import org.gradle.maven.MavenPomArtifact
 
 // Paths/names that are NOT part of the licensed Kalium deliverable.
 // This is intentionally separate from `excludedFromCoverage` in the root build script —
@@ -101,7 +106,18 @@ fun Project.registerSbomCollectionTasks() {
                     // current host (e.g. iOS klibs on Linux CI) must not kill the run —
                     // the customer deliverable will simply omit those targets and the
                     // shell wrapper warns about it.
-                    from(cfg.incoming.artifactView { lenient(true) }.files)
+                    //
+                    // componentFilter drops first-party project(":...") dependencies:
+                    // Kalium's own modules are the deliverable, not a third party that
+                    // needs notice attribution. Only external Maven/Gradle modules and
+                    // file dependencies (anything that isn't a sibling project) flow
+                    // through to the SBOM.
+                    from(
+                        cfg.incoming.artifactView {
+                            lenient(true)
+                            componentFilter { id -> id !is ProjectComponentIdentifier }
+                        }.files
+                    )
                     into(artifactsDir.map { it.dir("$bucket/$safeModuleId") })
                     duplicatesStrategy = DuplicatesStrategy.INCLUDE
                 }
@@ -151,6 +167,54 @@ fun Project.registerSbomCollectionTasks() {
                 val dest = java.io.File(outRoot, "npm/yarn.lock")
                 dest.parentFile.mkdirs()
                 yarnLock.copyTo(dest, overwrite = true)
+            }
+
+            // Maven POMs for every external coordinate resolved by the in-scope
+            // configurations. The <licenses> block in each POM is the
+            // authoritative source for license name + URL when a package's
+            // distribution doesn't bundle a LICENSE file (kotlin-stdlib,
+            // atomicfu, kermit, the AndroidX AARs, etc.). Lands under
+            // build/sbom/poms/<group-as-path>/<artifact>-<version>.pom for the
+            // shell wrapper to parse into a TSV.
+            val pomsDir = java.io.File(outRoot.parentFile, "poms")
+            val moduleIds: Set<ModuleComponentIdentifier> = rootProject.subprojects
+                .filter { it.isInSbomScope() }
+                .flatMap { sub ->
+                    sub.configurations
+                        .matching {
+                            it.isCanBeResolved && PRODUCTION_CLASSPATH_NAMES.matches(it.name)
+                        }
+                        .flatMap { cfg ->
+                            runCatching {
+                                cfg.incoming.resolutionResult.allComponents
+                                    .map { it.id }
+                                    .filterIsInstance<ModuleComponentIdentifier>()
+                            }.getOrElse { emptyList() }
+                        }
+                }
+                .toSet()
+
+            if (moduleIds.isNotEmpty()) {
+                pomsDir.mkdirs()
+                val resolved = runCatching {
+                    rootProject.dependencies.createArtifactResolutionQuery()
+                        .forComponents(moduleIds)
+                        .withArtifacts(MavenModule::class.java, MavenPomArtifact::class.java)
+                        .execute()
+                }.getOrNull()
+                resolved?.resolvedComponents?.forEach { component ->
+                    val id = component.id as? ModuleComponentIdentifier ?: return@forEach
+                    val groupDir = java.io.File(pomsDir, id.group.replace('.', '/'))
+                    groupDir.mkdirs()
+                    component.getArtifacts(MavenPomArtifact::class.java).forEach { artifact ->
+                        if (artifact is ResolvedArtifactResult) {
+                            artifact.file.copyTo(
+                                java.io.File(groupDir, "${id.module}-${id.version}.pom"),
+                                overwrite = true
+                            )
+                        }
+                    }
+                }
             }
         }
     }
