@@ -35,16 +35,26 @@ import org.gradle.maven.MavenPomArtifact
 private val SBOM_EXCLUDED_PATH_PREFIXES = listOf("sample/", "test/", "tools/")
 private val SBOM_EXCLUDED_PROJECT_PATHS = setOf("data/persistence-test")
 
-// Production runtime classpaths only — exclude test, benchmark, and metadata-helper
-// configurations. The licensee receives shipping code; test deps don't ship.
-// Android note: the `com.android.kotlin.multiplatform.library` plugin in this project
-// exposes a single `androidRuntimeClasspath` (no Release/Main suffix). The optional
-// `(Release|Main)` alternation keeps the matcher tolerant if AGP/KMP versions change
-// the naming.
-private val PRODUCTION_CLASSPATH_NAMES = Regex(
-    "^(jvm|js)RuntimeClasspath$" +
-        "|^android(Release|Main)?RuntimeClasspath$" +
-        "|^(iosArm64|iosSimulatorArm64|macosArm64)MainResolvableDependenciesMetadata$"
+// Production runtime classpaths to mine, listed by explicit name. The Kotlin
+// Multiplatform plugin creates the Apple target configurations lazily — they
+// aren't present in the live `configurations` container until something looks
+// them up by name. `findByName` forces that realization; a regex-based
+// `configurations.matching {}.forEach {}` silently misses them and leaves the
+// SBOM without any iOS/macOS coverage.
+//
+// Android: the `com.android.kotlin.multiplatform.library` plugin in this project
+// exposes a single `androidRuntimeClasspath`. Older AGP/KMP combinations used
+// `androidRelease`/`androidMain` variants; we list all three so a plugin
+// version bump doesn't silently drop the Android bucket.
+private val SBOM_TARGET_CONFIG_NAMES = listOf(
+    "jvmRuntimeClasspath",
+    "androidRuntimeClasspath",
+    "androidReleaseRuntimeClasspath",
+    "androidMainRuntimeClasspath",
+    "iosArm64MainResolvableDependenciesMetadata",
+    "iosSimulatorArm64MainResolvableDependenciesMetadata",
+    "macosArm64MainResolvableDependenciesMetadata",
+    "jsRuntimeClasspath",
 )
 
 private fun Project.isInSbomScope(): Boolean {
@@ -89,51 +99,70 @@ fun Project.registerSbomCollectionTasks() {
     }
 
     subprojects.filter { it.isInSbomScope() }.forEach { sub ->
+        // Nested afterEvaluate: the outer block fires after the subproject's
+        // own evaluation; the inner block is enqueued at that point and runs
+        // AFTER any other afterEvaluate blocks the KMP plugin registered
+        // during the subproject's main evaluation. The Apple target
+        // configurations (e.g. iosArm64MainResolvableDependenciesMetadata) are
+        // created inside one of those KMP afterEvaluate callbacks, so a single
+        // afterEvaluate registered at apply-time runs too early and findByName
+        // returns null. Two levels of afterEvaluate let our work land last.
         sub.afterEvaluate {
-            val matched = configurations.matching { cfg ->
-                cfg.isCanBeResolved && PRODUCTION_CLASSPATH_NAMES.matches(cfg.name)
-            }
+            sub.afterEvaluate {
+                SBOM_TARGET_CONFIG_NAMES.forEach { configName ->
+                    // findByName forces realization of lazy KMP target configurations.
+                    // null means this module simply doesn't declare that target.
+                    val cfg = configurations.findByName(configName) ?: return@forEach
+                    if (!cfg.isCanBeResolved) return@forEach
 
-            matched.forEach { cfg ->
-                val bucket = bucketFor(cfg.name)
-                val safeModuleId = sub.path.removePrefix(":").replace(':', '_')
-                val taskName = "collectSbom_${safeModuleId}_${cfg.name}"
+                    val bucket = bucketFor(configName)
+                    val safeModuleId = sub.path.removePrefix(":").replace(':', '_')
+                    val taskName = "collectSbom_${safeModuleId}_$configName"
 
-                val copyTask = tasks.register<Copy>(taskName) {
-                    this.group = "sbom"
-                    this.description = "Copy ${cfg.name} artifacts of ${sub.path} for SBOM."
-                    // Lenient artifact view: a single target failing to resolve on the
-                    // current host (e.g. iOS klibs on Linux CI) must not kill the run —
-                    // the customer deliverable will simply omit those targets and the
-                    // shell wrapper warns about it.
-                    //
-                    // componentFilter drops first-party project(":...") dependencies:
-                    // Kalium's own modules are the deliverable, not a third party that
-                    // needs notice attribution. Only external Maven/Gradle modules and
-                    // file dependencies (anything that isn't a sibling project) flow
-                    // through to the SBOM.
-                    from(
-                        cfg.incoming.artifactView {
-                            lenient(true)
-                            componentFilter { id -> id !is ProjectComponentIdentifier }
-                        }.files
-                    )
-                    into(artifactsDir.map { it.dir("$bucket/$safeModuleId") })
-                    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+                    tasks.register<Copy>(taskName) {
+                        this.group = "sbom"
+                        this.description = "Copy $configName artifacts of ${sub.path} for SBOM."
+                        // Lenient artifact view: a single target failing to resolve on the
+                        // current host (e.g. iOS klibs on Linux CI) must not kill the run —
+                        // the customer deliverable will simply omit those targets and the
+                        // shell wrapper warns about it.
+                        //
+                        // componentFilter drops first-party project(":...") dependencies:
+                        // Kalium's own modules are the deliverable, not a third party that
+                        // needs notice attribution. Only external Maven/Gradle modules and
+                        // file dependencies (anything that isn't a sibling project) flow
+                        // through to the SBOM.
+                        from(
+                            cfg.incoming.artifactView {
+                                lenient(true)
+                                componentFilter { id -> id !is ProjectComponentIdentifier }
+                            }.files
+                        )
+                        into(artifactsDir.map { it.dir("$bucket/$safeModuleId") })
+                        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+                    }
                 }
-
-                aggregate.configure { dependsOn(copyTask) }
             }
         }
     }
 
-    // JS: kotlinNpmInstall is registered on the root project by the Kotlin Gradle
-    // plugin once any subproject configures a js() target. Wire it in lazily.
-    rootProject.tasks.matching { it.name == "kotlinNpmInstall" }.configureEach {
-        aggregate.configure { dependsOn(this@configureEach) }
-    }
-
     aggregate.configure {
+        // Wire per-module copy tasks (registered lazily inside the afterEvaluate
+        // above) plus kotlinNpmInstall via live name-based matching. Declared
+        // once at top level rather than mutating `aggregate.configure { ... }`
+        // from inside another container's configureEach — Gradle 8+ rejects
+        // that nested-mutation pattern, which previously silently dropped the
+        // kotlinNpmInstall dependency and left build/js/ unpopulated.
+        dependsOn(
+            subprojects.map { p ->
+                p.tasks.matching { it.name.startsWith("collectSbom_") }
+            }
+        )
+        // kotlinNpmInstall is registered by the Kotlin Gradle plugin only when
+        // some subproject configures a js() target. matching{} silently yields
+        // nothing if Kotlin/JS isn't applied anywhere.
+        dependsOn(rootProject.tasks.matching { it.name == "kotlinNpmInstall" })
+
         doLast {
             val outRoot = artifactsDir.get().asFile
 
@@ -180,10 +209,9 @@ fun Project.registerSbomCollectionTasks() {
             val moduleIds: Set<ModuleComponentIdentifier> = rootProject.subprojects
                 .filter { it.isInSbomScope() }
                 .flatMap { sub ->
-                    sub.configurations
-                        .matching {
-                            it.isCanBeResolved && PRODUCTION_CLASSPATH_NAMES.matches(it.name)
-                        }
+                    SBOM_TARGET_CONFIG_NAMES
+                        .mapNotNull { sub.configurations.findByName(it) }
+                        .filter { it.isCanBeResolved }
                         .flatMap { cfg ->
                             runCatching {
                                 cfg.incoming.resolutionResult.allComponents
