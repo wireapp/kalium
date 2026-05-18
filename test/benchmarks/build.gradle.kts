@@ -17,7 +17,7 @@ allOpen {
 
 kotlin {
     jvmToolchain {
-        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
+        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_21.majorVersion))
     }
 
     jvm()
@@ -85,5 +85,5 @@ jmhReport {
 }
 
 tasks.withType<JavaCompile>().configureEach {
-    options.release.set(JavaVersion.VERSION_17.majorVersion.toInt())
+    options.release.set(JavaVersion.VERSION_21.majorVersion.toInt())
 }

@@ -24,7 +24,7 @@ import org.jetbrains.kotlin.gradle.targets.jvm.KotlinJvmTarget
 fun KotlinJvmTarget.commonJvmConfig(includeNativeInterop: Boolean, enableIntegrationTests: Boolean = false) {
     compilations.all {
         compileTaskProvider.configure {
-            compilerOptions.jvmTarget.set(JvmTarget.JVM_17)
+            compilerOptions.jvmTarget.set(JvmTarget.JVM_21)
         }
     }
     testRuns.getByName("test").executionTask.configure {
