@@ -39,6 +39,7 @@ data class CellFileLocalPath(
 
 interface CellFileDao {
     suspend fun upsert(entity: CellFileEntity)
+    suspend fun setTransferStatus(id: String, status: String)
     suspend fun delete(id: String)
     fun observeOfflineFiles(): Flow<List<CellFileEntity>>
     suspend fun getById(id: String): CellFileEntity?

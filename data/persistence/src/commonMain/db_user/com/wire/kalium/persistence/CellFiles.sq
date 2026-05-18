@@ -50,6 +50,11 @@ SELECT * FROM CellFile WHERE uuid = ?;
 getAllWithLocalPath:
 SELECT uuid, localPath FROM CellFile WHERE localPath IS NOT NULL;
 
+setTransferStatus:
+UPDATE CellFile
+SET assetTransferStatus = ?
+WHERE uuid = ?;
+
 upsertAttachmentFile:
 INSERT INTO CellFile(
     uuid,

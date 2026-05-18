@@ -127,6 +127,12 @@ internal class CellAttachmentsDataSource(
         }
     }
 
+    override suspend fun setStandaloneAssetTransferStatus(assetId: String, status: AssetTransferStatus) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            cellFileDao.setTransferStatus(assetId, status.name)
+        }
+    }
+
     override suspend fun deleteStandaloneAsset(assetId: String) = withContext(dispatchers.io) {
         wrapStorageRequest {
             cellFileDao.delete(assetId)

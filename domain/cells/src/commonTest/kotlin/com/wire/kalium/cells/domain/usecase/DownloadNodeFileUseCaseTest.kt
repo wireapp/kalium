@@ -187,6 +187,20 @@ class DownloadNodeFileUseCaseTest {
         }
     }
 
+    @Test
+    fun given_Asset_whenStandaloneDownloadSuccess_thenStandaloneTransferStatusUpdated() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withAssetNotFound()
+            .withDownloadSuccess()
+            .arrange()
+
+        useCase(assetId, conversationId, outFilePath, assetSize, remoteFilePath, onProgressUpdate = progressListener)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.attachmentsRepository.setStandaloneAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
+        }
+    }
+
     private class Arrangement {
 
         val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
@@ -217,6 +231,7 @@ class DownloadNodeFileUseCaseTest {
         fun arrange(): Pair<Arrangement, DownloadCellFileUseCaseImpl> {
 
             everySuspend { attachmentsRepository.setAssetTransferStatus(any(), any()) }.returns(Unit.right())
+            everySuspend { attachmentsRepository.setStandaloneAssetTransferStatus(any(), any()) }.returns(Unit.right())
             everySuspend { attachmentsRepository.saveLocalPath(any(), any()) }.returns(Unit.right())
             everySuspend { attachmentsRepository.saveStandaloneAssetPath(any(), any(), any(), any(), any()) }.returns(Unit.right())
 

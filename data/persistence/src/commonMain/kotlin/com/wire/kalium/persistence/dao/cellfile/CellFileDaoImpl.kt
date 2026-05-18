@@ -49,6 +49,12 @@ internal class CellFileDaoImpl(
         }
     }
 
+    override suspend fun setTransferStatus(id: String, status: String) {
+        withContext(writeDispatcher.value) {
+            queries.setTransferStatus(status, id)
+        }
+    }
+
     override suspend fun delete(id: String) {
         withContext(writeDispatcher.value) {
             queries.deleteCellFile(id)
