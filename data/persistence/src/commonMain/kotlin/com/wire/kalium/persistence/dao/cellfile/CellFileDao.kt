@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.Flow
 
 data class CellFileEntity(
     val uuid: String,
-    val conversationId: String?,
+    val conversationId: String,
     val name: String?,
     val owner: String?,
     val localPath: String?,
@@ -31,10 +31,15 @@ data class CellFileEntity(
     val modifiedAt: Long? = null,
 )
 
+data class CellFileLocalPath(
+    val uuid: String,
+    val localPath: String,
+)
+
 interface CellFileDao {
     suspend fun upsert(entity: CellFileEntity)
     suspend fun delete(id: String)
     fun observeOfflineFiles(): Flow<List<CellFileEntity>>
     suspend fun getById(id: String): CellFileEntity?
-    suspend fun getAllWithLocalPath(): List<Pair<String, String>>
+    suspend fun getAllWithLocalPath(): List<CellFileLocalPath>
 }

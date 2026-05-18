@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.message.MessageAttachment
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.cellfile.CellFileDao
 import com.wire.kalium.persistence.dao.cellfile.CellFileEntity
+import com.wire.kalium.persistence.dao.cellfile.CellFileLocalPath
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.util.DateTimeUtil
@@ -114,7 +115,7 @@ internal class CellAttachmentsDataSource(
             cellFileDao.upsert(
                 CellFileEntity(
                     uuid = assetId,
-                    conversationId = conversationId,
+                    conversationId = conversationId.orEmpty(),
                     name = name,
                     owner = ownerId,
                     localPath = path,
@@ -132,7 +133,7 @@ internal class CellAttachmentsDataSource(
         }
     }
 
-    override suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<Pair<String, String>>> = withContext(dispatchers.io) {
+    override suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<CellFileLocalPath>> = withContext(dispatchers.io) {
         wrapStorageRequest {
             cellFileDao.getAllWithLocalPath()
         }

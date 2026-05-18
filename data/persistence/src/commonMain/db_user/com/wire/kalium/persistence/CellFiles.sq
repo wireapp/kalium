@@ -21,7 +21,7 @@ ON CONFLICT(uuid) DO UPDATE SET
     localPath = COALESCE(excluded.localPath, localPath),
     size = COALESCE(excluded.size, size),
     downloadedAt = excluded.downloadedAt,
-    isOffline = excluded.isOffline,
+    isOffline = MAX(isOffline, excluded.isOffline),
     modifiedAt = COALESCE(excluded.modifiedAt, modifiedAt);
 
 deleteCellFile:
