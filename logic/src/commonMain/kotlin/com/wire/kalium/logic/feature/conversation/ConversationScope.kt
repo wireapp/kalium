@@ -305,6 +305,9 @@ public class ConversationScope internal constructor(
     public val leaveConversation: LeaveConversationUseCase
         get() = LeaveConversationUseCaseImpl(conversationGroupRepository, selfUserId)
 
+    public val promoteAdminAndLeaveConversation: PromoteAdminAndLeaveConversationUseCase
+        get() = PromoteAdminAndLeaveConversationUseCaseImpl(updateConversationMemberRole, leaveConversation)
+
     public val checkConversationLeaveConditions: CheckConversationLeaveConditionsUseCase
         get() = CheckConversationLeaveConditionsUseCaseImpl(
             conversationRepository,
