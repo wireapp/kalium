@@ -50,6 +50,7 @@ internal interface MessageInsertExtension {
     fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean = true)
 }
 
+@Suppress("LongParameterList")
 internal class MessageInsertExtensionImpl(
     private val messagesQueries: MessagesQueries,
     private val cellFilesQueries: CellFilesQueries,

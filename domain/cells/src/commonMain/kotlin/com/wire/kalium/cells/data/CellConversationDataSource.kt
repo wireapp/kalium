@@ -19,6 +19,7 @@ package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.model.CellConversation
+import com.wire.kalium.cells.util.toQualifiedIdOrNull
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
@@ -27,7 +28,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.cells.util.toQualifiedIdOrNull
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.firstOrNull
@@ -44,7 +44,6 @@ internal class CellConversationDataSource(
                 conversationDao.getCellName(conversationId)
             }
         }
-
 
     override suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>> =
         withContext(dispatchers.io) {
