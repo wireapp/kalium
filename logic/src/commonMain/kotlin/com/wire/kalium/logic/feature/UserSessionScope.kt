@@ -2457,6 +2457,7 @@ public class UserSessionScope internal constructor(
             resetMlsConversation,
             cryptoTransactionProvider,
             client.refillKeyPackages,
+            certificateRevocationListRepository,
             userScopedLogger,
         )
     }

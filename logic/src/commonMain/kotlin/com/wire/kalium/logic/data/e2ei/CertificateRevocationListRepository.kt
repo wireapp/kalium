@@ -27,6 +27,11 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
+import kotlinx.serialization.builtins.serializer
+import kotlin.time.Duration.Companion.minutes
 
 internal interface CertificateRevocationListRepository {
 
@@ -37,7 +42,10 @@ internal interface CertificateRevocationListRepository {
      */
     suspend fun getCRLs(): CRLUrlExpirationList?
     suspend fun addOrUpdateCRL(url: String, timestamp: ULong)
+    suspend fun clearCRLExpirationDates()
     suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray>
+    fun observeShouldForceCRLExpirationAfterOneMinute(): Flow<Boolean>
+    suspend fun setShouldForceCRLExpirationAfterOneMinute(enabled: Boolean)
 }
 
 internal class CertificateRevocationListRepositoryDataSource(
@@ -49,6 +57,11 @@ internal class CertificateRevocationListRepositoryDataSource(
         metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
 
     override suspend fun addOrUpdateCRL(url: String, timestamp: ULong) {
+        val expirationTimestamp = if (shouldForceCRLExpirationAfterOneMinute()) {
+            (Clock.System.now() + 1.minutes).epochSeconds.toULong()
+        } else {
+            timestamp
+        }
         val newCRLUrls = metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
             ?.let { crlExpirationList ->
                 val crlWithExpiration = crlExpirationList.cRLWithExpirationList.find {
@@ -57,7 +70,7 @@ internal class CertificateRevocationListRepositoryDataSource(
                 crlWithExpiration?.let { item ->
                     crlExpirationList.cRLWithExpirationList.map { current ->
                         if (current.url == url) {
-                            return@map item.copy(expiration = timestamp)
+                            return@map item.copy(expiration = expirationTimestamp)
                         } else {
                             return@map current
                         }
@@ -65,17 +78,26 @@ internal class CertificateRevocationListRepositoryDataSource(
                 } ?: run {
                     // add new CRL
                     crlExpirationList.cRLWithExpirationList.plus(
-                        CRLWithExpiration(url, timestamp)
+                        CRLWithExpiration(url, expirationTimestamp)
                     )
                 }
 
             } ?: run {
             // add new CRL
-            listOf(CRLWithExpiration(url, timestamp))
+            listOf(CRLWithExpiration(url, expirationTimestamp))
         }
         metadataDAO.putSerializable(
             CRL_LIST_KEY,
             CRLUrlExpirationList(newCRLUrls),
+            CRLUrlExpirationList.serializer()
+        )
+    }
+
+    override suspend fun clearCRLExpirationDates() {
+        val currentCRLs = metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer()) ?: return
+        metadataDAO.putSerializable(
+            CRL_LIST_KEY,
+            CRLUrlExpirationList(currentCRLs.cRLWithExpirationList.map { it.copy(expiration = 0UL) }),
             CRLUrlExpirationList.serializer()
         )
     }
@@ -89,7 +111,19 @@ internal class CertificateRevocationListRepositoryDataSource(
             acmeApi.getClientDomainCRL(url, proxyUrl)
         }
 
+    override fun observeShouldForceCRLExpirationAfterOneMinute(): Flow<Boolean> =
+        metadataDAO.observeSerializable(CRL_FORCE_EXPIRATION_AFTER_ONE_MINUTE_KEY, Boolean.serializer())
+            .map { it ?: false }
+
+    override suspend fun setShouldForceCRLExpirationAfterOneMinute(enabled: Boolean) {
+        metadataDAO.putSerializable(CRL_FORCE_EXPIRATION_AFTER_ONE_MINUTE_KEY, enabled, Boolean.serializer())
+    }
+
+    private suspend fun shouldForceCRLExpirationAfterOneMinute(): Boolean =
+        metadataDAO.getSerializable(CRL_FORCE_EXPIRATION_AFTER_ONE_MINUTE_KEY, Boolean.serializer()) ?: false
+
     companion object {
         const val CRL_LIST_KEY = "crl_list_key"
+        const val CRL_FORCE_EXPIRATION_AFTER_ONE_MINUTE_KEY = "crl_force_expiration_after_one_minute"
     }
 }
