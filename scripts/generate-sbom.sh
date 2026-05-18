@@ -180,8 +180,15 @@ echo "==> [4/4] Running scancode (this will take 30+ minutes)"
 SCANCODE_IGNORES=(
     # JVM / Kotlin / Android compiled bytecode
     '*.class' '*.dex' '*.kotlin_module' '*.kotlin_builtins' '*.kotlin_metadata'
+    # Kotlin/Native compiled metadata inside .klib-extract/*/linkdata trees —
+    # dominant share of the scan queue (~80k files in a full Kalium build),
+    # all opaque binary blobs with no readable licence text.
+    '*.knm' '*.knt' '*.knd' '*.knf' '*.knb'
     # Compiled native libraries and object files
     '*.so' '*.dylib' '*.dll' '*.jnilib' '*.o' '*.a' '*.obj' '*.lib' '*.wasm'
+    # Misnamed bytecode (some Android .bin entries are actually compiled
+    # Java class files; the .class ignore above misses them by extension).
+    '*.bin'
     # Original archives already extracted in place by extractcode
     '*.jar' '*.aar' '*.war' '*.klib' '*.zip' '*.tar' '*.tar.gz' '*.tgz'
     # Images / fonts / media — no licence content

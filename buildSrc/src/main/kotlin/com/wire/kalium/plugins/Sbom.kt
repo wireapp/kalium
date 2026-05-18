@@ -190,6 +190,28 @@ fun Project.registerSbomCollectionTasks() {
                     }
             }
 
+            // Workspace manifests — copy each Kalium JS workspace's package.json
+            // into _workspace_manifests/. These declare the *runtime* dependencies
+            // of non-test workspace packages; the notice generator BFS-walks them
+            // to compute the runtime closure and filter out test/build-time
+            // tooling (mocha, webpack, typescript and their transitives), which
+            // would otherwise dominate the npm side of the customer notice.
+            // Only the manifests are copied — not each workspace's full source
+            // tree — since the BFS only needs the dependency declarations.
+            val packagesRoot = rootProject.file("build/js/packages")
+            if (packagesRoot.exists()) {
+                val manifestsDir = java.io.File(outRoot, "npm/_workspace_manifests")
+                packagesRoot.walkTopDown()
+                    .onEnter { it.name != "node_modules" }
+                    .filter { it.isFile && it.name == "package.json" }
+                    .forEach { pj ->
+                        val rel = pj.relativeTo(packagesRoot).path
+                        val dest = java.io.File(manifestsDir, rel)
+                        dest.parentFile.mkdirs()
+                        pj.copyTo(dest, overwrite = true)
+                    }
+            }
+
             // yarn.lock alongside the resolved packages, for traceability.
             val yarnLock = rootProject.file("kotlin-js-store/yarn.lock")
             if (yarnLock.exists()) {

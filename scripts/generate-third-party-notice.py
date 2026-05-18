@@ -244,6 +244,29 @@ def resolve_licenses(names_raw, name_to_spdx):
     return spdx_ids, unresolved
 
 
+def load_license_overrides(path):
+    """Load scripts/sbom-license-overrides.tsv into {gid:aid: (names, urls)}.
+    Shared with scripts/parse-pom-licenses.py via the same TSV. Maven rows
+    use a real groupId; npm rows use groupId='npm' and the package name (or
+    @scope/name) as artifactId, so Maven and npm keys live in disjoint
+    spaces and don't collide. Comments (#) and the header row are skipped;
+    a missing file is non-fatal."""
+    table = {}
+    if not path or not os.path.isfile(path):
+        return table
+    with open(path) as f:
+        for row in csv.reader(f, delimiter="\t"):
+            if not row or not row[0] or row[0].lstrip().startswith("#"):
+                continue
+            if row[0] == "groupId":
+                continue
+            if len(row) < 4:
+                continue
+            gid, aid, names, urls = (c.strip() for c in row[:4])
+            table[f"{gid}:{aid}"] = (names, urls)
+    return table
+
+
 def normalize_npm_license(field):
     """Coerce a package.json `license` / `licenses` field into the same
     pipe-separated form ('A | B') the Maven flow uses for names/urls.
@@ -271,17 +294,117 @@ def normalize_npm_license(field):
     return "", ""
 
 
-# Prefix marking first-party Kotlin/JS packages: the Kotlin Gradle plugin
+# Prefixes marking first-party Kotlin/JS packages: the Kotlin Gradle plugin
 # emits one npm-style package per Kalium module (e.g. `kalium-core-common`,
-# `kalium-data-network`) into the resolved node_modules tree alongside real
-# third-party deps. Those are *our own* code and don't belong in a
+# `@wireapp/kalium-backup`) into the resolved node_modules tree alongside
+# real third-party deps. Those are *our own* code and don't belong in a
 # third-party notice — this is the npm analog of Sbom.kt's
 # `componentFilter { id -> id !is ProjectComponentIdentifier }` for Maven.
-FIRST_PARTY_NPM_PREFIXES = ("kalium-",)
+FIRST_PARTY_NPM_PREFIXES = ("kalium-", "@wireapp/kalium-")
 
 
 def is_first_party_npm(name):
     return any(name.startswith(p) for p in FIRST_PARTY_NPM_PREFIXES)
+
+
+def npm_name_likely_duplicates_maven(name, maven_aids):
+    """True if an npm package looks like a Kotlin/JS-emitted variant of a
+    Maven coordinate already covered on the Maven side of the notice.
+
+    The Kotlin Gradle plugin publishes KMP libraries as npm packages whose
+    name is either the bare Maven artifactId (`core-crypto-kmp`, `icu4j`)
+    or `<gradle-project>-<artifactId>` (`ktor-ktor-client-core`,
+    `Kotlin-DateTime-library-kotlinx-datetime`). Their package.json
+    typically declares no license, so they'd otherwise land as
+    'Verify manually' duplicates of fully-attributed Maven sections.
+
+    Conservative: exact match, or trailing match against a multi-segment
+    artifactId (single-segment IDs like 'core' are too generic to anchor
+    a suffix match on)."""
+    if name in maven_aids:
+        return True
+    for aid in maven_aids:
+        if "-" in aid and name.endswith("-" + aid):
+            return True
+    return False
+
+
+WORKSPACE_MANIFESTS_SUBDIR = "_workspace_manifests"
+
+
+def _read_package_json(path):
+    """Load a package.json file; return None on read or parse error."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def compute_runtime_closure(artifacts_dir):
+    """Compute the runtime-only npm package closure for the customer
+    deliverable. Returns the set of package names safe to include;
+    anything outside is build/test-time tooling (mocha, webpack,
+    typescript, chokidar, ...) that doesn't ship to customers.
+
+    Algorithm:
+      1. Seeds: union of `dependencies` + `peerDependencies` from every
+         non-test workspace package.json under
+         `artifacts/npm/_workspace_manifests/`.
+      2. BFS the forward dep graph built from every other package.json
+         in `artifacts/npm/`, using each package's `dependencies` +
+         `peerDependencies`.
+
+    Returns None when the manifests subtree is absent — old artifact
+    trees from before Sbom.kt started copying workspace manifests should
+    keep generating notices unchanged (no filtering applied)."""
+    npm_root = os.path.join(artifacts_dir, "npm")
+    manifests_dir = os.path.join(npm_root, WORKSPACE_MANIFESTS_SUBDIR)
+    if not os.path.isdir(manifests_dir):
+        return None
+
+    def runtime_deps(pj):
+        out = set(pj.get("dependencies") or {})
+        out.update(pj.get("peerDependencies") or {})
+        return out
+
+    # Forward dep graph from every non-meta package.json in artifacts/npm/.
+    forward = {}
+    for root, dirs, files in os.walk(npm_root):
+        if WORKSPACE_MANIFESTS_SUBDIR in root.split(os.sep):
+            continue
+        if "package.json" not in files:
+            continue
+        pj = _read_package_json(os.path.join(root, "package.json"))
+        if not pj:
+            continue
+        name = pj.get("name")
+        if not name:
+            continue
+        forward.setdefault(name, set()).update(runtime_deps(pj))
+
+    # Seeds: non-test workspace dependencies.
+    seeds = set()
+    for root, _dirs, files in os.walk(manifests_dir):
+        if "package.json" not in files:
+            continue
+        pj = _read_package_json(os.path.join(root, "package.json"))
+        if not pj:
+            continue
+        name = pj.get("name", "")
+        if not name or name.endswith("-test"):
+            continue
+        seeds.update(runtime_deps(pj))
+
+    closure = set()
+    queue = list(seeds)
+    while queue:
+        pkg = queue.pop()
+        if pkg in closure:
+            continue
+        closure.add(pkg)
+        queue.extend(forward.get(pkg, set()))
+    return closure
 
 
 def discover_npm_packages(artifacts_dir):
@@ -289,7 +412,8 @@ def discover_npm_packages(artifacts_dir):
     {name, version, license_names, license_urls, dir, key}.
 
     First-party Kalium npm packages (Kotlin/JS module outputs) are filtered
-    out; see FIRST_PARTY_NPM_PREFIXES.
+    out; see FIRST_PARTY_NPM_PREFIXES. The workspace-manifests subtree (used
+    by compute_runtime_closure) is also skipped to avoid duplicate entries.
 
     `key` mirrors the bash audit's dedup-key derivation
     (scripts/generate-sbom.sh: the path segment after the LAST
@@ -300,6 +424,8 @@ def discover_npm_packages(artifacts_dir):
     if not os.path.isdir(npm_root):
         return
     for root, _dirs, files in os.walk(npm_root):
+        if WORKSPACE_MANIFESTS_SUBDIR in root.split(os.sep):
+            continue
         if "package.json" not in files:
             continue
         try:
@@ -366,9 +492,27 @@ def main():
     name_to_spdx = build_name_to_spdx_index(db)
     found_map = parse_license_files_found(found_txt)
 
+    # Load manual license overrides. Same TSV as parse-pom-licenses.py uses
+    # for Maven coords; this script consumes the npm rows (groupId='npm').
+    override_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "sbom-license-overrides.tsv"
+    )
+    overrides = load_license_overrides(override_path)
+
+    # Runtime closure: set of npm package names reachable from non-test
+    # workspace `dependencies`/`peerDependencies`. Filters out test/build-
+    # time tooling (mocha, webpack, typescript and their transitives).
+    # None means the workspace manifests aren't present — skip the filter
+    # so older artifact trees still generate (possibly over-inclusive)
+    # notices instead of breaking.
+    runtime_closure = compute_runtime_closure(artifacts_dir)
+
     spdx_used = set()
     unresolved_names = set()
     sections = []
+    # Maven artifactIds; populated during the Maven loop and used by the
+    # npm-side `npm_name_likely_duplicates_maven` heuristic.
+    maven_aids = set()
 
     # --- Maven coordinates ---
     with open(pom_tsv) as f:
@@ -376,6 +520,7 @@ def main():
             gid = row["groupId"]
             aid = row["artifactId"]
             ver = row["version"]
+            maven_aids.add(aid)
             names_raw = row["license_names"]
             urls_raw = row["license_urls"]
             source = row["source"]
@@ -420,6 +565,31 @@ def main():
             continue
         npm_seen.add(dedup)
 
+        # Manual override wins over every filter below — an explicit override
+        # is the operator saying 'I've verified this package, include it'.
+        override = overrides.get(f"npm:{pkg['name']}")
+        if override is not None:
+            license_names, license_urls = override
+            source = "override"
+        else:
+            # Build/test-time filter: only include packages reachable from
+            # the runtime closure of non-test workspace dependencies.
+            # Filters out mocha, webpack, typescript, chokidar, ajv etc.
+            # and their transitives.
+            if runtime_closure is not None and pkg["name"] not in runtime_closure:
+                continue
+            # Skip KMP-as-npm duplicates: Kotlin/JS emits a license-less npm
+            # variant of every KMP Maven dep already covered on the Maven
+            # side. Without a license field these would otherwise render as
+            # 'Verify manually' duplicates of fully-attributed sections.
+            if not pkg["license_names"] and npm_name_likely_duplicates_maven(
+                pkg["name"], maven_aids
+            ):
+                continue
+            license_names = pkg["license_names"]
+            license_urls = pkg["license_urls"]
+            source = "package.json"
+
         verbatim = []
         rels = found_map.get(pkg["key"])
         if rels:
@@ -428,7 +598,7 @@ def main():
                 if os.path.isfile(full):
                     verbatim.append((rel, read_file_text(full)))
 
-        spdx_ids, this_unresolved = resolve_licenses(pkg["license_names"], name_to_spdx)
+        spdx_ids, this_unresolved = resolve_licenses(license_names, name_to_spdx)
         spdx_used.update(spdx_ids)
         unresolved_names.update(this_unresolved)
 
@@ -437,9 +607,9 @@ def main():
             "kind": "npm",
             "header": header,
             "sort_key": (1, header.lower()),
-            "names": pkg["license_names"],
-            "urls": pkg["license_urls"],
-            "source": "package.json",
+            "names": license_names,
+            "urls": license_urls,
+            "source": source,
             "spdx_ids": spdx_ids,
             "verbatim": verbatim,
         })
