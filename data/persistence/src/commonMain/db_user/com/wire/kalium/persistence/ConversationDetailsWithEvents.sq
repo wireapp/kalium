@@ -8,7 +8,6 @@ SELECT
     UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
     UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
     CASE
-        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
         WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
            CASE
                 WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top
@@ -91,7 +90,11 @@ WHERE archived = :fromArchive
     )
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
 ORDER BY
-    CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
+    CASE
+        WHEN :newActivitiesOnTop THEN
+            CASE WHEN qualifiedId IN :activeCallConversationIds THEN 1 ELSE hasNewActivitiesToShow END
+        ELSE 0
+    END DESC,
     lastModifiedDate DESC,
     name IS NULL,
     name COLLATE NOCASE ASC;
@@ -123,7 +126,11 @@ WHERE
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     ORDER BY
-        CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
+        CASE
+            WHEN :newActivitiesOnTop THEN
+                CASE WHEN qualifiedId IN :activeCallConversationIds THEN 1 ELSE hasNewActivitiesToShow END
+            ELSE 0
+        END DESC,
         lastModifiedDate DESC,
         name IS NULL,
         name COLLATE NOCASE ASC
@@ -158,7 +165,11 @@ WHERE
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     AND name LIKE ('%' || :searchQuery || '%')
 ORDER BY
-    CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
+    CASE
+        WHEN :newActivitiesOnTop THEN
+            CASE WHEN qualifiedId IN :activeCallConversationIds THEN 1 ELSE hasNewActivitiesToShow END
+        ELSE 0
+    END DESC,
     lastModifiedDate DESC,
     name IS NULL,
     name COLLATE NOCASE ASC

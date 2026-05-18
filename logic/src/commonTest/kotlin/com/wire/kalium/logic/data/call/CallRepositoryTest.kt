@@ -720,6 +720,98 @@ class CallRepositoryTest {
     }
 
     @Test
+    fun givenAGroupCallIsOngoing_whenLeavingLocally_thenKeepItJoinableUntilItIsClosedByAvs() = runTest {
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveConversationDetailsByIdReturns(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group.Regular(
+                            Arrangement.groupConversation,
+                            isSelfUserMember = true,
+                            selfRole = Conversation.Member.Role.Member
+                        )
+                    )
+                )
+            )
+            .givenGetKnownUserSucceeds()
+            .givenGetTeamSucceeds()
+            .givenGetCallStatusByConversationIdReturns(null)
+            .arrange()
+
+        callRepository.createCall(
+            conversationId = Arrangement.conversationId,
+            status = CallStatus.STILL_ONGOING,
+            callerId = callerId,
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            type = ConversationTypeForCall.Conference
+        )
+        callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.ESTABLISHED)
+        callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.CLOSED_INTERNALLY)
+
+        callRepository.ongoingCallsFlow().test {
+            assertEquals(CallStatus.STILL_ONGOING, awaitItem().single().status)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        callRepository.establishedCallsFlow().test {
+            assertEquals(emptyList(), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.CLOSED)
+
+        callRepository.ongoingCallsFlow().test {
+            assertEquals(emptyList(), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenAGroupCallIsOngoing_whenRejectingLocally_thenKeepItJoinableUntilItIsClosedByAvs() = runTest {
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveConversationDetailsByIdReturns(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group.Regular(
+                            Arrangement.groupConversation,
+                            isSelfUserMember = true,
+                            selfRole = Conversation.Member.Role.Member
+                        )
+                    )
+                )
+            )
+            .givenGetKnownUserSucceeds()
+            .givenGetTeamSucceeds()
+            .givenGetCallStatusByConversationIdReturns(null)
+            .arrange()
+
+        callRepository.createCall(
+            conversationId = Arrangement.conversationId,
+            status = CallStatus.STILL_ONGOING,
+            callerId = callerId,
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            type = ConversationTypeForCall.Conference
+        )
+        callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.REJECTED)
+
+        callRepository.ongoingCallsFlow().test {
+            assertEquals(CallStatus.STILL_ONGOING, awaitItem().single().status)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.CLOSED)
+
+        callRepository.ongoingCallsFlow().test {
+            assertEquals(emptyList(), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateIsMutedByIdIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
 
@@ -1474,31 +1566,6 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenMlsConferenceCall_whenClosingOpenCalls_thenAttemptToLeaveMlsConference() = runTest {
-        // given
-        val callEntity = createCallEntity().copy(
-            status = CallEntity.Status.ESTABLISHED,
-            callerId = "callerId@domain",
-            type = CallEntity.Type.MLS_CONFERENCE
-        )
-        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .givenObserveEstablishedCallsReturns(flowOf(listOf(callEntity)))
-            .givenLeaveSubconversationSuccessful()
-            .arrange()
-
-        // when
-        callRepository.updateOpenCallsToClosedStatus()
-        yield()
-        advanceUntilIdle()
-
-        // then
-        verifySuspend {
-            arrangement.leaveSubconversationUseCase.invoke(any(), Arrangement.conversationId, CALL_SUBCONVERSATION_ID)
-        }
-
-    }
-
-    @Test
     fun givenStaleOpenCallsCleanupIsObserved_whenCleanupIsMarkedDone_thenInitialAndDoneStatesAreEmitted() = runTest {
         // given
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
@@ -1508,45 +1575,6 @@ class CallRepositoryTest {
 
             // when
             callRepository.setStaleOpenCallsCleanupFinished()
-
-            // then
-            assertEquals(true, awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun givenOpenCallsCleanupShouldNotBeMarkedDone_whenClosingOpenCalls_thenCleanupFinishedIsNotEmitted() = runTest {
-        // given
-        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .givenObserveEstablishedCallsReturns(flowOf(emptyList()))
-            .arrange()
-
-        callRepository.observeStaleOpenCallsCleanupFinished().test {
-            // then
-            assertEquals(false, awaitItem())
-
-            // when
-            callRepository.updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards = false)
-
-            // then
-            expectNoEvents()
-        }
-    }
-
-    @Test
-    fun givenOpenCallsCleanupShouldBeMarkedDone_whenClosingOpenCalls_thenCleanupFinishedIsEmitted() = runTest {
-        // given
-        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .givenObserveEstablishedCallsReturns(flowOf(emptyList()))
-            .arrange()
-
-        callRepository.observeStaleOpenCallsCleanupFinished().test {
-            // then
-            assertEquals(false, awaitItem())
-
-            // when
-            callRepository.updateOpenCallsToClosedStatus()
 
             // then
             assertEquals(true, awaitItem())
