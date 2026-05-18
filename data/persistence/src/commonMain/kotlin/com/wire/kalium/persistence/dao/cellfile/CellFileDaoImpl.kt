@@ -65,8 +65,8 @@ internal class CellFileDaoImpl(
         queries.selectById(id, ::toEntity).executeAsOneOrNull()
     }
 
-    override suspend fun getAllWithLocalPath(): List<Pair<String, String>> = withContext(readDispatcher.value) {
-        queries.getAllWithLocalPath { uuid, localPath -> uuid to localPath }.executeAsList()
+    override suspend fun getAllWithLocalPath(): List<CellFileLocalPath> = withContext(readDispatcher.value) {
+        queries.getAllWithLocalPath { uuid, localPath -> CellFileLocalPath(uuid, localPath) }.executeAsList()
     }
 
     @Suppress("LongParameterList", "UnusedParameter")
@@ -95,6 +95,7 @@ internal class CellFileDaoImpl(
         editSupported: Long,
     ): CellFileEntity = CellFileEntity(
         uuid = uuid,
+        conversationId = conversationId.orEmpty(),
         name = name,
         owner = owner,
         mimeType = assetMimeType,
@@ -103,6 +104,5 @@ internal class CellFileDaoImpl(
         downloadedAt = downloadedAt,
         isOffline = isOffline == 1L,
         modifiedAt = modifiedAt,
-        conversationId = conversationId,
     )
 }
