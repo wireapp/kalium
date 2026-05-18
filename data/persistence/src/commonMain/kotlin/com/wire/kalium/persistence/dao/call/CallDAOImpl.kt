@@ -69,9 +69,9 @@ internal class CallDAOImpl(
     private val mapper: CallMapper = CallMapper,
 ) : CallDAO {
 
-    override suspend fun insertCall(call: CallEntity) {
+    override suspend fun insertCall(call: CallEntity, createdAt: String?) {
         withContext(writeDispatcher.value) {
-            val createdTime: Long = DateTimeUtil.currentInstant().toEpochMilliseconds()
+            val createdTime = createdAt ?: DateTimeUtil.currentInstant().toEpochMilliseconds().toString()
 
             callsQueries.insertCall(
                 conversation_id = call.conversationId,
@@ -79,7 +79,7 @@ internal class CallDAOImpl(
                 status = call.status,
                 caller_id = call.callerId,
                 conversation_type = call.conversationType,
-                created_at = createdTime.toString(),
+                created_at = createdTime,
                 type = call.type
             )
         }
