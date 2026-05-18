@@ -459,6 +459,36 @@ else
     "$NOTICE_PY" scripts/generate-third-party-notice.py "$OUTPUT_DIR" THIRD-PARTY-NOTICE.md
 fi
 
+# Customer SBOM bundle: pack the four canonical deliverable files into a
+# single archive next to the scan outputs. `zip -j` flattens the structure
+# so the recipient sees a flat list of files instead of build/sbom/... paths.
+echo
+echo "==> Bundling customer SBOM archive"
+SBOM_BUNDLE="$OUTPUT_DIR/SBOM-and-license.zip"
+BUNDLE_INPUTS=(
+    "$OUTPUT_DIR/scan.json"
+    "$OUTPUT_DIR/scan.cdx.json"
+    "$OUTPUT_DIR/scan.spdx"
+    "THIRD-PARTY-NOTICE.md"
+)
+EXISTING_INPUTS=()
+for f in "${BUNDLE_INPUTS[@]}"; do
+    if [[ -f "$f" ]]; then
+        EXISTING_INPUTS+=("$f")
+    else
+        echo "  WARN: missing input $f — skipping" >&2
+    fi
+done
+if [[ ${#EXISTING_INPUTS[@]} -eq 0 ]]; then
+    echo "  ERROR: no input files found, skipping bundle." >&2
+elif ! command -v zip >/dev/null 2>&1; then
+    echo "  WARN: 'zip' not on PATH — skipping bundle. Install zip to enable." >&2
+else
+    rm -f "$SBOM_BUNDLE"
+    zip -j "$SBOM_BUNDLE" "${EXISTING_INPUTS[@]}" >/dev/null
+    echo "  Wrote $SBOM_BUNDLE (${#EXISTING_INPUTS[@]} files)"
+fi
+
 echo
 echo "SBOM outputs:"
 ls -lh "$OUTPUT_DIR"/scan.* \
@@ -469,5 +499,6 @@ ls -lh "$OUTPUT_DIR"/scan.* \
        "$OUTPUT_DIR"/scan-license-files-found.txt \
        "$OUTPUT_DIR"/scan-license-files-missing.txt \
        "$OUTPUT_DIR"/scan-pom-licenses.tsv \
-       "$OUTPUT_DIR"/scan-pom-no-licenses.txt 2>/dev/null || true
+       "$OUTPUT_DIR"/scan-pom-no-licenses.txt \
+       "$OUTPUT_DIR"/SBOM-and-license.zip 2>/dev/null || true
 ls -lh THIRD-PARTY-NOTICE.md 2>/dev/null || true
