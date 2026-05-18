@@ -294,7 +294,7 @@ internal class ConversationMapperImpl(
                     if (isChannel) {
                         ConversationDetails.Group.Channel(
                             conversation = fromConversationViewToEntity(daoModel),
-                            hasOngoingCall = callStatus != null, // todo: we can do better!
+                            hasOngoingCall = false,
                             isSelfUserMember = isMember,
                             selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
                             isFavorite = isFavorite,
@@ -310,7 +310,7 @@ internal class ConversationMapperImpl(
                     } else {
                         ConversationDetails.Group.Regular(
                             conversation = fromConversationViewToEntity(daoModel),
-                            hasOngoingCall = callStatus != null, // todo: we can do better!
+                            hasOngoingCall = false,
                             isSelfUserMember = isMember,
                             selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
                             isFavorite = isFavorite,
