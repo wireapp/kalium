@@ -349,6 +349,7 @@ class UserDatabaseBuilder internal constructor(
             database.conversationsQueries,
             database.unreadEventsQueries,
             database.messagePreviewQueries,
+            database.cellFilesQueries,
             userId,
             database.reactionsQueries,
             database.usersQueries,
@@ -409,6 +410,7 @@ class UserDatabaseBuilder internal constructor(
             usersQueries = database.usersQueries,
             conversationsQueries = database.conversationsQueries,
             messagesQueries = database.messagesQueries,
+            cellFilesQueries = database.cellFilesQueries,
             messageAttachmentsQueries = database.messageAttachmentsQueries,
             reactionsQueries = database.reactionsQueries,
             receiptsQueries = database.receiptsQueries,
@@ -418,7 +420,7 @@ class UserDatabaseBuilder internal constructor(
         )
 
     val messageAttachments: MessageAttachmentsDao
-        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, readDispatcher, writeDispatcher)
+        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, database.cellFilesQueries, readDispatcher, writeDispatcher)
 
     val publicLinks: PublicLinkDao
         get() = PublicLinkDaoImpl(database.publicLinksQueries, readDispatcher, writeDispatcher)

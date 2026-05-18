@@ -439,11 +439,11 @@ public class CellsScope(
         GetOfflineFileUseCaseImpl(cellFileRepository)
     }
 
-    public val getConversationNames: GetConversationNameUseCase by lazy {
+    public val getConversationName: GetConversationNameUseCase by lazy {
         GetConversationNameUseCaseImpl(cellsConversationRepository)
     }
 
-    public val getUserNames: GetUserNameUseCase by lazy {
+    public val getUserName: GetUserNameUseCase by lazy {
         GetUserNameUseCaseImpl(usersRepository)
     }
 }

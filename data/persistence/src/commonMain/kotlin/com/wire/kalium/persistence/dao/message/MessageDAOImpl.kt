@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
+import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.MessageAssetTransferStatusQueries
@@ -64,6 +65,7 @@ internal class MessageDAOImpl internal constructor(
     private val conversationsQueries: ConversationsQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val messagePreviewQueries: MessagePreviewQueries,
+    private val cellFilesQueries: CellFilesQueries,
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val userQueries: UsersQueries,
@@ -74,6 +76,7 @@ internal class MessageDAOImpl internal constructor(
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
         queries,
+        cellFilesQueries,
         attachmentsQueries,
         unreadEventsQueries,
         conversationsQueries,

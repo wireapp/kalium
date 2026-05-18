@@ -92,27 +92,28 @@ SELECT
     ) AS sync_mentions_json,
     IFNULL(
         (SELECT '[' || GROUP_CONCAT('{
-            "id":"' || asset_id || '",
-            "version_id":"' || asset_version_id || '",
-            "cell_asset":"' || cell_asset || '",
-            "mime_type":"' || asset_mime_type || '",
-            "asset_path":"' || IFNULL(asset_path, '') || '",
-            "asset_size":' || IFNULL(asset_size, 0) || ',
-            "local_path":"' || IFNULL(local_path, '') || '",
-            "asset_width":"' || IFNULL(asset_width, 0) || '",
-            "asset_height":"' || IFNULL(asset_height, 0) || '",
-            "asset_transfer_status":"' || asset_transfer_status || '",
-            "asset_duration_ms":"' || IFNULL(asset_duration_ms, 0) || '",
-            "content_hash":"' || IFNULL(content_hash, '') || '",
-            "content_url":"' || IFNULL(content_url, '') || '",
-            "preview_url":"' || IFNULL(preview_url, '') || '",
-            "asset_index":"' || IFNULL(asset_index, 0) || '",
-            "content_url_expires_at":"' || IFNULL(content_url_expires_at, 0) || '",
-            "edit_supported":"' || edit_supported || '"}') || ']'
-         FROM MessageAttachments
+            "id":"' || ma.asset_id || '",
+            "version_id":"' || IFNULL(cf.assetVersionId, '') || '",
+            "cell_asset":"' || IFNULL(cf.cellAsset, 1) || '",
+            "mime_type":"' || IFNULL(cf.assetMimeType, '') || '",
+            "asset_path":"' || IFNULL(cf.assetPath, '') || '",
+            "asset_size":' || IFNULL(cf.size, 0) || ',
+            "local_path":"' || IFNULL(cf.localPath, '') || '",
+            "asset_width":"' || IFNULL(cf.assetWidth, 0) || '",
+            "asset_height":"' || IFNULL(cf.assetHeight, 0) || '",
+            "asset_transfer_status":"' || IFNULL(cf.assetTransferStatus, 'NOT_DOWNLOADED') || '",
+            "asset_duration_ms":"' || IFNULL(cf.assetDurationMs, 0) || '",
+            "content_hash":"' || IFNULL(cf.contentHash, '') || '",
+            "content_url":"' || IFNULL(cf.contentUrl, '') || '",
+            "preview_url":"' || IFNULL(cf.previewUrl, '') || '",
+            "asset_index":"' || IFNULL(ma.asset_index, 0) || '",
+            "content_url_expires_at":"' || IFNULL(cf.contentUrlExpiresAt, 0) || '",
+            "edit_supported":"' || IFNULL(cf.editSupported, 0) || '"}') || ']'
+         FROM MessageAttachments ma
+         LEFT JOIN CellFile cf ON cf.uuid = ma.asset_id
          WHERE
-             MessageAttachments.message_id = Message.id
-             AND MessageAttachments.conversation_id = Message.conversation_id
+             ma.message_id = Message.id
+             AND ma.conversation_id = Message.conversation_id
         ),
         '[]'
     ) AS sync_attachments_json,

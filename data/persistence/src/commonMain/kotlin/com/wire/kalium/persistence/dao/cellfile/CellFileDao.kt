@@ -24,6 +24,7 @@ data class CellFileEntity(
     val conversationId: String?,
     val name: String?,
     val owner: String?,
+    val mimeType: String? = null,
     val localPath: String?,
     val size: Long?,
     val downloadedAt: Long,

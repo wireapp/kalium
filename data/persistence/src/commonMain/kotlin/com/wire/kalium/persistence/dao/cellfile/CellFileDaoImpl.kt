@@ -39,6 +39,7 @@ internal class CellFileDaoImpl(
                 uuid = entity.uuid,
                 name = entity.name,
                 owner = entity.owner,
+                assetMimeType = entity.mimeType,
                 localPath = entity.localPath,
                 size = entity.size,
                 downloadedAt = entity.downloadedAt,
@@ -68,7 +69,7 @@ internal class CellFileDaoImpl(
         queries.getAllWithLocalPath { uuid, localPath -> uuid to localPath }.executeAsList()
     }
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "UnusedParameter")
     private fun toEntity(
         uuid: String,
         conversationId: String?,
@@ -79,10 +80,24 @@ internal class CellFileDaoImpl(
         downloadedAt: Long,
         modifiedAt: Long?,
         isOffline: Long,
+        assetVersionId: String,
+        cellAsset: Long,
+        contentUrl: String?,
+        previewUrl: String?,
+        assetMimeType: String?,
+        assetPath: String?,
+        contentHash: String?,
+        assetWidth: Long?,
+        assetHeight: Long?,
+        assetDurationMs: Long?,
+        assetTransferStatus: String,
+        contentUrlExpiresAt: Long?,
+        editSupported: Long,
     ): CellFileEntity = CellFileEntity(
         uuid = uuid,
         name = name,
         owner = owner,
+        mimeType = assetMimeType,
         localPath = localPath,
         size = size,
         downloadedAt = downloadedAt,

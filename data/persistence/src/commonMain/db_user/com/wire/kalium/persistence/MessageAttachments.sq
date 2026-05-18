@@ -1,82 +1,119 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import kotlin.Boolean;
-import kotlin.Float;
-import kotlin.Int;
-import kotlin.String;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
 
 CREATE TABLE MessageAttachments (
       asset_id TEXT NOT NULL,
-      asset_version_id TEXT NOT NULL,
       message_id TEXT NOT NULL,
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-      cell_asset INTEGER AS Boolean NOT NULL,
-      local_path TEXT,
-      content_url TEXT,
-      preview_url TEXT,
-      asset_mime_type TEXT NOT NULL,
-      asset_size INTEGER,
-      asset_path TEXT,
-
-      content_hash TEXT,
-
-      -- metadata fields
-      asset_width INTEGER AS Int,
-      asset_height INTEGER AS Int,
-      asset_duration_ms INTEGER,
-
-      asset_transfer_status TEXT NOT NULL DEFAULT 'NOT_DOWNLOADED',
-      asset_index INTEGER AS Int,
-
-      content_url_expires_at INTEGER DEFAULT(NULL),
-      edit_supported INTEGER AS Boolean NOT NULL DEFAULT 0,
+      asset_index INTEGER,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      FOREIGN KEY (asset_id) REFERENCES CellFile(uuid) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (conversation_id, message_id, asset_id)
 );
+
+CREATE INDEX IF NOT EXISTS message_attachments_asset_id_idx ON MessageAttachments(asset_id);
 
 insertCellAttachment:
 INSERT INTO MessageAttachments (
     asset_id,
-    asset_version_id,
     message_id,
     conversation_id,
-    cell_asset,
-    asset_mime_type,
-    local_path,
-    asset_path,
-    asset_size,
-    asset_width,
-    asset_height,
-    asset_duration_ms,
-    asset_transfer_status,
     asset_index
-) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?, ?);
+) VALUES(?,?,?,?)
+;
 
 getAttachment:
-SELECT * FROM MessageAttachments WHERE asset_id = ?;
+SELECT
+    ma.asset_id,
+    IFNULL(cf.assetVersionId, '') AS asset_version_id,
+    ma.message_id,
+    ma.conversation_id,
+    cf.cellAsset AS cell_asset,
+    cf.localPath AS local_path,
+    cf.contentUrl AS content_url,
+    cf.previewUrl AS preview_url,
+    IFNULL(cf.assetMimeType, '') AS asset_mime_type,
+    cf.size AS asset_size,
+    cf.assetPath AS asset_path,
+    cf.contentHash AS content_hash,
+    cf.assetWidth AS asset_width,
+    cf.assetHeight AS asset_height,
+    cf.assetDurationMs AS asset_duration_ms,
+    IFNULL(cf.assetTransferStatus, 'NOT_DOWNLOADED') AS asset_transfer_status,
+    ma.asset_index,
+    cf.contentUrlExpiresAt AS content_url_expires_at,
+    cf.editSupported AS edit_supported
+FROM MessageAttachments ma
+JOIN CellFile cf ON cf.uuid = ma.asset_id
+WHERE ma.asset_id = ?
+ORDER BY ma.asset_index ASC
+LIMIT 1;
 
 setPreviewUrl:
-UPDATE MessageAttachments SET preview_url = ? WHERE asset_id = ?;
+UPDATE CellFile SET previewUrl = ? WHERE uuid = ?;
 
 setLocalPath:
-UPDATE MessageAttachments SET local_path = ? WHERE asset_id = ?;
+UPDATE CellFile SET localPath = ? WHERE uuid = ?;
 
 getAssetPath:
-SELECT asset_path FROM MessageAttachments WHERE asset_id = ?;
+SELECT assetPath FROM CellFile WHERE uuid = ?;
 
 setAssetPath:
-UPDATE MessageAttachments SET asset_path = ? WHERE asset_id = ?;
+UPDATE CellFile SET assetPath = ? WHERE uuid = ?;
 
 setTransferStatus:
-UPDATE MessageAttachments SET asset_transfer_status = ? WHERE asset_id = ?;
+UPDATE CellFile SET assetTransferStatus = ? WHERE uuid = ?;
 
 updateAttachment:
-UPDATE MessageAttachments SET content_url = ?, content_url_expires_at = ?, content_hash = ?, asset_path = ?, edit_supported = ? WHERE asset_id = ?;
+UPDATE CellFile SET contentUrl = ?, contentUrlExpiresAt = ?, contentHash = ?, assetPath = ?, editSupported = ? WHERE uuid = ?;
 
 getAttachments:
-SELECT * FROM MessageAttachments WHERE message_id = ? AND conversation_id = ?;
+SELECT
+    ma.asset_id,
+    IFNULL(cf.assetVersionId, '') AS asset_version_id,
+    ma.message_id,
+    ma.conversation_id,
+    cf.cellAsset AS cell_asset,
+    cf.localPath AS local_path,
+    cf.contentUrl AS content_url,
+    cf.previewUrl AS preview_url,
+    IFNULL(cf.assetMimeType, '') AS asset_mime_type,
+    cf.size AS asset_size,
+    cf.assetPath AS asset_path,
+    cf.contentHash AS content_hash,
+    cf.assetWidth AS asset_width,
+    cf.assetHeight AS asset_height,
+    cf.assetDurationMs AS asset_duration_ms,
+    IFNULL(cf.assetTransferStatus, 'NOT_DOWNLOADED') AS asset_transfer_status,
+    ma.asset_index,
+    cf.contentUrlExpiresAt AS content_url_expires_at,
+    cf.editSupported AS edit_supported
+FROM MessageAttachments ma
+JOIN CellFile cf ON cf.uuid = ma.asset_id
+WHERE ma.message_id = ? AND ma.conversation_id = ?
+ORDER BY ma.asset_index ASC;
 
 getAllAttachments:
-SELECT * FROM MessageAttachments;
+SELECT
+    ma.asset_id,
+    IFNULL(cf.assetVersionId, '') AS asset_version_id,
+    ma.message_id,
+    ma.conversation_id,
+    cf.cellAsset AS cell_asset,
+    cf.localPath AS local_path,
+    cf.contentUrl AS content_url,
+    cf.previewUrl AS preview_url,
+    IFNULL(cf.assetMimeType, '') AS asset_mime_type,
+    cf.size AS asset_size,
+    cf.assetPath AS asset_path,
+    cf.contentHash AS content_hash,
+    cf.assetWidth AS asset_width,
+    cf.assetHeight AS asset_height,
+    cf.assetDurationMs AS asset_duration_ms,
+    IFNULL(cf.assetTransferStatus, 'NOT_DOWNLOADED') AS asset_transfer_status,
+    ma.asset_index,
+    cf.contentUrlExpiresAt AS content_url_expires_at,
+    cf.editSupported AS edit_supported
+FROM MessageAttachments ma
+JOIN CellFile cf ON cf.uuid = ma.asset_id
+ORDER BY ma.asset_index ASC;

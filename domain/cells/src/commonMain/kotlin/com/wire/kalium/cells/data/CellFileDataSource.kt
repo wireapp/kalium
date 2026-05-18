@@ -39,6 +39,7 @@ internal class CellFileDataSource(
 private fun CellFileEntity.toInfo() = OfflineFileInfo(
     id = uuid,
     name = name.orEmpty(),
+    mimeType = mimeType,
     owner = owner.orEmpty(),
     localPath = localPath.orEmpty(),
     size = size,
@@ -50,6 +51,7 @@ private fun CellFileEntity.toInfo() = OfflineFileInfo(
 private fun OfflineFileInfo.toEntity() = CellFileEntity(
     uuid = id,
     name = name,
+    mimeType = mimeType,
     owner = owner,
     localPath = localPath,
     size = size,
