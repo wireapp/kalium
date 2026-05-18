@@ -87,6 +87,7 @@ internal class MessageDAOImpl internal constructor(
     private val mapper = MessageMapper
     private val unreadEventMapper = UnreadEventMapper
 
+    @Suppress("ReturnCount")
     private fun withMultipartAttachments(message: MessageEntity): MessageEntity {
         val regularMessage = message as? MessageEntity.Regular ?: return message
         val multipartContent = regularMessage.content as? MessageEntityContent.Multipart ?: return message
@@ -363,8 +364,9 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity> =
         withContext(readDispatcher.value) {
-            withMultipartAttachments(queries.selectLastMessagesByConversationIds(conversationIds, mapper::toEntityMessageFromView)
-                .executeAsList()
+            withMultipartAttachments(
+                queries.selectLastMessagesByConversationIds(conversationIds, mapper::toEntityMessageFromView)
+                    .executeAsList()
             ).associateBy { it.conversationId }
         }
 
@@ -392,12 +394,14 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity> =
         withContext(readDispatcher.value) {
-            withMultipartAttachments(queries.selectMessagesFromUserByStatus(
-                userId,
-                MessageEntity.Status.PENDING,
-                mapper::toEntityMessageFromView
+            withMultipartAttachments(
+                queries.selectMessagesFromUserByStatus(
+                    userId,
+                    MessageEntity.Status.PENDING,
+                    mapper::toEntityMessageFromView
+                )
+                    .executeAsList()
             )
-                .executeAsList())
         }
 
     override suspend fun updateTextMessageContent(
@@ -626,15 +630,17 @@ internal class MessageDAOImpl internal constructor(
         limit: Int,
         offset: Int
     ): List<MessageEntity> = withContext(readDispatcher.value) {
-        withMultipartAttachments(queries
-            .selectConversationMessagesFromSearch(
-                searchQuery = searchQuery,
-                conversationId = conversationId,
-                limit = limit.toLong(),
-                offset = offset.toLong(),
-                mapper = mapper::toEntityMessageFromView
-            )
-            .executeAsList())
+        withMultipartAttachments(
+            queries
+                .selectConversationMessagesFromSearch(
+                    searchQuery = searchQuery,
+                    conversationId = conversationId,
+                    limit = limit.toLong(),
+                    offset = offset.toLong(),
+                    mapper = mapper::toEntityMessageFromView
+                )
+                .executeAsList()
+        )
     }
 
     override suspend fun searchMessagesByTextGlobally(
@@ -642,14 +648,16 @@ internal class MessageDAOImpl internal constructor(
         limit: Int,
         offset: Int
     ): List<MessageEntity> = withContext(readDispatcher.value) {
-        withMultipartAttachments(queries
-            .selectAllMessagesFromSearch(
-                searchQuery = searchQuery,
-                limit = limit.toLong(),
-                offset = offset.toLong(),
-                mapper = mapper::toEntityMessageFromView
-            )
-            .executeAsList())
+        withMultipartAttachments(
+            queries
+                .selectAllMessagesFromSearch(
+                    searchQuery = searchQuery,
+                    limit = limit.toLong(),
+                    offset = offset.toLong(),
+                    mapper = mapper::toEntityMessageFromView
+                )
+                .executeAsList()
+        )
     }
 
     override suspend fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>> =
@@ -715,12 +723,14 @@ internal class MessageDAOImpl internal constructor(
         contentTypes: Collection<MessageEntity.ContentType>,
         afterId: String,
         pageSize: Long,
-    ) = withMultipartAttachments(queries.selectForBackup(
-        contentType = contentTypes,
-        afterId = afterId,
-        limit = pageSize,
-        mapper::toEntityMessageFromView
-    ).executeAsList())
+    ) = withMultipartAttachments(
+        queries.selectForBackup(
+            contentType = contentTypes,
+            afterId = afterId,
+            limit = pageSize,
+            mapper::toEntityMessageFromView
+        ).executeAsList()
+    )
 
     override suspend fun updateCompositeMessageContent(
         conversationId: QualifiedIDEntity,
@@ -780,5 +790,4 @@ internal class MessageDAOImpl internal constructor(
         mapper,
         readDispatcher,
     )
-
 }

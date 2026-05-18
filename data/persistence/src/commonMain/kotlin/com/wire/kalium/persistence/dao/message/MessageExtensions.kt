@@ -198,6 +198,7 @@ internal class MessageExtensionsImpl internal constructor(
         }
     )
 
+    @Suppress("ReturnCount")
     private fun withMultipartAttachments(message: MessageEntity): MessageEntity {
         val regularMessage = message as? MessageEntity.Regular ?: return message
         val multipartContent = regularMessage.content as? MessageEntityContent.Multipart ?: return message
@@ -209,7 +210,7 @@ internal class MessageExtensionsImpl internal constructor(
         return regularMessage.copy(content = multipartContent.copy(attachments = attachments))
     }
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "LongMethod")
     private fun toEntityMessageFromViewWithMultipartAttachments(
         id: String,
         conversationId: QualifiedIDEntity,
