@@ -2414,6 +2414,7 @@ public class UserSessionScope internal constructor(
             sessionManager.getServerConfig().links,
             messages.messageRepository,
             assetRepository,
+            callRepository,
             newGroupConversationSystemMessagesCreator,
             deleteConversationUseCase,
             persistConversationsUseCase,
@@ -2949,7 +2950,6 @@ public class UserSessionScope internal constructor(
             @Suppress("TooGenericExceptionCaught")
             try {
                 apiMigrationManager.performMigrations()
-                callRepository.updateOpenCallsToClosedStatus()
                 messageRepository.resetAssetTransferStatus()
             } catch (exception: CancellationException) {
                 throw exception

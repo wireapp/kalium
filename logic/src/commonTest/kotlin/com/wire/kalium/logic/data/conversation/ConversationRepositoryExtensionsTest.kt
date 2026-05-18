@@ -67,6 +67,7 @@ class ConversationRepositoryExtensionsTest {
                 onlyInteractionEnabled = false,
                 newActivitiesOnTop = false,
             ),
+            activeCallConversationIds = emptyList(),
             pagingConfig = pagingConfig,
             startingOffset = 0L,
             strictMlsFilter = false

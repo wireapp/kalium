@@ -19,12 +19,19 @@ package com.wire.kalium.logic.feature.conversation
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.map
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationQueryConfig
 import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 
 /**
  * This use case will observe and return a flow of paginated searched conversation details with last message and unread events counts.
@@ -35,18 +42,33 @@ import kotlinx.coroutines.flow.flowOn
 public class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val conversationRepository: ConversationRepository,
+    private val callRepository: CallRepository,
 ) {
+    @OptIn(ExperimentalCoroutinesApi::class)
     public suspend operator fun invoke(
         queryConfig: ConversationQueryConfig,
         pagingConfig: PagingConfig,
         startingOffset: Long,
         strictMlsFilter: Boolean
-    ): Flow<PagingData<ConversationDetailsWithEvents>> = conversationRepository.extensions
-        .getPaginatedConversationDetailsWithEventsBySearchQuery(
-            queryConfig = queryConfig,
-            pagingConfig = pagingConfig,
-            startingOffset = startingOffset,
-            strictMlsFilter = strictMlsFilter
-        )
-        .flowOn(dispatcher.io)
+    ): Flow<PagingData<ConversationDetailsWithEvents>> =
+        callRepository.ongoingCallsFlow()
+            .map { calls -> calls.map { it.conversationId }.toSet() }
+            .onStart { emit(emptySet()) }
+            .distinctUntilChanged()
+            .flatMapLatest { activeCallConversationIds ->
+                conversationRepository.extensions
+                    .getPaginatedConversationDetailsWithEventsBySearchQuery(
+                        queryConfig = queryConfig,
+                        activeCallConversationIds = activeCallConversationIds.toList(),
+                        pagingConfig = pagingConfig,
+                        startingOffset = startingOffset,
+                        strictMlsFilter = strictMlsFilter
+                    )
+                    .map { pagingData ->
+                        pagingData.map { conversation ->
+                            conversation.withActiveCallStatus(activeCallConversationIds)
+                        }
+                    }
+            }
+            .flowOn(dispatcher.io)
 }

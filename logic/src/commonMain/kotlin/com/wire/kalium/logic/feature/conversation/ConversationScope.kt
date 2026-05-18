@@ -24,6 +24,7 @@ import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
@@ -140,6 +141,7 @@ public class ConversationScope internal constructor(
     private val serverConfigLinks: ServerConfig.Links,
     internal val messageRepository: MessageRepository,
     internal val assetRepository: AssetRepository,
+    internal val callRepository: CallRepository,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val deleteConversationUseCase: DeleteConversationUseCase,
     private val persistConversationsUseCase: PersistConversationsUseCase,
@@ -165,7 +167,12 @@ public class ConversationScope internal constructor(
         get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository)
 
     public val observeConversationListDetailsWithEvents: ObserveConversationListDetailsWithEventsUseCase
-        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(conversationRepository, conversationFolderRepository, getFavoriteFolder)
+        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(
+            conversationRepository,
+            conversationFolderRepository,
+            getFavoriteFolder,
+            callRepository
+        )
 
     public val observeConversationMembers: ObserveConversationMembersUseCase
         get() = ObserveConversationMembersUseCaseImpl(conversationRepository, userRepository)
@@ -449,7 +456,7 @@ public class ConversationScope internal constructor(
     public val syncConversationCode: SyncConversationCodeUseCase
         get() = SyncConversationCodeUseCase(conversationGroupRepository, serverConfigLinks)
     public val observeConversationsFromFolder: ObserveConversationsFromFolderUseCase
-        get() = ObserveConversationsFromFolderUseCaseImpl(conversationFolderRepository)
+        get() = ObserveConversationsFromFolderUseCaseImpl(conversationFolderRepository, callRepository)
     public val getFavoriteFolder: GetFavoriteFolderUseCase
         get() = GetFavoriteFolderUseCaseImpl(conversationFolderRepository)
     public val addConversationToFavorites: AddConversationToFavoritesUseCase
