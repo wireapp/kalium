@@ -363,7 +363,7 @@ internal class ConversationDAOImpl internal constructor(
             fromArchive = fromArchive,
             onlyInteractionsEnabled = onlyInteractionEnabled,
             newActivitiesOnTop = newActivitiesOnTop,
-            activeCallConversationIds = emptyList(),
+            activeCallConversationIds = emptySet(),
             strict_mls = if (strictMLSFilter) 1 else 0,
             mapper = conversationDetailsWithEventsMapper::fromViewToModel
         ).asFlow()

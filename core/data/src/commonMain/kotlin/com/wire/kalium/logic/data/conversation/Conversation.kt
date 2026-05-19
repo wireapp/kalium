@@ -328,7 +328,6 @@ sealed interface ConversationDetails {
     ) : ConversationDetails
 
     sealed interface Group : ConversationDetails {
-        val hasOngoingCall: Boolean
         val isSelfUserMember: Boolean
         val selfRole: Conversation.Member.Role?
         val isFavorite: Boolean
@@ -338,7 +337,6 @@ sealed interface ConversationDetails {
 
         data class Regular(
             override val conversation: Conversation,
-            override val hasOngoingCall: Boolean = false,
             override val isSelfUserMember: Boolean,
             override val selfRole: Conversation.Member.Role?,
             override val isFavorite: Boolean = false,
@@ -349,7 +347,6 @@ sealed interface ConversationDetails {
 
         data class Channel(
             override val conversation: Conversation,
-            override val hasOngoingCall: Boolean = false,
             override val isSelfUserMember: Boolean,
             override val selfRole: Conversation.Member.Role?,
             override val isFavorite: Boolean = false,

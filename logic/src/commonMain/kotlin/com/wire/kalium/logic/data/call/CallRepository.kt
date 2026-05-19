@@ -85,6 +85,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flattenConcat
@@ -110,6 +111,7 @@ internal interface CallRepository {
     fun incomingCallsFlow(): Flow<List<Call>>
     fun outgoingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
+    fun observeActiveCallConversationIds(): Flow<Set<ConversationId>>
     fun establishedCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallConversationId(): ConversationId?
     fun observeLastActiveCallByConversationId(conversationId: ConversationId): Flow<Call?>
@@ -230,6 +232,16 @@ internal class CallDataSource(
         activeCallEntities
             .map { calls -> calls.filter { it.status == CallEntity.Status.STILL_ONGOING } }
             .combineWithCallsMetadata()
+
+    override fun observeActiveCallConversationIds(): Flow<Set<ConversationId>> =
+        activeCallEntities
+            .map { activeCalls ->
+                activeCalls
+                    .filter { it.status.isActive }
+                    .map { it.conversationId.toModel() }
+                    .toSet()
+            }
+            .distinctUntilChanged()
 
     override fun establishedCallsFlow(): Flow<List<Call>> =
         activeCallEntities

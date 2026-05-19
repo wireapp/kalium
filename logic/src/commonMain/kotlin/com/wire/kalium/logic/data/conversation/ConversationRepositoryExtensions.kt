@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.map
 internal interface ConversationRepositoryExtensions {
     suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
-        activeCallConversationIds: List<ConversationId>,
+        activeCallConversationIds: Set<ConversationId>,
         pagingConfig: PagingConfig,
         startingOffset: Long,
         strictMlsFilter: Boolean,
@@ -45,7 +45,7 @@ internal class ConversationRepositoryExtensionsImpl internal constructor(
 ) : ConversationRepositoryExtensions {
     override suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
-        activeCallConversationIds: List<ConversationId>,
+        activeCallConversationIds: Set<ConversationId>,
         pagingConfig: PagingConfig,
         startingOffset: Long,
         strictMlsFilter: Boolean,
@@ -57,7 +57,7 @@ internal class ConversationRepositoryExtensionsImpl internal constructor(
                     fromArchive = fromArchive,
                     onlyInteractionEnabled = onlyInteractionEnabled,
                     newActivitiesOnTop = newActivitiesOnTop,
-                    activeCallConversationIds = activeCallConversationIds.map { it.toDao() },
+                    activeCallConversationIds = activeCallConversationIds.mapTo(mutableSetOf()) { it.toDao() },
                     conversationFilter = conversationFilter.toDao(),
                     strictMlsFilter = strictMlsFilter
                 ),
