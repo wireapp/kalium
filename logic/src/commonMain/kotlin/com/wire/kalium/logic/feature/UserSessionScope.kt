@@ -274,6 +274,8 @@ import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerIm
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSFaultyKeysConversationsRepairUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.MigrateConversationToMLSUseCase
+import com.wire.kalium.logic.feature.conversation.MigrateConversationToMLSUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
@@ -1959,9 +1961,10 @@ public class UserSessionScope internal constructor(
         )
     private val memberChangeHandler: MemberChangeEventHandler
         get() = MemberChangeEventHandlerImpl(
-            conversationRepository,
-            fetchConversationIfUnknownUseCase
-
+            conversationRepository = conversationRepository,
+            fetchConversationIfUnknown = fetchConversationIfUnknownUseCase,
+            persistMessage = persistMessage,
+            selfUserId = userId,
         )
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
@@ -2891,6 +2894,13 @@ public class UserSessionScope internal constructor(
             kaliumConfigs = kaliumConfigs,
         )
 
+    public val migrateConversationToMLS: MigrateConversationToMLSUseCase
+        get() = MigrateConversationToMLSUseCaseImpl(
+            mlsMigrator = mlsMigrator,
+            conversationRepository = conversationRepository,
+            coreCryptoTransactionProvider = cryptoTransactionProvider
+        )
+
     public val longWork: LongWorkScope = LongWorkScope(
         { this },
         { slowSyncRepository.slowSyncStatus.map { it is SlowSyncStatus.Ongoing } }
@@ -2930,6 +2940,8 @@ public class UserSessionScope internal constructor(
                 throw exception
             } catch (exception: Exception) {
                 userScopedLogger.e("Unable to run startup migrations and reset tasks", exception)
+            } finally {
+                callRepository.setStaleOpenCallsCleanupFinished()
             }
         }
 

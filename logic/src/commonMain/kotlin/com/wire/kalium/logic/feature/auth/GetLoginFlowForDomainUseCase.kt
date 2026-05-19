@@ -31,8 +31,10 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isEnterpriseServiceNotEnabled
+import com.wire.kalium.network.exceptions.isNotFound
 
 /**
  * Use case to get the login flow for the client app/user to follow.
@@ -47,10 +49,42 @@ public interface GetLoginFlowForDomainUseCase {
 @Suppress("FunctionNaming")
 internal fun GetLoginFlowForDomainUseCase(
     loginRepository: LoginRepository,
+    ssoLoginRepository: SSOLoginRepository,
     customServerConfigRepository: CustomServerConfigRepository,
     mapper: LoginRedirectMapper = LoginRedirectMapperImpl
 ) = object : GetLoginFlowForDomainUseCase {
     override suspend fun invoke(email: String): EnterpriseLoginResult {
+        logger.d("Get SSO code by email")
+        return when (val ssoCodeLoginFlow = getSsoCodeLoginFlow(email)) {
+            is SSOCodeLoginFlowResult.Success -> ssoCodeLoginFlow.enterpriseLoginResult
+            SSOCodeLoginFlowResult.FallbackToDomainRegistration -> getDomainRegistrationLoginFlow(email)
+        }
+    }
+
+    private suspend fun getSsoCodeLoginFlow(email: String): SSOCodeLoginFlowResult =
+        when (val ssoCodeResult = ssoLoginRepository.getByEmail(email)) {
+            is Either.Right ->
+                ssoCodeResult.value
+                    ?.let { EnterpriseLoginResult.Success(LoginRedirectPath.SSO(it)) }
+                    ?.let { SSOCodeLoginFlowResult.Success(it) }
+                    ?: SSOCodeLoginFlowResult.FallbackToDomainRegistration
+
+            is Either.Left -> if (ssoCodeResult.value.shouldFallbackToDomainRegistration()) {
+                SSOCodeLoginFlowResult.FallbackToDomainRegistration
+            } else {
+                SSOCodeLoginFlowResult.Success(
+                    ssoCodeResult.value.mapFailure().also { failure ->
+                        logger.logStructuredJson(
+                            level = KaliumLogLevel.ERROR,
+                            leadingMessage = "Get SSO code by email",
+                            jsonStringKeyValues = mapOf("error" to failure.toLogString())
+                        )
+                    }
+                )
+            }
+        }
+
+    private suspend fun getDomainRegistrationLoginFlow(email: String): EnterpriseLoginResult {
         logger.d("Get domain registration")
         return loginRepository.getDomainRegistration(email)
             .handleEnterpriseServiceNotEnabled()
@@ -121,6 +155,19 @@ internal fun GetLoginFlowForDomainUseCase(
             is NetworkFailure.FeatureNotSupported -> EnterpriseLoginResult.Failure.NotSupported
             else -> EnterpriseLoginResult.Failure.Generic(this)
         }
+
+    private fun NetworkFailure.shouldFallbackToDomainRegistration(): Boolean =
+        this is NetworkFailure.FeatureNotSupported ||
+                (this as? NetworkFailure.ServerMiscommunication)
+                    ?.kaliumException
+                    ?.let { it as? KaliumException.InvalidRequestError }
+                    ?.isNotFound() == true
+
+}
+
+private sealed interface SSOCodeLoginFlowResult {
+    data class Success(val enterpriseLoginResult: EnterpriseLoginResult) : SSOCodeLoginFlowResult
+    data object FallbackToDomainRegistration : SSOCodeLoginFlowResult
 }
 
 /**
@@ -128,7 +175,7 @@ internal fun GetLoginFlowForDomainUseCase(
  * Indicating error cases or the actual login path for the domain.
  */
 public sealed interface EnterpriseLoginResult {
-   public sealed class Failure : EnterpriseLoginResult {
+    public sealed class Failure : EnterpriseLoginResult {
 
         public abstract fun toLogString(): String
 

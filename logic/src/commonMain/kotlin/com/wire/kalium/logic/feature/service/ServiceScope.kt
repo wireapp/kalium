@@ -43,7 +43,11 @@ public class ServiceScope internal constructor(
 
     public val observeAllServices: ObserveAllServicesUseCase
         get() = ObserveAllServicesUseCaseImpl(
-            serviceRepository = serviceRepository,
+            serviceRepository = serviceRepository
+        )
+
+    public val syncServices: SyncServicesUseCase
+        get() = SyncServicesUseCaseImpl(
             teamRepository = teamRepository,
             selfTeamIdProvider = selfTeamIdProvider
         )
