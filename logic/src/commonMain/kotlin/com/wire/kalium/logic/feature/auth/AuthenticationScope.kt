@@ -134,7 +134,7 @@ public class AuthenticationScope internal constructor(
         get() = UnauthorizedSettingsRepositoryImpl(unauthenticatedNetworkContainer.unauthorizedSettingsApi)
 
     public val getLoginFlowForDomainUseCase: GetLoginFlowForDomainUseCase
-        get() = GetLoginFlowForDomainUseCase(loginRepository, customServerConfigRepository)
+        get() = GetLoginFlowForDomainUseCase(loginRepository, ssoLoginRepository, customServerConfigRepository)
 
     public val login: LoginUseCase
         get() = LoginUseCaseImpl(

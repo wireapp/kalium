@@ -20,6 +20,7 @@ package com.wire.kalium.network.api.base.unauthenticated.sso
 
 import com.wire.kalium.network.api.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
+import com.wire.kalium.network.api.unauthenticated.sso.SSOCodeResponse
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.utils.NetworkResponse
 
@@ -35,4 +36,6 @@ interface SSOLoginApi {
     suspend fun metaData(): NetworkResponse<String>
 
     suspend fun settings(): NetworkResponse<SSOSettingsResponse>
+
+    suspend fun getByEmail(email: String): NetworkResponse<SSOCodeResponse>
 }
