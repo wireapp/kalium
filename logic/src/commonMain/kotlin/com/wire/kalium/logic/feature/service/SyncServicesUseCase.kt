@@ -44,10 +44,12 @@ internal class SyncServicesUseCaseImpl internal constructor(
 ) : SyncServicesUseCase {
 
     override suspend fun invoke(): SyncServicesUseCase.Result =
-        (selfTeamIdProvider().getOrNull()?.let { teamId ->
-            teamRepository.syncServices(teamId = teamId)
-        } ?: Either.Right(Unit)).fold(
-            { SyncServicesUseCase.Result.Failure(it) },
-            { SyncServicesUseCase.Result.Success }
-        )
+        (
+                selfTeamIdProvider().getOrNull()?.let { teamId ->
+                    teamRepository.syncServices(teamId = teamId)
+                } ?: Either.Right(Unit)
+                ).fold(
+                { SyncServicesUseCase.Result.Failure(it) },
+                { SyncServicesUseCase.Result.Success }
+            )
 }
