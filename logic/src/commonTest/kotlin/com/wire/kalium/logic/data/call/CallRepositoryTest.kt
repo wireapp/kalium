@@ -219,7 +219,6 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
-                            false,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
                         )

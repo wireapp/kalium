@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.conversation
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import androidx.paging.map
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -30,7 +29,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 
 /**
@@ -51,24 +49,18 @@ public class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase
         startingOffset: Long,
         strictMlsFilter: Boolean
     ): Flow<PagingData<ConversationDetailsWithEvents>> =
-        callRepository.ongoingCallsFlow()
-            .map { calls -> calls.map { it.conversationId }.toSet() }
+        callRepository.observeActiveCallConversationIds()
             .onStart { emit(emptySet()) }
             .distinctUntilChanged()
             .flatMapLatest { activeCallConversationIds ->
                 conversationRepository.extensions
                     .getPaginatedConversationDetailsWithEventsBySearchQuery(
                         queryConfig = queryConfig,
-                        activeCallConversationIds = activeCallConversationIds.toList(),
+                        activeCallConversationIds = activeCallConversationIds,
                         pagingConfig = pagingConfig,
                         startingOffset = startingOffset,
                         strictMlsFilter = strictMlsFilter
                     )
-                    .map { pagingData ->
-                        pagingData.map { conversation ->
-                            conversation.withActiveCallStatus(activeCallConversationIds)
-                        }
-                    }
             }
             .flowOn(dispatcher.io)
 }

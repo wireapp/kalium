@@ -170,8 +170,7 @@ public class ConversationScope internal constructor(
         get() = ObserveConversationListDetailsWithEventsUseCaseImpl(
             conversationRepository,
             conversationFolderRepository,
-            getFavoriteFolder,
-            callRepository
+            getFavoriteFolder
         )
 
     public val observeConversationMembers: ObserveConversationMembersUseCase
@@ -456,7 +455,7 @@ public class ConversationScope internal constructor(
     public val syncConversationCode: SyncConversationCodeUseCase
         get() = SyncConversationCodeUseCase(conversationGroupRepository, serverConfigLinks)
     public val observeConversationsFromFolder: ObserveConversationsFromFolderUseCase
-        get() = ObserveConversationsFromFolderUseCaseImpl(conversationFolderRepository, callRepository)
+        get() = ObserveConversationsFromFolderUseCaseImpl(conversationFolderRepository)
     public val getFavoriteFolder: GetFavoriteFolderUseCase
         get() = GetFavoriteFolderUseCaseImpl(conversationFolderRepository)
     public val addConversationToFavorites: AddConversationToFavoritesUseCase
