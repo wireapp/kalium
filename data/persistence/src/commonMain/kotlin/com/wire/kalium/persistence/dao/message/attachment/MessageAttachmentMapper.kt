@@ -61,4 +61,32 @@ data object MessageAttachmentMapper {
             assetIndex = assetIndex?.toInt(),
             isEditSupported = editSupported == 1L,
         )
+
+    @Suppress("LongParameterList")
+    fun toDaoWithMessageId(
+        assetId: String,
+        assetVersionId: String,
+        messageId: String,
+        conversationId: QualifiedIDEntity,
+        cellAsset: Long,
+        localPath: String?,
+        contentUrl: String?,
+        previewUrl: String?,
+        assetMimeType: String,
+        assetSize: Long?,
+        assetPath: String?,
+        contentHash: String?,
+        assetWidth: Long?,
+        assetHeight: Long?,
+        assetDurationMs: Long?,
+        assetTransferStatus: String,
+        assetIndex: Long?,
+        contentUrlExpiresAt: Long?,
+        editSupported: Long,
+    ): Pair<String, MessageAttachmentEntity> = messageId to toDao(
+        assetId, assetVersionId, messageId, conversationId, cellAsset, localPath,
+        contentUrl, previewUrl, assetMimeType, assetSize, assetPath, contentHash,
+        assetWidth, assetHeight, assetDurationMs, assetTransferStatus, assetIndex,
+        contentUrlExpiresAt, editSupported,
+    )
 }

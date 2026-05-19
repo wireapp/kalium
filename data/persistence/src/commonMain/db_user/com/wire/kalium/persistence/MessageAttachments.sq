@@ -93,6 +93,33 @@ JOIN CellFile cf ON cf.uuid = ma.asset_id
 WHERE ma.message_id = ? AND ma.conversation_id = ?
 ORDER BY ma.asset_index ASC;
 
+-- Fetches attachments for a batch of messages in one query to avoid N+1.
+getAttachmentsForMessages:
+SELECT
+    ma.asset_id,
+    IFNULL(cf.assetVersionId, '') AS asset_version_id,
+    ma.message_id,
+    ma.conversation_id,
+    cf.cellAsset AS cell_asset,
+    cf.localPath AS local_path,
+    cf.contentUrl AS content_url,
+    cf.previewUrl AS preview_url,
+    IFNULL(cf.assetMimeType, '') AS asset_mime_type,
+    cf.size AS asset_size,
+    cf.assetPath AS asset_path,
+    cf.contentHash AS content_hash,
+    cf.assetWidth AS asset_width,
+    cf.assetHeight AS asset_height,
+    cf.assetDurationMs AS asset_duration_ms,
+    IFNULL(cf.assetTransferStatus, 'NOT_DOWNLOADED') AS asset_transfer_status,
+    ma.asset_index,
+    cf.contentUrlExpiresAt AS content_url_expires_at,
+    cf.editSupported AS edit_supported
+FROM MessageAttachments ma
+JOIN CellFile cf ON cf.uuid = ma.asset_id
+WHERE ma.message_id IN ?
+ORDER BY ma.message_id, ma.asset_index ASC;
+
 getAllAttachments:
 SELECT
     ma.asset_id,
