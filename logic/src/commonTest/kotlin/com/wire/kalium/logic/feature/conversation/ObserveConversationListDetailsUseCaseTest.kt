@@ -246,62 +246,6 @@ class ObserveConversationListDetailsUseCaseTest {
 
     @Suppress("FunctionNaming")
     @Test
-    fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
-        // Given
-        val groupConversation = TestConversation.GROUP()
-        val fetchArchivedConversations = false
-        val groupConversationDetails = ConversationDetails.Group.Regular(
-            groupConversation,
-            isSelfUserMember = true,
-            selfRole = Conversation.Member.Role.Member
-        )
-
-        val firstConversationsList = listOf(groupConversation)
-
-        val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
-        conversationListUpdates.send(firstConversationsList)
-
-        val (_, observeConversationsUseCase) = Arrangement()
-            .withConversationsList(conversationListUpdates)
-            .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
-            .arrange()
-
-        // When, Then
-        observeConversationsUseCase(fetchArchivedConversations).test {
-            assertEquals(true, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
-        }
-    }
-
-    @Test
-    fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
-        // Given
-        val groupConversation = TestConversation.GROUP()
-        val fetchArchivedConversations = false
-
-        val groupConversationDetails = ConversationDetails.Group.Regular(
-            groupConversation,
-            isSelfUserMember = true,
-            selfRole = Conversation.Member.Role.Member
-        )
-
-        val firstConversationsList = listOf(groupConversation)
-
-        val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
-        conversationListUpdates.send(firstConversationsList)
-
-        val (_, observeConversationsUseCase) = Arrangement()
-            .withConversationsList(conversationListUpdates)
-            .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
-            .arrange()
-
-        // When, Then
-        observeConversationsUseCase(fetchArchivedConversations).test {
-            assertEquals(false, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
-        }
-    }
-
-    @Suppress("FunctionNaming")
-    @Test
     fun givenConversationDetailsFailure_whenObservingDetailsList_thenIgnoreConversationWithFailure() = runTest {
         // Given
         val successConversation = TestConversation.ONE_ON_ONE().copy(id = ConversationId("successId", "domain"))

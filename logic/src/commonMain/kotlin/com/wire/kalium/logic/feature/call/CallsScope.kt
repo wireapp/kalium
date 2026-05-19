@@ -52,6 +52,8 @@ import com.wire.kalium.logic.feature.call.usecase.IsLastCallClosedUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveAskCallFeedbackUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveActiveCallConversationIdsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveActiveCallConversationIdsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveCallModerationActionsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveCallModerationActionsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveCallQualityDataUseCase
@@ -155,6 +157,11 @@ public class CallsScope internal constructor(
 
     public val observeOngoingCalls: ObserveOngoingCallsUseCase
         get() = ObserveOngoingCallsUseCaseImpl(
+            callRepository = callRepository,
+        )
+
+    public val observeActiveCallConversationIds: ObserveActiveCallConversationIdsUseCase
+        get() = ObserveActiveCallConversationIdsUseCaseImpl(
             callRepository = callRepository,
         )
 

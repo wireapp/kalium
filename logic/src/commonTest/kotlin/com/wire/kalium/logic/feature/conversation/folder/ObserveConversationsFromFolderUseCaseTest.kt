@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.conversation.folder
 
-import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.framework.TestConversationDetails
@@ -80,18 +79,10 @@ class ObserveConversationsFromFolderUseCaseTest {
     private class Arrangement {
 
         val conversationFolderRepository = mock<ConversationFolderRepository>(mode = MockMode.autoUnit)
-        val callRepository = mock<CallRepository>()
 
         private val observeConversationsFromFolderUseCase = ObserveConversationsFromFolderUseCaseImpl(
-            conversationFolderRepository,
-            callRepository
+            conversationFolderRepository
         )
-
-        init {
-            everySuspend {
-                callRepository.ongoingCallsFlow()
-            } returns flowOf(emptyList())
-        }
 
         suspend fun withConversationsFromFolder(folderId: String, conversationList: List<ConversationDetailsWithEvents>) = apply {
             everySuspend {

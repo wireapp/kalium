@@ -17,19 +17,12 @@
  */
 package com.wire.kalium.logic.feature.conversation.folder
 
-import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
-import com.wire.kalium.logic.feature.conversation.withActiveCallStatus
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 
 /**
  * This use case will observe and return the list of conversations from given folder.
@@ -41,21 +34,10 @@ public fun interface ObserveConversationsFromFolderUseCase {
 
 internal class ObserveConversationsFromFolderUseCaseImpl(
     private val conversationFolderRepository: ConversationFolderRepository,
-    private val callRepository: CallRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveConversationsFromFolderUseCase {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend operator fun invoke(folderId: String): Flow<List<ConversationDetailsWithEvents>> =
-        callRepository.ongoingCallsFlow()
-            .map { calls -> calls.map { it.conversationId }.toSet() }
-            .onStart { emit(emptySet()) }
-            .distinctUntilChanged()
-            .flatMapLatest { activeCallConversationIds ->
-                conversationFolderRepository.observeConversationsFromFolder(folderId)
-                    .map { conversations ->
-                        conversations.map { it.withActiveCallStatus(activeCallConversationIds) }
-                    }
-            }
+        conversationFolderRepository.observeConversationsFromFolder(folderId)
             .flowOn(dispatchers.io)
 }
