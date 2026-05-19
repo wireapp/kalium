@@ -18,20 +18,14 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationFilter
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onStart
 
 /**
  * This use case will observe and return the list of conversation details for the current user.
@@ -49,16 +43,14 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val conversationFolderRepository: ConversationFolderRepository,
     private val getFavoriteFolder: GetFavoriteFolderUseCase,
-    private val callRepository: CallRepository
 ) : ObserveConversationListDetailsWithEventsUseCase {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend operator fun invoke(
         fromArchive: Boolean,
         conversationFilter: ConversationFilter,
         strictMlsFilter: Boolean,
-    ): Flow<List<ConversationDetailsWithEvents>> {
-        val conversationsFlow = when (conversationFilter) {
+    ): Flow<List<ConversationDetailsWithEvents>> =
+        when (conversationFilter) {
             ConversationFilter.Favorites -> when (val result = getFavoriteFolder()) {
                 GetFavoriteFolderUseCase.Result.Failure -> flowOf(emptyList())
                 is GetFavoriteFolderUseCase.Result.Success ->
@@ -74,15 +66,4 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
             ConversationFilter.OneOnOne ->
                 conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter, strictMlsFilter)
         }
-
-        return callRepository.ongoingCallsFlow()
-            .map { calls -> calls.map { it.conversationId }.toSet() }
-            .onStart { emit(emptySet()) }
-            .distinctUntilChanged()
-            .flatMapLatest { activeCallConversationIds ->
-                conversationsFlow.map { conversations ->
-                    conversations.map { it.withActiveCallStatus(activeCallConversationIds) }
-                }
-            }
-    }
 }
