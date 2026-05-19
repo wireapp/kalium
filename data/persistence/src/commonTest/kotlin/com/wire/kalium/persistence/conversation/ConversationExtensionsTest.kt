@@ -37,8 +37,12 @@ import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
+import com.wire.kalium.persistence.utils.stubs.newDraftMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
@@ -51,6 +55,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.seconds
 
 class ConversationExtensionsTest : BaseDatabaseTest() {
+    private lateinit var databaseBuilder: UserDatabaseBuilder
     private lateinit var conversationExtensions: ConversationExtensions
     private lateinit var messageDAO: MessageDAO
     private lateinit var messageDraftDAO: MessageDraftDAO
@@ -63,7 +68,8 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     @BeforeTest
     fun setUp() {
         deleteDatabase(selfUserId)
-        val db = createDatabase(selfUserId, encryptedDBSecret, true)
+        databaseBuilder = createDatabase(selfUserId, encryptedDBSecret, true, dbInvalidationControlEnabled = true)
+        val db = databaseBuilder
         val queries = db.database.conversationDetailsWithEventsQueries
         messageDAO = db.messageDAO
         messageDraftDAO = db.messageDraftDAO
@@ -182,6 +188,110 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
             }
         }
     }
+    @Test
+    fun givenConversationListPagingSource_whenConversationIsInserted_thenItInvalidates() = runTest(dispatcher) {
+        populateData(count = 1, isChannel = false)
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh()
+        val invalidated = pagingSource.observeInvalidation()
+
+        conversationDAO.insertConversation(
+            newConversationEntity(ConversationIDEntity("new_conversation", "domain")).copy(
+                name = "new conversation",
+                type = ConversationEntity.Type.GROUP,
+                lastModifiedDate = Instant.parse("2024-01-01T00:00:00Z"),
+                lastReadDate = Instant.parse("2023-12-31T23:59:59Z"),
+                isChannel = false,
+            )
+        )
+
+        advanceUntilIdle()
+
+        assertTrue(invalidated())
+    }
+
+    @Test
+    fun givenConversationListPagingSource_whenMessageIsInserted_thenItInvalidates() = runTest(dispatcher) {
+        populateData(count = 1, isChannel = false)
+        val conversationId = conversationId()
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh()
+        val invalidated = pagingSource.observeInvalidation()
+
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = "message_after_load",
+                conversationId = conversationId,
+                senderUserId = otherUserId,
+                date = Instant.parse("2024-01-01T00:00:00Z"),
+            )
+        )
+
+        advanceUntilIdle()
+
+        assertTrue(invalidated())
+    }
+
+    @Test
+    fun givenConversationListPagingSource_whenUnreadChanges_thenItInvalidates() = runTest(dispatcher) {
+        populateData(count = 1, isChannel = false)
+        val conversationId = conversationId()
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = "message_before_load",
+                conversationId = conversationId,
+                senderUserId = otherUserId,
+                date = Instant.parse("2024-01-01T00:00:00Z"),
+            )
+        )
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh()
+        val invalidated = pagingSource.observeInvalidation()
+
+        databaseBuilder.database.unreadEventsQueries.deleteUnreadEvents(
+            Instant.parse("2025-01-01T00:00:00Z"),
+            conversationId,
+        )
+
+        advanceUntilIdle()
+
+        assertTrue(invalidated())
+    }
+
+    @Test
+    fun givenConversationListPagingSource_whenDraftChanges_thenItInvalidates() = runTest(dispatcher) {
+        populateData(count = 1, isChannel = false)
+        val conversationId = conversationId()
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh()
+        val invalidated = pagingSource.observeInvalidation()
+
+        messageDraftDAO.upsertMessageDraft(newDraftMessageEntity(conversationId = conversationId))
+
+        advanceUntilIdle()
+
+        assertTrue(invalidated())
+    }
+
+    @Test
+    fun givenConversationListPagingSource_whenUnrelatedMetadataChanges_thenItDoesNotInvalidate() = runTest(dispatcher) {
+        populateData(count = 1, isChannel = false)
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh()
+        val invalidated = pagingSource.observeInvalidation()
+
+        databaseBuilder.database.metadataQueries.insertValue("some_key", "some_value")
+
+        advanceUntilIdle()
+
+        assertFalse(invalidated())
+    }
+
     private fun getPager(searchQuery: String = "", fromArchive: Boolean = false, filter: ConversationFilterEntity = ConversationFilterEntity.ALL): KaliumPager<ConversationDetailsWithEventsEntity> =
         conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
             pagingConfig = PagingConfig(PAGE_SIZE),
@@ -193,6 +303,16 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     private suspend fun PagingSource<Int, ConversationDetailsWithEventsEntity>.nextPageForOffset(key: Int) =
         load(PagingSource.LoadParams.Append<Int>(key, PAGE_SIZE, true))
+
+    private fun PagingSource<Int, ConversationDetailsWithEventsEntity>.observeInvalidation(): () -> Boolean {
+        var invalidated = false
+        registerInvalidatedCallback {
+            invalidated = true
+        }
+        return { invalidated }
+    }
+
+    private fun conversationId(index: Int = 0, prefix: String = CONVERSATION_ID_PREFIX) = ConversationIDEntity("$prefix$index", "domain")
 
     private suspend fun populateData(
         archived: Boolean = false,
@@ -222,5 +342,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         const val CONVERSATION_ID_PREFIX = "conversation_"
         const val ARCHIVED_CONVERSATION_ID_PREFIX = "archived_conversation_"
         const val PAGE_SIZE = 20
+        val otherUserId = UserIDEntity("user", "domain")
     }
 }

@@ -15,16 +15,24 @@ CREATE INDEX unread_event_conv_tyoe ON UnreadEvent(conversation_id, type);
 CREATE INDEX unread_event_conv_date ON UnreadEvent(conversation_id, creation_date);
 
 deleteUnreadEvent:
+-- @NotifyCustomKey UnreadEvent
+-- @NotifyCustomKey conversation_list_unread
 DELETE FROM UnreadEvent WHERE id = ? AND conversation_id = ?;
 
 deleteUnreadEvents:
+-- @NotifyCustomKey UnreadEvent
+-- @NotifyCustomKey conversation_list_unread
 DELETE FROM UnreadEvent WHERE creation_date <= ? AND conversation_id = ?;
 
 insertEvent:
+-- @NotifyCustomKey UnreadEvent
+-- @NotifyCustomKey conversation_list_unread
 INSERT OR IGNORE INTO UnreadEvent(id, type, conversation_id, creation_date)
 VALUES(?, ?, ?, ?);
 
 updateEvent:
+-- @NotifyCustomKey UnreadEvent
+-- @NotifyCustomKey conversation_list_unread
 UPDATE OR IGNORE UnreadEvent
 SET type = :type
 WHERE id = :id AND conversation_id = :conversation_id;
