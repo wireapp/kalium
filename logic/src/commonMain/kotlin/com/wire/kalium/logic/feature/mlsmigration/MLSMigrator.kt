@@ -33,7 +33,6 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
@@ -47,6 +46,8 @@ internal interface MLSMigrator {
     suspend fun migrateProteusConversations(): Either<CoreFailure, Unit>
     suspend fun finaliseProteusConversations(): Either<CoreFailure, Unit>
     suspend fun finaliseAllProteusConversations(): Either<CoreFailure, Unit>
+    suspend fun migrate(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun finalise(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -70,9 +71,10 @@ internal class MLSMigratorImpl(
             conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Protocol.PROTEUS, teamId)
                 .flatMap { conversations ->
                     transactionProvider.transaction("migrateProteusConversations") { transactionContext ->
-                        conversations.foldToEitherWhileRight(Unit) { conversationId, _ ->
+                        conversations.forEach { conversationId ->
                             migrate(transactionContext, conversationId)
                         }
+                        Either.Right(Unit)
                     }
                 }
         }
@@ -85,9 +87,10 @@ internal class MLSMigratorImpl(
             transactionProvider.transaction("finaliseAllProteusConversations") { transactionContext ->
                 conversationRepository.getConversationIds(Conversation.Type.Group.Regular, Protocol.MIXED, teamId)
                     .flatMap {
-                        it.foldToEitherWhileRight(Unit) { conversationId, _ ->
+                        it.forEach { conversationId ->
                             finalise(transactionContext, conversationId)
                         }
+                        Either.Right(Unit)
                     }
             }
         }
@@ -101,15 +104,16 @@ internal class MLSMigratorImpl(
                     transactionProvider.transaction("finaliseProteusConversations") { transactionContext ->
                         conversationRepository.getTeamConversationIdsReadyToCompleteMigration(teamId)
                             .flatMap {
-                                it.foldToEitherWhileRight(Unit) { conversationId, _ ->
+                                it.forEach { conversationId ->
                                     finalise(transactionContext, conversationId)
                                 }
+                                Either.Right(Unit)
                             }
                     }
                 }
         }
 
-    private suspend fun migrate(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun migrate(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
         kaliumLogger.i("migrating ${conversationId.toLogString()} to mixed")
         return updateConversationProtocol(transactionContext, conversationId, Protocol.MIXED, localOnly = false)
             .flatMap { updated ->
@@ -128,18 +132,18 @@ internal class MLSMigratorImpl(
                 }
                 kaliumLogger.i("migrating ${conversationId.toLogString()} to mls")
                 establishConversation(transactionContext, conversationId)
-            }.flatMapLeft {
-                kaliumLogger.w("failed to migrate ${conversationId.toLogString()} to mixed: $it")
-                Either.Right(Unit)
+            }.flatMapLeft { failure ->
+                kaliumLogger.w("failed to migrate ${conversationId.toLogString()} to mixed: $failure")
+                Either.Left(failure)
             }
     }
 
-    private suspend fun finalise(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
+    override suspend fun finalise(transactionContext: CryptoTransactionContext, conversationId: ConversationId): Either<CoreFailure, Unit> {
         kaliumLogger.i("finalising ${conversationId.toLogString()} to mls")
         return updateConversationProtocol(transactionContext, conversationId, Protocol.MLS, localOnly = false)
             .fold({ failure ->
                 kaliumLogger.w("failed to finalise ${conversationId.toLogString()} to mls: $failure")
-                Either.Right(Unit)
+                Either.Left(failure)
             }, { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
