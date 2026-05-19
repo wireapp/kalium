@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.service
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.team.TeamRepository
@@ -29,7 +30,12 @@ import com.wire.kalium.logic.data.team.TeamRepository
  */
 public interface SyncServicesUseCase {
 
-    public suspend operator fun invoke(): Either<CoreFailure, Unit>
+    public suspend operator fun invoke(): Result
+
+    public sealed interface Result {
+        public data object Success : Result
+        public data class Failure(val error: CoreFailure) : Result
+    }
 }
 
 internal class SyncServicesUseCaseImpl internal constructor(
@@ -37,8 +43,11 @@ internal class SyncServicesUseCaseImpl internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider
 ) : SyncServicesUseCase {
 
-    override suspend fun invoke(): Either<CoreFailure, Unit> =
-        selfTeamIdProvider().getOrNull()?.let { teamId ->
+    override suspend fun invoke(): SyncServicesUseCase.Result =
+        (selfTeamIdProvider().getOrNull()?.let { teamId ->
             teamRepository.syncServices(teamId = teamId)
-        } ?: Either.Right(Unit)
+        } ?: Either.Right(Unit)).fold(
+            { SyncServicesUseCase.Result.Failure(it) },
+            { SyncServicesUseCase.Result.Success }
+        )
 }

@@ -24,12 +24,12 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
-import io.mockative.eq
-import io.mockative.mock
-import io.mockative.once
+import dev.mokkery.answering.returns
+import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
+import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,10 +47,10 @@ class SyncServicesUseCaseTest {
 
         val result = useCase()
 
-        assertEquals(Either.Right(Unit), result)
-        coVerify {
-            arrangement.teamRepository.syncServices(eq(teamId))
-        }.wasInvoked(exactly = once)
+        assertEquals(SyncServicesUseCase.Result.Success, result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.teamRepository.syncServices(teamId)
+        }
     }
 
     @Test
@@ -61,10 +61,10 @@ class SyncServicesUseCaseTest {
 
         val result = useCase()
 
-        assertEquals(Either.Right(Unit), result)
-        coVerify {
+        assertEquals(SyncServicesUseCase.Result.Success, result)
+        verifySuspend(VerifyMode.not) {
             arrangement.teamRepository.syncServices(any())
-        }.wasNotInvoked()
+        }
     }
 
     @Test
@@ -78,29 +78,29 @@ class SyncServicesUseCaseTest {
 
         val result = useCase()
 
-        assertTrue(result is Either.Left)
-        assertEquals(failure, (result as Either.Left).value)
+        assertTrue(result is SyncServicesUseCase.Result.Failure)
+        assertEquals(failure, result.error)
     }
 
     private class Arrangement {
-        val teamRepository: TeamRepository = mock(TeamRepository::class)
-        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
+        val teamRepository: TeamRepository = mock()
+        val selfTeamIdProvider: SelfTeamIdProvider = mock()
 
         private val useCase: SyncServicesUseCase = SyncServicesUseCaseImpl(
             teamRepository = teamRepository,
             selfTeamIdProvider = selfTeamIdProvider
         )
 
-        suspend fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
-            coEvery {
-                selfTeamIdProvider.invoke()
-            }.returns(either)
+        fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
+            everySuspend {
+                selfTeamIdProvider()
+            } returns (either)
         }
 
-        suspend fun withSyncingServices(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
+        fun withSyncingServices(result: Either<CoreFailure, Unit>) = apply {
+            everySuspend {
                 teamRepository.syncServices(any())
-            }.returns(result)
+            } returns (result)
         }
 
         fun arrange() = this to useCase
