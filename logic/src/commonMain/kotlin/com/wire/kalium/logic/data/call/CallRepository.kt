@@ -425,23 +425,25 @@ internal class CallDataSource(
                     conversationId.toLogString()
         )
         val qualifiedIDEntity = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = conversationId)
-        (_callMetadataProfile.value[conversationId]?.callerId?.toString() ?: callDAO.getCallerIdByConversationId(
-            conversationId = qualifiedIDEntity
-        ))?.let { callerId ->
-            val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callerId)
+        (
+                _callMetadataProfile.value[conversationId]?.callerId?.toString() ?: callDAO.getCallerIdByConversationId(
+                    conversationId = qualifiedIDEntity
+                )
+                )?.let { callerId ->
+                val qualifiedUserId = qualifiedIdMapper.fromStringToQualifiedID(callerId)
 
-            val message = Message.System(
-                Uuid.random().toString(),
-                MessageContent.MissedCall,
-                conversationId,
-                Clock.System.now(),
-                qualifiedUserId,
-                Message.Status.Sent,
-                Message.Visibility.VISIBLE,
-                expirationData = null,
-            )
-            persistMessage(message)
-        } ?: callingLogger.i("[CallRepository] -> Unable to persist Missed Call due to missing Caller ID")
+                val message = Message.System(
+                    Uuid.random().toString(),
+                    MessageContent.MissedCall,
+                    conversationId,
+                    Clock.System.now(),
+                    qualifiedUserId,
+                    Message.Status.Sent,
+                    Message.Visibility.VISIBLE,
+                    expirationData = null,
+                )
+                persistMessage(message)
+            } ?: callingLogger.i("[CallRepository] -> Unable to persist Missed Call due to missing Caller ID")
     }
 
     override fun updateIsMutedById(conversationId: ConversationId, isMuted: Boolean) {
@@ -612,6 +614,7 @@ internal class CallDataSource(
         staleOpenCallsCleanupFinishedFlow.value = true
         callingLogger.i("Stale open calls cleanup is done")
     }
+
     override fun observeStaleOpenCallsCleanupFinished(): Flow<Boolean> = staleOpenCallsCleanupFinishedFlow
 
     override suspend fun establishedCallConversationId(): ConversationId? =
