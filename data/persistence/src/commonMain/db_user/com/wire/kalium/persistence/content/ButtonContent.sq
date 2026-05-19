@@ -14,10 +14,14 @@ CREATE TABLE ButtonContent (
 );
 
 insertButton:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey message_search_:conversation_id
 INSERT INTO ButtonContent (message_id, conversation_id, id, text)
 VALUES (:message_id, :conversation_id, :id, :text);
 
 markSelected {
+    -- @NotifyCustomKey message_list_:conversation_id
+    -- @NotifyCustomKey message_search_:conversation_id
     UPDATE ButtonContent
     SET is_selected = 0
     WHERE conversation_id = :conversation_id AND
@@ -31,7 +35,11 @@ markSelected {
 }
 
 removeAllSelection:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey message_search_:conversation_id
 UPDATE ButtonContent SET is_selected = 0 WHERE conversation_id = :conversation_id AND message_id = :message_id;
 
 deleteAllButtons:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey message_search_:conversation_id
 DELETE FROM ButtonContent WHERE conversation_id = :conversation_id AND message_id = :message_id;

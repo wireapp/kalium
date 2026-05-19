@@ -100,6 +100,11 @@ ORDER BY
     name COLLATE NOCASE ASC;
 
 selectConversationDetailsWithEvents:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_order
+-- @CustomKey conversation_list_last_message
+-- @CustomKey conversation_list_unread
+-- @CustomKey conversation_list_draft
 SELECT * FROM ConversationDetailsWithEvents
 WHERE
     archived = :fromArchive
@@ -138,6 +143,11 @@ WHERE
     OFFSET :offset;
 
 selectConversationDetailsWithEventsFromSearch:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_order
+-- @CustomKey conversation_list_last_message
+-- @CustomKey conversation_list_unread
+-- @CustomKey conversation_list_draft
 SELECT * FROM ConversationDetailsWithEvents
 WHERE
     archived = :fromArchive
@@ -177,6 +187,7 @@ LIMIT :limit
 OFFSET :offset;
 
 countConversations:
+-- @CustomKey conversation_list_membership
 SELECT COUNT(*)
 FROM Conversation
 WHERE
@@ -238,6 +249,7 @@ WHERE
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END;
 
 countConversationDetailsWithEventsFromSearch:
+-- @CustomKey conversation_list_membership
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
     ConversationDetails.type IS NOT 'SELF'

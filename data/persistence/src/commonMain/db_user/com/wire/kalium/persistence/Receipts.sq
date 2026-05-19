@@ -16,8 +16,16 @@ CREATE INDEX receipt_msg_type ON Receipt(message_id, type);
 
 -- TODO: Cast to proper types when/if SQLDelight supports it:
 insertReceipt:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey message_search_:conversation_id
 WITH insertion(message_id, conversation_id, user_id, type, date) AS(
-    VALUES (CAST(? AS TEXT), CAST(? AS TEXT), CAST(? AS TEXT), CAST(? AS TEXT), CAST(? AS TEXT))
+    VALUES (
+        CAST(:message_id AS TEXT),
+        CAST(:conversation_id AS TEXT),
+        CAST(:user_id AS TEXT),
+        CAST(:type AS TEXT),
+        CAST(:date AS TEXT)
+    )
 )
 INSERT OR IGNORE INTO Receipt(message_id, conversation_id, user_id, type, date)
 SELECT
