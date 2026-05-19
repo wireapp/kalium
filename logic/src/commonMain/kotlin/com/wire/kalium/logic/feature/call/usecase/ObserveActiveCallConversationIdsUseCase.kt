@@ -22,6 +22,9 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Use case to observe the conversation ids of active calls. This is used to determine if a conversation has an active call.
+ */
 public fun interface ObserveActiveCallConversationIdsUseCase {
     public suspend operator fun invoke(): Flow<Set<ConversationId>>
 }
