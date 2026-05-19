@@ -274,6 +274,8 @@ import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerIm
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSFaultyKeysConversationsRepairUseCaseImpl
+import com.wire.kalium.logic.feature.conversation.MigrateConversationToMLSUseCase
+import com.wire.kalium.logic.feature.conversation.MigrateConversationToMLSUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
@@ -2890,6 +2892,13 @@ public class UserSessionScope internal constructor(
             mlsConversationRepository = mlsConversationRepository,
             fetchConversationUseCase = fetchConversationUseCase,
             kaliumConfigs = kaliumConfigs,
+        )
+
+    public val migrateConversationToMLS: MigrateConversationToMLSUseCase
+        get() = MigrateConversationToMLSUseCaseImpl(
+            mlsMigrator = mlsMigrator,
+            conversationRepository = conversationRepository,
+            coreCryptoTransactionProvider = cryptoTransactionProvider
         )
 
     public val longWork: LongWorkScope = LongWorkScope(
