@@ -41,7 +41,7 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">7195fb0
+        <div class="library-version" id="library-version">8dbbade
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
@@ -140,7 +140,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-observe-all-services-use-case/index.html">ObserveAllServicesUseCase</a></div><div class="brief "><p class="paragraph">This use case returns all services currently in the database. In case it is empty, the repository will request the list from the API.</p></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-observe-all-services-use-case/index.html">ObserveAllServicesUseCase</a></div><div class="brief "><p class="paragraph">Emits the list of services currently persisted in the database. Does not trigger a network sync — callers should invoke <a href="-sync-services-use-case/index.html">SyncServicesUseCase</a> explicitly when a remote refresh is desired.</p></div></div></div>
                 </div>
               </div>
             </div>
@@ -155,7 +155,7 @@
                   </span></span></div>
               <div>
                 <div class="title">
-                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-observe-all-services-use-case-impl/index.html">ObserveAllServicesUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">serviceRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.service/-service-repository/index.html">ServiceRepository</a><span class="token punctuation">, </span></span><span class="parameter ">teamRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.team/-team-repository/index.html">TeamRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfTeamIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-self-team-id-provider/index.html">SelfTeamIdProvider</a></span></span><span class="token punctuation">)</span> : <a href="-observe-all-services-use-case/index.html">ObserveAllServicesUseCase</a></div></div></div>
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-observe-all-services-use-case-impl/index.html">ObserveAllServicesUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">serviceRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.service/-service-repository/index.html">ServiceRepository</a></span></span><span class="token punctuation">)</span> : <a href="-observe-all-services-use-case/index.html">ObserveAllServicesUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
@@ -246,6 +246,36 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">class </span><a href="-service-scope/index.html">ServiceScope</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">serviceRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.service/-service-repository/index.html">ServiceRepository</a><span class="token punctuation">, </span></span><span class="parameter ">teamRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.team/-team-repository/index.html">TeamRepository</a><span class="token punctuation">, </span></span><span class="parameter ">userConfigRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.configuration/-user-config-repository/index.html">UserConfigRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfTeamIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-self-team-id-provider/index.html">SelfTeamIdProvider</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="271197756%2FClasslikes%2F867774983" anchor-label="SyncServicesUseCase" id="271197756%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-sync-services-use-case/index.html"><span>Sync</span><wbr><span>Services</span><wbr><span>Use</span><wbr><span><span>Case</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="271197756%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-sync-services-use-case/index.html">SyncServicesUseCase</a></div><div class="brief "><p class="paragraph">Syncs the list of services available for the current self-team from the backend. No-op when the self user does not belong to a team.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2018237052%2FClasslikes%2F867774983" anchor-label="SyncServicesUseCaseImpl" id="2018237052%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-sync-services-use-case-impl/index.html"><span>Sync</span><wbr><span>Services</span><wbr><span>Use</span><wbr><span>Case</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2018237052%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-sync-services-use-case-impl/index.html">SyncServicesUseCaseImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">teamRepository<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.team/-team-repository/index.html">TeamRepository</a><span class="token punctuation">, </span></span><span class="parameter ">selfTeamIdProvider<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.id/-self-team-id-provider/index.html">SelfTeamIdProvider</a></span></span><span class="token punctuation">)</span> : <a href="-sync-services-use-case/index.html">SyncServicesUseCase</a></div></div></div>
                 </div>
               </div>
             </div>
