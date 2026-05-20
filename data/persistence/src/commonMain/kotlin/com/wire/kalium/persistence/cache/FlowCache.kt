@@ -18,6 +18,8 @@
 package com.wire.kalium.persistence.cache
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
@@ -52,22 +54,28 @@ internal class FlowCache<Key : Any, Value>(
 
     private val mutex = Mutex()
     private val storage = hashMapOf<Key, Flow<Value>>()
+    private val sharingJobs = hashMapOf<Key, Job>()
 
     suspend fun get(
         key: Key,
         flowProducer: suspend (key: Key) -> Flow<Value>
     ): Flow<Value> {
-        suspend fun createFlow() = flowProducer(key)
-            .onCompletion {
-                remove(key)
-            }
-            .shareIn(
-                scope = cacheScope,
-                started = SharingStarted.WhileSubscribed(
-                    stopTimeoutMillis = flowTimeoutDuration.inWholeMilliseconds
-                ),
-                replay = 1
-            )
+        suspend fun createFlow(): Flow<Value> {
+            val sharingJob = SupervisorJob(cacheScope.coroutineContext[Job])
+            val sharingScope = CoroutineScope(cacheScope.coroutineContext + sharingJob)
+            sharingJobs[key] = sharingJob
+            return flowProducer(key)
+                .onCompletion {
+                    remove(key)
+                }
+                .shareIn(
+                    scope = sharingScope,
+                    started = SharingStarted.WhileSubscribed(
+                        stopTimeoutMillis = flowTimeoutDuration.inWholeMilliseconds
+                    ),
+                    replay = 1
+                )
+        }
 
         return mutex.withLock {
             val result = storage.getOrPut(key) {
@@ -83,6 +91,7 @@ internal class FlowCache<Key : Any, Value>(
 
     suspend fun remove(key: Key) = mutex.withLock {
         storage.remove(key)
+        sharingJobs.remove(key)?.cancel()
     }
 
     companion object {

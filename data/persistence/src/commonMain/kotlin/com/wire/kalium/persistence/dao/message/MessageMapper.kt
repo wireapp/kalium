@@ -199,6 +199,8 @@ object MessageMapper {
                         isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
                         otherUserIdList = userIdList.filterNot { it == selfUserId },
                     )
+
+                    MessageEntity.MemberChangeType.SELF_USER_PROMOTED_TO_ADMIN -> MessagePreviewEntityContent.Unknown
                 }
             }
 

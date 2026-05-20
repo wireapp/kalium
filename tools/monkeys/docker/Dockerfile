@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17 AS jdk-build
+FROM eclipse-temurin:21 AS jdk-build
 
 COPY .. /kalium
 RUN cd /kalium && ./gradlew :monkeys:assembleDist

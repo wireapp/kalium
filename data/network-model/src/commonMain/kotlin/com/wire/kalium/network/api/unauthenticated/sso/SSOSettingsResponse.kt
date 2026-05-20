@@ -26,3 +26,15 @@ data class SSOSettingsResponse(
     @SerialName("default_sso_code")
     val defaultCode: String?
 )
+
+@Serializable
+data class SSOCodeRequest(
+    @SerialName("email")
+    val email: String
+)
+
+@Serializable
+data class SSOCodeResponse(
+    @SerialName("sso_code")
+    val ssoCode: String?
+)
