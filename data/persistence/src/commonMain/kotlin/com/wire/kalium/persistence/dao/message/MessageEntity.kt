@@ -200,7 +200,12 @@ sealed interface MessageEntity {
         /**
          * A member(s) was removed from the team.
          */
-        REMOVED_FROM_TEAM
+        REMOVED_FROM_TEAM,
+
+        /**
+         * Self user was assigned the admin role in the conversation. Local-only.
+         */
+        SELF_USER_PROMOTED_TO_ADMIN
     }
 
     enum class FederationType {

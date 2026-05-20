@@ -17,25 +17,16 @@
  */
 package com.wire.kalium.logic.feature.service
 
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceRepository
-import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.common.functional.fold
-import com.wire.kalium.common.functional.getOrNull
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 
 /**
- * This use case returns all services currently in the database.
- * In case it is empty, the repository will request the list from the API.
- *
- * @return Flow<List<ServiceDetails>>
+ * Emits the list of services currently persisted in the database.
+ * Does not trigger a network sync — callers should invoke [SyncServicesUseCase] explicitly
+ * when a remote refresh is desired.
  */
 public interface ObserveAllServicesUseCase {
 
@@ -43,29 +34,14 @@ public interface ObserveAllServicesUseCase {
 }
 
 internal class ObserveAllServicesUseCaseImpl internal constructor(
-    private val serviceRepository: ServiceRepository,
-    private val teamRepository: TeamRepository,
-    private val selfTeamIdProvider: SelfTeamIdProvider
+    private val serviceRepository: ServiceRepository
 ) : ObserveAllServicesUseCase {
 
-    override suspend fun invoke(): Flow<List<ServiceDetails>> = flow {
-        // TODO: This should be called only one time preferably by the view model to
-        //  avoid unnecessary updates each time the use case is invoked
-        //  or have a in memory timer to avoid calling it too often
-        val scope = CoroutineScope(currentCoroutineContext())
-        scope.launch {
-            selfTeamIdProvider().getOrNull()?.let { teamId ->
-                teamRepository.syncServices(teamId = teamId)
-            }
+    override suspend fun invoke(): Flow<List<ServiceDetails>> =
+        serviceRepository.observeAllServices().map { either ->
+            either.fold(
+                { emptyList() },
+                { it }
+            )
         }
-
-        emitAll(
-            serviceRepository.observeAllServices().map { either ->
-                either.fold(
-                    { emptyList() },
-                    { it }
-                )
-            }
-        )
-    }
 }

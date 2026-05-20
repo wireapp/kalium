@@ -136,7 +136,6 @@ internal class ProteusMessageUnpackerImpl(
     ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
         is ProtoContent.Readable -> Either.Right(protoContent)
         is ProtoContent.ExternalMessageInstructions -> encryptedData?.let {
-            logger.d("Solving external content '$protoContent', EncryptedData='$it'")
             solveExternalContentForProteusMessage(protoContent, encryptedData)
         } ?: run {
             val rootCause = IllegalArgumentException(
@@ -151,7 +150,6 @@ internal class ProteusMessageUnpackerImpl(
         externalData: EncryptedData
     ): Either<CoreFailure, ProtoContent.Readable> = wrapProteusRequest {
         val decryptedExternalMessage = decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data
-        logger.d("ExternalMessage - Decrypted external message content: '$decryptedExternalMessage'")
         PlainMessageBlob(decryptedExternalMessage)
     }.map(protoContentMapper::decodeFromProtobuf).flatMap { decodedProtobuf ->
         if (decodedProtobuf !is ProtoContent.Readable) {

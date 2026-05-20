@@ -26,6 +26,8 @@ import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationSyncReason
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
@@ -52,6 +54,7 @@ class MemberChangeEventHandlerTest {
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownSucceeding()
             .withUpdateMemberSucceeding()
+            .withPersistMessageSucceeding()
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .arrange()
 
@@ -109,6 +112,7 @@ class MemberChangeEventHandlerTest {
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownSucceeding()
             .withUpdateMemberSucceeding()
+            .withPersistMessageSucceeding()
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
             .arrange()
 
@@ -127,6 +131,7 @@ class MemberChangeEventHandlerTest {
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
             .withUpdateMemberSucceeding()
+            .withPersistMessageSucceeding()
             .arrange()
 
         eventHandler.handle(arrangement.transactionContext, event)
@@ -157,15 +162,74 @@ class MemberChangeEventHandlerTest {
         }
     }
 
+    @Test
+    fun givenSelfUserPromotedToAdmin_whenHandlingMemberChangedRole_thenSystemMessageIsPersisted() = runTest {
+        val selfMember = Member(TestUser.USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChange(member = selfMember)
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withFetchConversationIfUnknownSucceeding()
+            .withUpdateMemberSucceeding()
+            .withPersistMessageSucceeding()
+            .arrange()
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage(
+                matches { message ->
+                    message.content is MessageContent.MemberChange.SelfUserPromotedToAdmin
+                }
+            )
+        }
+    }
+
+    @Test
+    fun givenOtherUserPromotedToAdmin_whenHandlingMemberChangedRole_thenNoSystemMessageIsPersisted() = runTest {
+        val otherMember = Member(TestUser.OTHER_USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChange(member = otherMember)
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withFetchConversationIfUnknownSucceeding()
+            .withUpdateMemberSucceeding()
+            .arrange()
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessage(any())
+        }
+    }
+
+    @Test
+    fun givenSelfUserRoleChangedToMember_whenHandlingMemberChangedRole_thenNoSystemMessageIsPersisted() = runTest {
+        val selfMember = Member(TestUser.USER_ID, Member.Role.Member)
+        val event = TestEvent.memberChange(member = selfMember)
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withFetchConversationIfUnknownSucceeding()
+            .withUpdateMemberSucceeding()
+            .arrange()
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessage(any())
+        }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMokkeryImpl() {
 
         val conversationRepository = mock<ConversationRepository>()
         private val userRepository = mock<UserRepository>()
         val fetchConversationIfUnknown = mock<FetchConversationIfUnknownUseCase>()
+        val persistMessage = mock<PersistMessageUseCase>()
 
         private val memberChangeEventHandler: MemberChangeEventHandler = MemberChangeEventHandlerImpl(
-            conversationRepository,
-            fetchConversationIfUnknown
+            conversationRepository = conversationRepository,
+            fetchConversationIfUnknown = fetchConversationIfUnknown,
+            persistMessage = persistMessage,
+            selfUserId = TestUser.USER_ID,
         )
 
         suspend fun withFetchConversationIfUnknownSucceeding() = apply {
@@ -202,6 +266,10 @@ class MemberChangeEventHandlerTest {
             everySuspend {
                 userRepository.fetchUsersIfUnknownByIds(any())
             } returns result
+        }
+
+        suspend fun withPersistMessageSucceeding() = apply {
+            everySuspend { persistMessage(any()) } returns Either.Right(Unit)
         }
 
         fun arrange() = this to memberChangeEventHandler
