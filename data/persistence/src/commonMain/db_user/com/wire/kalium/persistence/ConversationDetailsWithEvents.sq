@@ -89,15 +89,7 @@ WHERE archived = :fromArchive
       )
     )
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-ORDER BY
-    CASE
-        WHEN :newActivitiesOnTop THEN
-            CASE WHEN qualifiedId IN :activeCallConversationIds THEN 1 ELSE hasNewActivitiesToShow END
-        ELSE 0
-    END DESC,
-    lastModifiedDate DESC,
-    name IS NULL,
-    name COLLATE NOCASE ASC;
+ORDER BY lastModifiedDate DESC;
 
 selectConversationDetailsWithEvents:
 -- @CustomKey conversation_list_membership
@@ -120,6 +112,17 @@ WHERE
     AND CASE
         -- When filter is ALL, do not apply additional filters on conversation type
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        WHEN :conversationFilter = 'UNREAD' THEN (
+            COALESCE(unreadKnocksCount, 0) +
+            COALESCE(unreadMissedCallsCount, 0) +
+            COALESCE(unreadMentionsCount, 0) +
+            COALESCE(unreadRepliesCount, 0) +
+            COALESCE(unreadMessagesCount, 0)
+        ) > 0
+        WHEN :conversationFilter = 'ONGOING_CALLS' THEN qualifiedId IN (
+            SELECT conversation_id FROM Call
+            WHERE status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING')
+        )
         -- When filter is GROUPS, filter only group conversations
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
@@ -130,15 +133,7 @@ WHERE
         ELSE 1 = 0
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-    ORDER BY
-        CASE
-            WHEN :newActivitiesOnTop THEN
-                CASE WHEN qualifiedId IN :activeCallConversationIds THEN 1 ELSE hasNewActivitiesToShow END
-            ELSE 0
-        END DESC,
-        lastModifiedDate DESC,
-        name IS NULL,
-        name COLLATE NOCASE ASC
+    ORDER BY lastModifiedDate DESC
     LIMIT :limit
     OFFSET :offset;
 
@@ -163,6 +158,17 @@ WHERE
     AND CASE
         -- When filter is ALL, do not apply additional filters on conversation type
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        WHEN :conversationFilter = 'UNREAD' THEN (
+            COALESCE(unreadKnocksCount, 0) +
+            COALESCE(unreadMissedCallsCount, 0) +
+            COALESCE(unreadMentionsCount, 0) +
+            COALESCE(unreadRepliesCount, 0) +
+            COALESCE(unreadMessagesCount, 0)
+        ) > 0
+        WHEN :conversationFilter = 'ONGOING_CALLS' THEN qualifiedId IN (
+            SELECT conversation_id FROM Call
+            WHERE status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING')
+        )
         -- When filter is GROUPS, filter only group conversations
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
@@ -174,15 +180,7 @@ WHERE
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     AND name LIKE ('%' || :searchQuery || '%')
-ORDER BY
-    CASE
-        WHEN :newActivitiesOnTop THEN
-            CASE WHEN qualifiedId IN :activeCallConversationIds THEN 1 ELSE hasNewActivitiesToShow END
-        ELSE 0
-    END DESC,
-    lastModifiedDate DESC,
-    name IS NULL,
-    name COLLATE NOCASE ASC
+ORDER BY lastModifiedDate DESC
 LIMIT :limit
 OFFSET :offset;
 
@@ -194,6 +192,13 @@ WHERE
     type IS NOT 'SELF'
     AND CASE
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        WHEN :conversationFilter = 'UNREAD' THEN qualified_id IN (
+            SELECT conversation_id FROM UnreadEvent
+        )
+        WHEN :conversationFilter = 'ONGOING_CALLS' THEN qualified_id IN (
+            SELECT conversation_id FROM Call
+            WHERE status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING')
+        )
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
         WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND is_channel = 1)
@@ -213,22 +218,33 @@ WHERE
     );
 
 countConversationDetailsWithEvents:
-SELECT COUNT(*) FROM ConversationDetails
+SELECT COUNT(*) FROM ConversationDetailsWithEvents
 WHERE
-    ConversationDetails.type IS NOT 'SELF'
+    type IS NOT 'SELF'
     AND (
-        ConversationDetails.type IS 'GROUP'
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
-        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
+        type IS 'GROUP'
+        OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+        OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+        OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
     )
-    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
-    AND ConversationDetails.isActive
-    AND ConversationDetails.deletedLocally = 0
+    AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
+    AND isActive
+    AND deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
         -- When filter is ALL, do not apply additional filters on conversation type
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        WHEN :conversationFilter = 'UNREAD' THEN (
+            COALESCE(unreadKnocksCount, 0) +
+            COALESCE(unreadMissedCallsCount, 0) +
+            COALESCE(unreadMentionsCount, 0) +
+            COALESCE(unreadRepliesCount, 0) +
+            COALESCE(unreadMessagesCount, 0)
+        ) > 0
+        WHEN :conversationFilter = 'ONGOING_CALLS' THEN qualifiedId IN (
+            SELECT conversation_id FROM Call
+            WHERE status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING')
+        )
         -- When filter is GROUPS, filter only group conversations
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
@@ -250,22 +266,33 @@ WHERE
 
 countConversationDetailsWithEventsFromSearch:
 -- @CustomKey conversation_list_membership
-SELECT COUNT(*) FROM ConversationDetails
+SELECT COUNT(*) FROM ConversationDetailsWithEvents
 WHERE
-    ConversationDetails.type IS NOT 'SELF'
+    type IS NOT 'SELF'
     AND (
-        ConversationDetails.type IS 'GROUP'
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
-        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
+        type IS 'GROUP'
+        OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+        OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+        OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
     )
-    AND (ConversationDetails.protocol IS 'PROTEUS' OR ConversationDetails.protocol IS 'MIXED' OR (ConversationDetails.protocol IS 'MLS' AND ConversationDetails.mls_group_state IS 'ESTABLISHED'))
-    AND ConversationDetails.isActive
-    AND ConversationDetails.deletedLocally = 0
+    AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
+    AND isActive
+    AND deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
         -- When filter is ALL, do not apply additional filters on conversation type
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        WHEN :conversationFilter = 'UNREAD' THEN (
+            COALESCE(unreadKnocksCount, 0) +
+            COALESCE(unreadMissedCallsCount, 0) +
+            COALESCE(unreadMentionsCount, 0) +
+            COALESCE(unreadRepliesCount, 0) +
+            COALESCE(unreadMessagesCount, 0)
+        ) > 0
+        WHEN :conversationFilter = 'ONGOING_CALLS' THEN qualifiedId IN (
+            SELECT conversation_id FROM Call
+            WHERE status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING')
+        )
         -- When filter is GROUPS, filter only group conversations
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations

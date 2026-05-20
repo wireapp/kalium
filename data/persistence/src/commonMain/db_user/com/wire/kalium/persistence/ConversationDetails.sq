@@ -155,6 +155,13 @@ WHERE
     AND CASE
             -- When filter is ALL, do not apply additional filters on conversation type
             WHEN :conversationFilter = 'ALL' THEN 1 = 1
+            WHEN :conversationFilter = 'UNREAD' THEN qualifiedId IN (
+                SELECT conversation_id FROM UnreadEvent
+            )
+            WHEN :conversationFilter = 'ONGOING_CALLS' THEN qualifiedId IN (
+                SELECT conversation_id FROM Call
+                WHERE status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING')
+            )
             -- When filter is GROUPS, filter only group conversations
             WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP' AND is_channel = 0
             -- When filter is ONE_ON_ONE, filter only one-on-one conversations
@@ -164,7 +171,7 @@ WHERE
             -- When filter is FAVORITES (future implementation)
             ELSE 1 = 0
         END
-ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
+ORDER BY lastModifiedDate DESC;
 
 selectConversationDetailsByQualifiedId:
 SELECT * FROM ConversationDetails WHERE qualifiedId = ? AND deletedLocally = 0;

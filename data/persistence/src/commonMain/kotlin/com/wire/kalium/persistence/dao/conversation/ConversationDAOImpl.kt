@@ -351,14 +351,11 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun getAllConversationDetailsWithEvents(
         fromArchive: Boolean,
         onlyInteractionEnabled: Boolean,
-        newActivitiesOnTop: Boolean,
         strictMLSFilter: Boolean,
     ): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationDetailsWithEventsQueries.selectAllConversationDetailsWithEvents(
             fromArchive = fromArchive,
             onlyInteractionsEnabled = onlyInteractionEnabled,
-            newActivitiesOnTop = newActivitiesOnTop,
-            activeCallConversationIds = emptySet(),
             strict_mls = if (strictMLSFilter) 1 else 0,
             mapper = conversationDetailsWithEventsMapper::fromViewToModel
         ).asFlow()

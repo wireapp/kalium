@@ -25,6 +25,12 @@ sealed class ConversationFilter {
     data object All : ConversationFilter()
 
     @Serializable
+    data object Unread : ConversationFilter()
+
+    @Serializable
+    data object OngoingCalls : ConversationFilter()
+
+    @Serializable
     data object Favorites : ConversationFilter()
 
     @Serializable

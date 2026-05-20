@@ -65,9 +65,7 @@ class ConversationRepositoryExtensionsTest {
                 searchQuery = searchQuery,
                 fromArchive = false,
                 onlyInteractionEnabled = false,
-                newActivitiesOnTop = false,
             ),
-            activeCallConversationIds = emptySet(),
             pagingConfig = pagingConfig,
             startingOffset = 0L,
             strictMlsFilter = false
@@ -76,7 +74,7 @@ class ConversationRepositoryExtensionsTest {
             arrangement.conversationDaoExtensions
                 .getPagerForConversationDetailsWithEventsSearch(
                     queryConfig = matches {
-                        it.searchQuery == searchQuery && !it.fromArchive && !it.onlyInteractionEnabled && !it.newActivitiesOnTop
+                        it.searchQuery == searchQuery && !it.fromArchive && !it.onlyInteractionEnabled
                     },
                     pagingConfig = eq(pagingConfig),
                     startingOffset = any()

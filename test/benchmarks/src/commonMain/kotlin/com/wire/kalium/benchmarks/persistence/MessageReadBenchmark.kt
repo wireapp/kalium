@@ -130,7 +130,6 @@ class MessageReadBenchmark {
                 queryConfig = ConversationExtensions.QueryConfig(
                     fromArchive = false,
                     onlyInteractionEnabled = false,
-                    newActivitiesOnTop = true,
                     conversationFilter = ConversationFilterEntity.ALL,
                     strictMlsFilter = true
                 ),

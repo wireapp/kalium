@@ -21,7 +21,6 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -37,8 +36,6 @@ interface ConversationExtensions {
         val searchQuery: String = "",
         val fromArchive: Boolean = false,
         val onlyInteractionEnabled: Boolean = false,
-        val newActivitiesOnTop: Boolean = false,
-        val activeCallConversationIds: Set<QualifiedIDEntity> = emptySet(),
         val conversationFilter: ConversationFilterEntity = ConversationFilterEntity.ALL,
         val strictMlsFilter: Boolean = true,
     )
@@ -101,8 +98,6 @@ internal class ConversationExtensionsImpl internal constructor(
                         fromArchive = fromArchive,
                         onlyInteractionsEnabled = onlyInteractionEnabled,
                         conversationFilter = conversationFilter.name,
-                        newActivitiesOnTop = newActivitiesOnTop,
-                        activeCallConversationIds = activeCallConversationIds,
                         limit = limit,
                         offset = offset,
                         strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
@@ -114,8 +109,6 @@ internal class ConversationExtensionsImpl internal constructor(
                         onlyInteractionsEnabled = onlyInteractionEnabled,
                         conversationFilter = conversationFilter.name,
                         searchQuery = searchQuery,
-                        newActivitiesOnTop = newActivitiesOnTop,
-                        activeCallConversationIds = activeCallConversationIds,
                         limit = limit,
                         offset = offset,
                         strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,

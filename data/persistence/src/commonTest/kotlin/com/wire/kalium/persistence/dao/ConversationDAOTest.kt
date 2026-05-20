@@ -1336,7 +1336,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversations_whenObservingTheFullList_thenConvWithNullNameAreLast() = runTest {
+    fun givenConversations_whenObservingTheFullList_thenNewestConversationIsFirst() = runTest {
         // given
         val fromArchive = false
         val conversation1 = conversationEntity1.copy(
@@ -1352,7 +1352,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             name = "name",
             type = ConversationEntity.Type.GROUP,
             hasIncompleteMetadata = false,
-            lastModifiedDate = Instant.parse("2021-03-30T15:36:00.000Z"),
+            lastModifiedDate = Instant.parse("2021-03-30T15:37:00.000Z"),
         )
         conversationDAO.insertConversation(conversation1)
         conversationDAO.insertConversation(conversation2)
@@ -1566,7 +1566,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversationWithStillOngoingCall_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() = runTest {
+    fun givenConversationWithStillOngoingCall_whenGettingAllConversationsWithEvents_thenReturnByLastModifiedDate() = runTest {
         val conversationEntity1 = conversationEntity1.copy(
             id = ConversationIDEntity("conversation1", "domain"),
             type = ConversationEntity.Type.GROUP,
@@ -1591,14 +1591,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
             type = CallEntity.Type.CONFERENCE
         )
         callDAO.insertCall(callEntity.copy(conversationId = conversationEntity2.id)) // but conversation 2 has ongoing call
-        conversationDAO.getAllConversationDetailsWithEvents(newActivitiesOnTop = true).first().let {
-            assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with ongoing call
-            assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
+        conversationDAO.getAllConversationDetailsWithEvents().first().let {
+            assertEquals(conversationEntity1.id, it[0].conversationViewEntity.id)
+            assertEquals(conversationEntity2.id, it[1].conversationViewEntity.id)
         }
     }
 
     @Test
-    fun givenConversationWithUnreadEvents_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() = runTest {
+    fun givenConversationWithUnreadEvents_whenGettingAllConversationsWithEvents_thenReturnByLastModifiedDate() = runTest {
         val conversationEntity1 = conversationEntity1.copy(
             id = ConversationIDEntity("conversation1", "domain"),
             type = ConversationEntity.Type.GROUP,
@@ -1621,14 +1621,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
             date = Instant.fromEpochMilliseconds(1) // message received after last read date so it should be unread
         )
         messageDAO.insertOrIgnoreMessage(messageEntity)
-        conversationDAO.getAllConversationDetailsWithEvents(newActivitiesOnTop = true).first().let {
-            assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with unread event
-            assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
+        conversationDAO.getAllConversationDetailsWithEvents().first().let {
+            assertEquals(conversationEntity1.id, it[0].conversationViewEntity.id)
+            assertEquals(conversationEntity2.id, it[1].conversationViewEntity.id)
         }
     }
 
     @Test
-    fun givenConversationWithUnreadEventsButMuted_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() =
+    fun givenConversationWithUnreadEventsButMuted_whenGettingAllConversationsWithEvents_thenReturnByLastModifiedDate() =
         runTest {
             val conversationEntity1 = conversationEntity1.copy(
                 id = ConversationIDEntity("conversation1", "domain"),
@@ -1661,14 +1661,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
             )
             messageDAO.insertOrIgnoreMessage(messageEntity1)
             messageDAO.insertOrIgnoreMessage(messageEntity2)
-            conversationDAO.getAllConversationDetailsWithEvents(newActivitiesOnTop = true).first().let {
-                assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with not muted new message
-                assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
+            conversationDAO.getAllConversationDetailsWithEvents().first().let {
+                assertEquals(conversationEntity1.id, it[0].conversationViewEntity.id)
+                assertEquals(conversationEntity2.id, it[1].conversationViewEntity.id)
             }
         }
 
     @Test
-    fun givenConversationWithUnreadEvents_whenGettingAllConversationsWithEventsAndNotNewActivitiesOnTop_thenReturnRightOrder() = runTest {
+    fun givenConversationWithUnreadEvents_whenGettingAllConversationsWithEvents_thenReturnRecentConversationFirst() = runTest {
         val conversationEntity1 = conversationEntity1.copy(
             id = ConversationIDEntity("conversation1", "domain"),
             type = ConversationEntity.Type.GROUP,
@@ -1691,14 +1691,14 @@ class ConversationDAOTest : BaseDatabaseTest() {
             date = Instant.fromEpochMilliseconds(1) // message received after last read date so it should be unread
         )
         messageDAO.insertOrIgnoreMessage(messageEntity)
-        conversationDAO.getAllConversationDetailsWithEvents(newActivitiesOnTop = false).first().let {
+        conversationDAO.getAllConversationDetailsWithEvents().first().let {
             assertEquals(conversationEntity1.id, it[0].conversationViewEntity.id) // first is the more recent one even if it's already read
             assertEquals(conversationEntity2.id, it[1].conversationViewEntity.id) // second is the other one even if it has unread events
         }
     }
 
     @Test
-    fun givenReceivedConnectionRequest_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() = runTest {
+    fun givenReceivedConnectionRequest_whenGettingAllConversationsWithEvents_thenReturnByLastModifiedDate() = runTest {
         val conversationEntity1 = conversationEntity1.copy(
             id = ConversationIDEntity("conversation1", "domain"),
             type = ConversationEntity.Type.GROUP,
@@ -1723,9 +1723,9 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity2)
         connectionDAO.insertConnection(connectionEntity)
         userDAO.upsertUser(userEntity)
-        conversationDAO.getAllConversationDetailsWithEvents(newActivitiesOnTop = true).first().let {
-            assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with received connection request
-            assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
+        conversationDAO.getAllConversationDetailsWithEvents().first().let {
+            assertEquals(conversationEntity1.id, it[0].conversationViewEntity.id)
+            assertEquals(conversationEntity2.id, it[1].conversationViewEntity.id)
         }
     }
 

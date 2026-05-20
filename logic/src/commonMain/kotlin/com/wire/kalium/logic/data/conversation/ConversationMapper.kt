@@ -775,6 +775,8 @@ internal fun ConversationEntity.VerificationStatus.toModel(): Conversation.Verif
 
 internal fun ConversationFilter.toDao(): ConversationFilterEntity = when (this) {
     ConversationFilter.All -> ConversationFilterEntity.ALL
+    ConversationFilter.Unread -> ConversationFilterEntity.UNREAD
+    ConversationFilter.OngoingCalls -> ConversationFilterEntity.ONGOING_CALLS
     ConversationFilter.Favorites -> ConversationFilterEntity.FAVORITES
     ConversationFilter.Groups -> ConversationFilterEntity.GROUPS
     ConversationFilter.OneOnOne -> ConversationFilterEntity.ONE_ON_ONE

@@ -23,8 +23,6 @@ import androidx.paging.map
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -32,7 +30,6 @@ import kotlinx.coroutines.flow.map
 internal interface ConversationRepositoryExtensions {
     suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
-        activeCallConversationIds: Set<ConversationId>,
         pagingConfig: PagingConfig,
         startingOffset: Long,
         strictMlsFilter: Boolean,
@@ -42,10 +39,9 @@ internal interface ConversationRepositoryExtensions {
 internal class ConversationRepositoryExtensionsImpl internal constructor(
     private val conversationDAO: ConversationDAO,
     private val conversationMapper: ConversationMapper
-) : ConversationRepositoryExtensions {
+    ) : ConversationRepositoryExtensions {
     override suspend fun getPaginatedConversationDetailsWithEventsBySearchQuery(
         queryConfig: ConversationQueryConfig,
-        activeCallConversationIds: Set<ConversationId>,
         pagingConfig: PagingConfig,
         startingOffset: Long,
         strictMlsFilter: Boolean,
@@ -56,8 +52,6 @@ internal class ConversationRepositoryExtensionsImpl internal constructor(
                     searchQuery = searchQuery,
                     fromArchive = fromArchive,
                     onlyInteractionEnabled = onlyInteractionEnabled,
-                    newActivitiesOnTop = newActivitiesOnTop,
-                    activeCallConversationIds = activeCallConversationIds.mapTo(mutableSetOf()) { it.toDao() },
                     conversationFilter = conversationFilter.toDao(),
                     strictMlsFilter = strictMlsFilter
                 ),
@@ -80,6 +74,5 @@ public data class ConversationQueryConfig(
     val searchQuery: String = "",
     val fromArchive: Boolean = false,
     val onlyInteractionEnabled: Boolean = false,
-    val newActivitiesOnTop: Boolean = false,
     val conversationFilter: ConversationFilter = ConversationFilter.All,
 )

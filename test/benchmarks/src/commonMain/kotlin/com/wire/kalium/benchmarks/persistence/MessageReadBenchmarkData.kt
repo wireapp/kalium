@@ -165,7 +165,6 @@ internal object MessageReadBenchmarkData {
         val conversationDetails = db.conversationDAO.getAllConversationDetailsWithEvents(
             fromArchive = false,
             onlyInteractionEnabled = false,
-            newActivitiesOnTop = true
         ).first()
         check(conversationDetails.size == TotalConversations) {
             "Expected $TotalConversations conversation detail rows, got ${conversationDetails.size}"
