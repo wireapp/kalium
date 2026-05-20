@@ -69,6 +69,7 @@ CREATE INDEX conversation_verification_status ON Conversation(verification_statu
 CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
 CREATE INDEX conversation_archived_type_channel_index ON Conversation(archived, type, is_channel);
 CREATE INDEX Conversation_idx_archived_protocol ON Conversation(archived, protocol);
+CREATE INDEX conversation_archived_deleted_modified_date ON Conversation(archived, deleted_locally, last_modified_date DESC);
 CREATE INDEX conversation_idx_wire_cell_notnull ON Conversation(wire_cell) WHERE wire_cell IS NOT NULL;
 CREATE INDEX conversation_history_sharing_retention ON Conversation(history_sharing_retention_seconds);
 CREATE INDEX conversation_keying_material_update_index ON Conversation(

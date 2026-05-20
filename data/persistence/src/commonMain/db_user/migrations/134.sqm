@@ -1,0 +1,2 @@
+CREATE INDEX IF NOT EXISTS conversation_archived_deleted_modified_date
+ON Conversation(archived, deleted_locally, last_modified_date DESC);

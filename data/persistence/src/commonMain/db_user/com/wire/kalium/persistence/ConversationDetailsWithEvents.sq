@@ -97,45 +97,167 @@ selectConversationDetailsWithEvents:
 -- @CustomKey conversation_list_last_message
 -- @CustomKey conversation_list_unread
 -- @CustomKey conversation_list_draft
-SELECT * FROM ConversationDetailsWithEvents
-WHERE
-    archived = :fromArchive
-    -- :strict_mls is 0 or 1
-    AND (
-      protocol IN ('PROTEUS','MIXED')
-      OR (
-        protocol = 'MLS'
-        AND ( :strict_mls = 0
-              OR mls_group_state IN ('ESTABLISHED','PENDING_AFTER_RESET') )
-      )
-    )
-    AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
-        WHEN :conversationFilter = 'UNREAD' THEN (
-            COALESCE(unreadKnocksCount, 0) +
-            COALESCE(unreadMissedCallsCount, 0) +
-            COALESCE(unreadMentionsCount, 0) +
-            COALESCE(unreadRepliesCount, 0) +
-            COALESCE(unreadMessagesCount, 0)
-        ) > 0
-        WHEN :conversationFilter = 'ONGOING_CALLS' THEN qualifiedId IN (
-            SELECT conversation_id FROM Call
-            WHERE status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING')
+WITH PageIds AS (
+    SELECT Conversation.qualified_id AS qualifiedId
+    FROM Conversation
+    WHERE
+        Conversation.type IS NOT 'SELF'
+        AND Conversation.archived = :fromArchive
+        AND Conversation.deleted_locally = 0
+        AND (
+            Conversation.protocol IN ('PROTEUS','MIXED')
+            OR (
+                Conversation.protocol = 'MLS'
+                AND (:strict_mls = 0 OR Conversation.mls_group_state IN ('ESTABLISHED','PENDING_AFTER_RESET'))
+            )
         )
-        -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
-        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
-        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
-        -- When filter is FAVORITES (future implementation)
-
-        ELSE 1 = 0
-    END
-    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-    ORDER BY lastModifiedDate DESC
+        AND CASE
+            WHEN :conversationFilter = 'ALL' THEN 1 = 1
+            WHEN :conversationFilter = 'UNREAD' THEN EXISTS (
+                SELECT 1 FROM UnreadEvent
+                WHERE UnreadEvent.conversation_id = Conversation.qualified_id
+            )
+            WHEN :conversationFilter = 'ONGOING_CALLS' THEN EXISTS (
+                SELECT 1 FROM Call
+                WHERE Call.conversation_id = Conversation.qualified_id
+                    AND status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING')
+            )
+            WHEN :conversationFilter = 'GROUPS' THEN (Conversation.type = 'GROUP' AND Conversation.is_channel = 0)
+            WHEN :conversationFilter = 'ONE_ON_ONE' THEN Conversation.type = 'ONE_ON_ONE'
+            WHEN :conversationFilter = 'CHANNELS' THEN Conversation.type = 'GROUP' AND Conversation.is_channel = 1
+            ELSE 1 = 0
+        END
+    ORDER BY Conversation.last_modified_date DESC
     LIMIT :limit
-    OFFSET :offset;
+    OFFSET :offset
+),
+Page AS (
+    SELECT ConversationDetails.*
+    FROM PageIds
+    JOIN ConversationDetails
+        ON ConversationDetails.qualifiedId = PageIds.qualifiedId
+    WHERE
+        (
+            ConversationDetails.type IS 'GROUP'
+            OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL))
+            OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1)
+            OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL)
+        )
+        AND ConversationDetails.isActive
+        AND ConversationDetails.deletedLocally = 0
+        AND CASE WHEN :onlyInteractionsEnabled THEN ConversationDetails.interactionEnabled = 1 ELSE 1 END
+),
+PageUnreadEventCounts AS (
+    SELECT
+        conversation_id AS conversationId,
+        SUM(CASE WHEN type = 'KNOCK' THEN 1 ELSE 0 END) AS knocksCount,
+        SUM(CASE WHEN type = 'MISSED_CALL' THEN 1 ELSE 0 END) AS missedCallsCount,
+        SUM(CASE WHEN type = 'MENTION' THEN 1 ELSE 0 END) AS mentionsCount,
+        SUM(CASE WHEN type = 'REPLY' THEN 1 ELSE 0 END) AS repliesCount,
+        SUM(CASE WHEN type = 'MESSAGE' THEN 1 ELSE 0 END) AS messagesCount
+    FROM UnreadEvent
+    WHERE conversation_id IN (SELECT qualifiedId FROM Page)
+    GROUP BY conversation_id
+),
+PageLastMessagePreview AS (
+    SELECT
+        Page.qualifiedId AS conversationId,
+        Message.id AS lastMessageId,
+        Message.content_type AS lastMessageContentType,
+        Message.creation_date AS lastMessageDate,
+        Message.visibility AS lastMessageVisibility,
+        Message.sender_user_id AS lastMessageSenderUserId,
+        (Message.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
+        User.name AS lastMessageSenderName,
+        User.connection_status AS lastMessageSenderConnectionStatus,
+        User.deleted AS lastMessageSenderIsDeleted,
+        (Message.sender_user_id IS NOT NULL AND Message.sender_user_id == Page.selfUserId) AS lastMessageIsSelfMessage,
+        CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS lastMessageMemberChangeList,
+        CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS lastMessageMemberChangeType,
+        CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS lastMessageUpdateConversationName,
+        EXISTS (
+            SELECT 1 FROM MessageMention AS Mention
+            WHERE Mention.message_id = LastMessage.message_id
+                AND Mention.conversation_id = LastMessage.conversation_id
+                AND Mention.user_id = Page.selfUserId
+        ) AS lastMessageIsMentioningSelfUser,
+        TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
+        TextContent.text_body AS lastMessageText,
+        AssetContent.asset_mime_type AS lastMessageAssetMimeType
+    FROM Page
+    JOIN LastMessage
+        ON LastMessage.conversation_id = Page.qualifiedId AND Page.archived = 0
+    JOIN Message
+        ON LastMessage.message_id = Message.id AND LastMessage.conversation_id = Message.conversation_id
+    LEFT JOIN User
+        ON Message.sender_user_id = User.qualified_id
+    LEFT JOIN MessageSystemContent AS SystemContent
+        ON LastMessage.message_id = SystemContent.message_id AND LastMessage.conversation_id = SystemContent.conversation_id
+    LEFT JOIN MessageAssetContent AS AssetContent
+        ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
+    LEFT JOIN MessageTextContent AS TextContent
+        ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
+)
+SELECT
+    Page.*,
+    PageUnreadEventCounts.knocksCount AS unreadKnocksCount,
+    PageUnreadEventCounts.missedCallsCount AS unreadMissedCallsCount,
+    PageUnreadEventCounts.mentionsCount AS unreadMentionsCount,
+    PageUnreadEventCounts.repliesCount AS unreadRepliesCount,
+    PageUnreadEventCounts.messagesCount AS unreadMessagesCount,
+    CASE
+        WHEN Page.mutedStatus = 'ALL_ALLOWED' THEN
+           CASE
+                WHEN (
+                    COALESCE(PageUnreadEventCounts.knocksCount, 0) +
+                    COALESCE(PageUnreadEventCounts.missedCallsCount, 0) +
+                    COALESCE(PageUnreadEventCounts.mentionsCount, 0) +
+                    COALESCE(PageUnreadEventCounts.repliesCount, 0) +
+                    COALESCE(PageUnreadEventCounts.messagesCount, 0)
+                ) > 0 THEN 1
+                WHEN Page.type = 'CONNECTION_PENDING' AND Page.connectionStatus = 'PENDING' THEN 1
+                ELSE 0
+            END
+        WHEN Page.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+            CASE
+                WHEN (
+                    COALESCE(PageUnreadEventCounts.mentionsCount, 0) +
+                    COALESCE(PageUnreadEventCounts.repliesCount, 0)
+                ) > 0 THEN 1
+                WHEN Page.type = 'CONNECTION_PENDING' AND Page.connectionStatus = 'PENDING' THEN 1
+                ELSE 0
+            END
+        ELSE 0
+    END AS hasNewActivitiesToShow,
+    MessageDraft.text AS messageDraftText,
+    MessageDraft.edit_message_id AS messageDraftEditMessageId,
+    MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
+    MessageDraft.mention_list AS messageDraftMentionList,
+    PageLastMessagePreview.lastMessageId,
+    PageLastMessagePreview.lastMessageContentType,
+    PageLastMessagePreview.lastMessageDate,
+    PageLastMessagePreview.lastMessageVisibility,
+    PageLastMessagePreview.lastMessageSenderUserId,
+    COALESCE(PageLastMessagePreview.lastMessageIsEphemeral, 0) AS lastMessageIsEphemeral,
+    PageLastMessagePreview.lastMessageSenderName,
+    PageLastMessagePreview.lastMessageSenderConnectionStatus,
+    PageLastMessagePreview.lastMessageSenderIsDeleted,
+    COALESCE(PageLastMessagePreview.lastMessageIsSelfMessage, 0) AS lastMessageIsSelfMessage,
+    PageLastMessagePreview.lastMessageMemberChangeList,
+    PageLastMessagePreview.lastMessageMemberChangeType,
+    PageLastMessagePreview.lastMessageUpdateConversationName,
+    COALESCE(PageLastMessagePreview.lastMessageIsMentioningSelfUser, 0) AS lastMessageIsMentioningSelfUser,
+    PageLastMessagePreview.lastMessageIsQuotingSelfUser,
+    PageLastMessagePreview.lastMessageText,
+    PageLastMessagePreview.lastMessageAssetMimeType
+FROM Page
+LEFT JOIN PageUnreadEventCounts
+    ON PageUnreadEventCounts.conversationId = Page.qualifiedId
+LEFT JOIN MessageDraft
+    ON Page.qualifiedId = MessageDraft.conversation_id AND Page.archived = 0
+LEFT JOIN PageLastMessagePreview
+    ON PageLastMessagePreview.conversationId = Page.qualifiedId
+ORDER BY Page.lastModifiedDate DESC;
 
 selectConversationDetailsWithEventsFromSearch:
 -- @CustomKey conversation_list_membership
@@ -143,46 +265,159 @@ selectConversationDetailsWithEventsFromSearch:
 -- @CustomKey conversation_list_last_message
 -- @CustomKey conversation_list_unread
 -- @CustomKey conversation_list_draft
-SELECT * FROM ConversationDetailsWithEvents
-WHERE
-    archived = :fromArchive
-    -- :strict_mls is 0 or 1
-    AND (
-      protocol IN ('PROTEUS','MIXED')
-      OR (
-        protocol = 'MLS'
-        AND ( :strict_mls = 0
-              OR mls_group_state IN ('ESTABLISHED','PENDING_AFTER_RESET') )
-      )
-    )
-    AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
-        WHEN :conversationFilter = 'UNREAD' THEN (
-            COALESCE(unreadKnocksCount, 0) +
-            COALESCE(unreadMissedCallsCount, 0) +
-            COALESCE(unreadMentionsCount, 0) +
-            COALESCE(unreadRepliesCount, 0) +
-            COALESCE(unreadMessagesCount, 0)
-        ) > 0
-        WHEN :conversationFilter = 'ONGOING_CALLS' THEN qualifiedId IN (
-            SELECT conversation_id FROM Call
-            WHERE status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING')
+WITH Page AS (
+    SELECT * FROM ConversationDetails
+    WHERE
+        type IS NOT 'SELF'
+        AND (
+            type IS 'GROUP'
+            OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL))
+            OR (type IS 'ONE_ON_ONE' AND userDeleted = 1)
+            OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL)
         )
-        -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
-        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
-        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
-
-        -- When filter is FAVORITES (future implementation)
-        ELSE 1 = 0
-    END
-    AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
-    AND name LIKE ('%' || :searchQuery || '%')
-ORDER BY lastModifiedDate DESC
-LIMIT :limit
-OFFSET :offset;
+        AND isActive
+        AND deletedLocally = 0
+        AND archived = :fromArchive
+        AND (
+            protocol IN ('PROTEUS','MIXED')
+            OR (
+                protocol = 'MLS'
+                AND (:strict_mls = 0 OR mls_group_state IN ('ESTABLISHED','PENDING_AFTER_RESET'))
+            )
+        )
+        AND CASE
+            WHEN :conversationFilter = 'ALL' THEN 1 = 1
+            WHEN :conversationFilter = 'UNREAD' THEN EXISTS (
+                SELECT 1 FROM UnreadEvent
+                WHERE UnreadEvent.conversation_id = ConversationDetails.qualifiedId
+            )
+            WHEN :conversationFilter = 'ONGOING_CALLS' THEN EXISTS (
+                SELECT 1 FROM Call
+                WHERE Call.conversation_id = ConversationDetails.qualifiedId
+                    AND status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING')
+            )
+            WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+            WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+            WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
+            ELSE 1 = 0
+        END
+        AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
+        AND name LIKE ('%' || :searchQuery || '%')
+    ORDER BY lastModifiedDate DESC
+    LIMIT :limit
+    OFFSET :offset
+),
+PageUnreadEventCounts AS (
+    SELECT
+        conversation_id AS conversationId,
+        SUM(CASE WHEN type = 'KNOCK' THEN 1 ELSE 0 END) AS knocksCount,
+        SUM(CASE WHEN type = 'MISSED_CALL' THEN 1 ELSE 0 END) AS missedCallsCount,
+        SUM(CASE WHEN type = 'MENTION' THEN 1 ELSE 0 END) AS mentionsCount,
+        SUM(CASE WHEN type = 'REPLY' THEN 1 ELSE 0 END) AS repliesCount,
+        SUM(CASE WHEN type = 'MESSAGE' THEN 1 ELSE 0 END) AS messagesCount
+    FROM UnreadEvent
+    WHERE conversation_id IN (SELECT qualifiedId FROM Page)
+    GROUP BY conversation_id
+),
+PageLastMessagePreview AS (
+    SELECT
+        Page.qualifiedId AS conversationId,
+        Message.id AS lastMessageId,
+        Message.content_type AS lastMessageContentType,
+        Message.creation_date AS lastMessageDate,
+        Message.visibility AS lastMessageVisibility,
+        Message.sender_user_id AS lastMessageSenderUserId,
+        (Message.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
+        User.name AS lastMessageSenderName,
+        User.connection_status AS lastMessageSenderConnectionStatus,
+        User.deleted AS lastMessageSenderIsDeleted,
+        (Message.sender_user_id IS NOT NULL AND Message.sender_user_id == Page.selfUserId) AS lastMessageIsSelfMessage,
+        CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS lastMessageMemberChangeList,
+        CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS lastMessageMemberChangeType,
+        CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS lastMessageUpdateConversationName,
+        EXISTS (
+            SELECT 1 FROM MessageMention AS Mention
+            WHERE Mention.message_id = LastMessage.message_id
+                AND Mention.conversation_id = LastMessage.conversation_id
+                AND Mention.user_id = Page.selfUserId
+        ) AS lastMessageIsMentioningSelfUser,
+        TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
+        TextContent.text_body AS lastMessageText,
+        AssetContent.asset_mime_type AS lastMessageAssetMimeType
+    FROM Page
+    JOIN LastMessage
+        ON LastMessage.conversation_id = Page.qualifiedId AND Page.archived = 0
+    JOIN Message
+        ON LastMessage.message_id = Message.id AND LastMessage.conversation_id = Message.conversation_id
+    LEFT JOIN User
+        ON Message.sender_user_id = User.qualified_id
+    LEFT JOIN MessageSystemContent AS SystemContent
+        ON LastMessage.message_id = SystemContent.message_id AND LastMessage.conversation_id = SystemContent.conversation_id
+    LEFT JOIN MessageAssetContent AS AssetContent
+        ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
+    LEFT JOIN MessageTextContent AS TextContent
+        ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
+)
+SELECT
+    Page.*,
+    PageUnreadEventCounts.knocksCount AS unreadKnocksCount,
+    PageUnreadEventCounts.missedCallsCount AS unreadMissedCallsCount,
+    PageUnreadEventCounts.mentionsCount AS unreadMentionsCount,
+    PageUnreadEventCounts.repliesCount AS unreadRepliesCount,
+    PageUnreadEventCounts.messagesCount AS unreadMessagesCount,
+    CASE
+        WHEN Page.mutedStatus = 'ALL_ALLOWED' THEN
+           CASE
+                WHEN (
+                    COALESCE(PageUnreadEventCounts.knocksCount, 0) +
+                    COALESCE(PageUnreadEventCounts.missedCallsCount, 0) +
+                    COALESCE(PageUnreadEventCounts.mentionsCount, 0) +
+                    COALESCE(PageUnreadEventCounts.repliesCount, 0) +
+                    COALESCE(PageUnreadEventCounts.messagesCount, 0)
+                ) > 0 THEN 1
+                WHEN Page.type = 'CONNECTION_PENDING' AND Page.connectionStatus = 'PENDING' THEN 1
+                ELSE 0
+            END
+        WHEN Page.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+            CASE
+                WHEN (
+                    COALESCE(PageUnreadEventCounts.mentionsCount, 0) +
+                    COALESCE(PageUnreadEventCounts.repliesCount, 0)
+                ) > 0 THEN 1
+                WHEN Page.type = 'CONNECTION_PENDING' AND Page.connectionStatus = 'PENDING' THEN 1
+                ELSE 0
+            END
+        ELSE 0
+    END AS hasNewActivitiesToShow,
+    MessageDraft.text AS messageDraftText,
+    MessageDraft.edit_message_id AS messageDraftEditMessageId,
+    MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
+    MessageDraft.mention_list AS messageDraftMentionList,
+    PageLastMessagePreview.lastMessageId,
+    PageLastMessagePreview.lastMessageContentType,
+    PageLastMessagePreview.lastMessageDate,
+    PageLastMessagePreview.lastMessageVisibility,
+    PageLastMessagePreview.lastMessageSenderUserId,
+    COALESCE(PageLastMessagePreview.lastMessageIsEphemeral, 0) AS lastMessageIsEphemeral,
+    PageLastMessagePreview.lastMessageSenderName,
+    PageLastMessagePreview.lastMessageSenderConnectionStatus,
+    PageLastMessagePreview.lastMessageSenderIsDeleted,
+    COALESCE(PageLastMessagePreview.lastMessageIsSelfMessage, 0) AS lastMessageIsSelfMessage,
+    PageLastMessagePreview.lastMessageMemberChangeList,
+    PageLastMessagePreview.lastMessageMemberChangeType,
+    PageLastMessagePreview.lastMessageUpdateConversationName,
+    COALESCE(PageLastMessagePreview.lastMessageIsMentioningSelfUser, 0) AS lastMessageIsMentioningSelfUser,
+    PageLastMessagePreview.lastMessageIsQuotingSelfUser,
+    PageLastMessagePreview.lastMessageText,
+    PageLastMessagePreview.lastMessageAssetMimeType
+FROM Page
+LEFT JOIN PageUnreadEventCounts
+    ON PageUnreadEventCounts.conversationId = Page.qualifiedId
+LEFT JOIN MessageDraft
+    ON Page.qualifiedId = MessageDraft.conversation_id AND Page.archived = 0
+LEFT JOIN PageLastMessagePreview
+    ON PageLastMessagePreview.conversationId = Page.qualifiedId
+ORDER BY Page.lastModifiedDate DESC;
 
 countConversations:
 -- @CustomKey conversation_list_membership

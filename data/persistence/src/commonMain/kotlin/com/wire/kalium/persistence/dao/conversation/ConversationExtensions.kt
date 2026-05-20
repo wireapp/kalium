@@ -19,11 +19,21 @@ package com.wire.kalium.persistence.dao.conversation
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import app.cash.sqldelight.paging3.QueryPagingSource
+import androidx.paging.PagingSource
+import androidx.paging.PagingState
+import app.cash.sqldelight.Query
+import app.cash.sqldelight.SuspendingTransacter
+import app.cash.sqldelight.Transacter
+import app.cash.sqldelight.TransacterBase
+import app.cash.sqldelight.TransactionCallbacks
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.db.ReadDispatcher
+import com.wire.kalium.persistence.kaliumLogger
+import kotlinx.coroutines.withContext
+import kotlin.properties.Delegates
+import kotlin.time.TimeSource
 
 interface ConversationExtensions {
     fun getPagerForConversationDetailsWithEventsSearch(
@@ -72,7 +82,7 @@ internal class ConversationExtensionsImpl internal constructor(
      * - SELECT still uses full ConversationDetails rules (COUNT can be a superset)
      */
     private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
-        QueryPagingSource(
+        TimedConversationDetailsWithEventsPagingSource(
             countQuery =
                 if (searchQuery.isBlank()) {
                     queries.countConversations(
@@ -92,6 +102,7 @@ internal class ConversationExtensionsImpl internal constructor(
             transacter = queries,
             context = readDispatcher.value,
             initialOffset = initialOffset,
+            queryConfig = queryConfig,
             queryProvider = { limit, offset ->
                 if (searchQuery.isBlank()) {
                     queries.selectConversationDetailsWithEvents(
@@ -101,7 +112,7 @@ internal class ConversationExtensionsImpl internal constructor(
                         limit = limit,
                         offset = offset,
                         strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
-                        mapper = mapper::fromViewToModel,
+                        mapper = mapper::fromPagedViewToModel,
                     )
                 } else {
                     queries.selectConversationDetailsWithEventsFromSearch(
@@ -112,10 +123,124 @@ internal class ConversationExtensionsImpl internal constructor(
                         limit = limit,
                         offset = offset,
                         strict_mls = if (queryConfig.strictMlsFilter) 1 else 0,
-                        mapper = mapper::fromViewToModel,
+                        mapper = mapper::fromPagedViewToModel,
                     )
                 }
             }
         )
     }
+}
+
+private class TimedConversationDetailsWithEventsPagingSource(
+    private val queryProvider: (limit: Long, offset: Long) -> Query<ConversationDetailsWithEventsEntity>,
+    private val countQuery: Query<Long>,
+    private val transacter: TransacterBase,
+    private val context: kotlin.coroutines.CoroutineContext,
+    private val initialOffset: Long,
+    private val queryConfig: QueryConfig,
+) : PagingSource<Int, ConversationDetailsWithEventsEntity>(), Query.Listener {
+
+    private var currentQuery: Query<ConversationDetailsWithEventsEntity>? by Delegates.observable(null) { _, old, new ->
+        old?.removeListener(this)
+        new?.addListener(this)
+    }
+
+    override val jumpingSupported: Boolean
+        get() = true
+
+    init {
+        registerInvalidatedCallback {
+            currentQuery?.removeListener(this)
+            currentQuery = null
+        }
+    }
+
+    override fun queryResultsChanged() = invalidate()
+
+    override suspend fun load(
+        params: LoadParams<Int>,
+    ): LoadResult<Int, ConversationDetailsWithEventsEntity> = withContext(context) {
+        val key = (params.key ?: initialOffset.toInt()).toLong()
+        val limit = when (params) {
+            is LoadParams.Prepend -> minOf(key, params.loadSize.toLong())
+            else -> params.loadSize.toLong()
+        }
+        val loadType = when (params) {
+            is LoadParams.Append -> "append"
+            is LoadParams.Prepend -> "prepend"
+            is LoadParams.Refresh -> "refresh"
+        }
+
+        var countDurationMs = 0L
+        var queryDurationMs = 0L
+        var count = 0L
+        var offset = 0L
+        val totalStart = TimeSource.Monotonic.markNow()
+
+        val loadResult = runCatching {
+            val getPagingSourceLoadResult: TransactionCallbacks.() -> LoadResult.Page<Int, ConversationDetailsWithEventsEntity> = {
+                val countStart = TimeSource.Monotonic.markNow()
+                count = countQuery.executeAsOne()
+                countDurationMs = countStart.elapsedNow().inWholeMilliseconds
+
+                offset = when (params) {
+                    is LoadParams.Prepend -> maxOf(0L, key - params.loadSize)
+                    is LoadParams.Append -> key
+                    is LoadParams.Refresh -> if (key >= count - params.loadSize) maxOf(0L, count - params.loadSize) else key
+                }
+
+                val queryStart = TimeSource.Monotonic.markNow()
+                val data = queryProvider(limit, offset)
+                    .also { currentQuery = it }
+                    .executeAsList()
+                queryDurationMs = queryStart.elapsedNow().inWholeMilliseconds
+
+                val nextPosToLoad = offset + data.size
+                LoadResult.Page(
+                    data = data,
+                    prevKey = offset.toInt().takeIf { it > 0 && data.isNotEmpty() },
+                    nextKey = nextPosToLoad.toInt().takeIf { data.isNotEmpty() && data.size >= limit && nextPosToLoad < count },
+                    itemsBefore = offset.toInt(),
+                    itemsAfter = maxOf(0L, count - nextPosToLoad).toInt(),
+                )
+            }
+
+            when (transacter) {
+                is Transacter -> transacter.transactionWithResult(bodyWithReturn = getPagingSourceLoadResult)
+                is SuspendingTransacter -> transacter.transactionWithResult(bodyWithReturn = getPagingSourceLoadResult)
+            }
+        }
+
+        val totalDurationMs = totalStart.elapsedNow().inWholeMilliseconds
+        loadResult
+            .onSuccess { page ->
+                kaliumLogger.i(
+                    "[ConversationDetailsWithEventsPaging] " +
+                        "loadType=$loadType " +
+                        "limit=$limit " +
+                        "offset=$offset " +
+                        "rows=${page.data.size} " +
+                        "count=$count " +
+                        "countMs=$countDurationMs " +
+                        "queryMs=$queryDurationMs " +
+                        "totalMs=$totalDurationMs " +
+                        "search=${queryConfig.searchQuery.isNotBlank()} " +
+                        "filter=${queryConfig.conversationFilter.name} " +
+                        "archive=${queryConfig.fromArchive} " +
+                        "onlyInteraction=${queryConfig.onlyInteractionEnabled}"
+                )
+            }
+            .onFailure { error ->
+                kaliumLogger.e(
+                    "[ConversationDetailsWithEventsPaging] " +
+                        "failed loadType=$loadType limit=$limit offset=$offset totalMs=$totalDurationMs",
+                    error
+                )
+            }
+
+        if (invalid) LoadResult.Invalid() else loadResult.getOrThrow()
+    }
+
+    override fun getRefreshKey(state: PagingState<Int, ConversationDetailsWithEventsEntity>): Int? =
+        state.anchorPosition?.let { maxOf(0, it - (state.config.initialLoadSize / 2)) }
 }
