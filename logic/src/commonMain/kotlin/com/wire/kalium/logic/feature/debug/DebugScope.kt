@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCas
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.EventGenerator
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
@@ -124,6 +125,7 @@ public class DebugScope internal constructor(
     private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
     private val transactionProvider: CryptoTransactionProvider,
     private val refillKeyPackagesUseCase: RefillKeyPackagesUseCase,
+    private val certificateRevocationListRepository: CertificateRevocationListRepository,
     logger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
@@ -298,6 +300,12 @@ public class DebugScope internal constructor(
 
     public val setDebugE2EICertificateExpiration: SetDebugE2EICertificateExpirationUseCase
         get() = SetDebugE2EICertificateExpirationUseCaseImpl(e2EIClientProvider)
+
+    public val observeDebugCRLExpirationAfterOneMinute: ObserveDebugCRLExpirationAfterOneMinuteUseCase
+        get() = ObserveDebugCRLExpirationAfterOneMinuteUseCaseImpl(certificateRevocationListRepository)
+
+    public val setDebugCRLExpirationAfterOneMinute: SetDebugCRLExpirationAfterOneMinuteUseCase
+        get() = SetDebugCRLExpirationAfterOneMinuteUseCaseImpl(certificateRevocationListRepository)
 
     public val repairFaultyRemovalKeysUseCase: RepairFaultyRemovalKeysUseCase by lazy {
         RepairFaultyRemovalKeysUseCaseImpl(

@@ -153,6 +153,7 @@ public class UserScope internal constructor(
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     public val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
+    public val getSelfTeamId: GetSelfTeamIdUseCase get() = GetSelfTeamIdUseCaseImpl(selfTeamIdProvider)
     public val observeSelfUser: ObserveSelfUserUseCase get() = ObserveSelfUserUseCaseImpl(userRepository)
     public val observeSelfUserWithTeam: ObserveSelfUserWithTeamUseCase
         get() = ObserveSelfUserWithTeamUseCaseImpl(userRepository)
