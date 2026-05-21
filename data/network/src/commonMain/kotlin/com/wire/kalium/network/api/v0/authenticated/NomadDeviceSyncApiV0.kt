@@ -31,7 +31,7 @@ import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.NetworkErrorLabel
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.handleUnsuccessfulResponse
+import com.wire.kalium.network.utils.interceptUnsuccessfulResponse
 import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.call.body
@@ -151,7 +151,7 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
                     httpResponse.status == HttpStatusCode.Forbidden ->
                         handleLabeledError(httpResponse, NetworkErrorLabel.NO_CRYPTO_STATE, FORBIDDEN_CODE)
 
-                    else -> handleUnsuccessfulResponse(httpResponse)
+                    else -> interceptUnsuccessfulResponse(httpResponse)
                 }
             }
         }.getOrElse { unhandledException ->
@@ -172,7 +172,7 @@ internal open class NomadDeviceSyncApiV0 internal constructor(
                 )
             )
         } else {
-            handleUnsuccessfulResponse(httpResponse)
+            interceptUnsuccessfulResponse(httpResponse)
         }
     }
 
