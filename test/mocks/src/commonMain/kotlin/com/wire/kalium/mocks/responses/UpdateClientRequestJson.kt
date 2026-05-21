@@ -32,7 +32,7 @@ object UpdateClientRequestJson {
         """
         | {
         |   "mls_public_keys": {
-        |     "ed25519": "${Base64.encode(it.mlsPublicKeys.values.first())}}"
+        |     "ed25519": "${Base64.encode(it.mlsPublicKeys.values.first().encodeToByteArray())}}"
         |   }
         | }
         """.trimMargin()
