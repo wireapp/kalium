@@ -20,7 +20,7 @@ package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.authenticated.client.MLSPublicKeyTypeDTO
 import com.wire.kalium.network.api.authenticated.client.UpdateClientMlsPublicKeysRequest
-import io.ktor.util.encodeBase64
+import kotlin.io.encoding.Base64
 
 object UpdateClientRequestJson {
 
@@ -32,7 +32,7 @@ object UpdateClientRequestJson {
         """
         | {
         |   "mls_public_keys": {
-        |     "ed25519": "${it.mlsPublicKeys.values.first().encodeBase64()}}"
+        |     "ed25519": "${Base64.encode(it.mlsPublicKeys.values.first())}}"
         |   }
         | }
         """.trimMargin()

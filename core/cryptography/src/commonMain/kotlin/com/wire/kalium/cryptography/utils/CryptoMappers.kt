@@ -45,7 +45,6 @@ import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.cryptography.WireIdentity
-import io.ktor.util.encodeBase64
 import kotlin.io.encoding.Base64
 
 fun MLSCiphersuite.toCrypto(): Ciphersuite = when (this) {
@@ -101,10 +100,10 @@ fun MlsGroupInfoEncryptionType.toCryptography(): GroupInfoEncryptionType = when 
 
 fun PreKeyCrypto.toCrypto(): ProteusAutoPrekeyBundle = ProteusAutoPrekeyBundle(id.toUShort(), Base64.decode(pkb))
 
-fun ProteusAutoPrekeyBundle.toCryptography(): PreKeyCrypto = PreKeyCrypto(id.toInt(), pkb.encodeBase64())
+fun ProteusAutoPrekeyBundle.toCryptography(): PreKeyCrypto = PreKeyCrypto(id.toInt(), Base64.encode(pkb))
 
 fun com.wire.crypto.WelcomeBundle.toCryptography() = WelcomeBundle(
-    id.copyBytes().encodeBase64(),
+    Base64.encode(id.copyBytes()),
     crlNewDistributionPoints
 )
 

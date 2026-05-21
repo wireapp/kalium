@@ -62,7 +62,7 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import io.ktor.util.encodeBase64
+import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -89,7 +89,7 @@ class ClientRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRemoteRepository.registerMLSClient(
                 eq(CLIENT_ID),
-                eq(MLS_PUBLIC_KEY.encodeBase64()),
+                eq(Base64.encode(MLS_PUBLIC_KEY)),
                 eq(MLS_CIPHER_SUITE)
             )
         }
