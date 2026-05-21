@@ -55,6 +55,13 @@ public interface ObserveOfflineFilesUseCase {
 }
 
 /**
+ * Use case for observing offline files for a specific conversation.
+ */
+public interface ObserveOfflineFilesByConversationUseCase {
+    public operator fun invoke(conversationId: String): Flow<List<OfflineFileInfo>>
+}
+
+/**
  * Use case for retrieving a specific offline file's information from the local database by its ID.
  * Returns the [OfflineFileInfo] if found, or null if no file with the given ID exists.
  */
@@ -82,6 +89,13 @@ internal class ObserveOfflineFilesUseCaseImpl(
     private val repository: CellFileRepository,
 ) : ObserveOfflineFilesUseCase {
     override fun invoke(): Flow<List<OfflineFileInfo>> = repository.observeOfflineFiles()
+}
+
+internal class ObserveOfflineFilesByConversationUseCaseImpl(
+    private val repository: CellFileRepository,
+) : ObserveOfflineFilesByConversationUseCase {
+    override fun invoke(conversationId: String): Flow<List<OfflineFileInfo>> =
+        repository.observeOfflineFilesByConversationId(conversationId)
 }
 
 internal class GetOfflineFileUseCaseImpl(

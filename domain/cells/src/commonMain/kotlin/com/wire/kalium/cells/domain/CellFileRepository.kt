@@ -24,5 +24,6 @@ internal interface CellFileRepository {
     suspend fun upsert(info: OfflineFileInfo)
     suspend fun delete(id: String)
     fun observeOfflineFiles(): Flow<List<OfflineFileInfo>>
+    fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<OfflineFileInfo>>
     suspend fun getById(id: String): OfflineFileInfo?
 }

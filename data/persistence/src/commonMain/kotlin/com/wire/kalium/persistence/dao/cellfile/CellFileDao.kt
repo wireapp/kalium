@@ -42,6 +42,7 @@ interface CellFileDao {
     suspend fun setTransferStatus(id: String, status: String)
     suspend fun delete(id: String)
     fun observeOfflineFiles(): Flow<List<CellFileEntity>>
+    fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<CellFileEntity>>
     suspend fun getById(id: String): CellFileEntity?
     suspend fun getAllWithLocalPath(): List<CellFileLocalPath>
 }

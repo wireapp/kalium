@@ -67,6 +67,12 @@ internal class CellFileDaoImpl(
             .mapToList()
             .flowOn(readDispatcher.value)
 
+    override fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<CellFileEntity>> =
+        queries.observeOfflineFilesByConversationId(conversationId, ::toEntity)
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
+
     override suspend fun getById(id: String): CellFileEntity? = withContext(readDispatcher.value) {
         queries.selectById(id, ::toEntity).executeAsOneOrNull()
     }

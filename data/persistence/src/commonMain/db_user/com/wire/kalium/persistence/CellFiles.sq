@@ -44,6 +44,9 @@ DELETE FROM CellFile WHERE uuid = ?;
 observeOfflineFiles:
 SELECT * FROM CellFile WHERE isOffline = 1;
 
+observeOfflineFilesByConversationId:
+SELECT * FROM CellFile WHERE isOffline = 1 AND conversationId = ?;
+
 selectById:
 SELECT * FROM CellFile WHERE uuid = ?;
 

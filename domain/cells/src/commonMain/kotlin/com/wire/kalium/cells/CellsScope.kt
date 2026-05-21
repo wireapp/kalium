@@ -135,6 +135,8 @@ import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCase
 import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesUseCase
 import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesByConversationUseCase
+import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesByConversationUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCase
 import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
@@ -433,6 +435,10 @@ public class CellsScope(
 
     public val observeOfflineFiles: ObserveOfflineFilesUseCase by lazy {
         ObserveOfflineFilesUseCaseImpl(cellFileRepository)
+    }
+
+    public val observeOfflineFilesByConversation: ObserveOfflineFilesByConversationUseCase by lazy {
+        ObserveOfflineFilesByConversationUseCaseImpl(cellFileRepository)
     }
 
     public val getOfflineFile: GetOfflineFileUseCase by lazy {

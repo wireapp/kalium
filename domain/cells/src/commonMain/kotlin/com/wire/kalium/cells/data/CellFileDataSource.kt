@@ -33,6 +33,8 @@ internal class CellFileDataSource(
     }
     override fun observeOfflineFiles(): Flow<List<OfflineFileInfo>> =
         dao.observeOfflineFiles().map { list -> list.map { it.toInfo() } }
+    override fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<OfflineFileInfo>> =
+        dao.observeOfflineFilesByConversationId(conversationId).map { list -> list.map { it.toInfo() } }
     override suspend fun getById(id: String): OfflineFileInfo? =
         dao.getById(id)?.toInfo()
 }
