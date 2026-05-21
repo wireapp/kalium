@@ -101,7 +101,7 @@ PRAGMA legacy_alter_table = ON;
 ALTER TABLE MessageAttachments RENAME TO MessageAttachments_legacy;
 PRAGMA legacy_alter_table = OFF;
 
-CREATE TABLE IF NOT EXISTS MessageAttachments (
+CREATE TABLE MessageAttachments (
       asset_id TEXT NOT NULL,
       message_id TEXT NOT NULL,
       conversation_id TEXT NOT NULL,
