@@ -18,12 +18,13 @@
 package com.wire.kalium.cells.domain
 
 import com.wire.kalium.cells.domain.usecase.offline.OfflineFileInfo
+import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 
 internal interface CellFileRepository {
     suspend fun upsert(info: OfflineFileInfo)
     suspend fun delete(id: String)
     fun observeOfflineFiles(): Flow<List<OfflineFileInfo>>
-    fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<OfflineFileInfo>>
+    fun observeOfflineFilesByConversationId(conversationId: ConversationId): Flow<List<OfflineFileInfo>>
     suspend fun getById(id: String): OfflineFileInfo?
 }

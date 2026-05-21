@@ -18,10 +18,12 @@
 package com.wire.kalium.cells.data
 import com.wire.kalium.cells.domain.CellFileRepository
 import com.wire.kalium.cells.domain.usecase.offline.OfflineFileInfo
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.cellfile.CellFileDao
 import com.wire.kalium.persistence.dao.cellfile.CellFileEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+
 internal class CellFileDataSource(
     private val dao: CellFileDao,
 ) : CellFileRepository {
@@ -33,8 +35,8 @@ internal class CellFileDataSource(
     }
     override fun observeOfflineFiles(): Flow<List<OfflineFileInfo>> =
         dao.observeOfflineFiles().map { list -> list.map { it.toInfo() } }
-    override fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<OfflineFileInfo>> =
-        dao.observeOfflineFilesByConversationId(conversationId).map { list -> list.map { it.toInfo() } }
+    override fun observeOfflineFilesByConversationId(conversationId: ConversationId): Flow<List<OfflineFileInfo>> =
+        dao.observeOfflineFilesByConversationId(conversationId.toString()).map { list -> list.map { it.toInfo() } }
     override suspend fun getById(id: String): OfflineFileInfo? =
         dao.getById(id)?.toInfo()
 }

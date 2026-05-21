@@ -18,6 +18,7 @@
 package com.wire.kalium.cells.domain.usecase.offline
 
 import com.wire.kalium.cells.domain.CellFileRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 
 public data class OfflineFileInfo(
@@ -58,7 +59,7 @@ public interface ObserveOfflineFilesUseCase {
  * Use case for observing offline files for a specific conversation.
  */
 public interface ObserveOfflineFilesByConversationUseCase {
-    public operator fun invoke(conversationId: String): Flow<List<OfflineFileInfo>>
+    public operator fun invoke(conversationId: ConversationId): Flow<List<OfflineFileInfo>>
 }
 
 /**
@@ -94,7 +95,7 @@ internal class ObserveOfflineFilesUseCaseImpl(
 internal class ObserveOfflineFilesByConversationUseCaseImpl(
     private val repository: CellFileRepository,
 ) : ObserveOfflineFilesByConversationUseCase {
-    override fun invoke(conversationId: String): Flow<List<OfflineFileInfo>> =
+    override fun invoke(conversationId: ConversationId): Flow<List<OfflineFileInfo>> =
         repository.observeOfflineFilesByConversationId(conversationId)
 }
 
