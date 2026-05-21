@@ -30,16 +30,21 @@ internal class CellFileDataSource(
     override suspend fun upsert(info: OfflineFileInfo) {
         dao.upsert(info.toEntity())
     }
-    override suspend fun delete(id: String) {
-        dao.delete(id)
+
+    override suspend fun clearOfflineAccess(id: String) {
+        dao.clearOfflineAccess(id)
     }
+
     override fun observeOfflineFiles(): Flow<List<OfflineFileInfo>> =
         dao.observeOfflineFiles().map { list -> list.map { it.toInfo() } }
+
     override fun observeOfflineFilesByConversationId(conversationId: ConversationId): Flow<List<OfflineFileInfo>> =
         dao.observeOfflineFilesByConversationId(conversationId.toString()).map { list -> list.map { it.toInfo() } }
+
     override suspend fun getById(id: String): OfflineFileInfo? =
         dao.getById(id)?.toInfo()
 }
+
 private fun CellFileEntity.toInfo() = OfflineFileInfo(
     id = uuid,
     name = name.orEmpty(),

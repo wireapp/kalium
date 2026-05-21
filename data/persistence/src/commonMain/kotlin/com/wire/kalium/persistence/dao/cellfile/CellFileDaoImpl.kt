@@ -61,6 +61,12 @@ internal class CellFileDaoImpl(
         }
     }
 
+    override suspend fun clearOfflineAccess(id: String) {
+        withContext(writeDispatcher.value) {
+            queries.clearOfflineAccess(id)
+        }
+    }
+
     override fun observeOfflineFiles(): Flow<List<CellFileEntity>> =
         queries.observeOfflineFiles(::toEntity)
             .asFlow()

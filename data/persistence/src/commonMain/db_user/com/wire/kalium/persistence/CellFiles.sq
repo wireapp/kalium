@@ -41,6 +41,9 @@ ON CONFLICT(uuid) DO UPDATE SET
 deleteCellFile:
 DELETE FROM CellFile WHERE uuid = ?;
 
+clearOfflineAccess:
+UPDATE CellFile SET isOffline = 0, localPath = NULL WHERE uuid = ?;
+
 observeOfflineFiles:
 SELECT * FROM CellFile WHERE isOffline = 1;
 

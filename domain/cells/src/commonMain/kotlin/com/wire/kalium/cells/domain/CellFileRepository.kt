@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.Flow
 
 internal interface CellFileRepository {
     suspend fun upsert(info: OfflineFileInfo)
-    suspend fun delete(id: String)
+    suspend fun clearOfflineAccess(id: String)
     fun observeOfflineFiles(): Flow<List<OfflineFileInfo>>
     fun observeOfflineFilesByConversationId(conversationId: ConversationId): Flow<List<OfflineFileInfo>>
     suspend fun getById(id: String): OfflineFileInfo?

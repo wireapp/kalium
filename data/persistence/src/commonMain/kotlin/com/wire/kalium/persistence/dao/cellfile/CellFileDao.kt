@@ -41,6 +41,7 @@ interface CellFileDao {
     suspend fun upsert(entity: CellFileEntity)
     suspend fun setTransferStatus(id: String, status: String)
     suspend fun delete(id: String)
+    suspend fun clearOfflineAccess(id: String)
     fun observeOfflineFiles(): Flow<List<CellFileEntity>>
     fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<CellFileEntity>>
     suspend fun getById(id: String): CellFileEntity?

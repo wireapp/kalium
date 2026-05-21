@@ -82,7 +82,7 @@ internal class DeleteOfflineFileUseCaseImpl(
     private val repository: CellFileRepository,
 ) : DeleteOfflineFileUseCase {
     override suspend fun invoke(id: String) {
-        repository.delete(id)
+        repository.clearOfflineAccess(id)
     }
 }
 
