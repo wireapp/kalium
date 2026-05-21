@@ -144,7 +144,6 @@ internal inline fun <T : Any> NetworkResponse<T>.onSuccess(
 ): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Success) fn(this) }
 
-
 // TODO(refactor): Remove this function completely. Currently being used in ACME, E2EI and Asset downloads.
 @Deprecated("This should not be called directly. Either wrapRequest, or use the desired ErrorResponseInterceptors as needed")
 internal suspend fun handleUnsuccessfulResponse(
