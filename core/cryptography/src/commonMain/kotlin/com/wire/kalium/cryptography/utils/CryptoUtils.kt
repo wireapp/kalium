@@ -19,7 +19,6 @@
 package com.wire.kalium.cryptography.utils
 
 import com.wire.kalium.cryptography.kaliumLogger
-import io.ktor.util.encodeBase64
 import okio.Buffer
 import okio.HashingSink
 import okio.Sink
@@ -29,7 +28,7 @@ import okio.buffer
 import okio.use
 
 fun calcMd5(bytes: ByteArray): String =
-    Buffer().use { it.write(bytes).md5().toByteArray().encodeBase64() }
+    Buffer().use { it.write(bytes).md5().base64() }
 
 /**
  * Method used to calculate the digested MD5 hash of a relatively small byte array
@@ -44,7 +43,7 @@ fun calcFileMd5(dataSource: Source): String? =
         dataSource.buffer().peek().use { source ->
             HashingSink.md5(blackholeSink()).use { sink ->
                 source.readAll(sink)
-                sink.hash.toByteArray().encodeBase64()
+                sink.hash.base64()
             }
         }
     } catch (e: Exception) {
