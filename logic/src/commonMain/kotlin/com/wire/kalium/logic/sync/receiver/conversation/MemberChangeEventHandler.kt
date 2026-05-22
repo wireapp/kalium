@@ -107,11 +107,11 @@ internal class MemberChangeEventHandlerImpl(
             }
             .onFailure { eventLogger.logFailure(it) }
             .onSuccess {
-                if (event.member?.id == selfUserId && event.member.role == Conversation.Member.Role.Admin) {
+                event.member?.takeIf { it.role == Conversation.Member.Role.Admin }?.let { promotedMember ->
                     persistMessage(
                         Message.System(
                             id = event.id,
-                            content = MessageContent.MemberChange.SelfUserPromotedToAdmin(members = listOf(selfUserId)),
+                            content = MessageContent.MemberChange.UserPromotedToAdmin(members = listOf(promotedMember.id)),
                             conversationId = event.conversationId,
                             date = Instant.parse(event.timestampIso),
                             senderUserId = selfUserId,
