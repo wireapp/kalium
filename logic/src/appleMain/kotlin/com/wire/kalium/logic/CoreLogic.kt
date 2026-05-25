@@ -18,6 +18,10 @@
 
 package com.wire.kalium.logic
 
+import co.touchlab.kermit.platformLogWriter
+import com.wire.kalium.common.logger.CoreLogger
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
@@ -101,6 +105,27 @@ public actual class CoreLogic(
     actual override val globalCallManager: GlobalCallManager by lazy {
         GlobalCallManager(getGlobalScope(), networkStateObserver)
     }
+}
+
+/**
+ * Initializes KaliumLogger for iOS with the default platform logger (NSLog).
+ * This must be called before creating any Kalium scopes to see logs in Xcode console.
+ *
+ * @param logLevel The minimum log level to output. Defaults to INFO.
+ *                 Available levels: VERBOSE, DEBUG, INFO, WARN, ERROR, DISABLED
+ *
+ * Example usage from Swift:
+ * ```swift
+ * initKaliumLogger(logLevel: .debug)
+ * ```
+ */
+public fun initKaliumLogger(logLevel: KaliumLogLevel = KaliumLogLevel.INFO) {
+    CoreLogger.init(
+        KaliumLogger.Config(
+            initialLevel = logLevel,
+            initialLogWriterList = listOf(platformLogWriter())
+        )
+    )
 }
 
 @Suppress("MayBeConst")
