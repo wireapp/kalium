@@ -18,8 +18,14 @@
 
 package com.wire.kalium.network.api.base.unauthenticated.appVersioning
 
-actual class AppVersionBlackListResponse {
-    actual fun isAppNeedsToBeUpdated(currentAppVersion: Int): Boolean = false // TODO
+import kotlinx.serialization.SerialName
+
+actual class AppVersionBlackListResponse(
+    @SerialName("min_version") val oldestAccepted: Int,
+    @SerialName("exclude") val blacklisted: List<Int>
+) {
+    actual fun isAppNeedsToBeUpdated(currentAppVersion: Int): Boolean =
+        currentAppVersion < oldestAccepted || blacklisted.contains(currentAppVersion)
 }
 
 actual fun appVersioningUrlPlatformPath(): String = "ios"
