@@ -17,11 +17,16 @@
  */
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
+import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 
 public interface FinalizeMLSClientAfterE2EIEnrollment {
     public suspend fun invoke()
@@ -29,12 +34,25 @@ public interface FinalizeMLSClientAfterE2EIEnrollment {
 
 internal class FinalizeMLSClientAfterE2EIEnrollmentImpl(
     private val clientRepository: ClientRepository,
+    private val currentClientIdProvider: CurrentClientIdProvider,
+    private val registerMLSClient: RegisterMLSClientUseCase,
     private val joinExistingMLSConversationsUseCase: JoinExistingMLSConversationsUseCase,
     private val slowSyncRepository: SlowSyncRepository
 ) : FinalizeMLSClientAfterE2EIEnrollment {
     override suspend fun invoke() {
-        joinExistingMLSConversationsUseCase().map {
+        currentClientIdProvider()
+            .flatMap { clientId -> registerMLSClient(clientId) }
+            .flatMap { result ->
+                when (result) {
+                    RegisterMLSClientResult.Success -> Either.Right(Unit)
+                    RegisterMLSClientResult.E2EICertificateRequired ->
+                        CoreFailure.Unknown(IllegalStateException("E2EI certificate is still required after enrollment")).left()
+                }
+            }.flatMap {
             clientRepository.clearClientRegistrationBlockedByE2EI()
+        }.flatMap {
+            joinExistingMLSConversationsUseCase()
+        }.map {
             kaliumLogger.i("Clearing last slow sync completion instant after finalizing MLS client enrollment")
             slowSyncRepository.clearLastSlowSyncCompletionInstant()
         }

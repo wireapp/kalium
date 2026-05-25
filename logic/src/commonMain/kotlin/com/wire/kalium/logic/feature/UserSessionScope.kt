@@ -2525,6 +2525,7 @@ public class UserSessionScope internal constructor(
             userPropertyRepository,
             messages.messageSender,
             clientIdProvider,
+            registerMLSClientUseCase,
             e2eiRepository,
             mlsConversationRepository,
             conversationRepository,

@@ -63,6 +63,7 @@ import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUse
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCase
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
+import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingMLSGroupJoinsUseCase
@@ -123,6 +124,7 @@ public class UserScope internal constructor(
     private val userPropertyRepository: UserPropertyRepository,
     private val messageSender: MessageSender,
     private val clientIdProvider: CurrentClientIdProvider,
+    private val registerMLSClientUseCase: RegisterMLSClientUseCase,
     private val e2EIRepository: E2EIRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationRepository: ConversationRepository,
@@ -175,6 +177,8 @@ public class UserScope internal constructor(
     public val finalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollment
         get() = FinalizeMLSClientAfterE2EIEnrollmentImpl(
             clientRepository,
+            clientIdProvider,
+            registerMLSClientUseCase,
             joinExistingMLSConversationsUseCase,
             slowSyncRepository
         )
