@@ -473,6 +473,12 @@ public class MessageScope internal constructor(
             notificationEventsManager = NotificationEventsManagerImpl
         )
 
+    public val getCurrentNotifications: GetCurrentNotificationsUseCase
+        get() = GetCurrentNotificationsUseCaseImpl(
+            connectionRepository = connectionRepository,
+            messageRepository = messageRepository
+        )
+
     internal val sendConfirmation: SendConfirmationUseCase
         get() = SendConfirmationUseCase(
             currentClientIdProvider,
