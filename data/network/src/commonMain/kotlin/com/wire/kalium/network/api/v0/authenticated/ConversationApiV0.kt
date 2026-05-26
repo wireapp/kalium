@@ -60,7 +60,6 @@ import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -84,7 +83,7 @@ internal open class ConversationApiV0 internal constructor(
     override suspend fun fetchConversationsIds(
         pagingState: String?
     ): NetworkResponse<ConversationPagingResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post("$PATH_CONVERSATIONS/$PATH_LIST_IDS") {
                 setBody(PaginationRequest(pagingState = pagingState, size = MAX_CONVERSATION_DETAILS_COUNT))
             }
@@ -93,7 +92,7 @@ internal open class ConversationApiV0 internal constructor(
     override suspend fun fetchConversationsListDetails(
         conversationsIds: List<ConversationId>
     ): NetworkResponse<ConversationResponseDTO> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post("$PATH_CONVERSATIONS/$PATH_CONVERSATIONS_LIST/$PATH_V2") {
                 setBody(ConversationsDetailsRequest(conversationsIds = conversationsIds))
             }
@@ -102,7 +101,7 @@ internal open class ConversationApiV0 internal constructor(
     override suspend fun fetchConversationDetails(
         conversationId: ConversationId
     ): NetworkResponse<ConversationResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get(
                 "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}"
             )
@@ -113,7 +112,7 @@ internal open class ConversationApiV0 internal constructor(
      */
     override suspend fun createNewConversation(
         createConversationRequest: CreateConversationRequest
-    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse {
+    ): NetworkResponse<ConversationResponse> = wrapRequest {
         httpClient.post(PATH_CONVERSATIONS) {
             setBody(createConversationRequest)
         }
@@ -157,11 +156,11 @@ internal open class ConversationApiV0 internal constructor(
             "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
         ).let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.MemberLeaveDTO> { response }
+                HttpStatusCode.OK -> wrapRequest<EventContentDTO.Conversation.MemberLeaveDTO> { response }
                     .mapSuccess { ConversationMemberRemovedResponse.Changed(it) }
 
                 HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationMemberRemovedResponse.Unchanged, response)
-                else -> wrapKaliumResponse { response }
+                else -> wrapRequest { response }
             }
         }
     } catch (e: IOException) {
@@ -171,7 +170,7 @@ internal open class ConversationApiV0 internal constructor(
     override suspend fun updateConversationMemberState(
         memberUpdateRequest: MemberUpdateDTO,
         conversationId: ConversationId,
-    ): NetworkResponse<Unit> = wrapKaliumResponse {
+    ): NetworkResponse<Unit> = wrapRequest {
         httpClient.put(
             "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_SELF"
         ) {
@@ -188,7 +187,7 @@ internal open class ConversationApiV0 internal constructor(
         }.let { httpResponse ->
             when (httpResponse.status) {
                 HttpStatusCode.NoContent -> NetworkResponse.Success(UpdateConversationAccessResponse.AccessUnchanged, httpResponse)
-                else -> wrapKaliumResponse<EventContentDTO.Conversation.AccessUpdate> { httpResponse }
+                else -> wrapRequest<EventContentDTO.Conversation.AccessUpdate> { httpResponse }
                     .mapSuccess {
                         UpdateConversationAccessResponse.AccessUpdated(it)
                     }
@@ -202,7 +201,7 @@ internal open class ConversationApiV0 internal constructor(
         conversationId: ConversationId,
         userId: UserId,
         conversationMemberRoleDTO: ConversationMemberRoleDTO
-    ): NetworkResponse<Unit> = wrapKaliumResponse {
+    ): NetworkResponse<Unit> = wrapRequest {
         httpClient.put(
             "$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS/${userId.domain}/${userId.value}"
         ) {
@@ -220,11 +219,11 @@ internal open class ConversationApiV0 internal constructor(
             setBody(ConversationRenameRequest(conversationName))
         }.let { response ->
             when (response.status) {
-                HttpStatusCode.OK -> wrapKaliumResponse<EventContentDTO.Conversation.ConversationRenameDTO> { response }
+                HttpStatusCode.OK -> wrapRequest<EventContentDTO.Conversation.ConversationRenameDTO> { response }
                     .mapSuccess { ConversationRenameResponse.Changed(it) }
 
                 HttpStatusCode.NoContent -> NetworkResponse.Success(ConversationRenameResponse.Unchanged, response)
-                else -> wrapKaliumResponse { response }
+                else -> wrapRequest { response }
             }
         }
     } catch (e: IOException) {
@@ -255,7 +254,7 @@ internal open class ConversationApiV0 internal constructor(
     }
 
     override suspend fun fetchLimitedInformationViaCode(code: String, key: String): NetworkResponse<ConversationCodeInfo> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)
                 parameter(QUERY_KEY_KEY, key)
@@ -308,12 +307,12 @@ internal open class ConversationApiV0 internal constructor(
             }
 
             HttpStatusCode.Created -> {
-                wrapKaliumResponse<AddServiceResponse> { httpResponse }
+                wrapRequest<AddServiceResponse> { httpResponse }
                     .mapSuccess { ServiceAddedResponse.Changed(it.event) }
             }
 
             else -> {
-                wrapKaliumResponse { httpResponse }
+                wrapRequest { httpResponse }
             }
         }
 
@@ -330,7 +329,7 @@ internal open class ConversationApiV0 internal constructor(
                     httpResponse
                 )
 
-                else -> wrapKaliumResponse<EventContentDTO.Conversation.ReceiptModeUpdate> { httpResponse }
+                else -> wrapRequest<EventContentDTO.Conversation.ReceiptModeUpdate> { httpResponse }
                     .mapSuccess {
                         UpdateConversationReceiptModeResponse.ReceiptModeUpdated(it)
                     }
@@ -349,12 +348,12 @@ internal open class ConversationApiV0 internal constructor(
                 APINotSupported("V0->3: generateGuestRoomLink with password api is only available on API V4")
             )
         } else {
-            wrapKaliumResponse {
+            wrapRequest {
                 httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
             }
         }
 
-    override suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun revokeGuestRoomLink(conversationId: ConversationId): NetworkResponse<Unit> = wrapRequest {
         httpClient.delete("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
     }
 
@@ -362,7 +361,7 @@ internal open class ConversationApiV0 internal constructor(
         conversationId: ConversationId,
         messageTimer: Long?
     ): NetworkResponse<EventContentDTO.Conversation.MessageTimerUpdate> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.put("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MESSAGE_TIMER") {
                 setBody(ConversationMessageTimerDTO(messageTimer))
             }
@@ -372,7 +371,7 @@ internal open class ConversationApiV0 internal constructor(
         conversationId: ConversationId,
         typingIndicatorMode: TypingIndicatorStatusDTO
     ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_TYPING_NOTIFICATION") {
                 setBody(typingIndicatorMode)
             }
@@ -385,7 +384,7 @@ internal open class ConversationApiV0 internal constructor(
         ConversationApi.getApiNotSupportError("updateProtocol")
 
     override suspend fun guestLinkInfo(conversationId: ConversationId): NetworkResponse<ConversationInviteLinkResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
         }
 

@@ -27,7 +27,7 @@ import com.wire.kalium.network.api.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.v9.authenticated.ConversationApiV9
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
@@ -38,7 +38,7 @@ internal open class ConversationApiV10 internal constructor(
 
     override suspend fun createNewConversation(
         createConversationRequest: CreateConversationRequest
-    ): NetworkResponse<ConversationResponse> = wrapKaliumResponse<ConversationResponseV10> {
+    ): NetworkResponse<ConversationResponse> = wrapRequest<ConversationResponseV10> {
         httpClient.post(PATH_CONVERSATIONS) {
             setBody(apiModelMapper.toApiV10(createConversationRequest))
         }

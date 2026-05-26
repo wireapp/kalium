@@ -26,7 +26,6 @@ import com.wire.kalium.network.api.v14.unauthenticated.SSOLoginApiV14
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapRequest
-import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.head
@@ -55,7 +54,7 @@ internal open class SSOLoginApiV15 internal constructor(
         }
     }
 
-    override suspend fun getByEmail(email: String): NetworkResponse<SSOCodeResponse> = wrapKaliumResponse {
+    override suspend fun getByEmail(email: String): NetworkResponse<SSOCodeResponse> = wrapRequest {
         httpClient.post {
             url.appendPathSegments(PATH_SSO, PATH_GET_BY_EMAIL)
             setBody(SSOCodeRequest(email))

@@ -27,7 +27,7 @@ import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageList
 import com.wire.kalium.network.api.v4.authenticated.KeyPackageApiV4
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import com.wire.kalium.util.int.toHexString
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -42,7 +42,7 @@ internal open class KeyPackageApiV5 internal constructor(
 
     override suspend fun claimKeyPackages(
         param: KeyPackageApi.Param
-    ): NetworkResponse<ClaimedKeyPackageList> = wrapKaliumResponse {
+    ): NetworkResponse<ClaimedKeyPackageList> = wrapRequest {
         httpClient.post("$PATH_KEY_PACKAGES/$PATH_CLAIM/${param.user.domain}/${param.user.value}") {
             param.selfClientId?.let {
                 parameter(QUERY_SKIP_OWN, it)
@@ -55,7 +55,7 @@ internal open class KeyPackageApiV5 internal constructor(
         clientId: String,
         keyPackages: List<KeyPackage>
     ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             kaliumLogger.v("Keypackages Count to upload: ${keyPackages.size}")
             httpClient.post("$PATH_KEY_PACKAGES/$PATH_SELF/$clientId") {
                 setBody(KeyPackageList(keyPackages))
@@ -67,7 +67,7 @@ internal open class KeyPackageApiV5 internal constructor(
         keyPackages: List<KeyPackage>,
         cipherSuite: Int
     ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             kaliumLogger.v("Keypackages Count to replace: ${keyPackages.size}")
             httpClient.put("$PATH_KEY_PACKAGES/$PATH_SELF/$clientId") {
                 setBody(KeyPackageList(keyPackages))
@@ -79,7 +79,7 @@ internal open class KeyPackageApiV5 internal constructor(
         clientId: String,
         cipherSuite: Int,
     ): NetworkResponse<KeyPackageCountDTO> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get("$PATH_KEY_PACKAGES/$PATH_SELF/$clientId/$PATH_COUNT") {
                 parameter(QUERY_CIPHER_SUITE, cipherSuite.toHexString())
             }

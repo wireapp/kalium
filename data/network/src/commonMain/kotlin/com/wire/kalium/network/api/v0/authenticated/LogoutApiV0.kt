@@ -26,7 +26,7 @@ import com.wire.kalium.network.api.model.RefreshTokenProperties
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.CustomErrors.MISSING_REFRESH_TOKEN
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -40,7 +40,7 @@ internal open class LogoutApiV0 internal constructor(
     private val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun logout(): NetworkResponse<Unit> = sessionManager.session()?.refreshToken?.let { refreshToken ->
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post("$PATH_ACCESS/$PATH_LOGOUT") {
                 header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
             }
@@ -48,14 +48,14 @@ internal open class LogoutApiV0 internal constructor(
     } ?: MISSING_REFRESH_TOKEN
 
     override suspend fun removeCookiesByIds(removeCookiesByIdsRequest: RemoveCookiesByIdsRequest): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post("$PATH_COOKIES/$PATH_REMOVE") {
                 setBody(removeCookiesByIdsRequest)
             }
         }
 
     override suspend fun removeCookiesByLabels(removeCookiesByLabelsRequest: RemoveCookiesByLabels): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post("$PATH_COOKIES/$PATH_REMOVE") {
                 setBody(removeCookiesByLabelsRequest)
             }

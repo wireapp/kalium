@@ -21,7 +21,7 @@ package com.wire.kalium.network.api.base.unauthenticated.systemsettings
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.unauthenticated.systemsettings.UnauthorizedSettingsResponse
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 
 interface UnauthorizedSettingsApi {
@@ -34,7 +34,7 @@ class UnauthorizedSettingsApiImpl internal constructor(
 
     private val httpClient get() = unauthenticatedNetworkClient.httpClient
 
-    override suspend fun settings(): NetworkResponse<UnauthorizedSettingsResponse> = wrapKaliumResponse {
+    override suspend fun settings(): NetworkResponse<UnauthorizedSettingsResponse> = wrapRequest {
         httpClient.get(PATH)
     }
 
