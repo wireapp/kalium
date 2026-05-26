@@ -170,6 +170,8 @@ internal object BaseErrorResponseInterceptor : ErrorResponseInterceptor<Any> {
     }
 }
 
+// TODO(refactor): Temporary bridge for endpoints that manually handle response bodies, headers, or streaming.
+// Prefer wrapRequest or endpoint-specific ErrorResponseInterceptors where possible.
 internal suspend fun interceptUnsuccessfulResponse(
     result: HttpResponse,
     json: Json = KtxSerializer.json
