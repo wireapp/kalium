@@ -48,7 +48,7 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import io.ktor.util.encodeBase64
+import kotlin.io.encoding.Base64
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -344,7 +344,7 @@ internal class KeyPackageRepositoryTest {
             val USER_ID = UserId("user_id", "wire.com")
             val SELF_USER_ID = UserId("self_user_id", "wire.com")
             val KEY_PACKAGES = listOf("keypackage".encodeToByteArray())
-            val KEY_PACKAGES_BASE64 = KEY_PACKAGES.map { it.encodeBase64() }
+            val KEY_PACKAGES_BASE64 = KEY_PACKAGES.map { Base64.encode(it) }
             val EMPTY_CLAIMED_KEY_PACKAGES = ClaimedKeyPackageList(
                 emptyList()
             )

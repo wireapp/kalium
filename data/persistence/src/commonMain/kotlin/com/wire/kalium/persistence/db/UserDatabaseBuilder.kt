@@ -287,12 +287,9 @@ class UserDatabaseBuilder internal constructor(
             writeDispatcher,
         )
 
-    private val metadataCache = FlowCache<String, String?>(databaseScope)
     val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(
             database.metadataQueries,
-            metadataCache,
-            databaseScope,
             writeDispatcher,
             readDispatcher,
         )

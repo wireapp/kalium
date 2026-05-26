@@ -75,6 +75,9 @@ object FeatureConfigTest {
         assetAuditLogConfigModel: AssetAuditLogConfigModel? = AssetAuditLogConfigModel(
             status = Status.ENABLED,
         ),
+        preventAdminlessGroupsModel: PreventAdminlessGroupsConfigModel? = PreventAdminlessGroupsConfigModel(
+            status = Status.DISABLED,
+        ),
     ): FeatureConfigModel = FeatureConfigModel(
         appLockModel,
         classifiedDomainsModel,
@@ -100,5 +103,6 @@ object FeatureConfigTest {
         appsModel,
         enableUserProfileQRCodeConfigModel,
         assetAuditLogConfigModel,
+        preventAdminlessGroupsModel,
     )
 }

@@ -178,26 +178,35 @@ class MemberChangeEventHandlerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.persistMessage(
                 matches { message ->
-                    message.content is MessageContent.MemberChange.SelfUserPromotedToAdmin
+                    val content = message.content
+                    content is MessageContent.MemberChange.UserPromotedToAdmin &&
+                            content.members == listOf(TestUser.USER_ID)
                 }
             )
         }
     }
 
     @Test
-    fun givenOtherUserPromotedToAdmin_whenHandlingMemberChangedRole_thenNoSystemMessageIsPersisted() = runTest {
+    fun givenOtherUserPromotedToAdmin_whenHandlingMemberChangedRole_thenSystemMessageIsPersisted() = runTest {
         val otherMember = Member(TestUser.OTHER_USER_ID, Member.Role.Admin)
         val event = TestEvent.memberChange(member = otherMember)
 
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownSucceeding()
             .withUpdateMemberSucceeding()
+            .withPersistMessageSucceeding()
             .arrange()
 
         eventHandler.handle(arrangement.transactionContext, event)
 
-        verifySuspend(VerifyMode.not) {
-            arrangement.persistMessage(any())
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.persistMessage(
+                matches { message ->
+                    val content = message.content
+                    content is MessageContent.MemberChange.UserPromotedToAdmin &&
+                            content.members == listOf(TestUser.OTHER_USER_ID)
+                }
+            )
         }
     }
 

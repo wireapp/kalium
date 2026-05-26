@@ -29,7 +29,6 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
-import io.ktor.util.encodeBase64
 import kotlinx.coroutines.test.runTest
 import kotlin.io.encoding.Base64
 import kotlin.test.BeforeTest
@@ -66,7 +65,7 @@ class SecurityHelperTest {
         val secret1 = securityHelper.globalDBSecret()
         every {
             passphraseStorage.getPassphrase(any())
-        }.returns(secret1.value.encodeBase64())
+        }.returns(Base64.encode(secret1.value))
 
         val secret2 = securityHelper.globalDBSecret()
         assertTrue(secret1.value.contentEquals(secret2.value))
@@ -89,7 +88,7 @@ class SecurityHelperTest {
         val secret1 = securityHelper.userDBSecret(userId)
         every {
             passphraseStorage.getPassphrase(any())
-        }.returns(secret1.value.encodeBase64())
+        }.returns(Base64.encode(secret1.value))
 
         val secret2 = securityHelper.userDBSecret(userId)
         assertTrue(secret1.value.contentEquals(secret2.value))
@@ -107,7 +106,7 @@ class SecurityHelperTest {
 
         val oldKeyBytes = ByteArray(32) { 0 }
         every { passphraseStorage.setPassphrase(any(), any()) } returns Unit
-        setupSequencedGetPassphrase(mlsV2Alias, listOf(oldKeyBytes.encodeBase64(), oldKeyBytes.encodeBase64()))
+        setupSequencedGetPassphrase(mlsV2Alias, listOf(Base64.encode(oldKeyBytes), Base64.encode(oldKeyBytes)))
         setupSequencedGetPassphrase(mlsV1Alias, listOf(null, "oldKeyBase64"))
 
         val secret1 = securityHelper.mlsDBSecret(userId, rootPath)

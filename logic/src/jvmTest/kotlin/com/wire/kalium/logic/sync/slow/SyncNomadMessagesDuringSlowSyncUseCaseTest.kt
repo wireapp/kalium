@@ -345,7 +345,7 @@ private fun nomadStoredMessage(
     return NomadStoredMessage(
         messageId = messageId,
         timestamp = 1_707_235_200,
-        payload = Base64.Default.encode(payload.encodeToByteArray())
+        payload = Base64.encode(payload.encodeToByteArray())
     )
 }
 
