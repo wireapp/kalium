@@ -164,6 +164,7 @@ object FeatureConfigJson {
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.PreventAdminlessGroups(FeatureFlagStatusDTO.DISABLED),
         ),
         featureConfigResponseSerializer
     )

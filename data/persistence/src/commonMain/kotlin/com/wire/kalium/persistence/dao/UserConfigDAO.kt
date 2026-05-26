@@ -80,6 +80,8 @@ interface UserConfigDAO {
     suspend fun isProfileQRCodeEnabled(): Boolean
     suspend fun setAssetAuditLogEnabled(enabled: Boolean)
     suspend fun isAssetAuditLogEnabled(): Boolean
+    suspend fun setPreventAdminlessGroupsEnabled(enabled: Boolean)
+    suspend fun isPreventAdminlessGroupsEnabled(): Boolean
     suspend fun setWireCellsConfig(config: WireCellsConfigEntity)
     suspend fun removeWireCellsConfig()
     suspend fun getWireCellsConfig(): WireCellsConfigEntity?
@@ -278,6 +280,13 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun isAssetAuditLogEnabled(): Boolean =
         metadataDAO.valueByKey(ASSET_AUDIT_LOG_ENABLED)?.toBoolean() ?: false
 
+    override suspend fun setPreventAdminlessGroupsEnabled(enabled: Boolean) {
+        metadataDAO.insertValue(enabled.toString(), PREVENT_ADMINLESS_GROUPS_ENABLED)
+    }
+
+    override suspend fun isPreventAdminlessGroupsEnabled(): Boolean =
+        metadataDAO.valueByKey(PREVENT_ADMINLESS_GROUPS_ENABLED)?.toBoolean() ?: false
+
     override suspend fun isMlsFaultyKeysRepairExecuted(): Boolean =
         metadataDAO.valueByKey(MLS_FAULTY_CONVERSATIONS_REPAIRED)?.toBoolean() ?: false
 
@@ -324,6 +333,7 @@ internal class UserConfigDAOImpl internal constructor(
         const val PROFILE_QR_CODE_ENABLED = "profile_qr_code_enabled"
         private const val APPS_ENABLED_KEY = "apps_enabled"
         private const val ASSET_AUDIT_LOG_ENABLED = "asset_audit_log"
+        private const val PREVENT_ADMINLESS_GROUPS_ENABLED = "prevent_adminless_groups"
         private const val WIRE_CELLS_CONFIG = "wire_cells_config"
         private const val MLS_FAULTY_CONVERSATIONS_REPAIRED = "mls_faulty_conversations_repaired"
     }

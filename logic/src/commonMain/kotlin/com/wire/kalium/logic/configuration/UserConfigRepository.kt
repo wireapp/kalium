@@ -163,6 +163,8 @@ internal interface UserConfigRepository {
     suspend fun isProfileQRCodeEnabled(): Boolean
     suspend fun setAssetAuditLogEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isAssetAuditLogEnabled(): Boolean
+    suspend fun setPreventAdminlessGroupsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isPreventAdminlessGroupsEnabled(): Boolean
     suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit>
     suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?>
     suspend fun isMLSFaultyKeysRepairExecuted(): Boolean
@@ -604,6 +606,13 @@ internal class UserConfigDataSource internal constructor(
         }
 
     override suspend fun isAssetAuditLogEnabled(): Boolean = userConfigDAO.isAssetAuditLogEnabled()
+
+    override suspend fun setPreventAdminlessGroupsEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigDAO.setPreventAdminlessGroupsEnabled(enabled)
+        }
+
+    override suspend fun isPreventAdminlessGroupsEnabled(): Boolean = userConfigDAO.isPreventAdminlessGroupsEnabled()
 
     override suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit> =
         wrapStorageRequest {

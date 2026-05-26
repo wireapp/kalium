@@ -186,6 +186,7 @@ class FeatureConfigMapperTest {
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.PreventAdminlessGroups(FeatureFlagStatusDTO.ENABLED),
         )
 
         val mapper: FeatureConfigMapper = FeatureConfigMapperImpl()
