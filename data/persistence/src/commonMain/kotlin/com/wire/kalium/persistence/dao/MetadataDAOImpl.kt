@@ -68,7 +68,9 @@ class MetadataDAOImpl internal constructor(
             .flowOn(readDispatcher.value)
     }
 
-    override suspend fun valueByKey(key: String): String? = valueByKeyFlow(key).first()
+    override suspend fun valueByKey(key: String): String? = withContext(readDispatcher.value) {
+        metadataQueries.selectValueByKey(key).executeAsOneOrNull()
+    }
 
     override suspend fun clear(keysToKeep: List<String>?) {
         withContext(writeDispatcher.value) {
