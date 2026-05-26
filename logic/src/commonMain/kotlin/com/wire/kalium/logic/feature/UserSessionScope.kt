@@ -2532,7 +2532,6 @@ public class UserSessionScope internal constructor(
             team.isSelfATeamMember,
             updateSupportedProtocols,
             clientRepository,
-            joinExistingMLSConversations,
             refreshUsersWithoutMetadata,
             isE2EIEnabled,
             certificateRevocationListRepository,

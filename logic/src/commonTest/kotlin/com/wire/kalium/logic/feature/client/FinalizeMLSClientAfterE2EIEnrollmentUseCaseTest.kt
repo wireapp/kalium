@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import dev.mokkery.MockMode
@@ -35,17 +34,16 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class FinalizeMLSClientAfterE2EIEnrollmentTest {
+class FinalizeMLSClientAfterE2EIEnrollmentUseCaseTest {
 
     @Test
-    fun givenE2EIEnrollmentFinished_whenFinalizing_thenRegisterMLSClientBeforeClearingBlockAndJoiningConversations() = runTest {
+    fun givenE2EIEnrollmentFinished_whenFinalizing_thenRegisterMLSClientBeforeClearingBlockAndForcingSlowSync() = runTest {
         val clientId = ClientId("client-id")
         val calls = mutableListOf<String>()
         val (arrangement, useCase) = arrange {
             withCurrentClientId(clientId)
             withRegisterMLSClient(clientId, calls, Either.Right(RegisterMLSClientResult.Success))
             withClearClientRegistrationBlockedByE2EI(calls)
-            withJoinExistingMLSConversations(calls)
             withClearLastSlowSyncCompletionInstant(calls)
         }
 
@@ -55,7 +53,6 @@ class FinalizeMLSClientAfterE2EIEnrollmentTest {
             listOf(
                 REGISTER_MLS_CLIENT,
                 CLEAR_E2EI_BLOCK,
-                JOIN_EXISTING_MLS_CONVERSATIONS,
                 CLEAR_LAST_SLOW_SYNC_COMPLETION
             ),
             calls
@@ -63,7 +60,6 @@ class FinalizeMLSClientAfterE2EIEnrollmentTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.registerMLSClient(clientId)
             arrangement.clientRepository.clearClientRegistrationBlockedByE2EI()
-            arrangement.joinExistingMLSConversationsUseCase()
             arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
         }
     }
@@ -80,18 +76,16 @@ class FinalizeMLSClientAfterE2EIEnrollmentTest {
 
         verifySuspend(VerifyMode.not) {
             arrangement.clientRepository.clearClientRegistrationBlockedByE2EI()
-            arrangement.joinExistingMLSConversationsUseCase()
             arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
         }
     }
 
-    private fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, FinalizeMLSClientAfterE2EIEnrollment> =
+    private fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, FinalizeMLSClientAfterE2EIEnrollmentUseCase> =
         Arrangement().apply(block).arrange()
 
     private class Arrangement {
         val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
         val registerMLSClient = mock<RegisterMLSClientUseCase>(mode = MockMode.autoUnit)
-        val joinExistingMLSConversationsUseCase = mock<JoinExistingMLSConversationsUseCase>(mode = MockMode.autoUnit)
         val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
         private var currentClientIdProvider = CurrentClientIdProvider { Either.Right(ClientId("client-id")) }
 
@@ -117,24 +111,16 @@ class FinalizeMLSClientAfterE2EIEnrollmentTest {
             }
         }
 
-        fun withJoinExistingMLSConversations(calls: MutableList<String>) = apply {
-            everySuspend { joinExistingMLSConversationsUseCase() } calls {
-                calls += JOIN_EXISTING_MLS_CONVERSATIONS
-                Either.Right(Unit)
-            }
-        }
-
         fun withClearLastSlowSyncCompletionInstant(calls: MutableList<String>) = apply {
             everySuspend { slowSyncRepository.clearLastSlowSyncCompletionInstant() } calls {
                 calls += CLEAR_LAST_SLOW_SYNC_COMPLETION
             }
         }
 
-        fun arrange() = this to FinalizeMLSClientAfterE2EIEnrollmentImpl(
+        fun arrange() = this to FinalizeMLSClientAfterE2EIEnrollmentUseCaseImpl(
             clientRepository = clientRepository,
             currentClientIdProvider = currentClientIdProvider,
             registerMLSClient = registerMLSClient,
-            joinExistingMLSConversationsUseCase = joinExistingMLSConversationsUseCase,
             slowSyncRepository = slowSyncRepository
         )
     }
@@ -142,7 +128,6 @@ class FinalizeMLSClientAfterE2EIEnrollmentTest {
     private companion object {
         const val REGISTER_MLS_CLIENT = "registerMLSClient"
         const val CLEAR_E2EI_BLOCK = "clearE2EIBlock"
-        const val JOIN_EXISTING_MLS_CONVERSATIONS = "joinExistingMLSConversations"
         const val CLEAR_LAST_SLOW_SYNC_COMPLETION = "clearLastSlowSyncCompletion"
     }
 }
