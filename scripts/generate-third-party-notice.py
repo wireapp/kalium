@@ -658,6 +658,35 @@ def main():
 
     sections.sort(key=lambda s: s["sort_key"])
 
+    # Stale-override audit (npm side). Walk the sections built from disk and
+    # collect every `npm:<name>` key that was actually emitted. Any npm
+    # override in the YAML that did not appear in this set points to a stale
+    # entry — typo'd package name, or the package was removed from the
+    # runtime tree. Surfaced as an ERROR so the operator notices.
+    # Maven overrides are validated separately by parse-pom-licenses.py
+    # against the POM directory.
+    seen_npm_keys = set()
+    for s in sections:
+        if s["kind"] == "npm" and s["header"].startswith("npm:"):
+            name = s["header"][4:].rsplit("@", 1)[0]
+            seen_npm_keys.add(f"npm:{name}")
+    npm_override_keys = {k for k in overrides if k.startswith("npm:")}
+    unused_npm = sorted(npm_override_keys - seen_npm_keys)
+    if unused_npm:
+        suffix = "y" if len(unused_npm) == 1 else "ies"
+        print(
+            f"  ERROR: {len(unused_npm)} npm override entr{suffix} in "
+            f"{override_path} matched no scanned package:",
+            file=sys.stderr,
+        )
+        for k in unused_npm:
+            print(f"    - {k}", file=sys.stderr)
+        print(
+            "  Each entry above is either a typo or refers to a package "
+            "no longer in the scan. Remove or correct it.",
+            file=sys.stderr,
+        )
+
     # Verbatim-body deduplication. Bundled LICENSE/NOTICE text and
     # license_text overrides are commonly identical across many components
     # (the Apache-2.0 boilerplate is the worst offender — every Apache

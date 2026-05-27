@@ -98,6 +98,11 @@ def main():
 
     overrides = load_overrides(override_path)
     pom_count = from_pom = from_override = unresolved = 0
+    # Track which override keys were actually applied to a POM. After the loop,
+    # any Maven override (`gid:aid` not starting with `npm:`) that never matched
+    # points to a stale entry in the YAML — either a typo or a dependency that
+    # was removed upstream. Surfaced as an ERROR so the operator notices.
+    used_override_keys = set()
     with open(out_tsv, 'w') as tsv, open(out_nolic, 'w') as nolic:
         tsv.write('groupId\tartifactId\tversion\tlicense_names\tlicense_urls\tsource\n')
         for pom in sorted(glob.iglob(os.path.join(poms_dir, '**/*.pom'), recursive=True)):
@@ -110,9 +115,11 @@ def main():
             # Override table wins over POM-declared metadata: it's curated and
             # canonical, the POM is upstream-declared (sometimes inconsistent or
             # ambiguous). Fall through to <licenses> only when no override matches.
-            hit = overrides.get(f'{gid}:{aid}')
+            key = f'{gid}:{aid}'
+            hit = overrides.get(key)
             if hit is not None:
                 from_override += 1
+                used_override_keys.add(key)
                 names, urls = hit
                 tsv.write(f'{gid}\t{aid}\t{ver}\t{names}\t{urls}\toverride\n')
                 continue
@@ -133,6 +140,25 @@ def main():
     print(f'  Wrote {out_tsv}')
     if unresolved:
         print(f'  Wrote {out_nolic} ({unresolved} entries — add to {override_path})')
+
+    # Stale-override audit. Only Maven keys are this script's concern; npm
+    # entries (groupId='npm') are validated by generate-third-party-notice.py
+    # against the artifacts/npm/ tree it walks.
+    maven_override_keys = {k for k in overrides if not k.startswith('npm:')}
+    unused = sorted(maven_override_keys - used_override_keys)
+    if unused:
+        print(
+            f'  ERROR: {len(unused)} Maven override entr{"y" if len(unused) == 1 else "ies"} '
+            f'in {override_path} matched no scanned POM:',
+            file=sys.stderr,
+        )
+        for k in unused:
+            print(f'    - {k}', file=sys.stderr)
+        print(
+            '  Each entry above is either a typo or refers to a dependency '
+            'no longer in the scan. Remove or correct it.',
+            file=sys.stderr,
+        )
 
 
 if __name__ == '__main__':
