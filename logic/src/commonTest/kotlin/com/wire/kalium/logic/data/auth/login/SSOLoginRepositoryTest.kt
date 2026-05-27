@@ -26,6 +26,7 @@ import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLooku
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.api.unauthenticated.domainLookup.DomainLookupResponse
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
+import com.wire.kalium.network.api.unauthenticated.sso.SSOCodeResponse
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -191,6 +192,36 @@ class SSOLoginRepositoryTest {
     }
 
     @Test
+    fun givenApiRequestSuccess_whenGettingSsoCodeByEmail_thenSuccessIsPropagated() = runTest {
+        everySuspend {
+            ssoLogin.getByEmail(TEST_EMAIL)
+        }.returns(NetworkResponse.Success(SSOCodeResponse(TEST_CODE), mapOf(), 200))
+
+        val actual = ssoLoginRepository.getByEmail(TEST_EMAIL)
+
+        assertIs<Either.Right<String?>>(actual)
+        assertEquals(TEST_CODE, actual.value)
+        verifySuspend(VerifyMode.exactly(1)) {
+            ssoLogin.getByEmail(TEST_EMAIL)
+        }
+    }
+
+    @Test
+    fun givenApiRequestFail_whenGettingSsoCodeByEmail_thenNetworkFailureIsPropagated() = runTest {
+        everySuspend {
+            ssoLogin.getByEmail(TEST_EMAIL)
+        }.returns(NetworkResponse.Error(TestNetworkException.generic))
+
+        val actual = ssoLoginRepository.getByEmail(TEST_EMAIL)
+
+        assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
+        assertEquals(TestNetworkException.generic, actual.value.kaliumException)
+        verifySuspend(VerifyMode.exactly(1)) {
+            ssoLogin.getByEmail(TEST_EMAIL)
+        }
+    }
+
+    @Test
     fun givenDomainLookupSuccess_thenSuccesIsPropagated() = runTest {
         val domain = "test.com"
         val networkResponse = DomainLookupResponse(
@@ -236,6 +267,7 @@ class SSOLoginRepositoryTest {
     private companion object {
         const val TEST_CODE = "code"
         const val TEST_COOKIE = "cookie"
+        const val TEST_EMAIL = "user@example.com"
         const val TEST_SUCCESS = "wire/success"
         const val TEST_ERROR = "wire/error"
         val TEST_SERVER_CONFIG = newServerConfig(1)

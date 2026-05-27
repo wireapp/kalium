@@ -18,6 +18,7 @@
 package com.wire.kalium.persistence.cache
 
 import app.cash.turbine.test
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.consumeAsFlow
@@ -116,5 +117,26 @@ class FlowCacheTest {
         advanceTimeBy(timeout + 1.seconds)
 
         assertTrue(channel.isClosedForSend)
+    }
+
+    @Test
+    fun givenMultipleCacheEvictions_thenSharingCoroutinesShouldNotAccumulate() = runTest {
+        val timeout = 3.seconds
+        val cache = FlowCache<Int, String>(backgroundScope, timeout)
+        val itemKey = 42
+
+        repeat(5) {
+            val channel = Channel<String>(Channel.UNLIMITED)
+            channel.send("item")
+            cache.get(itemKey) { channel.receiveAsFlow() }.test {
+                awaitItem()
+                cancelAndIgnoreRemainingEvents()
+            }
+            advanceTimeBy(timeout + 1.seconds)
+        }
+
+        val activeChildren = backgroundScope.coroutineContext[Job]!!.children.count()
+        assertEquals(0, activeChildren,
+            "Expected 0 active coroutines but found $activeChildren zombie(s)")
     }
 }

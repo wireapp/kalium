@@ -98,14 +98,13 @@ import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import io.ktor.util.encodeBase64
+import kotlin.io.encoding.Base64
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
-import kotlin.io.encoding.Base64
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -1942,7 +1941,7 @@ class MLSConversationRepositoryTest {
                 "eventId",
                 TestConversation.ID,
                 TestUser.USER_ID,
-                WELCOME.encodeBase64(),
+                Base64.encode(WELCOME),
                 timestampIso = "2022-03-30T15:36:00.000Z"
             )
             private val SIMPLE_CLIENT_RESPONSE = SimpleClientResponse("an ID", DeviceTypeDTO.Desktop)

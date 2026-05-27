@@ -115,6 +115,7 @@ internal interface ConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
+    suspend fun getConversationListWithOtherUserName(): Either<StorageFailure, Flow<List<ConversationWithOtherUserName>>>
     suspend fun observeConversationList(): Flow<List<Conversation>>
     suspend fun observeConversationListDetails(
         fromArchive: Boolean,
@@ -364,6 +365,12 @@ internal interface ConversationRepository {
     suspend fun getMLSConversationsByDomain(domain: String): Either<CoreFailure, List<Conversation>>
 }
 
+internal data class ConversationWithOtherUserName(
+    val conversation: Conversation,
+    val otherUserName: String?,
+    val selfIsMember: Boolean,
+)
+
 @OptIn(ConversationPersistenceApi::class)
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 internal class ConversationDataSource internal constructor(
@@ -490,6 +497,19 @@ internal class ConversationDataSource internal constructor(
     override suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>> = wrapStorageRequest {
         observeConversationList()
     }
+
+    override suspend fun getConversationListWithOtherUserName(): Either<StorageFailure, Flow<List<ConversationWithOtherUserName>>> =
+        wrapStorageRequest {
+            conversationDAO.getAllConversationsWithOtherUserName(selfUserId.toDao()).map { conversations ->
+                conversations.map { conversationWithOtherUserName ->
+                    ConversationWithOtherUserName(
+                        conversation = conversationMapper.fromDaoModel(conversationWithOtherUserName.conversation),
+                        otherUserName = conversationWithOtherUserName.otherUserName,
+                        selfIsMember = conversationWithOtherUserName.selfIsMember,
+                    )
+                }
+            }
+        }
 
     override suspend fun observeConversationList(): Flow<List<Conversation>> {
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }

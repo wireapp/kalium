@@ -17,13 +17,18 @@
  */
 package com.wire.kalium.logic.feature.debug
 
+import com.wire.kalium.common.error.CommonizedMLSException
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.commonizeMLSException
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.ConversationWithOtherUserName
 import com.wire.kalium.logic.data.id.ConversationId
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
 /**
@@ -41,44 +46,45 @@ internal class GetConversationCryptoStatsUseCaseImpl(
 ) : GetConversationCryptoStatsUseCase {
 
     override suspend fun invoke(): GetConversationCryptoStatsResult =
-        conversationRepository.getConversationList().fold(
+        conversationRepository.getConversationListWithOtherUserName().fold(
             fnL = { GetConversationCryptoStatsResult.Failure(it) },
             fnR = { conversationFlow ->
-                val conversations = conversationFlow.first()
-                val mlsCapable = conversations.mapNotNull { conversation ->
-                    (conversation.protocol as? Conversation.ProtocolInfo.MLSCapable)
-                        ?.let { conversation to it }
+                val conversationsWithOtherUserName = conversationFlow.first()
+                val mlsCapable = conversationsWithOtherUserName.mapNotNull { conversationWithOtherUserName ->
+                    (conversationWithOtherUserName.conversation.protocol as? Conversation.ProtocolInfo.MLSCapable)
+                        ?.let { conversationWithOtherUserName.conversation to it }
                 }
 
                 val ccEpochs = fetchCCEpochs(mlsCapable)
 
-                val details = conversations.map { conversation ->
+                val details = conversationsWithOtherUserName.map { conversationWithOtherUserName ->
+                    val conversation = conversationWithOtherUserName.conversation
                     val mlsCapableInfo = conversation.protocol as? Conversation.ProtocolInfo.MLSCapable
                     val ccResult = mlsCapableInfo?.groupId?.value?.let { ccEpochs[it] }
                     ConversationCryptoDetail(
                         conversationId = conversation.id,
-                        conversationName = conversation.name,
+                        conversationName = conversationWithOtherUserName.displayName(),
                         protocolType = conversation.protocol.toProtocolType(),
                         groupId = mlsCapableInfo?.groupId?.value,
                         dbGroupState = mlsCapableInfo?.groupState?.toDetailGroupState(),
                         dbEpoch = mlsCapableInfo?.epoch,
                         ccEpoch = ccResult?.epoch,
-                        establishedInCrypto = if (mlsCapableInfo != null) ccResult != null else null,
+                        ccLookupFailed = ccResult?.lookupFailed ?: false,
+                        selfIsMember = conversationWithOtherUserName.selfIsMember,
                     )
                 }
 
                 GetConversationCryptoStatsResult.Success(
                     ConversationCryptoStats(
-                        totalConversations = conversations.size,
+                        totalConversations = conversationsWithOtherUserName.size,
                         proteusCount = details.count { it.protocolType == ConversationCryptoProtocolType.PROTEUS },
                         mlsCount = details.count { it.protocolType == ConversationCryptoProtocolType.MLS },
                         mixedCount = details.count { it.protocolType == ConversationCryptoProtocolType.MIXED },
-                        mlsNotEstablishedInCrypto = details.count {
-                            it.protocolType == ConversationCryptoProtocolType.MLS && it.establishedInCrypto == false
-                        },
-                        mixedNotEstablishedInCrypto = details.count {
-                            it.protocolType == ConversationCryptoProtocolType.MIXED && it.establishedInCrypto == false
-                        },
+                        mlsDriftCount = details.count { it.isDrift(ConversationCryptoProtocolType.MLS) },
+                        mixedDriftCount = details.count { it.isDrift(ConversationCryptoProtocolType.MIXED) },
+                        mlsLeftCount = details.count { it.isLeft(ConversationCryptoProtocolType.MLS) },
+                        mixedLeftCount = details.count { it.isLeft(ConversationCryptoProtocolType.MIXED) },
+                        ccLookupFailedCount = details.count { it.ccLookupFailed },
                         conversationDetails = details
                     )
                 )
@@ -91,20 +97,60 @@ internal class GetConversationCryptoStatsUseCaseImpl(
         if (mlsCapableConversations.isEmpty()) return emptyMap()
 
         return transactionProvider.mlsTransaction("GetConversationCryptoStats") { mlsContext ->
-            val result = mlsCapableConversations.mapNotNull { (_, protocolInfo) ->
-                runCatching {
-                    val epoch = mlsContext.conversationEpoch(protocolInfo.groupId.value)
-                    protocolInfo.groupId.value to CCEpochResult(epoch)
-                }.getOrNull()
-            }.toMap()
+            val result = mlsCapableConversations.associate { (_, protocolInfo) ->
+                protocolInfo.groupId.value to runCatching {
+                    mlsContext.conversationEpoch(protocolInfo.groupId.value)
+                }.fold(
+                    onSuccess = { CCEpochResult(epoch = it, lookupFailed = false) },
+                    onFailure = { it.toCCEpochResult() },
+                )
+            }
             Either.Right(result)
         }.fold(
-            fnL = { emptyMap() },
+            fnL = {
+                mlsCapableConversations.associate { (_, protocolInfo) ->
+                    protocolInfo.groupId.value to CCEpochResult.lookupFailed()
+                }
+            },
             fnR = { it }
         )
     }
 
-    private data class CCEpochResult(val epoch: ULong)
+    private data class CCEpochResult(val epoch: ULong?, val lookupFailed: Boolean) {
+        companion object {
+            fun lookupFailed(): CCEpochResult = CCEpochResult(epoch = null, lookupFailed = true)
+        }
+    }
+
+    private fun Throwable.toCCEpochResult(): CCEpochResult {
+        if (this is CancellationException) throw this
+        val failure = when (this) {
+            is CommonizedMLSException -> failure
+            is Exception -> commonizeMLSException(this).failure
+            else -> commonizeMLSException(Exception(this)).failure
+        }
+        return when (failure) {
+            MLSFailure.ConversationNotFound -> CCEpochResult(epoch = null, lookupFailed = false)
+            else -> CCEpochResult.lookupFailed()
+        }
+    }
+
+    private fun ConversationWithOtherUserName.displayName(): String? = when {
+        !conversation.name.isNullOrBlank() -> conversation.name
+        !otherUserName.isNullOrBlank() -> otherUserName
+        conversation.type == Conversation.Type.Self -> SELF_CONVERSATION_NAME
+        else -> null
+    }
+
+    private fun ConversationCryptoDetail.isDrift(protocolType: ConversationCryptoProtocolType): Boolean =
+        this.protocolType == protocolType &&
+            selfIsMember &&
+            dbGroupState == DetailGroupState.ESTABLISHED &&
+            ccEpoch == null &&
+            !ccLookupFailed
+
+    private fun ConversationCryptoDetail.isLeft(protocolType: ConversationCryptoProtocolType): Boolean =
+        this.protocolType == protocolType && !selfIsMember
 
     private fun Conversation.ProtocolInfo.toProtocolType(): ConversationCryptoProtocolType = when (this) {
         is Conversation.ProtocolInfo.Proteus -> ConversationCryptoProtocolType.PROTEUS
@@ -118,8 +164,11 @@ public data class ConversationCryptoStats(
     val proteusCount: Int,
     val mlsCount: Int,
     val mixedCount: Int,
-    val mlsNotEstablishedInCrypto: Int,
-    val mixedNotEstablishedInCrypto: Int,
+    val mlsDriftCount: Int,
+    val mixedDriftCount: Int,
+    val mlsLeftCount: Int,
+    val mixedLeftCount: Int,
+    val ccLookupFailedCount: Int,
     val conversationDetails: List<ConversationCryptoDetail>,
 )
 
@@ -131,7 +180,8 @@ public data class ConversationCryptoDetail(
     val dbGroupState: DetailGroupState?,
     val dbEpoch: ULong?,
     val ccEpoch: ULong?,
-    val establishedInCrypto: Boolean?,
+    val ccLookupFailed: Boolean,
+    val selfIsMember: Boolean,
 )
 
 public enum class DetailGroupState {
@@ -158,3 +208,5 @@ public sealed class GetConversationCryptoStatsResult {
     public data class Success(val stats: ConversationCryptoStats) : GetConversationCryptoStatsResult()
     public data class Failure(val coreFailure: CoreFailure) : GetConversationCryptoStatsResult()
 }
+
+private const val SELF_CONVERSATION_NAME = "self"

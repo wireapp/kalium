@@ -20,26 +20,19 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MetadataQueries
-import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.mapToOneOrNull
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 
 class MetadataDAOImpl internal constructor(
     private val metadataQueries: MetadataQueries,
-    private val metadataCache: FlowCache<String, String?>,
-    private val databaseScope: CoroutineScope,
     private val writeDispatcher: WriteDispatcher,
     private val readDispatcher: ReadDispatcher,
 ) : MetadataDAO {
@@ -58,14 +51,16 @@ class MetadataDAOImpl internal constructor(
 
     override suspend fun valueByKeyFlow(
         key: String
-    ): Flow<String?> = metadataCache.get(key) {
+    ): Flow<String?> =
         metadataQueries.selectValueByKey(key)
             .asFlow()
             .mapToOneOrNull()
+            .distinctUntilChanged()
             .flowOn(readDispatcher.value)
-    }
 
-    override suspend fun valueByKey(key: String): String? = valueByKeyFlow(key).first()
+    override suspend fun valueByKey(key: String): String? = withContext(readDispatcher.value) {
+        metadataQueries.selectValueByKey(key).executeAsOneOrNull()
+    }
 
     override suspend fun clear(keysToKeep: List<String>?) {
         withContext(writeDispatcher.value) {
@@ -90,7 +85,6 @@ class MetadataDAOImpl internal constructor(
     }
 
     override fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> {
-        // TODO: Cache
         return metadataQueries.selectValueByKey(key)
             .asFlow()
             .mapToOneOrNull()
@@ -100,6 +94,6 @@ class MetadataDAOImpl internal constructor(
                 }
             }
             .distinctUntilChanged()
-            .shareIn(databaseScope, SharingStarted.Lazily, 1)
+            .flowOn(readDispatcher.value)
     }
 }

@@ -42,6 +42,7 @@ import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandle
 import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNoTeam
 
@@ -73,6 +74,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val appsFeatureHandler: AppsFeatureHandler,
     private val enableUserProfileQRCodeConfigHandler: EnableUserProfileQRCodeConfigHandler,
     private val assetAuditLogConfigHandler: AssetAuditLogConfigHandler,
+    private val preventAdminlessGroupsConfigHandler: PreventAdminlessGroupsConfigHandler,
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { it ->
@@ -101,6 +103,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             }
             enableUserProfileQRCodeConfigHandler.handle(it.enableUserProfileQRCodeConfigModel)
             assetAuditLogConfigHandler.handle(it.assetAuditLogConfigModel)
+            preventAdminlessGroupsConfigHandler.handle(it.preventAdminlessGroupsModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->
             if (

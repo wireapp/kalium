@@ -84,7 +84,6 @@ import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import io.ktor.util.encodeBase64
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
@@ -97,6 +96,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
 import java.util.Collections
+import kotlin.io.encoding.Base64
 
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class CallManagerImpl internal constructor(
@@ -525,7 +525,7 @@ internal class CallManagerImpl internal constructor(
                 federatedIdMapper.parseToFederatedId(conversationId),
                 Uint32_t(epochInfo.epoch.toLong()),
                 epochInfo.members.toJsonString(),
-                epochInfo.sharedSecret.encodeBase64()
+                Base64.encode(epochInfo.sharedSecret)
             )
         }
     }

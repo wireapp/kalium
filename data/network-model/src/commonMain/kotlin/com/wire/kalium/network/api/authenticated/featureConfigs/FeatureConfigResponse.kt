@@ -73,6 +73,8 @@ data class FeatureConfigResponse(
     val enableUserProfileQRCode: FeatureConfigData.EnableUserProfileQRCode?,
     @SerialName("assetAuditLog")
     val assetAuditLog: FeatureConfigData.AssetAuditLog?,
+    @SerialName("preventAdminlessGroups")
+    val preventAdminlessGroups: FeatureConfigData.PreventAdminlessGroups?,
 )
 
 @Serializable
@@ -358,6 +360,13 @@ sealed class FeatureConfigData {
     @SerialName("assetAuditLog")
     @Serializable
     data class AssetAuditLog(
+        @SerialName("status")
+        val status: FeatureFlagStatusDTO
+    ) : FeatureConfigData()
+
+    @SerialName("preventAdminlessGroups")
+    @Serializable
+    data class PreventAdminlessGroups(
         @SerialName("status")
         val status: FeatureFlagStatusDTO
     ) : FeatureConfigData()

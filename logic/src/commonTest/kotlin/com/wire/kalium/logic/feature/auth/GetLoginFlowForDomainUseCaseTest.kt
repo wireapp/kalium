@@ -26,6 +26,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.DomainLookupResult
 import com.wire.kalium.logic.data.auth.login.LoginRepository
+import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.MockMode
@@ -33,6 +34,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -50,6 +52,47 @@ class GetLoginFlowForDomainUseCaseTest {
 
         verifySuspend { arrangement.loginRepository.getDomainRegistration(Arrangement.EMAIL) }
         assertEquals(EnterpriseLoginResult.Success(LoginRedirectPath.Default), result)
+    }
+
+    @Test
+    fun givenEmail_whenSsoCodeByEmailExists_thenReturnSsoPath() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withSsoCodeByEmailResult(Arrangement.SSO_CODE.right())
+            .arrange()
+
+        val result = useCase(Arrangement.EMAIL)
+
+        verifySuspend { arrangement.ssoLoginRepository.getByEmail(Arrangement.EMAIL) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.loginRepository.getDomainRegistration(any()) }
+        assertEquals(EnterpriseLoginResult.Success(LoginRedirectPath.SSO(Arrangement.SSO_CODE)), result)
+    }
+
+    @Test
+    fun givenEmail_whenSsoCodeByEmailReturnsNotFound_thenFallbackToDomainRegistration() = runTest {
+        val notFoundError = KaliumException.InvalidRequestError(ErrorResponse(404, "", "not-found"))
+        val (arrangement, useCase) = Arrangement()
+            .withSsoCodeByEmailResult(NetworkFailure.ServerMiscommunication(notFoundError).left())
+            .withDomainRegistrationResult(LoginDomainPath.Default.right())
+            .arrange()
+
+        val result = useCase(Arrangement.EMAIL)
+
+        verifySuspend { arrangement.ssoLoginRepository.getByEmail(Arrangement.EMAIL) }
+        verifySuspend { arrangement.loginRepository.getDomainRegistration(Arrangement.EMAIL) }
+        assertEquals(EnterpriseLoginResult.Success(LoginRedirectPath.Default), result)
+    }
+
+    @Test
+    fun givenEmail_whenSsoCodeByEmailReturnsGenericError_thenDoNotFallbackToDomainRegistration() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withSsoCodeByEmailResult(NetworkFailure.ServerMiscommunication(RuntimeException()).left())
+            .arrange()
+
+        val result = useCase(Arrangement.EMAIL)
+
+        verifySuspend { arrangement.ssoLoginRepository.getByEmail(Arrangement.EMAIL) }
+        verifySuspend(VerifyMode.exactly(0)) { arrangement.loginRepository.getDomainRegistration(any()) }
+        assertEquals(EnterpriseLoginResult.Failure.Generic::class, result::class)
     }
 
     @Test
@@ -113,7 +156,14 @@ class GetLoginFlowForDomainUseCaseTest {
     private class Arrangement {
 
         val loginRepository: LoginRepository = mock(mode = MockMode.autoUnit)
+        val ssoLoginRepository: SSOLoginRepository = mock(mode = MockMode.autoUnit)
         val customServerConfigRepository = mock<CustomServerConfigRepository>(mode = MockMode.autoUnit)
+        private var ssoCodeByEmailConfigured = false
+
+        suspend fun withSsoCodeByEmailResult(result: Either<NetworkFailure, String?>) = apply {
+            ssoCodeByEmailConfigured = true
+            everySuspend { ssoLoginRepository.getByEmail(any()) } returns result
+        }
 
         suspend fun withDomainRegistrationResult(result: Either<NetworkFailure, LoginDomainPath>) = apply {
             everySuspend { loginRepository.getDomainRegistration(any()) } returns result
@@ -127,10 +177,16 @@ class GetLoginFlowForDomainUseCaseTest {
             everySuspend { customServerConfigRepository.fetchRemoteConfig(any()) } returns result
         }
 
-        fun arrange() = this to GetLoginFlowForDomainUseCase(loginRepository, customServerConfigRepository)
+        suspend fun arrange(): Pair<Arrangement, GetLoginFlowForDomainUseCase> {
+            if (!ssoCodeByEmailConfigured) {
+                withSsoCodeByEmailResult(NetworkFailure.FeatureNotSupported.left())
+            }
+            return this to GetLoginFlowForDomainUseCase(loginRepository, ssoLoginRepository, customServerConfigRepository)
+        }
 
         companion object {
             const val EMAIL = "user@wire.com"
+            const val SSO_CODE = "99db9768-04e3-4b5d-9268-831b6a25c4ab"
         }
     }
 }

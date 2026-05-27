@@ -313,6 +313,12 @@ sealed interface MessageContent {
          * Member(s) removed from the conversation, due to some backend stopped to federate between them, or us.
          */
         data class FederationRemoved(override val members: List<UserId>) : MemberChange(members)
+
+        /**
+         * A user was assigned the admin role in the conversation.
+         * `members.first()` is the promoted user.
+         */
+        data class UserPromotedToAdmin(override val members: List<UserId>) : MemberChange(members)
     }
 
     data class LastRead(
@@ -486,6 +492,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.ButtonAction -> "ButtonAction"
     is MessageContent.ButtonActionConfirmation -> "ButtonActionConfirmation"
     is MessageContent.MemberChange.FederationRemoved -> "MemberChange.FederationRemoved"
+    is MessageContent.MemberChange.UserPromotedToAdmin -> "MemberChange.PromotedToAdmin"
     is MessageContent.FederationStopped.ConnectionRemoved -> "Federation.ConnectionRemoved"
     is MessageContent.FederationStopped.Removed -> "Federation.Removed"
     is MessageContent.ConversationProtocolChanged -> "ConversationProtocolChanged"

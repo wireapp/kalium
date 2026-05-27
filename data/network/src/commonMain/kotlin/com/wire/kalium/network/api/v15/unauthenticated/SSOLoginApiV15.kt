@@ -20,6 +20,8 @@ package com.wire.kalium.network.api.v15.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
+import com.wire.kalium.network.api.unauthenticated.sso.SSOCodeRequest
+import com.wire.kalium.network.api.unauthenticated.sso.SSOCodeResponse
 import com.wire.kalium.network.api.v14.unauthenticated.SSOLoginApiV14
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
@@ -28,6 +30,8 @@ import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.head
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.appendPathSegments
 
@@ -47,6 +51,13 @@ internal open class SSOLoginApiV15 internal constructor(
         val url = httpRequest.call.request.url.toString()
         wrapRequest<String> { httpRequest }.mapSuccess {
             url
+        }
+    }
+
+    override suspend fun getByEmail(email: String): NetworkResponse<SSOCodeResponse> = wrapRequest {
+        httpClient.post {
+            url.appendPathSegments(PATH_SSO, PATH_GET_BY_EMAIL)
+            setBody(SSOCodeRequest(email))
         }
     }
 }

@@ -48,6 +48,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.CellsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.EnableUserProfileQRCodeConfigHandler
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -414,6 +415,7 @@ class FeatureConfigEventReceiverTest {
                 CellsConfigHandler(userConfigRepository),
                 EnableUserProfileQRCodeConfigHandler(userConfigRepository),
                 AssetAuditLogConfigHandler(userConfigRepository),
+                PreventAdminlessGroupsConfigHandler(userConfigRepository),
             )
         }
 
