@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
-import io.ktor.util.encodeBase64
 import kotlin.io.encoding.Base64
 
 internal expect class SecureRandom internal constructor() {
@@ -69,7 +68,7 @@ internal class SecurityHelperImpl(
             ?.let { legacyPassphrase ->
                 return SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH).also { newKeyBytes ->
                     databaseMigrator(rootDir, legacyPassphrase, newKeyBytes)
-                    passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBytes.encodeBase64())
+                    passphraseStorage.setPassphrase("${MLS_DB_PASSPHRASE_PREFIX_V2}_$userId", Base64.encode(newKeyBytes))
                 }.let { MlsDBSecret(it) }
             }
 
@@ -90,7 +89,7 @@ internal class SecurityHelperImpl(
                 ?.let { legacyPassphrase ->
                     return SecureRandom().nextBytes(MIN_DATABASE_SECRET_LENGTH).also { newKeyBytes ->
                         databaseMigrator(rootDir, legacyPassphrase, newKeyBytes)
-                        passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", newKeyBytes.encodeBase64())
+                        passphraseStorage.setPassphrase("${PROTEUS_DB_PASSPHRASE_PREFIX_V2}_$userId", Base64.encode(newKeyBytes))
                     }.let { ProteusDBSecret(it) }
                 }
 
@@ -125,7 +124,7 @@ internal class SecurityHelperImpl(
         get() = Base64.decode(this)
 
     private val ByteArray.toPreservedString: String
-        get() = this.encodeBase64()
+        get() = Base64.encode(this)
 
     private companion object {
         const val MIN_DATABASE_SECRET_LENGTH = 32

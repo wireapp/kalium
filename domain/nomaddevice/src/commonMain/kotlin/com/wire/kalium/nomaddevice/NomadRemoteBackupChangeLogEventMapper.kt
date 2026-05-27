@@ -94,7 +94,7 @@ internal class NomadRemoteBackupChangeLogEventMapper {
             )
             return null
         }
-        val payloadBase64 = Base64.Default.encode(payloadModel.encodeToByteArray())
+        val payloadBase64 = Base64.encode(payloadModel.encodeToByteArray())
         return NomadMessageEvent.UpsertMessageEvent(
             messageId = messageId,
             conversation = conversationId.toApiConversation(),

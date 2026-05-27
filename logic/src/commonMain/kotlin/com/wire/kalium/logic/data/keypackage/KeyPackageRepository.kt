@@ -36,7 +36,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
-import io.ktor.util.encodeBase64
+import kotlin.io.encoding.Base64
 
 internal interface KeyPackageRepository {
 
@@ -127,7 +127,7 @@ internal class KeyPackageDataSource(
             mlsContext.generateKeyPackages(amount)
         }.flatMap { keyPackages ->
             wrapApiRequest {
-                keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
+                keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { Base64.encode(it) })
             }
         }
 
@@ -136,7 +136,7 @@ internal class KeyPackageDataSource(
         keyPackages: List<ByteArray>
     ): Either<CoreFailure, Unit> =
         wrapApiRequest {
-            keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
+            keyPackageApi.uploadKeyPackages(clientId.value, keyPackages.map { Base64.encode(it) })
         }
 
     override suspend fun replaceKeyPackages(
@@ -145,7 +145,7 @@ internal class KeyPackageDataSource(
         cipherSuite: CipherSuite
     ): Either<CoreFailure, Unit> =
         wrapApiRequest {
-            keyPackageApi.replaceKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() }, cipherSuite.tag)
+            keyPackageApi.replaceKeyPackages(clientId.value, keyPackages.map { Base64.encode(it) }, cipherSuite.tag)
         }
 
     override suspend fun validKeyPackageCount(

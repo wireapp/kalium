@@ -91,6 +91,7 @@ object FeatureConfigResponseJson {
         FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
         FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.ENABLED),
         FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.ENABLED),
+        FeatureConfigData.PreventAdminlessGroups(FeatureFlagStatusDTO.ENABLED),
     )
     val valid = KtxSerializer.json.encodeToString(featureConfigResponse)
 

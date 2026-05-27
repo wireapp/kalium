@@ -27,7 +27,7 @@ import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.ClientApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
@@ -35,7 +35,7 @@ internal open class ClientApiV2 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : ClientApiV0(authenticatedNetworkClient) {
     override suspend fun listClientsOfUsers(userIds: List<UserId>): NetworkResponse<Map<UserId, List<SimpleClientResponse>>> =
-        wrapKaliumResponse<ClientsOfUsersResponse> {
+        wrapRequest<ClientsOfUsersResponse> {
             httpClient.post("$PATH_USERS/$PATH_LIST_CLIENTS") {
                 setBody(ListClientsOfUsersRequest(userIds))
             }

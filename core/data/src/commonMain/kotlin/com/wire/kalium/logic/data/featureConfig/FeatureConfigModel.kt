@@ -50,6 +50,7 @@ data class FeatureConfigModel(
     val appsModel: ConfigsStatusModel?,
     val enableUserProfileQRCodeConfigModel: EnableUserProfileQRCodeConfigModel?,
     val assetAuditLogConfigModel: AssetAuditLogConfigModel?,
+    val preventAdminlessGroupsModel: PreventAdminlessGroupsConfigModel?,
 )
 
 enum class Status {
@@ -167,6 +168,12 @@ data class EnableUserProfileQRCodeConfigModel(
 
 @Serializable
 data class AssetAuditLogConfigModel(
+    @SerialName("status")
+    val status: Status
+)
+
+@Serializable
+data class PreventAdminlessGroupsConfigModel(
     @SerialName("status")
     val status: Status
 )

@@ -46,9 +46,9 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.util.DelicateKaliumApi
-import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.io.encoding.Base64
 
 @Suppress("TooManyFunctions")
 internal interface ClientRepository {
@@ -257,7 +257,7 @@ internal class ClientDataSource(
         publicKey: ByteArray,
         cipherSuite: CipherSuite
     ): Either<CoreFailure, Unit> =
-        clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64(), cipherSuite)
+        clientRemoteRepository.registerMLSClient(clientId, Base64.encode(publicKey), cipherSuite)
             .flatMap {
                 wrapStorageRequest {
                     clientRegistrationStorage.setHasRegisteredMLSClient()

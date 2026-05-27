@@ -35,8 +35,8 @@ import com.wire.crypto.toClientId
 import com.wire.kalium.cryptography.exceptions.CryptographyException
 import com.wire.kalium.cryptography.utils.toCrypto
 import com.wire.kalium.cryptography.utils.toCryptography
-import io.ktor.util.encodeBase64
 import kotlinx.coroutines.CoroutineScope
+import kotlin.io.encoding.Base64
 import kotlin.time.Duration
 
 internal object CoreCryptoLoggerImpl : CoreCryptoLogger {
@@ -100,7 +100,7 @@ class CoreCryptoCentralImpl(
                 coroutineScope,
                 epochObserver = object : EpochObserver {
                     override suspend fun epochChanged(conversationId: ConversationId, epoch: ULong) {
-                        epochObserver.onEpochChange(conversationId.copyBytes().encodeBase64(), epoch)
+                        epochObserver.onEpochChange(Base64.encode(conversationId.copyBytes()), epoch)
                     }
                 }
             )
@@ -149,7 +149,7 @@ class CoreCryptoCentralImpl(
             coroutineScope,
             epochObserver = object : EpochObserver {
                 override suspend fun epochChanged(conversationId: ConversationId, epoch: ULong) {
-                    epochObserver.onEpochChange(conversationId.copyBytes().encodeBase64(), epoch)
+                    epochObserver.onEpochChange(Base64.encode(conversationId.copyBytes()), epoch)
                 }
             }
         )

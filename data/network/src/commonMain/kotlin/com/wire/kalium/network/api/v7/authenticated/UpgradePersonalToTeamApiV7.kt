@@ -23,7 +23,7 @@ import com.wire.kalium.network.api.authenticated.user.CreateUserTeamDTO
 import com.wire.kalium.network.api.unauthenticated.register.NewBindingTeamDTO
 import com.wire.kalium.network.api.v6.authenticated.UpgradePersonalToTeamApiV6
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
@@ -32,7 +32,7 @@ internal open class UpgradePersonalToTeamApiV7 internal constructor(
 ) : UpgradePersonalToTeamApiV6(authenticatedNetworkClient) {
 
     override suspend fun migrateToTeam(teamName: String): NetworkResponse<CreateUserTeamDTO> {
-        return wrapKaliumResponse {
+        return wrapRequest {
 
             httpClient.post(PATH_MIGRATE_TO_TEAM) {
                 // We do not ask user for icon at this point, so we use hardcoded values from the backend

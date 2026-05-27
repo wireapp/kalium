@@ -35,7 +35,7 @@ import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
 import io.ktor.client.request.post
@@ -50,14 +50,14 @@ internal open class ClientApiV0 internal constructor(
     protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun registerClient(registerClientRequest: RegisterClientRequest): NetworkResponse<ClientDTO> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post(PATH_CLIENTS) {
                 setBody(apiModelMapper.toApiV0ToV8(registerClientRequest))
             }
         }
 
     override suspend fun listClientsOfUsers(userIds: List<UserId>): NetworkResponse<Map<UserId, List<SimpleClientResponse>>> =
-        wrapKaliumResponse<ClientsOfUsersResponse> {
+        wrapRequest<ClientsOfUsersResponse> {
             httpClient.post("$PATH_USERS/$PATH_LIST_CLIENTS/v2") {
                 setBody(ListClientsOfUsersRequest(userIds))
             }
@@ -72,23 +72,23 @@ internal open class ClientApiV0 internal constructor(
         }
 
     override suspend fun fetchSelfUserClient(): NetworkResponse<List<ClientDTO>> =
-        wrapKaliumResponse { httpClient.get(PATH_CLIENTS) }
+        wrapRequest { httpClient.get(PATH_CLIENTS) }
 
     override suspend fun deleteClient(password: String?, clientID: String) =
-        wrapKaliumResponse<Unit> {
+        wrapRequest<Unit> {
             httpClient.delete("$PATH_CLIENTS/$clientID") {
                 setBody(PasswordRequest(password))
             }
         }
 
     override suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientDTO> =
-        wrapKaliumResponse { httpClient.get("$PATH_CLIENTS/$clientID") }
+        wrapRequest { httpClient.get("$PATH_CLIENTS/$clientID") }
 
     override suspend fun updateClientMlsPublicKeys(
         updateClientMlsPublicKeysRequest: UpdateClientMlsPublicKeysRequest,
         clientID: String
     ): NetworkResponse<Unit> =
-        wrapKaliumResponse<Unit> {
+        wrapRequest<Unit> {
             httpClient.put("$PATH_CLIENTS/$clientID") {
                 setBody(updateClientMlsPublicKeysRequest)
             }
@@ -97,20 +97,20 @@ internal open class ClientApiV0 internal constructor(
     override suspend fun updateClientCapabilities(
         updateClientCapabilitiesRequest: UpdateClientCapabilitiesRequest,
         clientID: String
-    ): NetworkResponse<Unit> = wrapKaliumResponse {
+    ): NetworkResponse<Unit> = wrapRequest {
         httpClient.put("$PATH_CLIENTS/$clientID") {
             setBody(updateClientCapabilitiesRequest)
         }
     }
 
     override suspend fun registerToken(body: PushTokenBody): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post(PUSH_TOKEN) {
                 setBody(body)
             }
         }
 
-    override suspend fun deregisterToken(pid: String): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun deregisterToken(pid: String): NetworkResponse<Unit> = wrapRequest {
         httpClient.delete("$PUSH_TOKEN/$pid")
     }
 

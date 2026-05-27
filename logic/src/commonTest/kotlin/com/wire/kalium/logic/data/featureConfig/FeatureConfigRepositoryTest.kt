@@ -103,6 +103,7 @@ class FeatureConfigRepositoryTest {
             appsModel = ConfigsStatusModel(Status.DISABLED),
             enableUserProfileQRCodeConfigModel = EnableUserProfileQRCodeConfigModel(Status.DISABLED),
             assetAuditLogConfigModel = AssetAuditLogConfigModel(Status.DISABLED),
+            preventAdminlessGroupsModel = PreventAdminlessGroupsConfigModel(Status.DISABLED),
             cellsInternalModel = CellsInternalModel(
                 status = Status.DISABLED,
                 config = CellsInternalConfigModel(null, CollaboraEdition.NO, null)
@@ -204,6 +205,7 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.Apps(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.EnableUserProfileQRCode(FeatureFlagStatusDTO.DISABLED),
             FeatureConfigData.AssetAuditLog(FeatureFlagStatusDTO.DISABLED),
+            FeatureConfigData.PreventAdminlessGroups(FeatureFlagStatusDTO.DISABLED),
         )
 
         val featureConfigApi: FeatureConfigApi = mock<FeatureConfigApi>(mode = MockMode.autoUnit)
