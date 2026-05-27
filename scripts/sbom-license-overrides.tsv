@@ -6,8 +6,7 @@
 #
 # Use this to:
 #   - Pin a canonical name/URL for packages whose declared license uses
-#     inconsistent wording ("The Apache Software License, Version 2.0" vs
-#     "Apache-2.0").
+#     inconsistent wording (The Apache Software License, Version 2.0 vs Apache-2.0).
 #   - Disambiguate dual-licensed projects when Kalium ships under one option.
 #   - Cover packages that declare no license at all (the original trigger —
 #     SLF4J, Guava's listenablefuture stubs, the ICU4J npm port, etc.).
@@ -31,7 +30,7 @@
 #
 # How to update: when build/sbom/scan-pom-no-licenses.txt grows, when the
 # upstream-declared metadata for a known package is wrong, or when an npm
-# section in THIRD-PARTY-NOTICE.md shows "Verify manually", verify the
+# section in THIRD-PARTY-NOTICE.md shows Verify manually, verify the
 # license against the upstream project's documentation (LICENSE file in
 # the repo, project website, etc.) and add a row here.
 groupId	artifactId	license_names	license_urls
