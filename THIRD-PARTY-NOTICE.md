@@ -1967,6 +1967,8 @@ See https://github.com/google/guava/blob/master/LICENSE for the license of this 
 - **SPDX:** [Apache-2.0](#license-apache-2-0)
 - **Source:** `override`
 
+[The full text of this license is included at the end of this file.](#bundled-license-283ea6cc2997)
+
 <details>
 <summary>Bundled <code>jvm/core_common/commons-io-2.18.0.jar-extract/META-INF/NOTICE.txt</code></summary>
 
@@ -1979,8 +1981,6 @@ The Apache Software Foundation (https://www.apache.org/).
 ```
 
 </details>
-
-[The full text of this license is included at the end of this file.](#bundled-license-283ea6cc2997)
 
 ---
 
@@ -2745,23 +2745,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 As per https://www.apache.org/licenses/, all software produced by The Apache Software Foundation or any of its projects or subjects is licensed according to the terms of the documents listed below (Apache License 2.0).
 
 <details>
-<summary>Bundled <code>android/domain_calling/commons-math3-3.6.1.jar-extract/META-INF/NOTICE.txt</code></summary>
-
-```
-Apache Commons Math
-Copyright 2001-2016 The Apache Software Foundation
-
-This product includes software developed at
-The Apache Software Foundation (http://www.apache.org/).
-
-This product includes software developed for Orekit by
-CS Systèmes d'Information (http://www.c-s.fr/)
-Copyright 2010-2012 CS Systèmes d'Information
-```
-
-</details>
-
-<details>
 <summary>Bundled <code>android/domain_calling/commons-math3-3.6.1.jar-extract/META-INF/LICENSE.txt</code></summary>
 
 ```
@@ -3221,6 +3204,23 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ===============================================================================
+```
+
+</details>
+
+<details>
+<summary>Bundled <code>android/domain_calling/commons-math3-3.6.1.jar-extract/META-INF/NOTICE.txt</code></summary>
+
+```
+Apache Commons Math
+Copyright 2001-2016 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+This product includes software developed for Orekit by
+CS Systèmes d'Information (http://www.c-s.fr/)
+Copyright 2010-2012 CS Systèmes d'Information
 ```
 
 </details>

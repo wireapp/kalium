@@ -39,6 +39,15 @@ SBOM_GRADLE_EXTRA_ARGS="${SBOM_GRADLE_EXTRA_ARGS:-}"
 SKIP_EXTRACT=false
 SKIP_SCAN=false
 
+require_cmd() {
+    # Abort with a helpful message if $1 is not on PATH. $2 is an optional
+    # hint string (e.g. "Install ScanCode-Toolkit.").
+    if ! command -v "$1" >/dev/null 2>&1; then
+        echo "ERROR: '$1' not found on PATH. ${2:-Install it.}" >&2
+        exit 1
+    fi
+}
+
 usage() {
     cat >&2 <<EOF
 Usage: $(basename "$0") [--skip-extract] [--skip-scan] [-h|--help]
@@ -96,10 +105,7 @@ echo
 # on macOS. Install them via Homebrew if missing and expose icu4c on PATH /
 # PKG_CONFIG_PATH so the pip build can find it.
 if [[ "$(uname -s)" == "Darwin" ]]; then
-    if ! command -v brew >/dev/null 2>&1; then
-        echo "ERROR: Homebrew is required on macOS to install pkg-config and icu4c." >&2
-        exit 1
-    fi
+    require_cmd brew "Install Homebrew (required on macOS for pkg-config, icu4c, and libmagic)."
     for pkg in pkg-config icu4c; do
         if ! brew list --formula "$pkg" >/dev/null 2>&1; then
             echo "  Installing $pkg via Homebrew..."
@@ -119,22 +125,13 @@ else
     echo "  scancode-toolkit already installed"
 fi
 
-command -v extractcode >/dev/null 2>&1 || {
-    echo "ERROR: 'extractcode' not found on PATH. Install ScanCode-Toolkit." >&2
-    exit 1
-}
-command -v scancode >/dev/null 2>&1 || {
-    echo "ERROR: 'scancode' not found on PATH. Install ScanCode-Toolkit." >&2
-    exit 1
-}
+require_cmd extractcode "Install ScanCode-Toolkit."
+require_cmd scancode "Install ScanCode-Toolkit."
 
 # ScanCode's typecode module needs the libmagic C library + magic DB. On macOS
 # these aren't bundled, so locate the Homebrew install and point typecode at it.
 if [[ "$(uname -s)" == "Darwin" && -z "${TYPECODE_LIBMAGIC_PATH:-}" ]]; then
-    if ! command -v brew >/dev/null 2>&1; then
-        echo "ERROR: libmagic is required on macOS. Install Homebrew and run 'brew install libmagic'." >&2
-        exit 1
-    fi
+    # brew already validated above by the earlier Darwin block.
     if ! LIBMAGIC_PREFIX="$(brew --prefix libmagic 2>/dev/null)" || [[ -z "$LIBMAGIC_PREFIX" ]]; then
         echo "ERROR: libmagic not installed. Run 'brew install libmagic'." >&2
         exit 1
@@ -315,105 +312,8 @@ fi
 echo
 echo "==> Auditing for LICENSE/NOTICE/COPYING files in each unique third-party package"
 if [[ -d "$ARTIFACTS_DIR" ]]; then
-    PACKAGE_DIRS=()
-
-    # 1) Top-level *-extract dirs (an extracted jar/aar/klib/zip/war). Skip
-    #    nested ones — e.g. classes.jar-extract inside an .aar-extract is
-    #    part of the parent package, not a separately-licensed unit.
-    while IFS= read -r dir; do
-        parent="$(dirname "$dir")"
-        is_nested=false
-        while [[ "$parent" != "$ARTIFACTS_DIR" && "$parent" != "/" && "$parent" != "." ]]; do
-            if [[ "$(basename "$parent")" == *-extract ]]; then
-                is_nested=true
-                break
-            fi
-            parent="$(dirname "$parent")"
-        done
-        if ! $is_nested; then
-            PACKAGE_DIRS+=("$dir")
-        fi
-    done < <(find "$ARTIFACTS_DIR" -type d -name '*-extract' 2>/dev/null)
-
-    # 2) NPM packages: every directory containing a package.json. Captures
-    #    both top-level node_modules entries and any nested transitive deps.
-    if [[ -d "$ARTIFACTS_DIR/npm" ]]; then
-        while IFS= read -r pj; do
-            PACKAGE_DIRS+=("$(dirname "$pj")")
-        done < <(find "$ARTIFACTS_DIR/npm" -name 'package.json' -type f 2>/dev/null)
-    fi
-
-    # 3) Prebuilt AVS native libs — opaque blob, audited as one unit.
-    if [[ -d "$ARTIFACTS_DIR/native/avs" ]]; then
-        PACKAGE_DIRS+=("$ARTIFACTS_DIR/native/avs")
-    fi
-
-    # Build (dedup-key, canonical-path) pairs and keep one path per key —
-    # alphabetically first via `sort`, then `awk '!seen[$1]++'`. Keys live in
-    # disjoint namespaces (basenames end in `-extract`, npm keys never do,
-    # AVS is a literal), so they cannot collide across sources.
-    DEDUP_MAP=$(mktemp)
-    trap 'rm -f "$DEDUP_MAP"' EXIT INT TERM
-    for pkg in "${PACKAGE_DIRS[@]}"; do
-        rel="${pkg#$ARTIFACTS_DIR/}"
-        case "$rel" in
-            native/avs*)
-                key="native/avs" ;;
-            npm/*/node_modules/*)
-                # Strip up to the LAST node_modules/ so deeply nested
-                # transitive deps (foo/node_modules/bar/node_modules/baz)
-                # collapse to just `baz`. Preserves @scope/name for scoped
-                # packages.
-                key="${rel##*/node_modules/}" ;;
-            *-extract)
-                key="$(basename "$pkg")" ;;
-            *)
-                key="$rel" ;;
-        esac
-        printf '%s\t%s\n' "$key" "$pkg"
-    done | sort | awk -F'\t' '!seen[$1]++' > "$DEDUP_MAP"
-
-    MISSING_FILE="$OUTPUT_DIR/scan-license-files-missing.txt"
-    FOUND_FILE="$OUTPUT_DIR/scan-license-files-found.txt"
-    : > "$MISSING_FILE"
-    : > "$FOUND_FILE"
-
-    MISSING_COUNT=0
-    FOUND_COUNT=0
-    while IFS=$'\t' read -r key canonical; do
-        # Case-insensitive prefix match. Catches LICENSE, LICENSE.txt,
-        # LICENCE-MIT, NOTICE.md, COPYING.LESSER, UNLICENSE, etc. Prefixes
-        # (not *LICENSE*) keep false positives like "JLicenseManager.kt"
-        # out — a false positive here would silently drop a notice from
-        # the customer report, which is worse than over-reporting misses.
-        matches=$(find "$canonical" -type f \
-            \( -iname 'LICENSE*' -o -iname 'LICENCE*' \
-               -o -iname 'NOTICE*' -o -iname 'COPYING*' \
-               -o -iname 'UNLICENSE*' \) 2>/dev/null)
-        if [[ -n "$matches" ]]; then
-            FOUND_COUNT=$((FOUND_COUNT + 1))
-            {
-                echo "## $key"
-                while IFS= read -r m; do
-                    echo "  ${m#$ARTIFACTS_DIR/}"
-                done <<< "$matches"
-                echo
-            } >> "$FOUND_FILE"
-        else
-            MISSING_COUNT=$((MISSING_COUNT + 1))
-            echo "$key" >> "$MISSING_FILE"
-        fi
-    done < "$DEDUP_MAP"
-
-    sort -o "$MISSING_FILE" "$MISSING_FILE"
-
-    TOTAL=$((FOUND_COUNT + MISSING_COUNT))
-    OCCURRENCES=${#PACKAGE_DIRS[@]}
-    printf "  Audited %d unique packages (from %d artifact occurrences):\n" \
-        "$TOTAL" "$OCCURRENCES"
-    printf "    %d have a LICENSE/NOTICE/COPYING file\n" "$FOUND_COUNT"
-    printf "    %d do not (see %s)\n" "$MISSING_COUNT" "$MISSING_FILE"
-    printf "  Wrote %s\n" "$FOUND_FILE"
+    require_cmd python3 "python3 is required for the license-file audit."
+    python3 scripts/audit-license-files.py "$ARTIFACTS_DIR" "$OUTPUT_DIR"
 else
     echo "  Skipped (no $ARTIFACTS_DIR on disk)"
 fi

@@ -22,7 +22,11 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 
-import yaml
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
+
+from sbom_overrides import load_overrides, report_unused_overrides  # noqa: E402
 
 NS = '{http://maven.apache.org/POM/4.0.0}'
 
@@ -60,33 +64,6 @@ def licenses(root):
     return out
 
 
-def load_overrides(path):
-    """Read the manual override YAML. Keyed by 'groupId:artifactId' — entries
-    cover all versions of that artifact. Returns (names, urls) per key; the
-    `notes` field is consumed by generate-third-party-notice.py and ignored
-    here. Missing file is non-fatal."""
-    table = {}
-    if not os.path.isfile(path):
-        print(f'  WARN: override table {path} not found; no overrides applied')
-        return table
-    with open(path) as f:
-        data = yaml.safe_load(f) or []
-    if not isinstance(data, list):
-        print(f'  WARN: {path} did not parse to a list of entries; no overrides applied')
-        return table
-    for entry in data:
-        if not isinstance(entry, dict):
-            continue
-        gid = (entry.get('groupId') or '').strip()
-        aid = (entry.get('artifactId') or '').strip()
-        if not gid or not aid:
-            continue
-        names = (entry.get('license_names') or '').strip()
-        urls = (entry.get('license_urls') or '').strip()
-        table[f'{gid}:{aid}'] = (names, urls)
-    return table
-
-
 def main():
     if len(sys.argv) != 5:
         print(
@@ -120,8 +97,9 @@ def main():
             if hit is not None:
                 from_override += 1
                 used_override_keys.add(key)
-                names, urls = hit
-                tsv.write(f'{gid}\t{aid}\t{ver}\t{names}\t{urls}\toverride\n')
+                tsv.write(
+                    f'{gid}\t{aid}\t{ver}\t{hit["names"]}\t{hit["urls"]}\toverride\n'
+                )
                 continue
             lics = licenses(root)
             if lics:
@@ -146,19 +124,7 @@ def main():
     # against the artifacts/npm/ tree it walks.
     maven_override_keys = {k for k in overrides if not k.startswith('npm:')}
     unused = sorted(maven_override_keys - used_override_keys)
-    if unused:
-        print(
-            f'  ERROR: {len(unused)} Maven override entr{"y" if len(unused) == 1 else "ies"} '
-            f'in {override_path} matched no scanned POM:',
-            file=sys.stderr,
-        )
-        for k in unused:
-            print(f'    - {k}', file=sys.stderr)
-        print(
-            '  Each entry above is either a typo or refers to a dependency '
-            'no longer in the scan. Remove or correct it.',
-            file=sys.stderr,
-        )
+    report_unused_overrides(unused, override_path, kind='Maven')
 
 
 if __name__ == '__main__':

@@ -42,7 +42,12 @@ import re
 import sys
 from collections import Counter, defaultdict
 
-import yaml
+# yaml is required transitively via sbom_overrides — see module docstring.
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if _SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPT_DIR)
+
+from sbom_overrides import load_overrides, report_unused_overrides  # noqa: E402
 
 
 def fail(msg):
@@ -305,42 +310,6 @@ def resolve_licenses(names_raw, name_to_spdx):
     return spdx_ids, unresolved
 
 
-def load_license_overrides(path):
-    """Load scripts/sbom-license-overrides.yaml into
-    {gid:aid: {names, urls, notes}}.
-
-    Shared with scripts/parse-pom-licenses.py via the same YAML file (that
-    script ignores the notes field; this one renders it). Maven rows use a
-    real groupId; npm rows use groupId='npm' and the package name (or
-    @scope/name) as artifactId, so Maven and npm keys live in disjoint
-    spaces and don't collide. A missing file is non-fatal."""
-    table = {}
-    if not path or not os.path.isfile(path):
-        return table
-    with open(path) as f:
-        data = yaml.safe_load(f) or []
-    if not isinstance(data, list):
-        return table
-    for entry in data:
-        if not isinstance(entry, dict):
-            continue
-        gid = (entry.get("groupId") or "").strip()
-        aid = (entry.get("artifactId") or "").strip()
-        if not gid or not aid:
-            continue
-        table[f"{gid}:{aid}"] = {
-            "names": (entry.get("license_names") or "").strip(),
-            "urls": (entry.get("license_urls") or "").strip(),
-            "notes": (entry.get("notes") or "").strip(),
-            # license_text intentionally NOT stripped of leading whitespace
-            # in the value — multi-line YAML literals encode indentation
-            # that consumers may want to preserve. Only trailing whitespace
-            # is removed (handled at render time).
-            "license_text": entry.get("license_text") or "",
-        }
-    return table
-
-
 def normalize_npm_license(field):
     """Coerce a package.json `license` / `licenses` field into the same
     pipe-separated form ('A | B') the Maven flow uses for names/urls.
@@ -502,10 +471,8 @@ def discover_npm_packages(artifacts_dir):
             continue
         if "package.json" not in files:
             continue
-        try:
-            with open(os.path.join(root, "package.json"), encoding="utf-8") as f:
-                pj = json.load(f)
-        except (OSError, json.JSONDecodeError):
+        pj = _read_package_json(os.path.join(root, "package.json"))
+        if not pj:
             continue
         name = pj.get("name")
         version = pj.get("version")
@@ -537,9 +504,72 @@ def read_file_text(path):
         return f"(unable to read: {e})"
 
 
+def collect_verbatim_files(found_map, artifacts_dir, candidate_keys):
+    """Resolve one or more dedup-keys to (rel, text) pairs from found_map.
+    The first key with hits wins — Maven yields several candidates (one
+    per archive extension) of which only one exists; npm passes a single
+    key. Missing on-disk paths are silently skipped."""
+    for key in candidate_keys:
+        rels = found_map.get(key)
+        if not rels:
+            continue
+        verbatim = []
+        for rel in rels:
+            full = os.path.join(artifacts_dir, rel)
+            if os.path.isfile(full):
+                verbatim.append((rel, read_file_text(full)))
+        return verbatim
+    return []
+
+
+def build_section(*, kind, header, sort_tag, names, urls, source, override,
+                  candidate_keys, found_map, artifacts_dir, name_to_spdx):
+    """Assemble one entry for the `sections` list. Pure function — the
+    caller accumulates spdx_used / unresolved_names from the returned
+    section after both Maven and npm loops complete."""
+    spdx_ids, unresolved = resolve_licenses(names, name_to_spdx)
+    return {
+        "kind": kind,
+        "header": header,
+        "sort_key": (sort_tag, header.lower()),
+        "names": names,
+        "urls": urls,
+        "source": source,
+        "spdx_ids": spdx_ids,
+        "unresolved": list(unresolved),
+        "verbatim": collect_verbatim_files(found_map, artifacts_dir, candidate_keys),
+        "notes": (override or {}).get("notes", ""),
+        "license_text": (override or {}).get("license_text", ""),
+    }
+
+
 def spdx_anchor(spdx):
     """GitHub-flavored markdown anchor for an SPDX ID."""
     return "license-" + re.sub(r"[^a-z0-9-]", "-", spdx.lower())
+
+
+def emit_license_body(out, text, summary, dedup_index, anchors_emitted):
+    """Render one verbatim license body to `out`.
+
+    When the body is shared with other sections (present in `dedup_index`),
+    emit a single link to the Bundled License Texts appendix — but only
+    once per section, even when the same body is bundled under multiple
+    filenames in the same package. Otherwise inline a collapsible
+    <details> block titled with `summary`.
+    """
+    key = text.strip()
+    if key in dedup_index:
+        anchor = dedup_index[key]["anchor"]
+        if anchor not in anchors_emitted:
+            out.write(
+                f"[The full text of this license is included "
+                f"at the end of this file.](#{anchor})\n\n"
+            )
+            anchors_emitted.add(anchor)
+    else:
+        out.write(f"<details>\n<summary>{summary}</summary>\n\n```\n")
+        out.write(text.rstrip())
+        out.write("\n```\n\n</details>\n\n")
 
 
 def main():
@@ -572,7 +602,7 @@ def main():
     override_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "sbom-license-overrides.yaml"
     )
-    overrides = load_license_overrides(override_path)
+    overrides = load_overrides(override_path)
 
     # Runtime closure: set of npm package names reachable from non-test
     # workspace `dependencies`/`peerDependencies`. Filters out test/build-
@@ -590,61 +620,34 @@ def main():
     maven_aids = set()
 
     # --- Maven coordinates ---
+    # Notes / license_text on the section come from the YAML overrides
+    # regardless of whether the Maven row's source is 'override' or 'pom' —
+    # an operator may want either attached to a coordinate while still
+    # letting the upstream POM declare the license itself.
     with open(pom_tsv) as f:
         for row in csv.DictReader(f, delimiter="\t"):
-            gid = row["groupId"]
-            aid = row["artifactId"]
-            ver = row["version"]
+            gid, aid, ver = row["groupId"], row["artifactId"], row["version"]
             maven_aids.add(aid)
-            names_raw = row["license_names"]
-            urls_raw = row["license_urls"]
-            source = row["source"]
-
-            # Locate verbatim LICENSE files for this coordinate by trying each
-            # candidate artifact extension. First hit wins; a single Maven
-            # coordinate produces one extracted directory.
-            verbatim = []
-            for basename in candidate_basenames(aid, ver):
-                rels = found_map.get(basename)
-                if rels:
-                    for rel in rels:
-                        full = os.path.join(artifacts_dir, rel)
-                        if os.path.isfile(full):
-                            verbatim.append((rel, read_file_text(full)))
-                    break
-
-            spdx_ids, this_unresolved = resolve_licenses(names_raw, name_to_spdx)
-            spdx_used.update(spdx_ids)
-            unresolved_names.update(this_unresolved)
-
-            # Notes and license_text are sourced from the YAML overrides
-            # file regardless of whether the Maven row's source is 'override'
-            # or 'pom' — an operator might want either attached to a
-            # coordinate while still letting the upstream POM declare the
-            # license itself.
-            override_entry = overrides.get(f"{gid}:{aid}") or {}
-            notes = override_entry.get("notes", "")
-            license_text = override_entry.get("license_text", "")
-
-            coord = f"{gid}:{aid}:{ver}"
-            sections.append({
-                "kind": "maven",
-                "header": coord,
-                "sort_key": (0, coord.lower()),
-                "names": names_raw,
-                "urls": urls_raw,
-                "source": source,
-                "spdx_ids": spdx_ids,
-                "unresolved": list(this_unresolved),
-                "verbatim": verbatim,
-                "notes": notes,
-                "license_text": license_text,
-            })
+            sections.append(build_section(
+                kind="maven",
+                header=f"{gid}:{aid}:{ver}",
+                sort_tag=0,
+                names=row["license_names"],
+                urls=row["license_urls"],
+                source=row["source"],
+                override=overrides.get(f"{gid}:{aid}"),
+                candidate_keys=candidate_basenames(aid, ver),
+                found_map=found_map,
+                artifacts_dir=artifacts_dir,
+                name_to_spdx=name_to_spdx,
+            ))
 
     # --- npm packages ---
     # Dedup by (name, version): the same package can land under multiple
     # JS compilations' node_modules trees. Different versions of the same
     # name remain as separate sections — each is a distinct licensable unit.
+    # Manual override wins over the filters below — an explicit override
+    # is the operator saying 'I've verified this package, include it'.
     npm_seen = set()
     for pkg in discover_npm_packages(artifacts_dir):
         dedup = (pkg["name"], pkg["version"])
@@ -652,14 +655,7 @@ def main():
             continue
         npm_seen.add(dedup)
 
-        # Manual override wins over every filter below — an explicit override
-        # is the operator saying 'I've verified this package, include it'.
-        # `notes` and `license_text` may be set whether or not the override
-        # replaces license metadata, so they're read independently of the
-        # source branch.
         override = overrides.get(f"npm:{pkg['name']}")
-        notes = (override or {}).get("notes", "")
-        license_text = (override or {}).get("license_text", "")
         if override is not None:
             license_names = override["names"]
             license_urls = override["urls"]
@@ -683,32 +679,23 @@ def main():
             license_urls = pkg["license_urls"]
             source = "package.json"
 
-        verbatim = []
-        rels = found_map.get(pkg["key"])
-        if rels:
-            for rel in rels:
-                full = os.path.join(artifacts_dir, rel)
-                if os.path.isfile(full):
-                    verbatim.append((rel, read_file_text(full)))
+        sections.append(build_section(
+            kind="npm",
+            header=f"npm:{pkg['name']}@{pkg['version']}",
+            sort_tag=1,
+            names=license_names,
+            urls=license_urls,
+            source=source,
+            override=override,
+            candidate_keys=[pkg["key"]],
+            found_map=found_map,
+            artifacts_dir=artifacts_dir,
+            name_to_spdx=name_to_spdx,
+        ))
 
-        spdx_ids, this_unresolved = resolve_licenses(license_names, name_to_spdx)
-        spdx_used.update(spdx_ids)
-        unresolved_names.update(this_unresolved)
-
-        header = f"npm:{pkg['name']}@{pkg['version']}"
-        sections.append({
-            "kind": "npm",
-            "header": header,
-            "sort_key": (1, header.lower()),
-            "names": license_names,
-            "urls": license_urls,
-            "source": source,
-            "spdx_ids": spdx_ids,
-            "unresolved": list(this_unresolved),
-            "verbatim": verbatim,
-            "notes": notes,
-            "license_text": license_text,
-        })
+    for s in sections:
+        spdx_used.update(s["spdx_ids"])
+        unresolved_names.update(s["unresolved"])
 
     sections.sort(key=lambda s: s["sort_key"])
 
@@ -726,20 +713,7 @@ def main():
             seen_npm_keys.add(f"npm:{name}")
     npm_override_keys = {k for k in overrides if k.startswith("npm:")}
     unused_npm = sorted(npm_override_keys - seen_npm_keys)
-    if unused_npm:
-        suffix = "y" if len(unused_npm) == 1 else "ies"
-        print(
-            f"  ERROR: {len(unused_npm)} npm override entr{suffix} in "
-            f"{override_path} matched no scanned package:",
-            file=sys.stderr,
-        )
-        for k in unused_npm:
-            print(f"    - {k}", file=sys.stderr)
-        print(
-            "  Each entry above is either a typo or refers to a package "
-            "no longer in the scan. Remove or correct it.",
-            file=sys.stderr,
-        )
+    report_unused_overrides(unused_npm, override_path, kind='npm')
 
     # Verbatim-body deduplication. Bundled LICENSE/NOTICE text and
     # license_text overrides are commonly identical across many components
@@ -853,55 +827,24 @@ def main():
             if s.get("notes"):
                 out.write(f"**Notes:**\n\n{s['notes'].strip()}\n\n")
 
-            # When a verbatim body has been factored out into the Bundled
-            # License Texts appendix (because >= 2 sections share it),
-            # emit a single link-note pointing at the anchor in place of
-            # the inline <details> block. `section_anchors_emitted` keeps
-            # the note from repeating when the same section bundles the
-            # same body under multiple filenames.
+            # Render verbatim bodies via emit_license_body — it handles
+            # both the dedup-link-to-appendix and inline-<details> paths.
+            # Bundled distribution files first, then the optional
+            # operator-pasted license_text override; the same shared
+            # `anchors_emitted` set prevents a repeated link-note when
+            # one section bundles the same body under multiple filenames
+            # or alongside an override.
             section_anchors_emitted = set()
-
             for fname, text in s["verbatim"]:
-                key = text.strip()
-                if key in dedup_index:
-                    anchor = dedup_index[key]["anchor"]
-                    if anchor not in section_anchors_emitted:
-                        out.write(
-                            f"[The full text of this license is included "
-                            f"at the end of this file.](#{anchor})\n\n"
-                        )
-                        section_anchors_emitted.add(anchor)
-                else:
-                    out.write(
-                        f"<details>\n<summary>Bundled <code>{fname}</code>"
-                        f"</summary>\n\n"
-                    )
-                    out.write("```\n")
-                    out.write(text.rstrip())
-                    out.write("\n```\n\n</details>\n\n")
-
-            # license_text override — operator-pasted license body for
-            # packages that ship no LICENSE file in their distribution.
-            # Rendered with the same <details> shell as bundled files so
-            # the customer-facing UX is uniform — and subject to the same
-            # dedup factoring above.
+                emit_license_body(
+                    out, text, f"Bundled <code>{fname}</code>",
+                    dedup_index, section_anchors_emitted,
+                )
             if s.get("license_text"):
-                key = s["license_text"].strip()
-                if key in dedup_index:
-                    anchor = dedup_index[key]["anchor"]
-                    if anchor not in section_anchors_emitted:
-                        out.write(
-                            f"[The full text of this license is included "
-                            f"at the end of this file.](#{anchor})\n\n"
-                        )
-                        section_anchors_emitted.add(anchor)
-                else:
-                    out.write(
-                        "<details>\n<summary>License text (from override)"
-                        "</summary>\n\n```\n"
-                    )
-                    out.write(s["license_text"].rstrip())
-                    out.write("\n```\n\n</details>\n\n")
+                emit_license_body(
+                    out, s["license_text"], "License text (from override)",
+                    dedup_index, section_anchors_emitted,
+                )
 
             if not s["verbatim"] and not s.get("license_text") and not s["spdx_ids"]:
                 out.write(
