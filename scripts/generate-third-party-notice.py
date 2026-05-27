@@ -50,6 +50,58 @@ def fail(msg):
     sys.exit(1)
 
 
+# Compliance policy: SPDX identifiers approved for inclusion in this SDK.
+# After writing THIRD-PARTY-NOTICE.md, the script audits every component
+# section against this set. A component fails the audit when any of:
+#   - its resolved SPDX IDs include a value outside this set;
+#   - it has no resolved SPDX IDs at all (license could not be normalized);
+#   - it declared one or more license names that did not resolve to SPDX
+#     (the unmapped alternatives may carry obligations we can't verify).
+# Any failure causes a non-zero exit code, blocking the downstream
+# bundling step in scripts/generate-sbom.sh.
+
+ACCEPTED_SPDX_LICENSES = frozenset([
+    "Apache-2.0",
+    "BSD-3-Clause", 
+    "GPL-3.0-only",
+    "GPL-3.0-or-later",
+    "ISC",
+    "MIT",
+    "Unicode-DFS-2016",
+    "Zlib"
+])
+
+
+def find_compliance_violations(sections, accepted):
+    """Return a list of (header, reason, detail) tuples for sections that
+    fail the license-compliance audit. Order matches `sections` order so
+    the error list is stable across runs."""
+    violations = []
+    for s in sections:
+        if not s["spdx_ids"]:
+            violations.append((
+                s["header"],
+                "no SPDX ID resolved",
+                s["names"] or "(no declared license)",
+            ))
+            continue
+        rejected = [spdx for spdx in s["spdx_ids"] if spdx not in accepted]
+        if rejected:
+            violations.append((
+                s["header"],
+                "license(s) not in accepted set",
+                ", ".join(rejected),
+            ))
+            continue
+        if s.get("unresolved"):
+            violations.append((
+                s["header"],
+                "unresolved license name(s)",
+                ", ".join(sorted(s["unresolved"])),
+            ))
+    return violations
+
+
 def parse_license_files_found(path):
     """Parse scan-license-files-found.txt into {package_basename: [paths]}.
     Paths are kept relative to the artifacts/ directory so they can be
@@ -583,6 +635,7 @@ def main():
                 "urls": urls_raw,
                 "source": source,
                 "spdx_ids": spdx_ids,
+                "unresolved": list(this_unresolved),
                 "verbatim": verbatim,
                 "notes": notes,
                 "license_text": license_text,
@@ -651,6 +704,7 @@ def main():
             "urls": license_urls,
             "source": source,
             "spdx_ids": spdx_ids,
+            "unresolved": list(this_unresolved),
             "verbatim": verbatim,
             "notes": notes,
             "license_text": license_text,
@@ -939,6 +993,30 @@ def main():
             f"    {len(unresolved_names)} unresolved license names "
             "(see end of doc — manual review needed)"
         )
+
+    # Compliance audit — runs after the notice file is written so the
+    # operator can still inspect THIRD-PARTY-NOTICE.md when the audit
+    # fails. Non-zero exit aborts the surrounding generate-sbom.sh
+    # (it uses `set -e`) before the bundling step packages an
+    # out-of-policy notice.
+    violations = find_compliance_violations(sections, ACCEPTED_SPDX_LICENSES)
+    if violations:
+        print(
+            f"\n  ERROR: {len(violations)} component(s) failed the license "
+            f"compliance audit (ACCEPTED_SPDX_LICENSES in "
+            f"{os.path.basename(__file__)}):",
+            file=sys.stderr,
+        )
+        for header, reason, detail in violations:
+            print(f"    - {header}", file=sys.stderr)
+            print(f"        {reason}: {detail}", file=sys.stderr)
+        print(
+            "  Fix the dependency, add a manual override in "
+            "sbom-license-overrides.yaml that selects an accepted "
+            "license, or extend ACCEPTED_SPDX_LICENSES.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
