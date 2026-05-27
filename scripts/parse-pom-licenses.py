@@ -5,19 +5,24 @@ Parse Maven POM <licenses> metadata into a TSV for downstream SBOM tooling.
 For every *.pom under the given poms directory, resolve the artifact's
 groupId/artifactId/version (falling back to <parent> for inherited fields) and
 emit one row per artifact with its declared license names/URLs. A curated
-override TSV takes precedence over POM-declared metadata when matched on
+override YAML takes precedence over POM-declared metadata when matched on
 'groupId:artifactId'. Artifacts with neither an override nor a <licenses>
 block are written to the no-licenses report — the punch list for the override
 table.
 
 Usage: parse-pom-licenses.py <poms_dir> <out_tsv> <out_nolic> <override_path>
+
+Requires PyYAML. ScanCode-Toolkit pulls it in transitively, so when this
+script is invoked via the venv set up by scripts/generate-sbom.sh it is
+already importable.
 """
 
-import csv
 import glob
 import os
 import sys
 import xml.etree.ElementTree as ET
+
+import yaml
 
 NS = '{http://maven.apache.org/POM/4.0.0}'
 
@@ -56,23 +61,29 @@ def licenses(root):
 
 
 def load_overrides(path):
-    """Read the manual override TSV. Keyed by 'groupId:artifactId' — entries
-    cover all versions of that artifact. Comments (#) and the header row are
-    ignored; missing file is non-fatal."""
+    """Read the manual override YAML. Keyed by 'groupId:artifactId' — entries
+    cover all versions of that artifact. Returns (names, urls) per key; the
+    `notes` field is consumed by generate-third-party-notice.py and ignored
+    here. Missing file is non-fatal."""
     table = {}
     if not os.path.isfile(path):
         print(f'  WARN: override table {path} not found; no overrides applied')
         return table
     with open(path) as f:
-        for row in csv.reader(f, delimiter='\t'):
-            if not row or not row[0] or row[0].lstrip().startswith('#'):
-                continue
-            if row[0] == 'groupId':
-                continue
-            if len(row) < 4:
-                continue
-            gid, aid, names, urls = (c.strip() for c in row[:4])
-            table[f'{gid}:{aid}'] = (names, urls)
+        data = yaml.safe_load(f) or []
+    if not isinstance(data, list):
+        print(f'  WARN: {path} did not parse to a list of entries; no overrides applied')
+        return table
+    for entry in data:
+        if not isinstance(entry, dict):
+            continue
+        gid = (entry.get('groupId') or '').strip()
+        aid = (entry.get('artifactId') or '').strip()
+        if not gid or not aid:
+            continue
+        names = (entry.get('license_names') or '').strip()
+        urls = (entry.get('license_urls') or '').strip()
+        table[f'{gid}:{aid}'] = (names, urls)
     return table
 
 

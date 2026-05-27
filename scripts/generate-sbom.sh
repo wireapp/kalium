@@ -426,15 +426,25 @@ fi
 echo
 echo "==> Parsing POM <licenses> metadata"
 POMS_DIR="$OUTPUT_DIR/poms"
+# Prefer the venv python — it has PyYAML installed transitively via
+# scancode-toolkit, which the override-loader needs. Fall back to a bare
+# python3 only if a yaml module is importable there too, otherwise skip
+# (rather than dying mid-pipeline on `import yaml`).
+POM_PY=""
+if [[ -x .venv/bin/python3 ]] && .venv/bin/python3 -c 'import yaml' 2>/dev/null; then
+    POM_PY=".venv/bin/python3"
+elif command -v python3 >/dev/null 2>&1 && python3 -c 'import yaml' 2>/dev/null; then
+    POM_PY="python3"
+fi
 if [[ ! -d "$POMS_DIR" ]]; then
     echo "  Skipped (no $POMS_DIR — run Gradle artifact collection to materialise POMs)"
-elif ! command -v python3 >/dev/null 2>&1; then
-    echo "  Skipped (python3 not on PATH)"
+elif [[ -z "$POM_PY" ]]; then
+    echo "  Skipped (no python3 with PyYAML available — run the full pipeline once to provision .venv)"
 else
     POM_TSV="$OUTPUT_DIR/scan-pom-licenses.tsv"
     POM_NOLIC="$OUTPUT_DIR/scan-pom-no-licenses.txt"
-    OVERRIDE_TSV="scripts/sbom-license-overrides.tsv"
-    python3 scripts/parse-pom-licenses.py "$POMS_DIR" "$POM_TSV" "$POM_NOLIC" "$OVERRIDE_TSV"
+    OVERRIDE_YAML="scripts/sbom-license-overrides.yaml"
+    "$POM_PY" scripts/parse-pom-licenses.py "$POMS_DIR" "$POM_TSV" "$POM_NOLIC" "$OVERRIDE_YAML"
 fi
 
 # Customer-facing THIRD-PARTY-NOTICE.md. Concatenates per-package verbatim
