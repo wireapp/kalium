@@ -24,7 +24,7 @@ import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.v4.authenticated.SelfApiV4
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 
@@ -34,7 +34,7 @@ internal open class SelfApiV5 internal constructor(
 ) : SelfApiV4(authenticatedNetworkClient, sessionManager) {
     override suspend fun updateSupportedProtocols(
         protocols: List<SupportedProtocolDTO>
-    ): NetworkResponse<Unit> = wrapKaliumResponse {
+    ): NetworkResponse<Unit> = wrapRequest {
         httpClient.put("$PATH_SELF/$PATH_SUPPORTED_PROTOCOLS") {
             setBody(UpdateSupportedProtocolsRequest(protocols))
         }

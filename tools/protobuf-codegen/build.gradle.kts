@@ -63,6 +63,6 @@ tasks {
 
 kotlin {
     jvmToolchain {
-        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.majorVersion))
+        languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_21.majorVersion))
     }
 }

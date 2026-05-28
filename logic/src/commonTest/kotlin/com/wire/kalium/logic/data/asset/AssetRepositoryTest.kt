@@ -399,7 +399,7 @@ internal class AssetRepositoryTest {
         val assetRawData = assetName.encodeToByteArray()
         val encryptedDataPath = encryptDataWithPath(assetRawData, assetEncryptionKey)
         val wrongAssetSha256 = calcFileSHA256(fakeKaliumFileSystem!!.source(encryptedDataPath))?.copyOf().apply {
-            this?.set(0, 99)
+            this?.set(0, this[0].inc())
         }
         val assetEncryptedData = fakeKaliumFileSystem!!.source(encryptedDataPath).buffer().use {
             it.readByteArray()

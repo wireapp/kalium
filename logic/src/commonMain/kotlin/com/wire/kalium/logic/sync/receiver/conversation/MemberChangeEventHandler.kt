@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.common.functional.onFailure
@@ -26,10 +27,15 @@ import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Instant
 
 internal interface MemberChangeEventHandler {
     suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged)
@@ -38,6 +44,8 @@ internal interface MemberChangeEventHandler {
 internal class MemberChangeEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val fetchConversationIfUnknown: FetchConversationIfUnknownUseCase,
+    private val persistMessage: PersistMessageUseCase,
+    private val selfUserId: UserId,
 ) : MemberChangeEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
@@ -98,6 +106,22 @@ internal class MemberChangeEventHandlerImpl(
                 conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
             }
             .onFailure { eventLogger.logFailure(it) }
-            .onSuccess { eventLogger.logSuccess() }
+            .onSuccess {
+                event.member?.takeIf { it.role == Conversation.Member.Role.Admin }?.let { promotedMember ->
+                    persistMessage(
+                        Message.System(
+                            id = event.id,
+                            content = MessageContent.MemberChange.UserPromotedToAdmin(members = listOf(promotedMember.id)),
+                            conversationId = event.conversationId,
+                            date = Instant.parse(event.timestampIso),
+                            senderUserId = selfUserId,
+                            status = Message.Status.Sent,
+                            visibility = Message.Visibility.VISIBLE,
+                            expirationData = null
+                        )
+                    )
+                }
+                eventLogger.logSuccess()
+            }
     }
 }

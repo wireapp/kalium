@@ -470,6 +470,7 @@ internal fun MessageEntityContent.System.toMessageContent(): MessageContent.Syst
 
             MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
             MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessageContent.MemberChange.RemovedFromTeam(memberList)
+            MessageEntity.MemberChangeType.USER_PROMOTED_TO_ADMIN -> MessageContent.MemberChange.UserPromotedToAdmin(memberList)
         }
     }
 
@@ -782,6 +783,11 @@ internal fun MessageContent.System.toMessageEntityContent(): MessageEntityConten
             is MessageContent.MemberChange.RemovedFromTeam -> MessageEntityContent.MemberChange(
                 memberUserIdList,
                 MessageEntity.MemberChangeType.REMOVED_FROM_TEAM
+            )
+
+            is MessageContent.MemberChange.UserPromotedToAdmin -> MessageEntityContent.MemberChange(
+                memberUserIdList,
+                MessageEntity.MemberChangeType.USER_PROMOTED_TO_ADMIN
             )
         }
     }

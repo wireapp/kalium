@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.v15.unauthenticated.SSOLoginApiV15
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.protocolWithAuthority
@@ -31,6 +32,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 internal class SSOLoginApiV15Test : ApiTest() {
 
@@ -78,7 +80,27 @@ internal class SSOLoginApiV15Test : ApiTest() {
         assertEquals("${Url(TEST_BACKEND.links.api).protocolWithAuthority}$expectedPathAndQuery", actual.value)
     }
 
+    @Test
+    fun givenV15_whenCallingGetByEmail_thenRequestConfiguredCorrectly() = runTest {
+        val email = "user@example.com"
+        val networkClient = mockUnauthenticatedNetworkClient(
+            SSO_CODE_RESPONSE,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertPost()
+                assertPathEqual(PATH_SSO_GET_BY_EMAIL)
+                assertJsonBodyContent("""{"email":"$email"}""")
+            }
+        )
+
+        val response = SSOLoginApiV15(networkClient).getByEmail(email)
+
+        assertTrue(response.isSuccessful())
+    }
+
     private companion object {
         const val PATH_SSO_INITIATE = "/sso/initiate-login"
+        const val PATH_SSO_GET_BY_EMAIL = "sso/get-by-email"
+        const val SSO_CODE_RESPONSE = """{"sso_code":"99db9768-04e3-4b5d-9268-831b6a25c4ab"}"""
     }
 }

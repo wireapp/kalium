@@ -244,6 +244,24 @@ WHERE qualified_id = :qualified_id;
 selectAllConversations:
 SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' AND deleted_locally = 0 ORDER BY last_modified_date DESC, name ASC;
 
+selectAllConversationsWithOtherUserName:
+SELECT
+    Conversation.*,
+    User.name AS otherUserName,
+    EXISTS (
+        SELECT 1 FROM Member
+        WHERE Member.conversation = Conversation.qualified_id
+          AND Member.user = :selfUserId
+    ) AS selfIsMember
+FROM Conversation
+LEFT JOIN Member AS OtherMember ON Conversation.qualified_id = OtherMember.conversation
+    AND Conversation.type IS 'ONE_ON_ONE'
+    AND OtherMember.user IS NOT :selfUserId
+LEFT JOIN User ON User.qualified_id = OtherMember.user
+WHERE Conversation.type IS NOT 'CONNECTION_PENDING'
+  AND Conversation.deleted_locally = 0
+ORDER BY Conversation.last_modified_date DESC, Conversation.name ASC;
+
 selectAllTeamProteusConversationsReadyForMigration:
 SELECT
 qualified_id,

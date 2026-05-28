@@ -26,6 +26,7 @@ import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.toSessionDto
 import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
+import com.wire.kalium.network.api.unauthenticated.sso.SSOCodeResponse
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.CustomErrors.MISSING_REFRESH_TOKEN
@@ -33,7 +34,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.splitSetCookieHeader
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.bearerAuth
@@ -70,20 +71,20 @@ internal open class SSOLoginApiV0 internal constructor(
         }.let { httpRequestBuilder ->
             val httpRequest = httpClient.head(httpRequestBuilder)
             val url = httpRequest.call.request.url.toString()
-            wrapKaliumResponse<Any> { httpRequest }.mapSuccess {
+            wrapRequest<Any> { httpRequest }.mapSuccess {
                 url
             }
         }
     }
 
-    override suspend fun finalize(cookie: String): NetworkResponse<String> = wrapKaliumResponse {
+    override suspend fun finalize(cookie: String): NetworkResponse<String> = wrapRequest {
         httpClient.post("$PATH_SSO/$PATH_FINALIZE") {
             header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$cookie")
         }
     }
 
     override suspend fun provideLoginSession(cookie: String): NetworkResponse<AuthenticationResultDTO> =
-        wrapKaliumResponse<AccessTokenDTO> {
+        wrapRequest<AccessTokenDTO> {
             httpClient.post(PATH_ACCESS) {
                 header(HttpHeaders.Cookie, cookie)
             }
@@ -97,7 +98,7 @@ internal open class SSOLoginApiV0 internal constructor(
                 NetworkResponse.Success(refreshToken, headers, httpCode)
             }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
         }.flatMap { tokensPairResponse ->
-            wrapKaliumResponse<SelfUserDTO> {
+            wrapRequest<SelfUserDTO> {
                 httpClient.get(PATH_SELF) {
                     bearerAuth(tokensPairResponse.value.first.value)
                 }
@@ -109,13 +110,18 @@ internal open class SSOLoginApiV0 internal constructor(
             }
         }
 
-    override suspend fun metaData(): NetworkResponse<String> = wrapKaliumResponse {
+    override suspend fun metaData(): NetworkResponse<String> = wrapRequest {
         httpClient.get("$PATH_SSO/$PATH_METADATA")
     }
 
-    override suspend fun settings(): NetworkResponse<SSOSettingsResponse> = wrapKaliumResponse {
+    override suspend fun settings(): NetworkResponse<SSOSettingsResponse> = wrapRequest {
         httpClient.get("$PATH_SSO/$PATH_SETTINGS")
     }
+
+    override suspend fun getByEmail(email: String): NetworkResponse<SSOCodeResponse> =
+        NetworkResponse.Error(
+            APINotSupported("${this::class.simpleName}: ${::getByEmail.name} is only available on API V15")
+        )
 
     protected companion object {
         const val PATH_SSO = "sso"
@@ -123,6 +129,7 @@ internal open class SSOLoginApiV0 internal constructor(
         const val PATH_FINALIZE = "finalize-login"
         const val PATH_METADATA = "metadata"
         const val PATH_SETTINGS = "settings"
+        const val PATH_GET_BY_EMAIL = "get-by-email"
         const val PATH_ACCESS = "access"
         const val PATH_SELF = "self"
         const val QUERY_SUCCESS_REDIRECT = "success_redirect"

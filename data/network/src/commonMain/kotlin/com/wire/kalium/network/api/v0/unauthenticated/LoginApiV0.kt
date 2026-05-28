@@ -30,7 +30,7 @@ import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.bearerAuth
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -74,7 +74,7 @@ internal open class LoginApiV0 internal constructor(
     override suspend fun login(
         param: LoginParam,
         persist: Boolean
-    ): NetworkResponse<Pair<SessionDTO, SelfUserDTO>> = wrapKaliumResponse<AccessTokenDTO> {
+    ): NetworkResponse<Pair<SessionDTO, SelfUserDTO>> = wrapRequest<AccessTokenDTO> {
         httpClient.post(PATH_LOGIN) {
             parameter(QUERY_PERSIST, persist)
             setBody(param.toRequestBody())
@@ -87,7 +87,7 @@ internal open class LoginApiV0 internal constructor(
         }.mapSuccess { Pair(accessTokenDTOResponse.value, it) }
     }.flatMap { tokensPairResponse ->
         // this is a hack to get the user QualifiedUserId on login
-        wrapKaliumResponse<SelfUserDTO> {
+        wrapRequest<SelfUserDTO> {
             httpClient.get(PATH_SELF) {
                 bearerAuth(tokensPairResponse.value.first.value)
             }

@@ -37,7 +37,7 @@ import kotlin.test.assertTrue
 
 /**
  * Integration tests for macOS BackupUtils implementation.
- * These tests exercise the real /usr/bin/zip and /usr/bin/unzip tools via NSTask.
+ * These tests also verify the generated ZIP can be inspected by the system unzip tool.
  */
 class BackupUtilsTest {
 
@@ -146,6 +146,24 @@ class BackupUtilsTest {
         assertTrue(!fileSystem.exists(outputDir / "skip.txt"))
     }
 
+    @Test
+    fun givenZip64StoredFixture_whenExtractingAll_thenFileIsExtracted() {
+        val content = "zip64 stored content"
+        val outputDir = testDir / "zip64-stored"
+
+        val result = extractCompressedFile(
+            inputSource = zip64StoredFixture("payload.txt", content.encodeToByteArray()),
+            outputRootPath = outputDir,
+            param = ExtractFilesParam.All,
+            fileSystem = testKaliumFileSystem,
+        )
+
+        assertIs<Either.Right<Long>>(result)
+        assertEquals(content.length.toLong(), result.value)
+        val extractedContent = fileSystem.source(outputDir / "payload.txt").buffer().use { it.readUtf8() }
+        assertEquals(content, extractedContent)
+    }
+
     // endregion
 
     // region round-trip
@@ -178,6 +196,35 @@ class BackupUtilsTest {
             val actual = fileSystem.source(outputDir / name).buffer().use { it.readUtf8() }
             assertEquals(expectedContent, actual, "Content mismatch for $name")
         }
+    }
+
+    @Test
+    fun givenLargeFile_whenRoundTripping_thenContentMatchesAndSystemUnzipAccepts() {
+        val largeContent = ByteArray(LARGE_TEST_SIZE_BYTES) { (it % 251).toByte() }
+        val zipPath = testDir / "large.zip"
+
+        val createResult = createCompressedFile(
+            listOf(largeContent.toSource() to "large.bin"),
+            fileSystem.sink(zipPath)
+        )
+        assertIs<Either.Right<Long>>(createResult)
+
+        val entries = listZipEntries(zipPath)
+        assertEquals(listOf("large.bin"), entries)
+
+        val outputDir = testDir / "large-extracted"
+        val extractResult = extractCompressedFile(
+            inputSource = fileSystem.source(zipPath),
+            outputRootPath = outputDir,
+            param = ExtractFilesParam.All,
+            fileSystem = testKaliumFileSystem,
+        )
+        assertIs<Either.Right<Long>>(extractResult)
+        assertEquals(LARGE_TEST_SIZE_BYTES.toLong(), extractResult.value)
+
+        val extractedBytes = fileSystem.source(outputDir / "large.bin").buffer().use { it.readByteArray() }
+        assertEquals(LARGE_TEST_SIZE_BYTES, extractedBytes.size)
+        assertTrue(extractedBytes.contentEquals(largeContent), "Large round-trip content mismatch")
     }
 
     // endregion
@@ -228,15 +275,47 @@ class BackupUtilsTest {
         return buffer
     }
 
+    private fun ByteArray.toSource(): Source {
+        val buffer = Buffer()
+        buffer.write(this)
+        return buffer
+    }
+
     private fun listZipEntries(zipPath: Path): List<String> {
         val result = execCommand(args = listOf("/usr/bin/unzip", "-Z1", zipPath.toString()))
         return result.stdout.lines().filter { it.isNotBlank() }
     }
 
+    private fun zip64StoredFixture(fileName: String, content: ByteArray): Source {
+        val fileNameBytes = fileName.encodeToByteArray()
+        val extra = Buffer()
+            .writeShortLe(ZIP64_EXTRA_FIELD_ID)
+            .writeShortLe(Long.SIZE_BYTES * 2)
+            .writeLongLe(content.size.toLong())
+            .writeLongLe(content.size.toLong())
+            .readByteArray()
+
+        return Buffer()
+            .writeIntLe(LOCAL_FILE_HEADER_SIGNATURE)
+            .writeShortLe(ZIP64_VERSION_NEEDED)
+            .writeShortLe(GENERAL_PURPOSE_UTF8_FLAG)
+            .writeShortLe(COMPRESSION_METHOD_STORED)
+            .writeShortLe(0)
+            .writeShortLe(0)
+            .writeIntLe(ZIP64_STORED_CONTENT_CRC)
+            .writeIntLe(ZIP32_MAX_FIELD)
+            .writeIntLe(ZIP32_MAX_FIELD)
+            .writeShortLe(fileNameBytes.size)
+            .writeShortLe(extra.size)
+            .write(fileNameBytes)
+            .write(extra)
+            .write(content)
+            .writeIntLe(CENTRAL_DIRECTORY_HEADER_SIGNATURE)
+    }
+
     /**
      * A KaliumFileSystem backed by the real filesystem for integration testing.
-     * Required because the macOS BackupUtils shells out to /usr/bin/zip and /usr/bin/unzip
-     * which operate on real files.
+     * Required because the test verifies interoperability with the system unzip tool.
      */
     private class RealKaliumFileSystem(private val rootDir: Path) : KaliumFileSystem {
         private val fs = FileSystem.SYSTEM
@@ -272,7 +351,20 @@ class BackupUtilsTest {
 
         override fun selfUserAvatarPath(): Path = providePersistentAssetPath("self_avatar.jpg")
         override suspend fun listDirectories(dir: Path): List<Path> = fs.list(dir)
+        override fun size(path: Path): Long? = fs.metadata(path).size
     }
 
     // endregion
+
+    private companion object {
+        const val LARGE_TEST_SIZE_BYTES = 5 * 1024 * 1024
+        const val LOCAL_FILE_HEADER_SIGNATURE = 0x04034b50
+        const val CENTRAL_DIRECTORY_HEADER_SIGNATURE = 0x02014b50
+        const val GENERAL_PURPOSE_UTF8_FLAG = 0x0800
+        const val COMPRESSION_METHOD_STORED = 0
+        const val ZIP64_VERSION_NEEDED = 45
+        const val ZIP64_EXTRA_FIELD_ID = 0x0001
+        const val ZIP32_MAX_FIELD = -1
+        const val ZIP64_STORED_CONTENT_CRC = 0x64dad28d
+    }
 }

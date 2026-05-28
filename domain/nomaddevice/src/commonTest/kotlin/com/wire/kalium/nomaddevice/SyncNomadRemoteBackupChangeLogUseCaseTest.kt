@@ -123,7 +123,7 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         assertEquals(CONVERSATION_ID.value, upsertEvent.conversation.id)
         assertEquals(CONVERSATION_ID.domain, upsertEvent.conversation.domain)
 
-        val decodedPayload = NomadDeviceMessagePayload.decodeFromByteArray(Base64.Default.decode(upsertEvent.payload))
+        val decodedPayload = NomadDeviceMessagePayload.decodeFromByteArray(Base64.decode(upsertEvent.payload))
         assertEquals("hello from db", decodedPayload.content.text?.text)
         assertEquals("sender-client", decodedPayload.senderClientId)
         assertEquals("quoted-message", decodedPayload.content.text?.quotedMessageId)
@@ -238,7 +238,7 @@ class SyncNomadRemoteBackupChangeLogUseCaseTest {
         useCase(SELF_USER_ID)
 
         val upsertEvent = assertIs<NomadMessageEvent.UpsertMessageEvent>(api.requests.single().events.single())
-        val decodedPayload = NomadDeviceMessagePayload.decodeFromByteArray(Base64.Default.decode(upsertEvent.payload))
+        val decodedPayload = NomadDeviceMessagePayload.decodeFromByteArray(Base64.decode(upsertEvent.payload))
         val attachments = decodedPayload.content.multipart?.attachments.orEmpty()
 
         assertEquals(2, attachments.size)

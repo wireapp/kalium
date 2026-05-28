@@ -45,6 +45,7 @@ import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.SelfDeletingMessagesModel
 import com.wire.kalium.logic.data.featureConfig.EnableUserProfileQRCodeConfigModel
+import com.wire.kalium.logic.data.featureConfig.PreventAdminlessGroupsConfigModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
@@ -651,6 +652,17 @@ internal sealed class Event(open val id: String) {
         ) : FeatureConfig(id) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.AssetAudiLogConfigUpdated",
+                idKey to id,
+                featureStatusKey to model.status.name,
+            )
+        }
+
+        internal data class PreventAdminlessGroupsConfigUpdated(
+            override val id: String,
+            val model: PreventAdminlessGroupsConfigModel,
+        ) : FeatureConfig(id) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "FeatureConfig.PreventAdminlessGroupsConfigUpdated",
                 idKey to id,
                 featureStatusKey to model.status.name,
             )
