@@ -23,7 +23,7 @@ android-test-rules = "1.7.0"
 android-test-core = "1.6.1"
 android-test-ext-junit = "1.3.0"
 androidx-arch = "2.2.0"
-androidx-test-orchestrator = "1.5.1"
+androidx-test-orchestrator = "1.6.1"
 androidx-sqlite = "2.6.2"
 ktx-datetime = { strictly = "0.6.1" }
 ktx-serialization = "1.11.0"
