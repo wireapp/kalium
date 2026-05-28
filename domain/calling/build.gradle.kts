@@ -65,9 +65,7 @@ kotlin {
                 implementation(libs.jna)
             }
         }
-        matching { sourceSet ->
-            sourceSet.name.startsWith("ios") && sourceSet.name.endsWith("Main")
-        }.all {
+        val appleMain by getting {
             dependencies {
                 api(libs.avsKmp)
             }

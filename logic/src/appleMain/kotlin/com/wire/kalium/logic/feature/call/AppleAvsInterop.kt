@@ -418,6 +418,7 @@ internal object AppleAvsInterop {
     fun setBackground(handle: UInt, background: Boolean): Int = wcall_set_background(handle, background.toAvsInt())
 
     fun setNetworkQualityInterval(handle: UInt, callbacks: Callbacks, intervalInSeconds: Int) {
+        if (!startIfAvailable()) return
         val arg = handles.values.firstOrNull { it.stableRef.get() === callbacks }?.stableRef?.asCPointer()
         wcall_set_network_quality_handler(handle, networkQualityHandler, intervalInSeconds, arg)
     }

@@ -35,7 +35,8 @@ sqldelight = "0.0.6-2.3.2"
 sqlcipher-android = "4.13.0"
 pbandk = "0.16.0"
 turbine = "1.1.0"
-avs = "10.3.23"
+avs = "10.3.29"
+avs-kmp = "0.0.62"
 jna = "5.17.0"
 core-crypto = "9.3.3"
 core-crypto-kmp = "9.3.3.1-kmp"
@@ -229,7 +230,7 @@ difference-jvm = { module = "dev.andrewbailey.difference:difference-jvm", versio
 
 # avs
 avs = { module = "com.wire:avs", version.ref = "avs" }
-avsKmp = { module = "com.wire:avs-kmp", version.ref = "avs" }
+avsKmp = { module = "com.wire:avs-kmp", version.ref = "avs-kmp" }
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 
 # logging
