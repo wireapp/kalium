@@ -350,6 +350,7 @@ internal object AppleAvsInterop {
         senderClientId: String,
         conversationType: Int
     ): Boolean {
+        if (!startIfAvailable()) return false
         if (payload.isEmpty()) return false
 
         return runCatching {
@@ -376,46 +377,60 @@ internal object AppleAvsInterop {
     }
 
     fun respondToSend(handle: UInt, status: Int, reason: String, context: COpaquePointer?) {
+        if (!startIfAvailable()) return
         wcall_resp(handle, status, reason, context)
     }
 
     fun respondToSft(handle: UInt, error: Int, data: ByteArray, context: COpaquePointer?) {
+        if (!startIfAvailable()) return
         data.usePinned { pinned ->
             wcall_sft_resp(handle, error, pinned.addressOf(0).reinterpret(), data.size.toULong(), context)
         }
     }
 
     fun updateConfig(handle: UInt, error: Int, json: String) {
+        if (!startIfAvailable()) return
         wcall_config_update(handle, error, json)
     }
 
     fun startCall(handle: UInt, conversationId: String, callType: Int, conversationType: Int, audioCbr: Boolean): Int =
-        wcall_start(handle, conversationId, callType, conversationType, audioCbr.toAvsInt(), 0)
+        if (startIfAvailable()) wcall_start(handle, conversationId, callType, conversationType, audioCbr.toAvsInt(), 0) else -1
 
     fun answerCall(handle: UInt, conversationId: String, callType: Int, audioCbr: Boolean): Int =
-        wcall_answer(handle, conversationId, callType, audioCbr.toAvsInt())
+        if (startIfAvailable()) wcall_answer(handle, conversationId, callType, audioCbr.toAvsInt()) else -1
 
-    fun endCall(handle: UInt, conversationId: String) = wcall_end(handle, conversationId)
+    fun endCall(handle: UInt, conversationId: String) {
+        if (!startIfAvailable()) return
+        wcall_end(handle, conversationId)
+    }
 
-    fun rejectCall(handle: UInt, conversationId: String): Int = wcall_reject(handle, conversationId)
+    fun rejectCall(handle: UInt, conversationId: String): Int =
+        if (startIfAvailable()) wcall_reject(handle, conversationId) else -1
 
-    fun setMute(handle: UInt, muted: Boolean) = wcall_set_mute(handle, muted.toAvsInt())
+    fun setMute(handle: UInt, muted: Boolean) {
+        if (!startIfAvailable()) return
+        wcall_set_mute(handle, muted.toAvsInt())
+    }
 
-    fun setVideoSendState(handle: UInt, conversationId: String, state: Int) = wcall_set_video_send_state(handle, conversationId, state)
+    fun setVideoSendState(handle: UInt, conversationId: String, state: Int) {
+        if (!startIfAvailable()) return
+        wcall_set_video_send_state(handle, conversationId, state)
+    }
 
     fun requestVideoStreams(handle: UInt, conversationId: String, mode: Int, json: String): Int =
-        wcall_request_video_streams(handle, conversationId, mode, json)
+        if (startIfAvailable()) wcall_request_video_streams(handle, conversationId, mode, json) else -1
 
     fun setEpochInfo(handle: UInt, conversationId: String, epoch: UInt, clientsJson: String, keyBase64: String): Int =
-        wcall_set_epoch_info(handle, conversationId, epoch, clientsJson, keyBase64)
+        if (startIfAvailable()) wcall_set_epoch_info(handle, conversationId, epoch, clientsJson, keyBase64) else -1
 
     fun setClientsForConversation(handle: UInt, conversationId: String, clients: String): Int =
-        wcall_set_clients_for_conv(handle, conversationId, clients)
+        if (startIfAvailable()) wcall_set_clients_for_conv(handle, conversationId, clients) else -1
 
     fun processNotifications(handle: UInt, isStarted: Boolean): Int =
-        wcall_process_notifications(handle, isStarted.toAvsInt())
+        if (startIfAvailable()) wcall_process_notifications(handle, isStarted.toAvsInt()) else -1
 
-    fun setBackground(handle: UInt, background: Boolean): Int = wcall_set_background(handle, background.toAvsInt())
+    fun setBackground(handle: UInt, background: Boolean): Int =
+        if (startIfAvailable()) wcall_set_background(handle, background.toAvsInt()) else -1
 
     fun setNetworkQualityInterval(handle: UInt, callbacks: Callbacks, intervalInSeconds: Int) {
         if (!startIfAvailable()) return
