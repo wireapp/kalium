@@ -113,26 +113,6 @@ make                                    # Build from source, outputs to ./native
 
 Always pass `-Djava.library.path=./native/libs` when running JVM tests or CLI.
 
-### Generating an SBOM for licensing
-
-For customer licensing deliverables that require a **file-level** license/notice
-report (not just dependency coordinates), use:
-
-```bash
-./scripts/generate-sbom.sh
-```
-
-This runs `:collectSbomArtifacts` to materialise every third-party runtime
-artifact (JVM jars, Android AARs, native klibs, resolved npm packages, prebuilt
-AVS libs) under `build/sbom/artifacts/`, then drives `extractcode` (to unpack
-AARs/JARs in place) and `scancode` to emit JSON, SPDX, CycloneDX, and HTML
-reports under `build/sbom/`.
-
-Scope is restricted to licensable modules — `:sample:*`, `:tools:*`, `:test:*`,
-and `:data:persistence-test` are excluded. Run on an **Apple Silicon Mac** when
-iOS/macOS native dependencies must be included; on other hosts those targets
-resolve empty and the SBOM omits them.
-
 ## Architecture
 
 ### Module Structure
