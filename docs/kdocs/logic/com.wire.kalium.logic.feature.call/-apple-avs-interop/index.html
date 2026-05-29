@@ -1,0 +1,486 @@
+<!doctype html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>AppleAvsInterop</title>
+<link href="../../../images/logo-icon.svg" rel="icon" type="image/svg">    <script>var pathToRoot = "../../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async></script>
+<script type="text/javascript" src="../../../scripts/sourceset_dependencies.js" async></script>
+<link href="../../../styles/style.css" rel="Stylesheet">
+<link href="../../../styles/main.css" rel="Stylesheet">
+<link href="../../../styles/prism.css" rel="Stylesheet">
+<link href="../../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../../scripts/clipboard.js" async></script>
+<script type="text/javascript" src="../../../scripts/navigation-loader.js" async></script>
+<script type="text/javascript" src="../../../scripts/platform-content-handler.js" async></script>
+<script type="text/javascript" src="../../../scripts/main.js" defer></script>
+<script type="text/javascript" src="../../../scripts/prism.js" async></script>
+<script type="text/javascript" src="../../../ui-kit/ui-kit.min.js" defer></script>
+<script type="text/javascript" src="../../../scripts/symbol-parameters-wrapper_deferred.js" defer></script></head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+<a class="library-name--link" href="../../../index.html">
+                    kalium
+            </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">4f92bdb
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/appleMain">apple</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/appleMain" data-filter=":logic:dokkaHtmlPartial/appleMain">
+                                <span class="checkbox--icon"></span>
+                                apple
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button" type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list" data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    kalium
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="classlike" id="content" pageids="logic::com.wire.kalium.logic.feature.call/AppleAvsInterop///PointingToDeclaration//-688325495">
+  <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.feature.call</a><span class="delimiter">/</span><span class="current">AppleAvsInterop</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span>Apple</span><wbr><span>Avs</span><wbr><span><span>Interop</span></span></h1>
+    <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+      <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">object </span><a href="index.html">AppleAvsInterop</a></div></div>    </div>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="CONSTRUCTOR,TYPE,PROPERTY,FUNCTION">Members</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="-880097702%2FClasslikes%2F-688325495" anchor-label="Callbacks" id="-880097702%2FClasslikes%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-callbacks/index.html"><span><span>Callbacks</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-880097702%2FClasslikes%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-callbacks/index.html">Callbacks</a></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2079212216%2FClasslikes%2F-688325495" anchor-label="CreatedHandle" id="2079212216%2FClasslikes%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-created-handle/index.html"><span>Created</span><wbr><span><span>Handle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2079212216%2FClasslikes%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-created-handle/index.html">CreatedHandle</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>stableRef<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&lt;</span><a href="-callbacks/index.html">AppleAvsInterop.Callbacks</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-144126317%2FFunctions%2F-688325495" anchor-label="answerCall" id="-144126317%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="answer-call.html"><span>answer</span><wbr><span><span>Call</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-144126317%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="answer-call.html"><span class="token function">answerCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">callType<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">audioCbr<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1015683521%2FFunctions%2F-688325495" anchor-label="endCall" id="-1015683521%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="end-call.html"><span>end</span><wbr><span><span>Call</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1015683521%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="end-call.html"><span class="token function">endCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1206206760%2FFunctions%2F-688325495" anchor-label="notifyNetworkChangedIfAvailable" id="-1206206760%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="notify-network-changed-if-available.html"><span>notify</span><wbr><span>Network</span><wbr><span>Changed</span><wbr><span>If</span><wbr><span><span>Available</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1206206760%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="notify-network-changed-if-available.html"><span class="token function">notifyNetworkChangedIfAvailable</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1476944634%2FFunctions%2F-688325495" anchor-label="processNotifications" id="1476944634%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="process-notifications.html"><span>process</span><wbr><span><span>Notifications</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1476944634%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="process-notifications.html"><span class="token function">processNotifications</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">isStarted<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="654213600%2FFunctions%2F-688325495" anchor-label="receiveCallingMessage" id="654213600%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="receive-calling-message.html"><span>receive</span><wbr><span>Calling</span><wbr><span><span>Message</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="654213600%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="receive-calling-message.html"><span class="token function">receiveCallingMessage</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">payload<span class="token operator">: </span><span data-unresolved-link="kotlin/ByteArray///PointingToDeclaration/">ByteArray</span><span class="token punctuation">, </span></span><span class="parameter ">currentTimeSeconds<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">messageTimeSeconds<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">senderUserId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">senderClientId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">conversationType<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-223361205%2FFunctions%2F-688325495" anchor-label="rejectCall" id="-223361205%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="reject-call.html"><span>reject</span><wbr><span><span>Call</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-223361205%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="reject-call.html"><span class="token function">rejectCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1526195727%2FFunctions%2F-688325495" anchor-label="requestVideoStreams" id="-1526195727%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="request-video-streams.html"><span>request</span><wbr><span>Video</span><wbr><span><span>Streams</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1526195727%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="request-video-streams.html"><span class="token function">requestVideoStreams</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">mode<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">json<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1109699378%2FFunctions%2F-688325495" anchor-label="respondToSend" id="-1109699378%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="respond-to-send.html"><span>respond</span><wbr><span>To</span><wbr><span><span>Send</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1109699378%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="respond-to-send.html"><span class="token function">respondToSend</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">status<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">reason<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">context<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-660506025%2FFunctions%2F-688325495" anchor-label="respondToSft" id="-660506025%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="respond-to-sft.html"><span>respond</span><wbr><span>To</span><wbr><span><span>Sft</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-660506025%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="respond-to-sft.html"><span class="token function">respondToSft</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">error<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">data<span class="token operator">: </span><span data-unresolved-link="kotlin/ByteArray///PointingToDeclaration/">ByteArray</span><span class="token punctuation">, </span></span><span class="parameter ">context<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1872423041%2FFunctions%2F-688325495" anchor-label="setBackground" id="1872423041%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-background.html"><span>set</span><wbr><span><span>Background</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1872423041%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-background.html"><span class="token function">setBackground</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">background<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-596981545%2FFunctions%2F-688325495" anchor-label="setClientsForConversation" id="-596981545%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-clients-for-conversation.html"><span>set</span><wbr><span>Clients</span><wbr><span>For</span><wbr><span><span>Conversation</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-596981545%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-clients-for-conversation.html"><span class="token function">setClientsForConversation</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">clients<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-948225388%2FFunctions%2F-688325495" anchor-label="setEpochInfo" id="-948225388%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-epoch-info.html"><span>set</span><wbr><span>Epoch</span><wbr><span><span>Info</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-948225388%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-epoch-info.html"><span class="token function">setEpochInfo</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">epoch<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">clientsJson<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">keyBase64<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="459529644%2FFunctions%2F-688325495" anchor-label="setMute" id="459529644%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-mute.html"><span>set</span><wbr><span><span>Mute</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="459529644%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-mute.html"><span class="token function">setMute</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">muted<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-787913967%2FFunctions%2F-688325495" anchor-label="setNetworkQualityInterval" id="-787913967%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-network-quality-interval.html"><span>set</span><wbr><span>Network</span><wbr><span>Quality</span><wbr><span><span>Interval</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-787913967%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-network-quality-interval.html"><span class="token function">setNetworkQualityInterval</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">callbacks<span class="token operator">: </span><a href="-callbacks/index.html">AppleAvsInterop.Callbacks</a><span class="token punctuation">, </span></span><span class="parameter ">intervalInSeconds<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="653692309%2FFunctions%2F-688325495" anchor-label="setVideoSendState" id="653692309%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-video-send-state.html"><span>set</span><wbr><span>Video</span><wbr><span>Send</span><wbr><span><span>State</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="653692309%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-video-send-state.html"><span class="token function">setVideoSendState</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">state<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1291217140%2FFunctions%2F-688325495" anchor-label="startCall" id="-1291217140%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="start-call.html"><span>start</span><wbr><span><span>Call</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1291217140%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="start-call.html"><span class="token function">startCall</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">conversationId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">callType<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">conversationType<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">audioCbr<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1241156933%2FFunctions%2F-688325495" anchor-label="startIfAvailable" id="-1241156933%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="start-if-available.html"><span>start</span><wbr><span>If</span><wbr><span><span>Available</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1241156933%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="start-if-available.html"><span class="token function">startIfAvailable</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="929626154%2FFunctions%2F-688325495" anchor-label="updateConfig" id="929626154%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="update-config.html"><span>update</span><wbr><span><span>Config</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="929626154%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="update-config.html"><span class="token function">updateConfig</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">handle<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">error<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">json<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-64612080%2FFunctions%2F-688325495" anchor-label="userHandle" id="-64612080%2FFunctions%2F-688325495" data-filterable-set=":logic:dokkaHtmlPartial/appleMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="user-handle.html"><span>user</span><wbr><span><span>Handle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-64612080%2FFunctions%2F-688325495"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button></div>
+<div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">fun </span><a href="user-handle.html"><span class="token function">userHandle</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">selfUserId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">selfClientId<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">, </span></span><span class="parameter ">callbacks<span class="token operator">: </span><a href="-callbacks/index.html">AppleAvsInterop.Callbacks</a></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">?</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2026 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
