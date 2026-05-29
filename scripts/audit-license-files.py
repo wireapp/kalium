@@ -33,7 +33,10 @@ import sys
 # false positives like "JLicenseManager.kt" out — a false positive here
 # would silently drop a notice from the customer report, which is worse
 # than over-reporting misses.
-LICENSE_FILE_PREFIXES = ("license", "licence", "notice", "copying", "unlicense")
+LICENSE_FILE_PREFIXES = ("license", "licence", "notice", "copying", "unlicense", "copyright", "attribution", 
+                         "legal", "third-party-notice", "third_party_notice", "third-party-license",
+                         "third_party_license", "AL20", "AL2", "apache", "MIT", "GPL", "LGPL", "BSD", 
+                         "MPL", "CDDL", "EPL", "EULA")
 
 
 def is_license_file(name):
