@@ -34,6 +34,7 @@ cd "$(dirname "$0")/.."
 
 ARTIFACTS_DIR="build/sbom/artifacts"
 OUTPUT_DIR="build/sbom"
+SBOM_REQUIREMENTS_FILE="scripts/sbom-requirements.txt"
 SCANCODE_PROCESSES="${SCANCODE_PROCESSES:-8}"
 SBOM_GRADLE_EXTRA_ARGS="${SBOM_GRADLE_EXTRA_ARGS:-}"
 SKIP_EXTRACT=false
@@ -117,13 +118,16 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     export PKG_CONFIG_PATH="$BREW_PREFIX/opt/icu4c/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 fi
 
-if ! command -v scancode >/dev/null 2>&1; then
-    echo "  Installing scancode-toolkit..."
-    pip install --upgrade pip setuptools wheel >/dev/null
-    pip install scancode-toolkit >/dev/null
-else
-    echo "  scancode-toolkit already installed"
+if [[ ! -f "$SBOM_REQUIREMENTS_FILE" ]]; then
+    echo "ERROR: missing $SBOM_REQUIREMENTS_FILE." >&2
+    exit 1
 fi
+
+# Always reconcile the venv to the pinned SBOM toolchain so CI and developer
+# machines use the same ScanCode stack even when .venv already exists.
+echo "  Installing pinned SBOM Python toolchain from $SBOM_REQUIREMENTS_FILE..."
+python -m pip install --upgrade "pip==26.0.1" >/dev/null
+python -m pip install --upgrade --requirement "$SBOM_REQUIREMENTS_FILE" >/dev/null
 
 require_cmd extractcode "Install ScanCode-Toolkit."
 require_cmd scancode "Install ScanCode-Toolkit."
