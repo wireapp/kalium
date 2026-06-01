@@ -27,7 +27,7 @@ import kotlinx.datetime.Instant
  * Syncs the visibility of a thread item and adjusts the thread's visible reply count
  * when the visibility changes.
  */
-internal fun MessageThreadsQueries.syncThreadItemVisibilityIfNeeded(
+internal suspend fun MessageThreadsQueries.syncThreadItemVisibilityIfNeeded(
     conversationId: QualifiedIDEntity,
     messageId: String,
     newVisibility: MessageEntity.Visibility,
