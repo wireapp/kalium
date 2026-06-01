@@ -445,7 +445,14 @@ WHERE conversation_id = ?
 AND visibility IN ?;
 
 countPendingByConversationIdAndVisibility:
-SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? AND status = 'PENDING';
+SELECT count(*)
+FROM MessageMainList
+INNER JOIN Message
+    ON Message.id = MessageMainList.message_id
+    AND Message.conversation_id = MessageMainList.conversation_id
+WHERE MessageMainList.conversation_id = ?
+AND MessageMainList.visibility IN ?
+AND Message.status = 'PENDING';
 
 selectOldestVisibleMessageTimestampByConversationId:
 SELECT MIN(creation_date) FROM Message WHERE conversation_id = ? AND visibility = "VISIBLE";
@@ -469,22 +476,48 @@ INNER JOIN MessageDetailsView
 ORDER BY MainPage.creation_date DESC, MainPage.message_id DESC;
 
 selectPendingByConversationIdAndVisibility:
-SELECT *
-FROM MessageDetailsView
-WHERE conversationId = :conversationId
-    AND visibility IN :visibility
-    AND status = 'PENDING'
-ORDER BY date DESC
-LIMIT :limit OFFSET :offset;
+SELECT MessageDetailsView.*
+FROM (
+    SELECT
+        MessageMainList.conversation_id,
+        MessageMainList.message_id,
+        MessageMainList.creation_date
+    FROM MessageMainList
+    INNER JOIN Message
+        ON Message.id = MessageMainList.message_id
+        AND Message.conversation_id = MessageMainList.conversation_id
+    WHERE MessageMainList.conversation_id = :conversationId
+    AND MessageMainList.visibility IN :visibility
+    AND Message.status = 'PENDING'
+    ORDER BY MessageMainList.creation_date DESC, MessageMainList.message_id DESC
+    LIMIT :limit OFFSET :offset
+) AS MainPage
+INNER JOIN MessageDetailsView
+    ON MessageDetailsView.id = MainPage.message_id
+    AND MessageDetailsView.conversationId = MainPage.conversation_id
+ORDER BY MainPage.creation_date DESC, MainPage.message_id DESC;
 
 selectNonPendingByConversationIdAndVisibility:
-SELECT *
-FROM MessageDetailsView
-WHERE conversationId = :conversationId
-    AND visibility IN :visibility
-    AND status != 'PENDING'
-ORDER BY date DESC
-LIMIT :limit OFFSET :offset;
+SELECT MessageDetailsView.*
+FROM (
+    SELECT
+        MessageMainList.conversation_id,
+        MessageMainList.message_id,
+        MessageMainList.creation_date
+    FROM MessageMainList
+    INNER JOIN Message
+        ON Message.id = MessageMainList.message_id
+        AND Message.conversation_id = MessageMainList.conversation_id
+    WHERE MessageMainList.conversation_id = :conversationId
+    AND MessageMainList.visibility IN :visibility
+    AND Message.status != 'PENDING'
+    ORDER BY MessageMainList.creation_date DESC, MessageMainList.message_id DESC
+    LIMIT :limit OFFSET :offset
+) AS MainPage
+INNER JOIN MessageDetailsView
+    ON MessageDetailsView.id = MainPage.message_id
+    AND MessageDetailsView.conversationId = MainPage.conversation_id
+ORDER BY MainPage.creation_date DESC, MainPage.message_id DESC;
 
 countBackupMessages:
 SELECT count(*) FROM Message WHERE visibility = "VISIBLE" AND self_deletion_end_date IS NULL AND content_type IN :contentType;

@@ -284,13 +284,12 @@ internal class MessageExtensionsImpl internal constructor(
         threadId: String,
         visibilities: Collection<MessageEntity.Visibility>,
         initialOffset: Long
-    ) = QueryPagingSource(
+    ) = AsyncQueryPagingSource(
         countQuery = messageThreadsQueries.countByConversationAndThreadIdAndVisibility(
             conversation_id = conversationId,
             thread_id = threadId,
             visibility = visibilities
         ),
-        transacter = messageThreadsQueries,
         context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->

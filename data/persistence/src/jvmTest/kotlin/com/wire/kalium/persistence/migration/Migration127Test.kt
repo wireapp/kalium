@@ -26,10 +26,10 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class Migration127Test {
+class Migration136Test {
 
     @Test
-    fun givenMigration127_whenExecuted_thenAllTablesAreCreated() {
+    fun givenMigration136_whenExecuted_thenAllTablesAreCreated() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         try {
             executeMigration(driver, migrationSql())
@@ -43,7 +43,7 @@ class Migration127Test {
     }
 
     @Test
-    fun givenMigration127_whenExecuted_thenAllIndexesAreCreated() {
+    fun givenMigration136_whenExecuted_thenAllIndexesAreCreated() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         try {
             executeMigration(driver, migrationSql())
@@ -57,7 +57,7 @@ class Migration127Test {
     }
 
     @Test
-    fun givenMigration127_whenExecuted_thenNoLegacyIndexesExist() {
+    fun givenMigration136_whenExecuted_thenNoLegacyIndexesExist() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         try {
             executeMigration(driver, migrationSql())
@@ -70,7 +70,7 @@ class Migration127Test {
     }
 
     @Test
-    fun givenMigration127_whenExecuted_thenThreadRootHasAllColumns() {
+    fun givenMigration136_whenExecuted_thenThreadRootHasAllColumns() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         try {
             executeMigration(driver, migrationSql())
@@ -87,7 +87,7 @@ class Migration127Test {
     }
 
     @Test
-    fun givenMigration127_whenExecuted_thenThreadItemHasVisibilityColumn() {
+    fun givenMigration136_whenExecuted_thenThreadItemHasVisibilityColumn() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         try {
             executeMigration(driver, migrationSql())
@@ -99,7 +99,7 @@ class Migration127Test {
     }
 
     @Test
-    fun givenExistingMessages_whenMigration127Executed_thenMessageMainListIsBackfilled() {
+    fun givenExistingMessages_whenMigration136Executed_thenMessageMainListIsBackfilled() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         try {
             createMinimalMessageTable(driver)
@@ -133,7 +133,7 @@ class Migration127Test {
     }
 
     @Test
-    fun givenEmptyMessageTable_whenMigration127Executed_thenMessageMainListIsEmpty() {
+    fun givenEmptyMessageTable_whenMigration136Executed_thenMessageMainListIsEmpty() {
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY)
         try {
             createMinimalMessageTable(driver)
@@ -150,7 +150,7 @@ class Migration127Test {
     // region helpers
 
     private fun migrationSql(): String {
-        val migrationFile = File("src/commonMain/db_user/migrations/127.sqm")
+        val migrationFile = File("src/commonMain/db_user/migrations/136.sqm")
         check(migrationFile.exists()) { "Migration file not found: ${migrationFile.absolutePath}" }
         return migrationFile.readText()
     }

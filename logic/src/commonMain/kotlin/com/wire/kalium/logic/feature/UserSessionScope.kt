@@ -1893,8 +1893,8 @@ public class UserSessionScope internal constructor(
             inCallReactionsRepository,
             buttonActionHandler,
             MessageCompositeEditHandlerImpl(messageRepository),
-            callingMessageHandler,
             messageThreadRepository,
+            callingMessageHandler,
             userId
         )
 
