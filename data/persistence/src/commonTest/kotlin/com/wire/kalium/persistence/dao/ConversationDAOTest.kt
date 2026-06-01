@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.dao
 
+import androidx.paging.PagingConfig
+import androidx.paging.PagingSource
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.asset.AssetDAO
@@ -27,7 +29,9 @@ import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationExtensions
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
@@ -61,6 +65,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -1566,7 +1571,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversationWithStillOngoingCall_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() = runTest {
+    fun givenConversationWithActiveCall_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() = runTest {
         val conversationEntity1 = conversationEntity1.copy(
             id = ConversationIDEntity("conversation1", "domain"),
             type = ConversationEntity.Type.GROUP,
@@ -1582,16 +1587,20 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
         userDAO.upsertUser(user1)
-        val callEntity = CallEntity(
-            conversationId = conversationEntity1.id,
-            id = "call_id",
-            status = CallEntity.Status.STILL_ONGOING,
-            callerId = "callerId",
-            conversationType = ConversationEntity.Type.GROUP,
-            type = CallEntity.Type.CONFERENCE
-        )
-        callDAO.insertCall(callEntity.copy(conversationId = conversationEntity2.id)) // but conversation 2 has ongoing call
-        conversationDAO.getAllConversationDetailsWithEvents(newActivitiesOnTop = true).first().let {
+
+        val result = conversationDAO.platformExtensions
+            .getPagerForConversationDetailsWithEventsSearch(
+                queryConfig = ConversationExtensions.QueryConfig(
+                    newActivitiesOnTop = true,
+                    activeCallConversationIds = setOf(conversationEntity2.id)
+                ),
+                pagingConfig = PagingConfig(pageSize = 20),
+            )
+            .pagingSource
+            .load(PagingSource.LoadParams.Refresh<Int>(key = null, loadSize = 20, placeholdersEnabled = false))
+
+        assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+        result.data.let {
             assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with ongoing call
             assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
         }
