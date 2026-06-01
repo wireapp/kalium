@@ -107,6 +107,31 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenConversationFlowPreviouslyObservedMissingValue_whenConversationInserted_thenGetConversationByIdShouldReadFreshValue() =
+        runTest(dispatcher) {
+            assertNull(conversationDAO.observeConversationById(conversationEntity1.id).first())
+
+            conversationDAO.insertConversation(conversationEntity1)
+
+            val result = conversationDAO.getConversationById(conversationEntity1.id)
+            assertNotNull(result)
+            assertEquals(conversationEntity1.id, result.id)
+            assertEquals(conversationEntity1.name, result.name)
+        }
+
+    @Test
+    fun givenConversationDetailsFlowPreviouslyObservedMissingValue_whenConversationInserted_thenGetConversationDetailsByIdShouldReadFreshValue() =
+        runTest(dispatcher) {
+            assertNull(conversationDAO.observeConversationDetailsById(conversationEntity1.id).first())
+
+            conversationDAO.insertConversation(conversationEntity1)
+            insertTeamUserAndMember(team, user1, conversationEntity1.id)
+
+            val result = conversationDAO.getConversationDetailsById(conversationEntity1.id)
+            assertEquals(conversationEntity1.toViewEntity(user1), result)
+        }
+
+    @Test
     fun givenListOfConversations_ThenMultipleConversationsCanBeInsertedAtOnce() = runTest(dispatcher) {
         conversationDAO.insertConversations(listOf(conversationEntity1, conversationEntity2))
         insertTeamUserAndMember(team, user1, conversationEntity1.id)
@@ -518,6 +543,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         assertNotNull(actual)
         assertEquals(expectedLastReadDate, actual.lastReadDate)
+        assertEquals(expectedLastReadDate, conversationDAO.getConversationLastReadDate(conversationEntity3.id))
     }
 
     @Test

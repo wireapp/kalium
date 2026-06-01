@@ -27,8 +27,6 @@ import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
-import com.wire.kalium.persistence.cache.FlowCache
-import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -40,7 +38,6 @@ import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -56,8 +53,6 @@ internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_D
 //       Even if they operate on the same table underneath, these DAOs can represent/do different things.
 @Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class ConversationDAOImpl internal constructor(
-    private val conversationDetailsCache: FlowCache<ConversationIDEntity, ConversationViewEntity?>,
-    private val conversationCache: FlowCache<ConversationIDEntity, ConversationEntity?>,
     private val conversationQueries: ConversationsQueries,
     private val conversationDetailsQueries: ConversationDetailsQueries,
     private val conversationDetailsWithEventsQueries: ConversationDetailsWithEventsQueries,
@@ -76,16 +71,23 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun observeConversationById(
         qualifiedID: QualifiedIDEntity
     ): Flow<ConversationEntity?> =
-        conversationCache.get(qualifiedID) {
-            conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::fromViewToModel)
-                .asFlow()
-                .mapToOneOrNull()
-                .flowOn(readDispatcher.value)
-        }
+        conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::fromViewToModel)
+            .asFlow()
+            .mapToOneOrNull()
+            .flowOn(readDispatcher.value)
 
     override suspend fun getConversationById(
         qualifiedID: QualifiedIDEntity
-    ): ConversationEntity? = observeConversationById(qualifiedID).first()
+    ): ConversationEntity? = withContext(readDispatcher.value) {
+        conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::fromViewToModel)
+            .executeAsOneOrNull()
+    }
+
+    override suspend fun getConversationLastReadDate(
+        qualifiedID: QualifiedIDEntity
+    ): Instant? = withContext(readDispatcher.value) {
+        conversationQueries.getConversationLastReadDate(qualifiedID).executeAsOneOrNull()
+    }
 
     override suspend fun getNonDeletedConversationById(
         qualifiedID: QualifiedIDEntity
@@ -95,17 +97,18 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun observeConversationDetailsById(
         conversationId: QualifiedIDEntity
-    ): Flow<ConversationViewEntity?> = conversationDetailsCache.get(conversationId) {
+    ): Flow<ConversationViewEntity?> =
         conversationDetailsQueries.selectConversationDetailsByQualifiedId(conversationId, conversationMapper::fromViewToModel)
             .asFlow()
             .mapToOneOrNull()
             .flowOn(readDispatcher.value)
-    }
 
     override suspend fun getConversationDetailsById(
         qualifiedID: QualifiedIDEntity
-    ): ConversationViewEntity? =
-        observeConversationDetailsById(qualifiedID).first()
+    ): ConversationViewEntity? = withContext(readDispatcher.value) {
+        conversationDetailsQueries.selectConversationDetailsByQualifiedId(qualifiedID, conversationMapper::fromViewToModel)
+            .executeAsOneOrNull()
+    }
 
     // endregion
 
