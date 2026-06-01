@@ -19,16 +19,7 @@
 
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.network.api.model.ErrorResponse
-import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.kaliumLogger
-import com.wire.kalium.network.tools.KtxSerializer
-import io.ktor.client.call.DoubleReceiveException
-import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.request.HttpRequestBuilder
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 
@@ -143,52 +134,3 @@ internal inline fun <T : Any> NetworkResponse<T>.onSuccess(
     fn: (NetworkResponse.Success<T>) -> Unit
 ): NetworkResponse<T> =
     this.apply { if (this is NetworkResponse.Success) fn(this) }
-
-// TODO(refactor): Remove this function completely. Currently being used in ACME, E2EI and Asset downloads.
-@Deprecated("This should not be called directly. Either wrapRequest, or use the desired ErrorResponseInterceptors as needed")
-internal suspend fun handleUnsuccessfulResponse(
-    result: HttpResponse
-): NetworkResponse.Error {
-    val status = result.status
-    val bodyText = try {
-        result.bodyAsText()
-    } catch (_: NoTransformationFoundException) {
-        // When the backend returns something that is not a JSON for whatever reason.
-        "NoTransformationFoundException"
-    } catch (_: DoubleReceiveException) {
-        // When the backend returns a JSON that cannot be parsed.
-        "DoubleReceiveException"
-    }
-
-    val errorResponse = try {
-        KtxSerializer.json.decodeFromString<ErrorResponse>(bodyText)
-    } catch (_: IllegalArgumentException) {
-        // When the backend returns something that is not a JSON for whatever reason.
-        ErrorResponse(code = status.value, label = status.description, message = bodyText)
-    }
-
-    val kException = toStatusCodeBasedKaliumException(status, result, errorResponse)
-    return NetworkResponse.Error(kException)
-}
-
-private fun toStatusCodeBasedKaliumException(
-    status: HttpStatusCode,
-    result: HttpResponse,
-    errorResponse: ErrorResponse
-): KaliumException {
-    val kException = when (status.value) {
-        HttpStatusCode.Unauthorized.value -> {
-            kaliumLogger.e("Unauthorized request, $result")
-            KaliumException.Unauthorized(status.value)
-        }
-
-        in (300..399) -> KaliumException.RedirectError(errorResponse)
-        in (400..499) -> KaliumException.InvalidRequestError(errorResponse)
-        in (500..599) -> KaliumException.ServerError(errorResponse)
-        else -> {
-            kaliumLogger.e("Server responded with unsupported status code: [$status]")
-            KaliumException.ServerError(errorResponse)
-        }
-    }
-    return kException
-}
