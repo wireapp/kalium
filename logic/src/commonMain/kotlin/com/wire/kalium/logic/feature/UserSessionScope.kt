@@ -387,6 +387,8 @@ import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.IsPreventAdminlessGroupsEnabledUseCase
+import com.wire.kalium.logic.feature.user.IsPreventAdminlessGroupsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCase
@@ -509,6 +511,7 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUn
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
+import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
@@ -2217,6 +2220,9 @@ public class UserSessionScope internal constructor(
     private val assetAuditLogConfigHandler
         get() = AssetAuditLogConfigHandler(userConfigRepository)
 
+    private val preventAdminlessGroupsConfigHandler
+        get() = PreventAdminlessGroupsConfigHandler(userConfigRepository)
+
     private val featureConfigEventReceiver: FeatureConfigEventReceiver
         get() = FeatureConfigEventReceiverImpl(
             guestRoomConfigHandler,
@@ -2232,6 +2238,7 @@ public class UserSessionScope internal constructor(
             cellsConfigHandler,
             enableUserProfileQRCodeConfigHandler,
             assetAuditLogConfigHandler,
+            preventAdminlessGroupsConfigHandler,
         )
 
     private val preKeyRepository: PreKeyRepository
@@ -2460,6 +2467,7 @@ public class UserSessionScope internal constructor(
             resetMlsConversation,
             cryptoTransactionProvider,
             client.refillKeyPackages,
+            certificateRevocationListRepository,
             userScopedLogger,
         )
     }
@@ -2525,13 +2533,13 @@ public class UserSessionScope internal constructor(
             userPropertyRepository,
             messages.messageSender,
             clientIdProvider,
+            registerMLSClientUseCase,
             e2eiRepository,
             mlsConversationRepository,
             conversationRepository,
             team.isSelfATeamMember,
             updateSupportedProtocols,
             clientRepository,
-            joinExistingMLSConversations,
             refreshUsersWithoutMetadata,
             isE2EIEnabled,
             certificateRevocationListRepository,
@@ -2602,6 +2610,10 @@ public class UserSessionScope internal constructor(
             featureConfigApi = authenticatedNetworkContainer.featureConfigApi
         )
     public val isFileSharingEnabled: IsFileSharingEnabledUseCase get() = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
+
+    public val isPreventAdminlessGroupsEnabled: IsPreventAdminlessGroupsEnabledUseCase
+        get() = IsPreventAdminlessGroupsEnabledUseCaseImpl(userConfigRepository)
+
     public val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
@@ -2691,6 +2703,7 @@ public class UserSessionScope internal constructor(
             appsFeatureHandler,
             enableUserProfileQRCodeConfigHandler,
             assetAuditLogConfigHandler,
+            preventAdminlessGroupsConfigHandler,
         )
 
     public val team: TeamScope

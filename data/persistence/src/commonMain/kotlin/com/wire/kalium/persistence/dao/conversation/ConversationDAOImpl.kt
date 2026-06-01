@@ -321,6 +321,16 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(readDispatcher.value)
     }
 
+    override suspend fun getAllConversationsWithOtherUserName(
+        selfUserId: QualifiedIDEntity
+    ): Flow<List<ConversationWithOtherUserNameEntity>> {
+        return conversationQueries
+            .selectAllConversationsWithOtherUserName(selfUserId, conversationMapper::toConversationWithOtherUserNameEntity)
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
+    }
+
     override suspend fun getAllConversationDetails(
         fromArchive: Boolean,
         filter: ConversationFilterEntity,

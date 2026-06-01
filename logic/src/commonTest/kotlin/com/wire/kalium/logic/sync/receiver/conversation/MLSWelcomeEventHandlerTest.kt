@@ -52,7 +52,7 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import io.ktor.util.encodeBase64
+import kotlin.io.encoding.Base64
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -412,7 +412,7 @@ class MLSWelcomeEventHandlerTest {
             "eventId",
             CONVERSATION_ID,
             TestUser.USER_ID,
-            WELCOME.encodeBase64(),
+            Base64.encode(WELCOME),
             timestampIso = "2022-03-30T15:36:00.000Z"
         )
         val WELCOME_BUNDLE = WelcomeBundle(MLS_GROUP_ID, null)

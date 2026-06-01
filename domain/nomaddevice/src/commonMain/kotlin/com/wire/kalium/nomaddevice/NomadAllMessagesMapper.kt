@@ -73,7 +73,7 @@ public class NomadAllMessagesMapper {
         conversationWithMessages: NomadConversationWithMessages,
         storedMessage: NomadStoredMessage,
     ): NomadMessageToInsert? {
-        val payloadBytes = runCatching { Base64.Default.decode(storedMessage.payload) }.getOrElse {
+        val payloadBytes = runCatching { Base64.decode(storedMessage.payload) }.getOrElse {
             logSkip(storedMessage, conversationWithMessages, "invalid base64 payload")
             return null
         }
@@ -156,7 +156,7 @@ public class NomadAllMessagesMapper {
         base64
             ?.takeUnless { it.isEmpty() }
             ?.let { encoded ->
-                runCatching { Base64.Default.decode(encoded) }.getOrElse {
+                runCatching { Base64.decode(encoded) }.getOrElse {
                     logSkip(storedMessage, conversation, invalidBase64Reason)
                     null
                 }

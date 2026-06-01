@@ -28,7 +28,6 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
@@ -54,8 +53,8 @@ import com.wire.kalium.logic.feature.auth.PersistSelfUserEmailUseCase
 import com.wire.kalium.logic.feature.auth.PersistSelfUserEmailUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
-import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
-import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentImpl
+import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentUseCase
+import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsProfileQRCodeEnabledUseCase
 import com.wire.kalium.logic.feature.client.IsProfileQRCodeEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUseCase
@@ -63,6 +62,7 @@ import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUse
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCase
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
+import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.mls.RecoverPendingMLSGroupJoinsUseCase
@@ -123,13 +123,13 @@ public class UserScope internal constructor(
     private val userPropertyRepository: UserPropertyRepository,
     private val messageSender: MessageSender,
     private val clientIdProvider: CurrentClientIdProvider,
+    private val registerMLSClientUseCase: RegisterMLSClientUseCase,
     private val e2EIRepository: E2EIRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val conversationRepository: ConversationRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val updateSelfUserSupportedProtocolsUseCase: UpdateSelfUserSupportedProtocolsUseCase,
     private val clientRepository: ClientRepository,
-    private val joinExistingMLSConversationsUseCase: JoinExistingMLSConversationsUseCase,
     public val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
@@ -153,6 +153,7 @@ public class UserScope internal constructor(
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     public val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
+    public val getSelfTeamId: GetSelfTeamIdUseCase get() = GetSelfTeamIdUseCaseImpl(selfTeamIdProvider)
     public val observeSelfUser: ObserveSelfUserUseCase get() = ObserveSelfUserUseCaseImpl(userRepository)
     public val observeSelfUserWithTeam: ObserveSelfUserWithTeamUseCase
         get() = ObserveSelfUserWithTeamUseCaseImpl(userRepository)
@@ -171,10 +172,11 @@ public class UserScope internal constructor(
         )
     internal val getTeamUrl: GetTeamUrlUseCase get() = teamUrlUseCase
 
-    public val finalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollment
-        get() = FinalizeMLSClientAfterE2EIEnrollmentImpl(
+    public val finalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollmentUseCase
+        get() = FinalizeMLSClientAfterE2EIEnrollmentUseCaseImpl(
             clientRepository,
-            joinExistingMLSConversationsUseCase,
+            clientIdProvider,
+            registerMLSClientUseCase,
             slowSyncRepository
         )
     public val getE2EICertificate: GetMLSClientIdentityUseCase

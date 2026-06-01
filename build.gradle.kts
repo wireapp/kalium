@@ -90,21 +90,6 @@ subprojects {
             showStandardStreams = false
         }
     }
-
-    // Configure GC for iOS Simulator ARM64 tests only
-    pluginManager.withPlugin("org.jetbrains.kotlin.multiplatform") {
-        extensions.configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension> {
-            targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>()
-                .matching { it.name == "iosSimulatorArm64" }
-                .configureEach {
-                    binaries.all {
-                        if (this is org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable) {
-                            binaryOptions["gc"] = "stwms"
-                        }
-                    }
-                }
-        }
-    }
 }
 
 // Set meaningful versions on kalium modules for SBOM traceability.
@@ -128,7 +113,7 @@ allprojects {
 
 // We only want coverage reports of actual Kalium
 // Samples and other side-projects can have their own rules
-val excludedFromCoverage = setOf("buildSrc", "monkeys", "testservice", "cli", "android")
+val excludedFromCoverage = setOf("buildSrc", "cli", "android")
 
 kover {
     useJacoco()

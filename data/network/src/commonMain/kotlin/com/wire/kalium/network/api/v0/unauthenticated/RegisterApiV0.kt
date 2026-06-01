@@ -31,7 +31,7 @@ import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -43,7 +43,7 @@ internal open class RegisterApiV0 internal constructor(
 
     private val httpClient get() = unauthenticatedNetworkClient.httpClient
 
-    private suspend fun getToken(refreshToken: String): NetworkResponse<AccessTokenDTO> = wrapKaliumResponse {
+    private suspend fun getToken(refreshToken: String): NetworkResponse<AccessTokenDTO> = wrapRequest {
         httpClient.post(PATH_ACCESS) {
             header(HttpHeaders.Cookie, "${RefreshTokenProperties.COOKIE_NAME}=$refreshToken")
         }
@@ -51,7 +51,7 @@ internal open class RegisterApiV0 internal constructor(
 
     override suspend fun register(
         param: RegisterParam
-    ): NetworkResponse<Pair<SelfUserDTO, SessionDTO>> = wrapKaliumResponse<SelfUserDTO> {
+    ): NetworkResponse<Pair<SelfUserDTO, SessionDTO>> = wrapRequest<SelfUserDTO> {
         httpClient.post(REGISTER_PATH) {
             setBody(param.toBody())
         }
@@ -76,13 +76,13 @@ internal open class RegisterApiV0 internal constructor(
 
     override suspend fun requestActivationCode(
         param: RequestActivationCodeParam
-    ): NetworkResponse<Unit> = wrapKaliumResponse {
+    ): NetworkResponse<Unit> = wrapRequest {
         httpClient.post("$ACTIVATE_PATH/$SEND_PATH") {
             setBody(param.toBody())
         }
     }
 
-    override suspend fun activate(param: ActivationParam): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun activate(param: ActivationParam): NetworkResponse<Unit> = wrapRequest {
         httpClient.post(ACTIVATE_PATH) {
             setBody(param.toBody())
         }

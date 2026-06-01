@@ -38,10 +38,10 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.authenticated.notification.conversation.MessageEventData
-import io.ktor.util.encodeBase64
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.Clock
+import kotlin.io.encoding.Base64
 
 internal class EventGenerator(
     private val selfClient: QualifiedClientID,
@@ -104,7 +104,7 @@ internal class EventGenerator(
         recipient: CryptoSessionId
     ): MessageEventData {
         return MessageEventData(
-            text = proteusContext.encrypt(message.data, recipient).encodeBase64(),
+            text = Base64.encode(proteusContext.encrypt(message.data, recipient)),
             sender = sender.cryptoClientId.value,
             recipient = recipient.cryptoClientId.value,
             encryptedExternalData = null

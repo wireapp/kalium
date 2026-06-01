@@ -26,7 +26,6 @@ import com.wire.kalium.network.api.authenticated.conversation.ConversationsDetai
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
@@ -37,7 +36,7 @@ internal open class ConversationApiV2 internal constructor(
     override suspend fun fetchConversationsListDetails(
         conversationsIds: List<ConversationId>
     ): NetworkResponse<ConversationResponseDTO> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post("$PATH_CONVERSATIONS/$PATH_CONVERSATIONS_LIST") {
                 setBody(ConversationsDetailsRequest(conversationsIds = conversationsIds))
             }

@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource.Companion.CRL_LIST_KEY
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource.Companion.CRL_FORCE_EXPIRATION_AFTER_ONE_MINUTE_KEY
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
@@ -32,8 +33,11 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verifySuspend
+import kotlinx.datetime.Clock
+import kotlinx.serialization.builtins.serializer
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -113,6 +117,45 @@ class CertificateRevocationListRepositoryTest {
     }
 
     @Test
+    fun givenForceExpirationAfterOneMinute_whenUpdatingCRLs_thenExpirationIsOverridden() = runTest {
+        val now = Clock.System.now().epochSeconds.toULong()
+        val (arrangement, crlRepository) = Arrangement()
+            .withEmptyList()
+            .withForceExpirationAfterOneMinute(true)
+            .arrange()
+
+        crlRepository.addOrUpdateCRL(DUMMY_URL, TIMESTAMP)
+
+        verifySuspend {
+            arrangement.metadataDAO.putSerializable(
+                CRL_LIST_KEY,
+                matches {
+                    val expiration = it.cRLWithExpirationList.single().expiration
+                    expiration >= now && expiration != TIMESTAMP
+                },
+                CRLUrlExpirationList.serializer()
+            )
+        }
+    }
+
+    @Test
+    fun givenStoredCRLs_whenClearingExpirationDates_thenStoredUrlsRemainWithExpiredDates() = runTest {
+        val (arrangement, crlRepository) = Arrangement()
+            .withCRLs()
+            .arrange()
+
+        crlRepository.clearCRLExpirationDates()
+
+        verifySuspend {
+            arrangement.metadataDAO.putSerializable(
+                CRL_LIST_KEY,
+                CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, 0UL))),
+                CRLUrlExpirationList.serializer()
+            )
+        }
+    }
+
+    @Test
     fun givenCRLUrlProxyRequired_whenClientDomainCRLRequested_thenProxyIsApplied() = runTest {
         val (arrangement, crlRepository) = Arrangement()
             .withClientDomainCRL()
@@ -164,6 +207,10 @@ class CertificateRevocationListRepositoryTest {
         val metadataDAO = mock<MetadataDAO>(mode = MockMode.autoUnit)
         val userConfigRepository = mock<UserConfigRepository>()
 
+        init {
+            withForceExpirationAfterOneMinute(false)
+        }
+
         fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO, userConfigRepository)
 
         fun withEmptyList() = apply {
@@ -191,6 +238,15 @@ class CertificateRevocationListRepositoryTest {
                     CRLUrlExpirationList.serializer()
                 )
             } returns CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP)))
+        }
+
+        fun withForceExpirationAfterOneMinute(enabled: Boolean) = apply {
+            everySuspend {
+                metadataDAO.getSerializable(
+                    CRL_FORCE_EXPIRATION_AFTER_ONE_MINUTE_KEY,
+                    Boolean.serializer()
+                )
+            } returns enabled
         }
 
         fun withE2EISettings(result: Either<StorageFailure, E2EISettings> = E2EI_SETTINGS.right()) = apply {
