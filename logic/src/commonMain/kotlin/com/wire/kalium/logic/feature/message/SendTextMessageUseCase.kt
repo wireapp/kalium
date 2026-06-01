@@ -111,7 +111,8 @@ public class SendTextMessageUseCase internal constructor(
                 status = Message.Status.Pending,
                 editStatus = Message.EditStatus.NotEdited,
                 expirationData = messageTimer?.let { Message.ExpirationData(it) },
-                isSelfMessage = true
+                isSelfMessage = true,
+                linkPreviews = previews
             )
             persistMessage(message).flatMap {
                 messageSender.sendMessage(message)

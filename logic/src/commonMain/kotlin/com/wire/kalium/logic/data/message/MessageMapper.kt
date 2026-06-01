@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.message.attachment.MessageAttachmentMapper
 import com.wire.kalium.logic.data.message.attachment.toModel
 import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
+import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
@@ -154,53 +155,57 @@ internal class MessageMapperImpl(
         )
     }
 
-    private fun mapRegularMessage(message: MessageEntity.Regular) = Message.Regular(
-        id = message.id,
-        content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN, selfUserId),
-        conversationId = message.conversationId.toModel(),
-        date = message.date,
-        senderUserId = message.senderUserId.toModel(),
-        senderClientId = ClientId(message.senderClientId),
-        status = message.status.toModel(message.readCount),
-        editStatus = when (val editStatus = message.editStatus) {
-            MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-            is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate)
-        },
-        expirationData = message.expireAfterMs?.let {
-            Message.ExpirationData(
-                expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                selfDeletionStatus = message.selfDeletionEndDate
-                    ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
-                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted
-            )
-        },
-        visibility = message.visibility.toModel(),
-        reactions = Message.Reactions(
-            reactions = message.reactions.reactions.mapValues { (_, reaction) ->
-                Message.ReactionData(
-                    count = reaction.count,
-                    isSelf = reaction.isSelf
+    private fun mapRegularMessage(message: MessageEntity.Regular): Message.Regular {
+        val content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN, selfUserId)
+        return Message.Regular(
+            id = message.id,
+            content = content,
+            conversationId = message.conversationId.toModel(),
+            date = message.date,
+            senderUserId = message.senderUserId.toModel(),
+            senderClientId = ClientId(message.senderClientId),
+            status = message.status.toModel(message.readCount),
+            editStatus = when (val editStatus = message.editStatus) {
+                MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
+                is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate)
+            },
+            expirationData = message.expireAfterMs?.let {
+                Message.ExpirationData(
+                    expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
+                    selfDeletionStatus = message.selfDeletionEndDate
+                        ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
+                        ?: Message.ExpirationData.SelfDeletionStatus.NotStarted
                 )
-            }
-        ),
-        senderUserName = message.senderName,
-        isSelfMessage = message.isSelfMessage,
-        expectsReadConfirmation = message.expectsReadConfirmation,
-        deliveryStatus = when (val recipientsFailure = message.deliveryStatus) {
-            is DeliveryStatusEntity.CompleteDelivery -> DeliveryStatus.CompleteDelivery
-            is DeliveryStatusEntity.PartialDelivery -> DeliveryStatus.PartialDelivery(
-                recipientsFailedWithNoClients = recipientsFailure.recipientsFailedWithNoClients.map { it.toModel() },
-                recipientsFailedDelivery = recipientsFailure.recipientsFailedDelivery.map { it.toModel() }
-            )
-        },
-        sender = message.sender?.let {
-            if (message.isSelfMessage) {
-                userMapper.fromUserDetailsEntityToSelfUser(it)
-            } else {
-                userMapper.fromUserDetailsEntityToOtherUser(it)
-            }
-        }
-    )
+            },
+            visibility = message.visibility.toModel(),
+            reactions = Message.Reactions(
+                reactions = message.reactions.reactions.mapValues { (_, reaction) ->
+                    Message.ReactionData(
+                        count = reaction.count,
+                        isSelf = reaction.isSelf
+                    )
+                }
+            ),
+            senderUserName = message.senderName,
+            isSelfMessage = message.isSelfMessage,
+            expectsReadConfirmation = message.expectsReadConfirmation,
+            deliveryStatus = when (val recipientsFailure = message.deliveryStatus) {
+                is DeliveryStatusEntity.CompleteDelivery -> DeliveryStatus.CompleteDelivery
+                is DeliveryStatusEntity.PartialDelivery -> DeliveryStatus.PartialDelivery(
+                    recipientsFailedWithNoClients = recipientsFailure.recipientsFailedWithNoClients.map { it.toModel() },
+                    recipientsFailedDelivery = recipientsFailure.recipientsFailedDelivery.map { it.toModel() }
+                )
+            },
+            sender = message.sender?.let {
+                if (message.isSelfMessage) {
+                    userMapper.fromUserDetailsEntityToSelfUser(it)
+                } else {
+                    userMapper.fromUserDetailsEntityToOtherUser(it)
+                }
+            },
+            linkPreviews = extractLinkPreviewsFromContent(content)
+        )
+    }
 
     private fun mapSystemMessage(message: MessageEntity.System) = Message.System(
         id = message.id,
@@ -632,6 +637,7 @@ internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, self
         }
         MessageContent.Text(
             value = this.messageBody,
+            linkPreviews = this.linkPreview.map { MapperProvider.linkPreviewMapper().fromDaoToModel(it) },
             mentions = this.mentions.map { it.toModel(selfUserId = selfUserId) },
             quotedMessageReference = quotedMessageId?.let {
                 MessageContent.QuoteReference(
@@ -699,6 +705,7 @@ internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, self
         }
         MessageContent.Multipart(
             value = messageBody,
+            linkPreviews = linkPreview.map { MapperProvider.linkPreviewMapper().fromDaoToModel(it) },
             mentions = mentions.map { it.toModel(selfUserId = selfUserId) },
             quotedMessageReference = quotedMessageId?.let {
                 MessageContent.QuoteReference(
@@ -714,6 +721,13 @@ internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, self
         )
     }
 }
+
+private fun extractLinkPreviewsFromContent(content: MessageContent.Regular): List<MessageLinkPreview> =
+    when (content) {
+        is MessageContent.Text -> content.linkPreviews
+        is MessageContent.Multipart -> content.linkPreviews
+        else -> emptyList()
+    }
 
 private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
     // Prioritise Invalid and Deleted over content types
