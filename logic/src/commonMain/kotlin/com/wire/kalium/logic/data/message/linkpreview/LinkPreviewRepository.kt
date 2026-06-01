@@ -20,8 +20,6 @@ package com.wire.kalium.logic.data.message.linkpreview
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import io.ktor.client.HttpClient
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.UserAgent
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
@@ -95,7 +93,7 @@ internal class LinkPreviewRepositoryImpl(
         val headStart = lowerHtml.indexOf("<head")
         val headEnd = lowerHtml.indexOf("</head>")
 
-        return if (headStart >= 0 && headEnd > headStart) {
+        return if (headStart in 0..<headEnd) {
             // Include the full <head> opening and </head> closing tags
             val adjustedStart = html.lastIndexOf('<', headStart)
             val adjustedEnd = headEnd + 7 // Include "</head>"

@@ -55,9 +55,9 @@ internal object OpenGraphScanner {
             val property = match.groupValues[1]
             val content = match.groupValues[2].unescapeHtml()
 
-            when {
-                property == "og:image" && content.isNotEmpty() -> imageUrls.add(content)
-                property in OG_KEYS && content.isNotEmpty() -> ogData[property] = content
+            when (property) {
+                "og:image" if content.isNotEmpty() -> imageUrls.add(content)
+                in OG_KEYS if content.isNotEmpty() -> ogData[property] = content
             }
         }
 
