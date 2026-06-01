@@ -521,6 +521,7 @@ object MessageMapper {
         conversationName: String?,
         reactionsJson: String,
         mentions: String,
+        linkPreviews: String,
         attachments: String?,
         quotedMessageId: String?,
         quotedSenderId: QualifiedIDEntity?,
@@ -558,6 +559,7 @@ object MessageMapper {
         } else when (contentType) {
             MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
                 messageBody = text ?: "",
+                linkPreview = messageLinkPreviewFromJsonString(linkPreviews),
                 mentions = messageMentionsFromJsonString(mentions),
                 quotedMessageId = quotedMessageId,
                 quotedMessage = quotedMessageContentType?.let {
@@ -837,6 +839,16 @@ object MessageMapper {
         }
     } ?: emptyList()
 
+    private fun messageLinkPreviewFromJsonString(linkPreviews: String?): List<MessageEntity.LinkPreview> = linkPreviews?.let {
+        try {
+            serializer.decodeFromString(it)
+        } catch (e: SerializationException) {
+            if (isDebug) throw e
+            kaliumLogger.e("messageLinkPreviewFromJsonString: Invalid JSON received", e)
+            emptyList()
+        }
+    } ?: emptyList()
+
     fun toReactionEntityFromView(messageId: String, conversationId: QualifiedIDEntity, aggregatedReactions: String?) =
         MessageReactionsEntity(
             messageId = messageId,
@@ -852,4 +864,18 @@ object MessageMapper {
                 }
             } ?: emptyList()
         )
+
+    fun toLinkPreviewEntity(
+        url: String,
+        urlOffset: Int,
+        permanentUrl: String?,
+        title: String,
+        summary: String
+    ) = MessageEntity.LinkPreview(
+        url = url,
+        urlOffset = urlOffset,
+        permanentUrl = permanentUrl ?: url,
+        title = title,
+        summary = summary
+    )
 }

@@ -112,6 +112,20 @@ IFNULL(
 ) AS mentions,
 IFNULL(
     (SELECT '[' || GROUP_CONCAT('{
+        "url":"' || url || '",
+        "urlOffset":' || url_offset || ',
+        "permanentUrl":"' || IFNULL(permanent_url,"' || url || '") || '",
+        "title":"' || title || '",
+        "summary":"' || summary || '"}') || ']'
+    FROM MessageLinkPreview
+    WHERE MessageLinkPreview.message_id = Message.id
+        AND MessageLinkPreview.conversation_id = Message.conversation_id
+    ORDER BY MessageLinkPreview.url_offset ASC
+    ),
+    '[]'
+) AS linkPreviews,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT('{
         "id":"' || asset_id || '",
         "asset_index":"' || asset_index || '",
         "mime_type":"' || asset_mime_type || '",

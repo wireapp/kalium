@@ -88,7 +88,8 @@ sealed interface Message {
         override val expirationData: ExpirationData? = null,
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false,
-        val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery
+        val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery,
+        val linkPreviews: List<com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview> = emptyList()
     ) : Sendable, Standalone {
 
         override fun toLogString(): String {

@@ -243,6 +243,9 @@ DELETE FROM Message WHERE id = ? AND conversation_id = ?;
 deleteMessageLinkPreviews:
 DELETE FROM MessageLinkPreview WHERE message_id = ? AND conversation_id = ?;
 
+selectLinkPreviewsByMessageId:
+SELECT url, url_offset, permanent_url, title, summary FROM MessageLinkPreview WHERE message_id = ? AND conversation_id = ? ORDER BY url_offset ASC;
+
 deleteMessageMentions:
 DELETE FROM MessageMention WHERE message_id = ? AND conversation_id = ?;
 
