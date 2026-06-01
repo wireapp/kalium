@@ -87,6 +87,10 @@ import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHa
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandlerImpl
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCase
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCaseImpl
+import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCase
+import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCaseImpl
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepositoryImpl
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCase
@@ -584,4 +588,23 @@ public class MessageScope internal constructor(
 
     public val updateAudioMessageNormalizedLoudnessUseCase: UpdateAudioMessageNormalizedLoudnessUseCase
         get() = UpdateAudioMessageNormalizedLoudnessUseCaseImpl(messageRepository = messageRepository)
+
+    private val linkPreviewRepository: LinkPreviewRepository by lazy {
+        LinkPreviewRepositoryImpl(
+            httpClient = io.ktor.client.HttpClient {
+                install(io.ktor.client.plugins.HttpTimeout) {
+                    requestTimeoutMillis = 10_000L
+                    socketTimeoutMillis = 20_000L
+                }
+                install(io.ktor.client.plugins.UserAgent) {
+                    agent = "Wire LinkPreview Bot"
+                }
+                followRedirects = true
+                expectSuccess = false
+            }
+        )
+    }
+
+    public val generateLinkPreview: GenerateLinkPreviewUseCase
+        get() = GenerateLinkPreviewUseCaseImpl(linkPreviewRepository)
 }
