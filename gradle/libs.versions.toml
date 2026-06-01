@@ -1,7 +1,7 @@
 [versions]
 kotlin = "2.3.20"
 ksp = "2.3.6"
-activity-compose = "1.9.0"
+activity-compose = "1.13.0"
 app-compat = "1.6.1"
 android-paging3 = "3.5.0"
 cli-kt = "3.5.0"
@@ -35,9 +35,10 @@ sqldelight = "0.0.6-2.3.2"
 sqlcipher-android = "4.13.0"
 pbandk = "0.16.0"
 turbine = "1.1.0"
-avs = "10.3.23"
+avs = "10.3.29"
+avs-kmp = "0.0.62"
 jna = "5.17.0"
-core-crypto = "9.3.3"
+core-crypto = "9.3.4"
 core-crypto-kmp = "9.3.3.1-kmp"
 desugar-jdk = "2.1.5"
 kermit = "2.1.0"
@@ -48,7 +49,7 @@ carthage = "0.0.1"
 libsodiumBindings = "0.9.5"
 protobufCodegen = "0.9.4"
 annotation = "1.9.1"
-mordant = "3.0.1"
+mordant = "3.0.2"
 apache-tika = "3.1.0"
 faker = "1.16.0"
 robolectric = "4.16.1"
@@ -60,12 +61,12 @@ postgres = "1.0.7.RELEASE"
 r2dbc = "1.0.0.RELEASE"
 slf4js = "2.0.13"
 androidx-benchmark = "1.5.0-alpha05"
-benchmark = "0.4.16"
+benchmark = "0.4.17"
 jmh = "1.37"
 jmhReport = "0.9.6"
 xerialDriver = "3.51.0.0"
 kotlinx-io = "0.9.0"
-cells-sdk = "0.1.1-alpha17"
+cells-sdk = "0.1.1-alpha17.02"
 difference = "1.1.1"
 
 [plugins]
@@ -229,6 +230,7 @@ difference-jvm = { module = "dev.andrewbailey.difference:difference-jvm", versio
 
 # avs
 avs = { module = "com.wire:avs", version.ref = "avs" }
+avsKmp = { module = "com.wire:avs-kmp", version.ref = "avs-kmp" }
 jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 
 # logging

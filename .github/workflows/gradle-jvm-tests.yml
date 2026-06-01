@@ -52,14 +52,6 @@ jobs:
         run: |
           ./gradlew :sample:samples:compileKotlinJvm
 
-      - name: Build the testservice
-        env:
-          GITHUB_USER: ${{ github.actor }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          ./gradlew :tools:testservice:compileKotlin -Djava.library.path=$LD_LIBRARY_PATH
-          ./gradlew :tools:testservice:test
-
       - name: Test with Gradle
         run: |
           ./gradlew jvmTest koverXmlReportJvmOnly -Djava.library.path=$LD_LIBRARY_PATH

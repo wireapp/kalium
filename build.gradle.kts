@@ -113,7 +113,7 @@ allprojects {
 
 // We only want coverage reports of actual Kalium
 // Samples and other side-projects can have their own rules
-val excludedFromCoverage = setOf("buildSrc", "monkeys", "testservice", "cli", "android")
+val excludedFromCoverage = setOf("buildSrc", "cli", "android")
 
 kover {
     useJacoco()
