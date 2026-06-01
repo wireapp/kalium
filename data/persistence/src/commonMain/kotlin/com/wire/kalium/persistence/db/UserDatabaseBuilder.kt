@@ -28,13 +28,11 @@ import com.wire.kalium.persistence.backup.DatabaseExporterImpl
 import com.wire.kalium.persistence.backup.DatabaseImporter
 import com.wire.kalium.persistence.backup.DatabaseImporterImpl
 import com.wire.kalium.persistence.backup.ObfuscatedCopyExporter
-import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.AppDAO
 import com.wire.kalium.persistence.dao.AppDAOImpl
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
-import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.PrekeyDAO
@@ -49,7 +47,6 @@ import com.wire.kalium.persistence.dao.UserConfigDAO
 import com.wire.kalium.persistence.dao.UserConfigDAOImpl
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDAOImpl
-import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserPrefsDAO
 import com.wire.kalium.persistence.dao.asset.AssetDAO
@@ -62,17 +59,14 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.ClientDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
-import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
 import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAOImpl
 import com.wire.kalium.persistence.dao.event.EventDAO
 import com.wire.kalium.persistence.dao.event.EventDAOImpl
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberDAOImpl
-import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -101,9 +95,6 @@ import com.wire.kalium.persistence.db.feeders.MessagesFeeder
 import com.wire.kalium.persistence.db.feeders.ReactionsFeeder
 import com.wire.kalium.persistence.db.feeders.UnreadEventsFeeder
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmInline
 
@@ -214,11 +205,9 @@ class UserDatabaseBuilder internal constructor(
 
     val readDispatcher: ReadDispatcher = ReadDispatcher(dispatcher.limitedParallelism(MAX_READ_PARALLELISM))
     val writeDispatcher: WriteDispatcher = WriteDispatcher(dispatcher.limitedParallelism(MAX_WRITE_PARALLELISM))
-    private val databaseScope = CoroutineScope(SupervisorJob() + dispatcher)
 
-    private val userCache = FlowCache<UserIDEntity, UserDetailsEntity?>(databaseScope)
     val userDAO: UserDAO
-        get() = UserDAOImpl(database.usersQueries, userCache, readDispatcher, writeDispatcher)
+        get() = UserDAOImpl(database.usersQueries, readDispatcher, writeDispatcher)
 
     val messageMetaDataDAO: MessageMetadataDAO
         get() = MessageMetadataDAOImpl(database.messageMetadataQueries, readDispatcher)
@@ -242,15 +231,8 @@ class UserDatabaseBuilder internal constructor(
             writeDispatcher,
         )
 
-    private val conversationDetailsCache =
-        FlowCache<ConversationIDEntity, ConversationViewEntity?>(databaseScope)
-
-    private val conversationCache =
-        FlowCache<ConversationIDEntity, ConversationEntity?>(databaseScope)
     val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(
-            conversationDetailsCache,
-            conversationCache,
             database.conversationsQueries,
             database.conversationDetailsQueries,
             database.conversationDetailsWithEventsQueries,
@@ -267,9 +249,6 @@ class UserDatabaseBuilder internal constructor(
             writeDispatcher,
         )
 
-    private val conversationMembersCache =
-        FlowCache<ConversationIDEntity, List<MemberEntity>>(databaseScope)
-
     val appDAO: AppDAO
         get() = AppDAOImpl(
             database.appsQueries,
@@ -279,7 +258,6 @@ class UserDatabaseBuilder internal constructor(
 
     val memberDAO: MemberDAO
         get() = MemberDAOImpl(
-            conversationMembersCache,
             database.membersQueries,
             database.usersQueries,
             database.conversationsQueries,
@@ -438,7 +416,6 @@ class UserDatabaseBuilder internal constructor(
      */
     fun nuke(): Boolean {
         sqlDriver.close()
-        databaseScope.cancel()
         return nuke(userId, platformDatabaseData)
     }
 

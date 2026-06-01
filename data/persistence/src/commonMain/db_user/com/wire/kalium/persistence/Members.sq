@@ -46,6 +46,24 @@ SELECT * FROM Member;
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation = :conversation;
 
+isMemberAdmin:
+SELECT EXISTS(
+    SELECT 1 FROM Member
+    WHERE conversation = :conversationId
+      AND user = :userId
+      AND role = 'wire_admin'
+);
+
+selectConversationMemberCounts:
+SELECT
+    COUNT(*) AS conversationSize,
+    COALESCE(SUM(CASE WHEN usr.user_type IN ('APP', 'SERVICE') THEN 1 ELSE 0 END), 0) AS servicesCount,
+    COALESCE(SUM(CASE WHEN usr.user_type = 'GUEST' THEN 1 ELSE 0 END), 0) AS guestsCount,
+    COALESCE(SUM(CASE WHEN usr.user_type = 'GUEST' AND usr.team IS NOT NULL THEN 1 ELSE 0 END), 0) AS guestsProCount
+FROM Member AS mem
+LEFT JOIN User AS usr ON usr.qualified_id = mem.user
+WHERE mem.conversation = :conversationId;
+
 selectConversationsByMember:
 SELECT
     Conversation.*

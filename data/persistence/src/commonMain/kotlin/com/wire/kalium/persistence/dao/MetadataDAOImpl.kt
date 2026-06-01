@@ -49,9 +49,7 @@ class MetadataDAOImpl internal constructor(
         }
     }
 
-    override suspend fun valueByKeyFlow(
-        key: String
-    ): Flow<String?> =
+    override suspend fun valueByKeyFlow(key: String): Flow<String?> =
         metadataQueries.selectValueByKey(key)
             .asFlow()
             .mapToOneOrNull()
@@ -84,8 +82,8 @@ class MetadataDAOImpl internal constructor(
         }
     }
 
-    override fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> {
-        return metadataQueries.selectValueByKey(key)
+    override fun <T> observeSerializable(key: String, kSerializer: KSerializer<T>): Flow<T?> =
+        metadataQueries.selectValueByKey(key)
             .asFlow()
             .mapToOneOrNull()
             .map { jsonString ->
@@ -95,5 +93,4 @@ class MetadataDAOImpl internal constructor(
             }
             .distinctUntilChanged()
             .flowOn(readDispatcher.value)
-    }
 }

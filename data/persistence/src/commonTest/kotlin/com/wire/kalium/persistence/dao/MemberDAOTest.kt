@@ -65,6 +65,18 @@ class MemberDAOTest : BaseDatabaseTest() {
         assertEquals(listOf(member1), memberDAO.observeConversationMembers(conversationEntity1.id).first())
     }
 
+    @Test
+    fun givenConversationMembersFlowPreviouslyObservedEmptyList_whenMemberInserted_thenGetConversationMembersShouldReadFreshMembers() = runTest(dispatcher) {
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val member1 = TestStubs.member1
+        conversationDAO.insertConversation(conversationEntity1)
+        assertEquals(emptyList(), memberDAO.observeConversationMembers(conversationEntity1.id).first())
+
+        memberDAO.insertMember(member1, conversationEntity1.id)
+
+        assertEquals(listOf(member1.user), memberDAO.getConversationMembers(conversationEntity1.id))
+    }
+
 
     @Test
     fun givenExistingConversation_ThenMemberCanBeDeleted() = runTest {
@@ -92,6 +104,43 @@ class MemberDAOTest : BaseDatabaseTest() {
         memberDAO.updateMemberRole(member1.user, conversationEntity1.id, newRole)
 
         assertEquals(expected, memberDAO.observeConversationMembers(conversationEntity1.id).first())
+    }
+
+    @Test
+    fun givenExistingConversation_whenCheckingMemberAdminRole_thenReturnsRoleSnapshot() = runTest(dispatcher) {
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val adminMember = TestStubs.member1.copy(role = MemberEntity.Role.Admin)
+        val regularMember = TestStubs.member2.copy(role = MemberEntity.Role.Member)
+        conversationDAO.insertConversation(conversationEntity1)
+        memberDAO.insertMembersWithQualifiedId(listOf(adminMember, regularMember), conversationEntity1.id)
+
+        assertTrue(memberDAO.isMemberAdmin(conversationEntity1.id, adminMember.user))
+        assertFalse(memberDAO.isMemberAdmin(conversationEntity1.id, regularMember.user))
+    }
+
+    @Test
+    fun givenExistingConversation_whenGettingMemberCounts_thenReturnsAggregateSnapshot() = runTest(dispatcher) {
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val guestUser = TestStubs.user1.copy(userType = UserTypeEntity.GUEST, team = null)
+        val guestProUser = TestStubs.user2.copy(userType = UserTypeEntity.GUEST, team = TestStubs.teamId)
+        val serviceUser = TestStubs.user3.copy(userType = UserTypeEntity.SERVICE)
+        userDAO.upsertUsers(listOf(guestUser, guestProUser, serviceUser))
+        conversationDAO.insertConversation(conversationEntity1)
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(
+                TestStubs.member1.copy(user = guestUser.id),
+                TestStubs.member2.copy(user = guestProUser.id),
+                TestStubs.member3.copy(user = serviceUser.id)
+            ),
+            conversationEntity1.id
+        )
+
+        val result = memberDAO.getConversationMemberCounts(conversationEntity1.id)
+
+        assertEquals(3, result.conversationSize)
+        assertEquals(1, result.servicesCount)
+        assertEquals(2, result.guestsCount)
+        assertEquals(1, result.guestsProCount)
     }
 
     @Test
