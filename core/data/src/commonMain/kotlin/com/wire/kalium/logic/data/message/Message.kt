@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
@@ -89,7 +90,7 @@ sealed interface Message {
         val reactions: Reactions = Reactions.EMPTY,
         val expectsReadConfirmation: Boolean = false,
         val deliveryStatus: DeliveryStatus = DeliveryStatus.CompleteDelivery,
-        val linkPreviews: List<com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview> = emptyList()
+        val linkPreviews: List<MessageLinkPreview> = emptyList()
     ) : Sendable, Standalone {
 
         override fun toLogString(): String {
