@@ -32,6 +32,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessageExtensions
 import com.wire.kalium.persistence.dao.message.MessageExtensionsImpl
 import com.wire.kalium.persistence.dao.message.MessageMapper
+import com.wire.kalium.persistence.dao.message.MessageThreadDAO
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
@@ -57,6 +58,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
     private lateinit var messageExtensions: MessageExtensions
     private lateinit var messageDAO: MessageDAO
+    private lateinit var messageThreadDAO: MessageThreadDAO
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
@@ -72,6 +74,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         val messageThreadsQueries = db.database.messageThreadsQueries
         val messageAssetViewQueries = db.database.messageAssetViewQueries
         messageDAO = db.messageDAO
+        messageThreadDAO = db.messageThreadDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
         messageExtensions = MessageExtensionsImpl(
@@ -226,6 +229,62 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenThreadReplyMessages_whenLoadingConversationPager_thenRepliesAreExcludedFromMainList() = runTest {
+        val userId = UserIDEntity("user", "domain")
+        userDAO.upsertUser(newUserEntity(qualifiedID = userId))
+        conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
+        val root = newRegularMessageEntity(
+            id = "thread-root",
+            conversationId = CONVERSATION_ID,
+            senderUserId = userId,
+            status = MessageEntity.Status.SENT,
+            content = MessageEntityContent.Text("thread root"),
+            date = Instant.fromEpochSeconds(4)
+        )
+        val sentReply = newRegularMessageEntity(
+            id = "thread-sent-reply",
+            conversationId = CONVERSATION_ID,
+            senderUserId = userId,
+            status = MessageEntity.Status.SENT,
+            content = MessageEntityContent.Text("sent reply"),
+            date = Instant.fromEpochSeconds(3)
+        )
+        val pendingReply = newRegularMessageEntity(
+            id = "thread-pending-reply",
+            conversationId = CONVERSATION_ID,
+            senderUserId = userId,
+            status = MessageEntity.Status.PENDING,
+            content = MessageEntityContent.Text("pending reply"),
+            date = Instant.fromEpochSeconds(2)
+        )
+        val mainMessage = newRegularMessageEntity(
+            id = "main-message",
+            conversationId = CONVERSATION_ID,
+            senderUserId = userId,
+            status = MessageEntity.Status.SENT,
+            content = MessageEntityContent.Text("main message"),
+            date = Instant.fromEpochSeconds(1)
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(root, sentReply, pendingReply, mainMessage))
+        messageThreadDAO.upsertThreadRoot(
+            conversationId = CONVERSATION_ID,
+            rootMessageId = root.id,
+            threadId = THREAD_ID,
+            createdAt = root.date
+        )
+        messageThreadDAO.upsertThreadItem(CONVERSATION_ID, root.id, THREAD_ID, true, root.date, root.visibility)
+        messageThreadDAO.upsertThreadItem(CONVERSATION_ID, sentReply.id, THREAD_ID, false, sentReply.date, sentReply.visibility)
+        messageThreadDAO.upsertThreadItem(CONVERSATION_ID, pendingReply.id, THREAD_ID, false, pendingReply.date, pendingReply.visibility)
+
+        val result = getPager().pagingSource.refresh()
+
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertContentEquals(listOf(root.id, mainMessage.id), result.data.map { it.id })
+        assertEquals(0, result.itemsBefore)
+        assertEquals(0, result.itemsAfter)
+    }
+
+    @Test
     fun givenInsertedMessages_whenGettingSearchedMessagesSecondPage_thenShouldContainTheCorrectItems() = runTest {
         populateMessageData(prefix = "message")
 
@@ -373,6 +432,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         const val PENDING_MESSAGE_COUNT = 25
         const val NON_PENDING_MESSAGE_COUNT = 40
         const val MIXED_MESSAGE_COUNT = PENDING_MESSAGE_COUNT + NON_PENDING_MESSAGE_COUNT
+        const val THREAD_ID = "thread-id"
         val CONVERSATION_ID = ConversationIDEntity("conversation", "domain")
     }
 }
