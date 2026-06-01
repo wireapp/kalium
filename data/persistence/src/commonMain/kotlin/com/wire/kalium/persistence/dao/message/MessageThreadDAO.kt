@@ -28,7 +28,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
@@ -78,7 +77,6 @@ private data class MessageThreadItemStateEntity(
     val creationDate: Instant,
 )
 
-@Mockable
 interface MessageThreadDAO {
     suspend fun upsertThreadRoot(
         conversationId: QualifiedIDEntity,
@@ -196,7 +194,7 @@ internal class MessageThreadDAOImpl internal constructor(
         }
     }
 
-    private fun updateThreadCountersAfterUpsert(
+    private suspend fun updateThreadCountersAfterUpsert(
         conversationId: QualifiedIDEntity,
         previous: MessageThreadItemStateEntity?,
         threadId: String,

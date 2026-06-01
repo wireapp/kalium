@@ -36,7 +36,6 @@ import com.wire.kalium.persistence.dao.message.MessageThreadDAO
 import com.wire.kalium.persistence.dao.message.GlobalThreadSummaryEntity
 import com.wire.kalium.persistence.dao.message.MessageThreadRootEntity
 import com.wire.kalium.persistence.dao.message.MessageThreadSummaryEntity
-import io.mockative.Mockable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
@@ -82,7 +81,6 @@ internal data class GlobalThreadSummary(
     val rootMessageSelfDeletionDurationMillis: Long?,
 )
 
-@Mockable
 internal interface MessageThreadRepository {
     suspend fun upsertThreadRoot(
         conversationId: ConversationId,

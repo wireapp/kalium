@@ -363,25 +363,26 @@ IFNULL(
 ) AS mentions,
 IFNULL(
     (SELECT '[' || GROUP_CONCAT('{
-        "id":"' || asset_id || '",
-        "asset_index":"' || asset_index || '",
-        "mime_type":"' || asset_mime_type || '",
-        "cell_asset":"' || cell_asset || '",
-        "asset_path":"' || IFNULL(asset_path,'') || '",
-        "asset_size":' || IFNULL(asset_size,0) || ',
-        "local_path":"' || IFNULL(local_path,'') || '",
-        "asset_width":"' || IFNULL(asset_width,0) || '",
-        "asset_height":"' || IFNULL(asset_height,0) || '",
-        "asset_transfer_status":"' || asset_transfer_status || '",
-        "asset_duration_ms":"' || IFNULL(asset_duration_ms,0) || '",
-        "content_hash":"' || IFNULL(content_hash,'') || '",
-        "content_url":"' || IFNULL(content_url,'') || '",
-        "preview_url":"' || IFNULL(preview_url,'') || '",
-        "content_url_expires_at":"' || IFNULL(content_url_expires_at,0) || '",
-        "edit_supported":"' || edit_supported || '"}') || ']'
-    FROM MessageAttachments
-    WHERE (MessageAttachments.message_id = Message.id
-        AND MessageAttachments.conversation_id = Message.conversation_id)
+        "id":"' || ma.asset_id || '",
+        "asset_index":"' || ma.asset_index || '",
+        "mime_type":"' || IFNULL(cf.assetMimeType, '') || '",
+        "cell_asset":"' || cf.cellAsset || '",
+        "asset_path":"' || IFNULL(cf.assetPath,'') || '",
+        "asset_size":' || IFNULL(cf.size,0) || ',
+        "local_path":"' || IFNULL(cf.localPath,'') || '",
+        "asset_width":"' || IFNULL(cf.assetWidth,0) || '",
+        "asset_height":"' || IFNULL(cf.assetHeight,0) || '",
+        "asset_transfer_status":"' || IFNULL(cf.assetTransferStatus, 'NOT_DOWNLOADED') || '",
+        "asset_duration_ms":"' || IFNULL(cf.assetDurationMs,0) || '",
+        "content_hash":"' || IFNULL(cf.contentHash,'') || '",
+        "content_url":"' || IFNULL(cf.contentUrl,'') || '",
+        "preview_url":"' || IFNULL(cf.previewUrl,'') || '",
+        "content_url_expires_at":"' || IFNULL(cf.contentUrlExpiresAt,0) || '",
+        "edit_supported":"' || cf.editSupported || '"}') || ']'
+    FROM MessageAttachments ma
+    JOIN CellFile cf ON cf.uuid = ma.asset_id
+    WHERE (ma.message_id = Message.id
+        AND ma.conversation_id = Message.conversation_id)
     ),
     '[]'
 ) AS attachments,
