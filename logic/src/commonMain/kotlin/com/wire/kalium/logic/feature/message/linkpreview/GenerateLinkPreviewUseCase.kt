@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message.linkpreview
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.message.linkpreview.ExclusionRanges
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
@@ -66,6 +67,9 @@ internal class GenerateLinkPreviewUseCaseImpl(
             if (ogData == null) {
                 Either.Right(null)
             } else {
+                val image = ogData.imageUrls.firstOrNull()?.let { imageUrl ->
+                    repository.fetchImage(imageUrl).getOrNull()
+                }
                 // 4. Map to MessageLinkPreview
                 val preview = MessageLinkPreview(
                     url = originalUrl,
@@ -73,7 +77,7 @@ internal class GenerateLinkPreviewUseCaseImpl(
                     permanentUrl = ogData.url,
                     title = ogData.title,
                     summary = ogData.description,
-                    image = null // MVP: skip images
+                    image = image
                 )
                 Either.Right(preview)
             }

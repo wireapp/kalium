@@ -272,11 +272,12 @@ public class SendMultipartMessageUseCase internal constructor(
                         // on upload failure we still want link previews being included without image
                         kaliumLogger.e("Upload of link preview asset failed: $failure")
                     }.getOrNull()?.let { (assetId, sha256Key) ->
+                        val persistedAssetPath = assetDataSource.fetchDecodedAsset(assetId.key).getOrNull()
                         it.assetToken = assetId.assetToken ?: ""
                         it.assetKey = assetId.key
                         it.assetDomain = assetId.domain
                         it.sha256Key = sha256Key.data
-                        it
+                        it.copy(assetDataPath = persistedAssetPath ?: it.assetDataPath)
                     }
                 }
             }

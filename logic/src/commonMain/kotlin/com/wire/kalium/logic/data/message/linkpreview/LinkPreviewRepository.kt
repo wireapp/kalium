@@ -19,10 +19,14 @@ package com.wire.kalium.logic.data.message.linkpreview
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import io.ktor.client.HttpClient
 import io.ktor.client.request.prepareGet
+import io.ktor.client.statement.bodyAsBytes
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import okio.Buffer
+import kotlin.uuid.Uuid
 
 /**
  * Repository for link preview data fetching and parsing.
@@ -43,14 +47,15 @@ internal interface LinkPreviewRepository {
      * @param imageUrl The image URL to fetch.
      * @return Either a CoreFailure or the image ByteArray.
      */
-    suspend fun fetchImage(imageUrl: String): Either<CoreFailure, ByteArray?>
+    suspend fun fetchImage(imageUrl: String): Either<CoreFailure, LinkPreviewAsset?>
 }
 
 /**
  * Default implementation of LinkPreviewRepository.
  */
 internal class LinkPreviewRepositoryImpl(
-    private val httpClient: HttpClient
+    private val httpClient: HttpClient,
+    private val kaliumFileSystem: KaliumFileSystem
 ) : LinkPreviewRepository {
     override suspend fun fetchOpenGraph(url: String, originalUrl: String): Either<CoreFailure, OpenGraphData?> {
         return try {
@@ -62,9 +67,13 @@ internal class LinkPreviewRepositoryImpl(
         }
     }
 
-    override suspend fun fetchImage(imageUrl: String): Either<CoreFailure, ByteArray?> {
-        // MVP: Return null for images; implement later with image fetching
-        return Either.Right(null)
+    override suspend fun fetchImage(imageUrl: String): Either<CoreFailure, LinkPreviewAsset?> {
+        return try {
+            val downloadedImage = fetchImageData(imageUrl) ?: return Either.Right(null)
+            Either.Right(downloadedImage.toLinkPreviewAsset(imageUrl))
+        } catch (_: Exception) {
+            Either.Right(null)
+        }
     }
 
     private suspend fun fetchHead(url: String): String? {
@@ -105,4 +114,55 @@ internal class LinkPreviewRepositoryImpl(
             html
         }
     }
+
+    private suspend fun fetchImageData(imageUrl: String): DownloadedImage? {
+        return try {
+            httpClient.prepareGet(imageUrl).execute { resp ->
+                if (resp.status.value >= 400) return@execute null
+
+                val contentType = resp.headers[HttpHeaders.ContentType].orEmpty()
+                if (!contentType.contains("image", ignoreCase = true)
+                    || contentType.contains("svg", ignoreCase = true)
+                ) {
+                    return@execute null
+                }
+
+                val bytes = resp.bodyAsBytes()
+                if (bytes.isEmpty()) return@execute null
+
+                DownloadedImage(
+                    bytes = bytes,
+                    mimeType = contentType.substringBefore(';').trim()
+                )
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private suspend fun DownloadedImage.toLinkPreviewAsset(imageUrl: String): LinkPreviewAsset? {
+        val metadata = readImageMetadata(bytes, mimeType)
+        if (metadata == null) {
+            return null
+        }
+        val tempPath = kaliumFileSystem.tempFilePath("link-preview-${Uuid.random()}")
+        val source = Buffer().write(bytes)
+        val sink = kaliumFileSystem.sink(tempPath, mustCreate = true)
+        kaliumFileSystem.writeData(sink, source)
+        val assetName = imageUrl.substringAfterLast('/').substringBefore('?').takeIf { it.isNotBlank() }
+
+        return LinkPreviewAsset(
+            mimeType = metadata.mimeType,
+            assetDataPath = tempPath,
+            assetDataSize = bytes.size.toLong(),
+            assetHeight = metadata.height,
+            assetWidth = metadata.width,
+            assetName = assetName
+        )
+    }
 }
+
+internal data class DownloadedImage(
+    val bytes: ByteArray,
+    val mimeType: String
+)

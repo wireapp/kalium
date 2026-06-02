@@ -91,6 +91,7 @@ import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseC
 import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCaseImpl
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepositoryImpl
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCase
@@ -145,6 +146,7 @@ public class MessageScope internal constructor(
     private val audioNormalizedLoudnessScheduler: AudioNormalizedLoudnessScheduler,
     private val userPropertyRepository: UserPropertyRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    private val kaliumFileSystem: KaliumFileSystem,
     private val protoContentMapper: ProtoContentMapper,
     private val observeSelfDeletingMessages: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val messageMetadataRepository: MessageMetadataRepository,
@@ -601,7 +603,8 @@ public class MessageScope internal constructor(
                 }
                 followRedirects = true
                 expectSuccess = false
-            }
+            },
+            kaliumFileSystem = kaliumFileSystem
         )
     }
 

@@ -150,7 +150,11 @@ internal class MessageInsertExtensionImpl(
                         url_offset = it.urlOffset,
                         permanent_url = it.permanentUrl,
                         summary = it.summary,
-                        title = it.title
+                        title = it.title,
+                        image_local_path = it.imageLocalPath,
+                        image_width = it.imageWidth,
+                        image_height = it.imageHeight,
+                        image_mime_type = it.imageMimeType
                     )
                 }
                 content.mentions.forEach {
@@ -340,7 +344,11 @@ internal class MessageInsertExtensionImpl(
                         url_offset = it.urlOffset,
                         permanent_url = it.permanentUrl,
                         summary = it.summary,
-                        title = it.title
+                        title = it.title,
+                        image_local_path = it.imageLocalPath,
+                        image_width = it.imageWidth,
+                        image_height = it.imageHeight,
+                        image_mime_type = it.imageMimeType
                     )
                 }
                 content.mentions.forEach {

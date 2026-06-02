@@ -85,7 +85,11 @@ INSERT INTO MessageLinkPreview
         local_db.MessageLinkPreview.url_offset,
         local_db.MessageLinkPreview.permanent_url,
         local_db.MessageLinkPreview.title,
-        local_db.MessageLinkPreview.summary
+        local_db.MessageLinkPreview.summary,
+        local_db.MessageLinkPreview.image_local_path,
+        local_db.MessageLinkPreview.image_width,
+        local_db.MessageLinkPreview.image_height,
+        local_db.MessageLinkPreview.image_mime_type
  FROM local_db.MessageLinkPreview
         LEFT JOIN selfdelete_message_id
            ON local_db.MessageLinkPreview.message_id = selfdelete_message_id.id

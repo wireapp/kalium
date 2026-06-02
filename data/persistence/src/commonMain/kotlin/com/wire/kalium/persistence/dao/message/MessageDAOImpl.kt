@@ -422,7 +422,11 @@ internal class MessageDAOImpl internal constructor(
                 url_offset = it.urlOffset,
                 permanent_url = it.permanentUrl,
                 title = it.title,
-                summary = it.summary
+                summary = it.summary,
+                image_local_path = it.imageLocalPath,
+                image_width = it.imageWidth,
+                image_height = it.imageHeight,
+                image_mime_type = it.imageMimeType
             )
         }
         newTextContent.mentions.forEach {
