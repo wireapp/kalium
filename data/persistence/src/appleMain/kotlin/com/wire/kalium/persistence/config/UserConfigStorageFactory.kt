@@ -18,6 +18,7 @@
 package com.wire.kalium.persistence.config
 
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsPlatformParam
 import com.wire.kalium.persistence.kmmSettings.KaliumPreferencesSettings
 import com.wire.kalium.persistence.kmmSettings.SettingOptions
@@ -34,14 +35,15 @@ actual class UserConfigStorageFactory actual constructor() {
      * Creates a [UserConfigStorage] instance for Apple platforms.
      * @param userId The user ID entity
      * @param shouldEncryptData Whether to encrypt the data (ignored on Apple, uses Keychain)
-     * @param platformParam Must be a [String] representing the service name for Keychain
+     * @param platformParam Must be an [ApplePersistenceConfig] supplied by the consumer via
+     *  `CoreLogic`. The `serviceName` inside it must NOT be derived from `NSHomeDirectory()`.
      */
     actual fun create(
         userId: UserIDEntity,
         shouldEncryptData: Boolean,
         platformParam: Any
     ): UserConfigStorage {
-        require(platformParam is String) { "platformParam must be a String (service name)" }
+        require(platformParam is ApplePersistenceConfig) { "platformParam must be an ApplePersistenceConfig" }
         val settings = buildSettings(
             SettingOptions.UserSettings(shouldEncryptData, userId),
             EncryptedSettingsPlatformParam(platformParam)
