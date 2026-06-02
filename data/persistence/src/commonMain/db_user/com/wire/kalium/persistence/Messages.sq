@@ -444,7 +444,14 @@ selectOldestVisibleMessageTimestampByConversationId:
 SELECT MIN(creation_date) FROM Message WHERE conversation_id = ? AND visibility = "VISIBLE";
 
 selectByConversationIdAndVisibility:
-SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
+SELECT * FROM MessageDetailsView
+WHERE conversationId = :conversationId AND id IN (
+    SELECT id FROM Message
+    WHERE conversation_id = :conversationId AND visibility IN :visibility
+    ORDER BY CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END DESC, creation_date DESC
+    LIMIT :limit OFFSET :offset
+)
+ORDER BY CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END DESC, date DESC;
 
 countBackupMessages:
 SELECT count(*) FROM Message WHERE visibility = "VISIBLE" AND self_deletion_end_date IS NULL AND content_type IN :contentType;
