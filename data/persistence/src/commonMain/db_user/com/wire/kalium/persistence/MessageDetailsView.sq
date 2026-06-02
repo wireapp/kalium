@@ -116,7 +116,11 @@ IFNULL(
         "urlOffset":' || url_offset || ',
         "permanentUrl":"' || IFNULL(permanent_url,"' || url || '") || '",
         "title":"' || title || '",
-        "summary":"' || summary || '"}') || ']'
+        "summary":"' || summary || '",
+        "imageLocalPath":"' || IFNULL(image_local_path,'') || '",
+        "imageWidth":' || IFNULL(image_width,0) || ',
+        "imageHeight":' || IFNULL(image_height,0) || ',
+        "imageMimeType":"' || IFNULL(image_mime_type,'') || '"}') || ']'
     FROM MessageLinkPreview
     WHERE MessageLinkPreview.message_id = Message.id
         AND MessageLinkPreview.conversation_id = Message.conversation_id

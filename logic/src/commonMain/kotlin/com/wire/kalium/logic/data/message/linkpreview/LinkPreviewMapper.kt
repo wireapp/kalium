@@ -22,6 +22,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LinkPreview
+import okio.Path.Companion.toPath
 import pbandk.ByteArr
 
 internal interface LinkPreviewMapper {
@@ -36,12 +37,24 @@ internal class LinkPreviewMapperImpl(
 ) : LinkPreviewMapper {
 
     override fun fromDaoToModel(linkPreview: MessageEntity.LinkPreview): MessageLinkPreview {
+        val image = linkPreview.imageLocalPath
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { localPath ->
+                LinkPreviewAsset(
+                    mimeType = linkPreview.imageMimeType ?: "*/*",
+                    assetDataPath = localPath.toPath(),
+                    assetDataSize = 0L,
+                    assetWidth = linkPreview.imageWidth ?: 0,
+                    assetHeight = linkPreview.imageHeight ?: 0,
+                )
+            }
         return MessageLinkPreview(
             url = linkPreview.url,
             urlOffset = linkPreview.urlOffset,
             permanentUrl = linkPreview.permanentUrl,
             title = linkPreview.title,
-            summary = linkPreview.summary
+            summary = linkPreview.summary,
+            image = image
         )
     }
 
@@ -51,7 +64,11 @@ internal class LinkPreviewMapperImpl(
             urlOffset = linkPreview.urlOffset,
             permanentUrl = linkPreview.permanentUrl ?: "",
             title = linkPreview.title ?: "",
-            summary = linkPreview.summary ?: ""
+            summary = linkPreview.summary ?: "",
+            imageLocalPath = linkPreview.image?.assetDataPath?.toString(),
+            imageWidth = linkPreview.image?.assetWidth,
+            imageHeight = linkPreview.image?.assetHeight,
+            imageMimeType = linkPreview.image?.mimeType,
         )
     }
 
