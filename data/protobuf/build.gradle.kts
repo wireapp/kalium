@@ -33,6 +33,7 @@ kaliumLibrary {
 val codegenProject = project(":tools:protobuf-codegen")
 val generatedFilesBaseDir = file("generated")
 generatedFilesBaseDir.mkdirs()
+val generatedFileSuppressions = """@file:Suppress("UNNECESSARY_NOT_NULL_ASSERTION")"""
 
 kotlin {
     sourceSets {
@@ -97,6 +98,16 @@ codegenProject.tasks
                     "Failed to move Generated protobuf files from '${generatedDirectory.absolutePath}' " +
                             "to destination directory '${targetDirectory.absolutePath}'"
                 }
+
+                targetDirectory
+                    .walkTopDown()
+                    .filter { it.isFile && it.extension == "kt" }
+                    .forEach { generatedFile ->
+                        val content = generatedFile.readText()
+                        if (!content.contains(generatedFileSuppressions)) {
+                            generatedFile.writeText("$generatedFileSuppressions\n$content")
+                        }
+                    }
             }
         }
     }

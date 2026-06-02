@@ -143,7 +143,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Location -> true
             is MessageContent.LegalHold -> false
             is MessageContent.MemberChange.RemovedFromTeam -> false
-            is MessageContent.MemberChange.SelfUserPromotedToAdmin -> false
+            is MessageContent.MemberChange.UserPromotedToAdmin -> true
             is MessageContent.TeamMemberRemoved -> false
             is MessageContent.DataTransfer -> false
             is MessageContent.InCallEmoji -> false
@@ -208,7 +208,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.ConversationStartedUnverifiedWarning,
             is MessageContent.LegalHold,
             is MessageContent.MemberChange.RemovedFromTeam,
-            is MessageContent.MemberChange.SelfUserPromotedToAdmin,
+            is MessageContent.MemberChange.UserPromotedToAdmin,
             is MessageContent.TeamMemberRemoved,
             is MessageContent.DataTransfer,
             is MessageContent.InCallEmoji,

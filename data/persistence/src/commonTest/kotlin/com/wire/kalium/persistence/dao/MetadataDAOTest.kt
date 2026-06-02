@@ -73,6 +73,15 @@ class MetadataDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenPreviouslyMissingKey_whenValueIsStored_thenValueByKeyReturnsStoredValue() = runTest(dispatcher) {
+        assertNull(metadataDAO.valueByKeyFlow(key1).first())
+
+        metadataDAO.insertValue(value1, key1)
+
+        assertEquals(value1, metadataDAO.valueByKey(key1))
+    }
+
+    @Test
     fun giveExistingKey_whenValueHasBeenModified_thenEmitNewValue() = runTest(dispatcher) {
         metadataDAO.insertValue(value1, key1)
         metadataDAO.valueByKeyFlow(key1).test {

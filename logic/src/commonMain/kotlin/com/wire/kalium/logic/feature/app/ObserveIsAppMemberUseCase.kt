@@ -33,7 +33,7 @@ public interface ObserveIsAppMemberUseCase {
      * @param conversationId ID of the conversation App will be seen, added or removed.
      * @return a [Flow] of [ObserveIsAppMemberResult] with Success of a Qualified ID of App in User table or NULL or an error.
      */
-    public suspend operator fun invoke(
+    public operator fun invoke(
         appId: QualifiedID,
         conversationId: ConversationId
     ): Flow<ObserveIsAppMemberResult>
@@ -43,7 +43,7 @@ internal class ObserveIsAppMemberUseCaseImpl internal constructor(
     private val appRepository: AppRepository
 ) : ObserveIsAppMemberUseCase {
 
-    override suspend fun invoke(
+    override fun invoke(
         appId: QualifiedID,
         conversationId: ConversationId
     ): Flow<ObserveIsAppMemberResult> =

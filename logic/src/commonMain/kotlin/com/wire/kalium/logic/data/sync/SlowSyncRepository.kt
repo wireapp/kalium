@@ -38,7 +38,7 @@ internal interface SlowSyncRepository {
     suspend fun needsToRecoverMLSGroups(): Boolean
     suspend fun setNeedsToPersistHistoryLostMessage(value: Boolean)
     suspend fun needsToPersistHistoryLostMessage(): Boolean
-    suspend fun observeLastSlowSyncCompletionInstant(): Flow<Instant?>
+    fun observeLastSlowSyncCompletionInstant(): Flow<Instant?>
     fun updateSlowSyncStatus(slowSyncStatus: SlowSyncStatus)
     suspend fun setSlowSyncVersion(version: Int)
     suspend fun getSlowSyncVersion(): Int?
@@ -86,7 +86,7 @@ internal class SlowSyncRepositoryImpl(
         return metadataDao.valueByKey(key = NEEDS_TO_PERSIST_HISTORY_LOST_MESSAGES_KEY).toBoolean()
     }
 
-    override suspend fun observeLastSlowSyncCompletionInstant(): Flow<Instant?> =
+    override fun observeLastSlowSyncCompletionInstant(): Flow<Instant?> =
         metadataDao.valueByKeyFlow(key = LAST_SLOW_SYNC_INSTANT_KEY)
             .map { instantString ->
                 instantString?.let { Instant.parse(it) }

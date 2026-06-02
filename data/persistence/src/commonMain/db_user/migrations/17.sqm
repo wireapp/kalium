@@ -1,6 +1,6 @@
 import kotlin.Boolean;
 
-DROP VIEW MessagePreview;
+DROP VIEW IF EXISTS MessagePreview;
 
 UPDATE Conversation
 SET muted_status = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED'

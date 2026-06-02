@@ -53,7 +53,7 @@ import kotlinx.coroutines.flow.map
 internal interface ConversationFolderRepository {
 
     suspend fun getFavoriteConversationFolder(): Either<CoreFailure, ConversationFolder>
-    suspend fun observeConversationsFromFolder(folderId: String): Flow<List<ConversationDetailsWithEvents>>
+    fun observeConversationsFromFolder(folderId: String): Flow<List<ConversationDetailsWithEvents>>
     suspend fun updateConversationFolders(folderWithConversations: List<FolderWithConversations>): Either<CoreFailure, Unit>
     suspend fun fetchConversationFolders(): Either<CoreFailure, Unit>
     suspend fun addConversationToFolder(conversationId: QualifiedID, folderId: String): Either<CoreFailure, Unit>
@@ -65,7 +65,7 @@ internal interface ConversationFolderRepository {
 
     suspend fun removeFolder(folderId: String): Either<CoreFailure, Unit>
     suspend fun syncConversationFoldersFromLocal(): Either<CoreFailure, Unit>
-    suspend fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
+    fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>>
     suspend fun addFolder(folder: ConversationFolder): Either<CoreFailure, Unit>
 }
 
@@ -85,7 +85,7 @@ internal class ConversationFolderDataSource internal constructor(
         conversationFolderDAO.getFavoriteConversationFolder()?.toModel()
     }
 
-    override suspend fun observeConversationsFromFolder(folderId: String): Flow<List<ConversationDetailsWithEvents>> =
+    override fun observeConversationsFromFolder(folderId: String): Flow<List<ConversationDetailsWithEvents>> =
         conversationFolderDAO.observeConversationListFromFolder(folderId).map { conversationDetailsWithEventsEntityList ->
             conversationDetailsWithEventsEntityList.map {
                 conversationMapper.fromDaoModelToDetailsWithEvents(it)
@@ -181,7 +181,7 @@ internal class ConversationFolderDataSource internal constructor(
             }
     }
 
-    override suspend fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>> {
+    override fun observeFolders(): Flow<Either<CoreFailure, List<ConversationFolder>>> {
         return conversationFolderDAO.observeFolders()
             .wrapStorageRequest()
             .mapRight { folderEntities -> folderEntities.map { it.toModel() } }

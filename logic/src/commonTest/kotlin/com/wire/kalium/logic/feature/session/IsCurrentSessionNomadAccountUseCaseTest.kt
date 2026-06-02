@@ -108,7 +108,7 @@ internal class IsCurrentSessionNomadAccountUseCaseTest {
         }
 
         suspend fun withFullAccountInfo(userId: UserId, result: Either<StorageFailure, Account>) = apply {
-            every { sessionRepository.fullAccountInfo(eq(userId)) } returns result
+            everySuspend { sessionRepository.fullAccountInfo(eq(userId)) } returns result
         }
 
         fun arrange() = this to useCase

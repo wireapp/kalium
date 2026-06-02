@@ -28,7 +28,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventResponseToSto
 import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.Hardcoded.NOTIFICATIONS_4O4_ERROR
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.CLIENT_QUERY_KEY
@@ -46,7 +46,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.deleteSensitiveItemsFromJson
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setWSSUrl
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.http.HttpStatusCode
@@ -71,7 +71,7 @@ internal open class NotificationApiV0 internal constructor(
 
     override suspend fun mostRecentNotification(
         queryClient: String
-    ): NetworkResponse<EventResponse> = wrapKaliumResponse {
+    ): NetworkResponse<EventResponse> = wrapRequest {
         httpClient.get("$PATH_NOTIFICATIONS/$PATH_LAST") {
             parameter(CLIENT_QUERY_KEY, queryClient)
         }
@@ -99,7 +99,7 @@ internal open class NotificationApiV0 internal constructor(
         queryClient: String?,
         querySince: String?
     ): NetworkResponse<NotificationResponse> {
-        return wrapKaliumResponse({
+        return wrapRequest(customErrorInterceptor = {
             if (it.status.value != HttpStatusCode.NotFound.value) null
             else {
                 // In case of 404, we ignore the content completely and fallback to a 404 response to match API V3
@@ -206,7 +206,7 @@ internal open class NotificationApiV0 internal constructor(
     }
 
     internal object Hardcoded {
-        val NOTIFICATIONS_4O4_ERROR = ErrorResponse(
+        val NOTIFICATIONS_4O4_ERROR = GenericAPIErrorResponse(
             code = HttpStatusCode.NotFound.value,
             message = "Event or client not found",
             label = "missing_events_or_client_(hardcoded_v0_response)"

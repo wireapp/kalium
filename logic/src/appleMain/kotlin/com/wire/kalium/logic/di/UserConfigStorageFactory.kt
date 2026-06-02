@@ -34,6 +34,6 @@ internal actual class UserConfigStorageFactory actual constructor() {
     ): UserConfigStorage = persistenceFactory.create(
         userId = userId.toDao(),
         shouldEncryptData = shouldEncryptData,
-        platformParam = platformProperties.rootPath
+        platformParam = platformProperties.keychainConfig
     )
 }

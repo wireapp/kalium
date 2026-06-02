@@ -37,7 +37,7 @@ internal interface ReceiptRepository {
         messageIds: List<String>
     )
 
-    suspend fun observeMessageReceipts(
+    fun observeMessageReceipts(
         conversationId: ConversationId,
         messageId: String,
         type: ReceiptType
@@ -66,7 +66,7 @@ internal class ReceiptRepositoryImpl(
         )
     }
 
-    override suspend fun observeMessageReceipts(
+    override fun observeMessageReceipts(
         conversationId: ConversationId,
         messageId: String,
         type: ReceiptType

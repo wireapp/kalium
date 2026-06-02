@@ -31,9 +31,9 @@ import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
-import com.wire.kalium.network.utils.handleUnsuccessfulResponse
+import com.wire.kalium.network.utils.interceptUnsuccessfulResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
@@ -90,7 +90,7 @@ class ACMEApiImpl internal constructor(
             )
         }
 
-        return wrapKaliumResponse {
+        return wrapRequest {
             httpClient.get("$protocolWithAuthority/$PATH_ACME_ROOTS_PEM")
         }
 
@@ -101,7 +101,7 @@ class ACMEApiImpl internal constructor(
             return NetworkResponse.Error(KaliumException.GenericError(IllegalArgumentException("getACMEDirectories: Url cannot be empty")))
         }
 
-        return wrapKaliumResponse {
+        return wrapRequest {
             httpClient.get(discoveryUrl)
         }
     }
@@ -128,7 +128,7 @@ class ACMEApiImpl internal constructor(
         } else {
             // FIXME: It doesn't make any sense to do the regular handling of unsuccessful response here,
             //        as ACME is NOT the Wire API, and doesn't follow its error response format.
-            handleUnsuccessfulResponse(httpResponse)
+            interceptUnsuccessfulResponse(httpResponse)
         }
 
     override suspend fun sendACMERequest(
@@ -159,7 +159,7 @@ class ACMEApiImpl internal constructor(
             )
         }
 
-        return wrapKaliumResponse<String> {
+        return wrapRequest<String> {
             httpClient.post(url) {
                 contentType(ContentType.Application.JoseJson)
                 setBody(body)
@@ -210,7 +210,7 @@ class ACMEApiImpl internal constructor(
         } else {
             // FIXME: It doesn't make any sense to do the regular handling of unsuccessful response here,
             //        as ACME is NOT the Wire API, and doesn't follow its error response format.
-            handleUnsuccessfulResponse(httpResponse)
+            interceptUnsuccessfulResponse(httpResponse)
         }
 
     override suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> {
@@ -222,7 +222,7 @@ class ACMEApiImpl internal constructor(
             )
         }
 
-        return wrapKaliumResponse<ChallengeResponse> {
+        return wrapRequest<ChallengeResponse> {
             httpClient.post(url) {
                 contentType(ContentType.Application.JoseJson)
                 setBody(body)
@@ -260,7 +260,7 @@ class ACMEApiImpl internal constructor(
             )
         }
 
-        return wrapKaliumResponse<FederationCertificateChainResponse> {
+        return wrapRequest<FederationCertificateChainResponse> {
             httpClient.get("$protocolWithAuthority/$PATH_ACME_FEDERATION")
         }.mapSuccess { it.certificates }
     }
@@ -274,7 +274,7 @@ class ACMEApiImpl internal constructor(
             )
         }
 
-        return wrapKaliumResponse {
+        return wrapRequest {
             val crlUrlBuilder: URLBuilder = URLBuilder(url)
             val proxyUrlBuilder: URLBuilder? = if (proxyUrl.isNullOrEmpty()) null else URLBuilder(proxyUrl)
 

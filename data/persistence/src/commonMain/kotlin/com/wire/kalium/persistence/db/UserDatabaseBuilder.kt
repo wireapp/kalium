@@ -106,7 +106,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -210,8 +209,18 @@ class UserDatabaseBuilder internal constructor(
     )
 
     init {
-        database.databasePropertiesQueries.insertSelfUserId(userId)
-        database.databasePropertiesQueries.enableForeignKeyContraints()
+        sqlDriver.execute(
+            identifier = null,
+            sql = "INSERT OR IGNORE INTO SelfUser(id) VALUES(?);",
+            parameters = 1
+        ) {
+            bindString(0, userId.toString())
+        }
+        sqlDriver.execute(
+            identifier = null,
+            sql = "PRAGMA foreign_keys = 1;",
+            parameters = 0,
+        )
     }
 
     val readDispatcher: ReadDispatcher = ReadDispatcher(dispatcher.limitedParallelism(MAX_READ_PARALLELISM))
@@ -289,12 +298,9 @@ class UserDatabaseBuilder internal constructor(
             writeDispatcher,
         )
 
-    private val metadataCache = FlowCache<String, String?>(databaseScope)
     val metadataDAO: MetadataDAO
         get() = MetadataDAOImpl(
             database.metadataQueries,
-            metadataCache,
-            databaseScope,
             writeDispatcher,
             readDispatcher,
         )
@@ -470,40 +476,9 @@ internal expect fun createEmptyDatabaseFile(
     userId: UserIDEntity,
 ): String?
 
-@Suppress("TooGenericExceptionCaught")
-fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
-    val oldVersion = this.executeQuery(null, "PRAGMA user_version;", {
-        it.next()
-        it.getLong(0).let { QueryResult.Value<Long?>(it) }
-    }, 0).value ?: return false
-
-    val newVersion = sqlSchema.version
-    return try {
-        if (oldVersion != newVersion) {
-            sqlSchema.migrate(this, oldVersion, newVersion)
-        }
-        true
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        false
-    }
-}
+expect suspend fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.AsyncValue<Unit>>): Boolean
 
 /**
  * @return true if the database have fk violations, false otherwise
  */
-fun SqlDriver.checkFKViolations(): Boolean {
-    var result = false
-    executeQuery(null, "PRAGMA foreign_key_check;", {
-        // foreign_key_check returns the rows with the fk violations
-        // if the cursor has a next, it means there are violations
-        // and the backup is corrupted
-        if (it.next().value) {
-            result = true
-        }
-        QueryResult.Unit
-    }, 0, null)
-
-    return result
-}
+expect suspend fun SqlDriver.checkFKViolations(): Boolean

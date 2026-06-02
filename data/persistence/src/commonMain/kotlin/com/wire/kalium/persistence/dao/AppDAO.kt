@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.App
@@ -73,13 +74,13 @@ interface AppDAO {
     suspend fun insert(appEntity: AppEntity)
     suspend fun upsertApps(apps: List<AppEntity>)
     suspend fun byId(id: QualifiedIDEntity): AppEntity?
-    suspend fun observeIsAppMember(
+    fun observeIsAppMember(
         appId: QualifiedIDEntity,
         conversationId: ConversationIDEntity
     ): Flow<QualifiedIDEntity?>
 
-    suspend fun observeAllApps(): Flow<List<AppEntity>>
-    suspend fun searchAppsByName(query: String): Flow<List<AppEntity>>
+    fun observeAllApps(): Flow<List<AppEntity>>
+    fun searchAppsByName(query: String): Flow<List<AppEntity>>
 }
 
 internal class AppDAOImpl(
@@ -118,7 +119,7 @@ internal class AppDAOImpl(
     }
 
     override suspend fun byId(id: QualifiedIDEntity): AppEntity? = withContext(readDispatcher.value) {
-        appsQueries.byId(id = id, mapper = ::mapToAppEntity).executeAsOneOrNull()
+        appsQueries.byId(id = id, mapper = ::mapToAppEntity).awaitAsOneOrNull()
     }
 
     /**
@@ -134,7 +135,7 @@ internal class AppDAOImpl(
      *
      *  Can be refactored to a boolean check (isMember) in the future once old bots/services dependencies are removed.
      */
-    override suspend fun observeIsAppMember(
+    override fun observeIsAppMember(
         appId: QualifiedIDEntity,
         conversationId: ConversationIDEntity
     ): Flow<QualifiedIDEntity?> =
@@ -143,14 +144,14 @@ internal class AppDAOImpl(
             .mapToOneOrNull(readDispatcher.value)
             .flowOn(readDispatcher.value)
 
-    override suspend fun observeAllApps(): Flow<List<AppEntity>> =
+    override fun observeAllApps(): Flow<List<AppEntity>> =
         appsQueries.getAll()
             .asFlow()
             .mapToList()
             .map { it.map(::mapAppToAppEntity) }
             .flowOn(readDispatcher.value)
 
-    override suspend fun searchAppsByName(query: String): Flow<List<AppEntity>> =
+    override fun searchAppsByName(query: String): Flow<List<AppEntity>> =
         appsQueries.searchByName(query)
             .asFlow()
             .mapToList()

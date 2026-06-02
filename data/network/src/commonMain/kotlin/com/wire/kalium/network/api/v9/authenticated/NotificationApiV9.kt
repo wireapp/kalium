@@ -35,7 +35,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.deleteSensitiveItemsFromJson
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setWSSUrl
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.websocket.Frame
@@ -105,7 +105,7 @@ internal open class NotificationApiV9 internal constructor(
             }
         }
 
-    private suspend fun cookies(): NetworkResponse<Unit> = wrapKaliumResponse {
+    private suspend fun cookies(): NetworkResponse<Unit> = wrapRequest {
         authenticatedNetworkClient.httpClient.get("/cookies")
     }
 

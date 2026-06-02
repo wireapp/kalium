@@ -27,7 +27,7 @@ import com.wire.kalium.network.api.model.ApiModelMapperImpl
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 
 internal open class ConversationApiV6 internal constructor(
@@ -35,7 +35,7 @@ internal open class ConversationApiV6 internal constructor(
     private val apiModelMapper: ApiModelMapper = ApiModelMapperImpl()
 ) : ConversationApiV5(authenticatedNetworkClient) {
     override suspend fun fetchMlsOneToOneConversation(userId: UserId): NetworkResponse<ConversationResponse> =
-        wrapKaliumResponse<ConversationResponseV6> {
+        wrapRequest<ConversationResponseV6> {
             httpClient.get("$PATH_CONVERSATIONS/$PATH_ONE_TO_ONE/${userId.domain}/${userId.value}")
         }.mapSuccess {
             apiModelMapper.fromApiV6(it)

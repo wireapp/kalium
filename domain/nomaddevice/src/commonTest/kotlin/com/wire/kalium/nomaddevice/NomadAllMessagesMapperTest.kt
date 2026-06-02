@@ -181,7 +181,7 @@ class NomadAllMessagesMapperTest {
         return NomadStoredMessage(
             messageId = messageId,
             timestamp = timestamp,
-            payload = Base64.Default.encode(payload.encodeToByteArray())
+            payload = Base64.encode(payload.encodeToByteArray())
         )
     }
 

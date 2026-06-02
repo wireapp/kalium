@@ -56,7 +56,7 @@ internal interface CustomServerConfigRepository {
     /**
      * @return the list of [ServerConfigWithUserId] that were checked "if app needs to be updated" after the date
      */
-    suspend fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>>
+    fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>>
 
     /**
      * updates lastBlackListCheckDate for the Set of configIds
@@ -102,7 +102,7 @@ internal class CustomServerConfigDataSource internal constructor(
     override suspend fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig> =
         storeServerLinksAndMetadata(links, metadata)
 
-    override suspend fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>> =
+    override fun getServerConfigsWithUserIdAfterTheDate(date: String): Either<StorageFailure, Flow<List<ServerConfigWithUserId>>> =
         wrapStorageRequest { serverConfigurationDAO.getServerConfigsWithAccIdWithLastCheckBeforeDate(date) }
             .map { it.map { list -> list.map(serverConfigMapper::fromEntity) } }
 

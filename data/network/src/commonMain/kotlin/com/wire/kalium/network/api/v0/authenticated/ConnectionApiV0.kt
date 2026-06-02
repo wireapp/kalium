@@ -27,7 +27,7 @@ import com.wire.kalium.network.api.authenticated.connection.UpdateConnectionRequ
 import com.wire.kalium.network.api.model.PaginationRequest
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
@@ -39,25 +39,25 @@ internal open class ConnectionApiV0 internal constructor(private val authenticat
     protected val httpClient get() = authenticatedNetworkClient.httpClient
 
     override suspend fun fetchSelfUserConnections(pagingState: String?): NetworkResponse<ConnectionResponse> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post(PATH_CONNECTIONS) {
                 setBody(PaginationRequest(pagingState = pagingState, size = MAX_CONNECTIONS_COUNT))
             }
         }
 
     override suspend fun createConnection(userId: UserId): NetworkResponse<ConnectionDTO> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}")
         }
 
     override suspend fun updateConnection(userId: UserId, connectionStatus: ConnectionStateDTO): NetworkResponse<ConnectionDTO> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.put("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}") {
                 setBody(UpdateConnectionRequest(connectionStatus))
             }
         }
 
-    override suspend fun userConnectionInfo(userId: UserId): NetworkResponse<ConnectionDTO> = wrapKaliumResponse {
+    override suspend fun userConnectionInfo(userId: UserId): NetworkResponse<ConnectionDTO> = wrapRequest {
         httpClient.get("$PATH_CONNECTIONS_ENDPOINTS/${userId.domain}/${userId.value}")
     }
 

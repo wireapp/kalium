@@ -38,7 +38,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import io.ktor.util.encodeBase64
+import kotlin.io.encoding.Base64
 import kotlinx.datetime.Instant
 
 internal object TestEvent {
@@ -208,7 +208,7 @@ internal object TestEvent {
         subConversationId,
         TestUser.USER_ID,
         dateTime,
-        "content".encodeBase64(),
+        Base64.encode("content".encodeToByteArray()),
     )
 
     fun newConversationEvent() = Event.Conversation.NewConversation(

@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.async.coroutines.await
+import com.wire.kalium.persistence.GlobalDatabase
 import kotlinx.coroutines.CoroutineDispatcher
 
 actual fun globalDatabaseProvider(
@@ -26,9 +28,23 @@ actual fun globalDatabaseProvider(
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean
 ): GlobalDatabaseBuilder {
-    TODO("Not yet implemented")
+    val rawDriver = createKaliumWebWorkerDriver()
+    val initializedDriver = SchemaInitializingSqlDriver(rawDriver) {
+        GlobalDatabase.Schema.create(rawDriver).await()
+        rawDriver.execute(
+            identifier = null,
+            sql = "PRAGMA foreign_keys = 1;",
+            parameters = 0,
+        ).await()
+    }
+    return GlobalDatabaseBuilder(
+        sqlDriver = initializedDriver,
+        platformDatabaseData = platformDatabaseData,
+        queriesContext = queriesContext
+    )
 }
 
 actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
-    TODO("Not yet implemented")
+    // TODO: Implement real JS global database deletion once the worker driver uses a stable persisted storage key.
+    return true
 }

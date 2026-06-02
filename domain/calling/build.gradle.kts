@@ -65,6 +65,11 @@ kotlin {
                 implementation(libs.jna)
             }
         }
+        val appleMain by getting {
+            dependencies {
+                api(libs.avsKmp)
+            }
+        }
 
         val commonTest by getting {
             dependencies { }

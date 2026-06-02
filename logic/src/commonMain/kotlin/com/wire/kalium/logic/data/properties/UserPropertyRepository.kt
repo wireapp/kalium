@@ -39,14 +39,14 @@ import kotlinx.serialization.json.intOrNull
 
 internal interface ReadReceiptsPropertyRepository {
     suspend fun getReadReceiptsStatus(): Boolean
-    suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>>
+    fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>>
     suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit>
     suspend fun deleteReadReceiptsProperty(): Either<CoreFailure, Unit>
 }
 
 internal interface TypingIndicatorPropertyRepository {
     suspend fun getTypingIndicatorStatus(): Boolean
-    suspend fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>>
+    fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>>
     suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit>
     suspend fun removeTypingIndicatorProperty(): Either<CoreFailure, Unit>
 }
@@ -94,7 +94,7 @@ internal class ReadReceiptsPropertyDataSource(
             .firstOrNull()
             ?.fold({ false }, { it }) ?: false
 
-    override suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>> = userConfigRepository.isReadReceiptsEnabled()
+    override fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>> = userConfigRepository.isReadReceiptsEnabled()
 
     override suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
         propertiesApi.setProperty(PropertyKey.WIRE_RECEIPT_MODE, 1)
@@ -119,7 +119,7 @@ internal class TypingIndicatorPropertyDataSource(
             .firstOrNull()
             ?.fold({ false }, { it }) ?: true
 
-    override suspend fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>> =
+    override fun observeTypingIndicatorStatus(): Flow<Either<CoreFailure, Boolean>> =
         userConfigRepository.isTypingIndicatorEnabled()
 
     override suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {

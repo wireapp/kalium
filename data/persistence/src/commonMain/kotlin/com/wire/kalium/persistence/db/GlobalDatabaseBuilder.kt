@@ -62,7 +62,11 @@ class GlobalDatabaseBuilder internal constructor(
     )
 
     init {
-        database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
+        sqlDriver.execute(
+            identifier = null,
+            sql = "PRAGMA foreign_keys = 1;",
+            parameters = 0,
+        )
     }
 
     val serverConfigurationDAO: ServerConfigurationDAO
