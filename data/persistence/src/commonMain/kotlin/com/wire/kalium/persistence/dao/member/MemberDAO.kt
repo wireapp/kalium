@@ -62,7 +62,7 @@ interface MemberDAO {
         conversationID: QualifiedIDEntity
     )
 
-    suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
+    fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
 
     suspend fun getGroupConversationWithUserIdsWithBothDomains(
@@ -189,7 +189,7 @@ internal class MemberDAOImpl internal constructor(
         }
     }
 
-    override suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean> =
+    override fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean> =
         memberQueries.isUserMember(conversationId, userId)
             .asFlow()
             .mapToOneOrNull()

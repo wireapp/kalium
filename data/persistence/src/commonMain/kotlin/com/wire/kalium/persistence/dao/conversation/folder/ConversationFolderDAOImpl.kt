@@ -43,7 +43,7 @@ class ConversationFolderDAOImpl internal constructor(
 ) : ConversationFolderDAO {
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
 
-    override suspend fun observeFolders(): Flow<List<ConversationFolderEntity>> {
+    override fun observeFolders(): Flow<List<ConversationFolderEntity>> {
         return conversationFoldersQueries.getFolders()
             .asFlow()
             .mapToList()
@@ -98,7 +98,7 @@ class ConversationFolderDAOImpl internal constructor(
         type = row.folder_type
     )
 
-    override suspend fun observeConversationListFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>> {
+    override fun observeConversationListFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationFoldersQueries.getConversationsFromFolder(
             folderId,
             conversationDetailsWithEventsMapper::fromViewToModel

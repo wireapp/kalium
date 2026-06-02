@@ -82,7 +82,7 @@ class AssetDAOImpl internal constructor(
         }
     }
 
-    override suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?> {
+    override fun getAssetByKey(assetKey: String): Flow<AssetEntity?> {
         return queries.selectByKey(assetKey, mapper::fromAssets)
             .asFlow()
             .mapToOneOrNull()

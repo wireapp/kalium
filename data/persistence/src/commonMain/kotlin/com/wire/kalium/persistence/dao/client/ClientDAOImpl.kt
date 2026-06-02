@@ -165,7 +165,7 @@ internal class ClientDAOImpl internal constructor(
         }
     }
 
-    override suspend fun observeClient(userId: QualifiedIDEntity, clientId: String): Flow<Client?> =
+    override fun observeClient(userId: QualifiedIDEntity, clientId: String): Flow<Client?> =
         clientsQueries.selectByUserAndClientId(userId, clientId, mapper::fromClient)
             .asFlow()
             .mapToOneNotNull()
@@ -192,7 +192,7 @@ internal class ClientDAOImpl internal constructor(
             .awaitAsOneOrNull()
     }
 
-    override suspend fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
+    override fun getClientsOfUserByQualifiedIDFlow(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper::fromClient)
             .asFlow()
             .mapToList()
@@ -203,12 +203,11 @@ internal class ClientDAOImpl internal constructor(
             .awaitAsList()
     }
 
-    override suspend fun observeClientsByUserId(qualifiedID: QualifiedIDEntity): Flow<List<Client>> = withContext(readDispatcher.value) {
+    override fun observeClientsByUserId(qualifiedID: QualifiedIDEntity): Flow<List<Client>> =
         clientsQueries.selectAllClientsByUserId(qualifiedID, mapper = mapper::fromClient)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
-    }
 
     override suspend fun getClientsOfUsersByQualifiedIDs(
         ids: List<QualifiedIDEntity>

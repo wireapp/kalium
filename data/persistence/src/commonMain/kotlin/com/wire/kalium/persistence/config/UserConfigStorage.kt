@@ -165,7 +165,7 @@ interface UserConfigStorage {
     /**
      * Get a flow of saved flag to know if conference calling is enabled or not
      */
-    suspend fun isConferenceCallingEnabledFlow(): Flow<Boolean>
+    fun isConferenceCallingEnabledFlow(): Flow<Boolean>
 
     suspend fun persistUseSftForOneOnOneCalls(shouldUse: Boolean)
 
@@ -174,7 +174,7 @@ interface UserConfigStorage {
     /**
      * Get the saved flag to know whether user's Read Receipts are currently enabled or not
      */
-    suspend fun areReadReceiptsEnabled(): Flow<Boolean>
+    fun areReadReceiptsEnabled(): Flow<Boolean>
 
     /**
      * Persist the flag to indicate if user's Read Receipts are enabled or not.
@@ -184,7 +184,7 @@ interface UserConfigStorage {
     /**
      * Get the saved global flag to know whether user's typing indicator is currently enabled or not.
      */
-    suspend fun isTypingIndicatorEnabled(): Flow<Boolean>
+    fun isTypingIndicatorEnabled(): Flow<Boolean>
 
     /**
      * Persist the flag to indicate whether user's typing indicator global flag is enabled or not.
@@ -194,11 +194,11 @@ interface UserConfigStorage {
     suspend fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?)
     suspend fun isGuestRoomLinkEnabled(): IsGuestRoomLinkEnabledEntity?
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
-    suspend fun isScreenshotCensoringEnabledFlow(): Flow<Boolean>
+    fun isScreenshotCensoringEnabledFlow(): Flow<Boolean>
     suspend fun persistScreenshotCensoring(enabled: Boolean)
     suspend fun setIfAbsentE2EINotificationTime(timeStamp: Long)
     suspend fun getE2EINotificationTime(): Long?
-    suspend fun e2EINotificationTimeFlow(): Flow<Long?>
+    fun e2EINotificationTimeFlow(): Flow<Long?>
     suspend fun updateE2EINotificationTime(timeStamp: Long)
 
     enum class UserPreferences(val key: String) {
@@ -548,7 +548,7 @@ class UserConfigStorageImpl constructor(
         return kaliumPreferences.getLong(E2EI_NOTIFICATION_TIME.key)
     }
 
-    override suspend fun e2EINotificationTimeFlow(): Flow<Long?> = e2EINotificationFlow
+    override fun e2EINotificationTimeFlow(): Flow<Long?> = e2EINotificationFlow
         .map { getE2EINotificationTime() }
         .onStart { emit(getE2EINotificationTime()) }
         .distinctUntilChanged()
@@ -564,7 +564,7 @@ class UserConfigStorageImpl constructor(
             DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
         )
 
-    override suspend fun isConferenceCallingEnabledFlow(): Flow<Boolean> = conferenceCallingEnabledFlow
+    override fun isConferenceCallingEnabledFlow(): Flow<Boolean> = conferenceCallingEnabledFlow
         .map { isConferenceCallingEnabled() }
         .onStart { emit(isConferenceCallingEnabled()) }
 
@@ -578,7 +578,7 @@ class UserConfigStorageImpl constructor(
             DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE
         )
 
-    override suspend fun areReadReceiptsEnabled(): Flow<Boolean> = areReadReceiptsEnabledFlow
+    override fun areReadReceiptsEnabled(): Flow<Boolean> = areReadReceiptsEnabledFlow
         .map { kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS.key, true) }
         .onStart { emit(kaliumPreferences.getBoolean(ENABLE_READ_RECEIPTS.key, true)) }
         .distinctUntilChanged()
@@ -589,7 +589,7 @@ class UserConfigStorageImpl constructor(
         }
     }
 
-    override suspend fun isTypingIndicatorEnabled(): Flow<Boolean> = isTypingIndicatorEnabledFlow
+    override fun isTypingIndicatorEnabled(): Flow<Boolean> = isTypingIndicatorEnabledFlow
         .map { kaliumPreferences.getBoolean(ENABLE_TYPING_INDICATOR.key, true) }
         .onStart { emit(kaliumPreferences.getBoolean(ENABLE_TYPING_INDICATOR.key, true)) }
         .distinctUntilChanged()
@@ -625,7 +625,7 @@ class UserConfigStorageImpl constructor(
             .onStart { emit(isGuestRoomLinkEnabled()) }
             .distinctUntilChanged()
 
-    override suspend fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> =
+    override fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> =
         isScreenshotCensoringEnabledFlow
             .map { kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING.key, false) }
             .onStart { emit(kaliumPreferences.getBoolean(ENABLE_SCREENSHOT_CENSORING.key, false)) }

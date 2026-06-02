@@ -319,14 +319,14 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun getAllConversations(): Flow<List<ConversationEntity>> {
+    override fun getAllConversations(): Flow<List<ConversationEntity>> {
         return conversationQueries.selectAllConversations(conversationMapper::fromViewToModel)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
     }
 
-    override suspend fun getAllConversationsWithOtherUserName(
+    override fun getAllConversationsWithOtherUserName(
         selfUserId: QualifiedIDEntity
     ): Flow<List<ConversationWithOtherUserNameEntity>> {
         return conversationQueries
@@ -336,7 +336,7 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(readDispatcher.value)
     }
 
-    override suspend fun getAllConversationDetails(
+    override fun getAllConversationDetails(
         fromArchive: Boolean,
         filter: ConversationFilterEntity,
         strictMLSFilter: Boolean,
@@ -353,7 +353,7 @@ internal class ConversationDAOImpl internal constructor(
             .flowOn(readDispatcher.value)
     }
 
-    override suspend fun getAllConversationDetailsWithEvents(
+    override fun getAllConversationDetailsWithEvents(
         fromArchive: Boolean,
         onlyInteractionEnabled: Boolean,
         newActivitiesOnTop: Boolean,
@@ -400,14 +400,14 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.selectOneOnOneConversationIdsByProtocol(protocol, userId).awaitAsList()
         }
 
-    override suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?> {
+    override fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?> {
         return conversationQueries.selectActiveOneOnOneConversation(userId, conversationMapper::fromViewToModel)
             .asFlow()
             .mapToOneOrNull()
             .flowOn(readDispatcher.value)
     }
 
-    override suspend fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?> {
+    override fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?> {
         return conversationDetailsQueries.selectActiveOneOnOneConversationDetails(userId, conversationMapper::fromViewToModel)
             .asFlow()
             .mapToOneOrNull()
@@ -558,7 +558,7 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>> {
+    override fun getProposalTimers(): Flow<List<ProposalTimerEntity>> {
         return conversationQueries.selectProposalTimers()
             .asFlow()
             .mapToList()
@@ -625,7 +625,7 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?> =
+    override fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?> =
         conversationQueries.getGuestRoomLinkByConversationId(conversationId).asFlow().mapToOneOrNull().map {
             it?.guest_room_link?.let { link -> ConversationGuestLinkEntity(link, it.is_guest_password_protected) }
         }.flowOn(readDispatcher.value)
@@ -655,7 +655,7 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean> =
+    override fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean> =
         conversationQueries.selectDegradedConversationNotified(conversationId)
             .asFlow()
             .mapToOneOrDefault(true)
@@ -676,7 +676,7 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
+    override fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         unreadEventsQueries.getUnreadArchivedConversationsCount()
             .asFlow()
             .mapToOne()
@@ -694,13 +694,13 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified).await() > 0
         }
 
-    override suspend fun observeLegalHoldStatus(conversationId: QualifiedIDEntity) =
+    override fun observeLegalHoldStatus(conversationId: QualifiedIDEntity) =
         conversationQueries.selectLegalHoldStatus(conversationId)
             .asFlow()
             .mapToOneOrDefault(ConversationEntity.LegalHoldStatus.DISABLED)
             .flowOn(readDispatcher.value)
 
-    override suspend fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity) =
+    override fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity) =
         conversationQueries.selectLegalHoldStatusChangeNotified(conversationId)
             .asFlow()
             .mapToOneOrDefault(true)

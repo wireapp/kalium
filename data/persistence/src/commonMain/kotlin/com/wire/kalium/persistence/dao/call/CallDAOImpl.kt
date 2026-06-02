@@ -88,25 +88,25 @@ internal class CallDAOImpl(
         }
     }
 
-    override suspend fun observeCalls(): Flow<List<CallEntity>> =
+    override fun observeCalls(): Flow<List<CallEntity>> =
         callsQueries.selectAllCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
 
-    override suspend fun observeIncomingCalls(): Flow<List<CallEntity>> =
+    override fun observeIncomingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectIncomingCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
 
-    override suspend fun observeOutgoingCalls(): Flow<List<CallEntity>> =
+    override fun observeOutgoingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectOutgoingCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
 
-    override suspend fun observeEstablishedCalls(): Flow<List<CallEntity>> =
+    override fun observeEstablishedCalls(): Flow<List<CallEntity>> =
         callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
@@ -116,7 +116,7 @@ internal class CallDAOImpl(
         callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls).awaitAsOne()
     }
 
-    override suspend fun observeOngoingCalls(): Flow<List<CallEntity>> =
+    override fun observeOngoingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectOngoingCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
@@ -140,7 +140,7 @@ internal class CallDAOImpl(
             callsQueries.lastCallStatusByConversationId(conversationId).awaitAsOneOrNull()
         }
 
-    override suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
+    override fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
         callsQueries.selectLastClosedCallCreationTimeConversationId(conversationId)
             .asFlow()
             .mapToOneOrNull()

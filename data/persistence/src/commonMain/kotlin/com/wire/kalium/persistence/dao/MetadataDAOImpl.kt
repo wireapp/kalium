@@ -49,7 +49,7 @@ class MetadataDAOImpl internal constructor(
         }
     }
 
-    override suspend fun valueByKeyFlow(
+    override fun valueByKeyFlow(
         key: String
     ): Flow<String?> =
         metadataQueries.selectValueByKey(key)

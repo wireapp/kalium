@@ -116,7 +116,7 @@ class ConnectionDAOImpl(
 ) : ConnectionDAO {
 
     private val connectionMapper = ConnectionMapper()
-    override suspend fun getConnections(): Flow<List<ConnectionEntity>> {
+    override fun getConnections(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.getConnections()
             .asFlow()
             .mapToList()
@@ -128,7 +128,7 @@ class ConnectionDAOImpl(
         connectionsQueries.selectConnection(conversationId).awaitAsOneOrNull()?.let { connectionMapper.toModel(it) }
     }
 
-    override suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
+    override fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionRequests(connectionMapper::toModel)
             .asFlow()
             .mapToList()
@@ -181,7 +181,7 @@ class ConnectionDAOImpl(
             }
         }
 
-    override suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>> {
+    override fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionsForNotification(connectionMapper::toModel)
             .asFlow()
             .mapToList()

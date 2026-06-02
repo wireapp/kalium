@@ -130,7 +130,7 @@ internal object ServerConfigMapper {
 interface ServerConfigurationDAO {
     suspend fun deleteById(id: String)
     suspend fun insert(insertData: InsertData)
-    suspend fun allConfigFlow(): Flow<List<ServerConfigEntity>>
+    fun allConfigFlow(): Flow<List<ServerConfigEntity>>
     suspend fun allConfig(): List<ServerConfigEntity>
     suspend fun configById(id: String): ServerConfigEntity?
     suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
@@ -142,9 +142,9 @@ interface ServerConfigurationDAO {
     suspend fun isNativePushSupportedByServer(userId: UserIDEntity): Boolean?
     suspend fun teamUrlForUser(userId: UserIDEntity): String?
     suspend fun setFederationToTrue(id: String)
-    suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
+    fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
     suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String)
-    suspend fun getServerConfigByLinksFlow(links: ServerConfigEntity.Links): Flow<ServerConfigEntity?>
+    fun getServerConfigByLinksFlow(links: ServerConfigEntity.Links): Flow<ServerConfigEntity?>
 
     data class InsertData(
         val id: String,
@@ -205,7 +205,7 @@ internal class ServerConfigurationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
+    override fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
         queries.storedConfig(mapper = mapper::fromServerConfiguration)
             .asFlow()
             .mapToList()
@@ -268,7 +268,7 @@ internal class ServerConfigurationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>> =
+    override fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>> =
         queries.getServerConfigsWithAccIdWithLastCheckBeforeDate(date, mapper::serverConfigWithAccId)
             .asFlow()
             .mapToList()
@@ -284,20 +284,18 @@ internal class ServerConfigurationDAOImpl internal constructor(
         queries.getTeamUrlByUser(userId).awaitAsOneOrNull()
     }
 
-    override suspend fun getServerConfigByLinksFlow(links: ServerConfigEntity.Links): Flow<ServerConfigEntity?> =
-        withContext(queriesContext) {
-            with(links) {
-                queries.getByLinks(
-                    apiBaseUrl = api,
-                    webSocketBaseUrl = webSocket,
-                    title = title,
-                    api_proxy_host = apiProxy?.host,
-                    api_proxy_port = apiProxy?.port,
-                    mapper = mapper::fromServerConfiguration
-                )
-            }
-                .asFlow()
-                .mapToOneOrNull()
-                .flowOn(queriesContext)
+    override fun getServerConfigByLinksFlow(links: ServerConfigEntity.Links): Flow<ServerConfigEntity?> =
+        with(links) {
+            queries.getByLinks(
+                apiBaseUrl = api,
+                webSocketBaseUrl = webSocket,
+                title = title,
+                api_proxy_host = apiProxy?.host,
+                api_proxy_port = apiProxy?.port,
+                mapper = mapper::fromServerConfiguration
+            )
         }
+            .asFlow()
+            .mapToOneOrNull()
+            .flowOn(queriesContext)
 }

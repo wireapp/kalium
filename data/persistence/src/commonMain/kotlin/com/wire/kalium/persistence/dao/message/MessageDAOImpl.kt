@@ -287,7 +287,7 @@ internal class MessageDAOImpl internal constructor(
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).awaitAsOneOrNull()
     }
 
-    override suspend fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
+    override fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
             .asFlow()
             .mapToOneOrNull()
@@ -330,7 +330,7 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
-    override suspend fun getMessagesByConversationAndVisibility(
+    override fun getMessagesByConversationAndVisibility(
         conversationId: QualifiedIDEntity,
         limit: Int,
         offset: Int,
@@ -360,7 +360,7 @@ internal class MessageDAOImpl internal constructor(
                 .awaitAsList()
         }
 
-    override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
+    override fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
         visibility: List<MessageEntity.Visibility>
@@ -459,29 +459,27 @@ internal class MessageDAOImpl internal constructor(
         queries.updateSystemMessageLegalHoldMembers(QualifiedIDListAdapter.encode(newMembers), messageId, conversationId)
     }
 
-    override suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
+    override fun observeLastMessages(): Flow<List<MessagePreviewEntity>> =
         messagePreviewQueries.getLastMessages(mapper::toPreviewEntity)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
 
-    override suspend fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>> {
+    override fun observeConversationsUnreadEvents(): Flow<List<ConversationUnreadEventEntity>> {
         return unreadEventsQueries.getConversationsUnreadEventCountsGrouped(unreadEventMapper::toConversationUnreadEntity)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
     }
 
-    override suspend fun observeUnreadEvents(): Flow<Map<ConversationIDEntity, List<UnreadEventEntity>>> =
-        withContext(readDispatcher.value) {
-            unreadEventsQueries.getUnreadEvents(unreadEventMapper::toUnreadEntity)
-                .asFlow()
-                .mapToList()
-                .map { it.groupBy { event -> event.conversationId } }
-                .flowOn(readDispatcher.value)
-        }
+    override fun observeUnreadEvents(): Flow<Map<ConversationIDEntity, List<UnreadEventEntity>>> =
+        unreadEventsQueries.getUnreadEvents(unreadEventMapper::toUnreadEntity)
+            .asFlow()
+            .mapToList()
+            .map { it.groupBy { event -> event.conversationId } }
+            .flowOn(readDispatcher.value)
 
-    override suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>> =
+    override fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>> =
         queries.getUnreadMessagesCount { conversationId, count ->
             conversationId to count.toInt()
         }
@@ -584,7 +582,7 @@ internal class MessageDAOImpl internal constructor(
         unreadEventsQueries.getConversationUnreadEventsCount(conversationId).awaitAsOne()
     }
 
-    override suspend fun observeMessageVisibility(
+    override fun observeMessageVisibility(
         messageUuid: String,
         conversationId: QualifiedIDEntity
     ): Flow<MessageEntity.Visibility?> {
@@ -637,7 +635,7 @@ internal class MessageDAOImpl internal constructor(
             .awaitAsList()
     }
 
-    override suspend fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>> =
+    override fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>> =
         assetStatusQueries.selectConversationAssetStatus(conversationId, mapper::fromAssetStatus)
             .asFlow()
             .mapToList()
@@ -649,7 +647,7 @@ internal class MessageDAOImpl internal constructor(
                 .awaitAsOne()
         }
 
-    override suspend fun observeAssetStatuses(): Flow<List<MessageAssetTransferStatus>> =
+    override fun observeAssetStatuses(): Flow<List<MessageAssetTransferStatus>> =
         assetStatusQueries.selectAllAssetTransferStatuses()
             .asFlow()
             .mapToList()
@@ -680,7 +678,7 @@ internal class MessageDAOImpl internal constructor(
             queries.countBackupMessages(contentTypes).awaitAsOne()
         }
 
-    override suspend fun getPagedMessagesFlow(
+    override fun getPagedMessagesFlow(
         contentTypes: Collection<MessageEntity.ContentType>,
         pageSize: Int,
     ): Flow<List<MessageEntity>> = flow {
