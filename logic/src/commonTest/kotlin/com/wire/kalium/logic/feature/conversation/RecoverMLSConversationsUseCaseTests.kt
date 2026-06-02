@@ -67,7 +67,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasInvoked(conversations.size)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(conversations.size)
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -91,7 +91,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasInvoked(conversations.size)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(conversations.size)
 
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
@@ -115,7 +115,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasNotInvoked()
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -139,7 +139,7 @@ class RecoverMLSConversationsUseCaseTests {
         }.wasInvoked(twice)
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(once)
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -174,7 +174,7 @@ class RecoverMLSConversationsUseCaseTests {
 
         // Only the second group should be joined (first was marked pending due to ConversationNotFound)
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(Arrangement.MLS_CONVERSATION2.id), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), eq(Arrangement.MLS_CONVERSATION2.id), any(), any())
         }.wasInvoked(once)
 
         // Overall result should be Success since ConversationNotFound is non-fatal
@@ -205,7 +205,7 @@ class RecoverMLSConversationsUseCaseTests {
 
         // No groups should be joined since all were marked pending
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasNotInvoked()
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
@@ -265,7 +265,7 @@ class RecoverMLSConversationsUseCaseTests {
 
         suspend fun withJoinExistingMLSConversationUseCaseSuccessful() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+                joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -298,10 +298,10 @@ class RecoverMLSConversationsUseCaseTests {
 
         suspend fun withJoinExistingMLSConversationUseCaseFailsFor(failedGroupId: ConversationId) = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), eq(failedGroupId), any())
+                joinExistingMLSConversationUseCase.invoke(any(), eq(failedGroupId), any(), any())
             }.returns(Either.Left(StorageFailure.DataNotFound))
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), matches { it != failedGroupId }, any())
+                joinExistingMLSConversationUseCase.invoke(any(), matches { it != failedGroupId }, any(), any())
             }.returns(Either.Right(Unit))
         }
 

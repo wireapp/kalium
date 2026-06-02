@@ -64,7 +64,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -80,7 +80,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -92,7 +92,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(twice)
     }
 
@@ -104,7 +104,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(twice)
     }
 
@@ -117,7 +117,7 @@ class JoinExistingMLSConversationsUseCaseTest {
             assertIs<NetworkFailure>(it)
         }
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(twice)
     }
 
@@ -129,7 +129,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(twice)
     }
 
@@ -145,7 +145,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(twice)
 
         coVerify {
@@ -167,7 +167,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(exactly = once)
     }
 
@@ -188,7 +188,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
 
         coVerify {
-            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }.wasInvoked(exactly = 3)
     }
 
@@ -227,25 +227,25 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         suspend fun withJoinExistingMLSConversationSuccessful() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+                joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
         suspend fun withJoinExistingMLSConversationNetworkFailure() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+                joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
             }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
 
         suspend fun withJoinExistingMLSConversationFailure() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+                joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
             }.returns(Either.Left(CoreFailure.NotSupportedByProteus))
         }
 
         suspend fun withNoKeyPackagesAvailable() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+                joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
             }.returns(Either.Left(CoreFailure.MissingKeyPackages(setOf())))
         }
 
@@ -263,7 +263,7 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         suspend fun withJoinExistingMLSConversationReturningInvalidRequestServerMiscommunication() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+                joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
             }.returns(
                 Either.Left(
                     NetworkFailure.ServerMiscommunication(
@@ -277,7 +277,7 @@ class JoinExistingMLSConversationsUseCaseTest {
 
         suspend fun withJoinExistingMLSConversationReturningThrottleServerMiscommunication() = apply {
             coEvery {
-                joinExistingMLSConversationUseCase.invoke(any(), any(), any())
+                joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
             }.returns(
                 Either.Left(
                     NetworkFailure.ServerMiscommunication(

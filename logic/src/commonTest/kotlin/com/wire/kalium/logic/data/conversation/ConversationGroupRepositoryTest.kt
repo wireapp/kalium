@@ -48,7 +48,7 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
+import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.thenReturnSequentially
@@ -215,13 +215,7 @@ class ConversationGroupRepositoryTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
-                any(),
-                any(),
-                any(),
-                any(),
-                any<ConversationEntity.Type>()
-            )
+            arrangement.newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(any(), any(), any(), any())
         }.wasInvoked(once)
     }
 
@@ -479,7 +473,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(conversationResponse, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withMlsConversationEstablished(MLSAdditionResult(setOf(TestUser.USER_ID), emptySet(), emptySet()))
+            .withMlsConversationEstablished(MLSAdditionResult(setOf(TestUser.USER_ID), emptySet()))
             .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
@@ -512,23 +506,17 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenMLSProtocolIsUsedAndSomeUsersHaveNoKeyPackages_whenCallingCreateGroupConversation_thenMissingKeyPackagesSystemMessageIsPersisted() =
+    fun givenMLSProtocolIsUsedAndSomeUsersAreNotAddedToMLSGroup_whenCallingCreateGroupConversation_thenMissingMembersArePersisted() =
         runTest {
             val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
-            val usersWithNoKeyPackages = setOf(TestUser.OTHER_USER_ID, TestUser.OTHER_USER_ID_2)
+            val missingMembersFromMLSGroup = setOf(TestUser.OTHER_USER_ID, TestUser.OTHER_USER_ID_2)
             val successfullyAddedUsers = setOf(TestUser.USER_ID)
-            val allWantedMembers = successfullyAddedUsers + usersWithNoKeyPackages
+            val allWantedMembers = successfullyAddedUsers + missingMembersFromMLSGroup
             val (arrangement, conversationGroupRepository) = Arrangement()
                 .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(conversationResponse, emptyMap(), 201)))
                 .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
                 .withInsertConversationSuccess()
-                .withMlsConversationEstablished(
-                    MLSAdditionResult(
-                        successfullyAddedUsers = setOf(TestUser.USER_ID),
-                        usersWithoutKeyPackages = usersWithNoKeyPackages,
-                        usersWithUnreachableBackend = emptySet()
-                    )
-                )
+                .withMlsConversationEstablished(MLSAdditionResult(setOf(TestUser.USER_ID), notAddedUsers = missingMembersFromMLSGroup))
                 .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
                 .withSuccessfulNewConversationGroupStartedHandled()
                 .withSuccessfulNewConversationMemberHandled()
@@ -548,77 +536,24 @@ class ConversationGroupRepositoryTest {
 
             with(arrangement) {
                 coVerify {
-                    arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
-                        any(),
-                        matches { it.containsAll(usersWithNoKeyPackages) },
-                        eq(MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages)
-                    )
+                    conversationDAO.insertConversation(any())
+                }.wasInvoked(once)
+
+                coVerify {
+                    mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), eq(true))
+                }.wasInvoked(once)
+
+                coVerify {
+                    newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
                 }.wasInvoked(once)
 
                 coVerify {
                     arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                         any(),
-                        any(),
-                        eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
-                    )
-                }.wasNotInvoked()
-            }
-        }
-
-    @Test
-    fun givenMLSProtocolIsUsedAndSomeUsersAreOnUnreachableBackend_whenCallingCreateGroupConversation_thenFederationSystemMessageIsPersisted() =
-        runTest {
-            val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
-            val usersOnUnreachableBackend = setOf(
-                TestUser.OTHER_USER_ID.copy(domain = "unreachable.com"),
-                TestUser.OTHER_USER_ID_2.copy(domain = "unreachable.com")
-            )
-            val successfullyAddedUsers = setOf(TestUser.USER_ID)
-            val allWantedMembers = successfullyAddedUsers + usersOnUnreachableBackend
-            val (arrangement, conversationGroupRepository) = Arrangement()
-                .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(conversationResponse, emptyMap(), 201)))
-                .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
-                .withInsertConversationSuccess()
-                .withMlsConversationEstablished(
-                    MLSAdditionResult(
-                        successfullyAddedUsers = setOf(TestUser.USER_ID),
-                        usersWithoutKeyPackages = emptySet(),
-                        usersWithUnreachableBackend = usersOnUnreachableBackend
-                    )
-                )
-                .withConversationById(TestConversation.ENTITY_GROUP.copy(protocolInfo = PROTEUS_PROTOCOL_INFO))
-                .withSuccessfulNewConversationGroupStartedHandled()
-                .withSuccessfulNewConversationMemberHandled()
-                .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
-                .withSuccessfulLegalHoldHandleConversationMembersChanged()
-                .withInsertFailedToAddSystemMessageSuccess()
-                .withConversationAppsAccessIfEnabled()
-                .arrange()
-
-            val result = conversationGroupRepository.createGroupConversation(
-                GROUP_NAME,
-                allWantedMembers.toList(),
-                CreateConversationParam(protocol = CreateConversationParam.Protocol.MLS)
-            )
-
-            result.shouldSucceed()
-
-            with(arrangement) {
-                coVerify {
-                    arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
-                        any(),
-                        matches { it.containsAll(usersOnUnreachableBackend) },
+                        matches { it.containsAll(missingMembersFromMLSGroup) },
                         eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
                     )
                 }.wasInvoked(once)
-
-                coVerify {
-                    arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
-                        any(),
-                        any(),
-                        eq(MessageContent.MemberChange.FailedToAdd.Type.MissingKeyPackages)
-                    )
-                }.wasNotInvoked()
             }
         }
 
@@ -1015,13 +950,15 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenMLSConversation_whenJoiningConversationSuccessWithChanged_thenEmitsLocalEventOnly() = runTest {
+    fun givenMLSConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
         val code = "code"
         val key = "key"
         val uri: String? = null
         val password: String? = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withJoinConversationAPIResponse(
                 code,
                 key,
@@ -1029,6 +966,8 @@ class ConversationGroupRepositoryTest {
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
             .withEmitLocalEvent()
+            .withJoinExistingMlsConversationSucceeds()
+            .withSuccessfulAddMemberToMLSGroup()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
@@ -1040,17 +979,37 @@ class ConversationGroupRepositoryTest {
 
         coVerify {
             arrangement.localEventRepository.emitLocalEvent(any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.joinExistingMLSConversation.invoke(
+                any(),
+                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
+                any(),
+                any()
+            )
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(),
+                eq(GroupID(MLS_PROTOCOL_INFO.groupId)),
+                eq(listOf(TestUser.SELF.id)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenMixedConversation_whenJoiningConversationSuccessWithChanged_thenEmitsLocalEventOnly() = runTest {
+    fun givenMixedConversation_whenJoiningConversationSuccessWithChanged_thenAddSelfClientsToMlsGroup() = runTest {
         val code = "code"
         val key = "key"
         val uri: String? = null
         val password: String? = null
 
         val (arrangement, conversationGroupRepository) = Arrangement()
+            .withConversationDetailsById(TestConversation.CONVERSATION)
+            .withProtocolInfoById(MIXED_PROTOCOL_INFO)
             .withJoinConversationAPIResponse(
                 code,
                 key,
@@ -1058,6 +1017,8 @@ class ConversationGroupRepositoryTest {
                 NetworkResponse.Success(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE, emptyMap(), 200)
             )
             .withEmitLocalEvent()
+            .withJoinExistingMlsConversationSucceeds()
+            .withSuccessfulAddMemberToMLSGroup()
             .arrange()
 
         conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
@@ -1069,6 +1030,24 @@ class ConversationGroupRepositoryTest {
 
         coVerify {
             arrangement.localEventRepository.emitLocalEvent(any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.joinExistingMLSConversation.invoke(
+                any(),
+                eq(ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE.event.qualifiedConversation.toModel()),
+                any(),
+                any()
+            )
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(),
+                eq(GroupID(MIXED_PROTOCOL_INFO.groupId)),
+                eq(listOf(TestUser.SELF.id)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -1707,40 +1686,6 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
-    fun givenNoNetworkConnection_whenAddingMembers_thenUnknownSystemMessageIsPersistedAndOperationFails() = runTest {
-        // given
-        val expectedInitialUsers = listOf(TestConversation.USER_1, TestUser.OTHER_FEDERATED_USER_ID)
-        val (arrangement, conversationGroupRepository) = Arrangement()
-            .withConversationDetailsById(TestConversation.MLS_CONVERSATION)
-            .withProtocolInfoById(MLS_PROTOCOL_INFO)
-            .withAddingMemberToMlsGroupResults(
-                Either.Left(NetworkFailure.NoNetworkConnection(null))
-            )
-            .withInsertFailedToAddSystemMessageSuccess()
-            .arrange()
-
-        // when
-        conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
-
-        // then
-        coVerify {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
-                conversationId = any(),
-                userIdList = any(),
-                type = eq(MessageContent.MemberChange.FailedToAdd.Type.Unknown)
-            )
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
-                conversationId = any(),
-                userIdList = any(),
-                type = eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
-            )
-        }.wasNotInvoked()
-    }
-
-    @Test
     fun givenAConversationAndAPIFailsWithMissingLHConsent_whenAddingMembersToConversation_thenShouldRetryWithValidUsers() =
         runTest {
             // given
@@ -1898,7 +1843,7 @@ class ConversationGroupRepositoryTest {
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl(),
-        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementMockativeImpl() {
+        CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         val conversationMessageTimerEventHandler = mock(ConversationMessageTimerEventHandler::class)
         val userRepository: UserRepository = mock(UserRepository::class)
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
@@ -1915,6 +1860,7 @@ class ConversationGroupRepositoryTest {
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
                 mlsConversationRepository,
+                joinExistingMLSConversation,
                 localEventRepository,
                 conversationMessageTimerEventHandler,
                 conversationDAO,
@@ -2186,13 +2132,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withConversationAppsAccessIfEnabled() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                    any<ConversationEntity.Type>()
-                )
+                newGroupConversationSystemMessagesCreator.conversationAppsAccessIfEnabled(any(), any(), any(), any())
             }.returns(Unit.right())
         }
 

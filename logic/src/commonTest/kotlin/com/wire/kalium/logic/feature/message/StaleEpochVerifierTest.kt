@@ -125,6 +125,7 @@ class StaleEpochVerifierTest {
             arrangement.joinExistingMLSConversationUseCase.invoke(
                 any(),
                 eq(CONVERSATION_ID),
+                any(),
                 any()
             )
         }.wasInvoked(once)

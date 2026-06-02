@@ -60,7 +60,8 @@ internal interface JoinExistingMLSConversationUseCase {
     suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
-        mlsPublicKeys: MLSPublicKeys? = null
+        mlsPublicKeys: MLSPublicKeys? = null,
+        allowJoinByExternalCommit: Boolean = true,
     ): Either<CoreFailure, Unit>
 }
 
@@ -83,7 +84,8 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     override suspend operator fun invoke(
         transactionContext: CryptoTransactionContext,
         conversationId: ConversationId,
-        mlsPublicKeys: MLSPublicKeys?
+        mlsPublicKeys: MLSPublicKeys?,
+        allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, Unit> =
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
@@ -95,7 +97,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 Either.Left(StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
-                    joinOrEstablishMLSGroupAndRetry(transactionContext, conversation, mlsPublicKeys)
+                    joinOrEstablishMLSGroupAndRetry(transactionContext, conversation, mlsPublicKeys, allowJoinByExternalCommit)
                 }
             })
         }
@@ -103,9 +105,10 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     private suspend fun joinOrEstablishMLSGroupAndRetry(
         transactionContext: CryptoTransactionContext,
         conversation: Conversation,
-        mlsPublicKeys: MLSPublicKeys?
+        mlsPublicKeys: MLSPublicKeys?,
+        allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, Unit> =
-        joinOrEstablishMLSGroup(transactionContext, conversation, mlsPublicKeys)
+        joinOrEstablishMLSGroup(transactionContext, conversation, mlsPublicKeys, allowJoinByExternalCommit)
             .flatMapLeft { failure ->
                 val failure = failure.wrapNetworkMlsFailureIfApplicable()
                 if (failure !is MLSFailure.MessageRejected) return@flatMapLeft Either.Left(failure)
@@ -132,7 +135,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             fetchConversation(transactionContext, conversation.id)
                         }.flatMap {
                             conversationRepository.getConversationById(conversation.id).flatMap { conversation ->
-                                joinOrEstablishMLSGroup(transactionContext, conversation, null)
+                                joinOrEstablishMLSGroup(transactionContext, conversation, null, allowJoinByExternalCommit)
                             }
                         }
                     }
@@ -147,12 +150,20 @@ internal class JoinExistingMLSConversationUseCaseImpl(
     private suspend fun joinOrEstablishMLSGroup(
         transactionContext: CryptoTransactionContext,
         conversation: Conversation,
-        publicKeys: MLSPublicKeys?
+        publicKeys: MLSPublicKeys?,
+        allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, Unit> {
         val protocol = conversation.protocol
         val type = conversation.type
         return when {
             protocol !is Conversation.ProtocolInfo.MLSCapable -> Either.Right(Unit)
+
+            protocol.epoch != 0UL && !allowJoinByExternalCommit -> {
+                logger.d(
+                    "Skipping external commit join for ${conversation.id.toLogString()} because pending events may still establish it"
+                )
+                Either.Right(Unit)
+            }
 
             protocol.epoch != 0UL -> {
                 // TODO(refactor): don't use conversationAPI directly
