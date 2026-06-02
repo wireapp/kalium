@@ -17,11 +17,13 @@
  */
 package com.wire.kalium.logic.data.message.linkpreview
 
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LinkPreview
+import com.wire.kalium.util.string.toHexString
 import okio.Path.Companion.toPath
 import pbandk.ByteArr
 
@@ -37,17 +39,29 @@ internal class LinkPreviewMapperImpl(
 ) : LinkPreviewMapper {
 
     override fun fromDaoToModel(linkPreview: MessageEntity.LinkPreview): MessageLinkPreview {
-        val image = linkPreview.imageLocalPath
-            ?.takeIf { it.isNotEmpty() }
-            ?.let { localPath ->
-                LinkPreviewAsset(
-                    mimeType = linkPreview.imageMimeType ?: "*/*",
-                    assetDataPath = localPath.toPath(),
-                    assetDataSize = 0L,
-                    assetWidth = linkPreview.imageWidth ?: 0,
-                    assetHeight = linkPreview.imageHeight ?: 0,
-                )
-            }
+        val hasRemoteImageData = !linkPreview.imageAssetKey.isNullOrEmpty() ||
+            !linkPreview.imageAssetToken.isNullOrEmpty() ||
+            !linkPreview.imageAssetDomain.isNullOrEmpty() ||
+            !linkPreview.imageOtrKey.isNullOrEmpty() ||
+            !linkPreview.imageSha256.isNullOrEmpty() ||
+            !linkPreview.imageEncryptionAlgorithm.isNullOrEmpty()
+        val image = when {
+            !linkPreview.imageLocalPath.isNullOrEmpty() || hasRemoteImageData -> LinkPreviewAsset(
+                mimeType = linkPreview.imageMimeType ?: "*/*",
+                assetDataPath = linkPreview.imageLocalPath?.takeIf { it.isNotEmpty() }?.toPath(),
+                assetDataSize = 0L,
+                assetWidth = linkPreview.imageWidth ?: 0,
+                assetHeight = linkPreview.imageHeight ?: 0,
+                assetKey = linkPreview.imageAssetKey,
+                assetToken = linkPreview.imageAssetToken,
+                assetDomain = linkPreview.imageAssetDomain,
+                otrKey = linkPreview.imageOtrKey?.hexToByteArray() ?: ByteArray(0),
+                sha256Key = linkPreview.imageSha256?.hexToByteArray() ?: ByteArray(0),
+                encryptionAlgorithm = linkPreview.imageEncryptionAlgorithm.toMessageEncryptionAlgorithm()
+            )
+
+            else -> null
+        }
         return MessageLinkPreview(
             url = linkPreview.url,
             urlOffset = linkPreview.urlOffset,
@@ -69,6 +83,12 @@ internal class LinkPreviewMapperImpl(
             imageWidth = linkPreview.image?.assetWidth,
             imageHeight = linkPreview.image?.assetHeight,
             imageMimeType = linkPreview.image?.mimeType,
+            imageAssetKey = linkPreview.image?.assetKey,
+            imageAssetToken = linkPreview.image?.assetToken,
+            imageAssetDomain = linkPreview.image?.assetDomain,
+            imageOtrKey = linkPreview.image?.otrKey?.toHexString(),
+            imageSha256 = linkPreview.image?.sha256Key?.toHexString(),
+            imageEncryptionAlgorithm = linkPreview.image?.encryptionAlgorithm?.name,
         )
     }
 
@@ -95,7 +115,11 @@ internal class LinkPreviewMapperImpl(
                     assetDataPath = null,
                     assetToken = linkPreview.image?.uploaded?.assetToken,
                     assetDomain = linkPreview.image?.uploaded?.assetDomain,
-                    assetKey = linkPreview.image?.uploaded?.assetId
+                    assetKey = linkPreview.image?.uploaded?.assetId,
+                    otrKey = linkPreview.image?.uploaded?.otrKey?.array ?: ByteArray(0),
+                    sha256Key = linkPreview.image?.uploaded?.sha256?.array ?: ByteArray(0),
+                    encryptionAlgorithm = encryptionAlgorithmMapper.fromProtobufModel(linkPreview.image?.uploaded?.encryption)
+                        ?: MessageEncryptionAlgorithm.AES_CBC
                 )
             }
         )
@@ -132,4 +156,19 @@ internal class LinkPreviewMapperImpl(
             )
         }
     )
+}
+
+private fun String?.toMessageEncryptionAlgorithm(): MessageEncryptionAlgorithm =
+    when (this) {
+        MessageEncryptionAlgorithm.AES_GCM.name -> MessageEncryptionAlgorithm.AES_GCM
+        else -> MessageEncryptionAlgorithm.AES_CBC
+    }
+
+private fun String.hexToByteArray(): ByteArray {
+    if (isEmpty()) return ByteArray(0)
+    require(length % 2 == 0) { "Hex string must have an even length" }
+
+    return ByteArray(length / 2) { index ->
+        substring(index * 2, index * 2 + 2).toInt(16).toByte()
+    }
 }
