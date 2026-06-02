@@ -18,6 +18,10 @@
 
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
@@ -226,7 +230,7 @@ class UserDAOImpl internal constructor(
         }
     }
 
-    private fun insertUser(user: UserEntity): Boolean {
+    private suspend fun insertUser(user: UserEntity): Boolean {
         userQueries.insertUser(
             qualified_id = user.id,
             name = user.name,
@@ -246,7 +250,7 @@ class UserDAOImpl internal constructor(
             supported_protocols = user.supportedProtocols,
             active_one_on_one_conversation_id = user.activeOneOnOneConversationId
         )
-        return userQueries.selectChanges().executeAsOne() > 0
+        return userQueries.selectChanges().awaitAsOne() > 0
     }
 
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(writeDispatcher.value) {
@@ -274,7 +278,7 @@ class UserDAOImpl internal constructor(
         }
     }
 
-    override suspend fun getAllUsersDetails(): Flow<List<UserDetailsEntity>> = userQueries.selectAllUsers()
+    override fun getAllUsersDetails(): Flow<List<UserDetailsEntity>> = userQueries.selectAllUsers()
         .asFlow()
         .mapToList()
         .map { entryList -> entryList.map(mapper::toDetailsModel) }
@@ -287,7 +291,7 @@ class UserDAOImpl internal constructor(
             .map { it?.let { mapper.toDetailsModel(it) } }
             .flowOn(readDispatcher.value)
 
-    override suspend fun getUserDetailsWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?> =
+    override fun getUserDetailsWithTeamByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<Pair<UserDetailsEntity, TeamEntity?>?> =
         userQueries.selectWithTeamByQualifiedId(listOf(qualifiedID), mapper::toUserAndTeamPairModel)
             .asFlow()
             .mapToOneOrNull()
@@ -297,31 +301,31 @@ class UserDAOImpl internal constructor(
         withContext(readDispatcher.value) {
             userQueries.selectMinimizedByQualifiedId(listOf(qualifiedID)) { qualifiedId, name, completeAssetId, userType, accentId ->
                 mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType, accentId)
-            }.executeAsOneOrNull()
+            }.awaitAsOneOrNull()
         }
 
     override suspend fun getUsersMinimizedByQualifiedIDs(qualifiedIDs: List<QualifiedIDEntity>): List<UserEntityMinimized> =
         withContext(readDispatcher.value) {
             userQueries.selectMinimizedByQualifiedId(qualifiedIDs) { qualifiedId, name, completeAssetId, userType, accentId ->
                 mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType, accentId)
-            }.executeAsList()
+            }.awaitAsList()
         }
 
     override suspend fun getUserDetailsByQualifiedID(qualifiedID: QualifiedIDEntity): UserDetailsEntity? =
         withContext(readDispatcher.value) {
             userQueries.selectDetailsByQualifiedId(listOf(qualifiedID))
-                .executeAsOneOrNull()
+                .awaitAsOneOrNull()
                 ?.let { mapper.toDetailsModel(it) }
         }
 
     override suspend fun getUsersDetailsByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserDetailsEntity> =
         withContext(readDispatcher.value) {
             userQueries.selectDetailsByQualifiedId(qualifiedIDList)
-                .executeAsList()
+                .awaitAsList()
                 .map { mapper.toDetailsModel(it) }
         }
 
-    override suspend fun getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
+    override fun getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
         searchQuery: String,
         connectionStates: List<ConnectionEntity.State>
     ): Flow<List<UserDetailsEntity>> = userQueries.selectByNameOrHandleOrEmailAndConnectionState(searchQuery, connectionStates)
@@ -330,7 +334,7 @@ class UserDAOImpl internal constructor(
         .map { it.map(mapper::toDetailsModel) }
         .flowOn(readDispatcher.value)
 
-    override suspend fun getUserDetailsByHandleAndConnectionStates(
+    override fun getUserDetailsByHandleAndConnectionStates(
         handle: String,
         connectionStates: List<ConnectionEntity.State>
     ) = userQueries.selectByHandleAndConnectionState(handle, connectionStates)
@@ -340,7 +344,7 @@ class UserDAOImpl internal constructor(
         .flowOn(readDispatcher.value)
 
     override suspend fun getUsersWithOneOnOneConversation(): List<UserEntity> = withContext(readDispatcher.value) {
-        userQueries.selectUsersWithOneOnOne().executeAsList().map(mapper::toModel)
+        userQueries.selectUsersWithOneOnOne().awaitAsList().map(mapper::toModel)
     }
 
     override suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity) {
@@ -354,26 +358,26 @@ class UserDAOImpl internal constructor(
     ): List<ConversationIDEntity> =
         withContext(writeDispatcher.value) {
             userQueries.transactionWithResult {
-                val conversationIds = userQueries.selectGroupConversationsUserIsMemberOf(qualifiedID).executeAsList()
+                val conversationIds = userQueries.selectGroupConversationsUserIsMemberOf(qualifiedID).awaitAsList()
                 safeMarkAsDeletedAndRemoveFromGroupConversation(qualifiedID)
                 conversationIds
             }
         }
 
     // returns true if any row has been inserted or modified, false if exactly the same data already exists
-    private fun markUserAsDeleted(qualifiedID: QualifiedIDEntity, userType: UserTypeEntity): Boolean {
+    private suspend fun markUserAsDeleted(qualifiedID: QualifiedIDEntity, userType: UserTypeEntity): Boolean {
         userQueries.markUserAsDeleted(qualifiedID, userType)
-        return userQueries.selectChanges().executeAsOne() > 0
+        return userQueries.selectChanges().awaitAsOne() > 0
     }
 
     // returns true if any row has been inserted or modified, false if exactly the same data already exists
-    private fun deleteUserFromGroupConversations(qualifiedID: QualifiedIDEntity): Boolean {
+    private suspend fun deleteUserFromGroupConversations(qualifiedID: QualifiedIDEntity): Boolean {
         userQueries.deleteUserFromGroupConversations(qualifiedID)
-        return userQueries.selectChanges().executeAsOne() > 0
+        return userQueries.selectChanges().awaitAsOne() > 0
     }
 
     // returns true if any row has been inserted or modified, false if exactly the same data already exists
-    private fun safeMarkAsDeletedAndRemoveFromGroupConversation(qualifiedID: QualifiedIDEntity): Boolean {
+    private suspend fun safeMarkAsDeletedAndRemoveFromGroupConversation(qualifiedID: QualifiedIDEntity): Boolean {
         return markUserAsDeleted(qualifiedID, UserTypeEntity.NONE) or deleteUserFromGroupConversations(qualifiedID)
     }
 
@@ -408,7 +412,7 @@ class UserDAOImpl internal constructor(
             .map { it.map(mapper::toDetailsModel) }
             .flowOn(readDispatcher.value)
 
-    override suspend fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(
+    override fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String
     ): Flow<List<UserDetailsEntity>> =
@@ -418,7 +422,7 @@ class UserDAOImpl internal constructor(
             .map { it.map(mapper::toDetailsModel) }
             .flowOn(readDispatcher.value)
 
-    override suspend fun getUsersDetailsNotInConversationByHandle(
+    override fun getUsersDetailsNotInConversationByHandle(
         conversationId: QualifiedIDEntity,
         handle: String
     ): Flow<List<UserDetailsEntity>> =
@@ -443,7 +447,7 @@ class UserDAOImpl internal constructor(
         }
     }
 
-    override suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =
+    override fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =
         userQueries.selectAllUsersWithConnectionStatus(connectionState)
             .asFlow()
             .mapToList()
@@ -452,7 +456,7 @@ class UserDAOImpl internal constructor(
 
     override suspend fun getAllUsersDetailsByTeam(teamId: String): List<UserDetailsEntity> = withContext(readDispatcher.value) {
         userQueries.selectUsersByTeam(teamId)
-            .executeAsList()
+            .awaitAsList()
             .map(mapper::toDetailsModel)
     }
 
@@ -472,12 +476,12 @@ class UserDAOImpl internal constructor(
 
     override suspend fun getUsersDetailsWithoutMetadata() = withContext(readDispatcher.value) {
         userQueries.selectUsersWithoutMetadata()
-            .executeAsList()
+            .awaitAsList()
             .map(mapper::toDetailsModel)
     }
 
     override suspend fun allOtherUsersId(): List<UserIDEntity> = withContext(readDispatcher.value) {
-        userQueries.userIdsWithoutSelf().executeAsList()
+        userQueries.userIdsWithoutSelf().awaitAsList()
     }
 
     override suspend fun updateUserSupportedProtocols(selfUserId: QualifiedIDEntity, supportedProtocols: Set<SupportedProtocolEntity>) {
@@ -513,15 +517,15 @@ class UserDAOImpl internal constructor(
 
     override suspend fun isAtLeastOneUserATeamMember(userId: List<UserIDEntity>, teamId: String): Boolean =
         withContext(readDispatcher.value) {
-            userQueries.isOneUserATeamMember(userId, teamId).executeAsOneOrNull() ?: false
+            userQueries.isOneUserATeamMember(userId, teamId).awaitAsOneOrNull() ?: false
         }
 
     override suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity? = withContext(readDispatcher.value) {
-        userQueries.selectOneOnOnConversationId(userId).executeAsOneOrNull()?.active_one_on_one_conversation_id
+        userQueries.selectOneOnOnConversationId(userId).awaitAsOneOrNull()?.active_one_on_one_conversation_id
     }
 
     override suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity? = withContext(readDispatcher.value) {
-        userQueries.selectNamesAndHandle(userId, ::NameAndHandleEntity).executeAsOneOrNull()
+        userQueries.selectNamesAndHandle(userId, ::NameAndHandleEntity).awaitAsOneOrNull()
     }
 
     override suspend fun getTeamIdByQualifiedID(qualifiedID: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
@@ -533,11 +537,11 @@ class UserDAOImpl internal constructor(
     }
 
     override suspend fun countContactsAmount(selfUserId: QualifiedIDEntity): Int = withContext(readDispatcher.value) {
-        userQueries.countContacts(selfUserId).executeAsOneOrNull()?.toInt() ?: 0
+        userQueries.countContacts(selfUserId).awaitAsOneOrNull()?.toInt() ?: 0
     }
 
     override suspend fun countTeamMembersAmount(teamId: String): Int = withContext(readDispatcher.value) {
-        userQueries.countTeamMembersFromTeam(teamId).executeAsOneOrNull()?.toInt() ?: 0
+        userQueries.countTeamMembersFromTeam(teamId).awaitAsOneOrNull()?.toInt() ?: 0
     }
 
 }

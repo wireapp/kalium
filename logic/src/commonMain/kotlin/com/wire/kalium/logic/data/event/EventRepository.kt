@@ -127,7 +127,7 @@ internal interface EventRepository {
      * @return Either containing a [CoreFailure] or the oldest available event ID as a String.
      */
     suspend fun fetchOldestAvailableEventId(): Either<CoreFailure, String>
-    suspend fun observeEvents(): Flow<List<EventEnvelope>>
+    fun observeEvents(): Flow<List<EventEnvelope>>
     suspend fun setEventsAsProcessed(eventIds: List<String>): Either<StorageFailure, Unit>
     fun setUnprocessedEventsBatchLimit(limit: Int?)
 }
@@ -157,7 +157,7 @@ internal class EventDataSource(
         logger.i("set unprocessed events batch limit to $batchLimit")
     }
 
-    override suspend fun observeEvents(): Flow<List<EventEnvelope>> {
+    override fun observeEvents(): Flow<List<EventEnvelope>> {
         var lastEmittedEventId: String? = null
         val batchLimit = unprocessedEventsBatchLimit.get().toLong()
         return eventDAO.observeUnprocessedEvents(batchLimit).transform { eventEntities ->

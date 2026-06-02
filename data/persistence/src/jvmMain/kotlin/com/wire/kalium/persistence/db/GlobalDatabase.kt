@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -42,7 +43,7 @@ actual fun globalDatabaseProvider(
         throw NotImplementedError("Encrypted DB is not supported on JVM")
     }
 
-    val schema = GlobalDatabase.Schema
+    val schema = GlobalDatabase.Schema.synchronous()
     val databasePath = storageData.file.resolve(FileNameUtil.globalDBName())
 
     // Make sure all intermediate directories exist
@@ -61,7 +62,7 @@ actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
 }
 
 fun createGlobalInMemoryDatabase(dispatcher: CoroutineDispatcher): GlobalDatabaseBuilder {
-    val driver = databaseDriver(uri = JdbcSqliteDriver.IN_MEMORY, schema = GlobalDatabase.Schema) {
+    val driver = databaseDriver(uri = JdbcSqliteDriver.IN_MEMORY, schema = GlobalDatabase.Schema.synchronous()) {
         isWALEnabled = false
         areForeignKeyConstraintsEnforced = true
     }

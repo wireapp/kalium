@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConnectionsQueries
 import com.wire.kalium.persistence.ConversationsQueries
@@ -114,7 +116,7 @@ class ConnectionDAOImpl(
 ) : ConnectionDAO {
 
     private val connectionMapper = ConnectionMapper()
-    override suspend fun getConnections(): Flow<List<ConnectionEntity>> {
+    override fun getConnections(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.getConnections()
             .asFlow()
             .mapToList()
@@ -123,10 +125,10 @@ class ConnectionDAOImpl(
     }
 
     override suspend fun getConnection(conversationId: QualifiedIDEntity): ConnectionEntity? = withContext(readDispatcher.value) {
-        connectionsQueries.selectConnection(conversationId).executeAsOneOrNull()?.let { connectionMapper.toModel(it) }
+        connectionsQueries.selectConnection(conversationId).awaitAsOneOrNull()?.let { connectionMapper.toModel(it) }
     }
 
-    override suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
+    override fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionRequests(connectionMapper::toModel)
             .asFlow()
             .mapToList()
@@ -179,7 +181,7 @@ class ConnectionDAOImpl(
             }
         }
 
-    override suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>> {
+    override fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionsForNotification(connectionMapper::toModel)
             .asFlow()
             .mapToList()
@@ -200,7 +202,7 @@ class ConnectionDAOImpl(
 
     override suspend fun getConnectionByUser(userId: QualifiedIDEntity): ConnectionEntity? {
         return withContext(readDispatcher.value) {
-            connectionsQueries.selectConnectionRequestByUser(userId, connectionMapper::toModel).executeAsOneOrNull()
+            connectionsQueries.selectConnectionRequestByUser(userId, connectionMapper::toModel).awaitAsOneOrNull()
         }
     }
 }

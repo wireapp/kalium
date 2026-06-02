@@ -33,8 +33,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.ConversationPersistenceApi
-import dev.mokkery.matcher.any
+import dev.mokkery.every
 import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matches
 import dev.mokkery.MockMode
@@ -297,10 +298,10 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     }
 
     override suspend fun withObserveConversationLegalHoldStatus(status: Conversation.LegalHoldStatus) = apply {
-        everySuspend { conversationRepository.observeLegalHoldStatus(any()) }.returns(flowOf(Either.Right(status)))
+        every { conversationRepository.observeLegalHoldStatus(any()) }.returns(flowOf(Either.Right(status)))
     }
 
     override suspend fun withObserveIsUserMember(userId: UserId, isMember: Boolean) = apply {
-        everySuspend { conversationRepository.observeIsUserMember(any(), eq(userId)) }.returns(flowOf(Either.Right(isMember)))
+        every { conversationRepository.observeIsUserMember(any(), eq(userId)) }.returns(flowOf(Either.Right(isMember)))
     }
 }

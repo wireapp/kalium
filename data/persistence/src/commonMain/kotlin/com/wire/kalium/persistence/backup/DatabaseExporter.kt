@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.backup
 
+import app.cash.sqldelight.async.coroutines.await
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDBSecret
@@ -35,7 +36,7 @@ interface DatabaseExporter {
      * Export the user DB to a plain DB
      * @return the path to the plain DB file, null if the file was not created
      */
-    fun exportToPlainDB(localDBPassphrase: UserDBSecret?): String?
+    suspend fun exportToPlainDB(localDBPassphrase: UserDBSecret?): String?
 
     /**
      * Delete the backup file and any temp data was created during the backup process
@@ -55,7 +56,7 @@ internal class DatabaseExporterImpl internal constructor(
     private val backupUserId = user.copy(value = "backup-${user.value}")
 
     @Suppress("TooGenericExceptionCaught", "ReturnCount")
-    override fun exportToPlainDB(localDBPassphrase: UserDBSecret?): String? {
+    override suspend fun exportToPlainDB(localDBPassphrase: UserDBSecret?): String? {
         // delete the backup DB file if it exists
         if (!deleteBackupDBFile()) {
             kaliumLogger.e("Failed to delete the backup DB file")
@@ -94,7 +95,7 @@ internal class DatabaseExporterImpl internal constructor(
         try {
             // attach the plain DB to the user DB
             // dump the content of the user DB into the plain DB
-            plainDatabase.database.dumpContentQueries.dumpAllTables()
+            plainDatabase.database.dumpContentQueries.dumpAllTables().await()
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

@@ -44,5 +44,5 @@ public interface MessageAttachmentDraftRepository {
     public suspend fun updateStatus(uuid: String, status: AttachmentUploadStatus): Either<CoreFailure, Unit>
     public suspend fun remove(uuid: String): Either<CoreFailure, Unit>
     public suspend fun removeAttachmentDrafts(conversationId: ConversationId)
-    public suspend fun observeAllDrafts(): Flow<Either<StorageFailure, List<AttachmentDraft>>>
+    public fun observeAllDrafts(): Flow<Either<StorageFailure, List<AttachmentDraft>>>
 }

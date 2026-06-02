@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.utils.IgnoreJS
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.IgnoreJvm
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,6 +44,7 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 @IgnoreJvm
 @IgnoreIOS
+@IgnoreJS
 class DatabaseImporterTest : BaseDatabaseTest() {
 
 

@@ -30,7 +30,7 @@ actual open class BaseDatabaseTest actual constructor() {
     protected actual val dispatcher: TestDispatcher = StandardTestDispatcher()
 
     actual fun deleteDatabase(userId: UserIDEntity) {
-        // TODO delete test database
+        createDatabase(userId, null, enableWAL = false).nuke()
     }
 
     actual fun createDatabase(
@@ -39,23 +39,30 @@ actual open class BaseDatabaseTest actual constructor() {
         enableWAL: Boolean,
         dbInvalidationControlEnabled: Boolean
     ): UserDatabaseBuilder {
-        TODO("Not yet implemented")
+        return com.wire.kalium.persistence.db.userDatabaseBuilder(
+            platformDatabaseData = PlatformDatabaseData(),
+            userId = userId,
+            passphrase = passphrase,
+            dispatcher = dispatcher,
+            enableWAL = enableWAL,
+            dbInvalidationControlEnabled = dbInvalidationControlEnabled
+        )
     }
 
     actual fun databasePath(
         userId: UserIDEntity
     ): String {
-        TODO("Not yet implemented")
+        return userId.toString()
     }
 
     actual fun doesDatabaseExist(
         userId: UserIDEntity
-    ): Boolean = TODO("Not yet implemented")
+    ): Boolean = true
 
     actual val encryptedDBSecret: UserDBSecret
-        get() = TODO("Not yet implemented")
+        get() = UserDBSecret(ByteArray(0))
 
     actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData {
-        TODO("Not yet implemented")
+        return PlatformDatabaseData()
     }
 }

@@ -37,7 +37,7 @@ open class ReceiptRepositoryStub : ReceiptRepository {
         messageIds: List<String>
     ): Unit = Unit
 
-    override suspend fun observeMessageReceipts(
+    override fun observeMessageReceipts(
         conversationId: ConversationId,
         messageId: String,
         type: ReceiptType

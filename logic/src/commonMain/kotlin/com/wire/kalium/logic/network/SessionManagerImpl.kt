@@ -47,6 +47,7 @@ import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
@@ -146,7 +147,7 @@ internal class SessionManagerImpl internal constructor(
             sessionMapper.fromEntityToProxyCredentialsDTO(it)
         })
 
-    private fun account(): Account = account ?: run {
+    private fun account(): Account = account ?: runBlocking {
         sessionRepository.fullAccountInfo(userId)
             .onSuccess { account = it }
             .fold({ error("user account is missing or an error occurred while reading local storage") }, { it })

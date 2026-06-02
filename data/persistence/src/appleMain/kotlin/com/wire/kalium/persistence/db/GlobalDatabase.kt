@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.async.coroutines.synchronous
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
@@ -32,7 +33,7 @@ actual fun globalDatabaseProvider(
     val driver = when (val data = platformDatabaseData.storageData) {
         is StorageData.FileBacked -> {
             NSFileManager.defaultManager.createDirectoryAtPath(data.storePath, true, null, null)
-            val schema = GlobalDatabase.Schema
+            val schema = GlobalDatabase.Schema.synchronous()
             databaseDriver(data.storePath, FileNameUtil.globalDBName(), schema) {
                 isWALEnabled = false
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
@@ -40,7 +41,7 @@ actual fun globalDatabaseProvider(
         }
 
         StorageData.InMemory ->
-            databaseDriver(null, FileNameUtil.globalDBName(), GlobalDatabase.Schema) {
+            databaseDriver(null, FileNameUtil.globalDBName(), GlobalDatabase.Schema.synchronous()) {
                 isWALEnabled = false
                 useGradleSafeSqliterLogging = platformDatabaseData.useGradleSafeSqliterLogging
             }

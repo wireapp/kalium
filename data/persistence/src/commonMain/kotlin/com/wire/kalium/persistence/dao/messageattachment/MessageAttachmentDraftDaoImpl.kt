@@ -17,6 +17,9 @@
  */
 package com.wire.kalium.persistence.dao.messageattachment
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MessageAttachmentDraftQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -66,7 +69,7 @@ internal class MessageAttachmentDraftDaoImpl internal constructor(
         }
     }
 
-    override suspend fun observeAttachments(): Flow<List<MessageAttachmentDraftEntity>> {
+    override fun observeAttachments(): Flow<List<MessageAttachmentDraftEntity>> {
         return queries.getAllDrafts(mapper = ::toDao)
             .asFlow()
             .mapToList()
@@ -81,16 +84,16 @@ internal class MessageAttachmentDraftDaoImpl internal constructor(
 
     override suspend fun getAttachments(conversationId: QualifiedIDEntity): List<MessageAttachmentDraftEntity> =
         withContext(readDispatcher.value) {
-            queries.getDrafts(conversationId, ::toDao).executeAsList()
+            queries.getDrafts(conversationId, ::toDao).awaitAsList()
         }
 
-    override suspend fun observeAttachments(conversationId: QualifiedIDEntity): Flow<List<MessageAttachmentDraftEntity>> =
+    override fun observeAttachments(conversationId: QualifiedIDEntity): Flow<List<MessageAttachmentDraftEntity>> =
         queries.getDrafts(conversationId, ::toDao).asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
 
     override suspend fun getAttachment(uuid: String): MessageAttachmentDraftEntity? = withContext(readDispatcher.value) {
-        queries.getDraft(uuid, ::toDao).executeAsOneOrNull()
+        queries.getDraft(uuid, ::toDao).awaitAsOneOrNull()
     }
 
     override suspend fun deleteAttachment(uuid: String) {

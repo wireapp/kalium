@@ -268,8 +268,8 @@ class SessionManagerTest {
             } calls { invocation -> block(invocation.args.toTypedArray()) }
         }
 
-        fun withFullAccountInfoReturning(block: (args: Array<Any?>) -> Either<StorageFailure, Account>) = apply {
-            every {
+        suspend fun withFullAccountInfoReturning(block: (args: Array<Any?>) -> Either<StorageFailure, Account>) = apply {
+            everySuspend {
                 sessionRepository.fullAccountInfo(any())
             } calls { invocation -> block(invocation.args.toTypedArray()) }
         }

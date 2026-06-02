@@ -53,7 +53,7 @@ open class ReactionRepositoryStub : ReactionRepository {
         TODO("Not yet implemented")
     }
 
-    override suspend fun observeMessageReactions(
+    override fun observeMessageReactions(
         conversationId: ConversationId,
         messageId: String
     ): Flow<List<MessageReaction>> {

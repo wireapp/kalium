@@ -1,5 +1,5 @@
-DROP VIEW MessageDetailsView;
-DROP VIEW ConversationDetails;
+DROP VIEW IF EXISTS MessageDetailsView;
+DROP VIEW IF EXISTS ConversationDetails;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT

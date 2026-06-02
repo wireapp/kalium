@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -49,7 +50,9 @@ class MetadataDAOImpl internal constructor(
         }
     }
 
-    override suspend fun valueByKeyFlow(key: String): Flow<String?> =
+    override fun valueByKeyFlow(
+        key: String
+    ): Flow<String?> =
         metadataQueries.selectValueByKey(key)
             .asFlow()
             .mapToOneOrNull()
@@ -57,7 +60,7 @@ class MetadataDAOImpl internal constructor(
             .flowOn(readDispatcher.value)
 
     override suspend fun valueByKey(key: String): String? = withContext(readDispatcher.value) {
-        metadataQueries.selectValueByKey(key).executeAsOneOrNull()
+        metadataQueries.selectValueByKey(key).awaitAsOneOrNull()
     }
 
     override suspend fun clear(keysToKeep: List<String>?) {
