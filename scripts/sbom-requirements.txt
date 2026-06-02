@@ -1,6 +1,5 @@
 # Pinned Python toolchain for scripts/generate-sbom.sh.
-# Resolved against Python 3.9 because the repository's default `python3`
-# currently resolves to 3.9.x in local/CI environments.
+# Requires Python >= 3.10
 attrs==26.1.0
 banal==1.0.6
 beartype==0.22.2
@@ -44,7 +43,7 @@ packageurl-python==0.17.6
 packaging==26.2
 packvers==21.5
 parameter-expansion-patched==0.3.1
-pdfminer.six==20251107
+pdfminer.six==20251230
 pefile==2024.8.26
 pip-requirements-parser==32.0.1
 pkginfo2==30.0.0

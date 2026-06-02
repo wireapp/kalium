@@ -96,6 +96,15 @@ if [[ "$SKIP_SCAN" == "true" ]]; then
 else
 
 echo "==> [1/4] Setting up VENV and ScanCode..."
+if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+    echo "ERROR: Python 3.10+ is required (pdfminer.six >= 20251108 dropped Python 3.9 support)." >&2
+    echo "       Current: $(python3 --version 2>&1)" >&2
+    exit 1
+fi
+if [ -d ".venv" ] && ! .venv/bin/python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+    echo "  Existing .venv is Python <3.10; recreating with $(python3 --version 2>&1)..."
+    rm -rf .venv
+fi
 if [ ! -d ".venv" ]; then
     python3 -m venv .venv
 fi
@@ -303,7 +312,7 @@ fi
 # License-file presence audit. Independent of scancode: walks the unpacked
 # artifact tree directly to flag third-party packages that do NOT ship a
 # LICENSE / NOTICE / COPYING file alongside their code. The missing list is
-# the punch list for the customer THIRD-PARTY-NOTICE.md — every entry needs
+# the punch list for THIRD-PARTY-NOTICE.md — every entry needs
 # a manual fallback (POM <licenses>, upstream repo, etc.) before the
 # deliverable is complete.
 #
@@ -326,7 +335,7 @@ fi
 # parsed for its <licenses> block — the authoritative SPDX-equivalent source
 # for license name + URL per package. This fills the gap for packages that
 # don't bundle a LICENSE file in their jar/aar/klib and is the structured
-# feedstock for the eventual customer THIRD-PARTY-NOTICE.md.
+# feedstock for THIRD-PARTY-NOTICE.md.
 echo
 echo "==> Parsing POM <licenses> metadata"
 POMS_DIR="$OUTPUT_DIR/poms"
