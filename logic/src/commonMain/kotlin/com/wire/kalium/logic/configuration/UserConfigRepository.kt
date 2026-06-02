@@ -98,20 +98,20 @@ internal interface UserConfigRepository {
     suspend fun getSupportedProtocols(): Either<StorageFailure, Set<SupportedProtocol>>
     suspend fun setConferenceCallingEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isConferenceCallingEnabled(): Either<StorageFailure, Boolean>
-    suspend fun observeConferenceCallingEnabled(): Flow<Either<StorageFailure, Boolean>>
+    fun observeConferenceCallingEnabled(): Flow<Either<StorageFailure, Boolean>>
     suspend fun setUseSFTForOneOnOneCalls(shouldUse: Boolean): Either<StorageFailure, Unit>
     suspend fun shouldUseSFTForOneOnOneCalls(): Either<StorageFailure, Boolean>
     suspend fun setSecondFactorPasswordChallengeStatus(isRequired: Boolean): Either<StorageFailure, Unit>
     suspend fun isSecondFactorPasswordChallengeRequired(): Either<StorageFailure, Boolean>
-    suspend fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
+    fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>>
     suspend fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit>
-    suspend fun isTypingIndicatorEnabled(): Flow<Either<StorageFailure, Boolean>>
+    fun isTypingIndicatorEnabled(): Flow<Either<StorageFailure, Boolean>>
     suspend fun setTypingIndicatorStatus(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun setGuestRoomStatus(status: Boolean, isStatusChanged: Boolean?): Either<StorageFailure, Unit>
     suspend fun getGuestRoomLinkStatus(): Either<StorageFailure, GuestRoomLinkStatus>
     fun observeGuestRoomLinkFeatureFlag(): Flow<Either<StorageFailure, GuestRoomLinkStatus>>
     suspend fun setScreenshotCensoringConfig(enabled: Boolean): Either<StorageFailure, Unit>
-    suspend fun observeScreenshotCensoringConfig(): Flow<Either<StorageFailure, Boolean>>
+    fun observeScreenshotCensoringConfig(): Flow<Either<StorageFailure, Boolean>>
 
     suspend fun getTeamSettingsSelfDeletionStatus(): Either<StorageFailure, TeamSettingsSelfDeletionStatus>
     suspend fun setTeamSettingsSelfDeletionStatus(
@@ -119,8 +119,8 @@ internal interface UserConfigRepository {
     ): Either<StorageFailure, Unit>
 
     suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit>
-    suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
-    suspend fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant>>
+    fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
+    fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant>>
     suspend fun setE2EINotificationTime(instant: Instant): Either<StorageFailure, Unit>
     suspend fun getMigrationConfiguration(): Either<StorageFailure, MLSMigrationModel>
     suspend fun setMigrationConfiguration(configuration: MLSMigrationModel): Either<StorageFailure, Unit>
@@ -133,16 +133,16 @@ internal interface UserConfigRepository {
     fun observeLegalHoldRequest(): Flow<Either<StorageFailure, LegalHoldRequest>>
     suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit>
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean): Either<StorageFailure, Unit>
-    suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
+    fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
     suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
     suspend fun getCRLExpirationTime(url: String): ULong?
-    suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>>
+    fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>>
     suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
-    suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>>
+    fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>>
     suspend fun clearE2EISettings()
     suspend fun setCurrentTrackingIdentifier(newIdentifier: String)
     suspend fun getCurrentTrackingIdentifier(): String?
-    suspend fun observeCurrentTrackingIdentifier(): Flow<Either<StorageFailure, String>>
+    fun observeCurrentTrackingIdentifier(): Flow<Either<StorageFailure, String>>
     suspend fun setPreviousTrackingIdentifier(identifier: String)
     suspend fun getPreviousTrackingIdentifier(): String?
     suspend fun deletePreviousTrackingIdentifier()
@@ -158,11 +158,13 @@ internal interface UserConfigRepository {
     suspend fun isCellsEnabled(): Boolean
     suspend fun setAppsEnabled(isAppsEnabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isAppsEnabled(): Boolean
-    suspend fun observeAppsEnabled(): Flow<Either<StorageFailure, Boolean>>
+    fun observeAppsEnabled(): Flow<Either<StorageFailure, Boolean>>
     suspend fun setProfileQRCodeEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isProfileQRCodeEnabled(): Boolean
     suspend fun setAssetAuditLogEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isAssetAuditLogEnabled(): Boolean
+    suspend fun setPreventAdminlessGroupsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
+    suspend fun isPreventAdminlessGroupsEnabled(): Boolean
     suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit>
     suspend fun getWireCellsConfig(): Either<StorageFailure, WireCellsConfig?>
     suspend fun isMLSFaultyKeysRepairExecuted(): Boolean
@@ -257,7 +259,7 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.setE2EISettings(setting.toEntity()) }
 
-    override suspend fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant>> =
+    override fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant>> =
         userConfigStorage.e2EINotificationTimeFlow()
             .wrapStorageRequest()
             .mapRight { Instant.fromEpochMilliseconds(it) }
@@ -319,7 +321,7 @@ internal class UserConfigDataSource internal constructor(
             userConfigStorage.isConferenceCallingEnabled()
         }
 
-    override suspend fun observeConferenceCallingEnabled(): Flow<Either<StorageFailure, Boolean>> =
+    override fun observeConferenceCallingEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isConferenceCallingEnabledFlow().wrapStorageRequest()
 
     override suspend fun setUseSFTForOneOnOneCalls(shouldUse: Boolean): Either<StorageFailure, Unit> = wrapStorageRequest {
@@ -342,7 +344,7 @@ internal class UserConfigDataSource internal constructor(
             userConfigStorage.isSecondFactorPasswordChallengeRequired()
         }
 
-    override suspend fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>> =
+    override fun isReadReceiptsEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.areReadReceiptsEnabled().wrapStorageRequest()
 
     override suspend fun setReadReceiptsStatus(enabled: Boolean): Either<StorageFailure, Unit> =
@@ -350,7 +352,7 @@ internal class UserConfigDataSource internal constructor(
             userConfigStorage.persistReadReceipts(enabled)
         }
 
-    override suspend fun isTypingIndicatorEnabled(): Flow<Either<StorageFailure, Boolean>> =
+    override fun isTypingIndicatorEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isTypingIndicatorEnabled().wrapStorageRequest()
 
     override suspend fun setTypingIndicatorStatus(enabled: Boolean): Either<StorageFailure, Unit> =
@@ -410,7 +412,7 @@ internal class UserConfigDataSource internal constructor(
             userConfigDAO.markTeamSettingsSelfDeletingMessagesStatusAsNotified()
         }
 
-    override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>> =
+    override fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>> =
         userConfigDAO.observeTeamSettingsSelfDeletingStatus().wrapStorageRequest().map {
             it.map {
                 TeamSettingsSelfDeletionStatus(
@@ -423,7 +425,7 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun setScreenshotCensoringConfig(enabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistScreenshotCensoring(enabled) }
 
-    override suspend fun observeScreenshotCensoringConfig(): Flow<Either<StorageFailure, Boolean>> =
+    override fun observeScreenshotCensoringConfig(): Flow<Either<StorageFailure, Boolean>> =
         userConfigStorage.isScreenshotCensoringEnabledFlow().wrapStorageRequest()
 
     override suspend fun setAppLockStatus(
@@ -504,7 +506,7 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun setLegalHoldChangeNotified(isNotified: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigDAO.setLegalHoldChangeNotified(isNotified) }
 
-    override suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>> =
+    override fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>> =
         userConfigDAO.observeLegalHoldChangeNotified().wrapStorageRequest()
 
     override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
@@ -514,14 +516,14 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun getCRLExpirationTime(url: String): ULong? =
         userConfigDAO.getCRLsPerDomain(url)
 
-    override suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>> =
+    override fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>> =
         userConfigDAO.observeCertificateExpirationTime(url).wrapStorageRequest()
 
     override suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean) {
         userConfigDAO.setShouldNotifyForRevokedCertificate(shouldNotify)
     }
 
-    override suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>> =
+    override fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>> =
         userConfigDAO.observeShouldNotifyForRevokedCertificate().wrapStorageRequest()
 
     override suspend fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
@@ -537,7 +539,7 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun getCurrentTrackingIdentifier(): String? =
         userConfigDAO.getTrackingIdentifier()
 
-    override suspend fun observeCurrentTrackingIdentifier(): Flow<Either<StorageFailure, String>> =
+    override fun observeCurrentTrackingIdentifier(): Flow<Either<StorageFailure, String>> =
         userConfigDAO.observeTrackingIdentifier().wrapStorageRequest()
 
     override suspend fun setPreviousTrackingIdentifier(identifier: String) {
@@ -588,7 +590,7 @@ internal class UserConfigDataSource internal constructor(
         }
 
     override suspend fun isAppsEnabled(): Boolean = userConfigDAO.getAppsEnabled()
-    override suspend fun observeAppsEnabled(): Flow<Either<StorageFailure, Boolean>> =
+    override fun observeAppsEnabled(): Flow<Either<StorageFailure, Boolean>> =
         userConfigDAO.observeAppsEnabled().wrapStorageRequest()
 
     override suspend fun setProfileQRCodeEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
@@ -604,6 +606,13 @@ internal class UserConfigDataSource internal constructor(
         }
 
     override suspend fun isAssetAuditLogEnabled(): Boolean = userConfigDAO.isAssetAuditLogEnabled()
+
+    override suspend fun setPreventAdminlessGroupsEnabled(enabled: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest {
+            userConfigDAO.setPreventAdminlessGroupsEnabled(enabled)
+        }
+
+    override suspend fun isPreventAdminlessGroupsEnabled(): Boolean = userConfigDAO.isPreventAdminlessGroupsEnabled()
 
     override suspend fun setWireCellsConfig(config: WireCellsConfig?): Either<StorageFailure, Unit> =
         wrapStorageRequest {

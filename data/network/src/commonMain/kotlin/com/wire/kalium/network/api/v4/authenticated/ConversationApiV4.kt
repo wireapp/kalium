@@ -34,7 +34,6 @@ import com.wire.kalium.network.api.model.JoinConversationRequestV4
 import com.wire.kalium.network.api.v3.authenticated.ConversationApiV3
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.wrapKaliumResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
@@ -47,7 +46,7 @@ internal open class ConversationApiV4 internal constructor(
 ) : ConversationApiV3(authenticatedNetworkClient) {
 
     override suspend fun createNewConversation(createConversationRequest: CreateConversationRequest) =
-        wrapKaliumResponse<ConversationResponseV3> {
+        wrapRequest<ConversationResponseV3> {
             httpClient.post(PATH_CONVERSATIONS) {
                 setBody(apiModelMapper.toApiV3(createConversationRequest))
             }
@@ -72,7 +71,7 @@ internal open class ConversationApiV4 internal constructor(
         code: String,
         key: String
     ): NetworkResponse<ConversationCodeInfo> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.get("$PATH_CONVERSATIONS/$PATH_JOIN") {
                 parameter(QUERY_KEY_CODE, code)
                 parameter(QUERY_KEY_KEY, key)
@@ -94,7 +93,7 @@ internal open class ConversationApiV4 internal constructor(
         conversationId: ConversationId,
         password: String?
     ): NetworkResponse<EventContentDTO.Conversation.CodeUpdated> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE") {
                 setBody(GenerateGuestLinkRequest(password))
             }
@@ -104,7 +103,7 @@ internal open class ConversationApiV4 internal constructor(
         conversationId: ConversationId,
         typingIndicatorMode: TypingIndicatorStatusDTO
     ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapRequest {
             httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_TYPING_NOTIFICATION") {
                 setBody(typingIndicatorMode)
             }

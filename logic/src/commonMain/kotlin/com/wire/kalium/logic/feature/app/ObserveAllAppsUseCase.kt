@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.map
  */
 public interface ObserveAllAppsUseCase {
 
-    public suspend operator fun invoke(): Flow<List<ServiceDetails>>
+    public operator fun invoke(): Flow<List<ServiceDetails>>
 }
 
 internal class ObserveAllAppsUseCaseImpl internal constructor(
@@ -40,7 +40,7 @@ internal class ObserveAllAppsUseCaseImpl internal constructor(
     private val appMapper: AppMapper = MapperProvider.appMapper()
 ) : ObserveAllAppsUseCase {
 
-    override suspend fun invoke(): Flow<List<ServiceDetails>> =
+    override fun invoke(): Flow<List<ServiceDetails>> =
         appRepository.observeAllApps().map {
             it.fold({ emptyList() }, { it })
         }.map { apps ->

@@ -237,16 +237,11 @@
     <ID>Filename:coreLogic.kt$com.wire.kalium.cli.coreLogic.kt</ID>
     <ID>Filename:defaultHttpEngine.kt$com.wire.kalium.network.defaultHttpEngine.kt</ID>
     <ID>Filename:fileLogger.kt$com.wire.kalium.cli.fileLogger.kt</ID>
-    <ID>Filename:fileLogger.kt$com.wire.kalium.monkeys.fileLogger.kt</ID>
     <ID>Filename:homeDirectory.kt$com.wire.kalium.cli.homeDirectory.kt</ID>
-    <ID>Filename:homeDirectory.kt$com.wire.kalium.monkeys.homeDirectory.kt</ID>
     <ID>Filename:main.kt$.main.kt</ID>
     <ID>Filename:main.kt$com.wire.kalium.cli.main.kt</ID>
-    <ID>Filename:main.kt$com.wire.kalium.monkeys.main.kt</ID>
     <ID>Filename:mlsMissingUsersMessageRejectionHandler.kt$com.wire.kalium.logic.feature.mls.mlsMissingUsersMessageRejectionHandler.kt</ID>
-    <ID>Filename:monkey.kt$com.wire.kalium.monkeys.monkey.kt</ID>
     <ID>Filename:readBinaryResource.kt$com.wire.kalium.cryptography.readBinaryResource.kt</ID>
-    <ID>Filename:replayer.kt$com.wire.kalium.monkeys.replayer.kt</ID>
     <ID>Filename:toByteArray.kt$com.wire.kalium.util.long.toByteArray.kt</ID>
     <ID>Filename:toUTF16BEByteArray.kt$com.wire.kalium.util.string.toUTF16BEByteArray.kt</ID>
     <ID>FinalNewline:ClientDTOSerializationTest.kt$com.wire.kalium.api.authenticated.client.ClientDTOSerializationTest.kt</ID>
@@ -751,7 +746,6 @@
     <ID>UnusedPrivateProperty:KeyPair.module_@wireapp_proteus.kt$KeyPair$publicKey: PublicKey</ID>
     <ID>UnusedPrivateProperty:KeyPair.module_@wireapp_proteus.kt$KeyPair$secretKey: SecretKey</ID>
     <ID>UnusedPrivateProperty:ListUsersRequestJson.kt$ListUsersRequestJson$private val qualifiedHandlesProvider = { serializable: QualifiedHandleListRequest -> val handlesArrayContent = serializable.qualifiedHandles.joinToString(",") { """{"domain": "${it.domain}", "handle":"${it.handle}"""" } """{"qualified_ids": [$handlesArrayContent]}""" }</ID>
-    <ID>UnusedPrivateProperty:LogResources.kt$LogResources$private val configuration: TestserviceConfiguration</ID>
     <ID>UnusedPrivateProperty:MarkAsReadCommand.kt$MarkAsReadCommand$val result = userSession.conversations.updateConversationReadDateUseCase( selectedConversation.id, DateTimeUtil.currentInstant() )</ID>
     <ID>UnusedPrivateProperty:MediaManagerServiceImpl.kt$MediaManagerServiceImpl$platformContext: PlatformContext</ID>
     <ID>UnusedPrivateProperty:NukeDBTest.kt$NukeDBTest$private val backupUserId = UserIDEntity("backup-selfValue", "selfDomain")</ID>

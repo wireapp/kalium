@@ -24,7 +24,7 @@ import com.wire.kalium.network.api.authenticated.notification.NotificationRespon
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v2.authenticated.NotificationApiV2
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 
@@ -40,7 +40,7 @@ internal open class NotificationApiV3 internal constructor(
         querySize: Int,
         queryClient: String?,
         querySince: String?
-    ): NetworkResponse<NotificationResponse> = wrapKaliumResponse {
+    ): NetworkResponse<NotificationResponse> = wrapRequest {
         // Pretty much the same V0 request, but without the 404 overwrite
         httpClient.get(V0.PATH_NOTIFICATIONS) {
             parameter(V0.SIZE_QUERY_KEY, querySize)

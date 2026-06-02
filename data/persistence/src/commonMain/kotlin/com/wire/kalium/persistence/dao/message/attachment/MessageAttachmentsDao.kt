@@ -17,6 +17,10 @@
  */
 package com.wire.kalium.persistence.dao.message.attachment
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
@@ -47,7 +51,7 @@ interface MessageAttachmentsDao {
     )
     suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity>
     suspend fun getAttachments(): List<MessageAttachmentEntity>
-    suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
+    fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
     suspend fun setAssetPath(assetId: String, path: String)
 }
 
@@ -60,22 +64,21 @@ internal class MessageAttachmentsDaoImpl(
 
     override suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity> =
         withContext(readDispatcher.value) {
-            queries.getAttachments(messageId, conversationId, ::toDao).executeAsList()
+            queries.getAttachments(messageId, conversationId, ::toDao).awaitAsList()
         }
 
     override suspend fun getAttachments(): List<MessageAttachmentEntity> = withContext(readDispatcher.value) {
-        queries.getAllAttachments(::toDao).executeAsList()
+        queries.getAllAttachments(::toDao).awaitAsList()
     }
 
-    override suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>> = withContext(readDispatcher.value) {
+    override fun observeAttachments(): Flow<List<MessageAttachmentEntity>> =
         queries.getAllAttachments(::toDao)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
-    }
 
     override suspend fun getAttachment(assetId: String): MessageAttachmentEntity = withContext(readDispatcher.value) {
-        queries.getAttachment(asset_id = assetId, ::toDao).executeAsOne()
+        queries.getAttachment(asset_id = assetId, ::toDao).awaitAsOne()
     }
 
     override suspend fun updateAttachment(

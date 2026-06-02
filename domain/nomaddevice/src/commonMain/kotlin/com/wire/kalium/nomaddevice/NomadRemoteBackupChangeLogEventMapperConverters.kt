@@ -49,7 +49,7 @@ internal fun MessageReactionsSyncEntity.toReactionBase64(): String {
             )
         }
     )
-    return Base64.Default.encode(proto.encodeToByteArray())
+    return Base64.encode(proto.encodeToByteArray())
 }
 
 internal fun MessageReadReceiptsSyncEntity.toReadReceiptsBase64(): String {
@@ -61,7 +61,7 @@ internal fun MessageReadReceiptsSyncEntity.toReadReceiptsBase64(): String {
             )
         }
     )
-    return Base64.Default.encode(proto.encodeToByteArray())
+    return Base64.encode(proto.encodeToByteArray())
 }
 
 internal fun QualifiedIDEntity.toApiConversation(): Conversation = Conversation(id = value, domain = domain)

@@ -39,7 +39,7 @@ object ClientActions {
         )
         val registerResult = userSession.client.getOrRegister(registerClientParam)
         if (registerResult is RegisterClientResult.Failure) {
-            error("Failed registering client of monkey : $registerResult")
+            error("Failed registering client of user : $registerResult")
         }
 
         return userSession

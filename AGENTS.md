@@ -241,7 +241,6 @@ fun givenEmailHasLeadingOrTrailingSpaces_whenLoggingIn_thenShouldBeTrimmed()
 - **`kalium.providerCacheScope` has no default** — consumers must explicitly set `LOCAL` or `GLOBAL`
 - **`:logic` must NOT expose `Either<>` types** to callers — wrap results in concrete types
 - **Mokkery only:** use `mock<SomeClass>()` for test mocks
-- **`shadowJar` service discovery:** requires `duplicatesStrategy = DuplicatesStrategy.INCLUDE` before `mergeServiceFiles()` in `tools/testservice/build.gradle.kts`
 
 ## Security Guidelines and Permissions
 

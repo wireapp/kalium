@@ -33,6 +33,7 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
@@ -51,7 +52,8 @@ internal actual open class UserSessionScopeProviderImpl(
     private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider,
     private val networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
-    userAgent: String
+    userAgent: String,
+    private val keychainConfig: ApplePersistenceConfig,
 ) : UserSessionScopeProviderCommon(
         globalCallManager,
         userStorageProvider,
@@ -67,7 +69,11 @@ internal actual open class UserSessionScopeProviderImpl(
         val dbPath = DBFolder("$rootAccountPath/database")
         val dataStoragePaths = DataStoragePaths(rootFileSystemPath, rootCachePath, dbPath)
         return UserSessionScope(
-            PlatformUserStorageProperties(rootPathsProvider.rootPath, rootStoragePath),
+            PlatformUserStorageProperties(
+                rootPath = rootPathsProvider.rootPath,
+                keychainConfig = keychainConfig,
+                rootStoragePath = rootStoragePath,
+            ),
             userId,
             globalScope,
             globalCallManager,

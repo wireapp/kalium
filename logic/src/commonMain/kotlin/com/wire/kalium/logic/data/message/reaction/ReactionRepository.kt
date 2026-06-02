@@ -60,7 +60,7 @@ internal interface ReactionRepository {
         userReactions: UserReactions
     ): Either<StorageFailure, Unit>
 
-    suspend fun observeMessageReactions(
+    fun observeMessageReactions(
         conversationId: ConversationId,
         messageId: String
     ): Flow<List<MessageReaction>>
@@ -126,7 +126,7 @@ internal class ReactionRepositoryImpl(
         )
     }
 
-    override suspend fun observeMessageReactions(
+    override fun observeMessageReactions(
         conversationId: ConversationId,
         messageId: String
     ): Flow<List<MessageReaction>> =

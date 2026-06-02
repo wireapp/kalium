@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.event
 
+import app.cash.sqldelight.async.coroutines.await
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,7 +45,7 @@ class EventMigration109Test : BaseDatabaseTest() {
         metadataDAO = userDatabase.metadataDAO
     }
 
-    private fun runMigration109Query() {
+    private suspend fun runMigration109Query() {
         // This is the exact query from 109/sqm.sq
         val updateQuery = """
             UPDATE Metadata
@@ -67,8 +68,8 @@ class EventMigration109Test : BaseDatabaseTest() {
         val deleteQuery = "DELETE FROM Events"
         
         // Execute the migration queries using the SqlDriver
-        userDatabase.sqlDriver.execute(null, updateQuery, 0)
-        userDatabase.sqlDriver.execute(null, deleteQuery, 0)
+        userDatabase.sqlDriver.execute(null, updateQuery, 0).await()
+        userDatabase.sqlDriver.execute(null, deleteQuery, 0).await()
     }
 
     @Test

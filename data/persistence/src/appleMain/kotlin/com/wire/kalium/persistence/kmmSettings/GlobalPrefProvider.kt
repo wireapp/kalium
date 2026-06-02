@@ -26,14 +26,14 @@ import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
 
 actual class GlobalPrefProvider(
-    rootPath: String,
+    keychainConfig: ApplePersistenceConfig,
     shouldEncryptData: Boolean = true
 ) {
     private val kaliumPref =
         KaliumPreferencesSettings(
             buildSettings(
                 SettingOptions.AppSettings(shouldEncryptData),
-                EncryptedSettingsPlatformParam(rootPath)
+                EncryptedSettingsPlatformParam(keychainConfig)
             )
         )
 

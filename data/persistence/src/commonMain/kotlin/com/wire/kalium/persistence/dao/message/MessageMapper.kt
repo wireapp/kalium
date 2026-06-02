@@ -200,7 +200,7 @@ object MessageMapper {
                         otherUserIdList = userIdList.filterNot { it == selfUserId },
                     )
 
-                    MessageEntity.MemberChangeType.SELF_USER_PROMOTED_TO_ADMIN -> MessagePreviewEntityContent.Unknown
+                    MessageEntity.MemberChangeType.USER_PROMOTED_TO_ADMIN -> MessagePreviewEntityContent.Unknown
                 }
             }
 

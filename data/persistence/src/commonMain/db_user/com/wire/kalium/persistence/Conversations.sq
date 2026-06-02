@@ -248,11 +248,11 @@ selectAllConversationsWithOtherUserName:
 SELECT
     Conversation.*,
     User.name AS otherUserName,
-    EXISTS (
+    CASE WHEN EXISTS (
         SELECT 1 FROM Member
         WHERE Member.conversation = Conversation.qualified_id
           AND Member.user = :selfUserId
-    ) AS selfIsMember
+    ) THEN 1 ELSE 0 END AS selfIsMemberInt
 FROM Conversation
 LEFT JOIN Member AS OtherMember ON Conversation.qualified_id = OtherMember.conversation
     AND Conversation.type IS 'ONE_ON_ONE'

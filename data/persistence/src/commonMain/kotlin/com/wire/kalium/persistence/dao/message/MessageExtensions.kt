@@ -134,9 +134,8 @@ internal class MessageExtensionsImpl internal constructor(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
         initialOffset: Long
-    ) = QueryPagingSource(
+    ) = AsyncQueryPagingSource(
         countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
-        transacter = messagesQueries,
         context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->
@@ -155,9 +154,8 @@ internal class MessageExtensionsImpl internal constructor(
         searchQuery: String,
         conversationId: ConversationIDEntity,
         initialOffset: Long
-    ) = QueryPagingSource(
+    ) = AsyncQueryPagingSource(
         countQuery = messagesQueries.countBySearchedMessageAndConversationId(searchQuery, conversationId),
-        transacter = messagesQueries,
         context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->
@@ -175,14 +173,13 @@ internal class MessageExtensionsImpl internal constructor(
         conversationId: ConversationIDEntity,
         mimeTypes: Set<String>,
         initialOffset: Long
-    ) = QueryPagingSource(
+    ) = AsyncQueryPagingSource(
         countQuery = messageAssetViewQueries.countAssetMessagesByConversationIdAndMimeTypes(
             conversationId,
             listOf(MessageEntity.Visibility.VISIBLE),
             listOf(MessageEntity.ContentType.ASSET),
             mimeTypes
         ),
-        transacter = messageAssetViewQueries,
         context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->
@@ -403,14 +400,13 @@ internal class MessageExtensionsImpl internal constructor(
         conversationId: ConversationIDEntity,
         mimeTypes: Set<String>,
         initialOffset: Long
-    ) = QueryPagingSource(
+    ) = AsyncQueryPagingSource(
         countQuery = messageAssetViewQueries.countImageAssetMessagesByConversationIdAndMimeTypes(
             conversationId,
             listOf(MessageEntity.Visibility.VISIBLE),
             listOf(MessageEntity.ContentType.ASSET),
             mimeTypes
         ),
-        transacter = messageAssetViewQueries,
         context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->

@@ -1,7 +1,7 @@
 ALTER TABLE MessageTextContent ADD COLUMN is_quote_verified INTEGER;
 
-DROP VIEW MessageQuoteDetails;
-DROP VIEW MessageDetailsView;
+DROP VIEW IF EXISTS MessageQuoteDetails;
+DROP VIEW IF EXISTS MessageDetailsView;
 
 
 CREATE VIEW IF NOT EXISTS MessageQuoteDetails

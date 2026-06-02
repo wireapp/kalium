@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.feature.call
 
+import avs.AVSFlowManager
+import avs.AVSMediaManager
+import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.util.PlatformContext
@@ -27,23 +30,46 @@ import com.wire.kalium.logic.util.PlatformView
 internal actual open class FlowManagerServiceImpl(
     appContext: PlatformContext
 ) : FlowManagerService {
+    private val mediaManager by lazy {
+        AVSMediaManager.defaultMediaManager() ?: AVSMediaManager()
+    }
+
+    private val flowManager by lazy {
+        AVSFlowManager(delegate = null, mediaManager = mediaManager).also {
+            it.setEnableLogging(true)
+        }
+    }
+
     actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
-        kaliumLogger.w("Calls not supported on iOS: setVideoPreview ignored")
+        val videoView = view.view
+        if (videoView == null) {
+            kaliumLogger.w("AVS iOS: setVideoPreview ignored because view is null")
+            return
+        }
+        flowManager.attachVideoView(videoView)
+        callingLogger.i("AVS iOS: attached remote video view for conversation=${conversationId.value}")
     }
 
     actual override suspend fun flipToFrontCamera(conversationId: ConversationId) {
-        kaliumLogger.w("Calls not supported on iOS: flipToFrontCamera ignored")
+        flowManager.setVideoCaptureDevice(deviceId = "front", forConversation = conversationId.toString())
+        callingLogger.i("AVS iOS: switched to front camera for conversation=${conversationId.value}")
     }
 
     actual override suspend fun flipToBackCamera(conversationId: ConversationId) {
-        kaliumLogger.w("Calls not supported on iOS: flipToBackCamera ignored")
+        flowManager.setVideoCaptureDevice(deviceId = "back", forConversation = conversationId.toString())
+        callingLogger.i("AVS iOS: switched to back camera for conversation=${conversationId.value}")
     }
 
     actual override suspend fun setUIRotation(rotation: PlatformRotation) {
-        kaliumLogger.w("Calls not supported on iOS: setUIRotation ignored")
+        kaliumLogger.w("AVS iOS: setUIRotation not exposed in current AVSFlowManager API")
     }
 
     actual override suspend fun startFlowManager() {
-        kaliumLogger.w("Calls not supported on iOS: startFlowManager ignored")
+        if (!AppleAvsInterop.startIfAvailable()) {
+            kaliumLogger.w("AVS iOS smoke: startFlowManager could not start AVS")
+            return
+        }
+        mediaManager.startAudio()
+        flowManager
     }
 }

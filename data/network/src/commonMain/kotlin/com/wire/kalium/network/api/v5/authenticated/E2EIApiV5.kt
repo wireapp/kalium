@@ -23,8 +23,8 @@ import com.wire.kalium.network.api.v4.authenticated.E2EIApiV4
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.handleUnsuccessfulResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.interceptUnsuccessfulResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareHead
 import io.ktor.client.statement.HttpResponse
@@ -53,10 +53,10 @@ internal open class E2EIApiV5 internal constructor(
             CustomErrors.MISSING_NONCE
         }
     else {
-        handleUnsuccessfulResponse(httpResponse)
+        interceptUnsuccessfulResponse(httpResponse)
     }
 
-    override suspend fun getAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse> = wrapKaliumResponse {
+    override suspend fun getAccessToken(clientId: String, dpopToken: String): NetworkResponse<AccessTokenResponse> = wrapRequest {
         httpClient.post("$PATH_CLIENTS/$clientId/$PATH_ACCESS_TOKEN") {
             headers.append(DPOP_HEADER_KEY, dpopToken)
         }

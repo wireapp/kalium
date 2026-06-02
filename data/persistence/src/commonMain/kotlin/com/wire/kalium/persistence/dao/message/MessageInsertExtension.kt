@@ -17,6 +17,10 @@
  */
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+import app.cash.sqldelight.async.coroutines.await
+
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
@@ -44,10 +48,10 @@ internal interface MessageInsertExtension {
      * that this asset message that is in the DB was only a preview message with valid metadata but no valid keys (Web clients send 2
      * separated messages). Therefore, it still needs to be updated with the valid keys in order to be displayed.
      */
-    fun isValidAssetMessageUpdate(message: MessageEntity): Boolean
-    fun updateAssetMessage(message: MessageEntity)
+    suspend fun isValidAssetMessageUpdate(message: MessageEntity): Boolean
+    suspend fun updateAssetMessage(message: MessageEntity)
     fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType
-    fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean = true)
+    suspend fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean = true)
 }
 
 @Suppress("LongParameterList")
@@ -61,12 +65,12 @@ internal class MessageInsertExtensionImpl(
     private val selfUserIDEntity: UserIDEntity
 ) : MessageInsertExtension {
 
-    override fun isValidAssetMessageUpdate(message: MessageEntity): Boolean {
+    override suspend fun isValidAssetMessageUpdate(message: MessageEntity): Boolean {
         if (message !is MessageEntity.Regular) return false
         // If asset has no valid keys, no need to query the DB
         val hasValidKeys = message.content is MessageEntityContent.Asset && message.content.hasValidRemoteData()
         val currentMessageHasMissingAssetInformation =
-            hasValidKeys && messagesQueries.selectById(message.id, message.conversationId).executeAsList().firstOrNull()?.let {
+            hasValidKeys && messagesQueries.selectById(message.id, message.conversationId).awaitAsList().firstOrNull()?.let {
                 val isFromSameSender = message.senderUserId == it.senderUserId
                         && message.senderClientId == it.senderClientId
                 (it.assetId.isNullOrEmpty() || it.assetOtrKey.isNullOrEmpty() || it.assetSha256.isNullOrEmpty()) && isFromSameSender
@@ -74,7 +78,7 @@ internal class MessageInsertExtensionImpl(
         return currentMessageHasMissingAssetInformation
     }
 
-    override fun updateAssetMessage(message: MessageEntity) {
+    override suspend fun updateAssetMessage(message: MessageEntity) {
         if (message.content !is MessageEntityContent.Asset) {
             return
         }
@@ -95,12 +99,12 @@ internal class MessageInsertExtensionImpl(
                 assetSha256 = assetSha256Key,
                 assetEncryptionAlgorithm = assetEncryptionAlgorithm,
                 assetNormalizedLoudness = assetNormalizedLoudness,
-            )
+            ).await()
         }
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean) {
+    override suspend fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean) {
         try {
             insertBaseMessageOrError(message)
             insertMessageContent(message)
@@ -109,12 +113,12 @@ internal class MessageInsertExtensionImpl(
             }
         } catch (e: CancellationException) {
             throw e
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             /* no-op */
         }
     }
 
-    private fun insertBaseMessageOrError(message: MessageEntity) {
+    private suspend fun insertBaseMessageOrError(message: MessageEntity) {
         // do not add withContext
         messagesQueries.insertMessage(
             id = message.id,
@@ -135,7 +139,7 @@ internal class MessageInsertExtensionImpl(
     }
 
     @Suppress("LongMethod", "ComplexMethod")
-    private fun insertMessageContent(message: MessageEntity) {
+    private suspend fun insertMessageContent(message: MessageEntity) {
         when (val content = message.content) {
             is MessageEntityContent.Text -> {
                 messagesQueries.insertMessageTextContent(
@@ -404,8 +408,8 @@ internal class MessageInsertExtensionImpl(
     }
 
     @Suppress("LongMethod")
-    private fun insertUnreadEvent(message: MessageEntity) {
-        val lastRead = conversationsQueries.getConversationLastReadDate(message.conversationId).executeAsOneOrNull()
+    private suspend fun insertUnreadEvent(message: MessageEntity) {
+        val lastRead = conversationsQueries.getConversationLastReadDate(message.conversationId).awaitAsOneOrNull()
             ?: Instant.DISTANT_PAST
 
         if (!message.isSelfMessage && message.date > lastRead) {
@@ -472,14 +476,14 @@ internal class MessageInsertExtensionImpl(
         }
     }
 
-    private fun insertUnreadTextContent(message: MessageEntity, textContent: MessageEntityContent.Text) {
+    private suspend fun insertUnreadTextContent(message: MessageEntity, textContent: MessageEntityContent.Text) {
         var isQuotingSelfUser = false
         if (textContent.quotedMessageId != null) {
             val senderId = messagesQueries.getMessageSenderId(
                 textContent.quotedMessageId,
                 message.conversationId
             )
-                .executeAsOneOrNull()
+                .awaitAsOneOrNull()
             isQuotingSelfUser = senderId == selfUserIDEntity
         }
         when {
@@ -507,7 +511,7 @@ internal class MessageInsertExtensionImpl(
         }
     }
 
-    private fun insertCompositeMessage(
+    private suspend fun insertCompositeMessage(
         content: MessageEntityContent.Composite,
         message: MessageEntity
     ) {

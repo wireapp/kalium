@@ -22,7 +22,7 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.authenticated.conversation.ResetMLSConversationRequestV9
 import com.wire.kalium.network.api.v8.authenticated.ConversationApiV8
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 
@@ -30,7 +30,7 @@ internal open class ConversationApiV9 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient
 ) : ConversationApiV8(authenticatedNetworkClient) {
 
-    override suspend fun resetMlsConversation(groupId: String, epoch: ULong): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun resetMlsConversation(groupId: String, epoch: ULong): NetworkResponse<Unit> = wrapRequest {
         httpClient.post("$PATH_MLS/$PATH_RESET_CONVERSATION") {
             setBody(
                 ResetMLSConversationRequestV9(
