@@ -151,7 +151,7 @@ internal class ObservableMLSConversationRepository(
     override suspend fun clearProposalTimer(groupID: GroupID) =
         delegate.clearProposalTimer(groupID)
 
-    override suspend fun observeProposalTimers(): Flow<ProposalTimer> = delegate.observeProposalTimers()
+    override fun observeProposalTimers(): Flow<ProposalTimer> = delegate.observeProposalTimers()
 
     override suspend fun addMemberToMLSGroup(
         mlsContext: MlsCoreCryptoContext,

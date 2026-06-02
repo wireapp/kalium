@@ -55,9 +55,9 @@ internal interface SessionRepository {
     suspend fun storeSession(session: StoreSessionParam): Either<StorageFailure, Unit>
 
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
-    suspend fun allSessionsFlow(): Flow<List<AccountInfo>>
+    fun allSessionsFlow(): Flow<List<AccountInfo>>
     suspend fun allValidSessions(): Either<StorageFailure, List<AccountInfo.Valid>>
-    suspend fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>>
+    fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>>
     suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
@@ -73,7 +73,7 @@ internal interface SessionRepository {
     suspend fun isNativePushSupportedByServer(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun updateSsoIdAndScimInfo(userId: UserId, ssoId: SsoId?, managedBy: ManagedByDTO?): Either<StorageFailure, Unit>
     suspend fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
-    suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
+    fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
     suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?>
     suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean>
@@ -123,7 +123,7 @@ internal class SessionDataSource internal constructor(
     override suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>> =
         wrapStorageRequest { accountsDAO.allAccountList() }.map { it.map { sessionMapper.fromAccountInfoEntity(it) } }
 
-    override suspend fun allSessionsFlow(): Flow<List<AccountInfo>> =
+    override fun allSessionsFlow(): Flow<List<AccountInfo>> =
         accountsDAO.observeAllAccountList()
             .map { it.map { sessionMapper.fromAccountInfoEntity(it) } }
 
@@ -131,7 +131,7 @@ internal class SessionDataSource internal constructor(
         wrapStorageRequest { accountsDAO.allValidAccountList() }
             .map { it.map { AccountInfo.Valid(it.userIDEntity.toModel()) } }
 
-    override suspend fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>> =
+    override fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>> =
         accountsDAO.observerValidAccountList()
             .map { it.map { AccountInfo.Valid(it.userIDEntity.toModel()) } }
             .wrapStorageRequest()
@@ -223,7 +223,7 @@ internal class SessionDataSource internal constructor(
         accountsDAO.isFederated(userId.toDao())
     }
 
-    override suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>> =
+    override fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>> =
         wrapStorageRequest {
             accountsDAO.getAllValidAccountPersistentWebSocketStatus().map {
                 it.map { persistentWebSocketStatusEntity ->

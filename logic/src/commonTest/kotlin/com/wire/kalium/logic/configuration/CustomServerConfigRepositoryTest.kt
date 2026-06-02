@@ -245,14 +245,14 @@ class CustomServerConfigRepositoryTest {
         }
 
         suspend fun withDaoEntityFlowResponse(): Arrangement {
-            everySuspend { serverConfigurationDAO.allConfigFlow() } returns flowOf(
+            every { serverConfigurationDAO.allConfigFlow() } returns flowOf(
                 listOf(newServerConfigEntity(1), newServerConfigEntity(2), newServerConfigEntity(3))
             )
             return this
         }
 
         suspend fun withGetServerConfigByLinksFlow(): Arrangement {
-            everySuspend { serverConfigurationDAO.getServerConfigByLinksFlow(any()) } returns flowOf(newServerConfigEntity(1))
+            every { serverConfigurationDAO.getServerConfigByLinksFlow(any()) } returns flowOf(newServerConfigEntity(1))
             return this
         }
 

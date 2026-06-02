@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.map
  * Use case that observes if the legal hold change should be notified to the user or if it has been already notified.
  */
 public interface ObserveLegalHoldChangeNotifiedForSelfUseCase {
-    public suspend operator fun invoke(): Flow<Result>
+    public operator fun invoke(): Flow<Result>
 
     public sealed class Result {
         public data class ShouldNotify(val legalHoldState: LegalHoldState) : Result()
@@ -47,7 +47,7 @@ internal class ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl internal constru
     val observeLegalHoldForUserUseCase: ObserveLegalHoldStateForUserUseCase
 ) : ObserveLegalHoldChangeNotifiedForSelfUseCase {
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun invoke(): Flow<ObserveLegalHoldChangeNotifiedForSelfUseCase.Result> =
+    override fun invoke(): Flow<ObserveLegalHoldChangeNotifiedForSelfUseCase.Result> =
         userConfigRepository.observeLegalHoldChangeNotified()
             .flatMapLatest {
                 it.fold(
