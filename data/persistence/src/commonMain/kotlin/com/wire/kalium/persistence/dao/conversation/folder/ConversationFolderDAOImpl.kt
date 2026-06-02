@@ -17,6 +17,9 @@
  */
 package com.wire.kalium.persistence.dao.conversation.folder
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationFolder
 import com.wire.kalium.persistence.ConversationFoldersQueries
@@ -40,7 +43,7 @@ class ConversationFolderDAOImpl internal constructor(
 ) : ConversationFolderDAO {
     private val conversationDetailsWithEventsMapper = ConversationDetailsWithEventsMapper
 
-    override suspend fun observeFolders(): Flow<List<ConversationFolderEntity>> {
+    override fun observeFolders(): Flow<List<ConversationFolderEntity>> {
         return conversationFoldersQueries.getFolders()
             .asFlow()
             .mapToList()
@@ -61,7 +64,7 @@ class ConversationFolderDAOImpl internal constructor(
     }
 
     override suspend fun getFoldersWithConversations(): List<FolderWithConversationsEntity> = withContext(readDispatcher.value) {
-        val labeledConversationList = conversationFoldersQueries.getAllFoldersWithConversations().executeAsList().map(::toEntity)
+        val labeledConversationList = conversationFoldersQueries.getAllFoldersWithConversations().awaitAsList().map(::toEntity)
 
         val folderMap = labeledConversationList.groupBy { it.folderId }.mapValues { entry ->
             val folderId = entry.key
@@ -95,7 +98,7 @@ class ConversationFolderDAOImpl internal constructor(
         type = row.folder_type
     )
 
-    override suspend fun observeConversationListFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>> {
+    override fun observeConversationListFromFolder(folderId: String): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationFoldersQueries.getConversationsFromFolder(
             folderId,
             conversationDetailsWithEventsMapper::fromViewToModel
@@ -109,7 +112,7 @@ class ConversationFolderDAOImpl internal constructor(
         return conversationFoldersQueries.getFavoriteFolder { id, name, folderType ->
             ConversationFolderEntity(id, name, folderType)
         }
-            .executeAsOneOrNull()
+            .awaitAsOneOrNull()
     }
 
     override suspend fun updateConversationFolders(folderWithConversationsList: List<FolderWithConversationsEntity>) =

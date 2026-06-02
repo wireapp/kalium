@@ -1,6 +1,6 @@
 import kotlin.Boolean;
 
-DROP VIEW MessageDetailsView;
+DROP VIEW IF EXISTS MessageDetailsView;
 ALTER TABLE Message ADD COLUMN expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0);
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
@@ -112,7 +112,7 @@ LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON
 LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
 LEFT JOIN SelfUser;
 
-DROP VIEW ReceiptDetails;
+DROP VIEW IF EXISTS ReceiptDetails;
 CREATE VIEW IF NOT EXISTS ReceiptDetails
 AS SELECT
 	Receipt.type,

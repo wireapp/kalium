@@ -212,7 +212,7 @@ internal interface MLSConversationRepository : MLSMemberAdder {
     suspend fun commitPendingProposals(mlsContext: MlsCoreCryptoContext, groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
     suspend fun clearProposalTimer(groupID: GroupID)
-    suspend fun observeProposalTimers(): Flow<ProposalTimer>
+    fun observeProposalTimers(): Flow<ProposalTimer>
     suspend fun rotateKeysAndMigrateConversations(
         mlsContext: MlsCoreCryptoContext,
         clientId: ClientId,
@@ -477,7 +477,7 @@ internal class MLSConversationDataSource(
         conversationDAO.clearProposalTimer(idMapper.toCryptoModel(groupID))
     }
 
-    override suspend fun observeProposalTimers(): Flow<ProposalTimer> =
+    override fun observeProposalTimers(): Flow<ProposalTimer> =
         merge(
             proposalTimersFlow,
             conversationDAO.getProposalTimers().map { it.map(conversationMapper::fromDaoModel) }.flatten()
