@@ -1422,7 +1422,9 @@ public class UserSessionScope internal constructor(
             oneOnOneProtocolSelector,
             oneOnOneMigrator,
             incrementalSyncRepository,
-            pendingActionsRepository
+            pendingActionsRepository,
+            conversationRepository,
+            mlsConversationRepository,
         )
 
     private val recoverPendingOneOnOneResolutionsUseCase: RecoverPendingOneOnOneResolutionsUseCase
