@@ -29,7 +29,6 @@ import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
-import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -42,10 +41,11 @@ internal object CallMapper {
         status = dbEntry.status,
         callerId = dbEntry.caller_id,
         conversationType = dbEntry.conversation_type,
+        createdAt = dbEntry.created_at,
         type = dbEntry.type
     )
 
-    @Suppress("FunctionParameterNaming", "LongParameterList", "UNUSED_PARAMETER")
+    @Suppress("FunctionParameterNaming", "LongParameterList")
     fun fromCalls(
         conversationId: QualifiedIDEntity,
         id: String,
@@ -60,6 +60,7 @@ internal object CallMapper {
         status = status,
         callerId = callerId,
         conversationType = conversationType,
+        createdAt = createdAt,
         type = type
     )
 }
@@ -72,17 +73,28 @@ internal class CallDAOImpl(
     private val mapper: CallMapper = CallMapper,
 ) : CallDAO {
 
-    override suspend fun insertCall(call: CallEntity, createdAt: String?) {
+    override suspend fun insertCall(call: CallEntity) {
         withContext(writeDispatcher.value) {
-            val createdTime = createdAt ?: DateTimeUtil.currentInstant().toEpochMilliseconds().toString()
-
             callsQueries.insertCall(
                 conversation_id = call.conversationId,
                 id = call.id,
                 status = call.status,
                 caller_id = call.callerId,
                 conversation_type = call.conversationType,
-                created_at = createdTime,
+                created_at = call.createdAt,
+                type = call.type
+            )
+        }
+    }
+
+    override suspend fun insertCallWithoutStatus(call: CallEntity) {
+        withContext(writeDispatcher.value) {
+            callsQueries.insertCallWithoutStatus(
+                conversation_id = call.conversationId,
+                id = call.id,
+                caller_id = call.callerId,
+                conversation_type = call.conversationType,
+                created_at = call.createdAt,
                 type = call.type
             )
         }
@@ -127,6 +139,16 @@ internal class CallDAOImpl(
             callsQueries.updateLastCallStatusByConversationId(
                 status,
                 conversationId
+            )
+        }
+    }
+
+    override suspend fun updateCallStatusById(status: CallEntity.Status, id: String, conversationId: QualifiedIDEntity) {
+        withContext(writeDispatcher.value) {
+            callsQueries.updateCallStatusById(
+                status = status,
+                id = id,
+                conversation_id = conversationId
             )
         }
     }

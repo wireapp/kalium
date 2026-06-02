@@ -62,6 +62,7 @@ object TestCall {
         status = CallEntity.Status.ESTABLISHED,
         callerId = CALLER_ID.toString(),
         conversationType = ConversationEntity.Type.ONE_ON_ONE,
+        createdAt = "1",
         type = CallEntity.Type.ONE_ON_ONE
     )
 

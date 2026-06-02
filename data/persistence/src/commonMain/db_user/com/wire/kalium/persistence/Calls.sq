@@ -22,8 +22,12 @@ insertCall:
 INSERT INTO Call(conversation_id, id, status, caller_id, conversation_type, created_at, type)
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
+insertCallWithoutStatus:
+INSERT INTO Call(conversation_id, id, status, caller_id, conversation_type, created_at, type)
+VALUES (?, ?, 'NOT_SET', ?, ?, ?, ?);
+
 selectAllCalls:
-SELECT * FROM Call;
+SELECT * FROM Call WHERE status != 'NOT_SET';
 
 selectEstablishedCalls:
 SELECT * FROM Call WHERE status = 'ESTABLISHED' OR status = 'ANSWERED';
@@ -45,12 +49,23 @@ WHERE
         SELECT id
         FROM Call
         WHERE
-            status != 'CLOSED'
-            AND status != 'MISSED'
+            (
+                status = 'NOT_SET'
+                OR (
+                    status != 'CLOSED'
+                    AND status != 'MISSED'
+                )
+            )
             AND conversation_id = ?
         ORDER BY created_at DESC
         LIMIT 1
     );
+
+updateCallStatusById:
+UPDATE Call
+SET status = ?
+WHERE id = ?
+    AND conversation_id = ?;
 
 selectLastClosedCallCreationTimeConversationId:
 SELECT created_at
@@ -74,6 +89,7 @@ SELECT status
 FROM Call
 WHERE
     conversation_id = :conversationId
+    AND status != 'NOT_SET'
 ORDER BY created_at DESC
 LIMIT 1;
 

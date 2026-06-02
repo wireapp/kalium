@@ -355,12 +355,16 @@ class UserDatabaseDataGenerator(
                 ConversationEntity.Type.values()[(generatedCallsCount + 1) % ConversationEntity.Type.values().size]
             else conversationType
 
+        val callStatuses = CallEntity.Status.values().filterNot {
+            it == CallEntity.Status.NOT_SET || it == CallEntity.Status.STILL_ONGOING
+        }
         val callEntity = CallEntity(
             conversationId = conversationId,
             id = "${callPrefix}Id${generatedCallsCount}",
-            status = CallEntity.Status.values()[generatedCallsCount % CallEntity.Status.values().size],
+            status = callStatuses[generatedCallsCount % callStatuses.size],
             callerId = userEntity.id.value,
             conversationType = sanitizedConversationType,
+            createdAt = (1_700_000_000_000L + generatedCallsCount).toString(),
             type = type
         )
 

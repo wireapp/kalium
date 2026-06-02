@@ -116,6 +116,30 @@ class CallDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenCallInsertedWithoutStatus_whenObservingCalls_thenCallIsNotReturnedButCallerIsStored() = runTest {
+        callDAO.insertCallWithoutStatus(callEntity)
+
+        assertEquals(emptyList(), callDAO.observeCalls().first())
+        assertEquals(emptyList(), callDAO.observeOutgoingCalls().first())
+        assertNull(callDAO.getCallStatusByConversationId(convId))
+        assertEquals(callEntity.callerId, callDAO.getCallerIdByConversationId(convId))
+    }
+
+    @Test
+    fun givenCallInsertedWithoutStatus_whenUpdatingStatusById_thenCallIsReturnedWithOriginalMetadata() = runTest {
+        callDAO.insertCallWithoutStatus(callEntity)
+
+        callDAO.updateCallStatusById(
+            status = CallEntity.Status.CLOSED,
+            id = callEntity.id,
+            conversationId = callEntity.conversationId
+        )
+
+        val calls = callDAO.observeCalls().first()
+        assertEquals(listOf(callEntity.copy(status = CallEntity.Status.CLOSED)), calls)
+    }
+
+    @Test
     fun givenLastCallIsActive_whenObservingLastActiveCall_thenReturnActiveCall() = runTest {
         // given
         val conversationId = callEntity.conversationId
@@ -207,6 +231,7 @@ class CallDAOTest : BaseDatabaseTest() {
             status = CallEntity.Status.STARTED,
             callerId = "callerId",
             conversationType = ConversationEntity.Type.GROUP,
+            createdAt = "1",
             type = CallEntity.Type.CONFERENCE
         )
     }

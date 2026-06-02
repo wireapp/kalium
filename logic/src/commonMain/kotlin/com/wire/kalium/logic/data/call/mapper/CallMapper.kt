@@ -38,6 +38,7 @@ import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.util.DateTimeUtil
 
 internal interface CallMapper {
     fun toCallTypeCalling(callType: CallType): CallTypeCalling
@@ -165,6 +166,7 @@ internal class CallMapperImpl(
         status = toCallEntityStatus(callStatus = status),
         callerId = callerId.toString(),
         conversationType = toConversationEntityType(conversationType = conversationType),
+        createdAt = DateTimeUtil.currentInstant().toEpochMilliseconds().toString(),
         type = toCallEntityType(type)
     )
 
@@ -214,13 +216,14 @@ internal class CallMapperImpl(
         CallStatus.MISSED -> CallEntity.Status.MISSED
         CallStatus.ANSWERED -> CallEntity.Status.ANSWERED
         CallStatus.ESTABLISHED -> CallEntity.Status.ESTABLISHED
-        CallStatus.STILL_ONGOING -> CallEntity.Status.STILL_ONGOING
+        CallStatus.STILL_ONGOING -> CallEntity.Status.NOT_SET
         CallStatus.CLOSED_INTERNALLY -> CallEntity.Status.CLOSED_INTERNALLY
         CallStatus.CLOSED -> CallEntity.Status.CLOSED
         CallStatus.REJECTED -> CallEntity.Status.REJECTED
     }
 
     private fun toCallStatus(callStatus: CallEntity.Status): CallStatus = when (callStatus) {
+        CallEntity.Status.NOT_SET -> CallStatus.CLOSED_INTERNALLY
         CallEntity.Status.STARTED -> CallStatus.STARTED
         CallEntity.Status.INCOMING -> CallStatus.INCOMING
         CallEntity.Status.MISSED -> CallStatus.MISSED

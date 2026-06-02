@@ -3509,6 +3509,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             status = CallEntity.Status.STILL_ONGOING,
             callerId = "callerId",
             conversationType = ConversationEntity.Type.GROUP,
+            createdAt = "1",
             type = CallEntity.Type.CONFERENCE
         )
     }

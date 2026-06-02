@@ -282,7 +282,7 @@ internal class CallDataSource(
             status = status,
             conversationType = conversation.conversation.type,
             callerId = callerId
-        )
+        ).copy(status = status.toInMemoryCallEntityStatus())
 
         val metadata = CallMetadata(
             callerId = callerId,
@@ -365,7 +365,7 @@ internal class CallDataSource(
     }
 
     override suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus) {
-        val callEntityStatus = callMapper.toCallEntityStatus(callStatus = status)
+        val callEntityStatus = status.toInMemoryCallEntityStatus()
         val conversationIdEntity = callMapper.fromConversationIdToQualifiedIDEntity(conversationId = conversationId)
         val activeCall = activeCallEntities.value.lastOrNull { it.conversationId == conversationIdEntity }
         val updatedActiveCall = activeCall?.copy(status = callEntityStatus)
@@ -383,9 +383,10 @@ internal class CallDataSource(
             }
             if (!callEntityStatus.isActive && !activeCall.shouldKeepGroupCallJoinable(callEntityStatus)) {
                 wrapStorageRequest {
-                    callDAO.insertCall(
-                        call = updatedActiveCall,
-                        createdAt = activeCallCreatedAt.remove(updatedActiveCall.id)
+                    callDAO.updateCallStatusById(
+                        status = updatedActiveCall.status,
+                        id = updatedActiveCall.id,
+                        conversationId = updatedActiveCall.conversationId
                     )
                 }
             }
@@ -808,13 +809,10 @@ internal class CallDataSource(
     override fun observeCallQualityData(conversationId: ConversationId) =
         _callQualityDataProfile.mapNotNull { it[conversationId] }
 
-    private fun upsertActiveCall(call: CallEntity) {
-        if (!activeCallCreatedAt.containsKey(call.id)) {
-            activeCallCreatedAt[call.id] = DateTimeUtil.currentInstant().toEpochMilliseconds().toString()
+    private suspend fun upsertActiveCall(call: CallEntity) {
+        wrapStorageRequest {
+            callDAO.insertCallWithoutStatus(call)
         }
-        activeCallEntities.value
-            .filter { it.conversationId == call.conversationId && it.id != call.id }
-            .forEach { activeCallCreatedAt.remove(it.id) }
         activeCallEntities.update { calls ->
             calls
                 .filterNot { it.conversationId == call.conversationId }
@@ -830,10 +828,18 @@ internal class CallDataSource(
             CallEntity.Status.ESTABLISHED,
             CallEntity.Status.STILL_ONGOING -> true
 
+            CallEntity.Status.NOT_SET,
             CallEntity.Status.MISSED,
             CallEntity.Status.CLOSED_INTERNALLY,
             CallEntity.Status.CLOSED,
             CallEntity.Status.REJECTED -> false
+        }
+
+    private fun CallStatus.toInMemoryCallEntityStatus(): CallEntity.Status =
+        if (this == CallStatus.STILL_ONGOING) {
+            CallEntity.Status.STILL_ONGOING
+        } else {
+            callMapper.toCallEntityStatus(callStatus = this)
         }
 
     companion object {

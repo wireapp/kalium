@@ -1,0 +1,3 @@
+UPDATE Call
+SET status = 'NOT_SET'
+WHERE status = 'STILL_ONGOING';

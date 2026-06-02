@@ -35,6 +35,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class CallMapperTest {
 
@@ -137,9 +138,10 @@ class CallMapperTest {
         )
 
         // then
+        assertTrue(result.createdAt.isNotBlank())
         assertEquals(
             expectedCallEntity,
-            result
+            result.copy(createdAt = expectedCallEntity.createdAt)
         )
     }
 
@@ -229,7 +231,7 @@ class CallMapperTest {
         val result = callMapper.toCallEntityStatus(callStatus = CallStatus.STILL_ONGOING)
 
         assertEquals(
-            CallEntity.Status.STILL_ONGOING,
+            CallEntity.Status.NOT_SET,
             result
         )
     }

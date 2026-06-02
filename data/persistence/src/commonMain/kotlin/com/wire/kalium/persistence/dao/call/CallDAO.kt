@@ -28,9 +28,11 @@ data class CallEntity(
     val status: Status,
     val callerId: String,
     val conversationType: ConversationEntity.Type,
+    val createdAt: String,
     val type: Type
 ) {
     enum class Status {
+        NOT_SET,
         STARTED,
         INCOMING,
         MISSED,
@@ -52,7 +54,8 @@ data class CallEntity(
 
 @Suppress("TooManyFunctions")
 interface CallDAO {
-    fun insertCall(call: CallEntity, createdAt: String? = null)
+    fun insertCall(call: CallEntity)
+    suspend fun insertCallWithoutStatus(call: CallEntity)
     fun observeCalls(): Flow<List<CallEntity>>
     fun observeIncomingCalls(): Flow<List<CallEntity>>
     fun observeOutgoingCalls(): Flow<List<CallEntity>>
@@ -60,6 +63,7 @@ interface CallDAO {
     suspend fun getEstablishedCall(): CallEntity
     fun observeOngoingCalls(): Flow<List<CallEntity>>
     suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity)
+    suspend fun updateCallStatusById(status: CallEntity.Status, id: String, conversationId: QualifiedIDEntity)
     suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String?
     suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status?
     fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?>
