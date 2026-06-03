@@ -35,7 +35,7 @@ public class AuthenticationScopeForConfigIdUseCase internal constructor(
     private val serverConfigMapper: ServerConfigMapper,
     private val authenticationScopeFactory: (ServerConfig) -> AuthenticationScope,
 ) {
-    public operator fun invoke(configId: String): AutoVersionAuthScopeUseCase.Result =
+    public suspend operator fun invoke(configId: String): AutoVersionAuthScopeUseCase.Result =
         wrapStorageRequest { serverConfigurationDAO.configById(configId) }
             .fold(
                 { AutoVersionAuthScopeUseCase.Result.Failure.Generic(it) },

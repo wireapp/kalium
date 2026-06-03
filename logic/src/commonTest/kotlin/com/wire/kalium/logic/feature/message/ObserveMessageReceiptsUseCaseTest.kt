@@ -59,7 +59,7 @@ class ObserveMessageReceiptsUseCaseTest {
                 messageIds: List<String>
             ) = Unit
 
-            override suspend fun observeMessageReceipts(
+            override fun observeMessageReceipts(
                 conversationId: ConversationId,
                 messageId: String,
                 type: ReceiptType

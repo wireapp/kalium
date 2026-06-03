@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.dao.ServiceEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.answering.throws
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
@@ -273,38 +274,28 @@ class ServiceRepositoryTest {
         }
 
         suspend fun withObserveIsMemberSuccess(result: Flow<QualifiedIDEntity?>) = apply {
-            everySuspend {
-                serviceDAO.observeIsServiceMember(any(), any())
-            }.returns(result)
+            every { serviceDAO.observeIsServiceMember(any(), any()) }.returns(result)
         }
 
         suspend fun withObserveIsMemberFailure(error: Throwable) = apply {
-            everySuspend {
-                serviceDAO.observeIsServiceMember(any(), any())
-            }.throws(error)
+            every { serviceDAO.observeIsServiceMember(any(), any()) }.throws(error)
         }
 
         suspend fun withGetAllServicesSuccess(result: Flow<List<ServiceEntity>>) = apply {
-            everySuspend {
-                serviceDAO.getAllServices()
-            }.returns(result)
+            every { serviceDAO.getAllServices() }.returns(result)
         }
 
         suspend fun withGetAllServicesFailure(error: Throwable) = apply {
-            everySuspend { serviceDAO.getAllServices() }
+            every { serviceDAO.getAllServices() }
                 .throws(error)
         }
 
         suspend fun withSearchServicesByNameSuccess(result: Flow<List<ServiceEntity>>) = apply {
-            everySuspend {
-                serviceDAO.searchServicesByName(any())
-            }.returns(result)
+            every { serviceDAO.searchServicesByName(any()) }.returns(result)
         }
 
         suspend fun withSearchServicesByNameFailure(error: Throwable) = apply {
-            everySuspend {
-                serviceDAO.searchServicesByName(any())
-            }.throws(error)
+            every { serviceDAO.searchServicesByName(any()) }.throws(error)
         }
 
         fun arrange() = this to serviceRepository

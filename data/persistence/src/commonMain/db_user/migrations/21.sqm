@@ -1,6 +1,6 @@
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 
-DROP VIEW ConversationDetails;
+DROP VIEW IF EXISTS ConversationDetails;
 ALTER TABLE Conversation ADD COLUMN receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL;
 
 CREATE VIEW IF NOT EXISTS ConversationDetails AS

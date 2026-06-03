@@ -38,7 +38,7 @@ interface UserConfigDAO {
     )
 
     suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified()
-    suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?>
+    fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?>
 
     suspend fun getMigrationConfiguration(): MLSMigrationEntity?
     suspend fun setMigrationConfiguration(configuration: MLSMigrationEntity)
@@ -49,17 +49,17 @@ interface UserConfigDAO {
     suspend fun clearLegalHoldRequest()
     fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?>
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean)
-    suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?>
+    fun observeLegalHoldChangeNotified(): Flow<Boolean?>
     suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
     suspend fun getCRLsPerDomain(url: String): ULong?
-    suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?>
+    fun observeCertificateExpirationTime(url: String): Flow<ULong?>
     suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
-    suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?>
+    fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?>
     suspend fun setDefaultCipherSuite(cipherSuite: SupportedCipherSuiteEntity)
     suspend fun getDefaultCipherSuite(): SupportedCipherSuiteEntity?
     suspend fun setTrackingIdentifier(identifier: String)
     suspend fun getTrackingIdentifier(): String?
-    suspend fun observeTrackingIdentifier(): Flow<String?>
+    fun observeTrackingIdentifier(): Flow<String?>
     suspend fun setPreviousTrackingIdentifier(identifier: String)
     suspend fun getPreviousTrackingIdentifier(): String?
     suspend fun deletePreviousTrackingIdentifier()
@@ -75,7 +75,7 @@ interface UserConfigDAO {
     suspend fun isCellsEnabled(): Boolean
     suspend fun setAppsEnabled(isAppsEnabled: Boolean)
     suspend fun getAppsEnabled(): Boolean
-    suspend fun observeAppsEnabled(): Flow<Boolean>
+    fun observeAppsEnabled(): Flow<Boolean>
     suspend fun setProfileQRCodeEnabled(enabled: Boolean)
     suspend fun isProfileQRCodeEnabled(): Boolean
     suspend fun setAssetAuditLogEnabled(enabled: Boolean)
@@ -124,7 +124,7 @@ internal class UserConfigDAOImpl internal constructor(
             }
     }
 
-    override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?> =
+    override fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?> =
         metadataDAO.observeSerializable(
             SELF_DELETING_MESSAGES_KEY,
             TeamSettingsSelfDeletionStatusEntity.serializer()
@@ -176,7 +176,7 @@ internal class UserConfigDAOImpl internal constructor(
         metadataDAO.insertValue(isNotified.toString(), LEGAL_HOLD_CHANGE_NOTIFIED)
     }
 
-    override suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?> =
+    override fun observeLegalHoldChangeNotified(): Flow<Boolean?> =
         metadataDAO.valueByKeyFlow(LEGAL_HOLD_CHANGE_NOTIFIED).map { it?.toBoolean() }
 
     override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
@@ -189,14 +189,14 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun getCRLsPerDomain(url: String): ULong? =
         metadataDAO.valueByKey(url)?.toULongOrNull()
 
-    override suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?> =
+    override fun observeCertificateExpirationTime(url: String): Flow<ULong?> =
         metadataDAO.valueByKeyFlow(url).map { it?.toULongOrNull() }
 
     override suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean) {
         metadataDAO.insertValue(shouldNotify.toString(), SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE)
     }
 
-    override suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?> =
+    override fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?> =
         metadataDAO.valueByKeyFlow(SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE).map { it?.toBoolean() }
 
     override suspend fun setDefaultCipherSuite(cipherSuite: SupportedCipherSuiteEntity) {
@@ -216,7 +216,7 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun getTrackingIdentifier(): String? =
         metadataDAO.valueByKey(key = ANALYTICS_TRACKING_IDENTIFIER_KEY)
 
-    override suspend fun observeTrackingIdentifier(): Flow<String?> =
+    override fun observeTrackingIdentifier(): Flow<String?> =
         metadataDAO.valueByKeyFlow(key = ANALYTICS_TRACKING_IDENTIFIER_KEY)
 
     override suspend fun setPreviousTrackingIdentifier(identifier: String) {
@@ -312,7 +312,7 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun getAppsEnabled(): Boolean =
         metadataDAO.valueByKey(APPS_ENABLED_KEY)?.toBoolean() ?: false
 
-    override suspend fun observeAppsEnabled(): Flow<Boolean> =
+    override fun observeAppsEnabled(): Flow<Boolean> =
         metadataDAO.valueByKeyFlow(APPS_ENABLED_KEY).map { it?.toBoolean() ?: false }
 
     private companion object {

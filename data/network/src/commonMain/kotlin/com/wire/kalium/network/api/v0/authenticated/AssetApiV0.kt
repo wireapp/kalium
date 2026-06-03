@@ -25,7 +25,7 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.handleUnsuccessfulResponse
+import com.wire.kalium.network.utils.interceptUnsuccessfulResponse
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.call.body
 import io.ktor.client.request.delete
@@ -71,7 +71,7 @@ internal open class AssetApiV0 internal constructor(
             if (httpResponse.status.isSuccess()) {
                 handleAssetContentDownload(httpResponse, tempFileSink)
             } else {
-                handleUnsuccessfulResponse(httpResponse).also {
+                interceptUnsuccessfulResponse(httpResponse).also {
                     if (it.kException is KaliumException.InvalidRequestError &&
                         it.kException.errorResponse.code == HttpStatusCode.Unauthorized.value
                     ) {

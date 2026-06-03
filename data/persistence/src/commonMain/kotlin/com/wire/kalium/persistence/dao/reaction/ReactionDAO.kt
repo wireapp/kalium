@@ -18,6 +18,10 @@
 
 package com.wire.kalium.persistence.dao.reaction
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ReactionsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -67,12 +71,12 @@ interface ReactionDAO {
         senderUserId: UserIDEntity
     ): UserReactionsEntity
 
-    suspend fun observeMessageReactions(
+    fun observeMessageReactions(
         conversationId: QualifiedIDEntity,
         messageId: String
     ): Flow<List<MessageReactionEntity>>
 
-    suspend fun getPagedReactionsFlow(pageSize: Int): Flow<List<MessageReactionsEntity>>
+    fun getPagedReactionsFlow(pageSize: Int): Flow<List<MessageReactionsEntity>>
     suspend fun countMessageReactionsBackup(): Long
 }
 
@@ -90,7 +94,7 @@ class ReactionDAOImpl(
         reactions: UserReactionsEntity
     ) = withContext(writeDispatcher.value) {
         reactionsQueries.transaction {
-            reactionsQueries.doesMessageExist(originalMessageId, conversationId).executeAsOneOrNull()?.let {
+            reactionsQueries.doesMessageExist(originalMessageId, conversationId).awaitAsOneOrNull()?.let {
                 reactionsQueries.deleteAllReactionsOnMessageFromUser(originalMessageId, conversationId, senderUserId)
                 reactions.forEach {
                     reactionsQueries.insertReaction(originalMessageId, conversationId, senderUserId, it, instant.toIsoDateTimeString())
@@ -137,18 +141,18 @@ class ReactionDAOImpl(
             .selectByMessageIdAndConversationIdAndSenderId(originalMessageId, conversationId, senderUserId) { _, _, _, emoji, _ ->
                 emoji
             }
-            .executeAsList()
+            .awaitAsList()
             .toSet()
     }
 
-    override suspend fun observeMessageReactions(conversationId: QualifiedIDEntity, messageId: String): Flow<List<MessageReactionEntity>> =
+    override fun observeMessageReactions(conversationId: QualifiedIDEntity, messageId: String): Flow<List<MessageReactionEntity>> =
         reactionsQueries.selectMessageReactionsByConversationIdAndMessageId(messageId, conversationId)
             .asFlow()
             .mapToList()
             .map { it.map(ReactionMapper::fromDAOToMessageReactionsEntity) }
             .flowOn(readDispatcher.value)
 
-    override suspend fun getPagedReactionsFlow(
+    override fun getPagedReactionsFlow(
         pageSize: Int,
     ): Flow<List<MessageReactionsEntity>> = flow {
         var offset = 0
@@ -163,17 +167,17 @@ class ReactionDAOImpl(
     }.buffer()
         .flowOn(readDispatcher.value)
 
-    private fun getReactionsPage(
+    private suspend fun getReactionsPage(
         offset: Long,
         pageSize: Long,
     ) = reactionsQueries.selectReactionsByMessagePaged(
         offset = offset,
         limit = pageSize,
         mapper = MessageMapper::toReactionEntityFromView
-    ).executeAsList()
+    ).awaitAsList()
 
     override suspend fun countMessageReactionsBackup(): Long =
         withContext(readDispatcher.value) {
-            reactionsQueries.countReactionsForBackup().executeAsOne()
+            reactionsQueries.countReactionsForBackup().awaitAsOne()
         }
 }

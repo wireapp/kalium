@@ -36,10 +36,10 @@ import kotlinx.coroutines.flow.map
 import kotlin.collections.map
 
 internal interface AppRepository {
-    suspend fun observeAllApps(): Flow<Either<StorageFailure, List<AppDetails>>>
-    suspend fun searchAppsByName(name: String): Flow<Either<StorageFailure, List<AppDetails>>>
+    fun observeAllApps(): Flow<Either<StorageFailure, List<AppDetails>>>
+    fun searchAppsByName(name: String): Flow<Either<StorageFailure, List<AppDetails>>>
     suspend fun getAppById(appId: QualifiedID): Either<StorageFailure, AppDetails?>
-    suspend fun observeIsAppMember(
+    fun observeIsAppMember(
         appId: QualifiedID,
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, UserId?>>
@@ -50,7 +50,7 @@ internal class AppDataSource internal constructor(
     private val teamDAO: TeamDAO,
     private val appMapper: AppMapper = MapperProvider.appMapper()
 ) : AppRepository {
-    override suspend fun observeAllApps(): Flow<Either<StorageFailure, List<AppDetails>>> =
+    override fun observeAllApps(): Flow<Either<StorageFailure, List<AppDetails>>> =
         wrapFlowStorageRequest {
             appDAO.observeAllApps().map { apps ->
                 apps.map { app ->
@@ -59,7 +59,7 @@ internal class AppDataSource internal constructor(
             }
         }
 
-    override suspend fun searchAppsByName(name: String): Flow<Either<StorageFailure, List<AppDetails>>> =
+    override fun searchAppsByName(name: String): Flow<Either<StorageFailure, List<AppDetails>>> =
         wrapFlowStorageRequest {
             appDAO.searchAppsByName(query = name).map { apps ->
                 apps.map { app ->
@@ -77,7 +77,7 @@ internal class AppDataSource internal constructor(
                 }
         }
 
-    override suspend fun observeIsAppMember(
+    override fun observeIsAppMember(
         appId: QualifiedID,
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, UserId?>> = wrapNullableFlowStorageRequest {

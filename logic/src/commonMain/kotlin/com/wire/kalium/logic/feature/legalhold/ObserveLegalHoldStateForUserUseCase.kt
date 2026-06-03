@@ -28,13 +28,13 @@ import kotlinx.coroutines.flow.map
  * Use case that allows to observe the legal hold state for a given user.
  */
 public interface ObserveLegalHoldStateForUserUseCase {
-    public suspend operator fun invoke(userId: UserId): Flow<LegalHoldState>
+    public operator fun invoke(userId: UserId): Flow<LegalHoldState>
 }
 
 internal class ObserveLegalHoldStateForUserUseCaseImpl internal constructor(
     private val clientRepository: ClientRepository
 ) : ObserveLegalHoldStateForUserUseCase {
-    override suspend fun invoke(userId: UserId): Flow<LegalHoldState> =
+    override fun invoke(userId: UserId): Flow<LegalHoldState> =
         clientRepository.observeClientsByUserId(userId).map {
             it.fold(
                 {

@@ -20,8 +20,16 @@ package com.wire.kalium.cli
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
+
+private val CLI_KEYCHAIN_CONFIG = ApplePersistenceConfig(serviceName = "com.wire.kalium.cli")
 
 actual fun coreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs
-): CoreLogic = CoreLogic(rootPath, kaliumConfigs, "Kalium CLI/apple")
+): CoreLogic = CoreLogic(
+    rootPath = rootPath,
+    keychainConfig = CLI_KEYCHAIN_CONFIG,
+    kaliumConfigs = kaliumConfigs,
+    userAgent = "Kalium CLI/apple",
+)

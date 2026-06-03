@@ -19,13 +19,21 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.globalDatabaseProvider
+import com.wire.kalium.util.KaliumDispatcherImpl
 
 actual abstract class GlobalDBBaseTest {
     actual fun deleteDatabase() {
-        TODO("Not yet implemented")
+        createDatabase().nuke()
     }
 
     actual fun createDatabase(): GlobalDatabaseBuilder {
-        TODO("Not yet implemented")
+        return globalDatabaseProvider(
+            platformDatabaseData = PlatformDatabaseData(),
+            queriesContext = KaliumDispatcherImpl.io,
+            passphrase = null,
+            enableWAL = false
+        )
     }
 }

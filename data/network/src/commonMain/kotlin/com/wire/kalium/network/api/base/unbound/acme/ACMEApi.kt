@@ -31,7 +31,7 @@ import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
-import com.wire.kalium.network.utils.handleUnsuccessfulResponse
+import com.wire.kalium.network.utils.interceptUnsuccessfulResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.call.body
@@ -128,7 +128,7 @@ class ACMEApiImpl internal constructor(
         } else {
             // FIXME: It doesn't make any sense to do the regular handling of unsuccessful response here,
             //        as ACME is NOT the Wire API, and doesn't follow its error response format.
-            handleUnsuccessfulResponse(httpResponse)
+            interceptUnsuccessfulResponse(httpResponse)
         }
 
     override suspend fun sendACMERequest(
@@ -210,7 +210,7 @@ class ACMEApiImpl internal constructor(
         } else {
             // FIXME: It doesn't make any sense to do the regular handling of unsuccessful response here,
             //        as ACME is NOT the Wire API, and doesn't follow its error response format.
-            handleUnsuccessfulResponse(httpResponse)
+            interceptUnsuccessfulResponse(httpResponse)
         }
 
     override suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> {

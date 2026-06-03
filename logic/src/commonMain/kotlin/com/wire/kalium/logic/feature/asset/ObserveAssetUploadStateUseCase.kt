@@ -48,7 +48,7 @@ internal class ObserveAssetUploadStateUseCaseImpl(
         }.distinctUntilChanged()
     }
 
-    private suspend fun observeRegularAssetsUpload() =
+    private fun observeRegularAssetsUpload() =
         messageRepository.observeAssetStatuses()
             .map { result ->
                 result.fold(
@@ -59,7 +59,7 @@ internal class ObserveAssetUploadStateUseCaseImpl(
                 )
             }
 
-    private suspend fun observeAttachmentDraftsUpload() =
+    private fun observeAttachmentDraftsUpload() =
         attachmentDraftRepository.observeAllDrafts()
             .map { result ->
                 result.fold(
