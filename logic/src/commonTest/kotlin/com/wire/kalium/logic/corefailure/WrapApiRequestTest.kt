@@ -21,7 +21,7 @@ package com.wire.kalium.logic.corefailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.error.wrapApiRequest
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.io.IOException
@@ -44,7 +44,7 @@ class WrapApiRequestTest {
     fun whenApiRequestReturnAnError_thenCorrectErrorIsPropagated() {
         val expected = NetworkResponse.Error(
             KaliumException.ServerError(
-                ErrorResponse(
+                GenericAPIErrorResponse(
                     500,
                     "have you tried turning it off and on again?", "server_crash"
                 )

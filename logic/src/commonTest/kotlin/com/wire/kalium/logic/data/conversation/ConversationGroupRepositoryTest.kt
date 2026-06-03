@@ -64,7 +64,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.model.ConversationAccessDTO
 import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
@@ -1964,7 +1964,7 @@ class ConversationGroupRepositoryTest {
                 conversationApi.addMember(any(), any())
             }.returns(
                 NetworkResponse.Error(
-                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+                    KaliumException.ServerError(GenericAPIErrorResponse(500, "error_message", "error_label"))
                 )
             )
         }
@@ -1998,7 +1998,7 @@ class ConversationGroupRepositoryTest {
                 conversationApi.removeMember(any(), any())
             }.returns(
                 NetworkResponse.Error(
-                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+                    KaliumException.ServerError(GenericAPIErrorResponse(500, "error_message", "error_label"))
                 )
             )
         }
@@ -2061,7 +2061,7 @@ class ConversationGroupRepositoryTest {
                 conversationApi.generateGuestRoomLink(any(), any())
             }.returns(
                 NetworkResponse.Error(
-                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+                    KaliumException.ServerError(GenericAPIErrorResponse(500, "error_message", "error_label"))
                 )
             )
         }
@@ -2089,7 +2089,7 @@ class ConversationGroupRepositoryTest {
                 conversationApi.revokeGuestRoomLink(any())
             }.returns(
                 NetworkResponse.Error(
-                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+                    KaliumException.ServerError(GenericAPIErrorResponse(500, "error_message", "error_label"))
                 )
             )
         }
@@ -2146,7 +2146,7 @@ class ConversationGroupRepositoryTest {
                 conversationApi.updateMessageTimer(any(), any())
             }.returns(
                 NetworkResponse.Error(
-                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+                    KaliumException.ServerError(GenericAPIErrorResponse(500, "error_message", "error_label"))
                 )
             )
         }
@@ -2287,7 +2287,7 @@ class ConversationGroupRepositoryTest {
 
         val ERROR_MISSING_LEGALHOLD_CONSENT = NetworkResponse.Error(
             KaliumException.InvalidRequestError(
-                ErrorResponse(
+                GenericAPIErrorResponse(
                     code = HttpStatusCode.Forbidden.value,
                     message = "",
                     label = "missing-legalhold-consent"

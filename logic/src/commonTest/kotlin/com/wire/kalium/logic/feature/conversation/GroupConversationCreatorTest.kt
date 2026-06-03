@@ -36,7 +36,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -234,7 +234,7 @@ class GroupConversationCreatorTest {
             Either.Left(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.InvalidRequestError(
-                        ErrorResponse(
+                        GenericAPIErrorResponse(
                             code = 403,
                             label = "operation-denied",
                             message = "Invalid-permission"

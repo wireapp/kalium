@@ -18,7 +18,7 @@
 package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.authenticated.user.CreateUserTeamDTO
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
@@ -37,7 +37,7 @@ object MigrationUserToTeamResponseJson {
     )
 
     val failedUserInTeam = ValidJsonProvider(
-        serializableData = ErrorResponse(
+        serializableData = GenericAPIErrorResponse(
             code = 403,
             label = "user-already-in-a-team",
             message = "Switching teams is not allowed"
@@ -52,7 +52,7 @@ object MigrationUserToTeamResponseJson {
     )
 
     val failedUserNotFound = ValidJsonProvider(
-        serializableData = ErrorResponse(
+        serializableData = GenericAPIErrorResponse(
             code = 404,
             label = "not-found",
             message = "User not found"

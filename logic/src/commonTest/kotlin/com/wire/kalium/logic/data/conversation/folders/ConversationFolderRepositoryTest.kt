@@ -30,7 +30,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.properties.LabelListResponseDTO
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
@@ -134,7 +134,7 @@ class ConversationFolderRepositoryTest {
             .withFetchConversationLabels(
                 NetworkResponse.Error(
                     KaliumException.InvalidRequestError(
-                        errorResponse = ErrorResponse(
+                        errorResponse = GenericAPIErrorResponse(
                             code = HttpStatusCode.NotFound.value,
                             message = "",
                             label = ""

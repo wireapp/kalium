@@ -327,7 +327,7 @@ internal class KeyPackageRepositoryTest {
             }.returns(
                 NetworkResponse.Error(
                     KaliumException.ServerError(
-                        com.wire.kalium.network.api.model.ErrorResponse(500, "internal server error", "server-error")
+                        com.wire.kalium.network.api.model.GenericAPIErrorResponse(500, "internal server error", "server-error")
                     )
                 )
             )
