@@ -4,7 +4,7 @@ This software includes the following third-party components, each subject to its
 
 Each section below identifies a component (Maven coordinate `groupId:artifactId:version` or npm package `npm:name@version`), its declared license, and either the verbatim LICENSE/NOTICE text bundled in the package's distribution (collapsed by default — click to expand) or a reference to the canonical license text in the [License Texts](#license-texts) appendix. When the same verbatim license body is bundled by multiple components, it is reproduced once in the [Bundled License Texts](#bundled-license-texts) appendix and linked from each component section.
 
-Generated from 382 components (360 Maven, 22 npm) — 23 ship a bundled LICENSE/NOTICE file, 359 reference the appendix.
+Generated from 387 components (364 Maven, 23 npm) — 23 ship a bundled LICENSE/NOTICE file, 364 reference the appendix.
 
 ---
 
@@ -1600,7 +1600,7 @@ See https://github.com/google/guava/blob/master/LICENSE for the license of this 
 
 ---
 
-### com.squareup.okio:okio-jvm:3.16.4
+### com.squareup.okio:okio-jvm:3.17.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** http://www.apache.org/licenses/LICENSE-2.0.txt
@@ -1627,7 +1627,7 @@ See https://github.com/google/guava/blob/master/LICENSE for the license of this 
 
 ---
 
-### com.squareup.okio:okio:3.16.4
+### com.squareup.okio:okio:3.17.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** http://www.apache.org/licenses/LICENSE-2.0.txt
@@ -1834,7 +1834,16 @@ See https://github.com/google/guava/blob/master/LICENSE for the license of this 
 
 ---
 
-### com.wire:avs:10.3.23
+### com.wire:avs-kmp:0.0.62
+
+- **License:** GPL-3.0
+- **URL:** https://opensource.org/licenses/GPL-3.0
+- **SPDX:** [GPL-3.0-only](#license-gpl-3-0-only)
+- **Source:** `pom`
+
+---
+
+### com.wire:avs:10.3.29
 
 - **License:** GPL-3.0
 - **URL:** https://opensource.org/licenses/GPL-3.0
@@ -1921,7 +1930,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-auth-js:3.4.3
+### io.ktor:ktor-client-auth-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -1930,7 +1939,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-auth-jvm:3.4.3
+### io.ktor:ktor-client-auth-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -1939,7 +1948,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-auth:3.4.3
+### io.ktor:ktor-client-auth:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -1957,7 +1966,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-content-negotiation-js:3.4.3
+### io.ktor:ktor-client-content-negotiation-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -1966,7 +1975,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-content-negotiation-jvm:3.4.3
+### io.ktor:ktor-client-content-negotiation-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -1975,7 +1984,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-content-negotiation:3.4.3
+### io.ktor:ktor-client-content-negotiation:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -1984,7 +1993,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-core-js:3.4.3
+### io.ktor:ktor-client-core-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -1993,7 +2002,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-core-jvm:3.4.3
+### io.ktor:ktor-client-core-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2002,7 +2011,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-core:3.4.3
+### io.ktor:ktor-client-core:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2011,7 +2020,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-darwin:3.4.3
+### io.ktor:ktor-client-darwin:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2020,7 +2029,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-encoding-js:3.4.3
+### io.ktor:ktor-client-encoding-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2029,7 +2038,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-encoding-jvm:3.4.3
+### io.ktor:ktor-client-encoding-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2038,7 +2047,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-encoding:3.4.3
+### io.ktor:ktor-client-encoding:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2047,7 +2056,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-ios:3.4.3
+### io.ktor:ktor-client-ios:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2056,7 +2065,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-js-js:3.4.3
+### io.ktor:ktor-client-js-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2065,7 +2074,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-js:3.4.3
+### io.ktor:ktor-client-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2092,7 +2101,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-logging-js:3.4.3
+### io.ktor:ktor-client-logging-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2101,7 +2110,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-logging-jvm:3.4.3
+### io.ktor:ktor-client-logging-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2110,7 +2119,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-logging:3.4.3
+### io.ktor:ktor-client-logging:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2119,7 +2128,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-mock-js:3.4.3
+### io.ktor:ktor-client-mock-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2128,7 +2137,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-mock-jvm:3.4.3
+### io.ktor:ktor-client-mock-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2137,7 +2146,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-mock:3.4.3
+### io.ktor:ktor-client-mock:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2146,7 +2155,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-okhttp-jvm:3.4.3
+### io.ktor:ktor-client-okhttp-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2155,7 +2164,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-okhttp:3.4.3
+### io.ktor:ktor-client-okhttp:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2182,7 +2191,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-websockets-js:3.4.3
+### io.ktor:ktor-client-websockets-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2191,7 +2200,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-websockets-jvm:3.4.3
+### io.ktor:ktor-client-websockets-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2200,7 +2209,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-client-websockets:3.4.3
+### io.ktor:ktor-client-websockets:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2209,7 +2218,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-events-js:3.4.3
+### io.ktor:ktor-events-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2218,7 +2227,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-events-jvm:3.4.3
+### io.ktor:ktor-events-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2227,7 +2236,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-events:3.4.3
+### io.ktor:ktor-events:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2236,7 +2245,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-http-cio-js:3.4.3
+### io.ktor:ktor-http-cio-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2245,7 +2254,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-http-cio-jvm:3.4.3
+### io.ktor:ktor-http-cio-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2254,7 +2263,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-http-cio:3.4.3
+### io.ktor:ktor-http-cio:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2263,7 +2272,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-http-js:3.4.3
+### io.ktor:ktor-http-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2272,7 +2281,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-http-jvm:3.4.3
+### io.ktor:ktor-http-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2281,7 +2290,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-http:3.4.3
+### io.ktor:ktor-http:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2290,7 +2299,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-io-js:3.4.3
+### io.ktor:ktor-io-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2299,7 +2308,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-io-jvm:3.4.3
+### io.ktor:ktor-io-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2308,7 +2317,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-io:3.4.3
+### io.ktor:ktor-io:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2317,7 +2326,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-network-jvm:3.4.3
+### io.ktor:ktor-network-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2344,7 +2353,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-network-tls:3.4.3
+### io.ktor:ktor-network-tls:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2353,7 +2362,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-network:3.4.3
+### io.ktor:ktor-network:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2362,7 +2371,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-serialization-js:3.4.3
+### io.ktor:ktor-serialization-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2371,7 +2380,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-serialization-jvm:3.4.3
+### io.ktor:ktor-serialization-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2380,7 +2389,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-serialization-kotlinx-js:3.4.3
+### io.ktor:ktor-serialization-kotlinx-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2389,7 +2398,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-serialization-kotlinx-json-js:3.4.3
+### io.ktor:ktor-serialization-kotlinx-json-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2398,7 +2407,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-serialization-kotlinx-json-jvm:3.4.3
+### io.ktor:ktor-serialization-kotlinx-json-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2407,7 +2416,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-serialization-kotlinx-json:3.4.3
+### io.ktor:ktor-serialization-kotlinx-json:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2416,7 +2425,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-serialization-kotlinx-jvm:3.4.3
+### io.ktor:ktor-serialization-kotlinx-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2425,7 +2434,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-serialization-kotlinx:3.4.3
+### io.ktor:ktor-serialization-kotlinx:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2434,7 +2443,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-serialization:3.4.3
+### io.ktor:ktor-serialization:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2443,7 +2452,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-sse-js:3.4.3
+### io.ktor:ktor-sse-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2452,7 +2461,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-sse-jvm:3.4.3
+### io.ktor:ktor-sse-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2461,7 +2470,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-sse:3.4.3
+### io.ktor:ktor-sse:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2470,7 +2479,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-utils-js:3.4.3
+### io.ktor:ktor-utils-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2479,7 +2488,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-utils-jvm:3.4.3
+### io.ktor:ktor-utils-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2488,7 +2497,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-utils:3.4.3
+### io.ktor:ktor-utils:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2497,7 +2506,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-websocket-serialization-js:3.4.3
+### io.ktor:ktor-websocket-serialization-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2506,7 +2515,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-websocket-serialization-jvm:3.4.3
+### io.ktor:ktor-websocket-serialization-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2515,7 +2524,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-websocket-serialization:3.4.3
+### io.ktor:ktor-websocket-serialization:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2524,7 +2533,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-websockets-js:3.4.3
+### io.ktor:ktor-websockets-js:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2533,7 +2542,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-websockets-jvm:3.4.3
+### io.ktor:ktor-websockets-jvm:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -2542,7 +2551,7 @@ The Apache Software Foundation (https://www.apache.org/).
 
 ---
 
-### io.ktor:ktor-websockets:3.4.3
+### io.ktor:ktor-websockets:3.5.0
 
 - **License:** The Apache Software License, Version 2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3201,6 +3210,15 @@ THE SOFTWARE.
 
 ---
 
+### org.jetbrains.kotlin:kotlin-dom-api-compat:2.3.21
+
+- **License:** Apache-2.0
+- **URL:** http://www.apache.org/licenses/LICENSE-2.0.txt
+- **SPDX:** [Apache-2.0](#license-apache-2-0)
+- **Source:** `pom`
+
+---
+
 ### org.jetbrains.kotlin:kotlin-native-utils:2.3.20
 
 - **License:** Apache-2.0
@@ -3211,6 +3229,15 @@ THE SOFTWARE.
 ---
 
 ### org.jetbrains.kotlin:kotlin-stdlib-common:2.3.20
+
+- **License:** Apache-2.0
+- **URL:** http://www.apache.org/licenses/LICENSE-2.0.txt
+- **SPDX:** [Apache-2.0](#license-apache-2-0)
+- **Source:** `pom`
+
+---
+
+### org.jetbrains.kotlin:kotlin-stdlib-common:2.3.21
 
 - **License:** Apache-2.0
 - **URL:** http://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3300,7 +3327,25 @@ THE SOFTWARE.
 
 ---
 
+### org.jetbrains.kotlin:kotlin-stdlib-js:2.3.21
+
+- **License:** Apache-2.0
+- **URL:** http://www.apache.org/licenses/LICENSE-2.0.txt
+- **SPDX:** [Apache-2.0](#license-apache-2-0)
+- **Source:** `pom`
+
+---
+
 ### org.jetbrains.kotlin:kotlin-stdlib:2.3.20
+
+- **License:** Apache-2.0
+- **URL:** http://www.apache.org/licenses/LICENSE-2.0.txt
+- **SPDX:** [Apache-2.0](#license-apache-2-0)
+- **Source:** `pom`
+
+---
+
+### org.jetbrains.kotlin:kotlin-stdlib:2.3.21
 
 - **License:** Apache-2.0
 - **URL:** http://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3426,7 +3471,7 @@ THE SOFTWARE.
 
 ---
 
-### org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2
+### org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0
 
 - **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3453,6 +3498,15 @@ THE SOFTWARE.
 
 ---
 
+### org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.11.0
+
+- **License:** Apache-2.0
+- **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
+- **SPDX:** [Apache-2.0](#license-apache-2-0)
+- **Source:** `pom`
+
+---
+
 ### org.jetbrains.kotlinx:kotlinx-coroutines-bom:1.7.3
 
 - **License:** The Apache Software License, Version 2.0
@@ -3471,7 +3525,25 @@ THE SOFTWARE.
 
 ---
 
+### org.jetbrains.kotlinx:kotlinx-coroutines-core-js:1.11.0
+
+- **License:** Apache-2.0
+- **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
+- **SPDX:** [Apache-2.0](#license-apache-2-0)
+- **Source:** `pom`
+
+---
+
 ### org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2
+
+- **License:** Apache-2.0
+- **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
+- **SPDX:** [Apache-2.0](#license-apache-2-0)
+- **Source:** `pom`
+
+---
+
+### org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.11.0
 
 - **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3498,6 +3570,15 @@ THE SOFTWARE.
 
 ---
 
+### org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0
+
+- **License:** Apache-2.0
+- **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
+- **SPDX:** [Apache-2.0](#license-apache-2-0)
+- **Source:** `pom`
+
+---
+
 ### org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3
 
 - **License:** The Apache Software License, Version 2.0
@@ -3507,7 +3588,7 @@ THE SOFTWARE.
 
 ---
 
-### org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:1.10.2
+### org.jetbrains.kotlinx:kotlinx-coroutines-slf4j:1.11.0
 
 - **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3543,7 +3624,7 @@ THE SOFTWARE.
 
 ---
 
-### org.jetbrains.kotlinx:kotlinx-io-bytestring-js:0.8.2
+### org.jetbrains.kotlinx:kotlinx-io-bytestring-js:0.9.0
 
 - **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3552,7 +3633,7 @@ THE SOFTWARE.
 
 ---
 
-### org.jetbrains.kotlinx:kotlinx-io-bytestring-jvm:0.8.2
+### org.jetbrains.kotlinx:kotlinx-io-bytestring-jvm:0.9.0
 
 - **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3561,7 +3642,7 @@ THE SOFTWARE.
 
 ---
 
-### org.jetbrains.kotlinx:kotlinx-io-bytestring:0.8.2
+### org.jetbrains.kotlinx:kotlinx-io-bytestring:0.9.0
 
 - **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3570,7 +3651,7 @@ THE SOFTWARE.
 
 ---
 
-### org.jetbrains.kotlinx:kotlinx-io-core-js:0.8.2
+### org.jetbrains.kotlinx:kotlinx-io-core-js:0.9.0
 
 - **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3579,7 +3660,7 @@ THE SOFTWARE.
 
 ---
 
-### org.jetbrains.kotlinx:kotlinx-io-core-jvm:0.8.2
+### org.jetbrains.kotlinx:kotlinx-io-core-jvm:0.9.0
 
 - **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3588,7 +3669,7 @@ THE SOFTWARE.
 
 ---
 
-### org.jetbrains.kotlinx:kotlinx-io-core:0.8.2
+### org.jetbrains.kotlinx:kotlinx-io-core:0.9.0
 
 - **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3615,15 +3696,6 @@ THE SOFTWARE.
 
 ---
 
-### org.jetbrains.kotlinx:kotlinx-serialization-bom:1.9.0
-
-- **License:** Apache-2.0
-- **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
-- **SPDX:** [Apache-2.0](#license-apache-2-0)
-- **Source:** `pom`
-
----
-
 ### org.jetbrains.kotlinx:kotlinx-serialization-core-js:1.11.0
 
 - **License:** Apache-2.0
@@ -3636,15 +3708,6 @@ THE SOFTWARE.
 ### org.jetbrains.kotlinx:kotlinx-serialization-core-js:1.7.2
 
 - **License:** The Apache Software License, Version 2.0
-- **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
-- **SPDX:** [Apache-2.0](#license-apache-2-0)
-- **Source:** `pom`
-
----
-
-### org.jetbrains.kotlinx:kotlinx-serialization-core-js:1.9.0
-
-- **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
 - **SPDX:** [Apache-2.0](#license-apache-2-0)
 - **Source:** `pom`
@@ -3669,15 +3732,6 @@ THE SOFTWARE.
 
 ---
 
-### org.jetbrains.kotlinx:kotlinx-serialization-core-jvm:1.9.0
-
-- **License:** Apache-2.0
-- **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
-- **SPDX:** [Apache-2.0](#license-apache-2-0)
-- **Source:** `pom`
-
----
-
 ### org.jetbrains.kotlinx:kotlinx-serialization-core:1.11.0
 
 - **License:** Apache-2.0
@@ -3696,16 +3750,7 @@ THE SOFTWARE.
 
 ---
 
-### org.jetbrains.kotlinx:kotlinx-serialization-core:1.9.0
-
-- **License:** Apache-2.0
-- **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
-- **SPDX:** [Apache-2.0](#license-apache-2-0)
-- **Source:** `pom`
-
----
-
-### org.jetbrains.kotlinx:kotlinx-serialization-json-io-js:1.9.0
+### org.jetbrains.kotlinx:kotlinx-serialization-json-io-js:1.11.0
 
 - **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3724,15 +3769,6 @@ THE SOFTWARE.
 ---
 
 ### org.jetbrains.kotlinx:kotlinx-serialization-json-io:1.11.0
-
-- **License:** Apache-2.0
-- **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
-- **SPDX:** [Apache-2.0](#license-apache-2-0)
-- **Source:** `pom`
-
----
-
-### org.jetbrains.kotlinx:kotlinx-serialization-json-io:1.9.0
 
 - **License:** Apache-2.0
 - **URL:** https://www.apache.org/licenses/LICENSE-2.0.txt
@@ -3833,7 +3869,7 @@ THE SOFTWARE.
 
 ---
 
-### org.slf4j:slf4j-api:2.0.17
+### org.slf4j:slf4j-api:2.0.18
 
 - **License:** MIT License
 - **URL:** https://www.slf4j.org/license.html
@@ -3955,6 +3991,14 @@ SUCH DAMAGE.
 - **URL:** https://opensource.org/licenses/MIT
 - **SPDX:** [MIT](#license-mit)
 - **Source:** `pom`
+
+---
+
+### npm:@cashapp/sqldelight-sqljs-worker@2.3.2
+
+- **License:** Apache-2.0
+- **SPDX:** [Apache-2.0](#license-apache-2-0)
+- **Source:** `package.json`
 
 ---
 
@@ -4595,7 +4639,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ---
 
-### npm:sql.js@1.6.2
+### npm:sql.js@1.8.0
 
 - **License:** MIT
 - **SPDX:** [MIT](#license-mit)
@@ -6111,7 +6155,7 @@ Referenced by 2 components:
 Referenced by 2 components:
 
 - `org.slf4j:slf4j-api:2.0.16`
-- `org.slf4j:slf4j-api:2.0.17`
+- `org.slf4j:slf4j-api:2.0.18`
 
 ```
 Copyright (c) 2004-2022 QOS.ch Sarl (Switzerland)
