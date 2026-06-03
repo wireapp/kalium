@@ -4,7 +4,7 @@ This software includes the following third-party components, each subject to its
 
 Each section below identifies a component (Maven coordinate `groupId:artifactId:version` or npm package `npm:name@version`), its declared license, and either the verbatim LICENSE/NOTICE text bundled in the package's distribution (collapsed by default — click to expand) or a reference to the canonical license text in the [License Texts](#license-texts) appendix. When the same verbatim license body is bundled by multiple components, it is reproduced once in the [Bundled License Texts](#bundled-license-texts) appendix and linked from each component section.
 
-Generated from 409 components (373 Maven, 36 npm) — 22 ship a bundled LICENSE/NOTICE file, 387 reference the appendix.
+Generated from 409 components (373 Maven, 36 npm) — 23 ship a bundled LICENSE/NOTICE file, 386 reference the appendix.
 
 ---
 
@@ -2695,6 +2695,31 @@ twall[at]users[dot]sf[dot]net.
 
 </details>
 
+<details>
+<summary>License text (from override)</summary>
+
+```
+Java Native Access (JNA) is licensed under the LGPL, version 2.1
+or later, or (from version 4.0 onward) the Apache License,
+version 2.0.
+
+You can freely decide which license you want to apply to the project.
+
+You may obtain a copy of the LGPL License at:
+
+http://www.gnu.org/licenses/licenses.html
+
+A copy is also included in the downloadable source code package
+containing JNA, in file "LGPL2.1", under the same directory
+as this file.
+
+You may obtain a copy of the Apache License at:
+
+http://www.apache.org/licenses/
+```
+
+</details>
+
 ---
 
 ### net.zetetic:sqlcipher-android:4.13.0
@@ -4671,14 +4696,31 @@ SOFTWARE.
 
 ### npm:jszip@3.10.1
 
-- **License:** The Apache Software License, Version 2.0
+- **License:** MIT
 - **URL:** https://github.com/Stuk/jszip/blob/main/LICENSE.markdown
-- **SPDX:** [Apache-2.0](#license-apache-2-0)
+- **SPDX:** [MIT](#license-mit)
 - **Source:** `override`
 
 **Notes:**
 
 JSZip is dual licensed. It can be used under the MIT license or the GPLv3 license. For this library, MIT license is chosen.
+
+<details>
+<summary>License text (from override)</summary>
+
+```
+The MIT License
+
+Copyright (c) 2009-2016 Stuart Knightley, David Duponchel, Franz Buchinger, António Afonso
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+</details>
 
 ---
 
