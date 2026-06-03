@@ -39,6 +39,7 @@ internal class CellFileDaoImpl(
                 uuid = entity.uuid,
                 name = entity.name,
                 owner = entity.owner,
+                assetMimeType = entity.mimeType,
                 localPath = entity.localPath,
                 size = entity.size,
                 downloadedAt = entity.downloadedAt,
@@ -48,14 +49,32 @@ internal class CellFileDaoImpl(
         }
     }
 
+    override suspend fun setTransferStatus(id: String, status: String) {
+        withContext(writeDispatcher.value) {
+            queries.setTransferStatus(status, id)
+        }
+    }
+
     override suspend fun delete(id: String) {
         withContext(writeDispatcher.value) {
             queries.deleteCellFile(id)
         }
     }
 
+    override suspend fun clearOfflineAccess(id: String) {
+        withContext(writeDispatcher.value) {
+            queries.clearOfflineAccess(id)
+        }
+    }
+
     override fun observeOfflineFiles(): Flow<List<CellFileEntity>> =
         queries.observeOfflineFiles(::toEntity)
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
+
+    override fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<CellFileEntity>> =
+        queries.observeOfflineFilesByConversationId(conversationId, ::toEntity)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
@@ -68,7 +87,7 @@ internal class CellFileDaoImpl(
         queries.getAllWithLocalPath { uuid, localPath -> CellFileLocalPath(uuid, localPath) }.executeAsList()
     }
 
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "UnusedParameter")
     private fun toEntity(
         uuid: String,
         conversationId: String?,
@@ -79,11 +98,25 @@ internal class CellFileDaoImpl(
         downloadedAt: Long,
         modifiedAt: Long?,
         isOffline: Long,
+        assetVersionId: String,
+        cellAsset: Long,
+        contentUrl: String?,
+        previewUrl: String?,
+        assetMimeType: String?,
+        assetPath: String?,
+        contentHash: String?,
+        assetWidth: Long?,
+        assetHeight: Long?,
+        assetDurationMs: Long?,
+        assetTransferStatus: String,
+        contentUrlExpiresAt: Long?,
+        editSupported: Long,
     ): CellFileEntity = CellFileEntity(
         uuid = uuid,
         conversationId = conversationId.orEmpty(),
         name = name,
         owner = owner,
+        mimeType = assetMimeType,
         localPath = localPath,
         size = size,
         downloadedAt = downloadedAt,

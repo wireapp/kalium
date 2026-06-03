@@ -18,12 +18,14 @@
 package com.wire.kalium.cells.domain.usecase.offline
 
 import com.wire.kalium.cells.domain.CellFileRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 
 public data class OfflineFileInfo(
     val id: String,
     val conversationId: String?,
     val name: String,
+    val mimeType: String? = null,
     val owner: String,
     val localPath: String,
     val size: Long?,
@@ -54,6 +56,13 @@ public interface ObserveOfflineFilesUseCase {
 }
 
 /**
+ * Use case for observing offline files for a specific conversation.
+ */
+public interface ObserveOfflineFilesByConversationUseCase {
+    public operator fun invoke(conversationId: ConversationId): Flow<List<OfflineFileInfo>>
+}
+
+/**
  * Use case for retrieving a specific offline file's information from the local database by its ID.
  * Returns the [OfflineFileInfo] if found, or null if no file with the given ID exists.
  */
@@ -73,7 +82,7 @@ internal class DeleteOfflineFileUseCaseImpl(
     private val repository: CellFileRepository,
 ) : DeleteOfflineFileUseCase {
     override suspend fun invoke(id: String) {
-        repository.delete(id)
+        repository.clearOfflineAccess(id)
     }
 }
 
@@ -81,6 +90,13 @@ internal class ObserveOfflineFilesUseCaseImpl(
     private val repository: CellFileRepository,
 ) : ObserveOfflineFilesUseCase {
     override fun invoke(): Flow<List<OfflineFileInfo>> = repository.observeOfflineFiles()
+}
+
+internal class ObserveOfflineFilesByConversationUseCaseImpl(
+    private val repository: CellFileRepository,
+) : ObserveOfflineFilesByConversationUseCase {
+    override fun invoke(conversationId: ConversationId): Flow<List<OfflineFileInfo>> =
+        repository.observeOfflineFilesByConversationId(conversationId)
 }
 
 internal class GetOfflineFileUseCaseImpl(

@@ -24,6 +24,7 @@ data class CellFileEntity(
     val conversationId: String,
     val name: String?,
     val owner: String?,
+    val mimeType: String? = null,
     val localPath: String?,
     val size: Long?,
     val downloadedAt: Long,
@@ -38,8 +39,11 @@ data class CellFileLocalPath(
 
 interface CellFileDao {
     suspend fun upsert(entity: CellFileEntity)
+    suspend fun setTransferStatus(id: String, status: String)
     suspend fun delete(id: String)
+    suspend fun clearOfflineAccess(id: String)
     fun observeOfflineFiles(): Flow<List<CellFileEntity>>
+    fun observeOfflineFilesByConversationId(conversationId: String): Flow<List<CellFileEntity>>
     suspend fun getById(id: String): CellFileEntity?
     suspend fun getAllWithLocalPath(): List<CellFileLocalPath>
 }

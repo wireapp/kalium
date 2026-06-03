@@ -127,10 +127,16 @@ import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCase
 import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.offline.DeleteOfflineFileUseCase
 import com.wire.kalium.cells.domain.usecase.offline.DeleteOfflineFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetConversationNameUseCase
+import com.wire.kalium.cells.domain.usecase.GetConversationNameUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetUserNameUseCase
+import com.wire.kalium.cells.domain.usecase.GetUserNameUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCase
 import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesUseCase
 import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesByConversationUseCase
+import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesByConversationUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCase
 import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
@@ -431,7 +437,19 @@ public class CellsScope(
         ObserveOfflineFilesUseCaseImpl(cellFileRepository)
     }
 
+    public val observeOfflineFilesByConversation: ObserveOfflineFilesByConversationUseCase by lazy {
+        ObserveOfflineFilesByConversationUseCaseImpl(cellFileRepository)
+    }
+
     public val getOfflineFile: GetOfflineFileUseCase by lazy {
         GetOfflineFileUseCaseImpl(cellFileRepository)
+    }
+
+    public val getConversationName: GetConversationNameUseCase by lazy {
+        GetConversationNameUseCaseImpl(cellsConversationRepository)
+    }
+
+    public val getUserName: GetUserNameUseCase by lazy {
+        GetUserNameUseCaseImpl(usersRepository)
     }
 }

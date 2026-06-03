@@ -21,11 +21,20 @@ package com.wire.kalium.persistence.dao.message
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import com.wire.kalium.persistence.MessageAssetViewQueries
+import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
+import com.wire.kalium.persistence.dao.BotIdEntity
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.kaliumLogger
+import kotlinx.datetime.Instant
 
 interface MessageExtensions {
     fun getPagerForConversation(
@@ -59,6 +68,7 @@ interface MessageExtensions {
 
 internal class MessageExtensionsImpl internal constructor(
     private val messagesQueries: MessagesQueries,
+    private val messageAttachmentsQueries: MessageAttachmentsQueries,
     private val messageAssetViewQueries: MessageAssetViewQueries,
     private val messageMapper: MessageMapper,
     private val readDispatcher: ReadDispatcher,
@@ -134,7 +144,7 @@ internal class MessageExtensionsImpl internal constructor(
                 visibilities,
                 limit,
                 offset,
-                messageMapper::toEntityMessageFromView
+                ::toEntityMessageFromViewWithMultipartAttachments
             )
         }
     )
@@ -153,7 +163,7 @@ internal class MessageExtensionsImpl internal constructor(
                 conversationId,
                 limit,
                 offset,
-                messageMapper::toEntityMessageFromView
+                ::toEntityMessageFromViewWithMultipartAttachments
             )
         }
     )
@@ -179,9 +189,210 @@ internal class MessageExtensionsImpl internal constructor(
                 mimeTypes,
                 limit,
                 offset,
-                messageMapper::toEntityMessageFromView
+                ::toEntityMessageFromViewWithMultipartAttachments
             )
         }
+    )
+
+    @Suppress("ReturnCount")
+    private fun withMultipartAttachments(message: MessageEntity): MessageEntity {
+        val regularMessage = message as? MessageEntity.Regular ?: return message
+        val multipartContent = regularMessage.content as? MessageEntityContent.Multipart ?: return message
+        val attachments = messageAttachmentsQueries.getAttachments(
+            regularMessage.id,
+            regularMessage.conversationId,
+            MessageAttachmentMapper::toDao
+        ).executeAsList()
+        return regularMessage.copy(content = multipartContent.copy(attachments = attachments))
+    }
+
+    @Suppress("LongParameterList", "LongMethod")
+    private fun toEntityMessageFromViewWithMultipartAttachments(
+        id: String,
+        conversationId: QualifiedIDEntity,
+        contentType: MessageEntity.ContentType,
+        date: Instant,
+        senderUserId: QualifiedIDEntity,
+        senderClientId: String?,
+        status: MessageEntity.Status,
+        lastEditTimestamp: Instant?,
+        visibility: MessageEntity.Visibility,
+        expectsReadConfirmation: Boolean,
+        expireAfterMillis: Long?,
+        selfDeletionEndDate: Instant?,
+        readCount: Long,
+        senderName: String?,
+        senderHandle: String?,
+        senderEmail: String?,
+        senderPhone: String?,
+        senderAccentId: Int,
+        senderTeamId: String?,
+        senderConnectionStatus: ConnectionEntity.State,
+        senderPreviewAssetId: QualifiedIDEntity?,
+        senderCompleteAssetId: QualifiedIDEntity?,
+        senderAvailabilityStatus: UserAvailabilityStatusEntity,
+        senderUserType: UserTypeEntity,
+        senderBotService: BotIdEntity?,
+        senderIsDeleted: Boolean,
+        senderExpiresAt: Instant?,
+        senderDefederated: Boolean,
+        senderSupportedProtocols: Set<SupportedProtocolEntity>?,
+        senderActiveOneOnOneConversationId: QualifiedIDEntity?,
+        senderIsProteusVerified: Long,
+        senderIsUnderLegalHold: Long,
+        isSelfMessage: Boolean,
+        text: String?,
+        isQuotingSelfUser: Boolean?,
+        assetSize: Long?,
+        assetName: String?,
+        assetMimeType: String?,
+        assetOtrKey: ByteArray?,
+        assetSha256: ByteArray?,
+        assetId: String?,
+        assetToken: String?,
+        assetDomain: String?,
+        assetEncryptionAlgorithm: String?,
+        assetWidth: Int?,
+        assetHeight: Int?,
+        assetDuration: Long?,
+        assetNormalizedLoudness: ByteArray?,
+        callerId: QualifiedIDEntity?,
+        memberChangeList: String?,
+        memberChangeType: String?,
+        unknownContentTypeName: String?,
+        unknownContentData: ByteArray?,
+        restrictedAssetMimeType: String?,
+        restrictedAssetSize: Long?,
+        restrictedAssetName: String?,
+        failedToDecryptData: ByteArray?,
+        decryptionErrorCode: Long?,
+        isDecryptionResolved: Boolean?,
+        conversationName: String?,
+        reactionsJson: String,
+        mentions: String,
+        quotedMessageId: String?,
+        quotedSenderId: QualifiedIDEntity?,
+        isQuoteVerified: Boolean?,
+        quotedSenderName: String?,
+        quotedSenderAccentId: Int?,
+        quotedMessageDateTime: Instant?,
+        quotedMessageEditTimestamp: Instant?,
+        quotedMessageVisibility: MessageEntity.Visibility?,
+        quotedMessageContentType: MessageEntity.ContentType?,
+        quotedTextBody: String?,
+        quotedAssetMimeType: String?,
+        quotedAssetName: String?,
+        quotedLocationName: String?,
+        isConversationAppsEnabled: Boolean?,
+        newConversationReceiptMode: Boolean?,
+        conversationReceiptModeChanged: Boolean?,
+        messageTimerChanged: Long?,
+        recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
+        recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
+        buttonsJson: String,
+        federationDomainList: String?,
+        federationType: String?,
+        conversationProtocolChanged: String?,
+        latitude: Float?,
+        longitude: Float?,
+        locationName: String?,
+        locationZoom: Int?,
+        legalHoldMemberList: String?,
+        legalHoldType: String?,
+    ): MessageEntity = withMultipartAttachments(
+        messageMapper.toEntityMessageFromView(
+            id = id,
+            conversationId = conversationId,
+            contentType = contentType,
+            date = date,
+            senderUserId = senderUserId,
+            senderClientId = senderClientId,
+            status = status,
+            lastEditTimestamp = lastEditTimestamp,
+            visibility = visibility,
+            expectsReadConfirmation = expectsReadConfirmation,
+            expireAfterMillis = expireAfterMillis,
+            selfDeletionEndDate = selfDeletionEndDate,
+            readCount = readCount,
+            senderName = senderName,
+            senderHandle = senderHandle,
+            senderEmail = senderEmail,
+            senderPhone = senderPhone,
+            senderAccentId = senderAccentId,
+            senderTeamId = senderTeamId,
+            senderConnectionStatus = senderConnectionStatus,
+            senderPreviewAssetId = senderPreviewAssetId,
+            senderCompleteAssetId = senderCompleteAssetId,
+            senderAvailabilityStatus = senderAvailabilityStatus,
+            senderUserType = senderUserType,
+            senderBotService = senderBotService,
+            senderIsDeleted = senderIsDeleted,
+            senderExpiresAt = senderExpiresAt,
+            senderDefederated = senderDefederated,
+            senderSupportedProtocols = senderSupportedProtocols,
+            senderActiveOneOnOneConversationId = senderActiveOneOnOneConversationId,
+            senderIsProteusVerified = senderIsProteusVerified,
+            senderIsUnderLegalHold = senderIsUnderLegalHold,
+            isSelfMessage = isSelfMessage,
+            text = text,
+            isQuotingSelfUser = isQuotingSelfUser,
+            assetSize = assetSize,
+            assetName = assetName,
+            assetMimeType = assetMimeType,
+            assetOtrKey = assetOtrKey,
+            assetSha256 = assetSha256,
+            assetId = assetId,
+            assetToken = assetToken,
+            assetDomain = assetDomain,
+            assetEncryptionAlgorithm = assetEncryptionAlgorithm,
+            assetWidth = assetWidth,
+            assetHeight = assetHeight,
+            assetDuration = assetDuration,
+            assetNormalizedLoudness = assetNormalizedLoudness,
+            callerId = callerId,
+            memberChangeList = memberChangeList,
+            memberChangeType = memberChangeType,
+            unknownContentTypeName = unknownContentTypeName,
+            unknownContentData = unknownContentData,
+            restrictedAssetMimeType = restrictedAssetMimeType,
+            restrictedAssetSize = restrictedAssetSize,
+            restrictedAssetName = restrictedAssetName,
+            failedToDecryptData = failedToDecryptData,
+            decryptionErrorCode = decryptionErrorCode,
+            isDecryptionResolved = isDecryptionResolved,
+            conversationName = conversationName,
+            reactionsJson = reactionsJson,
+            mentions = mentions,
+            quotedMessageId = quotedMessageId,
+            quotedSenderId = quotedSenderId,
+            isQuoteVerified = isQuoteVerified,
+            quotedSenderName = quotedSenderName,
+            quotedSenderAccentId = quotedSenderAccentId,
+            quotedMessageDateTime = quotedMessageDateTime,
+            quotedMessageEditTimestamp = quotedMessageEditTimestamp,
+            quotedMessageVisibility = quotedMessageVisibility,
+            quotedMessageContentType = quotedMessageContentType,
+            quotedTextBody = quotedTextBody,
+            quotedAssetMimeType = quotedAssetMimeType,
+            quotedAssetName = quotedAssetName,
+            quotedLocationName = quotedLocationName,
+            isConversationAppsEnabled = isConversationAppsEnabled,
+            newConversationReceiptMode = newConversationReceiptMode,
+            conversationReceiptModeChanged = conversationReceiptModeChanged,
+            messageTimerChanged = messageTimerChanged,
+            recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
+            recipientsFailedDeliveryList = recipientsFailedDeliveryList,
+            buttonsJson = buttonsJson,
+            federationDomainList = federationDomainList,
+            federationType = federationType,
+            conversationProtocolChanged = conversationProtocolChanged,
+            latitude = latitude,
+            longitude = longitude,
+            locationName = locationName,
+            locationZoom = locationZoom,
+            legalHoldMemberList = legalHoldMemberList,
+            legalHoldType = legalHoldType,
+        )
     )
 
     private fun getMessageImageAssetsPagingSource(

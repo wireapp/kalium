@@ -8,16 +8,30 @@ CREATE TABLE IF NOT EXISTS CellFile (
     downloadedAt   INTEGER NOT NULL,
     modifiedAt     INTEGER,
     isOffline      INTEGER NOT NULL DEFAULT 0,
+    assetVersionId TEXT NOT NULL DEFAULT '',
+    cellAsset      INTEGER NOT NULL DEFAULT 1,
+    contentUrl     TEXT,
+    previewUrl     TEXT,
+    assetMimeType  TEXT,
+    assetPath      TEXT,
+    contentHash    TEXT,
+    assetWidth     INTEGER,
+    assetHeight    INTEGER,
+    assetDurationMs INTEGER,
+    assetTransferStatus TEXT NOT NULL DEFAULT 'NOT_DOWNLOADED',
+    contentUrlExpiresAt INTEGER,
+    editSupported  INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (uuid)
 );
 
 upsertCellFile:
-INSERT INTO CellFile(uuid, conversationId, name, owner, localPath, size, downloadedAt, isOffline, modifiedAt)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO CellFile(uuid, conversationId, name, owner, assetMimeType, localPath, size, downloadedAt, isOffline, modifiedAt)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(uuid) DO UPDATE SET
     conversationId = COALESCE(excluded.conversationId, conversationId),
     name = COALESCE(excluded.name, name),
     owner = COALESCE(excluded.owner, owner),
+    assetMimeType = COALESCE(excluded.assetMimeType, assetMimeType),
     localPath = COALESCE(excluded.localPath, localPath),
     size = COALESCE(excluded.size, size),
     downloadedAt = excluded.downloadedAt,
@@ -27,11 +41,66 @@ ON CONFLICT(uuid) DO UPDATE SET
 deleteCellFile:
 DELETE FROM CellFile WHERE uuid = ?;
 
+clearOfflineAccess:
+UPDATE CellFile SET isOffline = 0, localPath = NULL WHERE uuid = ?;
+
 observeOfflineFiles:
 SELECT * FROM CellFile WHERE isOffline = 1;
+
+observeOfflineFilesByConversationId:
+SELECT * FROM CellFile WHERE isOffline = 1 AND conversationId = ?;
 
 selectById:
 SELECT * FROM CellFile WHERE uuid = ?;
 
 getAllWithLocalPath:
 SELECT uuid, localPath FROM CellFile WHERE localPath IS NOT NULL;
+
+setTransferStatus:
+UPDATE CellFile
+SET assetTransferStatus = ?
+WHERE uuid = ?;
+
+upsertAttachmentFile:
+INSERT INTO CellFile(
+    uuid,
+    conversationId,
+    localPath,
+    size,
+    downloadedAt,
+    modifiedAt,
+    isOffline,
+    assetVersionId,
+    cellAsset,
+    contentUrl,
+    previewUrl,
+    assetMimeType,
+    assetPath,
+    contentHash,
+    assetWidth,
+    assetHeight,
+    assetDurationMs,
+    assetTransferStatus,
+    contentUrlExpiresAt,
+    editSupported
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(uuid) DO UPDATE SET
+    conversationId = COALESCE(excluded.conversationId, conversationId),
+    localPath = COALESCE(excluded.localPath, localPath),
+    size = COALESCE(excluded.size, size),
+    downloadedAt = excluded.downloadedAt,
+    modifiedAt = COALESCE(excluded.modifiedAt, modifiedAt),
+    assetVersionId = excluded.assetVersionId,
+    cellAsset = excluded.cellAsset,
+    contentUrl = COALESCE(excluded.contentUrl, contentUrl),
+    previewUrl = COALESCE(excluded.previewUrl, previewUrl),
+    assetMimeType = COALESCE(excluded.assetMimeType, assetMimeType),
+    assetPath = COALESCE(excluded.assetPath, assetPath),
+    contentHash = COALESCE(excluded.contentHash, contentHash),
+    assetWidth = COALESCE(excluded.assetWidth, assetWidth),
+    assetHeight = COALESCE(excluded.assetHeight, assetHeight),
+    assetDurationMs = COALESCE(excluded.assetDurationMs, assetDurationMs),
+    assetTransferStatus = COALESCE(excluded.assetTransferStatus, assetTransferStatus),
+    contentUrlExpiresAt = COALESCE(excluded.contentUrlExpiresAt, contentUrlExpiresAt),
+    editSupported = excluded.editSupported;
+

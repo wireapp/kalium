@@ -18,27 +18,37 @@
 package com.wire.kalium.cells.data
 import com.wire.kalium.cells.domain.CellFileRepository
 import com.wire.kalium.cells.domain.usecase.offline.OfflineFileInfo
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.cellfile.CellFileDao
 import com.wire.kalium.persistence.dao.cellfile.CellFileEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+
 internal class CellFileDataSource(
     private val dao: CellFileDao,
 ) : CellFileRepository {
     override suspend fun upsert(info: OfflineFileInfo) {
         dao.upsert(info.toEntity())
     }
-    override suspend fun delete(id: String) {
-        dao.delete(id)
+
+    override suspend fun clearOfflineAccess(id: String) {
+        dao.clearOfflineAccess(id)
     }
+
     override fun observeOfflineFiles(): Flow<List<OfflineFileInfo>> =
         dao.observeOfflineFiles().map { list -> list.map { it.toInfo() } }
+
+    override fun observeOfflineFilesByConversationId(conversationId: ConversationId): Flow<List<OfflineFileInfo>> =
+        dao.observeOfflineFilesByConversationId(conversationId.toString()).map { list -> list.map { it.toInfo() } }
+
     override suspend fun getById(id: String): OfflineFileInfo? =
         dao.getById(id)?.toInfo()
 }
+
 private fun CellFileEntity.toInfo() = OfflineFileInfo(
     id = uuid,
     name = name.orEmpty(),
+    mimeType = mimeType,
     owner = owner.orEmpty(),
     localPath = localPath.orEmpty(),
     size = size,
@@ -50,6 +60,7 @@ private fun CellFileEntity.toInfo() = OfflineFileInfo(
 private fun OfflineFileInfo.toEntity() = CellFileEntity(
     uuid = id,
     name = name,
+    mimeType = mimeType,
     owner = owner,
     localPath = localPath,
     size = size,

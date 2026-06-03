@@ -50,6 +50,7 @@ internal interface CellAttachmentsRepository {
         name: String? = null,
         ownerId: String? = null,
     ): Either<StorageFailure, Unit>
+    suspend fun setStandaloneAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
     suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<CellFileLocalPath>>
     suspend fun deleteStandaloneAsset(assetId: String): Either<StorageFailure, Unit>
     suspend fun updateAssetPath(assetId: String, remotePath: String): Either<StorageFailure, Unit>
