@@ -20,9 +20,8 @@ package com.wire.kalium.persistence.dao.message
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import app.cash.sqldelight.paging3.QueryPagingSource
-import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessageAssetViewQueries
+import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity

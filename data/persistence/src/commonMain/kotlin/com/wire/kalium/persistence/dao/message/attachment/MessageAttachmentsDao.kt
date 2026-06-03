@@ -19,8 +19,6 @@ package com.wire.kalium.persistence.dao.message.attachment
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
-import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
-
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
