@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.dao.backup
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
