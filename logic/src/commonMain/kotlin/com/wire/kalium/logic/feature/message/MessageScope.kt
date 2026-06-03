@@ -89,6 +89,8 @@ import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCa
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCaseImpl
 import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCase
 import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCaseImpl
+import com.wire.kalium.logic.feature.message.linkpreview.ResolveLinkPreviewImagesUseCase
+import com.wire.kalium.logic.feature.message.linkpreview.ResolveLinkPreviewImagesUseCaseImpl
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepositoryImpl
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
@@ -610,4 +612,12 @@ public class MessageScope internal constructor(
 
     public val generateLinkPreview: GenerateLinkPreviewUseCase
         get() = GenerateLinkPreviewUseCaseImpl(linkPreviewRepository)
+
+    public val resolveLinkPreviewImages: ResolveLinkPreviewImagesUseCase
+        get() = ResolveLinkPreviewImagesUseCaseImpl(
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            scope = scope,
+            dispatcher = dispatcher
+        )
 }

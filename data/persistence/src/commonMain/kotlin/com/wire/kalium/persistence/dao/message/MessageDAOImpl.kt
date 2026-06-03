@@ -398,6 +398,20 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updateLinkPreviewImageLocalPath(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        urlOffset: Int,
+        localPath: String
+    ): Unit = withContext(writeDispatcher.value) {
+        queries.updateMessageLinkPreviewImageLocalPath(
+            image_local_path = localPath,
+            message_id = messageId,
+            conversation_id = conversationId,
+            url_offset = urlOffset
+        )
+    }
+
     /**
      * Be careful and run this operation in ONE wrapping transaction.
      */

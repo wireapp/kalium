@@ -201,6 +201,13 @@ class MessageMultipartEditHandlerTest {
             ): Either<CoreFailure, Unit> {
                 return updateMessageStatus().right()
             }
+
+            override suspend fun updateLinkPreviewImageLocalPath(
+                conversationId: ConversationId,
+                messageId: String,
+                urlOffset: Int,
+                localPath: String
+            ): Either<CoreFailure, Unit> = Unit.right()
         }
 
         private val notificationEventsManager = object : FakeNotificationEventsManager() {
