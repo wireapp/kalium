@@ -35,7 +35,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -233,7 +233,7 @@ class JoinSubconversationUseCaseTest {
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
             val MLS_UNSUPPORTED_PROPOSAL_FAILURE = NetworkFailure.ServerMiscommunication(
                 KaliumException.InvalidRequestError(
-                    ErrorResponse(
+                    GenericAPIErrorResponse(
                         422,
                         "Unsupported proposal type",
                         "mls-unsupported-proposal"

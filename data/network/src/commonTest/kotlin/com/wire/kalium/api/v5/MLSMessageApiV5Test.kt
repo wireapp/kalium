@@ -23,7 +23,7 @@ import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.mocks.responses.EventContentDTOJson
 import com.wire.kalium.mocks.responses.SendMLSMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.api.model.MLSErrorResponse
 import com.wire.kalium.network.api.v0.authenticated.MLSMessageApiV0
@@ -141,7 +141,7 @@ internal class MLSMessageApiV5Test : ApiTest() {
     fun givenCommitBundle_whenSendingBundleFailsMLSStaleMessage_theRequestShouldFailWithMLSRequestError() = runTest {
         val networkClient = mockAuthenticatedNetworkClient(
             ErrorResponseJson.valid(
-                ErrorResponse(
+                GenericAPIErrorResponse(
                     code = HttpStatusCode.Conflict.value,
                     message = "some other error",
                     label = "mls-stale-message"

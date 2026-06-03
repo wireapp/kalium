@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.auth.sso
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.MockMode
@@ -76,7 +76,7 @@ class FetchSSOSettingsUseCaseTest {
                 Either.Left(
                     NetworkFailure.ServerMiscommunication(
                         KaliumException.InvalidRequestError(
-                            ErrorResponse(404, "Not Found", "Not Found")
+                            GenericAPIErrorResponse(404, "Not Found", "Not Found")
                         )
                     )
                 )

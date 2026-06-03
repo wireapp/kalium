@@ -42,7 +42,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.ConversationPersistenceApi
 import kotlinx.coroutines.test.runTest
@@ -141,7 +141,7 @@ class ResetMLSConversationUseCaseTest {
             .withResetMlsConversationResponses(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.InvalidRequestError(
-                        ErrorResponse(409, "epoch is too old", "mls-stale-message")
+                        GenericAPIErrorResponse(409, "epoch is too old", "mls-stale-message")
                     )
                 ).left(),
                 Unit.right()
@@ -181,12 +181,12 @@ class ResetMLSConversationUseCaseTest {
             .withResetMlsConversationResponses(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.InvalidRequestError(
-                        ErrorResponse(409, "epoch is too old", "mls-stale-message")
+                        GenericAPIErrorResponse(409, "epoch is too old", "mls-stale-message")
                     )
                 ).left(),
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.InvalidRequestError(
-                        ErrorResponse(409, "epoch is too old", "mls-stale-message")
+                        GenericAPIErrorResponse(409, "epoch is too old", "mls-stale-message")
                     )
                 ).left()
             )

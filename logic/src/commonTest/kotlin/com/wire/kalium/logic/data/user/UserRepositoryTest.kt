@@ -54,7 +54,7 @@ import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.UpgradePersonalToTeamApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.exceptions.KaliumException
@@ -311,7 +311,7 @@ class UserRepositoryTest {
                 withAllOtherUsersIdSuccess(usersInDb)
             }
         val malformedQualifiedIdsError = KaliumException.InvalidRequestError(
-            ErrorResponse(
+            GenericAPIErrorResponse(
                 code = 400,
                 message = "Error in \$['qualified_ids'][1].domain: alphanumeric character: not enough input",
                 label = "bad-request"
@@ -352,7 +352,7 @@ class UserRepositoryTest {
                 withAllOtherUsersIdSuccess(usersInDb)
             }
         val malformedQualifiedIdsError = KaliumException.InvalidRequestError(
-            ErrorResponse(
+            GenericAPIErrorResponse(
                 code = 400,
                 message = "Error in \$['qualified_ids'][1].domain: alphanumeric character: not enough input",
                 label = "bad-request"
@@ -393,7 +393,7 @@ class UserRepositoryTest {
             }
 
         val genericBadRequestError = KaliumException.InvalidRequestError(
-            ErrorResponse(
+            GenericAPIErrorResponse(
                 code = 400,
                 message = "Request invalid: qualified_ids has invalid domain",
                 label = "bad-request"

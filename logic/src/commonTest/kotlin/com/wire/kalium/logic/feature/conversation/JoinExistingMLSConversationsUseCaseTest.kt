@@ -38,7 +38,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.DateTimeUtil
 import dev.mokkery.MockMode
@@ -333,7 +333,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                 Either.Left(
                     NetworkFailure.ServerMiscommunication(
                         KaliumException.InvalidRequestError(
-                            errorResponse = ErrorResponse(400, "Invalid LeafNode signature", "mls-protocol-error")
+                            errorResponse = GenericAPIErrorResponse(400, "Invalid LeafNode signature", "mls-protocol-error")
                         )
                     )
                 )
@@ -347,7 +347,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                 Either.Left(
                     NetworkFailure.ServerMiscommunication(
                         KaliumException.InvalidRequestError(
-                            errorResponse = ErrorResponse(420, "unknown status code", "throttled by ingress")
+                            errorResponse = GenericAPIErrorResponse(420, "unknown status code", "throttled by ingress")
                         )
                     )
                 )

@@ -21,7 +21,7 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.VerifiableAction
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 import dev.mokkery.MockMode
@@ -70,7 +70,7 @@ class RequestSecondFactorVerificationCodeUseCaseTest {
     fun givenRepositoryFailsWithTooManyRequests_whenRequesting2FACode_thenShouldFailWithTooManyRequests() = runTest {
         val networkFailure = NetworkFailure.ServerMiscommunication(
             KaliumException.InvalidRequestError(
-                ErrorResponse(HttpStatusCode.TooManyRequests.value, "", "too-many-requests")
+                GenericAPIErrorResponse(HttpStatusCode.TooManyRequests.value, "", "too-many-requests")
             )
         )
         val (_, requestSecondFactorVerificationCodeUseCase) = Arrangement()

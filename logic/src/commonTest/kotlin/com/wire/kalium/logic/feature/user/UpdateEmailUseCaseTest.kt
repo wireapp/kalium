@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -81,7 +81,7 @@ class UpdateEmailUseCaseTest {
             .withUpdateSelfEmailFailure(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.InvalidRequestError(
-                        ErrorResponse(
+                        GenericAPIErrorResponse(
                             400,
                             "message",
                             "key-exists"
@@ -104,7 +104,7 @@ class UpdateEmailUseCaseTest {
             .withUpdateSelfEmailFailure(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.InvalidRequestError(
-                        ErrorResponse(
+                        GenericAPIErrorResponse(
                             400,
                             "message",
                             "invalid-email"
