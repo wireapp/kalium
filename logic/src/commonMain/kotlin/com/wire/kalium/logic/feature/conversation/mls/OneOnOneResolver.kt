@@ -30,6 +30,10 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logic.data.client.wrapInMLSContext
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -102,6 +106,8 @@ internal class OneOnOneResolverImpl(
     private val oneOnOneMigrator: OneOnOneMigrator,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val pendingActionsRepository: PendingActionsRepository,
+    private val conversationRepository: ConversationRepository,
+    private val mlsConversationRepository: MLSConversationRepository,
     private val maxConcurrentResolutions: Int = DEFAULT_MAX_CONCURRENT_RESOLUTIONS,
     private val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
     private val throttleRetryDelayMs: Long = DEFAULT_THROTTLE_RETRY_DELAY_MS,
@@ -286,6 +292,9 @@ internal class OneOnOneResolverImpl(
         invalidateCurrentKnownProtocols: Boolean,
         allowJoinByExternalCommit: Boolean,
     ): Either<CoreFailure, ConversationId> {
+        if (user.deleted) {
+            return cleanupDeletedPeerMlsGroup(transactionContext, user.id)
+        }
         kaliumLogger.i("Resolving one-on-one protocol for ${user.id.toLogString()}")
         if (invalidateCurrentKnownProtocols) {
             userRepository.fetchUsersByIds(setOf(user.id))
@@ -307,6 +316,29 @@ internal class OneOnOneResolverImpl(
                 )
             }
         })
+    }
+
+    private suspend fun cleanupDeletedPeerMlsGroup(
+        transactionContext: CryptoTransactionContext,
+        userId: UserId,
+    ): Either<CoreFailure, ConversationId> {
+        kaliumLogger.i("Peer ${userId.toLogString()} is deleted — wiping 1:1 MLS group from CoreCrypto if any")
+        return userRepository.getOneOnOnConversationId(userId).flatMap { conversationId ->
+            conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
+                when (protocolInfo) {
+                    is Conversation.ProtocolInfo.MLSCapable -> transactionContext.wrapInMLSContext { mlsContext ->
+                        mlsConversationRepository.leaveGroup(mlsContext, protocolInfo.groupId)
+                    }.flatMapLeft {
+                        kaliumLogger.i(
+                            "Wipe of 1:1 MLS group for deleted peer ${userId.toLogString()} returned $it — " +
+                                "treating as already wiped"
+                        )
+                        Either.Right(Unit)
+                    }
+                    is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
+                }
+            }.map { conversationId }
+        }
     }
 
     private companion object {
