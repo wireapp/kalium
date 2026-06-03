@@ -326,7 +326,7 @@ internal class MessageDAOImpl internal constructor(
     }
 
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(readDispatcher.value) {
-        queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()?.let(::withMultipartAttachments)
+        queries.selectById(id, conversationId, mapper::toEntityMessageFromView).awaitAsOneOrNull()?.let(::withMultipartAttachments)
     }
 
     override fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =

@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.message
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
@@ -202,7 +203,7 @@ internal class MessageExtensionsImpl internal constructor(
         return regularMessage.copy(content = multipartContent.copy(attachments = attachments))
     }
 
-    private fun withMultipartAttachmentsList(messages: List<MessageEntity>): List<MessageEntity> {
+    private suspend fun withMultipartAttachmentsList(messages: List<MessageEntity>): List<MessageEntity> {
         val multipartIds = messages
             .filterIsInstance<MessageEntity.Regular>()
             .filter { it.content is MessageEntityContent.Multipart }
@@ -213,7 +214,7 @@ internal class MessageExtensionsImpl internal constructor(
         val attachmentsByMessageId: Map<String, List<MessageAttachmentEntity>> =
             messageAttachmentsQueries
                 .getAttachmentsForMessages(multipartIds, MessageAttachmentMapper::toDaoWithMessageId)
-                .executeAsList()
+                .awaitAsList()
                 .groupBy(keySelector = { it.first }, valueTransform = { it.second })
 
         return messages.map { message ->

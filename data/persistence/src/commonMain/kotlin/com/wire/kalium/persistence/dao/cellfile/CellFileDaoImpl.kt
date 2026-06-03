@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.cellfile
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -80,7 +81,7 @@ internal class CellFileDaoImpl(
             .flowOn(readDispatcher.value)
 
     override suspend fun getById(id: String): CellFileEntity? = withContext(readDispatcher.value) {
-        queries.selectById(id, ::toEntity).executeAsOneOrNull()
+        queries.selectById(id, ::toEntity).awaitAsOneOrNull()
     }
 
     override suspend fun getAllWithLocalPath(): List<CellFileLocalPath> = withContext(readDispatcher.value) {
