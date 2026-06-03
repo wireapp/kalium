@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -42,7 +41,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -277,7 +276,7 @@ class OneOnOneResolverTest {
                 Either.Left(
                     NetworkFailure.ServerMiscommunication(
                         KaliumException.InvalidRequestError(
-                            ErrorResponse(420, "", "Unknown Status Code")
+                            GenericAPIErrorResponse(420, "", "Unknown Status Code")
                         )
                     )
                 )
@@ -299,7 +298,7 @@ class OneOnOneResolverTest {
         val throttleFailure = Either.Left(
             NetworkFailure.ServerMiscommunication(
                 KaliumException.InvalidRequestError(
-                    ErrorResponse(420, "", "Unknown Status Code")
+                    GenericAPIErrorResponse(420, "", "Unknown Status Code")
                 )
             )
         )
