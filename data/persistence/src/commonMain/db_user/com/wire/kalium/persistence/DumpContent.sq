@@ -78,18 +78,22 @@ WITH selfdelete_message_id AS (
         FROM local_db.Message
         WHERE local_db.Message.expire_after_millis IS NOT NULL
 )
-INSERT INTO MessageLinkPreview
+INSERT INTO MessageLinkPreview(
+    message_id,
+    conversation_id,
+    url,
+    url_offset,
+    permanent_url,
+    title,
+    summary
+)
  SELECT local_db.MessageLinkPreview.message_id,
         local_db.MessageLinkPreview.conversation_id,
         local_db.MessageLinkPreview.url,
         local_db.MessageLinkPreview.url_offset,
         local_db.MessageLinkPreview.permanent_url,
         local_db.MessageLinkPreview.title,
-        local_db.MessageLinkPreview.summary,
-        local_db.MessageLinkPreview.image_local_path,
-        local_db.MessageLinkPreview.image_width,
-        local_db.MessageLinkPreview.image_height,
-        local_db.MessageLinkPreview.image_mime_type
+        local_db.MessageLinkPreview.summary
  FROM local_db.MessageLinkPreview
         LEFT JOIN selfdelete_message_id
            ON local_db.MessageLinkPreview.message_id = selfdelete_message_id.id
