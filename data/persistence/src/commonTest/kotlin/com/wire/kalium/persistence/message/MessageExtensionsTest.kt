@@ -48,6 +48,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.fail
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -131,7 +132,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getSearchMessagesPager(searchQuery = "message").pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
 
         result.data.forEachIndexed { index, message ->
             assertEquals(index.toString(), message.id)
@@ -228,8 +229,11 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessage(message)
 
         val result = getPager().pagingSource.refresh()
+        if (result is PagingSource.LoadResult.Error) {
+            fail("Expected pager page but got error", result.throwable)
+        }
 
-        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
         val multipartContent = (result.data.single().content as MessageEntityContent.Multipart)
         assertEquals(1, multipartContent.attachments.size)
         assertEquals(attachmentId, multipartContent.attachments.single().assetId)
