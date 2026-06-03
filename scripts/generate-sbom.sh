@@ -95,6 +95,21 @@ if [[ "$SKIP_SCAN" == "true" ]]; then
 else
 
 echo "==> [1/6] Setting up VENV and ScanCode..."
+SBOM_REQUIREMENTS_FILE="scripts/sbom-requirements.txt"
+if [[ ! -f "$SBOM_REQUIREMENTS_FILE" ]]; then
+    echo "ERROR: missing $SBOM_REQUIREMENTS_FILE." >&2
+    exit 1
+fi
+# The pinned toolchain needs Python 3.10+ (pdfminer.six >= 20251108 dropped 3.9).
+if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+    echo "ERROR: Python 3.10+ is required." >&2
+    echo "       Current: $(python3 --version 2>&1)" >&2
+    exit 1
+fi
+if [ -d ".venv" ] && ! .venv/bin/python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
+    echo "  Existing .venv is Python <3.10; recreating with $(python3 --version 2>&1)..."
+    rm -rf .venv
+fi
 if [ ! -d ".venv" ]; then
     python3 -m venv .venv
 fi
@@ -117,25 +132,18 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     export PKG_CONFIG_PATH="$BREW_PREFIX/opt/icu4c/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 fi
 
-if ! command -v scancode >/dev/null 2>&1; then
-    echo "  Installing scancode-toolkit..."
-    pip install --upgrade pip setuptools wheel >/dev/null
-    pip install scancode-toolkit >/dev/null
-else
-    echo "  scancode-toolkit already installed"
-fi
-
-# extractcode picks up libarchive at import time. Without the bundled plugin
-# it falls back to whatever the OS has on the linker path (Homebrew's, in
-# practice on macOS) and prints a "Using libarchive library found in a system
-# location" warning. The plugin ships its own pinned libarchive build so
-# extractcode runs against the version it's actually tested against.
-if ! pip show extractcode-libarchive >/dev/null 2>&1; then
-    echo "  Installing extractcode-libarchive plugin..."
-    pip install extractcode-libarchive >/dev/null
-else
-    echo "  extractcode-libarchive already installed"
-fi
+# Install the pinned, hash-locked SBOM toolchain. --require-hashes makes pip
+# reject any artifact whose sha256 isn't listed in the requirements file, so a
+# tampered or re-uploaded PyPI release aborts the install instead of silently
+# running in CI. Reconciled on every run so CI and developer machines share the
+# exact same ScanCode stack even when .venv already exists. This also installs
+# the pinned extractcode-libarchive plugin (so extractcode runs against its
+# tested libarchive build rather than whatever the OS has on the linker path).
+# pip itself is pinned separately as the bootstrap installer — it sits outside
+# the --require-hashes set.
+echo "  Installing pinned, hash-locked SBOM toolchain from $SBOM_REQUIREMENTS_FILE..."
+python -m pip install --upgrade "pip==26.0.1" >/dev/null
+python -m pip install --require-hashes --requirement "$SBOM_REQUIREMENTS_FILE" >/dev/null
 
 require_cmd extractcode "Install ScanCode-Toolkit."
 require_cmd scancode "Install ScanCode-Toolkit."
