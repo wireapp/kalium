@@ -74,7 +74,7 @@ typecode==30.0.2
 typecode-libmagic==5.39.210223
 typing_extensions==4.15.0
 uritools==5.0.0
-urllib3==2.6.3
+urllib3==2.7.0
 urlpy==0.5
 wcwidth==0.7.0
 webencodings==0.5.1
