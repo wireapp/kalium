@@ -26,6 +26,7 @@ import platform.Foundation.create
 import platform.ImageIO.CGImageSourceCreateImageAtIndex
 import platform.ImageIO.CGImageSourceCreateWithData
 
+@Suppress("ReturnCount")
 internal actual fun readImageMetadata(bytes: ByteArray, fallbackMimeType: String): ImageMetadata? {
     if (bytes.isEmpty()) return null
 
