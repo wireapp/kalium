@@ -54,7 +54,7 @@ data class CallEntity(
 
 @Suppress("TooManyFunctions")
 interface CallDAO {
-    fun insertCall(call: CallEntity)
+    suspend fun insertCall(call: CallEntity)
     suspend fun insertCallWithoutStatus(call: CallEntity)
     fun observeCalls(): Flow<List<CallEntity>>
     fun observeIncomingCalls(): Flow<List<CallEntity>>
