@@ -33,7 +33,18 @@ internal object UrlDetector {
     // - www. prefix with domain names or IP addresses
     // Supports IPv4, IPv6, and domain names with common TLDs.
     private val WEB_URL = Regex(
-        "(?:(?:https?|ftp)://(?:(?:[a-z0-9](?:[a-z0-9\\-]*[a-z0-9])?\\.)+(?:com|org|net|edu|gov|mil|int|mobi|name|aero|asia|biz|cat|coop|info|jobs|museum|tel|travel|xxx|[a-z]{2})|(?:(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9]?[0-9])|(?:(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}))(?::[0-9]+)?(?:/[a-z0-9\\-._~:/?#\\[\\]@!\$&'()*+,;=]*)?)|(?:www\\.(?:[a-z0-9](?:[a-z0-9\\-]*[a-z0-9])?\\.)+(?:com|org|net|edu|gov|mil|int|mobi|name|aero|asia|biz|cat|coop|info|jobs|museum|tel|travel|xxx|[a-z]{2})|(?:(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9]?[0-9])\\.){3}(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9]?[0-9])|(?:(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}))(?::[0-9]+)?(?:/[a-z0-9\\-._~:/?#\\[\\]@!\$&'()*+,;=]*)?",
+        "(?:(?:https?|ftp)://(?:(?:[a-z0-9](?:[a-z0-9\\-]*[a-z0-9])?\\.)+" +
+            "(?:com|org|net|edu|gov|mil|int|mobi|name|aero|asia|biz|cat|coop|info|jobs|museum|tel|travel|xxx|[a-z]{2})|" +
+            "(?:(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9]?[0-9])\\.){3}" +
+            "(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9]?[0-9])|" +
+            "(?:(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}))(?::[0-9]+)?" +
+            "(?:/[a-z0-9\\-._~:/?#\\[\\]@!\$&'()*+,;=]*)?)|" +
+            "(?:www\\.(?:[a-z0-9](?:[a-z0-9\\-]*[a-z0-9])?\\.)+" +
+            "(?:com|org|net|edu|gov|mil|int|mobi|name|aero|asia|biz|cat|coop|info|jobs|museum|tel|travel|xxx|[a-z]{2})|" +
+            "(?:(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9]?[0-9])\\.){3}" +
+            "(?:25[0-5]|2[0-4][0-9]|[0-1][0-9]{2}|[1-9]?[0-9])|" +
+            "(?:(?:[0-9a-f]{0,4}:){2,7}[0-9a-f]{0,4}))(?::[0-9]+)?" +
+            "(?:/[a-z0-9\\-._~:/?#\\[\\]@!\$&'()*+,;=]*)?",
         RegexOption.IGNORE_CASE
     )
 

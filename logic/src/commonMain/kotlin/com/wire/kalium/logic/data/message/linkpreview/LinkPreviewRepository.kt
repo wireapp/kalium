@@ -53,6 +53,7 @@ internal interface LinkPreviewRepository {
 /**
  * Default implementation of LinkPreviewRepository.
  */
+@Suppress("TooGenericExceptionCaught", "MagicNumber")
 internal class LinkPreviewRepositoryImpl(
     private val httpClient: HttpClient,
     private val kaliumFileSystem: KaliumFileSystem

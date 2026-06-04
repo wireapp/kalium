@@ -18,19 +18,20 @@
 package com.wire.kalium.logic.data.message.linkpreview
 
 import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.usePinned
+import platform.CoreFoundation.CFDataCreate
 import platform.CoreGraphics.CGImageGetHeight
 import platform.CoreGraphics.CGImageGetWidth
-import platform.Foundation.NSData
-import platform.Foundation.create
 import platform.ImageIO.CGImageSourceCreateImageAtIndex
 import platform.ImageIO.CGImageSourceCreateWithData
 
+@Suppress("ReturnCount")
 internal actual fun readImageMetadata(bytes: ByteArray, fallbackMimeType: String): ImageMetadata? {
     if (bytes.isEmpty()) return null
 
     val data = bytes.usePinned {
-        NSData.create(bytes = it.addressOf(0), length = bytes.size.toULong())
+        CFDataCreate(null, it.addressOf(0).reinterpret(), bytes.size.toLong())
     }
     val imageSource = CGImageSourceCreateWithData(data, null) ?: return null
     val image = CGImageSourceCreateImageAtIndex(imageSource, 0u, null) ?: return null

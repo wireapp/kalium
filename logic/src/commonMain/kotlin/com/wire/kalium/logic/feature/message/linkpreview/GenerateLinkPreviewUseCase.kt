@@ -17,9 +17,6 @@
  */
 package com.wire.kalium.logic.feature.message.linkpreview
 
-import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.message.linkpreview.ExclusionRanges
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
@@ -37,7 +34,7 @@ public interface GenerateLinkPreviewUseCase {
     public suspend operator fun invoke(
         text: String,
         mentions: List<MessageMention> = emptyList(),
-    ): Either<CoreFailure, MessageLinkPreview?>
+    ): MessageLinkPreview?
 }
 
 /**
@@ -49,38 +46,29 @@ internal class GenerateLinkPreviewUseCaseImpl(
     override suspend fun invoke(
         text: String,
         mentions: List<MessageMention>
-    ): Either<CoreFailure, MessageLinkPreview?> {
-        // 1. Detect all URLs
+    ): MessageLinkPreview? {
         val excludedRanges = ExclusionRanges.compute(text, mentions)
         val matches = UrlDetector.detect(text, excludedRanges)
 
-        // 2. Filter blacklisted hosts and get first match
         val firstMatch = matches
             .filterNot { PreviewBlacklist.isBlacklisted(it.url) }
-            .firstOrNull() ?: return Either.Right(null)
+            .firstOrNull() ?: return null
 
-        // 3. Fetch OG metadata
         val originalUrl = firstMatch.url
         val normalizedUrl = normalizeUrl(originalUrl)
 
-        return repository.fetchOpenGraph(normalizedUrl, originalUrl).flatMap { ogData ->
-            if (ogData == null) {
-                Either.Right(null)
-            } else {
-                val image = ogData.imageUrls.firstOrNull()?.let { imageUrl ->
-                    repository.fetchImage(imageUrl).getOrNull()
-                }
-                // 4. Map to MessageLinkPreview
-                val preview = MessageLinkPreview(
-                    url = originalUrl,
-                    urlOffset = firstMatch.start,
-                    permanentUrl = ogData.url,
-                    title = ogData.title,
-                    summary = ogData.description,
-                    image = image
-                )
-                Either.Right(preview)
+        return repository.fetchOpenGraph(normalizedUrl, originalUrl).getOrNull()?.let { ogData ->
+            val image = ogData.imageUrls.firstOrNull()?.let { imageUrl ->
+                repository.fetchImage(imageUrl).getOrNull()
             }
+            MessageLinkPreview(
+                url = originalUrl,
+                urlOffset = firstMatch.start,
+                permanentUrl = ogData.url,
+                title = ogData.title,
+                summary = ogData.description,
+                image = image
+            )
         }
     }
 

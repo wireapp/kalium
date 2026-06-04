@@ -26,6 +26,7 @@ import com.wire.kalium.cells.domain.usecase.RemoveAttachmentDraftsUseCase
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
@@ -47,6 +48,8 @@ import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepositoryImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
@@ -87,11 +90,6 @@ import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHa
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandlerImpl
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCase
 import com.wire.kalium.logic.feature.message.confirmation.SendDeliverSignalUseCaseImpl
-import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCase
-import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCaseImpl
-import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
-import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepositoryImpl
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCase
@@ -106,6 +104,8 @@ import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletio
 import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
+import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCase
+import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCaseImpl
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
@@ -121,6 +121,7 @@ import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LongParameterList")
 public class MessageScope internal constructor(
@@ -595,11 +596,11 @@ public class MessageScope internal constructor(
         LinkPreviewRepositoryImpl(
             httpClient = io.ktor.client.HttpClient {
                 install(io.ktor.client.plugins.HttpTimeout) {
-                    requestTimeoutMillis = 10_000L
-                    socketTimeoutMillis = 20_000L
+                    requestTimeoutMillis = 10.seconds.inWholeMilliseconds
+                    socketTimeoutMillis = 20.seconds.inWholeMilliseconds
                 }
                 install(io.ktor.client.plugins.UserAgent) {
-                    agent = "Wire LinkPreview Bot"
+                    agent = "Wire LinkPreviewFetcher"
                 }
                 followRedirects = true
                 expectSuccess = false
