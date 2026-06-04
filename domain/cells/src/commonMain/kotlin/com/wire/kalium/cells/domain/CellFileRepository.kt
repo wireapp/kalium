@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2025 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,14 +17,14 @@
  */
 package com.wire.kalium.cells.domain
 
-import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserDetailsEntity
+import com.wire.kalium.cells.domain.usecase.offline.OfflineFileInfo
+import com.wire.kalium.logic.data.id.ConversationId
+import kotlinx.coroutines.flow.Flow
 
-internal interface CellUsersRepository {
-    suspend fun getUserNames(): Either<StorageFailure, List<Pair<String, String>>>
-    suspend fun getUserNameById(userId: String): Either<StorageFailure, String?>
-    suspend fun getUsers(): Either<StorageFailure, List<UserDetailsEntity>>
-    suspend fun getConversationMemberDetails(conversationId: QualifiedIDEntity): Either<StorageFailure, List<UserDetailsEntity>>
+internal interface CellFileRepository {
+    suspend fun upsert(info: OfflineFileInfo)
+    suspend fun clearOfflineAccess(id: String)
+    fun observeOfflineFiles(): Flow<List<OfflineFileInfo>>
+    fun observeOfflineFilesByConversationId(conversationId: ConversationId): Flow<List<OfflineFileInfo>>
+    suspend fun getById(id: String): OfflineFileInfo?
 }

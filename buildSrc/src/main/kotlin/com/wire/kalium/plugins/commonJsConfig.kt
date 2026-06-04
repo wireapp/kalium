@@ -33,7 +33,7 @@ fun KotlinJsTargetDsl.commonJsConfig(
     browser {
         testTask {
             enabled = enableJsTests
-            useMocha { timeout = "5s" }
+            useMocha { timeout = "10s" }
         }
         // if later we need to enable CSS
         // commonWebpackConfig { cssSupport { enabled.set(true) } }

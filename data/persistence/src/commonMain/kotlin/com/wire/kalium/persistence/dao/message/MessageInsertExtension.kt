@@ -22,6 +22,7 @@ import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.async.coroutines.await
 
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
@@ -53,8 +54,10 @@ internal interface MessageInsertExtension {
     suspend fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean = true)
 }
 
+@Suppress("LongParameterList")
 internal class MessageInsertExtensionImpl(
     private val messagesQueries: MessagesQueries,
+    private val cellFilesQueries: CellFilesQueries,
     private val attachmentQueries: MessageAttachmentsQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val conversationsQueries: ConversationsQueries,
@@ -357,21 +360,33 @@ internal class MessageInsertExtensionImpl(
                     )
                 }
                 content.attachments.forEachIndexed { index, attachment ->
+                    cellFilesQueries.upsertAttachmentFile(
+                        uuid = attachment.assetId,
+                        conversationId = message.conversationId.toString(),
+                        localPath = attachment.localPath,
+                        size = attachment.assetSize,
+                        downloadedAt = message.date.toEpochMilliseconds(),
+                        modifiedAt = message.date.toEpochMilliseconds(),
+                        isOffline = 0,
+                        assetVersionId = attachment.assetVersionId,
+                        cellAsset = 1,
+                        contentUrl = null,
+                        previewUrl = attachment.previewUrl,
+                        assetMimeType = attachment.mimeType,
+                        assetPath = attachment.assetPath,
+                        contentHash = attachment.contentHash,
+                        assetWidth = attachment.assetWidth?.toLong(),
+                        assetHeight = attachment.assetHeight?.toLong(),
+                        assetDurationMs = attachment.assetDuration,
+                        assetTransferStatus = attachment.assetTransferStatus,
+                        contentUrlExpiresAt = attachment.contentExpiresAt,
+                        editSupported = if (attachment.isEditSupported) 1 else 0,
+                    )
                     attachmentQueries.insertCellAttachment(
+                        asset_id = attachment.assetId,
                         message_id = message.id,
                         conversation_id = message.conversationId,
-                        asset_id = attachment.assetId,
-                        asset_version_id = attachment.assetVersionId,
-                        cell_asset = true,
-                        asset_mime_type = attachment.mimeType,
-                        asset_path = attachment.assetPath,
-                        asset_size = attachment.assetSize,
-                        local_path = attachment.localPath ?: "",
-                        asset_width = attachment.assetWidth,
-                        asset_height = attachment.assetHeight,
-                        asset_duration_ms = attachment.assetDuration,
-                        asset_transfer_status = attachment.assetTransferStatus,
-                        asset_index = index,
+                        asset_index = index.toLong(),
                     )
                 }
             }
