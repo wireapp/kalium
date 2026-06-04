@@ -9,6 +9,6 @@ jobs:
     name: Label PR based on title
     runs-on: ubuntu-latest
     steps:
-      - uses: srvaroa/labeler@v1.14.0
+      - uses: srvaroa/labeler@bf262763a8a8e191f5847873aecc0f29df84f957
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

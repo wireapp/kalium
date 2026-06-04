@@ -26,7 +26,7 @@ jobs:
     container: kubazwire/cryptobox:1.0.0
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -60,14 +60,14 @@ jobs:
 
       - name: Archive Test Reports
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: test-reports
           path: ./**/build/reports/tests/**
 
       - name: Archive Test Results
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: test-results
           path: ./**/build/test-results/**/*.xml
@@ -78,7 +78,7 @@ jobs:
           apt-get install -y -qq --no-install-recommends python3-pip python3-venv
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/linux@v2
+        uses: EnricoMi/publish-unit-test-result-action/linux@2ceeed2b8f26e15b06c3846719f75354febd9e7b
         if: ${{ always() }}
         with:
           files: |
@@ -94,7 +94,7 @@ jobs:
           files: "build/reports/kover/reportJvmOnly.xml"
 
       - name: Archive Kover report
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: kover-report
           path: build/reports/kover/reportJvmOnly.xml
@@ -113,11 +113,11 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v8.0.1
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         continue-on-error: true
       - name: Display structure of downloaded files
         run: ls -R
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           node-version: 18
       - name: Install datadog-ci

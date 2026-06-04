@@ -12,7 +12,7 @@ jobs:
       contents: write
       id-token: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
           persist-credentials: false
       - name: Fetch release tags
@@ -38,7 +38,7 @@ jobs:
         run: ./gradlew :domain:backup:jsBrowserProductionLibraryDistribution
 
       - name: Setup Node for npm publish (Trusted Publisher)
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
           scope: "@wireapp"
 
@@ -50,7 +50,7 @@ jobs:
           echo "package_tgz=$package_tgz" >> "$GITHUB_OUTPUT"
 
       - name: Upload JS/TS package (GH Releases)
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
         with:
           tag_name: ${{ steps.logic-release.outputs.logic_tag }}
           fail_on_unmatched_files: true

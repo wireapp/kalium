@@ -27,7 +27,7 @@ jobs:
       BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
           persist-credentials: false
       - name: Setup Java and Gradle
@@ -38,13 +38,13 @@ jobs:
         run: ./gradlew jmhReport
       - name: Archive Reports
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: benchmarks-reports
           path: ./test/benchmarks/build/reports/benchmarks/**
       - name: Create Benchmark Table
         id: benchmark-table
-        uses: boswelja/kotlinx-benchmark-table-action@0.0.4
+        uses: boswelja/kotlinx-benchmark-table-action@0b1ff502591bcba42a55bd052eae6a82b187968b
         with:
           benchmark-results: ./test/benchmarks/build/reports/benchmarks/main/**/jvm.json
       - name: Post Results
@@ -63,7 +63,7 @@ jobs:
           unset REPORT_FULL_PATH_REF
 
       - name: Install bencher
-        uses: bencherdev/bencher@main
+        uses: bencherdev/bencher@f6dd4bde2670dd4a55a6cd2ca1c7c47ecf6d5b5f
 
       - name: Run Bencher on PR
         if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
