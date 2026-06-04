@@ -31,8 +31,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 /**
- * Use case to observe whether the self user has viewer access to a drive conversation. This is used to determine
- * whether the user should be able to see the conversation in the conversation list and access it at all.
+ * Use case to observe whether the self user has viewer access to a drive conversation.
  *
  * @param conversationId the id of the conversation to check viewer access for.
  * @return a [Flow] of [Boolean] — `true` if the self user has viewer access, `false` otherwise.
