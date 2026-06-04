@@ -518,6 +518,7 @@ com.wire.kalium.persistence.dao
 com.wire.kalium.persistence.dao.asset
 com.wire.kalium.persistence.dao.backup
 com.wire.kalium.persistence.dao.call
+com.wire.kalium.persistence.dao.cellfile
 com.wire.kalium.persistence.dao.client
 com.wire.kalium.persistence.dao.conversation
 com.wire.kalium.persistence.dao.conversation.folder
