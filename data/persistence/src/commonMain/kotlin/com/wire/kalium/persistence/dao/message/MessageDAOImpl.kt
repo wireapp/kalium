@@ -395,7 +395,7 @@ internal class MessageDAOImpl internal constructor(
         withContext(readDispatcher.value) {
             withMultipartAttachments(
                 queries.selectLastMessagesByConversationIds(conversationIds, mapper::toEntityMessageFromView)
-                    .executeAsList()
+                    .awaitAsList()
             ).associateBy { it.conversationId }
         }
 
@@ -428,8 +428,7 @@ internal class MessageDAOImpl internal constructor(
                     userId,
                     MessageEntity.Status.PENDING,
                     mapper::toEntityMessageFromView
-                )
-                    .executeAsList()
+                ).awaitAsList()
             )
         }
 
@@ -666,7 +665,7 @@ internal class MessageDAOImpl internal constructor(
                     offset = offset.toLong(),
                     mapper = mapper::toEntityMessageFromView
                 )
-                .executeAsList()
+                .awaitAsList()
         )
     }
 
@@ -683,7 +682,7 @@ internal class MessageDAOImpl internal constructor(
                     offset = offset.toLong(),
                     mapper = mapper::toEntityMessageFromView
                 )
-                .executeAsList()
+                .awaitAsList()
         )
     }
 
@@ -756,7 +755,7 @@ internal class MessageDAOImpl internal constructor(
             afterId = afterId,
             limit = pageSize,
             mapper::toEntityMessageFromView
-        ).executeAsList()
+        ).awaitAsList()
     )
 
     override suspend fun updateCompositeMessageContent(

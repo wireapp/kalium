@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
-import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.kaliumLogger
@@ -204,25 +203,16 @@ internal class MessageExtensionsImpl internal constructor(
     }
 
     private suspend fun withMultipartAttachmentsList(messages: List<MessageEntity>): List<MessageEntity> {
-        val multipartIds = messages
-            .filterIsInstance<MessageEntity.Regular>()
-            .filter { it.content is MessageEntityContent.Multipart }
-            .map { it.id }
-
-        if (multipartIds.isEmpty()) return messages
-
-        val attachmentsByMessageId: Map<String, List<MessageAttachmentEntity>> =
-            messageAttachmentsQueries
-                .getAttachmentsForMessages(multipartIds, MessageAttachmentMapper::toDaoWithMessageId)
-                .awaitAsList()
-                .groupBy(keySelector = { it.first }, valueTransform = { it.second })
-
         return messages.map { message ->
             val regularMessage = message as? MessageEntity.Regular ?: return@map message
             val multipartContent = regularMessage.content as? MessageEntityContent.Multipart ?: return@map message
             regularMessage.copy(
                 content = multipartContent.copy(
-                    attachments = attachmentsByMessageId[regularMessage.id] ?: emptyList()
+                    attachments = messageAttachmentsQueries.getAttachments(
+                        regularMessage.id,
+                        regularMessage.conversationId,
+                        MessageAttachmentMapper::toDao
+                    ).awaitAsList()
                 )
             )
         }

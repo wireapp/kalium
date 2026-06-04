@@ -19,6 +19,7 @@ package com.wire.kalium.persistence.dao.message.attachment
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
@@ -93,7 +94,7 @@ internal class MessageAttachmentsDaoImpl(
     }
 
     override suspend fun getAssetPath(assetId: String): String? = withContext(readDispatcher.value) {
-        queries.getAssetPath(uuid = assetId).executeAsOneOrNull()?.assetPath
+        queries.getAssetPath(uuid = assetId).awaitAsOneOrNull()?.assetPath
     }
 
     override suspend fun setAssetPath(assetId: String, path: String) {
