@@ -20,7 +20,7 @@ package com.wire.kalium.persistence.dao.backup
 
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
-
+import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
@@ -73,6 +73,7 @@ internal class NomadMessagesDAOImpl internal constructor(
     private val usersQueries: UsersQueries,
     private val conversationsQueries: ConversationsQueries,
     private val messagesQueries: MessagesQueries,
+    private val cellFilesQueries: CellFilesQueries,
     private val messageAttachmentsQueries: MessageAttachmentsQueries,
     private val reactionsQueries: ReactionsQueries,
     private val receiptsQueries: ReceiptsQueries,
@@ -83,6 +84,7 @@ internal class NomadMessagesDAOImpl internal constructor(
 
     private val contentWriter = NomadMessageContentWriter(
         messagesQueries = messagesQueries,
+        cellFilesQueries = cellFilesQueries,
         messageAttachmentsQueries = messageAttachmentsQueries,
     )
 
@@ -296,6 +298,7 @@ private class NomadUnreadEventWriter(
 
 private class NomadMessageContentWriter(
     private val messagesQueries: MessagesQueries,
+    private val cellFilesQueries: CellFilesQueries,
     private val messageAttachmentsQueries: MessageAttachmentsQueries,
 ) {
 
@@ -420,21 +423,33 @@ private class NomadMessageContentWriter(
             )
         }
         content.attachments.forEachIndexed { index, attachment ->
+            cellFilesQueries.upsertAttachmentFile(
+                uuid = attachment.assetId,
+                conversationId = message.conversationId.toString(),
+                localPath = attachment.localPath,
+                size = attachment.assetSize,
+                downloadedAt = message.date.toEpochMilliseconds(),
+                modifiedAt = message.date.toEpochMilliseconds(),
+                isOffline = 0,
+                assetVersionId = attachment.assetVersionId,
+                cellAsset = 1,
+                contentUrl = attachment.contentUrl,
+                previewUrl = attachment.previewUrl,
+                assetMimeType = attachment.mimeType,
+                assetPath = attachment.assetPath,
+                contentHash = attachment.contentHash,
+                assetWidth = attachment.assetWidth?.toLong(),
+                assetHeight = attachment.assetHeight?.toLong(),
+                assetDurationMs = attachment.assetDuration,
+                assetTransferStatus = attachment.assetTransferStatus,
+                contentUrlExpiresAt = attachment.contentExpiresAt,
+                editSupported = if (attachment.isEditSupported) 1 else 0,
+            )
             messageAttachmentsQueries.insertCellAttachment(
+                asset_id = attachment.assetId,
                 message_id = message.id,
                 conversation_id = message.conversationId,
-                asset_id = attachment.assetId,
-                asset_version_id = attachment.assetVersionId,
-                cell_asset = true,
-                asset_mime_type = attachment.mimeType,
-                asset_path = attachment.assetPath,
-                asset_size = attachment.assetSize,
-                local_path = attachment.localPath ?: "",
-                asset_width = attachment.assetWidth,
-                asset_height = attachment.assetHeight,
-                asset_duration_ms = attachment.assetDuration,
-                asset_transfer_status = attachment.assetTransferStatus,
-                asset_index = index,
+                asset_index = index.toLong(),
             )
         }
         return insertedContent
