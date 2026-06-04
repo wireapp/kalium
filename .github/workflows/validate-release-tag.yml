@@ -20,12 +20,14 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
+          persist-credentials: false
 
       - name: Verify signed tag and protected branch ancestry
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          INPUTS_TAG_NAME: ${{ inputs.tag-name }}
         run: |
-          tag_name="${{ inputs.tag-name }}"
+          tag_name="${INPUTS_TAG_NAME}"
           api_url="https://api.github.com/repos/${{ github.repository }}"
 
           ref_response=$(curl -fsSL \

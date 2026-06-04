@@ -65,6 +65,9 @@ jobs:
       - name: Create deployment summary
         run: |
           echo "## Kalium Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag**: ${{ inputs.tag-name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Targets**: ${{ inputs.deployment-targets }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag**: ${INPUTS_TAG_NAME}" >> $GITHUB_STEP_SUMMARY
+          echo "**Targets**: ${INPUTS_DEPLOYMENT_TARGETS}" >> $GITHUB_STEP_SUMMARY
           echo "**Status**: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
+        env:
+          INPUTS_TAG_NAME: ${{ inputs.tag-name }}
+          INPUTS_DEPLOYMENT_TARGETS: ${{ inputs.deployment-targets }}

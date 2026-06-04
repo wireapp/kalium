@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout project
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Install pip for adr-viewer
         run: |

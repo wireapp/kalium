@@ -16,6 +16,8 @@ jobs:
           xcode-version: '16.1.0'
 
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Fetch release tags
         run: git fetch --force --tags origin
       - name: Ensure the tag is signed

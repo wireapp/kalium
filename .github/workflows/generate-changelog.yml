@@ -15,6 +15,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: 'Set current Git tag'
         run: echo "CURRENT_TAG=$(git tag --points-at ${{github.sha}})" >> "$GITHUB_ENV"

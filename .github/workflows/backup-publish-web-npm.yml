@@ -13,6 +13,8 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Fetch release tags
         run: git fetch --force --tags origin
       - name: Ensure the tag is signed
@@ -57,4 +59,6 @@ jobs:
 
       - name: Publish package to npm (OIDC Trusted Publisher)
         working-directory: domain/backup/build/dist/js/productionLibrary
-        run: npm publish "${{ steps.pack.outputs.package_tgz }}"
+        run: npm publish "${STEPS_PACK_OUTPUTS_PACKAGE_TGZ}"
+        env:
+          STEPS_PACK_OUTPUTS_PACKAGE_TGZ: ${{ steps.pack.outputs.package_tgz }}

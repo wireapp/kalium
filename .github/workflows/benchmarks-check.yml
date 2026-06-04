@@ -28,6 +28,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
       - name: Run Benchmarks
@@ -48,7 +50,9 @@ jobs:
       - name: Post Results
         run: |
           echo '## Benchmarks results ⏱️' >> $GITHUB_STEP_SUMMARY
-          echo '${{steps.benchmark-table.outputs.benchmark-table}}️' >> $GITHUB_STEP_SUMMARY
+          echo '${STEPS_BENCHMARK_TABLE_OUTPUTS_BENCHMARK_TABLE}️' >> $GITHUB_STEP_SUMMARY
+        env:
+          STEPS_BENCHMARK_TABLE_OUTPUTS_BENCHMARK_TABLE: ${{steps.benchmark-table.outputs.benchmark-table}}
 
       - name: Set JMH report full path
         id: path
@@ -65,14 +69,16 @@ jobs:
         if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
         run: |
           bencher run \
-          --branch '${{ github.head_ref }}' \
-          --branch-start-point '${{ github.base_ref }}' \
+          --branch '${GITHUB_HEAD_REF}' \
+          --branch-start-point '${GITHUB_BASE_REF}' \
           --branch-start-point-hash '${{ github.event.pull_request.base.sha }}' \
           --adapter java_jmh \
           --testbed ubuntu-latest \
           --err \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          --file ${{ steps.path.outputs.report_full_path }}
+          --file ${STEPS_PATH_OUTPUTS_REPORT_FULL_PATH}
+        env:
+          STEPS_PATH_OUTPUTS_REPORT_FULL_PATH: ${{ steps.path.outputs.report_full_path }}
 
       - name: Run Bencher on base branch
         if: github.event_name == 'push' && github.ref_name == 'develop'
@@ -82,7 +88,9 @@ jobs:
           --adapter java_jmh \
           --testbed ubuntu-latest \
           --err \
-          --file ${{ steps.path.outputs.report_full_path }}
+          --file ${STEPS_PATH_OUTPUTS_REPORT_FULL_PATH}
+        env:
+          STEPS_PATH_OUTPUTS_REPORT_FULL_PATH: ${{ steps.path.outputs.report_full_path }}
 
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.

@@ -33,6 +33,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Get PR number
         id: pr-info
@@ -49,8 +50,9 @@ jobs:
         id: initial-comment
         env:
           GH_TOKEN: ${{ github.token }}
+          STEPS_PR_INFO_OUTPUTS_PR_NUMBER: ${{ steps.pr-info.outputs.pr_number }}
         run: |
-          COMMENT_ID=$(gh api repos/${{ github.repository }}/issues/${{ steps.pr-info.outputs.pr_number }}/comments \
+          COMMENT_ID=$(gh api repos/${{ github.repository }}/issues/${STEPS_PR_INFO_OUTPUTS_PR_NUMBER}/comments \
             -f body="🤖 Beep boop! Claude is putting on their reading glasses and diving into your code...
 
           ⏳ This comment will be updated with the review results once I'm done pondering the mysteries of your implementation.

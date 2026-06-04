@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       # trying https://github.com/actions/runner-images/issues/10386#issuecomment-2271613335
       - name: Free Disk Space Before Build
