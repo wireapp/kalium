@@ -1,13 +1,18 @@
 name: "Auto Author Assign"
 on:
-  pull_request_target:
+  pull_request:
     types: [ opened, reopened ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
-  pull-requests: write
+  pull-requests: write # required to assign the pull request author
 
 jobs:
   assign-author:
+    name: Assign Author
     runs-on: ubuntu-latest
     steps:
       - uses: toshimaru/auto-author-assign@bdd7688cbf9e6d5683f02f8c7d8ae4062a254b6d

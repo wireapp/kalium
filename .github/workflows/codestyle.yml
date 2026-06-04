@@ -2,8 +2,16 @@ name: "Check Codestyle"
 
 on: [ workflow_call ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
   static-code-analysis:
+    name: Static Code Analysis
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

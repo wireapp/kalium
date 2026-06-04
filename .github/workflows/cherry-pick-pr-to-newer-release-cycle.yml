@@ -29,6 +29,13 @@ on:
         types:
             - closed
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
     cherry-pick:
         runs-on: ubuntu-latest

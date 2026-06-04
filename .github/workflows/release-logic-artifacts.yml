@@ -10,29 +10,27 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
-  actions: read
-  id-token: write
-  attestations: write
-  artifact-metadata: write
+  contents: read # required by reusable validation/build workflows
+  actions: read # required by reusable workflow metadata reads
 
 jobs:
   validate-tag:
+    name: Validate Tag
     if: github.repository == 'wireapp/kalium' && !contains(github.ref_name, '-')
     uses: ./.github/workflows/validate-release-tag.yml
     with:
       tag-name: ${{ github.ref_name }}
-    secrets: inherit
 
   build:
+    name: Build
     needs: validate-tag
     permissions:
-      contents: read
-      actions: read
-      id-token: write
-      attestations: write
-      artifact-metadata: write
-      security-events: write
+      contents: read # required for actions/checkout to read workflow sources
+      actions: read # required for zizmor online audits in private repositories
+      id-token: write # required for artifact provenance attestations
+      attestations: write # required for artifact provenance attestations
+      artifact-metadata: write # required for artifact provenance metadata
+      security-events: write # required for SARIF upload
     uses: ./.github/workflows/build-kalium-unified.yml
     with:
       concurrency-group-suffix: release
@@ -42,10 +40,13 @@ jobs:
           "logic-android-aar",
           "logic-kmp"
         ]
-    secrets: inherit
 
   deploy:
+    name: Deploy
     needs: build
+    permissions:
+      contents: write # required to create/update GitHub releases
+      actions: read # required to download workflow artifacts
     uses: ./.github/workflows/deploy-kalium.yml
     with:
       tag-name: ${{ github.ref_name }}

@@ -8,6 +8,13 @@ on:
     schedule:
         -   cron: '10 0 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
     stale:
         runs-on: ubuntu-latest

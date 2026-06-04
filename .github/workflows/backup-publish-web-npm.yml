@@ -4,8 +4,16 @@ on:
     tags:
       - "backup/*"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
   publish-web:
+    name: Publish Web
     if: github.repository == 'wireapp/kalium'
     runs-on: ubuntu-latest
     permissions:
@@ -40,6 +48,7 @@ jobs:
       - name: Setup Node for npm publish (Trusted Publisher)
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
+          package-manager-cache: false
           scope: "@wireapp"
 
       - name: Pack JS/TS artifact

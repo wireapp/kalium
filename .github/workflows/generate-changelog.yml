@@ -5,8 +5,16 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
   Changelog:
+    name: Changelog
     if: "!contains(github.ref_name, '-')"
     runs-on: ubuntu-latest
 
@@ -18,7 +26,9 @@ jobs:
           persist-credentials: false
 
       - name: 'Set current Git tag'
-        run: echo "CURRENT_TAG=$(git tag --points-at ${{github.sha}})" >> "$GITHUB_ENV"
+        env:
+          GITHUB_SHA_REF: ${{ github.sha }}
+        run: echo "CURRENT_TAG=$(git tag --points-at "$GITHUB_SHA_REF")" >> "$GITHUB_ENV"
 
       - name: 'Set previous Git tag'
         run: echo "PREVIOUS_TAG=$(git describe --tags --abbrev=0 --exclude "$CURRENT_TAG")" >> "$GITHUB_ENV"

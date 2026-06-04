@@ -7,6 +7,10 @@ on:
     types: [ opened, synchronize ]
     paths: [ 'docs/adr/**' ]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
   pull-requests: write
@@ -16,6 +20,7 @@ env:
 
 jobs:
   publish:
+    name: Publish
     runs-on: ubuntu-latest
     steps:
       - name: Checkout project
@@ -45,7 +50,9 @@ jobs:
 
       - name: Comment new ADR(s) in PR
         if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           echo "# New ADR(s) in this PR 📚:" > /tmp/new-adr
-          gh pr diff ${{ github.event.pull_request.number }} --name-only | grep docs/adr | xargs cat >> /tmp/new-adr
-          gh pr comment ${{ github.event.pull_request.number }} -F /tmp/new-adr --edit-last || gh pr comment ${{ github.event.pull_request.number }} -F /tmp/new-adr
+          gh pr diff "$PR_NUMBER" --name-only | grep docs/adr | xargs cat >> /tmp/new-adr
+          gh pr comment "$PR_NUMBER" -F /tmp/new-adr --edit-last || gh pr comment "$PR_NUMBER" -F /tmp/new-adr

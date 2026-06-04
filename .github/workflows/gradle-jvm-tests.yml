@@ -15,15 +15,20 @@ concurrency:
 env:
   CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
   detekt:
+    name: Detekt
     uses: ./.github/workflows/codestyle.yml
 
   gradle-run-tests:
+    name: Gradle Run Tests
     needs: [ detekt ]
     runs-on: ubuntu-latest
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
-    container: kubazwire/cryptobox:1.0.0
+    container: kubazwire/cryptobox:1.0.0@sha256:4791e83cd7c76418e623c5ba17e9396efacf4f742d960a340eb08a106263334b
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
@@ -107,6 +112,7 @@ jobs:
           rm -f ~/.gradle/caches/modules-2/gc.properties
 
   upload-test-results-datadadog:
+    name: Upload Test Results Datadadog
     runs-on: ubuntu-latest
     needs: gradle-run-tests
     if: always()

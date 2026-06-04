@@ -4,8 +4,16 @@ on:
     tags:
       - "backup/*"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
   publish-swift:
+    name: Publish Swift
     if: github.repository == 'wireapp/kalium'
     runs-on: macos-latest
     permissions:

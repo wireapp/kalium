@@ -1,11 +1,21 @@
 name: "Semantic Commit Linting of PR titles"
 
 on:
-  pull_request_target:
+  pull_request:
     types: [ opened, edited, synchronize ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+  issues: write # required to add or remove title-fix labels
+  pull-requests: write # required to inspect and edit pull request labels
 
 jobs:
   semantic-commit-pr-title-lint:
+    name: Semantic Commit Pr Title Lint
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

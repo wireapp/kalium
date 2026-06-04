@@ -13,15 +13,20 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
   detekt:
+    name: Detekt
     uses: ./.github/workflows/codestyle.yml
   benchmarks-check:
+    name: Benchmarks Check
     needs: [ detekt ]
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
-    container: wirebot/cryptobox:1.4.0
+    container: wirebot/cryptobox:1.4.0@sha256:f0d41d90f5af96cd68a8f151fed66f83616b1b01ea6b2d71bdad319c66617e36
     env:
       BENCHER_PROJECT: kalium-hgtkc47o
       BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
@@ -67,18 +72,20 @@ jobs:
 
       - name: Run Bencher on PR
         if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
+        env:
+          GITHUB_ACTIONS_TOKEN: ${{ github.token }}
+          PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          STEPS_PATH_OUTPUTS_REPORT_FULL_PATH: ${{ steps.path.outputs.report_full_path }}
         run: |
           bencher run \
           --branch '${GITHUB_HEAD_REF}' \
           --branch-start-point '${GITHUB_BASE_REF}' \
-          --branch-start-point-hash '${{ github.event.pull_request.base.sha }}' \
+          --branch-start-point-hash "$PULL_REQUEST_BASE_SHA" \
           --adapter java_jmh \
           --testbed ubuntu-latest \
           --err \
-          --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          --github-actions "$GITHUB_ACTIONS_TOKEN" \
           --file ${STEPS_PATH_OUTPUTS_REPORT_FULL_PATH}
-        env:
-          STEPS_PATH_OUTPUTS_REPORT_FULL_PATH: ${{ steps.path.outputs.report_full_path }}
 
       - name: Run Bencher on base branch
         if: github.event_name == 'push' && github.ref_name == 'develop'

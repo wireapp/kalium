@@ -8,11 +8,16 @@ on:
         required: true
         type: string
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   validate-tag:
+    name: Validate Tag
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -25,10 +30,11 @@ jobs:
       - name: Verify signed tag and protected branch ancestry
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY_NAME: ${{ github.repository }}
           INPUTS_TAG_NAME: ${{ inputs.tag-name }}
         run: |
           tag_name="${INPUTS_TAG_NAME}"
-          api_url="https://api.github.com/repos/${{ github.repository }}"
+          api_url="https://api.github.com/repos/$GITHUB_REPOSITORY_NAME"
 
           ref_response=$(curl -fsSL \
             -H "Authorization: Bearer $GITHUB_TOKEN" \
