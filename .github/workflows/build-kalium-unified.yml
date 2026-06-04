@@ -18,12 +18,8 @@ on:
         type: string
 
 permissions:
-  contents: read
-  actions: read
-  id-token: write
-  attestations: write
-  artifact-metadata: write
-  security-events: write
+  contents: read # required for actions/checkout to read workflow sources
+  actions: read # required for reading workflow metadata and called workflows
 
 concurrency:
   group: build-kalium-unified-${{ github.ref }}-${{ inputs.concurrency-group-suffix }}
@@ -63,6 +59,7 @@ jobs:
           test "$findingsCount" -eq 0
 
   resolve-build-config:
+    name: Resolve build config
     runs-on: ubuntu-latest
     outputs:
       build-config: ${{ steps.resolve.outputs.build-config }}
@@ -70,9 +67,9 @@ jobs:
       - name: Resolve build config
         id: resolve
         shell: bash
+        env:
+          INPUT_CONFIG: ${{ inputs.build-config }}
         run: |
-          INPUT_CONFIG='${{ inputs.build-config }}'
-
           if ! echo "$INPUT_CONFIG" | jq -e 'type == "array" and all(.[]; type == "string")' > /dev/null; then
             echo "::error::build-config must be a JSON array of string build targets"
             exit 1
@@ -105,6 +102,7 @@ jobs:
     uses: ./.github/workflows/codestyle.yml
 
   jvm-tests:
+    name: JVM tests
     if: inputs.run-quality-checks
     needs: [detekt]
     runs-on: ubuntu-latest
@@ -124,6 +122,7 @@ jobs:
         run: ./gradlew jvmTest -Djava.library.path=./native/libs
 
   android-tests:
+    name: Android unit tests
     if: inputs.run-quality-checks
     needs: [detekt]
     runs-on: ubuntu-latest
@@ -145,6 +144,7 @@ jobs:
         run: ./gradlew testAndroidHostTest
 
   android-connected-tests:
+    name: Android connected tests
     if: inputs.run-quality-checks
     needs: [detekt]
     runs-on: ubuntu-latest
@@ -207,6 +207,7 @@ jobs:
           script: ./gradlew connectedAndroidDeviceTest
 
   ios-tests:
+    name: iOS tests
     if: inputs.run-quality-checks
     needs: [detekt]
     runs-on: macos-15
@@ -234,6 +235,11 @@ jobs:
   build:
     name: "Build ${{ matrix.platform }}"
     needs: [workflow-security, resolve-build-config, jvm-tests, android-tests, android-connected-tests, ios-tests]
+    permissions:
+      contents: read # required for actions/checkout to read workflow sources
+      id-token: write # required for artifact provenance attestations
+      attestations: write # required for artifact provenance attestations
+      artifact-metadata: write # required for artifact provenance metadata
     # When quality checks are skipped, run immediately
     if: |
       always() &&
@@ -264,39 +270,51 @@ jobs:
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./gradlew ${{ matrix.gradle-tasks }}
+          GRADLE_TASKS: ${{ matrix.gradle-tasks }}
+        run: |
+          read -ra GRADLE_ARGS <<< "$GRADLE_TASKS"
+          ./gradlew "${GRADLE_ARGS[@]}"
 
       - name: Post-build — collect file artifacts
         if: matrix.artifact-glob != ''
+        env:
+          ARTIFACT_GLOB: ${{ matrix.artifact-glob }}
+          ARTIFACT_NAME: ${{ matrix.artifact-name }}
         run: |
-          mkdir -p release/${{ matrix.artifact-name }}
-          IFS=' ' read -ra GLOBS <<< "${{ matrix.artifact-glob }}"
+          ARTIFACT_DIR="release/$ARTIFACT_NAME"
+          mkdir -p "$ARTIFACT_DIR"
+          IFS=' ' read -ra GLOBS <<< "$ARTIFACT_GLOB"
           for glob in "${GLOBS[@]}"; do
             dir=$(dirname "$glob")
             pattern=$(basename "$glob")
-            find "$dir" -maxdepth 1 -name "$pattern" -exec cp {} release/${{ matrix.artifact-name }}/ \;
+            find "$dir" -maxdepth 1 -name "$pattern" -exec cp {} "$ARTIFACT_DIR/" \;
           done
-          test -n "$(ls -A release/${{ matrix.artifact-name }})"
+          test -n "$(ls -A "$ARTIFACT_DIR")"
 
       - name: Post-build — zip XCFramework
         if: matrix.xcframework-dir != ''
+        env:
+          ARTIFACT_NAME: ${{ matrix.artifact-name }}
+          XCFRAMEWORK_DIR: ${{ matrix.xcframework-dir }}
         run: |
-          XCFRAMEWORK_DIR="${{ matrix.xcframework-dir }}"
           if [ ! -d "$XCFRAMEWORK_DIR" ]; then
             echo "::error::XCFramework not found at $XCFRAMEWORK_DIR"
             exit 1
           fi
-          mkdir -p release/${{ matrix.artifact-name }}
+          ARTIFACT_DIR="release/$ARTIFACT_NAME"
+          mkdir -p "$ARTIFACT_DIR"
           PARENT_DIR=$(dirname "$XCFRAMEWORK_DIR")
           FRAMEWORK_NAME=$(basename "$XCFRAMEWORK_DIR")
           (cd "$PARENT_DIR" && zip -rXq "${FRAMEWORK_NAME}.zip" "$FRAMEWORK_NAME")
-          mv "${PARENT_DIR}/${FRAMEWORK_NAME}.zip" release/${{ matrix.artifact-name }}/
+          mv "${PARENT_DIR}/${FRAMEWORK_NAME}.zip" "$ARTIFACT_DIR/"
 
       - name: Post-build — generate checksums
         if: matrix.artifact-name != ''
+        env:
+          ARTIFACT_NAME: ${{ matrix.artifact-name }}
         run: |
-          ARTIFACT_DIR="release/${{ matrix.artifact-name }}"
-          CHECKSUM_FILE="${{ matrix.artifact-name }}-SHA256SUMS.txt"
+          ARTIFACT_DIR="release/$ARTIFACT_NAME"
+          CHECKSUM_FILE="$ARTIFACT_NAME-SHA256SUMS.txt"
 
           (
             cd "$ARTIFACT_DIR"
@@ -329,9 +347,12 @@ jobs:
 
       - name: Post-build — persist attestation bundle
         if: steps.attest.outputs.bundle-path != ''
+        env:
+          ARTIFACT_NAME: ${{ matrix.artifact-name }}
+          ATTESTATION_BUNDLE_PATH: ${{ steps.attest.outputs.bundle-path }}
         run: |
-          cp "${{ steps.attest.outputs.bundle-path }}" \
-            "release/${{ matrix.artifact-name }}/${{ matrix.artifact-name }}-provenance-bundle.json"
+          cp "$ATTESTATION_BUNDLE_PATH" \
+            "release/$ARTIFACT_NAME/$ARTIFACT_NAME-provenance-bundle.json"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -341,13 +362,18 @@ jobs:
           retention-days: 3
 
       - name: Build summary
+        env:
+          ARTIFACT_NAME: ${{ matrix.artifact-name }}
+          ATTESTATION_URL: ${{ steps.attest.outputs.attestation-url }}
+          GRADLE_TASKS: ${{ matrix.gradle-tasks }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
-          echo "## Build Summary — ${{ matrix.platform }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Artifact**: ${{ matrix.artifact-name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Gradle tasks**: \`${{ matrix.gradle-tasks }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Checksums**: \`${{ matrix.artifact-name }}-SHA256SUMS.txt\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Attestation**: ${{ steps.attest.outputs.attestation-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "## Build Summary — $PLATFORM" >> $GITHUB_STEP_SUMMARY
+          echo "**Artifact**: $ARTIFACT_NAME" >> $GITHUB_STEP_SUMMARY
+          echo "**Gradle tasks**: \`$GRADLE_TASKS\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Checksums**: \`$ARTIFACT_NAME-SHA256SUMS.txt\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Attestation**: $ATTESTATION_URL" >> $GITHUB_STEP_SUMMARY
           echo "**Generated files**:" >> $GITHUB_STEP_SUMMARY
-          ls release/${{ matrix.artifact-name }}/ | while read file; do
+          ls "release/$ARTIFACT_NAME/" | while read file; do
             echo "- \`$file\`" >> $GITHUB_STEP_SUMMARY
           done
