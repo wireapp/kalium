@@ -23,14 +23,18 @@ package com.wire.kalium.network
 import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.unbound.configuration.isProxyRequired
+import com.wire.kalium.network.config.KaliumNetworkConfig
+import com.wire.kalium.network.config.TlsPolicy
 import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import okhttp3.CertificatePinner
+import okhttp3.CipherSuite
 import okhttp3.ConnectionPool
 import okhttp3.ConnectionSpec
 import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
+import okhttp3.TlsVersion
 import java.net.Authenticator
 import java.net.InetSocketAddress
 import java.net.PasswordAuthentication
@@ -112,10 +116,22 @@ private fun OkHttpClient.Builder.ignoreAllSSLErrors() {
     hostnameVerifier { _, _ -> true }
 }
 
-fun supportedConnectionSpecs(): List<ConnectionSpec> {
-    val wireSpec = ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS).build()
-    return listOf(wireSpec)
+fun supportedConnectionSpecs(): List<ConnectionSpec> = supportedConnectionSpecs(KaliumNetworkConfig.KALIUM_TLS_POLICY)
+
+internal fun supportedConnectionSpecs(tlsPolicy: TlsPolicy): List<ConnectionSpec> = when (tlsPolicy) {
+    TlsPolicy.TLS13_ONLY -> listOf(tls13OnlyConnectionSpec())
+    TlsPolicy.TLS12_TLS13 -> listOf(ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS).build())
 }
+
+private fun tls13OnlyConnectionSpec(): ConnectionSpec =
+    ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS)
+        .tlsVersions(TlsVersion.TLS_1_3)
+        .cipherSuites(
+            CipherSuite.TLS_AES_128_GCM_SHA256,
+            CipherSuite.TLS_AES_256_GCM_SHA384,
+            CipherSuite.TLS_AES_128_CCM_SHA256
+        )
+        .build()
 
 actual fun clearTextTrafficEngine(): HttpClientEngine = OkHttp.create {
     buildClearTextTrafficOkhttpClient()

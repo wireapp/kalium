@@ -21,10 +21,40 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kayan)
 }
 
 kaliumLibrary {
     multiplatform()
+}
+
+kayan {
+    packageName.set("com.wire.kalium.network.config")
+    className.set("KaliumNetworkConfig")
+    flavor.set("default")
+    baseConfigFile.set(layout.projectDirectory.file("default.json"))
+    configFormat.set(io.kayan.ConfigFormat.JSON)
+    validationMode.set(io.kayan.KayanValidationMode.SUBSET)
+
+    val parentDefaultConfig = gradle.parent
+        ?.rootProject
+        ?.layout
+        ?.projectDirectory
+        ?.file("default.json")
+        ?: layout.projectDirectory.file("../../../default.json")
+
+    if (parentDefaultConfig.asFile.exists()) {
+        customConfigFile.set(parentDefaultConfig)
+    }
+
+    schema {
+        enum(
+            jsonKey = "kalium_tls_policy",
+            propertyName = "KALIUM_TLS_POLICY",
+            enumTypeName = "com.wire.kalium.network.config.TlsPolicy",
+            required = true
+        )
+    }
 }
 
 kotlin {

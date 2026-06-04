@@ -1,0 +1,25 @@
+{
+  "flavors": {
+    "alpha": {
+      "kalium_tls_policy": "TLS13_ONLY"
+    },
+    "beta": {
+      "kalium_tls_policy": "TLS13_ONLY"
+    },
+    "default": {
+      "kalium_tls_policy": "TLS13_ONLY"
+    },
+    "dev": {
+      "kalium_tls_policy": "TLS13_ONLY"
+    },
+    "fdroid": {
+      "kalium_tls_policy": "TLS13_ONLY"
+    },
+    "prod": {
+      "kalium_tls_policy": "TLS13_ONLY"
+    },
+    "staging": {
+      "kalium_tls_policy": "TLS13_ONLY"
+    }
+  }
+}

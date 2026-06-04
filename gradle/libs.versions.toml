@@ -1,6 +1,7 @@
 [versions]
 kotlin = "2.3.20"
 ksp = "2.3.6"
+kayan = "1.4.0"
 activity-compose = "1.13.0"
 app-compat = "1.6.1"
 android-paging3 = "3.5.0"
@@ -92,6 +93,7 @@ androidx-benchmark = { id = "androidx.benchmark", version.ref = "androidx-benchm
 allOpen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
 jhmReport = { id = "io.morethan.jmhreport", version.ref = "jmhReport" }
 mokkery = { id = "dev.mokkery", version.ref = "mokkery" }
+kayan = { id = "io.github.mohamadjaara.kayan", version.ref = "kayan" }
 
 [bundles]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "coroutinesAndroid", "ktor", "ktor-okHttp"]
