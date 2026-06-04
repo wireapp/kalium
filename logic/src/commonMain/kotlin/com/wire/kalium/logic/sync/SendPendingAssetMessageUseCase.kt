@@ -43,6 +43,10 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCa
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 
 /**
  * Handles sending a pending asset message, retrying the upload if the previous attempt failed due to
@@ -65,6 +69,7 @@ internal class SendPendingAssetMessageUseCaseImpl(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : SendPendingAssetMessageUseCase {
 
     override suspend fun invoke(message: Message.Regular): Either<CoreFailure, Unit> {
@@ -117,45 +122,49 @@ internal class SendPendingAssetMessageUseCaseImpl(
     private suspend fun uploadAsset(
         conversationId: ConversationId,
         assetContent: AssetContent,
-    ): Either<CoreFailure, AssetContent> = with(assetContent) {
+    ): Either<CoreFailure, AssetContent> = withContext(dispatchers.io) {
+        with(assetContent) {
 
-        assetRepository.fetchPrivateDecodedAsset(
-            assetId = remoteData.assetId,
-            assetDomain = remoteData.assetDomain,
-            assetName = name ?: "",
-            assetToken = remoteData.assetToken,
-            encryptionKey = AES256Key(remoteData.otrKey),
-            assetSHA256Key = SHA256Key(remoteData.sha256),
-            mimeType = mimeType,
-            downloadIfNeeded = false
-        ).flatMap { fetchAssetResult ->
-
-            val updatedMetadata = metadata.withAudioNormalizedLoudnessIfNeeded(
+            assetRepository.fetchPrivateDecodedAsset(
+                assetId = remoteData.assetId,
+                assetDomain = remoteData.assetDomain,
+                assetName = name ?: "",
+                assetToken = remoteData.assetToken,
+                encryptionKey = AES256Key(remoteData.otrKey),
+                assetSHA256Key = SHA256Key(remoteData.sha256),
                 mimeType = mimeType,
-                assetDataPath = fetchAssetResult.path.toString()
-            )
+                downloadIfNeeded = false
+            ).flatMap { fetchAssetResult ->
 
-            assetRepository.uploadAndPersistPrivateAsset(
-                mimeType = mimeType,
-                assetDataPath = fetchAssetResult.path,
-                otrKey = AES256Key(remoteData.otrKey),
-                extension = name?.fileExtension() ?: "",
-                conversationId = conversationId.toApi(),
-                filename = name,
-                filetype = mimeType,
-            ).flatMap { uploadResult ->
-
-                val (uploadedAssetId, sha256Key) = uploadResult
-
-                assetContent.copy(
-                    metadata = updatedMetadata,
-                    remoteData = remoteData.copy(
-                        sha256 = sha256Key.data,
-                        assetId = uploadedAssetId.key,
-                        assetDomain = uploadedAssetId.domain,
-                        assetToken = uploadedAssetId.assetToken
+                val updatedMetadata = async {
+                    metadata.withAudioNormalizedLoudnessIfNeeded(
+                        mimeType = mimeType,
+                        assetDataPath = fetchAssetResult.path.toString()
                     )
-                ).right()
+                }
+
+                assetRepository.uploadAndPersistPrivateAsset(
+                    mimeType = mimeType,
+                    assetDataPath = fetchAssetResult.path,
+                    otrKey = AES256Key(remoteData.otrKey),
+                    extension = name?.fileExtension() ?: "",
+                    conversationId = conversationId.toApi(),
+                    filename = name,
+                    filetype = mimeType,
+                ).flatMap { uploadResult ->
+
+                    val (uploadedAssetId, sha256Key) = uploadResult
+
+                    assetContent.copy(
+                        metadata = updatedMetadata.await(),
+                        remoteData = remoteData.copy(
+                            sha256 = sha256Key.data,
+                            assetId = uploadedAssetId.key,
+                            assetDomain = uploadedAssetId.domain,
+                            assetToken = uploadedAssetId.assetToken
+                        )
+                    ).right()
+                }
             }
         }
     }
