@@ -34,7 +34,6 @@ cd "$(dirname "$0")/.."
 
 ARTIFACTS_DIR="build/sbom/artifacts"
 OUTPUT_DIR="build/sbom"
-SBOM_REQUIREMENTS_FILE="scripts/sbom-requirements.txt"
 SCANCODE_PROCESSES="${SCANCODE_PROCESSES:-8}"
 SBOM_GRADLE_EXTRA_ARGS="${SBOM_GRADLE_EXTRA_ARGS:-}"
 SKIP_EXTRACT=false
@@ -95,9 +94,15 @@ if [[ "$SKIP_SCAN" == "true" ]]; then
     echo "==> Skipping toolchain setup and scancode (--skip-scan); reusing $OUTPUT_DIR/scan.json"
 else
 
-echo "==> [1/4] Setting up VENV and ScanCode..."
+echo "==> [1/6] Setting up VENV and ScanCode..."
+SBOM_REQUIREMENTS_FILE="scripts/sbom-requirements.txt"
+if [[ ! -f "$SBOM_REQUIREMENTS_FILE" ]]; then
+    echo "ERROR: missing $SBOM_REQUIREMENTS_FILE." >&2
+    exit 1
+fi
+# The pinned toolchain needs Python 3.10+ (pdfminer.six >= 20251108 dropped 3.9).
 if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' 2>/dev/null; then
-    echo "ERROR: Python 3.10+ is required (pdfminer.six >= 20251108 dropped Python 3.9 support)." >&2
+    echo "ERROR: Python 3.10+ is required." >&2
     echo "       Current: $(python3 --version 2>&1)" >&2
     exit 1
 fi
@@ -127,16 +132,18 @@ if [[ "$(uname -s)" == "Darwin" ]]; then
     export PKG_CONFIG_PATH="$BREW_PREFIX/opt/icu4c/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
 fi
 
-if [[ ! -f "$SBOM_REQUIREMENTS_FILE" ]]; then
-    echo "ERROR: missing $SBOM_REQUIREMENTS_FILE." >&2
-    exit 1
-fi
-
-# Always reconcile the venv to the pinned SBOM toolchain so CI and developer
-# machines use the same ScanCode stack even when .venv already exists.
-echo "  Installing pinned SBOM Python toolchain from $SBOM_REQUIREMENTS_FILE..."
+# Install the pinned, hash-locked SBOM toolchain. --require-hashes makes pip
+# reject any artifact whose sha256 isn't listed in the requirements file, so a
+# tampered or re-uploaded PyPI release aborts the install instead of silently
+# running in CI. Reconciled on every run so CI and developer machines share the
+# exact same ScanCode stack even when .venv already exists. This also installs
+# the pinned extractcode-libarchive plugin (so extractcode runs against its
+# tested libarchive build rather than whatever the OS has on the linker path).
+# pip itself is pinned separately as the bootstrap installer — it sits outside
+# the --require-hashes set.
+echo "  Installing pinned, hash-locked SBOM toolchain from $SBOM_REQUIREMENTS_FILE..."
 python -m pip install --upgrade "pip==26.0.1" >/dev/null
-python -m pip install --upgrade --requirement "$SBOM_REQUIREMENTS_FILE" >/dev/null
+python -m pip install --require-hashes --requirement "$SBOM_REQUIREMENTS_FILE" >/dev/null
 
 require_cmd extractcode "Install ScanCode-Toolkit."
 require_cmd scancode "Install ScanCode-Toolkit."
@@ -161,10 +168,16 @@ if [[ "$(uname -s)" == "Darwin" && -z "${TYPECODE_LIBMAGIC_PATH:-}" ]]; then
 fi
 
 if [[ "$SKIP_EXTRACT" == "true" ]]; then
-    echo "==> [2/4] Skipping Gradle artifact collection (--skip-extract)"
-    echo "==> [3/4] Skipping extractcode (--skip-extract); reusing $ARTIFACTS_DIR"
+    echo "==> [2/6] Skipping Gradle artifact collection (--skip-extract)"
+    echo "==> [3/6] Skipping artifact deduplication (--skip-extract)"
+    echo "==> [4/6] Skipping extractcode (--skip-extract); reusing $ARTIFACTS_DIR"
 else
-    echo "==> [2/4] Resolving and copying dependency artifacts via Gradle"
+    echo "==> [2/6] Resolving and copying dependency artifacts via Gradle"
+    # Wipe the prior artifact + POM trees so this run starts clean. Gradle's
+    # Copy task uses duplicatesStrategy=INCLUDE, which would otherwise let
+    # stale files from a previous run (e.g. a dependency that has since been
+    # removed or upgraded) leak into the new SBOM.
+    rm -rf "$ARTIFACTS_DIR" "$OUTPUT_DIR/poms"
     # shellcheck disable=SC2086
     ./gradlew :collectSbomArtifacts $SBOM_GRADLE_EXTRA_ARGS
 
@@ -173,21 +186,36 @@ else
         exit 1
     fi
 
-    echo "==> [3/4] Unpacking archives with extractcode (recursive)"
+    echo "==> [3/6] Deduplicating per-module artifact copies"
+    # Gradle materialises shared third-party deps into every consuming
+    # module's subdir (e.g. kotlin-stdlib in 24 jvm/* dirs). Drop the
+    # byte-identical copies so extractcode and scancode each see one
+    # canonical instance per artifact.
+    python3 scripts/dedupe-sbom-artifacts.py "$ARTIFACTS_DIR"
+
+    echo "==> [4/6] Unpacking archives with extractcode (recursive)"
     # Recursive (no --shallow) so nested archives like classes.jar inside an
-    # extracted .aar land on disk as plain files. ScanCode then skips the
-    # original archive blobs via --ignore and never has to peek inside them
-    # for package metadata, which is what inflated the scan count.
+    # extracted .aar land on disk as plain files. The original archive blobs
+    # are then deleted by the prune step below.
     extractcode "$ARTIFACTS_DIR"
 fi
 
-echo "==> [4/4] Running scancode (this will take 30+ minutes)"
-
-# Glob patterns scancode should skip outright. These files carry no usable
-# licence/copyright text — they're compiled bytecode, native binaries, original
-# archives already unpacked by extractcode, or opaque media. Skipping them
-# avoids hundreds of thousands of useless file scans.
-SCANCODE_IGNORES=(
+# Glob patterns to delete from the extracted tree before scancode runs. These
+# files carry no usable licence/copyright text — compiled bytecode, native
+# binaries, original archives already unpacked by extractcode, opaque media,
+# debug source maps, or build-time metadata covered by sibling files.
+#
+# Deleting outright (instead of passing them to scancode via --ignore) is what
+# moves the needle: scancode still walks the full tree and runs libmagic on
+# every file before --ignore takes effect, so on a 478k-file artifact tree the
+# pre-scan inventory alone is non-trivial. Pruning shrinks the tree on disk so
+# scancode's traversal is also cheap.
+#
+# Verified against a full scan that the deletions below do NOT eliminate any
+# unique (package, license) pair — every package's attribution remains
+# discoverable via its LICENSE/NOTICE/MANIFEST.MF/POM/package.json or its
+# bundled source headers (.java, .h, .proto, .aidl, etc.).
+PRUNE_PATTERNS=(
     # JVM / Kotlin / Android compiled bytecode
     '*.class' '*.dex' '*.kotlin_module' '*.kotlin_builtins' '*.kotlin_metadata'
     # Kotlin/Native compiled metadata inside .klib-extract/*/linkdata trees —
@@ -197,7 +225,7 @@ SCANCODE_IGNORES=(
     # Compiled native libraries and object files
     '*.so' '*.dylib' '*.dll' '*.jnilib' '*.o' '*.a' '*.obj' '*.lib' '*.wasm'
     # Misnamed bytecode (some Android .bin entries are actually compiled
-    # Java class files; the .class ignore above misses them by extension).
+    # Java class files; the .class pattern above misses them by extension).
     '*.bin'
     # Original archives already extracted in place by extractcode
     '*.jar' '*.aar' '*.war' '*.klib' '*.zip' '*.tar' '*.tar.gz' '*.tgz'
@@ -207,7 +235,37 @@ SCANCODE_IGNORES=(
     '*.mp3' '*.mp4' '*.wav' '*.ogg' '*.m4a'
     # JAR signature blocks
     '*.RSA' '*.SF' '*.DSA'
+    # Debug source maps — every detection in these is a duplicate of the
+    # parent package's package.json / LICENSE entry.
+    '*.map'
+    # Maven version stamps and localisation .properties — covered by the
+    # package's MANIFEST.MF / POM.
+    '*.version' '*.properties'
 )
+
+echo "==> [5/6] Pruning extracted tree (deleting blacklisted file types)"
+PRE_PRUNE_FILES=$(find "$ARTIFACTS_DIR" -type f | wc -l | tr -d ' ')
+PRUNE_FIND_EXPR=()
+for pattern in "${PRUNE_PATTERNS[@]}"; do
+    PRUNE_FIND_EXPR+=(-iname "$pattern" -o)
+done
+unset "PRUNE_FIND_EXPR[$(( ${#PRUNE_FIND_EXPR[@]} - 1 ))]"  # drop trailing -o
+find "$ARTIFACTS_DIR" -type f \( "${PRUNE_FIND_EXPR[@]}" \) -delete
+# Clean up the now-empty directories left behind (linkdata trees, classes/,
+# native libs/, etc.) so scancode's traversal doesn't even stat them.
+find "$ARTIFACTS_DIR" -mindepth 1 -type d -empty -delete
+POST_PRUNE_FILES=$(find "$ARTIFACTS_DIR" -type f | wc -l | tr -d ' ')
+# Resource count = files + directories. ScanCode's progress meter ticks
+# through both during the tree walk, so this is the number worth comparing
+# against the "Scanned: N" counter scancode prints below.
+POST_PRUNE_RESOURCES=$(find "$ARTIFACTS_DIR" | wc -l | tr -d ' ')
+printf "    files before prune    : %d\n" "$PRE_PRUNE_FILES"
+printf "    files after prune     : %d  (%d deleted)\n" \
+    "$POST_PRUNE_FILES" "$((PRE_PRUNE_FILES - POST_PRUNE_FILES))"
+printf "    files + directories   : %d\n" "$POST_PRUNE_RESOURCES"
+echo
+
+echo "==> [6/6] Running scancode"
 
 SCANCODE_ARGS=(
     --license --copyright --package --info --email --url
@@ -216,9 +274,6 @@ SCANCODE_ARGS=(
     --json-pp "$OUTPUT_DIR/scan.json"
     --spdx-tv "$OUTPUT_DIR/scan.spdx"
 )
-for pattern in "${SCANCODE_IGNORES[@]}"; do
-    SCANCODE_ARGS+=(--ignore "$pattern")
-done
 # --cyclonedx is available in ScanCode-Toolkit >= 32; if not present, emit a
 # warning and continue rather than fail the whole run.
 if scancode --help 2>&1 | grep -q -- '--cyclonedx'; then
@@ -226,30 +281,6 @@ if scancode --help 2>&1 | grep -q -- '--cyclonedx'; then
 else
     echo "WARN: installed scancode lacks --cyclonedx; converting JSON afterwards (or skip)." >&2
 fi
-
-# Pre-scan diagnostic: count total files on disk, files matching any ignore
-# glob, and the top extensions of what's left. Lets us sanity-check the input
-# size before scancode burns hours on it.
-echo
-echo "  Pre-scan summary for $ARTIFACTS_DIR:"
-TOTAL_FILES=$(find "$ARTIFACTS_DIR" -type f | wc -l | tr -d ' ')
-IGNORE_FIND_EXPR=()
-for pattern in "${SCANCODE_IGNORES[@]}"; do
-    IGNORE_FIND_EXPR+=(-iname "$pattern" -o)
-done
-last_idx=$(( ${#IGNORE_FIND_EXPR[@]} - 1 ))
-unset "IGNORE_FIND_EXPR[$last_idx]"  # drop trailing -o
-IGNORED_FILES=$(find "$ARTIFACTS_DIR" -type f \( "${IGNORE_FIND_EXPR[@]}" \) | wc -l | tr -d ' ')
-TO_SCAN=$((TOTAL_FILES - IGNORED_FILES))
-printf "    total files on disk: %d\n" "$TOTAL_FILES"
-printf "    matched by --ignore: %d\n" "$IGNORED_FILES"
-printf "    will be scanned:     %d\n" "$TO_SCAN"
-echo "    top 10 extensions in the to-be-scanned set:"
-find "$ARTIFACTS_DIR" -type f ! \( "${IGNORE_FIND_EXPR[@]}" \) \
-    | sed -n 's/.*\.\([A-Za-z0-9]*\)$/\1/p' \
-    | sort | uniq -c | sort -rn | head -10 \
-    | awk '{printf "      %6d  .%s\n", $1, $2}'
-echo
 
 scancode "${SCANCODE_ARGS[@]}" "$ARTIFACTS_DIR"
 
@@ -312,7 +343,7 @@ fi
 # License-file presence audit. Independent of scancode: walks the unpacked
 # artifact tree directly to flag third-party packages that do NOT ship a
 # LICENSE / NOTICE / COPYING file alongside their code. The missing list is
-# the punch list for THIRD-PARTY-NOTICE.md — every entry needs
+# the punch list for the customer THIRD-PARTY-NOTICE.md — every entry needs
 # a manual fallback (POM <licenses>, upstream repo, etc.) before the
 # deliverable is complete.
 #
@@ -335,7 +366,7 @@ fi
 # parsed for its <licenses> block — the authoritative SPDX-equivalent source
 # for license name + URL per package. This fills the gap for packages that
 # don't bundle a LICENSE file in their jar/aar/klib and is the structured
-# feedstock for THIRD-PARTY-NOTICE.md.
+# feedstock for the eventual customer THIRD-PARTY-NOTICE.md.
 echo
 echo "==> Parsing POM <licenses> metadata"
 POMS_DIR="$OUTPUT_DIR/poms"
