@@ -31,10 +31,10 @@ jobs:
 
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-      id-token: write
+      contents: read # required for actions/checkout to read repository sources
+      pull-requests: write # required for Claude to post pull request review feedback
+      issues: write # required to update the review progress issue comment
+      id-token: write # required by the Claude Code action
 
     steps:
       - name: Checkout repository

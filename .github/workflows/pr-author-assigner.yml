@@ -8,11 +8,13 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  pull-requests: write # required to assign the pull request author
+  contents: read # required by workflow defaults
 
 jobs:
   assign-author:
     name: Assign Author
+    permissions:
+      pull-requests: write # required to assign the pull request author
     runs-on: ubuntu-latest
     steps:
       - uses: toshimaru/auto-author-assign@bdd7688cbf9e6d5683f02f8c7d8ae4062a254b6d

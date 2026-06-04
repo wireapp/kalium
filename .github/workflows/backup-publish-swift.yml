@@ -17,7 +17,7 @@ jobs:
     if: github.repository == 'wireapp/kalium'
     runs-on: macos-latest
     permissions:
-      contents: write
+      contents: write # required to upload backup XCFrameworks to GitHub releases
     steps:
       - uses: maxim-lobanov/setup-xcode@1242409711ff5721add51979e9e11e23ebb7e5a4
         with:

@@ -10,13 +10,15 @@ concurrency:
 
 permissions:
   contents: read # required for actions/checkout and repository metadata reads
-  issues: write # required to add or remove title-fix labels
-  pull-requests: write # required to inspect and edit pull request labels
 
 jobs:
   semantic-commit-pr-title-lint:
     name: Semantic Commit Pr Title Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # required for semantic PR title validation
+      issues: write # required to add or remove title-fix labels
+      pull-requests: write # required to inspect and edit pull request labels
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CUSTOM_PR_LABEL: "Fix PR Title 🤦‍♂️"

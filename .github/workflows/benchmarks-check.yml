@@ -24,7 +24,7 @@ jobs:
     name: Benchmarks Check
     needs: [ detekt ]
     permissions:
-      pull-requests: write
+      pull-requests: write # required for Bencher comparison comments/checks on PRs
     runs-on: ubuntu-latest
     container: wirebot/cryptobox:1.4.0@sha256:f0d41d90f5af96cd68a8f151fed66f83616b1b01ea6b2d71bdad319c66617e36
     env:

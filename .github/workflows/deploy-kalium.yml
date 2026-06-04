@@ -32,12 +32,15 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
-  actions: read
+  contents: read # required by reusable workflow defaults
+  actions: read # required to download workflow artifacts
 
 jobs:
   deploy:
     name: Deploy
+    permissions:
+      contents: write # required to create/update GitHub releases
+      actions: read # required to download workflow artifacts
     strategy:
       matrix:
         target: ${{ fromJson(inputs.deployment-targets) }}

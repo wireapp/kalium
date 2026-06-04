@@ -10,3 +10,10 @@ rules:
   secrets-outside-env:
     config:
       allow: []
+
+  superfluous-actions:
+    ignore:
+      - backup-publish-swift.yml
+      - backup-publish-web-npm.yml
+      - deploy-kalium.yml
+      - generate-changelog.yml

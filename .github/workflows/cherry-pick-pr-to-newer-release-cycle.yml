@@ -38,6 +38,7 @@ permissions:
 
 jobs:
     cherry-pick:
+        name: Cherry Pick
         runs-on: ubuntu-latest
 
         env:
