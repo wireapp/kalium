@@ -26,6 +26,13 @@ jobs:
 
   build:
     needs: validate-tag
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+      attestations: write
+      artifact-metadata: write
+      security-events: write
     uses: ./.github/workflows/build-kalium-unified.yml
     with:
       concurrency-group-suffix: release-rc
