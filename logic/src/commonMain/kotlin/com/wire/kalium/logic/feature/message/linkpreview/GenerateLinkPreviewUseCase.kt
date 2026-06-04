@@ -47,37 +47,29 @@ internal class GenerateLinkPreviewUseCaseImpl(
         text: String,
         mentions: List<MessageMention>
     ): MessageLinkPreview? {
-        // 1. Detect all URLs
         val excludedRanges = ExclusionRanges.compute(text, mentions)
         val matches = UrlDetector.detect(text, excludedRanges)
 
-        // 2. Filter blacklisted hosts and get first match
         val firstMatch = matches
             .filterNot { PreviewBlacklist.isBlacklisted(it.url) }
             .firstOrNull() ?: return null
 
-        // 3. Fetch OG metadata
         val originalUrl = firstMatch.url
         val normalizedUrl = normalizeUrl(originalUrl)
 
-        val ogData = repository.fetchOpenGraph(normalizedUrl, originalUrl).getOrNull() ?: return null
-
-        if (ogData == null) {
-            return null
+        return repository.fetchOpenGraph(normalizedUrl, originalUrl).getOrNull()?.let { ogData ->
+            val image = ogData.imageUrls.firstOrNull()?.let { imageUrl ->
+                repository.fetchImage(imageUrl).getOrNull()
+            }
+            MessageLinkPreview(
+                url = originalUrl,
+                urlOffset = firstMatch.start,
+                permanentUrl = ogData.url,
+                title = ogData.title,
+                summary = ogData.description,
+                image = image
+            )
         }
-
-        val image = ogData.imageUrls.firstOrNull()?.let { imageUrl ->
-            repository.fetchImage(imageUrl).getOrNull()
-        }
-        // 4. Map to MessageLinkPreview
-        return MessageLinkPreview(
-            url = originalUrl,
-            urlOffset = firstMatch.start,
-            permanentUrl = ogData.url,
-            title = ogData.title,
-            summary = ogData.description,
-            image = image
-        )
     }
 
     private fun normalizeUrl(url: String): String {
