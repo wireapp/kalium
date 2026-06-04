@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,20 +15,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.mocks.mocks.asset
+package com.wire.kalium.cells.domain
 
-import com.wire.kalium.network.api.authenticated.asset.AssetResponse
-import com.wire.kalium.network.api.model.GenericAPIErrorResponse
+import com.wire.kalium.cells.domain.usecase.offline.OfflineFileInfo
+import com.wire.kalium.logic.data.id.ConversationId
+import kotlinx.coroutines.flow.Flow
 
-object AssetMocks {
-
-    val invalid = GenericAPIErrorResponse(code = 401, message = "Invalid Asset Token", label = "invalid_asset_token")
-
-    val asset = AssetResponse(
-        key = "3-1-e7788668-1b22-488a-b63c-acede42f771f",
-        expires = "expiration_date",
-        token = "asset_token",
-        domain = "staging.wire.link"
-    )
-
+internal interface CellFileRepository {
+    suspend fun upsert(info: OfflineFileInfo)
+    suspend fun clearOfflineAccess(id: String)
+    fun observeOfflineFiles(): Flow<List<OfflineFileInfo>>
+    fun observeOfflineFilesByConversationId(conversationId: ConversationId): Flow<List<OfflineFileInfo>>
+    suspend fun getById(id: String): OfflineFileInfo?
 }

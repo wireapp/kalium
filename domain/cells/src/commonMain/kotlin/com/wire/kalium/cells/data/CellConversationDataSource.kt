@@ -19,6 +19,7 @@ package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.domain.CellConversationRepository
 import com.wire.kalium.cells.domain.model.CellConversation
+import com.wire.kalium.cells.util.toQualifiedIdOrNull
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
@@ -52,6 +53,15 @@ internal class CellConversationDataSource(
                         conv.id.toString() to name
                     }
                 } ?: emptyList()
+            }
+        }
+
+    override suspend fun getConversationNameById(conversationId: String): Either<StorageFailure, String?> =
+        withContext(dispatchers.io) {
+            wrapStorageRequest {
+                conversationId.toQualifiedIdOrNull()?.let { qualifiedId ->
+                    conversationDao.getConversationById(qualifiedId)?.name
+                }
             }
         }
 

@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.test_util
 
 import com.wire.kalium.common.error.NetworkFailure
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.FederationError
@@ -30,31 +30,31 @@ import io.ktor.http.HttpStatusCode
 object TestNetworkException {
 
     val generic = KaliumException.InvalidRequestError(
-        ErrorResponse(400, message = "generic test error", label = "generic-test-error")
+        GenericAPIErrorResponse(400, message = "generic test error", label = "generic-test-error")
     )
 
     val tooManyClient = KaliumException.InvalidRequestError(
-        ErrorResponse(403, message = "too many clients", label = "too-many-clients")
+        GenericAPIErrorResponse(403, message = "too many clients", label = "too-many-clients")
     )
 
     val missingAuth = KaliumException.InvalidRequestError(
-        ErrorResponse(403, message = "missing auth", label = "missing-auth")
+        GenericAPIErrorResponse(403, message = "missing auth", label = "missing-auth")
     )
 
     val badRequest = KaliumException.InvalidRequestError(
-        ErrorResponse(400, message = "bad request", label = "bad-request")
+        GenericAPIErrorResponse(400, message = "bad request", label = "bad-request")
     )
 
     val invalidCredentials = KaliumException.InvalidRequestError(
-        ErrorResponse(403, message = "invalid credentials", label = "invalid-credentials")
+        GenericAPIErrorResponse(403, message = "invalid credentials", label = "invalid-credentials")
     )
 
     val accessDenied = KaliumException.InvalidRequestError(
-        ErrorResponse(403, message = "Access denied.", label = "access-denied")
+        GenericAPIErrorResponse(403, message = "Access denied.", label = "access-denied")
     )
 
     val missingAuthenticationCode = KaliumException.InvalidRequestError(
-        ErrorResponse(
+        GenericAPIErrorResponse(
             code = 403,
             message = "missing authentication code",
             label = AuthenticationCodeFailure.MISSING_AUTHENTICATION_CODE.responseLabel
@@ -62,7 +62,7 @@ object TestNetworkException {
     )
 
     val invalidAuthenticationCode = KaliumException.InvalidRequestError(
-        ErrorResponse(
+        GenericAPIErrorResponse(
             code = 403,
             message = "invalid authentication code",
             label = AuthenticationCodeFailure.INVALID_OR_EXPIRED_AUTHENTICATION_CODE.responseLabel
@@ -70,67 +70,67 @@ object TestNetworkException {
     )
 
     val invalidHandle = KaliumException.InvalidRequestError(
-        ErrorResponse(400, message = "invalid handle", label = "invalid-handle")
+        GenericAPIErrorResponse(400, message = "invalid handle", label = "invalid-handle")
     )
 
     val invalidCode = KaliumException.InvalidRequestError(
-        ErrorResponse(404, message = "invalid code", label = "invalid-code")
+        GenericAPIErrorResponse(404, message = "invalid code", label = "invalid-code")
     )
 
     val notFound = KaliumException.InvalidRequestError(
-        ErrorResponse(404, message = "Not Found", label = "")
+        GenericAPIErrorResponse(404, message = "Not Found", label = "")
     )
 
     val handleExists = KaliumException.InvalidRequestError(
-        ErrorResponse(409, message = "handle exists", label = "handle-exists")
+        GenericAPIErrorResponse(409, message = "handle exists", label = "handle-exists")
     )
 
     val invalidEmail = KaliumException.InvalidRequestError(
-        ErrorResponse(400, "invalid email", "invalid-email")
+        GenericAPIErrorResponse(400, "invalid email", "invalid-email")
     )
 
     val keyExists = KaliumException.InvalidRequestError(
-        ErrorResponse(409, "The given e-mail address or phone number is in use.", "key-exists")
+        GenericAPIErrorResponse(409, "The given e-mail address or phone number is in use.", "key-exists")
     )
 
     val blackListedEmail = KaliumException.InvalidRequestError(
-        ErrorResponse(403, "blacklisted email", "blacklisted-email")
+        GenericAPIErrorResponse(403, "blacklisted email", "blacklisted-email")
     )
 
     val userCreationRestricted = KaliumException.InvalidRequestError(
-        ErrorResponse(403, "user creation restricted", "user-creation-restricted")
+        GenericAPIErrorResponse(403, "user creation restricted", "user-creation-restricted")
     )
 
     val tooManyTeamMembers = KaliumException.InvalidRequestError(
-        ErrorResponse(403, "too many team members", "too-many-team-members")
+        GenericAPIErrorResponse(403, "too many team members", "too-many-team-members")
     )
 
     val domainBlockedForRegistration = KaliumException.InvalidRequestError(
-        ErrorResponse(451, "domain blocked for registration", "domain-blocked-for-registration")
+        GenericAPIErrorResponse(451, "domain blocked for registration", "domain-blocked-for-registration")
     )
 
     val operationDenied = KaliumException.InvalidRequestError(
-        ErrorResponse(403, "Insufficient permissions", "operation-denied")
+        GenericAPIErrorResponse(403, "Insufficient permissions", "operation-denied")
     )
 
     val noTeam = KaliumException.InvalidRequestError(
-        ErrorResponse(404, "Team not found", "no-team")
+        GenericAPIErrorResponse(404, "Team not found", "no-team")
     )
 
     val noTeamMember = KaliumException.InvalidRequestError(
-        ErrorResponse(403, "Not a team member", "no-team-member")
+        GenericAPIErrorResponse(403, "Not a team member", "no-team-member")
     )
 
     val noConversation = KaliumException.InvalidRequestError(
-        ErrorResponse(404, "Conversation not found", "no-conversation")
+        GenericAPIErrorResponse(404, "Conversation not found", "no-conversation")
     )
 
     val noConversationCode = KaliumException.InvalidRequestError(
-        ErrorResponse(404, "Conversation code not found", "no-conversation-code")
+        GenericAPIErrorResponse(404, "Conversation code not found", "no-conversation-code")
     )
 
     val guestLinkDisables = KaliumException.InvalidRequestError(
-        ErrorResponse(409, "Guest links are disabled", "guest-links-disabled")
+        GenericAPIErrorResponse(409, "Guest links are disabled", "guest-links-disabled")
     )
 
     val federationNotEnabled = FederationError(
@@ -138,11 +138,11 @@ object TestNetworkException {
     )
 
     val accountSuspended = KaliumException.InvalidRequestError(
-        ErrorResponse(403, message = "account suspended", label = "suspended")
+        GenericAPIErrorResponse(403, message = "account suspended", label = "suspended")
     )
 
     val accountPendingActivation = KaliumException.InvalidRequestError(
-        ErrorResponse(403, message = "account pending activation", label = "pending-activation")
+        GenericAPIErrorResponse(403, message = "account pending activation", label = "pending-activation")
     )
 }
 
@@ -152,4 +152,4 @@ object TestNetworkResponseError {
 }
 
 fun serverMiscommunicationFailure(code: Int = HttpStatusCode.BadRequest.value, message: String = "", label: String = "") =
-    NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(ErrorResponse(code, message, label)))
+    NetworkFailure.ServerMiscommunication(KaliumException.InvalidRequestError(GenericAPIErrorResponse(code, message, label)))

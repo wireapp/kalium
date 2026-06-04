@@ -90,6 +90,8 @@ import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
 import com.wire.kalium.persistence.dao.backup.NomadMessagesDAOImpl
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAOImpl
+import com.wire.kalium.persistence.dao.cellfile.CellFileDao
+import com.wire.kalium.persistence.dao.cellfile.CellFileDaoImpl
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDaoImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -353,6 +355,7 @@ class UserDatabaseBuilder internal constructor(
             database.conversationsQueries,
             database.unreadEventsQueries,
             database.messagePreviewQueries,
+            database.cellFilesQueries,
             userId,
             database.reactionsQueries,
             database.usersQueries,
@@ -413,6 +416,7 @@ class UserDatabaseBuilder internal constructor(
             usersQueries = database.usersQueries,
             conversationsQueries = database.conversationsQueries,
             messagesQueries = database.messagesQueries,
+            cellFilesQueries = database.cellFilesQueries,
             messageAttachmentsQueries = database.messageAttachmentsQueries,
             reactionsQueries = database.reactionsQueries,
             receiptsQueries = database.receiptsQueries,
@@ -422,11 +426,13 @@ class UserDatabaseBuilder internal constructor(
         )
 
     val messageAttachments: MessageAttachmentsDao
-        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, readDispatcher, writeDispatcher)
+        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, database.cellFilesQueries, readDispatcher, writeDispatcher)
 
     val publicLinks: PublicLinkDao
         get() = PublicLinkDaoImpl(database.publicLinksQueries, readDispatcher, writeDispatcher)
 
+    val cellFileDao: CellFileDao
+        get() = CellFileDaoImpl(database.cellFilesQueries, readDispatcher, writeDispatcher)
     val remoteBackupChangeLogDAO: RemoteBackupChangeLogDAO
         get() = RemoteBackupChangeLogDAOImpl(database.remotebackupChangeLogQueries, readDispatcher, writeDispatcher)
 

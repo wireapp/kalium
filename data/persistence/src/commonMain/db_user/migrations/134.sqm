@@ -1,15 +1,124 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntityContent;
-import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
-import kotlin.Boolean;
-import kotlin.Int;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+CREATE TABLE IF NOT EXISTS CellFile (
+    uuid           TEXT    NOT NULL,
+    conversationId TEXT,
+    name           TEXT,
+    owner          TEXT,
+    localPath      TEXT,
+    size           INTEGER,
+    downloadedAt   INTEGER NOT NULL,
+    modifiedAt     INTEGER,
+    isOffline      INTEGER NOT NULL DEFAULT 0,
+    assetVersionId TEXT NOT NULL DEFAULT '',
+    cellAsset      INTEGER NOT NULL DEFAULT 1,
+    contentUrl     TEXT,
+    previewUrl     TEXT,
+    assetMimeType  TEXT,
+    assetPath      TEXT,
+    contentHash    TEXT,
+    assetWidth     INTEGER,
+    assetHeight    INTEGER,
+    assetDurationMs INTEGER,
+    assetTransferStatus TEXT NOT NULL DEFAULT 'NOT_DOWNLOADED',
+    contentUrlExpiresAt INTEGER,
+    editSupported  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (uuid)
+);
 
+DELETE FROM Asset WHERE domain = 'wire.cell';
+
+INSERT OR IGNORE INTO CellFile(
+    uuid,
+    conversationId,
+    localPath,
+    size,
+    downloadedAt,
+    modifiedAt,
+    isOffline,
+    assetVersionId,
+    cellAsset,
+    contentUrl,
+    previewUrl,
+    assetMimeType,
+    assetPath,
+    contentHash,
+    assetWidth,
+    assetHeight,
+    assetDurationMs,
+    assetTransferStatus,
+    contentUrlExpiresAt,
+    editSupported
+)
+SELECT
+    ma.asset_id,
+    CAST(ma.conversation_id AS TEXT),
+    NULLIF(ma.local_path, ''),
+    ma.asset_size,
+    CAST(strftime('%s', 'now') AS INTEGER) * 1000,
+    CAST(strftime('%s', 'now') AS INTEGER) * 1000,
+    0,
+    ma.asset_version_id,
+    ma.cell_asset,
+    ma.content_url,
+    ma.preview_url,
+    ma.asset_mime_type,
+    ma.asset_path,
+    ma.content_hash,
+    ma.asset_width,
+    ma.asset_height,
+    ma.asset_duration_ms,
+    ma.asset_transfer_status,
+    ma.content_url_expires_at,
+    ma.edit_supported
+FROM MessageAttachments ma
+;
+
+UPDATE CellFile
+SET
+    conversationId = COALESCE(conversationId, (SELECT CAST(ma.conversation_id AS TEXT) FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    localPath = COALESCE(localPath, (SELECT NULLIF(ma.local_path, '') FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    size = COALESCE(size, (SELECT ma.asset_size FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetVersionId = CASE
+        WHEN assetVersionId = '' THEN COALESCE((SELECT ma.asset_version_id FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1), assetVersionId)
+        ELSE assetVersionId
+    END,
+    contentUrl = COALESCE(contentUrl, (SELECT ma.content_url FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    previewUrl = COALESCE(previewUrl, (SELECT ma.preview_url FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetMimeType = COALESCE(assetMimeType, (SELECT ma.asset_mime_type FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetPath = COALESCE(assetPath, (SELECT ma.asset_path FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    contentHash = COALESCE(contentHash, (SELECT ma.content_hash FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetWidth = COALESCE(assetWidth, (SELECT ma.asset_width FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetHeight = COALESCE(assetHeight, (SELECT ma.asset_height FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetDurationMs = COALESCE(assetDurationMs, (SELECT ma.asset_duration_ms FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetTransferStatus = CASE
+        WHEN assetTransferStatus = 'NOT_DOWNLOADED' THEN COALESCE((SELECT ma.asset_transfer_status FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1), assetTransferStatus)
+        ELSE assetTransferStatus
+    END,
+    contentUrlExpiresAt = COALESCE(contentUrlExpiresAt, (SELECT ma.content_url_expires_at FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    editSupported = MAX(editSupported, COALESCE((SELECT ma.edit_supported FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1), 0))
+WHERE uuid IN (SELECT asset_id FROM MessageAttachments);
+
+PRAGMA legacy_alter_table = ON;
+ALTER TABLE MessageAttachments RENAME TO MessageAttachments_legacy;
+PRAGMA legacy_alter_table = OFF;
+
+CREATE TABLE MessageAttachments (
+      asset_id TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      conversation_id TEXT NOT NULL,
+      asset_index INTEGER,
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      FOREIGN KEY (asset_id) REFERENCES CellFile(uuid) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, message_id, asset_id)
+);
+
+INSERT INTO MessageAttachments(asset_id, message_id, conversation_id, asset_index)
+SELECT asset_id, message_id, CAST(conversation_id AS TEXT), asset_index
+FROM MessageAttachments_legacy;
+
+DROP TABLE MessageAttachments_legacy;
+CREATE INDEX IF NOT EXISTS message_attachments_asset_id_idx ON MessageAttachments(asset_id);
+
+DROP VIEW IF EXISTS MessageDetailsView;
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
 Message.id AS id,
@@ -165,13 +274,13 @@ LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id 
 LEFT JOIN MessageRecipientFailure AS FailedRecipientsWithNoClients ON Message.id = FailedRecipientsWithNoClients.message_id AND Message.conversation_id = FailedRecipientsWithNoClients.conversation_id AND FailedRecipientsWithNoClients.recipient_failure_type = 'NO_CLIENTS_TO_DELIVER'
 LEFT JOIN MessageRecipientFailure AS FailedRecipientsDeliveryFailed ON Message.id = FailedRecipientsDeliveryFailed.message_id AND Message.conversation_id = FailedRecipientsDeliveryFailed.conversation_id AND FailedRecipientsDeliveryFailed.recipient_failure_type = 'MESSAGE_DELIVERY_FAILED'
 
--- joins for quoted messages
 LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_message_id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
 LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent ON QuotedLocationContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
--- end joins for quoted messages
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
 LEFT JOIN SelfUser;
--- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
+
+PRAGMA optimize;
+

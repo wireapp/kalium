@@ -32,6 +32,7 @@ internal class AsyncQueryPagingSource<RowType : Any>(
     private val context: CoroutineContext,
     private val queryProvider: (limit: Long, offset: Long) -> Query<RowType>,
     private val initialOffset: Long = 0,
+    private val postProcessor: (suspend (List<RowType>) -> List<RowType>)? = null,
 ) : PagingSource<Int, RowType>(), Query.Listener {
     private var currentQuery: Query<RowType>? by Delegates.observable(null) { _, old, new ->
         old?.removeListener(this)
@@ -69,6 +70,7 @@ internal class AsyncQueryPagingSource<RowType : Any>(
                 val data = queryProvider(limit, offset.toLong())
                     .also { currentQuery = it }
                     .awaitAsList()
+                    .let { rows -> postProcessor?.invoke(rows) ?: rows }
                 val nextPosition = offset + data.size
 
                 if (invalid) {

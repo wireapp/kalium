@@ -24,6 +24,7 @@ import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.async.coroutines.await
 
 import app.cash.sqldelight.coroutines.asFlow
+import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.MessageAssetTransferStatusQueries
@@ -43,6 +44,8 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventMapper
@@ -69,6 +72,7 @@ internal class MessageDAOImpl internal constructor(
     private val conversationsQueries: ConversationsQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val messagePreviewQueries: MessagePreviewQueries,
+    private val cellFilesQueries: CellFilesQueries,
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val userQueries: UsersQueries,
@@ -79,6 +83,7 @@ internal class MessageDAOImpl internal constructor(
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
         queries,
+        cellFilesQueries,
         attachmentsQueries,
         unreadEventsQueries,
         conversationsQueries,
@@ -87,6 +92,43 @@ internal class MessageDAOImpl internal constructor(
     ) {
     private val mapper = MessageMapper
     private val unreadEventMapper = UnreadEventMapper
+
+    @Suppress("ReturnCount")
+    private fun withMultipartAttachments(message: MessageEntity): MessageEntity {
+        val regularMessage = message as? MessageEntity.Regular ?: return message
+        val multipartContent = regularMessage.content as? MessageEntityContent.Multipart ?: return message
+        val attachments = attachmentsQueries.getAttachments(
+            regularMessage.id,
+            regularMessage.conversationId,
+            MessageAttachmentMapper::toDao
+        ).executeAsList()
+        return regularMessage.copy(content = multipartContent.copy(attachments = attachments))
+    }
+
+    private fun withMultipartAttachments(messages: List<MessageEntity>): List<MessageEntity> {
+        val multipartIds = messages
+            .filterIsInstance<MessageEntity.Regular>()
+            .filter { it.content is MessageEntityContent.Multipart }
+            .map { it.id }
+
+        if (multipartIds.isEmpty()) return messages
+
+        val attachmentsByMessageId: Map<String, List<MessageAttachmentEntity>> =
+            attachmentsQueries
+                .getAttachmentsForMessages(multipartIds, MessageAttachmentMapper::toDaoWithMessageId)
+                .executeAsList()
+                .groupBy(keySelector = { it.first }, valueTransform = { it.second })
+
+        return messages.map { message ->
+            val regularMessage = message as? MessageEntity.Regular ?: return@map message
+            val multipartContent = regularMessage.content as? MessageEntityContent.Multipart ?: return@map message
+            regularMessage.copy(
+                content = multipartContent.copy(
+                    attachments = attachmentsByMessageId[regularMessage.id] ?: emptyList()
+                )
+            )
+        }
+    }
 
     override suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity) {
         withContext(writeDispatcher.value) {
@@ -284,13 +326,14 @@ internal class MessageDAOImpl internal constructor(
     }
 
     override suspend fun getMessageById(id: String, conversationId: QualifiedIDEntity): MessageEntity? = withContext(readDispatcher.value) {
-        queries.selectById(id, conversationId, mapper::toEntityMessageFromView).awaitAsOneOrNull()
+        queries.selectById(id, conversationId, mapper::toEntityMessageFromView).awaitAsOneOrNull()?.let(::withMultipartAttachments)
     }
 
     override fun observeMessageById(id: String, conversationId: QualifiedIDEntity): Flow<MessageEntity?> =
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView)
             .asFlow()
             .mapToOneOrNull()
+            .map { it?.let(::withMultipartAttachments) }
             .distinctUntilChanged()
             .flowOn(readDispatcher.value)
 
@@ -345,13 +388,15 @@ internal class MessageDAOImpl internal constructor(
         )
             .asFlow()
             .mapToList()
+            .map(::withMultipartAttachments)
             .flowOn(readDispatcher.value)
 
     override suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity> =
         withContext(readDispatcher.value) {
-            queries.selectLastMessagesByConversationIds(conversationIds, mapper::toEntityMessageFromView)
-                .awaitAsList()
-                .associateBy { it.conversationId }
+            withMultipartAttachments(
+                queries.selectLastMessagesByConversationIds(conversationIds, mapper::toEntityMessageFromView)
+                    .awaitAsList()
+            ).associateBy { it.conversationId }
         }
 
     override suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int): List<NotificationMessageEntity> =
@@ -373,16 +418,18 @@ internal class MessageDAOImpl internal constructor(
         )
             .asFlow()
             .mapToList()
+            .map(::withMultipartAttachments)
             .flowOn(readDispatcher.value)
 
     override suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity> =
         withContext(readDispatcher.value) {
-            queries.selectMessagesFromUserByStatus(
-                userId,
-                MessageEntity.Status.PENDING,
-                mapper::toEntityMessageFromView
+            withMultipartAttachments(
+                queries.selectMessagesFromUserByStatus(
+                    userId,
+                    MessageEntity.Status.PENDING,
+                    mapper::toEntityMessageFromView
+                ).awaitAsList()
             )
-                .awaitAsList()
         }
 
     override suspend fun updateTextMessageContent(
@@ -541,13 +588,13 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun getAllPendingEphemeralMessages(): List<MessageEntity> {
         return withContext(readDispatcher.value) {
-            queries.selectPendingEphemeralMessages(mapper::toEntityMessageFromView).awaitAsList()
+            withMultipartAttachments(queries.selectPendingEphemeralMessages(mapper::toEntityMessageFromView).awaitAsList())
         }
     }
 
     override suspend fun getAllAlreadyEndedEphemeralMessages(): List<MessageEntity> {
         return withContext(readDispatcher.value) {
-            queries.selectAlreadyEndedEphemeralMessages(mapper::toEntityMessageFromView).awaitAsList()
+            withMultipartAttachments(queries.selectAlreadyEndedEphemeralMessages(mapper::toEntityMessageFromView).awaitAsList())
         }
     }
 
@@ -609,15 +656,17 @@ internal class MessageDAOImpl internal constructor(
         limit: Int,
         offset: Int
     ): List<MessageEntity> = withContext(readDispatcher.value) {
-        queries
-            .selectConversationMessagesFromSearch(
-                searchQuery = searchQuery,
-                conversationId = conversationId,
-                limit = limit.toLong(),
-                offset = offset.toLong(),
-                mapper = mapper::toEntityMessageFromView
-            )
-            .awaitAsList()
+        withMultipartAttachments(
+            queries
+                .selectConversationMessagesFromSearch(
+                    searchQuery = searchQuery,
+                    conversationId = conversationId,
+                    limit = limit.toLong(),
+                    offset = offset.toLong(),
+                    mapper = mapper::toEntityMessageFromView
+                )
+                .awaitAsList()
+        )
     }
 
     override suspend fun searchMessagesByTextGlobally(
@@ -625,14 +674,16 @@ internal class MessageDAOImpl internal constructor(
         limit: Int,
         offset: Int
     ): List<MessageEntity> = withContext(readDispatcher.value) {
-        queries
-            .selectAllMessagesFromSearch(
-                searchQuery = searchQuery,
-                limit = limit.toLong(),
-                offset = offset.toLong(),
-                mapper = mapper::toEntityMessageFromView
-            )
-            .awaitAsList()
+        withMultipartAttachments(
+            queries
+                .selectAllMessagesFromSearch(
+                    searchQuery = searchQuery,
+                    limit = limit.toLong(),
+                    offset = offset.toLong(),
+                    mapper = mapper::toEntityMessageFromView
+                )
+                .awaitAsList()
+        )
     }
 
     override fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>> =
@@ -698,12 +749,14 @@ internal class MessageDAOImpl internal constructor(
         contentTypes: Collection<MessageEntity.ContentType>,
         afterId: String,
         pageSize: Long,
-    ) = queries.selectForBackup(
-        contentType = contentTypes,
-        afterId = afterId,
-        limit = pageSize,
-        mapper::toEntityMessageFromView
-    ).awaitAsList()
+    ) = withMultipartAttachments(
+        queries.selectForBackup(
+            contentType = contentTypes,
+            afterId = afterId,
+            limit = pageSize,
+            mapper::toEntityMessageFromView
+        ).awaitAsList()
+    )
 
     override suspend fun updateCompositeMessageContent(
         conversationId: QualifiedIDEntity,
@@ -758,9 +811,9 @@ internal class MessageDAOImpl internal constructor(
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(
         queries,
+        attachmentsQueries,
         assetViewQueries,
         mapper,
         readDispatcher,
     )
-
 }
