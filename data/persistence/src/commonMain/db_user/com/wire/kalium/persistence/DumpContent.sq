@@ -132,11 +132,20 @@ WITH selfdelete_message_id AS (
         FROM local_db.Message
         WHERE local_db.Message.expire_after_millis IS NOT NULL
 )
-INSERT INTO MessageTextContent
+INSERT INTO MessageTextContent(
+    message_id,
+    conversation_id,
+    text_body,
+    quoted_message_id,
+    quoted_message_conversation_id,
+    is_quote_verified,
+    is_quoting_self
+)
     SELECT local_db.MessageTextContent.message_id,
            local_db.MessageTextContent.conversation_id,
            local_db.MessageTextContent.text_body,
            local_db.MessageTextContent.quoted_message_id,
+           local_db.MessageTextContent.quoted_message_conversation_id,
            local_db.MessageTextContent.is_quote_verified,
            local_db.MessageTextContent.is_quoting_self
     FROM local_db.MessageTextContent

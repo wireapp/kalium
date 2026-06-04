@@ -1,14 +1,9 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntityContent;
-import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
-import kotlin.Boolean;
-import kotlin.Int;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+DROP VIEW IF EXISTS ConversationDetailsWithEvents;
+DROP VIEW IF EXISTS MessageDetailsView;
+
+ALTER TABLE MessageTextContent ADD COLUMN quoted_message_conversation_id TEXT;
+
+ALTER TABLE MessageDraft ADD COLUMN quoted_message_conversation_id TEXT;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
@@ -166,7 +161,6 @@ LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id 
 LEFT JOIN MessageRecipientFailure AS FailedRecipientsWithNoClients ON Message.id = FailedRecipientsWithNoClients.message_id AND Message.conversation_id = FailedRecipientsWithNoClients.conversation_id AND FailedRecipientsWithNoClients.recipient_failure_type = 'NO_CLIENTS_TO_DELIVER'
 LEFT JOIN MessageRecipientFailure AS FailedRecipientsDeliveryFailed ON Message.id = FailedRecipientsDeliveryFailed.message_id AND Message.conversation_id = FailedRecipientsDeliveryFailed.conversation_id AND FailedRecipientsDeliveryFailed.recipient_failure_type = 'MESSAGE_DELIVERY_FAILED'
 
--- joins for quoted messages
 LEFT JOIN Message AS QuotedMessage
     ON QuotedMessage.id = TextContent.quoted_message_id
     AND QuotedMessage.conversation_id = COALESCE(TextContent.quoted_message_conversation_id, TextContent.conversation_id)
@@ -180,7 +174,82 @@ LEFT JOIN MessageAssetContent AS QuotedAssetContent
 LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent
     ON QuotedLocationContent.message_id = QuotedMessage.id
     AND QuotedLocationContent.conversation_id = QuotedMessage.conversation_id
--- end joins for quoted messages
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
 LEFT JOIN SelfUser;
--- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
+
+CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
+SELECT
+    ConversationDetails.*,
+    UnreadEventCountsGrouped.knocksCount AS unreadKnocksCount,
+    UnreadEventCountsGrouped.missedCallsCount AS unreadMissedCallsCount,
+    UnreadEventCountsGrouped.mentionsCount AS unreadMentionsCount,
+    UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
+    UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
+    CASE
+        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1
+        WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
+           CASE
+                WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1
+                ELSE 0
+            END
+        WHEN ConversationDetails.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
+            CASE
+                WHEN (UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount) > 0 THEN 1
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1
+                ELSE 0
+            END
+        ELSE 0
+    END AS hasNewActivitiesToShow,
+    MessageDraft.text AS messageDraftText,
+    MessageDraft.edit_message_id AS messageDraftEditMessageId,
+    MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
+    MessageDraft.quoted_message_conversation_id AS messageDraftQuotedMessageConversationId,
+    MessageDraft.mention_list AS messageDraftMentionList,
+    Message.id AS lastMessageId,
+    Message.content_type AS lastMessageContentType,
+    Message.creation_date AS lastMessageDate,
+    Message.visibility AS lastMessageVisibility,
+    Message.sender_user_id AS lastMessageSenderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS lastMessageIsEphemeral,
+    User.name AS lastMessageSenderName,
+    User.connection_status AS lastMessageSenderConnectionStatus,
+    User.deleted AS lastMessageSenderIsDeleted,
+    (Message.sender_user_id IS NOT NULL AND Message.sender_user_id == ConversationDetails.selfUserId) AS lastMessageIsSelfMessage,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS lastMessageMemberChangeList,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS lastMessageMemberChangeType,
+    CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS lastMessageUpdateConversationName,
+    COUNT(Mention.user_id) > 0 AS lastMessageIsMentioningSelfUser,
+    TextContent.is_quoting_self AS lastMessageIsQuotingSelfUser,
+    TextContent.text_body AS lastMessageText,
+    AssetContent.asset_mime_type AS lastMessageAssetMimeType
+FROM ConversationDetails
+LEFT JOIN UnreadEventCountsGrouped
+    ON UnreadEventCountsGrouped.conversationId = ConversationDetails.qualifiedId
+LEFT JOIN MessageDraft
+    ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0
+LEFT JOIN LastMessage
+    ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0
+LEFT JOIN Message
+    ON LastMessage.message_id = Message.id AND LastMessage.conversation_id = Message.conversation_id
+LEFT JOIN User
+    ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageSystemContent AS SystemContent
+    ON LastMessage.message_id = SystemContent.message_id AND LastMessage.conversation_id = SystemContent.conversation_id
+LEFT JOIN MessageMention AS Mention
+    ON LastMessage.message_id == Mention.message_id AND ConversationDetails.selfUserId == Mention.user_id
+LEFT JOIN MessageAssetContent AS AssetContent
+    ON LastMessage.message_id = AssetContent.message_id AND LastMessage.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent
+    ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
+WHERE
+    ConversationDetails.type IS NOT 'SELF'
+    AND (
+        ConversationDetails.type IS 'GROUP'
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL))
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1)
+        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL)
+    )
+    AND ConversationDetails.isActive
+    AND ConversationDetails.deletedLocally = 0
+GROUP BY ConversationDetails.qualifiedId;

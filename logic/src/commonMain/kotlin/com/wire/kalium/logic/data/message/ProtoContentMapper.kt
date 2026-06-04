@@ -199,9 +199,7 @@ internal class ProtoContentMapperImpl(
     ): GenericMessage.Content.Multipart {
         val linkPreview = readableContent.linkPreviews.map { linkPreviewMapper.fromModelToProto(it) }
         val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
-        val quote = readableContent.quotedMessageReference?.let {
-            Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
-        }
+        val quote = readableContent.quotedMessageReference?.toProtoQuote()
         val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
         val attachments = packMultipartAttachments(readableContent.attachments, expectsReadConfirmation, legalHoldStatus)
 
@@ -522,6 +520,7 @@ internal class ProtoContentMapperImpl(
         quotedMessageReference = protoContent.text?.quote?.let {
             MessageContent.QuoteReference(
                 quotedMessageId = it.quotedMessageId,
+                quotedMessageConversationId = it.quotedConversationId?.let(idMapper::fromProtoModel),
                 quotedMessageSha256 = it.quotedMessageSha256?.array,
                 isVerified = false
             )
@@ -794,9 +793,7 @@ internal class ProtoContentMapperImpl(
     ): GenericMessage.Content.Text {
         val linkPreview = readableContent.linkPreviews.map { linkPreviewMapper.fromModelToProto(it) }
         val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
-        val quote = readableContent.quotedMessageReference?.let {
-            Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
-        }
+        val quote = readableContent.quotedMessageReference?.toProtoQuote()
         val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
         return GenericMessage.Content.Text(
             Text(
@@ -829,11 +826,18 @@ internal class ProtoContentMapperImpl(
         quotedMessageReference = protoContent.quote?.let {
             MessageContent.QuoteReference(
                 quotedMessageId = it.quotedMessageId,
+                quotedMessageConversationId = it.quotedConversationId?.let(idMapper::fromProtoModel),
                 quotedMessageSha256 = it.quotedMessageSha256?.array,
                 isVerified = false
             )
         },
         quotedMessageDetails = null
+    )
+
+    private fun MessageContent.QuoteReference.toProtoQuote(): Quote = Quote(
+        quotedMessageId = quotedMessageId,
+        quotedMessageSha256 = quotedMessageSha256?.let { ByteArr(it) },
+        quotedConversationId = quotedMessageConversationId?.let(idMapper::toProtoModel)
     )
 
     private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<CompositeButton> =

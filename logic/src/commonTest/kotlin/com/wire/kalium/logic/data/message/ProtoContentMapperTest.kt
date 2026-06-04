@@ -72,7 +72,9 @@ class ProtoContentMapperTest {
         val messageContent = MessageContent.Text(
             value = "Hello",
             quotedMessageReference = MessageContent.QuoteReference(
-                quotedMessageId = "quotedMessageId", quotedMessageSha256 = null, true
+                quotedMessageId = "quotedMessageId",
+                quotedMessageSha256 = null,
+                isVerified = true
             )
         )
         val protoContent = ProtoContent.Readable(

@@ -522,6 +522,7 @@ object MessageMapper {
         mentions: String,
         attachments: String?,
         quotedMessageId: String?,
+        quotedMessageConversationId: QualifiedIDEntity?,
         quotedSenderId: QualifiedIDEntity?,
         isQuoteVerified: Boolean?,
         quotedSenderName: String?,
@@ -614,6 +615,7 @@ object MessageMapper {
         reactionsJson = reactionsJson,
         mentions = mentions,
         quotedMessageId = quotedMessageId,
+        quotedMessageConversationId = quotedMessageConversationId,
         quotedSenderId = quotedSenderId,
         isQuoteVerified = isQuoteVerified,
         quotedSenderName = quotedSenderName,
@@ -709,6 +711,7 @@ object MessageMapper {
         reactionsJson: String,
         mentions: String,
         quotedMessageId: String?,
+        quotedMessageConversationId: QualifiedIDEntity?,
         quotedSenderId: QualifiedIDEntity?,
         isQuoteVerified: Boolean?,
         quotedSenderName: String?,
@@ -746,6 +749,7 @@ object MessageMapper {
                 messageBody = text ?: "",
                 mentions = messageMentionsFromJsonString(mentions),
                 quotedMessageId = quotedMessageId,
+                quotedMessageConversationId = quotedMessageId?.let { quotedMessageConversationId ?: conversationId },
                 quotedMessage = quotedMessageContentType?.let {
                     MessageEntityContent.Text.QuotedMessage(
                         id = quotedMessageId.requireField("quotedMessageId"),
@@ -819,6 +823,7 @@ object MessageMapper {
                         messageBody = text,
                         mentions = messageMentionsFromJsonString(mentions),
                         quotedMessageId = quotedMessageId,
+                        quotedMessageConversationId = quotedMessageId?.let { quotedMessageConversationId ?: conversationId },
                         quotedMessage = quotedMessageContentType?.let {
                             MessageEntityContent.Text.QuotedMessage(
                                 id = quotedMessageId.requireField("quotedMessageId"),
@@ -910,6 +915,7 @@ object MessageMapper {
                 messageBody = text,
                 mentions = messageMentionsFromJsonString(mentions),
                 quotedMessageId = quotedMessageId,
+                quotedMessageConversationId = quotedMessageId?.let { quotedMessageConversationId ?: conversationId },
                 quotedMessage = quotedMessageContentType?.let {
                     MessageEntityContent.Text.QuotedMessage(
                         id = quotedMessageId.requireField("quotedMessageId"),

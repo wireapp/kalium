@@ -8,10 +8,10 @@ CREATE TABLE MessageDraft (
       edit_message_id TEXT,
       quoted_message_id TEXT,
       mention_list TEXT AS List<Mention> NOT NULL,
+      quoted_message_conversation_id TEXT AS QualifiedIDEntity,
 
     FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (edit_message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (quoted_message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (conversation_id)
 );
 
@@ -19,17 +19,19 @@ deleteDraft:
 DELETE FROM MessageDraft WHERE conversation_id = ?;
 
 upsertDraft:
-INSERT INTO MessageDraft(conversation_id, text, edit_message_id, quoted_message_id, mention_list)
-VALUES( ?, ?, ?, ?, ?)
+INSERT INTO MessageDraft(conversation_id, text, edit_message_id, quoted_message_id, quoted_message_conversation_id, mention_list)
+VALUES( ?, ?, ?, ?, ?, ?)
 ON CONFLICT(conversation_id) DO UPDATE SET
     text = excluded.text,
     edit_message_id = excluded.edit_message_id,
     quoted_message_id = excluded.quoted_message_id,
+    quoted_message_conversation_id = excluded.quoted_message_conversation_id,
     mention_list = excluded.mention_list
 WHERE -- execute the update only if any of the fields changed
     MessageDraft.text != excluded.text
     OR MessageDraft.edit_message_id IS NOT excluded.edit_message_id
     OR MessageDraft.quoted_message_id IS NOT excluded.quoted_message_id
+    OR MessageDraft.quoted_message_conversation_id IS NOT excluded.quoted_message_conversation_id
     OR MessageDraft.mention_list != excluded.mention_list;
 
 getDraft:

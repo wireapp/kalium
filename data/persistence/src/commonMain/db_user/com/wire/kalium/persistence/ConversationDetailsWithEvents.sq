@@ -27,6 +27,7 @@ SELECT
     MessageDraft.text AS messageDraftText,
     MessageDraft.edit_message_id AS messageDraftEditMessageId,
     MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
+    MessageDraft.quoted_message_conversation_id AS messageDraftQuotedMessageConversationId,
     MessageDraft.mention_list AS messageDraftMentionList,
     -- last message
     Message.id AS lastMessageId,

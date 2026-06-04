@@ -60,7 +60,10 @@ class MessageDraftDAOImpl internal constructor(
             }
 
             if (messageDraft.quotedMessageId != null) {
-                val quotedMessageExists = messagesQueries.getMessage(messageDraft.quotedMessageId, messageDraft.conversationId)
+                val quotedMessageExists = messagesQueries.getMessage(
+                    messageDraft.quotedMessageId,
+                    messageDraft.quotedMessageConversationId ?: messageDraft.conversationId
+                )
                     .awaitAsOneOrNull() != null
                 if (!quotedMessageExists) {
                     return@withContext
@@ -73,6 +76,7 @@ class MessageDraftDAOImpl internal constructor(
                     text = messageDraft.text,
                     edit_message_id = messageDraft.editMessageId,
                     quoted_message_id = messageDraft.quotedMessageId,
+                    quoted_message_conversation_id = messageDraft.quotedMessageConversationId,
                     mention_list = messageDraft.selectedMentionList
                 )
                 val changes = queries.selectChanges().awaitAsOne()

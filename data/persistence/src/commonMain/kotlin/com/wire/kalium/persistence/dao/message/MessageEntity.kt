@@ -258,6 +258,7 @@ sealed class MessageEntityContent {
          *                 Otherwise we'd need to pass a full QuotedMessage object
          */
         val quotedMessageId: String? = null,
+        val quotedMessageConversationId: QualifiedIDEntity? = null,
         val isQuoteVerified: Boolean? = null,
         /**
          * Details of the message being quoted.
@@ -377,6 +378,7 @@ sealed class MessageEntityContent {
         val mentions: List<MessageEntity.Mention> = listOf(),
         val attachments: List<MessageAttachmentEntity> = listOf(),
         val quotedMessageId: String? = null,
+        val quotedMessageConversationId: QualifiedIDEntity? = null,
         val isQuoteVerified: Boolean? = null,
         /**
          * Details of the message being quoted.

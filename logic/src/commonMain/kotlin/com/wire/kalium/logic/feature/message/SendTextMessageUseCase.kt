@@ -74,7 +74,14 @@ public class SendTextMessageUseCase internal constructor(
         text: String,
         linkPreviews: List<MessageLinkPreview> = emptyList(),
         mentions: List<MessageMention> = emptyList(),
-        quotedMessageId: String? = null
+        quotedMessageId: String? = null,
+        quotedMessageReference: MessageContent.QuoteReference? = quotedMessageId?.let {
+            MessageContent.QuoteReference(
+                quotedMessageId = it,
+                quotedMessageSha256 = null,
+                isVerified = true
+            )
+        }
     ): MessageOperationResult = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -95,13 +102,7 @@ public class SendTextMessageUseCase internal constructor(
                     value = text,
                     linkPreviews = previews,
                     mentions = mentions,
-                    quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
-                        MessageContent.QuoteReference(
-                            quotedMessageId = quotedMessageId,
-                            quotedMessageSha256 = null,
-                            isVerified = true
-                        )
-                    }
+                    quotedMessageReference = quotedMessageReference
                 ),
                 expectsReadConfirmation = expectsReadConfirmation,
                 conversationId = conversationId,
