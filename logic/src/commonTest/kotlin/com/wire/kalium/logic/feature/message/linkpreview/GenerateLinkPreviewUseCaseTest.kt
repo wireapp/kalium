@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.message.linkpreview
 
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.OpenGraphData
@@ -59,7 +58,6 @@ class GenerateLinkPreviewUseCaseTest {
 
         val result = GenerateLinkPreviewUseCaseImpl(repository)
             .invoke("see https://example.com")
-            .getOrNull()
 
         assertNotNull(result)
         assertEquals(expectedImage, result.image)
@@ -80,7 +78,6 @@ class GenerateLinkPreviewUseCaseTest {
 
         val result = GenerateLinkPreviewUseCaseImpl(repository)
             .invoke("see https://example.com")
-            .getOrNull()
 
         assertNotNull(result)
         assertNull(result.image)
@@ -104,7 +101,6 @@ class GenerateLinkPreviewUseCaseTest {
 
         val result = GenerateLinkPreviewUseCaseImpl(repository)
             .invoke("see https://example.com")
-            .getOrNull()
 
         assertNotNull(result)
         assertNull(result.image)
