@@ -22,7 +22,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.logger.kaliumLogger
@@ -32,9 +31,11 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isTooManyRequests
 import io.mockative.Mockable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 
 /**
  * Send an external commit to join all MLS conversations for which the user is a member,
@@ -42,7 +43,10 @@ import kotlinx.coroutines.coroutineScope
  */
 @Mockable
 internal interface JoinExistingMLSConversationsUseCase {
-    suspend operator fun invoke(keepRetryingOnFailure: Boolean = true): Either<CoreFailure, Unit>
+    suspend operator fun invoke(
+        keepRetryingOnFailure: Boolean = true,
+        allowJoinByExternalCommit: Boolean = true,
+    ): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -51,10 +55,22 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
     private val clientRepository: ClientRepository,
     private val conversationRepository: ConversationRepository,
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase,
-    private val transactionProvider: CryptoTransactionProvider
+    private val transactionProvider: CryptoTransactionProvider,
+    private val maxConcurrentJoins: Int = DEFAULT_MAX_CONCURRENT_JOINS,
+    private val maxThrottleRetries: Int = DEFAULT_MAX_THROTTLE_RETRIES,
+    private val throttleRetryDelayMs: Long = DEFAULT_THROTTLE_RETRY_DELAY_MS,
 ) : JoinExistingMLSConversationsUseCase {
 
-    override suspend operator fun invoke(keepRetryingOnFailure: Boolean): Either<CoreFailure, Unit> =
+    init {
+        require(maxConcurrentJoins > 0) { "maxConcurrentJoins must be greater than zero" }
+        require(maxThrottleRetries >= 0) { "maxThrottleRetries must not be negative" }
+        require(throttleRetryDelayMs >= 0) { "throttleRetryDelayMs must not be negative" }
+    }
+
+    override suspend operator fun invoke(
+        keepRetryingOnFailure: Boolean,
+        allowJoinByExternalCommit: Boolean,
+    ): Either<CoreFailure, Unit> =
         if (!featureSupport.isMLSSupported ||
             !clientRepository.hasRegisteredMLSClient().getOrElse(false)
         ) {
@@ -64,56 +80,110 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
             transactionProvider.transaction("JoinExistingMLSConversations") { transactionContext ->
                 conversationRepository.getConversationsByGroupState(GroupState.PENDING_JOIN).flatMap { pendingConversations ->
                     kaliumLogger.d("Requesting to re-join ${pendingConversations.size} existing MLS conversation(s)")
-                    coroutineScope {
-                        pendingConversations.map { conversation ->
-                            async {
-                                joinRetrying(transactionContext, conversation)
-                            }
-                        }
-                    }.foldToEitherWhileRight(Unit) { value, _ ->
-                        value.await() // Fail if one fails
+                    pendingConversations.chunked(maxConcurrentJoins).foldToEitherWhileRight(Unit) { batch, _ ->
+                        joinBatch(transactionContext, batch, keepRetryingOnFailure, allowJoinByExternalCommit)
                     }
                 }
             }
         }
 
-    private suspend fun joinRetrying(transactionContext: CryptoTransactionContext, conversation: Conversation) =
-        joinExistingMLSConversationUseCase(transactionContext, conversation.id)
-            .flatMapLeft {
-                when (it) {
-                    is NetworkFailure -> {
-                        if (it is NetworkFailure.ServerMiscommunication
-                            && it.kaliumException is KaliumException.InvalidRequestError
-                        ) {
-                            kaliumLogger.w(
-                                "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                        "due to invalid request error, skipping."
-                            )
-                            Either.Right(Unit)
-                        } else {
-                            kaliumLogger.w(
-                                "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                        "due to network failure"
-                            )
-                            Either.Left(it)
-                        }
-                    }
+    private suspend fun joinBatch(
+        transactionContext: CryptoTransactionContext,
+        batch: List<Conversation>,
+        keepRetryingOnFailure: Boolean,
+        allowJoinByExternalCommit: Boolean,
+    ): Either<CoreFailure, Unit> = coroutineScope {
+        batch.map { conversation ->
+            async {
+                joinRetrying(transactionContext, conversation, keepRetryingOnFailure, allowJoinByExternalCommit)
+            }
+        }
+    }.foldToEitherWhileRight(Unit) { value, _ ->
+        value.await()
+    }
 
-                    is CoreFailure.MissingKeyPackages -> {
-                        kaliumLogger.w(
-                            "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                    "since some participants are out of key packages, skipping."
-                        )
-                        Either.Right(Unit)
-                    }
-
-                    else -> {
-                        kaliumLogger.w(
-                            "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                    "due to $it, skipping.."
-                        )
-                        Either.Right(Unit)
-                    }
+    private suspend fun joinRetrying(
+        transactionContext: CryptoTransactionContext,
+        conversation: Conversation,
+        keepRetryingOnFailure: Boolean,
+        allowJoinByExternalCommit: Boolean,
+        attempt: Int = 0,
+    ): Either<CoreFailure, Unit> {
+        return when (
+            val result = joinExistingMLSConversationUseCase(
+                transactionContext,
+                conversation.id,
+                allowJoinByExternalCommit = allowJoinByExternalCommit
+            )
+        ) {
+            is Either.Left -> {
+                val failure = result.value
+                if (keepRetryingOnFailure && failure.isThrottleFailure() && attempt < maxThrottleRetries) {
+                    val nextAttempt = attempt + 1
+                    val delayMs = throttleRetryDelayMs * nextAttempt
+                    kaliumLogger.w(
+                        "Failed to establish mls group for ${conversation.id.toLogString()} due to throttling; " +
+                        "retrying ($nextAttempt/$maxThrottleRetries) in ${delayMs}ms."
+                    )
+                    delay(delayMs)
+                    joinRetrying(transactionContext, conversation, keepRetryingOnFailure, allowJoinByExternalCommit, nextAttempt)
+                } else {
+                    handleJoinFailure(failure, conversation)
                 }
             }
+
+            is Either.Right -> Either.Right(Unit)
+        }
+    }
+
+    private fun handleJoinFailure(failure: CoreFailure, conversation: Conversation): Either<CoreFailure, Unit> =
+        when (failure) {
+            is NetworkFailure -> {
+                if (failure.isThrottleFailure()) {
+                    kaliumLogger.w(
+                        "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                            "due to throttling, propagating failure."
+                    )
+                    Either.Left(failure)
+                } else if (failure is NetworkFailure.ServerMiscommunication
+                    && failure.kaliumException is KaliumException.InvalidRequestError
+                ) {
+                    kaliumLogger.w(
+                        "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                            "due to invalid request error, skipping."
+                    )
+                    Either.Right(Unit)
+                } else {
+                    kaliumLogger.w(
+                        "Failed to establish mls group for ${conversation.id.toLogString()} due to network failure"
+                    )
+                    Either.Left(failure)
+                }
+            }
+
+            is CoreFailure.MissingKeyPackages -> {
+                kaliumLogger.w(
+                    "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                        "since some participants are out of key packages, skipping."
+                )
+                Either.Right(Unit)
+            }
+
+            else -> {
+                kaliumLogger.w(
+                    "Failed to establish mls group for ${conversation.id.toLogString()} due to $failure, skipping.."
+                )
+                Either.Right(Unit)
+            }
+        }
+
+    private fun CoreFailure.isThrottleFailure(): Boolean =
+        this is NetworkFailure.ServerMiscommunication &&
+            (kaliumException as? KaliumException.InvalidRequestError)?.isTooManyRequests() == true
+
+    private companion object {
+        const val DEFAULT_MAX_CONCURRENT_JOINS = 4
+        const val DEFAULT_MAX_THROTTLE_RETRIES = 3
+        const val DEFAULT_THROTTLE_RETRY_DELAY_MS = 250L
+    }
 }

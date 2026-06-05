@@ -1714,11 +1714,11 @@ public class UserSessionScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier
         get() = StaleEpochVerifierImpl(
             systemMessageInserter = systemMessageInserter,
+            fetchConversationUseCase = fetchConversationUseCase,
             conversationRepository = conversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             joinExistingMLSConversation = joinExistingMLSConversationUseCase,
-            subconversationRepository = subconversationRepository,
-            fetchConversation = fetchConversationUseCase
+            subconversationRepository = subconversationRepository
         )
 
     private val newMessageHandler: NewMessageEventHandler

@@ -21,6 +21,9 @@ jobs:
           WIRE_ANDROID_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           set -euo pipefail
+          if [[ "$WIRE_ANDROID_REF" == release/android-cycle-* ]]; then
+            WIRE_ANDROID_REF="${WIRE_ANDROID_REF/release\/android-cycle-/release\/cycle-}"
+          fi
           URL="https://raw.githubusercontent.com/wireapp/wire-android/${WIRE_ANDROID_REF}/build-logic/plugins/src/main/kotlin/AndroidCoordinates.kt"
           VERSION=$(curl -fsSL "$URL" | grep 'const val versionName' | sed -E 's/.*"([^"]+)".*/\1/')
           if [ -z "$VERSION" ]; then

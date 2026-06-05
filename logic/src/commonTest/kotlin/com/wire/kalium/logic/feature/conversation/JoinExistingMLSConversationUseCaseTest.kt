@@ -49,6 +49,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationA
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.any
@@ -260,6 +261,8 @@ class JoinExistingMLSConversationUseCaseTest {
         val fetchMLSOneToOneConversation = mock(FetchMLSOneToOneConversationUseCase::class)
         val fetchConversation = mock(FetchConversationUseCase::class)
         val resetMlsConversation = mock(ResetMLSConversationUseCase::class)
+        private var localGroupExists: Boolean = false
+        private var localGroupEpoch: ULong = LOCAL_GROUP_EPOCH
 
         val selfUserId = TestUser.USER_ID
 
@@ -276,6 +279,20 @@ class JoinExistingMLSConversationUseCaseTest {
             dispatcher
         ).also {
             withTransactionReturning(Either.Right(Unit))
+            coEvery {
+                mlsConversationRepository.hasEstablishedMLSGroup(any(), any())
+            }.invokes {
+                Either.Right(localGroupExists)
+            }
+            coEvery {
+                mlsConversationRepository.getLocalGroupEpoch(any(), any())
+            }.returns(Either.Right(localGroupEpoch))
+            coEvery {
+                conversationRepository.updateConversationGroupState(any(), any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
 
             coEvery {
                 resetMlsConversation.invoke(any()).toEither()
@@ -312,6 +329,14 @@ class JoinExistingMLSConversationUseCaseTest {
             coEvery {
                 mlsConversationRepository.joinGroupByExternalCommit(any(), any(), any())
             }.returns(Either.Right(Unit))
+        }
+
+        suspend fun withLocalGroupExists(exists: Boolean) = apply {
+            localGroupExists = exists
+        }
+
+        suspend fun withLocalGroupEpoch(epoch: ULong) = apply {
+            localGroupEpoch = epoch
         }
 
         suspend fun withJoinByExternalCommitGroupFailing(failure: CoreFailure, times: Int = Int.MAX_VALUE) = apply {
@@ -364,6 +389,7 @@ class JoinExistingMLSConversationUseCaseTest {
             val GROUP_ID3 = GroupID("group3")
             val GROUP_ID_ONE_ON_ONE = GroupID("group-one-on-ne")
             val GROUP_ID_SELF = GroupID("group-self")
+            val LOCAL_GROUP_EPOCH = 7UL
 
             val MLS_CONVERSATION1 = TestConversation.GROUP(
                 Conversation.ProtocolInfo.MLS(
@@ -394,6 +420,16 @@ class JoinExistingMLSConversationUseCaseTest {
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id3", "domain"))
+
+            val MLS_ESTABLISHED_GROUP_CONVERSATION = TestConversation.GROUP(
+                Conversation.ProtocolInfo.MLS(
+                    GROUP_ID3,
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("id4", "domain"))
 
             val MLS_UNESTABLISHED_SELF_CONVERSATION = TestConversation.SELF(
                 Conversation.ProtocolInfo.MLS(

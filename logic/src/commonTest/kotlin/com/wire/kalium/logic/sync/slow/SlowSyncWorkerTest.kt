@@ -535,7 +535,7 @@ class SlowSyncWorkerTest {
         }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONTACTS)) once else 0.times)
 
         coVerify {
-            arrangement.joinMLSConversations.invoke(any())
+            arrangement.joinMLSConversations.invoke(any(), any())
         }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.JOINING_MLS_CONVERSATIONS)) once else 0.times)
 
         coVerify {
@@ -682,13 +682,13 @@ class SlowSyncWorkerTest {
 
         suspend fun withJoinMLSConversationsFailure(keepRetryingOnFailure: Boolean = true) = apply {
             coEvery {
-                joinMLSConversations.invoke(eq(keepRetryingOnFailure))
+                joinMLSConversations.invoke(eq(keepRetryingOnFailure), any())
             }.returns(failure)
         }
 
         suspend fun withJoinMLSConversationsSuccess(keepRetryingOnFailure: Boolean = true) = apply {
             coEvery {
-                joinMLSConversations.invoke(eq(keepRetryingOnFailure))
+                joinMLSConversations.invoke(eq(keepRetryingOnFailure), any())
             }.returns(success)
         }
 
@@ -706,7 +706,7 @@ class SlowSyncWorkerTest {
 
         suspend fun withResolveOneOnOneConversationsSuccess() = apply {
             coEvery {
-                oneOnOneResolver.resolveAllOneOnOneConversations(any(), any())
+                oneOnOneResolver.resolveAllOneOnOneConversations(any(), any(), any())
             }.returns(success)
         }
 
