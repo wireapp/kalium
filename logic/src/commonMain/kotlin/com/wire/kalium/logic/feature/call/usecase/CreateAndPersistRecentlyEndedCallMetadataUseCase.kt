@@ -23,14 +23,11 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallScreenSharingMetadata
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.RecentlyEndedCallMetadata
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-import com.wire.kalium.logic.data.user.type.isAppOrBot
-import com.wire.kalium.logic.data.user.type.isGuest
 import com.wire.kalium.logic.data.user.type.isOwner
-import com.wire.kalium.logic.feature.conversation.ObserveConversationMembersUseCase
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.coroutines.flow.first
 
 /**
  * Given a call and raw call end reason create metadata containing all information regarding
@@ -42,7 +39,7 @@ internal interface CreateAndPersistRecentlyEndedCallMetadataUseCase {
 
 internal class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal constructor(
     private val callRepository: CallRepository,
-    private val observeConversationMembers: ObserveConversationMembersUseCase,
+    private val conversationRepository: ConversationRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider,
 ) : CreateAndPersistRecentlyEndedCallMetadataUseCase {
     override suspend fun invoke(conversationId: ConversationId, callEndedReason: Int) {
@@ -54,12 +51,9 @@ internal class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal con
         }
     }
 
-    private suspend fun CallMetadata.createMetadata(conversationId: ConversationId, callEndedReason: Int): RecentlyEndedCallMetadata {
+    private suspend fun CallMetadata.createMetadata(conversationId: ConversationId, callEndedReason: Int): RecentlyEndedCallMetadata? {
         val selfCallUser = getFullParticipants().firstOrNull { participant -> participant.userType.isOwner() }
-        val conversationMembers = observeConversationMembers(conversationId).first()
-        val conversationServicesCount = conversationMembers.count { member -> member.user.userType.isAppOrBot() }
-        val guestsCount = conversationMembers.count { member -> member.user.userType.isGuest() }
-        val guestsProCount = conversationMembers.count { member -> member.user.userType.isGuest() && member.user.teamId != null }
+        val memberCounts = conversationRepository.getConversationMemberCounts(conversationId).getOrNull() ?: return null
         val isOutgoingCall = callStatus == CallStatus.STARTED
         val callDurationInSeconds = establishedTime?.let {
             DateTimeUtil.calculateMillisDifference(it, DateTimeUtil.currentIsoDateTimeString()) / MILLIS_IN_SECOND
@@ -74,15 +68,15 @@ internal class CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl internal con
                 isOutgoingCall = isOutgoingCall,
                 callDurationInSeconds = callDurationInSeconds,
                 callParticipantsCount = participants.size,
-                conversationServices = conversationServicesCount,
+                conversationServices = memberCounts.servicesCount,
                 callAVSwitchToggle = selfCallUser?.isCameraOn ?: false,
                 callVideoEnabled = isCameraOn
             ),
             conversationDetails = RecentlyEndedCallMetadata.ConversationDetails(
                 conversationType = conversationType,
-                conversationSize = conversationMembers.size,
-                conversationGuests = guestsCount,
-                conversationGuestsPro = guestsProCount
+                conversationSize = memberCounts.conversationSize,
+                conversationGuests = memberCounts.guestsCount,
+                conversationGuestsPro = memberCounts.guestsProCount
             ),
             isTeamMember = selfTeamIdProvider().getOrNull() != null
         )

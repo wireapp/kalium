@@ -584,7 +584,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -732,10 +731,10 @@ public class UserSessionScope internal constructor(
         // this can depend directly on DAO it will make it easier to user
         // and remove any circular dependency when using this inside user repository
         wrapStorageNullableRequest {
-            userStorage.database.userDAO.observeUserDetailsByQualifiedID(userId.toDao()).firstOrNull()
-        }.map { userDetailsEntity ->
-            _teamId = Either.Right(userDetailsEntity?.team?.let { TeamId(it) })
-            userDetailsEntity?.team?.let { TeamId(it) }
+            userStorage.database.userDAO.getTeamIdByQualifiedID(userId.toDao())
+        }.map { teamId ->
+            _teamId = Either.Right(teamId?.let { TeamId(it) })
+            teamId?.let { TeamId(it) }
         }
     }
 
@@ -2804,7 +2803,7 @@ public class UserSessionScope internal constructor(
     private val createAndPersistRecentlyEndedCallMetadata: CreateAndPersistRecentlyEndedCallMetadataUseCase
         get() = CreateAndPersistRecentlyEndedCallMetadataUseCaseImpl(
             callRepository = callRepository,
-            observeConversationMembers = conversations.observeConversationMembers,
+            conversationRepository = conversationRepository,
             selfTeamIdProvider = selfTeamId
         )
 

@@ -43,7 +43,6 @@ import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -95,13 +94,13 @@ public class UpdateConversationReadDateUseCase internal constructor(
 
     private suspend fun doWork(conversationId: QualifiedID, time: Instant) {
         coroutineScope {
-            conversationRepository.observeConversationById(conversationId).first().onFailure {
+            conversationRepository.getConversationLastReadDate(conversationId).onFailure {
                 logger.w("Failed to update conversation read date; StorageFailure $it")
-            }.onSuccess { conversation ->
-                if (conversation.lastReadDate >= time) {
+            }.onSuccess { lastReadDate ->
+                if (lastReadDate >= time) {
                     logger.d(
                         "Skipping last-read update for '${conversationId.toLogString()}': " +
-                            "stored=${conversation.lastReadDate} >= requested=$time"
+                            "stored=$lastReadDate >= requested=$time"
                     )
                     // Skipping, as current lastRead is already newer than the scheduled one
                     return@onSuccess
@@ -111,7 +110,7 @@ public class UpdateConversationReadDateUseCase internal constructor(
 
                 if (shouldRunOptionalSideEffects) {
                     launch {
-                        sendConfirmation(conversationId, conversation.lastReadDate, time)
+                        sendConfirmation(conversationId, lastReadDate, time)
                     }
                 }
 

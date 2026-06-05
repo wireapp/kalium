@@ -90,6 +90,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -2126,9 +2127,13 @@ class CallRepositoryTest {
         }
 
         suspend fun givenObserveConversationDetailsByIdReturns(flow: Flow<Either<StorageFailure, ConversationDetails>>) = apply {
+            val result = when (val details = flow.first()) {
+                is Either.Left -> Either.Left(details.value)
+                is Either.Right -> Either.Right(details.value.conversation)
+            }
             everySuspend {
-                conversationRepository.observeConversationDetailsById(any())
-            } returns flow
+                conversationRepository.getConversationById(any())
+            } returns result
         }
 
         suspend fun givenGetKnownUserSucceeds() = apply {

@@ -74,10 +74,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
+
+internal data class ConversationMemberCounts(
+    val conversationSize: Int,
+    val servicesCount: Int,
+    val guestsCount: Int,
+    val guestsProCount: Int
+)
 
 @Suppress("TooManyFunctions")
 internal interface ConversationRepository {
@@ -88,6 +94,7 @@ internal interface ConversationRepository {
     suspend fun observeConversationById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun observeConversationDetailsById(conversationID: ConversationId): Flow<Either<StorageFailure, ConversationDetails>>
     suspend fun getConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
+    suspend fun getConversationLastReadDate(conversationId: ConversationId): Either<StorageFailure, Instant>
     suspend fun getNonDeletedConversationById(conversationId: ConversationId): Either<StorageFailure, Conversation>
 
     // endregion
@@ -145,6 +152,8 @@ internal interface ConversationRepository {
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
+    suspend fun isConversationMemberAdmin(conversationId: ConversationId, userId: UserId): Either<StorageFailure, Boolean>
+    suspend fun getConversationMemberCounts(conversationId: ConversationId): Either<StorageFailure, ConversationMemberCounts>
 
     /**
      * Fetches a list of all members' IDs or a given conversation including self user
@@ -407,6 +416,10 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
+    override suspend fun getConversationLastReadDate(conversationId: ConversationId): Either<StorageFailure, Instant> = wrapStorageRequest {
+        conversationDAO.getConversationLastReadDate(conversationId.toDao())
+    }
+
     override suspend fun getNonDeletedConversationById(
         conversationId: ConversationId
     ): Either<StorageFailure, Conversation> = wrapStorageRequest {
@@ -594,8 +607,27 @@ internal class ConversationDataSource internal constructor(
             members.map(memberMapper::fromDaoModel)
         }
 
+    override suspend fun isConversationMemberAdmin(
+        conversationId: ConversationId,
+        userId: UserId
+    ): Either<StorageFailure, Boolean> = wrapStorageRequest {
+        memberDAO.isMemberAdmin(conversationId.toDao(), userId.toDao())
+    }
+
+    override suspend fun getConversationMemberCounts(conversationId: ConversationId): Either<StorageFailure, ConversationMemberCounts> =
+        wrapStorageRequest {
+            memberDAO.getConversationMemberCounts(conversationId.toDao()).let {
+                ConversationMemberCounts(
+                    conversationSize = it.conversationSize,
+                    servicesCount = it.servicesCount,
+                    guestsCount = it.guestsCount,
+                    guestsProCount = it.guestsProCount
+                )
+            }
+        }
+
     override suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>> = wrapStorageRequest {
-        memberDAO.observeConversationMembers(conversationId.toDao()).first().map { it.user.toModel() }
+        memberDAO.getConversationMembers(conversationId.toDao()).map { it.toModel() }
     }
 
     override suspend fun persistMembers(
