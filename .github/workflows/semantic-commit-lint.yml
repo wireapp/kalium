@@ -19,6 +19,7 @@ jobs:
       contents: read # required for semantic PR title validation
       issues: write # required to add or remove title-fix labels
       pull-requests: write # required to inspect and edit pull request labels
+      statuses: write # required for action-semantic-pull-request commit statuses
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CUSTOM_PR_LABEL: "Fix PR Title 🤦‍♂️"

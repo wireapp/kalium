@@ -20,6 +20,11 @@ jobs:
   gradle-run-tests:
     name: Gradle Run Tests
     needs: [detekt]
+    permissions:
+      contents: read # required to read repository metadata in private repositories
+      issues: read # required to find related pull requests in private repositories
+      checks: write # required to publish unit test check runs
+      pull-requests: write # required to publish pull request comments
     runs-on: macos-latest
 
     steps:

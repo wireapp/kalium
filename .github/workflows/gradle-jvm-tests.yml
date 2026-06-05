@@ -26,6 +26,11 @@ jobs:
   gradle-run-tests:
     name: Gradle Run Tests
     needs: [ detekt ]
+    permissions:
+      contents: read # required to read repository metadata in private repositories
+      issues: read # required to find related pull requests in private repositories
+      checks: write # required to publish unit test check runs
+      pull-requests: write # required to publish pull request comments
     runs-on: ubuntu-latest
     # TODO: When migrating away from Cryptobox, use a regular Ubuntu machine with JDK 17 and caching
     container: kubazwire/cryptobox:1.0.0@sha256:4791e83cd7c76418e623c5ba17e9396efacf4f742d960a340eb08a106263334b
