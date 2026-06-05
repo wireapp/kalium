@@ -297,9 +297,7 @@ internal class ApplicationMessageHandlerImpl(
         val adjustedMessage = message.copy(
             content = messageContent.copy(quotedMessageReference = adjustedQuoteReference)
         )
-        persistMessage(adjustedMessage).onSuccess {
-            resolveLinkPreviewImages(adjustedMessage.conversationId, adjustedMessage.id)
-        }
+        persistMessage(adjustedMessage)
     }
 
     private suspend fun handleTextMessage(

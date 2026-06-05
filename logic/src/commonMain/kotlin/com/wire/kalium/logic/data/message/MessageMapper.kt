@@ -705,7 +705,6 @@ internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, self
         }
         MessageContent.Multipart(
             value = messageBody,
-            linkPreviews = linkPreview.map { MapperProvider.linkPreviewMapper().fromDaoToModel(it) },
             mentions = mentions.map { it.toModel(selfUserId = selfUserId) },
             quotedMessageReference = quotedMessageId?.let {
                 MessageContent.QuoteReference(
@@ -725,7 +724,6 @@ internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, self
 private fun extractLinkPreviewsFromContent(content: MessageContent.Regular): List<MessageLinkPreview> =
     when (content) {
         is MessageContent.Text -> content.linkPreviews
-        is MessageContent.Multipart -> content.linkPreviews
         else -> emptyList()
     }
 
