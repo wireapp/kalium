@@ -17,9 +17,15 @@
  */
 package com.wire.kalium.logic.data.message.linkpreview
 
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
+import com.wire.kalium.protobuf.messages.Asset
+import com.wire.kalium.protobuf.messages.EncryptionAlgorithm
+import com.wire.kalium.protobuf.messages.LinkPreview
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import okio.Path.Companion.toPath
+import pbandk.ByteArr
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
@@ -46,5 +52,89 @@ class LinkPreviewMapperTest {
         assertEquals(1200, image.assetWidth)
         assertEquals(630, image.assetHeight)
         assertEquals("image/png", image.mimeType)
+    }
+
+    @Test
+    fun givenProtoLinkPreviewWithRemoteImage_whenMappingThroughDao_thenRemoteImageMetadataIsPreserved() {
+        val mapper = LinkPreviewMapperImpl()
+        val proto = LinkPreview(
+            url = "https://example.com",
+            urlOffset = 4,
+            permanentUrl = "https://example.com/permalink",
+            title = "Title",
+            summary = "Summary",
+            image = Asset(
+                original = Asset.Original(
+                    mimeType = "image/png",
+                    size = 128,
+                    name = "preview.png",
+                    metaData = Asset.Original.MetaData.Image(
+                        Asset.ImageMetaData(
+                            width = 1200,
+                            height = 630
+                        )
+                    )
+                ),
+                status = Asset.Status.Uploaded(
+                    Asset.RemoteData(
+                        assetId = "asset-key",
+                        assetToken = "asset-token",
+                        assetDomain = "wire.com",
+                        otrKey = ByteArr(byteArrayOf(1, 2, 3)),
+                        sha256 = ByteArr(byteArrayOf(4, 5, 6)),
+                        encryption = EncryptionAlgorithm.AES_GCM
+                    )
+                )
+            )
+        )
+
+        val model = mapper.fromProtoToModel(proto)
+        val dao = mapper.fromModelToDao(model)
+        val result = mapper.fromDaoToModel(dao)
+
+        val image = assertNotNull(result.image)
+        assertEquals("asset-key", image.assetKey)
+        assertEquals("asset-token", image.assetToken)
+        assertEquals("wire.com", image.assetDomain)
+        assertContentEquals(byteArrayOf(1, 2, 3), image.otrKey)
+        assertContentEquals(byteArrayOf(4, 5, 6), image.sha256Key)
+        assertEquals(MessageEncryptionAlgorithm.AES_GCM, image.encryptionAlgorithm)
+        assertEquals("image/png", image.mimeType)
+        assertEquals(1200, image.assetWidth)
+        assertEquals(630, image.assetHeight)
+    }
+
+    @Test
+    fun givenModelLinkPreviewWithRemoteImage_whenMappingToProto_thenRemoteImageMetadataIsPreserved() {
+        val image = LinkPreviewAsset(
+            mimeType = "image/png",
+            assetDataPath = null,
+            assetDataSize = 128,
+            assetWidth = 1200,
+            assetHeight = 630,
+            assetKey = "asset-key",
+            assetToken = "asset-token",
+            assetDomain = "wire.com",
+            otrKey = byteArrayOf(1, 2, 3),
+            sha256Key = byteArrayOf(4, 5, 6),
+            encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
+        )
+        val model = MessageLinkPreview(
+            url = "https://example.com",
+            urlOffset = 4,
+            permanentUrl = "https://example.com/permalink",
+            title = "Title",
+            summary = "Summary",
+            image = image
+        )
+
+        val result = LinkPreviewMapperImpl().fromModelToProto(model)
+
+        assertEquals("asset-key", result.image?.uploaded?.assetId)
+        assertEquals("asset-token", result.image?.uploaded?.assetToken)
+        assertEquals("wire.com", result.image?.uploaded?.assetDomain)
+        assertContentEquals(byteArrayOf(1, 2, 3), result.image?.uploaded?.otrKey?.array)
+        assertContentEquals(byteArrayOf(4, 5, 6), result.image?.uploaded?.sha256?.array)
+        assertEquals(EncryptionAlgorithm.AES_GCM, result.image?.uploaded?.encryption)
     }
 }

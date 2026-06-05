@@ -154,7 +154,13 @@ internal class MessageInsertExtensionImpl(
                         image_local_path = it.imageLocalPath,
                         image_width = it.imageWidth,
                         image_height = it.imageHeight,
-                        image_mime_type = it.imageMimeType
+                        image_mime_type = it.imageMimeType,
+                        image_asset_key = it.imageAssetKey,
+                        image_asset_token = it.imageAssetToken,
+                        image_asset_domain = it.imageAssetDomain,
+                        image_otr_key = it.imageOtrKey,
+                        image_sha256 = it.imageSha256,
+                        image_encryption_algorithm = it.imageEncryptionAlgorithm
                     )
                 }
                 content.mentions.forEach {
@@ -348,7 +354,13 @@ internal class MessageInsertExtensionImpl(
                         image_local_path = it.imageLocalPath,
                         image_width = it.imageWidth,
                         image_height = it.imageHeight,
-                        image_mime_type = it.imageMimeType
+                        image_mime_type = it.imageMimeType,
+                        image_asset_key = it.imageAssetKey,
+                        image_asset_token = it.imageAssetToken,
+                        image_asset_domain = it.imageAssetDomain,
+                        image_otr_key = it.imageOtrKey,
+                        image_sha256 = it.imageSha256,
+                        image_encryption_algorithm = it.imageEncryptionAlgorithm
                     )
                 }
                 content.mentions.forEach {
