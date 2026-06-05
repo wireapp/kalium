@@ -127,13 +127,24 @@ internal class MessageExtensionsImpl internal constructor(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
         initialOffset: Long
-    ) = AsyncQueryPagingSource(
-        countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
+    ) = PendingMessagesPagingSource(
+        totalCountQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
+        pendingCountQuery = messagesQueries.countPendingByConversationIdAndVisibility(conversationId, visibilities),
         context = readDispatcher.value,
         initialOffset = initialOffset,
-        queryProvider = { limit, offset ->
+        pendingQueryProvider = { limit, offset ->
             kaliumLogger.d("[QueryPagingSource] Loading [MessageEntity] data: offset = $offset limit = $limit")
-            messagesQueries.selectByConversationIdAndVisibility(
+            messagesQueries.selectPendingByConversationIdAndVisibility(
+                conversationId,
+                visibilities,
+                limit,
+                offset,
+                messageMapper::toEntityMessageFromView
+            )
+        },
+        nonPendingQueryProvider = { limit, offset ->
+            kaliumLogger.d("[QueryPagingSource] Loading [MessageEntity] data: offset = $offset limit = $limit")
+            messagesQueries.selectNonPendingByConversationIdAndVisibility(
                 conversationId,
                 visibilities,
                 limit,

@@ -416,6 +416,129 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenMixedStatusMessages_whenGettingMessagesByConversation_thenPendingMessagesAreReturnedFirst() = runTest {
+        insertInitialData()
+
+        val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
+        val pendingOlder = newRegularMessageEntity(
+            "pending-older",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            status = MessageEntity.Status.PENDING,
+            senderName = userEntity1.name!!,
+            date = baseInstant + 10.seconds,
+            sender = userDetailsEntity1
+        )
+        val pendingNewer = newRegularMessageEntity(
+            "pending-newer",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            status = MessageEntity.Status.PENDING,
+            senderName = userEntity1.name!!,
+            date = baseInstant + 20.seconds,
+            sender = userDetailsEntity1
+        )
+        val sentOlder = newRegularMessageEntity(
+            "sent-older",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            status = MessageEntity.Status.SENT,
+            senderName = userEntity1.name!!,
+            date = baseInstant + 30.seconds,
+            sender = userDetailsEntity1
+        )
+        val readNewer = newRegularMessageEntity(
+            "read-newer",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            status = MessageEntity.Status.READ,
+            senderName = userEntity1.name!!,
+            date = baseInstant + 40.seconds,
+            sender = userDetailsEntity1
+        )
+        val hiddenPending = pendingNewer.copy(id = "hidden-pending", visibility = MessageEntity.Visibility.HIDDEN)
+        val otherConversationPending = pendingNewer.copy(
+            id = "other-conversation-pending",
+            conversationId = conversationEntity2.id
+        )
+
+        messageDAO.insertOrIgnoreMessages(
+            listOf(sentOlder, pendingOlder, readNewer, pendingNewer, hiddenPending, otherConversationPending)
+        )
+
+        val result = messageDAO.getMessagesByConversationAndVisibility(
+            conversationId = conversationEntity1.id,
+            limit = 10,
+            offset = 0,
+            visibility = listOf(MessageEntity.Visibility.VISIBLE)
+        ).first()
+
+        assertContentEquals(
+            listOf("pending-newer", "pending-older", "read-newer", "sent-older"),
+            result.map { it.id }
+        )
+    }
+
+    @Test
+    fun givenMixedStatusMessages_whenGettingPageAfterPendingSegment_thenOffsetIsAppliedToMergedOrder() = runTest {
+        insertInitialData()
+
+        val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
+        val messages = listOf(
+            newRegularMessageEntity(
+                "pending-older",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = userEntity1.name!!,
+                date = baseInstant + 10.seconds,
+                sender = userDetailsEntity1
+            ),
+            newRegularMessageEntity(
+                "pending-newer",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.PENDING,
+                senderName = userEntity1.name!!,
+                date = baseInstant + 20.seconds,
+                sender = userDetailsEntity1
+            ),
+            newRegularMessageEntity(
+                "sent-older",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.SENT,
+                senderName = userEntity1.name!!,
+                date = baseInstant + 30.seconds,
+                sender = userDetailsEntity1
+            ),
+            newRegularMessageEntity(
+                "read-newer",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.READ,
+                senderName = userEntity1.name!!,
+                date = baseInstant + 40.seconds,
+                sender = userDetailsEntity1
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(messages)
+
+        val result = messageDAO.getMessagesByConversationAndVisibility(
+            conversationId = conversationEntity1.id,
+            limit = 3,
+            offset = 1,
+            visibility = listOf(MessageEntity.Visibility.VISIBLE)
+        ).first()
+
+        assertContentEquals(
+            listOf("pending-older", "read-newer", "sent-older"),
+            result.map { it.id }
+        )
+    }
+
+    @Test
     fun givenMessagesAreInserted_whenGettingMessagesByConversationAfterDate_thenOnlyRelevantMessagesAreReturned() = runTest {
         insertInitialData()
 
