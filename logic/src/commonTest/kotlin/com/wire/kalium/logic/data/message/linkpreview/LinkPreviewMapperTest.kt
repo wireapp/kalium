@@ -28,6 +28,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class LinkPreviewMapperTest {
 
@@ -136,5 +137,23 @@ class LinkPreviewMapperTest {
         assertContentEquals(byteArrayOf(1, 2, 3), result.image?.uploaded?.otrKey?.array)
         assertContentEquals(byteArrayOf(4, 5, 6), result.image?.uploaded?.sha256?.array)
         assertEquals(EncryptionAlgorithm.AES_GCM, result.image?.uploaded?.encryption)
+    }
+
+    @Test
+    fun givenModelLinkPreviewWithQuotedSummary_whenMappingToDao_thenSummaryIsEscapedForStorage() {
+        val model = MessageLinkPreview(
+            url = "https://example.com",
+            urlOffset = 4,
+            permanentUrl = "https://example.com/permalink",
+            title = "Title \"quoted\"",
+            summary = "Summary with \"quotes\" and \n line break",
+            image = null
+        )
+
+        val result = LinkPreviewMapperImpl().fromModelToDao(model)
+
+        assertTrue(result.title.contains("\\\""))
+        assertTrue(result.summary.contains("\\\""))
+        assertTrue(result.summary.contains("\\n"))
     }
 }

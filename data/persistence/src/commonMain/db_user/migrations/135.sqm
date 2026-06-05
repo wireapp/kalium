@@ -1,3 +1,8 @@
+ALTER TABLE MessageLinkPreview ADD COLUMN image_local_path TEXT;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_width INTEGER;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_height INTEGER;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_mime_type TEXT;
+
 ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_key TEXT;
 ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_token TEXT;
 ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_domain TEXT;
@@ -219,3 +224,5 @@ LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent ON QuotedL
 -- end joins for quoted messages
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
 LEFT JOIN SelfUser;
+
+PRAGMA optimize;

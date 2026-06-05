@@ -75,21 +75,21 @@ internal class LinkPreviewMapperImpl(
 
     override fun fromModelToDao(linkPreview: MessageLinkPreview): MessageEntity.LinkPreview {
         return MessageEntity.LinkPreview(
-            url = linkPreview.url,
+            url = linkPreview.url.escapeForJsonStorage(),
             urlOffset = linkPreview.urlOffset,
-            permanentUrl = linkPreview.permanentUrl ?: "",
-            title = linkPreview.title ?: "",
-            summary = linkPreview.summary ?: "",
-            imageLocalPath = linkPreview.image?.assetDataPath?.toString(),
+            permanentUrl = (linkPreview.permanentUrl ?: "").escapeForJsonStorage(),
+            title = (linkPreview.title ?: "").escapeForJsonStorage(),
+            summary = (linkPreview.summary ?: "").escapeForJsonStorage(),
+            imageLocalPath = linkPreview.image?.assetDataPath?.toString()?.escapeForJsonStorage(),
             imageWidth = linkPreview.image?.assetWidth,
             imageHeight = linkPreview.image?.assetHeight,
-            imageMimeType = linkPreview.image?.mimeType,
-            imageAssetKey = linkPreview.image?.assetKey,
-            imageAssetToken = linkPreview.image?.assetToken,
-            imageAssetDomain = linkPreview.image?.assetDomain,
-            imageOtrKey = linkPreview.image?.otrKey?.toHexString(),
-            imageSha256 = linkPreview.image?.sha256Key?.toHexString(),
-            imageEncryptionAlgorithm = linkPreview.image?.encryptionAlgorithm?.name,
+            imageMimeType = linkPreview.image?.mimeType?.escapeForJsonStorage(),
+            imageAssetKey = linkPreview.image?.assetKey?.escapeForJsonStorage(),
+            imageAssetToken = linkPreview.image?.assetToken?.escapeForJsonStorage(),
+            imageAssetDomain = linkPreview.image?.assetDomain?.escapeForJsonStorage(),
+            imageOtrKey = linkPreview.image?.otrKey?.toHexString()?.escapeForJsonStorage(),
+            imageSha256 = linkPreview.image?.sha256Key?.toHexString()?.escapeForJsonStorage(),
+            imageEncryptionAlgorithm = linkPreview.image?.encryptionAlgorithm?.name?.escapeForJsonStorage(),
         )
     }
 
@@ -157,6 +157,19 @@ internal class LinkPreviewMapperImpl(
             )
         }
     )
+}
+
+private fun String.escapeForJsonStorage(): String = buildString(length) {
+    this@escapeForJsonStorage.forEach { character ->
+        when (character) {
+            '\\' -> append("\\\\")
+            '"' -> append("\\\"")
+            '\n' -> append("\\n")
+            '\r' -> append("\\r")
+            '\t' -> append("\\t")
+            else -> append(character)
+        }
+    }
 }
 
 private fun String?.toMessageEncryptionAlgorithm(): MessageEncryptionAlgorithm =
