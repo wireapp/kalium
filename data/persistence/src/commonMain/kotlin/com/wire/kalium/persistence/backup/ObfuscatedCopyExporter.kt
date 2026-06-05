@@ -142,9 +142,9 @@ class ObfuscatedCopyExporter internal constructor(
                         "                        ELSE NULL " +
                         "                      END, " +
                         "  image_asset_domain = CASE " +
-                        "                         WHEN image_asset_domain IS NOT NULL " +
-                        "                         THEN substr(hex(randomblob(length(image_asset_domain))), 1, length(image_asset_domain)) " +
-                        "                         ELSE NULL " +
+                        "                        WHEN image_asset_domain IS NOT NULL " +
+                        "                        THEN substr(hex(randomblob(length(image_asset_domain))), 1, length(image_asset_domain)) " +
+                        "                        ELSE NULL " +
                         "                       END, " +
                         "  image_otr_key = CASE " +
                         "                    WHEN image_otr_key IS NOT NULL " +

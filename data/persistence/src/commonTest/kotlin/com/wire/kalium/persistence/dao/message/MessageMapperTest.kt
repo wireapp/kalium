@@ -168,6 +168,7 @@ class MessageMapperTest {
             reactionsJson: String = "[]",
             mentions: String = "[]",
             linkPreviews: String = "[]",
+            attachments: String? = null,
             quotedMessageId: String? = null,
             quotedSenderId: QualifiedIDEntity? = null,
             isQuoteVerified: Boolean? = null,
@@ -197,7 +198,6 @@ class MessageMapperTest {
             locationZoom: Int? = null,
             legalHoldMemberList: List<QualifiedIDEntity>? = null,
             legalHoldType: MessageEntity.LegalHoldType? = null,
-            attachments: String? = null,
         ): MessageEntity {
             return MessageMapper.toEntityMessageFromView(
                 id,

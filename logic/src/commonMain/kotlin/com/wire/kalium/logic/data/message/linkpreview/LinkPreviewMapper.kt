@@ -17,12 +17,13 @@
  */
 package com.wire.kalium.logic.data.message.linkpreview
 
-import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LinkPreview
+import com.wire.kalium.util.string.hexToByteArray
 import com.wire.kalium.util.string.toHexString
 import okio.Path.Companion.toPath
 import pbandk.ByteArr
@@ -40,11 +41,11 @@ internal class LinkPreviewMapperImpl(
 
     override fun fromDaoToModel(linkPreview: MessageEntity.LinkPreview): MessageLinkPreview {
         val hasRemoteImageData = !linkPreview.imageAssetKey.isNullOrEmpty() ||
-            !linkPreview.imageAssetToken.isNullOrEmpty() ||
-            !linkPreview.imageAssetDomain.isNullOrEmpty() ||
-            !linkPreview.imageOtrKey.isNullOrEmpty() ||
-            !linkPreview.imageSha256.isNullOrEmpty() ||
-            !linkPreview.imageEncryptionAlgorithm.isNullOrEmpty()
+                !linkPreview.imageAssetToken.isNullOrEmpty() ||
+                !linkPreview.imageAssetDomain.isNullOrEmpty() ||
+                !linkPreview.imageOtrKey.isNullOrEmpty() ||
+                !linkPreview.imageSha256.isNullOrEmpty() ||
+                !linkPreview.imageEncryptionAlgorithm.isNullOrEmpty()
         val image = when {
             !linkPreview.imageLocalPath.isNullOrEmpty() || hasRemoteImageData -> LinkPreviewAsset(
                 mimeType = linkPreview.imageMimeType ?: "*/*",
@@ -163,12 +164,3 @@ private fun String?.toMessageEncryptionAlgorithm(): MessageEncryptionAlgorithm =
         MessageEncryptionAlgorithm.AES_GCM.name -> MessageEncryptionAlgorithm.AES_GCM
         else -> MessageEncryptionAlgorithm.AES_CBC
     }
-
-private fun String.hexToByteArray(): ByteArray {
-    if (isEmpty()) return ByteArray(0)
-    require(length % 2 == 0) { "Hex string must have an even length" }
-
-    return ByteArray(length / 2) { index ->
-        substring(index * 2, index * 2 + 2).toInt(16).toByte()
-    }
-}
