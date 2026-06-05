@@ -38,6 +38,7 @@ jobs:
     if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     needs: get-version
     permissions:
+      contents: read # required by the reusable Jira workflow
       pull-requests: write # required to update PR descriptions with Jira links
     uses: wireapp/.github/.github/workflows/jira-link-pr-reusable.yml@b00595235816b9a935c7463b990fae39864903a5
     with:
