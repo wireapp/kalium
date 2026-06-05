@@ -45,11 +45,15 @@ public interface DownloadCellFileUseCase {
      * @param onProgressUpdate Callback to receive download progress updates.
      * @return download operation result
      */
+    @Suppress("LongParameterList")
     public suspend operator fun invoke(
         assetId: String,
+        conversationId: String?,
         outFilePath: Path,
         assetSize: Long,
         remoteFilePath: String? = null,
+        name: String? = null,
+        ownerId: String? = null,
         onProgressUpdate: (Long) -> Unit
     ): Either<CoreFailure, Unit>
 }
@@ -61,9 +65,12 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
 ) : DownloadCellFileUseCase {
     override suspend operator fun invoke(
         assetId: String,
+        conversationId: String?,
         outFilePath: Path,
         assetSize: Long,
         remoteFilePath: String?,
+        name: String?,
+        ownerId: String?,
         onProgressUpdate: (Long) -> Unit,
     ): Either<CoreFailure, Unit> = withContext(dispatchers.io) {
         attachmentsRepository.getAssetPath(assetId).fold(
@@ -71,7 +78,7 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
                 // Attachment asset not found
                 // Try to download standalone file (not received as attachment in conversation).
                 remoteFilePath?.let {
-                    downloadFromRemotePath(assetId, outFilePath, assetSize, it, onProgressUpdate)
+                    downloadFromRemotePath(assetId, conversationId, outFilePath, assetSize, it, name, ownerId, onProgressUpdate)
                 } ?: Either.Left(StorageFailure.DataNotFound)
             },
             { path ->
@@ -91,13 +98,27 @@ internal class DownloadCellFileUseCaseImpl internal constructor(
         )
     }
 
+    @Suppress("LongParameterList")
     private suspend fun downloadFromRemotePath(
         assetId: String,
+        conversationId: String?,
         outFilePath: Path,
         assetSize: Long,
         path: String,
+        name: String?,
+        ownerId: String?,
         onProgressUpdate: (Long) -> Unit,
     ) = cellsRepository.downloadFile(outFilePath, path, onProgressUpdate)
-            .onSuccess { attachmentsRepository.saveStandaloneAssetPath(assetId, outFilePath.toString(), assetSize) }
+        .onSuccess {
+            attachmentsRepository.saveStandaloneAssetPath(
+                assetId,
+                conversationId,
+                outFilePath.toString(),
+                assetSize,
+                name,
+                ownerId
+            )
+            attachmentsRepository.setStandaloneAssetTransferStatus(assetId, AssetTransferStatus.SAVED_INTERNALLY)
+        }
 
 }

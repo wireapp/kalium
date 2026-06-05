@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.map
  */
 public interface SearchAppsByNameUseCase {
 
-    public suspend operator fun invoke(search: String): Flow<List<ServiceDetails>>
+    public operator fun invoke(search: String): Flow<List<ServiceDetails>>
 }
 
 internal class SearchAppsByNameUseCaseImpl internal constructor(
@@ -41,7 +41,7 @@ internal class SearchAppsByNameUseCaseImpl internal constructor(
     private val appMapper: AppMapper = MapperProvider.appMapper()
 ) : SearchAppsByNameUseCase {
 
-    override suspend fun invoke(search: String): Flow<List<ServiceDetails>> =
+    override fun invoke(search: String): Flow<List<ServiceDetails>> =
         appRepository.searchAppsByName(name = search).map {
             it.fold({ emptyList() }, { it })
         }.map { apps ->

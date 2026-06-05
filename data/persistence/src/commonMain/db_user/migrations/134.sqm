@@ -1,0 +1,286 @@
+CREATE TABLE IF NOT EXISTS CellFile (
+    uuid           TEXT    NOT NULL,
+    conversationId TEXT,
+    name           TEXT,
+    owner          TEXT,
+    localPath      TEXT,
+    size           INTEGER,
+    downloadedAt   INTEGER NOT NULL,
+    modifiedAt     INTEGER,
+    isOffline      INTEGER NOT NULL DEFAULT 0,
+    assetVersionId TEXT NOT NULL DEFAULT '',
+    cellAsset      INTEGER NOT NULL DEFAULT 1,
+    contentUrl     TEXT,
+    previewUrl     TEXT,
+    assetMimeType  TEXT,
+    assetPath      TEXT,
+    contentHash    TEXT,
+    assetWidth     INTEGER,
+    assetHeight    INTEGER,
+    assetDurationMs INTEGER,
+    assetTransferStatus TEXT NOT NULL DEFAULT 'NOT_DOWNLOADED',
+    contentUrlExpiresAt INTEGER,
+    editSupported  INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (uuid)
+);
+
+DELETE FROM Asset WHERE domain = 'wire.cell';
+
+INSERT OR IGNORE INTO CellFile(
+    uuid,
+    conversationId,
+    localPath,
+    size,
+    downloadedAt,
+    modifiedAt,
+    isOffline,
+    assetVersionId,
+    cellAsset,
+    contentUrl,
+    previewUrl,
+    assetMimeType,
+    assetPath,
+    contentHash,
+    assetWidth,
+    assetHeight,
+    assetDurationMs,
+    assetTransferStatus,
+    contentUrlExpiresAt,
+    editSupported
+)
+SELECT
+    ma.asset_id,
+    CAST(ma.conversation_id AS TEXT),
+    NULLIF(ma.local_path, ''),
+    ma.asset_size,
+    CAST(strftime('%s', 'now') AS INTEGER) * 1000,
+    CAST(strftime('%s', 'now') AS INTEGER) * 1000,
+    0,
+    ma.asset_version_id,
+    ma.cell_asset,
+    ma.content_url,
+    ma.preview_url,
+    ma.asset_mime_type,
+    ma.asset_path,
+    ma.content_hash,
+    ma.asset_width,
+    ma.asset_height,
+    ma.asset_duration_ms,
+    ma.asset_transfer_status,
+    ma.content_url_expires_at,
+    ma.edit_supported
+FROM MessageAttachments ma
+;
+
+UPDATE CellFile
+SET
+    conversationId = COALESCE(conversationId, (SELECT CAST(ma.conversation_id AS TEXT) FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    localPath = COALESCE(localPath, (SELECT NULLIF(ma.local_path, '') FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    size = COALESCE(size, (SELECT ma.asset_size FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetVersionId = CASE
+        WHEN assetVersionId = '' THEN COALESCE((SELECT ma.asset_version_id FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1), assetVersionId)
+        ELSE assetVersionId
+    END,
+    contentUrl = COALESCE(contentUrl, (SELECT ma.content_url FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    previewUrl = COALESCE(previewUrl, (SELECT ma.preview_url FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetMimeType = COALESCE(assetMimeType, (SELECT ma.asset_mime_type FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetPath = COALESCE(assetPath, (SELECT ma.asset_path FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    contentHash = COALESCE(contentHash, (SELECT ma.content_hash FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetWidth = COALESCE(assetWidth, (SELECT ma.asset_width FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetHeight = COALESCE(assetHeight, (SELECT ma.asset_height FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetDurationMs = COALESCE(assetDurationMs, (SELECT ma.asset_duration_ms FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    assetTransferStatus = CASE
+        WHEN assetTransferStatus = 'NOT_DOWNLOADED' THEN COALESCE((SELECT ma.asset_transfer_status FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1), assetTransferStatus)
+        ELSE assetTransferStatus
+    END,
+    contentUrlExpiresAt = COALESCE(contentUrlExpiresAt, (SELECT ma.content_url_expires_at FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1)),
+    editSupported = MAX(editSupported, COALESCE((SELECT ma.edit_supported FROM MessageAttachments ma WHERE ma.asset_id = CellFile.uuid LIMIT 1), 0))
+WHERE uuid IN (SELECT asset_id FROM MessageAttachments);
+
+PRAGMA legacy_alter_table = ON;
+ALTER TABLE MessageAttachments RENAME TO MessageAttachments_legacy;
+PRAGMA legacy_alter_table = OFF;
+
+CREATE TABLE MessageAttachments (
+      asset_id TEXT NOT NULL,
+      message_id TEXT NOT NULL,
+      conversation_id TEXT NOT NULL,
+      asset_index INTEGER,
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      FOREIGN KEY (asset_id) REFERENCES CellFile(uuid) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, message_id, asset_id)
+);
+
+INSERT INTO MessageAttachments(asset_id, message_id, conversation_id, asset_index)
+SELECT asset_id, message_id, CAST(conversation_id AS TEXT), asset_index
+FROM MessageAttachments_legacy;
+
+DROP TABLE MessageAttachments_legacy;
+CREATE INDEX IF NOT EXISTS message_attachments_asset_id_idx ON MessageAttachments(asset_id);
+
+DROP VIEW IF EXISTS MessageDetailsView;
+CREATE VIEW IF NOT EXISTS MessageDetailsView
+AS SELECT
+Message.id AS id,
+Message.conversation_id AS conversationId,
+Message.content_type AS contentType,
+Message.creation_date AS date,
+Message.sender_user_id AS senderUserId,
+Message.sender_client_id AS senderClientId,
+Message.status AS status,
+Message.last_edit_date AS lastEditTimestamp,
+Message.visibility AS visibility,
+Message.expects_read_confirmation AS expectsReadConfirmation,
+Message.expire_after_millis AS expireAfterMillis,
+Message.self_deletion_end_date AS selfDeletionEndDate,
+IFNULL ((SELECT COUNT (*) FROM Receipt WHERE message_id = Message.id AND type = 'READ'), 0) AS readCount,
+UserDetails.name AS senderName,
+UserDetails.handle AS senderHandle,
+UserDetails.email AS senderEmail,
+UserDetails.phone AS senderPhone,
+UserDetails.accent_id AS senderAccentId,
+UserDetails.team AS senderTeamId,
+UserDetails.connection_status AS senderConnectionStatus,
+UserDetails.preview_asset_id AS senderPreviewAssetId,
+UserDetails.complete_asset_id AS senderCompleteAssetId,
+UserDetails.user_availability_status AS senderAvailabilityStatus,
+UserDetails.user_type AS senderUserType,
+UserDetails.bot_service AS senderBotService,
+UserDetails.deleted AS senderIsDeleted,
+UserDetails.expires_at AS senderExpiresAt,
+UserDetails.defederated AS senderDefederated,
+UserDetails.supported_protocols AS senderSupportedProtocols,
+UserDetails.active_one_on_one_conversation_id AS senderActiveOneOnOneConversationId,
+UserDetails.is_proteus_verified AS senderIsProteusVerified,
+UserDetails.is_under_legal_hold AS senderIsUnderLegalHold,
+(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+TextContent.text_body AS text,
+TextContent.is_quoting_self AS isQuotingSelfUser,
+AssetContent.asset_size AS assetSize,
+AssetContent.asset_name AS assetName,
+AssetContent.asset_mime_type AS assetMimeType,
+AssetContent.asset_otr_key AS assetOtrKey,
+AssetContent.asset_sha256 AS assetSha256,
+AssetContent.asset_id AS assetId,
+AssetContent.asset_token AS assetToken,
+AssetContent.asset_domain AS assetDomain,
+AssetContent.asset_encryption_algorithm AS assetEncryptionAlgorithm,
+AssetContent.asset_width AS assetWidth,
+AssetContent.asset_height AS assetHeight,
+AssetContent.asset_duration_ms AS assetDuration,
+AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
+MissedCallContent.caller_id AS callerId,
+
+CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
+CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
+
+UnknownContent.unknown_type_name AS unknownContentTypeName,
+UnknownContent.unknown_encoded_data AS unknownContentData,
+RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
+RestrictedAssetContent.asset_size AS restrictedAssetSize,
+RestrictedAssetContent.asset_name AS restrictedAssetName,
+
+CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.blob_1 END AS failedToDecryptData,
+CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.integer_1 END AS decryptionErrorCode,
+CASE WHEN SystemContent.content_type = 'FAILED_DECRYPT' THEN SystemContent.boolean_1 END AS isDecryptionResolved,
+
+CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS conversationName,
+IFNULL(
+    (SELECT '[' ||
+        GROUP_CONCAT(
+            '{"emoji":"' || emoji ||
+            '","count":' || count ||
+            ',"isSelf":' || CASE WHEN isSelf > 0 THEN 'true' ELSE 'false' END ||
+            '}'
+        ) || ']'
+    FROM (
+        SELECT
+            Reaction.emoji AS emoji,
+            COUNT(*) AS count,
+            SUM(CASE WHEN Reaction.sender_id = s.id THEN 1 ELSE 0 END) AS isSelf
+        FROM Reaction
+        CROSS JOIN SelfUser s
+        WHERE Reaction.message_id = Message.id
+            AND Reaction.conversation_id = Message.conversation_id
+        GROUP BY Reaction.emoji
+    )
+    ),
+    '[]'
+) AS reactionsJson,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT(
+        '{"start":' || start || ', "length":' || length ||
+        ', "userId":{"value":"' || replace(substr(user_id, 0, instr(user_id, '@')), '@', '') || '"' ||
+        ',"domain":"' || replace(substr(user_id, instr(user_id, '@')+1, length(user_id)), '@', '') || '"' ||
+        '}' || '}') || ']'
+    FROM MessageMention
+    WHERE MessageMention.message_id = Message.id
+        AND MessageMention.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS mentions,
+TextContent.quoted_message_id AS quotedMessageId,
+QuotedMessage.sender_user_id AS quotedSenderId,
+TextContent.is_quote_verified AS isQuoteVerified,
+QuotedSender.name AS quotedSenderName,
+QuotedSender.accent_id AS quotedSenderAccentId,
+QuotedMessage.creation_date AS quotedMessageDateTime,
+QuotedMessage.last_edit_date AS quotedMessageEditTimestamp,
+QuotedMessage.visibility AS quotedMessageVisibility,
+QuotedMessage.content_type AS quotedMessageContentType,
+QuotedTextContent.text_body AS quotedTextBody,
+QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
+QuotedAssetContent.asset_name AS quotedAssetName,
+QuotedLocationContent.name AS quotedLocationName,
+
+CASE WHEN SystemContent.content_type = 'CONVERSATION_APPS_ENABLED_CHANGED' THEN SystemContent.boolean_1 END AS isConversationAppsEnabled,
+CASE WHEN SystemContent.content_type = 'NEW_CONVERSATION_RECEIPT_MODE' THEN SystemContent.boolean_1 END AS newConversationReceiptMode,
+
+CASE WHEN SystemContent.content_type = 'CONVERSATION_RECEIPT_MODE_CHANGED' THEN SystemContent.boolean_1 END AS conversationReceiptModeChanged,
+CASE WHEN SystemContent.content_type = 'CONVERSATION_TIMER_CHANGED' THEN SystemContent.integer_1 END AS messageTimerChanged,
+FailedRecipientsWithNoClients.recipient_failure_list AS recipientsFailedWithNoClientsList,
+FailedRecipientsDeliveryFailed.recipient_failure_list AS recipientsFailedDeliveryList,
+
+IFNULL(
+    (SELECT '[' ||
+            GROUP_CONCAT('{"text":"' || text || '", "id":"' || id || '""is_selected":' || is_selected || '}')
+        || ']'
+    FROM ButtonContent
+    WHERE ButtonContent.message_id = Message.id
+        AND ButtonContent.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS buttonsJson,
+CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemContent.list_1 END AS federationDomainList,
+CASE WHEN SystemContent.content_type = 'FEDERATION_TERMINATED' THEN SystemContent.enum_1 END AS federationType,
+CASE WHEN SystemContent.content_type = 'CONVERSATION_PROTOCOL_CHANGED' THEN SystemContent.enum_1 END AS conversationProtocolChanged,
+ConversationLocationContent.latitude AS latitude,
+ConversationLocationContent.longitude AS longitude,
+ConversationLocationContent.name AS locationName,
+ConversationLocationContent.zoom AS locationZoom,
+CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.list_1 END AS legalHoldMemberList,
+CASE WHEN SystemContent.content_type = 'LEGAL_HOLD' THEN SystemContent.enum_1 END AS legalHoldType
+
+FROM Message
+JOIN UserDetails ON Message.sender_user_id = UserDetails.qualified_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCallContent.message_id AND Message.conversation_id = MissedCallContent.conversation_id
+
+LEFT JOIN MessageSystemContent AS SystemContent ON Message.id = SystemContent.message_id AND Message.conversation_id = SystemContent.conversation_id
+
+LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id
+LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
+LEFT JOIN MessageRecipientFailure AS FailedRecipientsWithNoClients ON Message.id = FailedRecipientsWithNoClients.message_id AND Message.conversation_id = FailedRecipientsWithNoClients.conversation_id AND FailedRecipientsWithNoClients.recipient_failure_type = 'NO_CLIENTS_TO_DELIVER'
+LEFT JOIN MessageRecipientFailure AS FailedRecipientsDeliveryFailed ON Message.id = FailedRecipientsDeliveryFailed.message_id AND Message.conversation_id = FailedRecipientsDeliveryFailed.conversation_id AND FailedRecipientsDeliveryFailed.recipient_failure_type = 'MESSAGE_DELIVERY_FAILED'
+
+LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_message_id AND QuotedMessage.conversation_id = TextContent.conversation_id
+LEFT JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
+LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent ON QuotedLocationContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
+LEFT JOIN SelfUser;
+
+PRAGMA optimize;
+

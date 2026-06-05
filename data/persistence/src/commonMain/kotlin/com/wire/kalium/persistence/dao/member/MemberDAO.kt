@@ -17,6 +17,10 @@
  */
 package com.wire.kalium.persistence.dao.member
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
@@ -66,7 +70,7 @@ interface MemberDAO {
         conversationID: QualifiedIDEntity
     )
 
-    suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
+    fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean>
     suspend fun updateFullMemberList(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
 
     suspend fun getGroupConversationWithUserIdsWithBothDomains(
@@ -94,7 +98,7 @@ internal class MemberDAOImpl internal constructor(
     override suspend fun insertMember(member: MemberEntity, conversationID: QualifiedIDEntity) = withContext(writeDispatcher.value) {
         memberQueries.transaction {
             userQueries.insertOrIgnoreUserId(member.user)
-            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsList().firstOrNull() != null
+            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).awaitAsList().firstOrNull() != null
             if (conversationExist) {
                 memberQueries.insertMember(member.user, conversationID, member.role)
             } else {
@@ -117,9 +121,9 @@ internal class MemberDAOImpl internal constructor(
             nonSuspendInsertMembersWithQualifiedId(memberList, conversationID)
         }
 
-    private fun nonSuspendInsertMembersWithQualifiedId(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity) =
+    private suspend fun nonSuspendInsertMembersWithQualifiedId(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity) =
         memberQueries.transaction {
-            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).executeAsList().firstOrNull() != null
+            val conversationExist = conversationsQueries.selectByQualifiedId(conversationID).awaitAsList().firstOrNull() != null
             for (member: MemberEntity in memberList) {
                 userQueries.insertOrIgnoreUserId(member.user)
                 if (conversationExist) {
@@ -135,7 +139,7 @@ internal class MemberDAOImpl internal constructor(
 
     override suspend fun insertMembers(memberList: List<MemberEntity>, groupId: String) {
         withContext(writeDispatcher.value) {
-            conversationsQueries.selectByGroupId(groupId).executeAsOneOrNull()?.let {
+            conversationsQueries.selectByGroupId(groupId).awaitAsOneOrNull()?.let {
                 nonSuspendInsertMembersWithQualifiedId(memberList, it.qualified_id)
             }
         }
@@ -154,7 +158,7 @@ internal class MemberDAOImpl internal constructor(
         withContext(writeDispatcher.value) {
             memberQueries.transactionWithResult {
                 memberQueries.deleteMembers(conversationID, userIDList)
-                memberQueries.selectChanges().executeAsOne()
+                memberQueries.selectChanges().awaitAsOne()
             }
         }
 
@@ -196,7 +200,7 @@ internal class MemberDAOImpl internal constructor(
     ) = withContext(writeDispatcher.value) {
         memberQueries.transaction {
             conversationsQueries.updateConversationType(ConversationEntity.Type.ONE_ON_ONE, conversationID)
-            val conversationRecordExist = conversationsQueries.selectChanges().executeAsOne() != 0L
+            val conversationRecordExist = conversationsQueries.selectChanges().awaitAsOne() != 0L
             if (conversationRecordExist) {
                 memberQueries.insertMember(member.user, conversationID, member.role)
             } else {
@@ -208,7 +212,7 @@ internal class MemberDAOImpl internal constructor(
         }
     }
 
-    override suspend fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean> =
+    override fun observeIsUserMember(conversationId: QualifiedIDEntity, userId: UserIDEntity): Flow<Boolean> =
         memberQueries.isUserMember(conversationId, userId)
             .asFlow()
             .mapToOneOrNull()
@@ -219,7 +223,7 @@ internal class MemberDAOImpl internal constructor(
         withContext(writeDispatcher.value) {
             memberQueries.transaction {
                 val membersToDelete = memberQueries.selectAllMembersByConversation(conversationID)
-                    .executeAsList()
+                    .awaitAsList()
                     .filter { member -> memberList.none { it.user == member.user } }
 
                 memberList.forEach { member ->
@@ -238,7 +242,7 @@ internal class MemberDAOImpl internal constructor(
         secondDomain: String
     ): Map<ConversationIDEntity, List<UserIDEntity>> = withContext(readDispatcher.value) {
         memberQueries.selectFederatedMembersWithOneOfDomainsFromGroupConversation(firstDomain, secondDomain)
-            .executeAsList()
+            .awaitAsList()
             .groupBy { it.conversation }
             .filter { (_, members) ->
                 members.any { it.user.domain == firstDomain } &&
@@ -251,25 +255,25 @@ internal class MemberDAOImpl internal constructor(
         domain: String,
     ): Map<ConversationIDEntity, UserIDEntity> = withContext(readDispatcher.value) {
         memberQueries.selectFederatedMembersFromOneOnOneConversations(domain)
-            .executeAsList()
+            .awaitAsList()
             .associateBy({ it.conversation }, { it.user })
     }
 
     override suspend fun selectMembersNameAndHandle(conversationId: QualifiedIDEntity) = withContext(readDispatcher.value) {
-        memberQueries.selectMembersNamesAndHandle(conversationId).executeAsList()
+        memberQueries.selectMembersNamesAndHandle(conversationId).awaitAsList()
             .let { members -> members.associate { it.user to NameAndHandleEntity(it.name, it.handle) } }
     }
 
     override suspend fun getAllMembers(): List<UserIDEntity> = withContext(readDispatcher.value) {
         memberQueries.selectAllMembers()
-            .executeAsList()
+            .awaitAsList()
             .map { it.user }
     }
 
     override suspend fun getConversationMembers(conversationId: QualifiedIDEntity): List<UserIDEntity> =
         withContext(readDispatcher.value) {
             memberQueries.selectAllMembersByConversation(conversationId)
-                .executeAsList()
+                .awaitAsList()
                 .map { it.user }
         }
 }

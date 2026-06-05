@@ -18,11 +18,11 @@
 package com.wire.kalium.mocks.mocks.asset
 
 import com.wire.kalium.network.api.authenticated.asset.AssetResponse
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 
 object AssetMocks {
 
-    val invalid = ErrorResponse(code = 401, message = "Invalid Asset Token", label = "invalid_asset_token")
+    val invalid = GenericAPIErrorResponse(code = 401, message = "Invalid Asset Token", label = "invalid_asset_token")
 
     val asset = AssetResponse(
         key = "3-1-e7788668-1b22-488a-b63c-acede42f771f",

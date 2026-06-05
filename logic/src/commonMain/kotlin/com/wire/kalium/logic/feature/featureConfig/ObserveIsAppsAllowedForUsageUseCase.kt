@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.map
  * In case the team or session does not have the apps feature enabled, it will return AppsAllowedResult.Disabled.
  */
 public interface ObserveIsAppsAllowedForUsageUseCase {
-    public suspend operator fun invoke(): Flow<AppsAllowedResult>
+    public operator fun invoke(): Flow<AppsAllowedResult>
 }
 
 internal class ObserveIsAppsAllowedForUsageUseCaseImpl(
@@ -41,7 +41,7 @@ internal class ObserveIsAppsAllowedForUsageUseCaseImpl(
     private val selfTeamIdProvider: SelfTeamIdProvider
 ) : ObserveIsAppsAllowedForUsageUseCase {
 
-    override suspend fun invoke(): Flow<AppsAllowedResult> =
+    override fun invoke(): Flow<AppsAllowedResult> =
         userConfigRepository
         .observeAppsEnabled()
         .mapToRightOr(false)

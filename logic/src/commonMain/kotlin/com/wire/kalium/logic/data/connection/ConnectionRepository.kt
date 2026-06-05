@@ -81,15 +81,15 @@ internal interface ConnectionRepository {
         connectionState: ConnectionState
     ): Either<CoreFailure, Connection>
 
-    suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>>
+    fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>>
     suspend fun insertConnectionFromEvent(
         transactionContext: CryptoTransactionContext,
         event: Event.User.NewConnection
     ): Either<CoreFailure, Unit>
 
-    suspend fun observeConnectionList(): Flow<List<Connection>>
-    suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails.Connection>>
-    suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
+    fun observeConnectionList(): Flow<List<Connection>>
+    fun observeConnectionRequestList(): Flow<List<ConversationDetails.Connection>>
+    fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
     suspend fun setConnectionAsNotified(userId: UserId)
     suspend fun setAllConnectionsAsNotified()
     suspend fun deleteConnection(connection: Connection): Either<StorageFailure, Unit>
@@ -215,11 +215,11 @@ internal class ConnectionDataSource(
         else -> false
     }
 
-    override suspend fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>> = wrapStorageRequest {
+    override fun getConnections(): Either<StorageFailure, Flow<List<ConversationDetails>>> = wrapStorageRequest {
         observeConnectionRequestList()
     }
 
-    override suspend fun observeConnectionRequestList(): Flow<List<ConversationDetails.Connection>> {
+    override fun observeConnectionRequestList(): Flow<List<ConversationDetails.Connection>> {
         return connectionDAO.getConnectionRequests().map { connections ->
             connections
                 .map { connection ->
@@ -228,7 +228,7 @@ internal class ConnectionDataSource(
         }
     }
 
-    override suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>> {
+    override fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>> {
         return connectionDAO.getConnectionRequestsForNotification()
             .map {
                 it.map { connection ->
@@ -251,7 +251,7 @@ internal class ConnectionDataSource(
     ): Either<CoreFailure, Unit> =
         handleUserConnectionStatusPersistence(transactionContext, event.connection)
 
-    override suspend fun observeConnectionList(): Flow<List<Connection>> {
+    override fun observeConnectionList(): Flow<List<Connection>> {
         return connectionDAO.getConnections().map { connections ->
             connections.map { connection ->
                 connectionMapper.fromDaoToModel(connection)

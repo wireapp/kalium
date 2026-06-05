@@ -35,9 +35,8 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.exceptions.isWrongConversationPassword
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -318,7 +317,7 @@ class JoinConversationViaCodeUseCaseTest {
                 code, key, null, password, Either.Left(
                     NetworkFailure.ServerMiscommunication(
                         KaliumException.InvalidRequestError(
-                            ErrorResponse(403, "wrong password", "invalid-conversation-password")
+                            GenericAPIErrorResponse(403, "wrong password", "invalid-conversation-password")
                         )
                     )
                 )

@@ -41,7 +41,7 @@ import com.wire.kalium.network.api.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.UserId as UserIdDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -487,7 +487,7 @@ class ClientRepositoryTest {
         val CLIENT_RESULT = TestClient.CLIENT
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(
             KaliumException.InvalidRequestError(
-                ErrorResponse(
+                GenericAPIErrorResponse(
                     420, "forbidden", "forbidden"
                 )
             )

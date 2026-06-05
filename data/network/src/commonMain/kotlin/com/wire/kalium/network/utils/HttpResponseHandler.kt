@@ -23,6 +23,8 @@ import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
+import io.ktor.client.call.DoubleReceiveException
+import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
@@ -166,6 +168,31 @@ internal object BaseErrorResponseInterceptor : ErrorResponseInterceptor<Any> {
         }
         return NetworkResponse.Error(kException)
     }
+}
+
+// TODO(refactor): Temporary bridge for endpoints that manually handle response bodies, headers, or streaming.
+// Prefer wrapRequest or endpoint-specific ErrorResponseInterceptors where possible.
+internal suspend fun interceptUnsuccessfulResponse(
+    result: HttpResponse,
+    json: Json = KtxSerializer.json
+): NetworkResponse.Error {
+    val bodyText = try {
+        result.bodyAsText()
+    } catch (_: NoTransformationFoundException) {
+        "NoTransformationFoundException"
+    } catch (_: DoubleReceiveException) {
+        "DoubleReceiveException"
+    }
+
+    val responseData = HttpResponseData(
+        headers = result.headers,
+        statusCode = result.status,
+        body = bodyText,
+        json = json,
+    )
+
+    return UnauthorizedResponseInterceptor.intercept(responseData)
+        ?: BaseErrorResponseInterceptor.intercept(responseData)
 }
 
 /**

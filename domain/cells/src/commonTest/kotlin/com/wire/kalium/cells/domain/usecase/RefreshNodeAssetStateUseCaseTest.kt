@@ -29,7 +29,7 @@ import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.CellAssetContent
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 import dev.mokkery.matcher.any
@@ -459,7 +459,7 @@ class RefreshNodeAssetStateUseCaseTest {
             everySuspend { cellsRepository.getNode(any()) }.returns(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.ServerError(
-                        ErrorResponse(HttpStatusCode.NotFound.value, "Test", "")
+                        GenericAPIErrorResponse(HttpStatusCode.NotFound.value, "Test", "")
                     )
                 ).left()
             )
@@ -469,7 +469,7 @@ class RefreshNodeAssetStateUseCaseTest {
             everySuspend { cellsRepository.getNode(any()) }.returns(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.ServerError(
-                        ErrorResponse(HttpStatusCode.Forbidden.value, "Test", "")
+                        GenericAPIErrorResponse(HttpStatusCode.Forbidden.value, "Test", "")
                     )
                 ).left()
             )
@@ -499,7 +499,7 @@ class RefreshNodeAssetStateUseCaseTest {
             everySuspend { cellsRepository.getPreviews(any()) }.returns(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.ServerError(
-                        ErrorResponse(HttpStatusCode.NotFound.value, "Test", "")
+                        GenericAPIErrorResponse(HttpStatusCode.NotFound.value, "Test", "")
                     )
                 ).left()
             )

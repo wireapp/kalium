@@ -82,7 +82,7 @@ internal interface PreKeyRepository {
      * @return A [Flow] of [Instant] objects representing the last pre-key upload instant.
      * It emits `null` if no pre-key upload has occurred.
      */
-    suspend fun lastPreKeyRefillCheckInstantFlow(): Flow<Instant?>
+    fun lastPreKeyRefillCheckInstantFlow(): Flow<Instant?>
 
     /**
      * Sets the last prekey refill check date.
@@ -184,7 +184,7 @@ internal class PreKeyDataSource(
         prekeyDAO.forceInsertMostRecentPreKeyId(newId)
     }
 
-    override suspend fun lastPreKeyRefillCheckInstantFlow(): Flow<Instant?> =
+    override fun lastPreKeyRefillCheckInstantFlow(): Flow<Instant?> =
         metadataDAO.valueByKeyFlow(PREKEY_REFILL_INSTANT_KEY).map { instant ->
             instant?.let { Instant.parse(it) }
         }

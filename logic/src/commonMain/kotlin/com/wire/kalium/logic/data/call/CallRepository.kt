@@ -104,11 +104,11 @@ internal interface CallRepository {
     suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String>
     suspend fun connectToSFT(url: String, data: String): Either<CoreFailure, ByteArray>
     fun getCallMetadata(conversationId: ConversationId): CallMetadata?
-    suspend fun callsFlow(): Flow<List<Call>>
-    suspend fun incomingCallsFlow(): Flow<List<Call>>
-    suspend fun outgoingCallsFlow(): Flow<List<Call>>
-    suspend fun ongoingCallsFlow(): Flow<List<Call>>
-    suspend fun establishedCallsFlow(): Flow<List<Call>>
+    fun callsFlow(): Flow<List<Call>>
+    fun incomingCallsFlow(): Flow<List<Call>>
+    fun outgoingCallsFlow(): Flow<List<Call>>
+    fun ongoingCallsFlow(): Flow<List<Call>>
+    fun establishedCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallConversationId(): ConversationId?
     fun observeLastActiveCallByConversationId(conversationId: ConversationId): Flow<Call?>
 
@@ -129,7 +129,7 @@ internal interface CallRepository {
     fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean)
     suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>)
     fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: Map<UserId, List<String>>)
-    suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
+    fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards: Boolean = true)
     fun setStaleOpenCallsCleanupFinished()
     fun observeStaleOpenCallsCleanupFinished(): Flow<Boolean>
@@ -206,14 +206,14 @@ internal class CallDataSource(
 
     override fun getCallMetadata(conversationId: ConversationId): CallMetadata? = _callMetadataProfile[conversationId]
 
-    override suspend fun callsFlow(): Flow<List<Call>> = callDAO.observeCalls().combineWithCallsMetadata()
+    override fun callsFlow(): Flow<List<Call>> = callDAO.observeCalls().combineWithCallsMetadata()
 
-    override suspend fun incomingCallsFlow(): Flow<List<Call>> = callDAO.observeIncomingCalls().combineWithCallsMetadata()
-    override suspend fun outgoingCallsFlow(): Flow<List<Call>> = callDAO.observeOutgoingCalls().combineWithCallsMetadata()
+    override fun incomingCallsFlow(): Flow<List<Call>> = callDAO.observeIncomingCalls().combineWithCallsMetadata()
+    override fun outgoingCallsFlow(): Flow<List<Call>> = callDAO.observeOutgoingCalls().combineWithCallsMetadata()
 
-    override suspend fun ongoingCallsFlow(): Flow<List<Call>> = callDAO.observeOngoingCalls().combineWithCallsMetadata()
+    override fun ongoingCallsFlow(): Flow<List<Call>> = callDAO.observeOngoingCalls().combineWithCallsMetadata()
 
-    override suspend fun establishedCallsFlow(): Flow<List<Call>> = callDAO.observeEstablishedCalls().combineWithCallsMetadata()
+    override fun establishedCallsFlow(): Flow<List<Call>> = callDAO.observeEstablishedCalls().combineWithCallsMetadata()
 
     private val mutexProvider = MutexProvider<ConversationId>()
 
@@ -540,7 +540,7 @@ internal class CallDataSource(
         }
     }
 
-    override suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?> =
+    override fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?> =
         callDAO.getLastClosedCallByConversationId(
             conversationId = callMapper.fromConversationIdToQualifiedIDEntity(
                 conversationId = conversationId

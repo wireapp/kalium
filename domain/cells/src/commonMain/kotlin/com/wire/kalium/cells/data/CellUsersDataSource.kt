@@ -18,6 +18,7 @@
 package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.domain.CellUsersRepository
+import com.wire.kalium.cells.util.toQualifiedIdOrNull
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -32,12 +33,21 @@ internal class CellUsersDataSource(
     private val memberDAO: MemberDAO,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : CellUsersRepository {
+
     override suspend fun getUserNames() = withContext(dispatchers.io) {
         wrapStorageRequest {
             userDAO.getAllUsersDetails().firstOrNull()?.mapNotNull { user ->
                 user.name?.let { name ->
                     user.id.toString() to name
                 }
+            }
+        }
+    }
+
+    override suspend fun getUserNameById(userId: String) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            userId.toQualifiedIdOrNull()?.let { qualifiedId ->
+                userDAO.getUserDetailsByQualifiedID(qualifiedId)?.name
             }
         }
     }

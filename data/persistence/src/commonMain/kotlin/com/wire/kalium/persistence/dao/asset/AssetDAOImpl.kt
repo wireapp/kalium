@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.dao.asset
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.AssetsQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -80,7 +82,7 @@ class AssetDAOImpl internal constructor(
         }
     }
 
-    override suspend fun getAssetByKey(assetKey: String): Flow<AssetEntity?> {
+    override fun getAssetByKey(assetKey: String): Flow<AssetEntity?> {
         return queries.selectByKey(assetKey, mapper::fromAssets)
             .asFlow()
             .mapToOneOrNull()
@@ -105,6 +107,6 @@ class AssetDAOImpl internal constructor(
     }
 
     override suspend fun getAssets(): List<AssetEntity> = withContext(readDispatcher.value) {
-        queries.getAssets(mapper::fromAssets).executeAsList()
+        queries.getAssets(mapper::fromAssets).awaitAsList()
     }
 }

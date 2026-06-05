@@ -121,15 +121,15 @@ internal interface ConversationRepository {
         invalidateMembers: Boolean
     ): Either<CoreFailure, Unit>
 
-    suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
-    suspend fun getConversationListWithOtherUserName(): Either<StorageFailure, Flow<List<ConversationWithOtherUserName>>>
-    suspend fun observeConversationList(): Flow<List<Conversation>>
-    suspend fun observeConversationListDetails(
+    fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>>
+    fun getConversationListWithOtherUserName(): Either<StorageFailure, Flow<List<ConversationWithOtherUserName>>>
+    fun observeConversationList(): Flow<List<Conversation>>
+    fun observeConversationListDetails(
         fromArchive: Boolean,
         conversationFilter: ConversationFilter = ConversationFilter.All
     ): Flow<List<ConversationDetails>>
 
-    suspend fun observeConversationListDetailsWithEvents(
+    fun observeConversationListDetailsWithEvents(
         fromArchive: Boolean = false,
         conversationFilter: ConversationFilter = ConversationFilter.All,
         strictMlsFilter: Boolean = true,
@@ -169,7 +169,7 @@ internal interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<CoreFailure, Conversation>>
+    fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<CoreFailure, Conversation>>
 
     suspend fun getOneOnOneConversationsWithOtherUser(
         otherUserId: UserId,
@@ -262,7 +262,7 @@ internal interface ConversationRepository {
      * Deletes all conversation messages
      */
     suspend fun clearContent(conversationId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
+    fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
     suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
     suspend fun getConversationsByUserId(userId: UserId): Either<CoreFailure, List<Conversation>>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
@@ -300,7 +300,7 @@ internal interface ConversationRepository {
 
     suspend fun getConversationByMLSGroupId(mlsGroupId: GroupID): Either<CoreFailure, Conversation>
 
-    suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
+    fun observeUnreadArchivedConversationsCount(): Flow<Long>
 
     suspend fun sendTypingIndicatorStatus(
         conversationId: ConversationId,
@@ -337,7 +337,7 @@ internal interface ConversationRepository {
         protocol: Conversation.Protocol
     ): Either<CoreFailure, ConversationProtocolUpdateStatus>
 
-    suspend fun observeDegradedConversationNotified(conversationId: QualifiedID): Flow<Boolean>
+    fun observeDegradedConversationNotified(conversationId: QualifiedID): Flow<Boolean>
     suspend fun setDegradedConversationNotifiedFlag(
         conversationId: QualifiedID,
         value: Boolean
@@ -350,13 +350,13 @@ internal interface ConversationRepository {
 
     suspend fun setLegalHoldStatusChangeNotified(conversationId: ConversationId): Either<CoreFailure, Boolean>
 
-    suspend fun observeLegalHoldStatus(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation.LegalHoldStatus>>
+    fun observeLegalHoldStatus(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation.LegalHoldStatus>>
 
-    suspend fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>>
+    fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>>
 
     suspend fun getGroupStatusMembersNamesAndHandles(groupID: GroupID): Either<StorageFailure, EpochChangesData>
     suspend fun selectMembersNameAndHandle(conversationId: ConversationId): Either<StorageFailure, Map<UserId, NameAndHandle>>
-    suspend fun observeOneToOneConversationDetailsWithOtherUser(
+    fun observeOneToOneConversationDetailsWithOtherUser(
         otherUserId: UserId
     ): Flow<Either<StorageFailure, ConversationDetails.OneOne>>
 
@@ -507,11 +507,11 @@ internal class ConversationDataSource internal constructor(
         wrapStorageRequest { conversationDAO.getSelfConversationId(ConversationEntity.Protocol.MLS) }
             .map { it.toModel() }
 
-    override suspend fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>> = wrapStorageRequest {
+    override fun getConversationList(): Either<StorageFailure, Flow<List<Conversation>>> = wrapStorageRequest {
         observeConversationList()
     }
 
-    override suspend fun getConversationListWithOtherUserName(): Either<StorageFailure, Flow<List<ConversationWithOtherUserName>>> =
+    override fun getConversationListWithOtherUserName(): Either<StorageFailure, Flow<List<ConversationWithOtherUserName>>> =
         wrapStorageRequest {
             conversationDAO.getAllConversationsWithOtherUserName(selfUserId.toDao()).map { conversations ->
                 conversations.map { conversationWithOtherUserName ->
@@ -524,11 +524,11 @@ internal class ConversationDataSource internal constructor(
             }
         }
 
-    override suspend fun observeConversationList(): Flow<List<Conversation>> {
+    override fun observeConversationList(): Flow<List<Conversation>> {
         return conversationDAO.getAllConversations().map { it.map(conversationMapper::fromDaoModel) }
     }
 
-    override suspend fun observeConversationListDetails(
+    override fun observeConversationListDetails(
         fromArchive: Boolean,
         conversationFilter: ConversationFilter
     ): Flow<List<ConversationDetails>> =
@@ -536,7 +536,7 @@ internal class ConversationDataSource internal constructor(
             conversationViewEntityList.map { conversationViewEntity -> conversationMapper.fromDaoModelToDetails(conversationViewEntity) }
         }
 
-    override suspend fun observeConversationListDetailsWithEvents(
+    override fun observeConversationListDetailsWithEvents(
         fromArchive: Boolean,
         conversationFilter: ConversationFilter,
         strictMlsFilter: Boolean,
@@ -757,7 +757,7 @@ internal class ConversationDataSource internal constructor(
             wrapApiRequest { clientApi.listClientsOfUsers(it) }.map { memberMapper.fromMapOfClientsResponseToRecipients(it) }
         }
 
-    override suspend fun observeOneToOneConversationWithOtherUser(
+    override fun observeOneToOneConversationWithOtherUser(
         otherUserId: UserId
     ): Flow<Either<StorageFailure, Conversation>> {
         return conversationDAO.observeOneOnOneConversationWithOtherUser(otherUserId.toDao())
@@ -765,7 +765,7 @@ internal class ConversationDataSource internal constructor(
             .mapRight { conversationMapper.fromDaoModel(it) }
     }
 
-    override suspend fun observeOneToOneConversationDetailsWithOtherUser(
+    override fun observeOneToOneConversationDetailsWithOtherUser(
         otherUserId: UserId
     ): Flow<Either<StorageFailure, ConversationDetails.OneOne>> {
         return conversationDAO.observeOneOnOneConversationDetailsWithOtherUser(otherUserId.toDao())
@@ -866,7 +866,7 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.clearContent(conversationId.toDao())
         }
 
-    override suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>> =
+    override fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>> =
         memberDAO.observeIsUserMember(conversationId.toDao(), userId.toDao())
             .wrapStorageRequest()
 
@@ -1035,7 +1035,7 @@ internal class ConversationDataSource internal constructor(
         wrapStorageRequest { conversationDAO.getConversationByGroupID(mlsGroupId.value) }
             .map { conversationMapper.fromDaoModel(it) }
 
-    override suspend fun observeUnreadArchivedConversationsCount(): Flow<Long> =
+    override fun observeUnreadArchivedConversationsCount(): Flow<Long> =
         conversationDAO.observeUnreadArchivedConversationsCount()
             .wrapStorageRequest()
             .mapToRightOr(0L)
@@ -1102,7 +1102,7 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.updateDegradedConversationNotifiedFlag(conversationId.toDao(), value)
         }
 
-    override suspend fun observeDegradedConversationNotified(conversationId: QualifiedID): Flow<Boolean> =
+    override fun observeDegradedConversationNotified(conversationId: QualifiedID): Flow<Boolean> =
         conversationDAO.observeDegradedConversationNotified(conversationId.toDao())
             .wrapStorageRequest()
             .mapToRightOr(true)
@@ -1131,13 +1131,13 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.updateLegalHoldStatusChangeNotified(conversationId = conversationId.toDao(), notified = true)
         }
 
-    override suspend fun observeLegalHoldStatus(conversationId: ConversationId) =
+    override fun observeLegalHoldStatus(conversationId: ConversationId) =
         conversationDAO.observeLegalHoldStatus(conversationId.toDao())
             .map { conversationMapper.legalHoldStatusFromEntity(it) }
             .wrapStorageRequest()
             .distinctUntilChanged()
 
-    override suspend fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>> =
+    override fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>> =
         conversationDAO.observeLegalHoldStatusChangeNotified(conversationId.toDao())
             .wrapStorageRequest()
             .distinctUntilChanged()

@@ -35,7 +35,7 @@ internal open class FakeSlowSyncRepository(
     override suspend fun needsToRecoverMLSGroups(): Boolean = false
     override suspend fun setNeedsToPersistHistoryLostMessage(value: Boolean) {}
     override suspend fun needsToPersistHistoryLostMessage(): Boolean = false
-    override suspend fun observeLastSlowSyncCompletionInstant(): Flow<Instant?> = emptyFlow()
+    override fun observeLastSlowSyncCompletionInstant(): Flow<Instant?> = emptyFlow()
     override fun updateSlowSyncStatus(slowSyncStatus: SlowSyncStatus) {}
     override suspend fun setSlowSyncVersion(version: Int) {}
     override suspend fun getSlowSyncVersion(): Int? = null

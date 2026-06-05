@@ -84,6 +84,8 @@ import com.wire.kalium.persistence.dao.backup.NomadMessagesDAO
 import com.wire.kalium.persistence.dao.backup.NomadMessagesDAOImpl
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAOImpl
+import com.wire.kalium.persistence.dao.cellfile.CellFileDao
+import com.wire.kalium.persistence.dao.cellfile.CellFileDaoImpl
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDaoImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -95,6 +97,9 @@ import com.wire.kalium.persistence.db.feeders.MessagesFeeder
 import com.wire.kalium.persistence.db.feeders.ReactionsFeeder
 import com.wire.kalium.persistence.db.feeders.UnreadEventsFeeder
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.jvm.JvmInline
 
@@ -199,8 +204,18 @@ class UserDatabaseBuilder internal constructor(
     )
 
     init {
-        database.databasePropertiesQueries.insertSelfUserId(userId)
-        database.databasePropertiesQueries.enableForeignKeyContraints()
+        sqlDriver.execute(
+            identifier = null,
+            sql = "INSERT OR IGNORE INTO SelfUser(id) VALUES(?);",
+            parameters = 1
+        ) {
+            bindString(0, userId.toString())
+        }
+        sqlDriver.execute(
+            identifier = null,
+            sql = "PRAGMA foreign_keys = 1;",
+            parameters = 0,
+        )
     }
 
     val readDispatcher: ReadDispatcher = ReadDispatcher(dispatcher.limitedParallelism(MAX_READ_PARALLELISM))
@@ -322,6 +337,7 @@ class UserDatabaseBuilder internal constructor(
             database.conversationsQueries,
             database.unreadEventsQueries,
             database.messagePreviewQueries,
+            database.cellFilesQueries,
             userId,
             database.reactionsQueries,
             database.usersQueries,
@@ -382,6 +398,7 @@ class UserDatabaseBuilder internal constructor(
             usersQueries = database.usersQueries,
             conversationsQueries = database.conversationsQueries,
             messagesQueries = database.messagesQueries,
+            cellFilesQueries = database.cellFilesQueries,
             messageAttachmentsQueries = database.messageAttachmentsQueries,
             reactionsQueries = database.reactionsQueries,
             receiptsQueries = database.receiptsQueries,
@@ -391,11 +408,13 @@ class UserDatabaseBuilder internal constructor(
         )
 
     val messageAttachments: MessageAttachmentsDao
-        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, readDispatcher, writeDispatcher)
+        get() = MessageAttachmentsDaoImpl(database.messageAttachmentsQueries, database.cellFilesQueries, readDispatcher, writeDispatcher)
 
     val publicLinks: PublicLinkDao
         get() = PublicLinkDaoImpl(database.publicLinksQueries, readDispatcher, writeDispatcher)
 
+    val cellFileDao: CellFileDao
+        get() = CellFileDaoImpl(database.cellFilesQueries, readDispatcher, writeDispatcher)
     val remoteBackupChangeLogDAO: RemoteBackupChangeLogDAO
         get() = RemoteBackupChangeLogDAOImpl(database.remotebackupChangeLogQueries, readDispatcher, writeDispatcher)
 
@@ -440,40 +459,9 @@ internal expect fun createEmptyDatabaseFile(
     userId: UserIDEntity,
 ): String?
 
-@Suppress("TooGenericExceptionCaught")
-fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.Value<Unit>>): Boolean {
-    val oldVersion = this.executeQuery(null, "PRAGMA user_version;", {
-        it.next()
-        it.getLong(0).let { QueryResult.Value<Long?>(it) }
-    }, 0).value ?: return false
-
-    val newVersion = sqlSchema.version
-    return try {
-        if (oldVersion != newVersion) {
-            sqlSchema.migrate(this, oldVersion, newVersion)
-        }
-        true
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
-        false
-    }
-}
+expect suspend fun SqlDriver.migrate(sqlSchema: SqlSchema<QueryResult.AsyncValue<Unit>>): Boolean
 
 /**
  * @return true if the database have fk violations, false otherwise
  */
-fun SqlDriver.checkFKViolations(): Boolean {
-    var result = false
-    executeQuery(null, "PRAGMA foreign_key_check;", {
-        // foreign_key_check returns the rows with the fk violations
-        // if the cursor has a next, it means there are violations
-        // and the backup is corrupted
-        if (it.next().value) {
-            result = true
-        }
-        QueryResult.Unit
-    }, 0, null)
-
-    return result
-}
+expect suspend fun SqlDriver.checkFKViolations(): Boolean

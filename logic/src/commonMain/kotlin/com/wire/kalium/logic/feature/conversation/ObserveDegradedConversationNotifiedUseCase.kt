@@ -29,13 +29,13 @@ public interface ObserveDegradedConversationNotifiedUseCase {
      * @return [Flow] of [Boolean], false means conversation's verification degraded and user needs to be notified
      * true in other cases.
      */
-    public suspend operator fun invoke(conversationId: ConversationId): Flow<Boolean>
+    public operator fun invoke(conversationId: ConversationId): Flow<Boolean>
 }
 
 internal class ObserveDegradedConversationNotifiedUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository
 ) : ObserveDegradedConversationNotifiedUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId): Flow<Boolean> =
+    override fun invoke(conversationId: ConversationId): Flow<Boolean> =
         conversationRepository.observeDegradedConversationNotified(conversationId)
 }

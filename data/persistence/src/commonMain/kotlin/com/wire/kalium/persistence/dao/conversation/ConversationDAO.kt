@@ -73,14 +73,14 @@ interface ConversationDAO {
         modifiedDates: Map<QualifiedIDEntity, Instant>,
     )
     suspend fun updateAllConversationsNotificationDate()
-    suspend fun getAllConversations(): Flow<List<ConversationEntity>>
-    suspend fun getAllConversationsWithOtherUserName(selfUserId: QualifiedIDEntity): Flow<List<ConversationWithOtherUserNameEntity>>
-    suspend fun getAllConversationDetails(
+    fun getAllConversations(): Flow<List<ConversationEntity>>
+    fun getAllConversationsWithOtherUserName(selfUserId: QualifiedIDEntity): Flow<List<ConversationWithOtherUserNameEntity>>
+    fun getAllConversationDetails(
         fromArchive: Boolean,
         filter: ConversationFilterEntity,
         strictMLSFilter: Boolean = true,
     ): Flow<List<ConversationViewEntity>>
-    suspend fun getAllConversationDetailsWithEvents(
+    fun getAllConversationDetailsWithEvents(
         fromArchive: Boolean = false,
         onlyInteractionEnabled: Boolean = false,
         newActivitiesOnTop: Boolean = false,
@@ -99,7 +99,7 @@ interface ConversationDAO {
         protocol: ConversationEntity.Protocol
     ): List<QualifiedIDEntity>
 
-    suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?>
+    fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
     suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
@@ -128,7 +128,7 @@ interface ConversationDAO {
     suspend fun getConversationsByKeyingMaterialUpdate(threshold: Duration): List<String>
     suspend fun setProposalTimer(proposalTimer: ProposalTimerEntity)
     suspend fun clearProposalTimer(groupID: String)
-    suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>>
+    fun getProposalTimers(): Flow<List<ProposalTimerEntity>>
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
     suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, dateTime: Instant)
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
@@ -154,20 +154,20 @@ interface ConversationDAO {
 
     suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity)
 
-    suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?>
+    fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?>
     suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun updateUserMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
     suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
     suspend fun clearContent(conversationId: QualifiedIDEntity)
     suspend fun updateMlsVerificationStatus(verificationStatus: ConversationEntity.VerificationStatus, conversationId: QualifiedIDEntity)
     suspend fun getConversationByGroupID(groupID: String): ConversationEntity?
-    suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
-    suspend fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
+    fun observeUnreadArchivedConversationsCount(): Flow<Long>
+    fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
     suspend fun updateDegradedConversationNotifiedFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean)
     suspend fun updateLegalHoldStatus(conversationId: QualifiedIDEntity, legalHoldStatus: ConversationEntity.LegalHoldStatus): Boolean
     suspend fun updateLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity, notified: Boolean): Boolean
-    suspend fun observeLegalHoldStatus(conversationId: QualifiedIDEntity): Flow<ConversationEntity.LegalHoldStatus>
-    suspend fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
+    fun observeLegalHoldStatus(conversationId: QualifiedIDEntity): Flow<ConversationEntity.LegalHoldStatus>
+    fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
     suspend fun getMLSGroupIdByUserId(userId: UserIDEntity): String?
     suspend fun getMLSGroupIdByConversationId(conversationId: QualifiedIDEntity): String?
     suspend fun updateMLSGroupIdAndState(
@@ -180,7 +180,7 @@ interface ConversationDAO {
     suspend fun getEstablishedSelfMLSGroupId(): String?
 
     suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity?
-    suspend fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
+    fun observeOneOnOneConversationDetailsWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
 
     suspend fun getCellName(conversationId: QualifiedIDEntity): String?
     suspend fun hasConversationWithCell(): Boolean

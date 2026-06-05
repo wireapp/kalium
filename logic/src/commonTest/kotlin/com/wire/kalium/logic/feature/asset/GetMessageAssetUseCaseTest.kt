@@ -39,7 +39,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import dev.mokkery.MockMode
@@ -155,7 +155,7 @@ class GetMessageAssetUseCaseTest {
             val someMessageId = "some-message-id"
             val notFoundFailure = NetworkFailure.ServerMiscommunication(
                 KaliumException.InvalidRequestError(
-                    ErrorResponse(
+                    GenericAPIErrorResponse(
                         404,
                         "asset not found",
                         "not-found"
