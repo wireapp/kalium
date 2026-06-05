@@ -32,7 +32,6 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.feature.call.ShouldRemoteMuteChecker
 import com.wire.kalium.logic.feature.call.ShouldRemoteMuteCheckerImpl
 import com.wire.kalium.logic.feature.call.usecase.MuteCallUseCase
-import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 
 internal interface CallingMessageHandler {
@@ -81,13 +80,14 @@ internal class CallingMessageHandlerImpl internal constructor(
             return
         }
 
-        val conversationMembers = conversationRepository.observeConversationMembers(targetConversationId).first()
+        val isSenderAdmin = conversationRepository
+            .isConversationMemberAdmin(targetConversationId, message.senderUserId)
+            .getOrNull() ?: false
         val shouldRemoteMute = shouldRemoteMuteChecker.check(
-            senderUserId = message.senderUserId,
+            isSenderAdmin = isSenderAdmin,
             selfUserId = selfUserId,
             selfClientId = clientId.value,
-            targets = callingValue.targets,
-            conversationMembers = conversationMembers
+            targets = callingValue.targets
         )
         callingLogger.i("$tagWithUserId: Calling $REMOTE_MUTE_TYPE message received for conversationId: $targetConversationId.")
         if (shouldRemoteMute) {
