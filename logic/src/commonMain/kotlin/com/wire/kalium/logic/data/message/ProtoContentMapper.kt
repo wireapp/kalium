@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.toModel
 import com.wire.kalium.logic.data.asset.toProto
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.history.HistoryClient
 import com.wire.kalium.logic.data.id.ConversationId
@@ -39,6 +40,9 @@ import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Attachment
+import com.wire.kalium.protobuf.messages.BackupRootKeyEnvelope
+import com.wire.kalium.protobuf.messages.BackupRootKeyRequest
+import com.wire.kalium.protobuf.messages.BackupRootKeySyncAck
 import com.wire.kalium.protobuf.messages.Button
 import com.wire.kalium.protobuf.messages.ButtonAction
 import com.wire.kalium.protobuf.messages.ButtonActionConfirmation
@@ -169,6 +173,7 @@ internal class ProtoContentMapperImpl(
             is MessageContent.InCallEmoji -> packInCallEmoji(readableContent)
             is MessageContent.Multipart -> packMultipart(readableContent, expectsReadConfirmation, legalHoldStatus)
             is MessageContent.History -> packHistoryMessage(readableContent)
+            is MessageContent.BackupRootKeySync -> packBackupRootKeySync(readableContent)
         }
     }
 
@@ -191,6 +196,31 @@ internal class ProtoContentMapperImpl(
             )
         }
     }
+
+    private fun packBackupRootKeySync(readableContent: MessageContent.BackupRootKeySync): GenericMessage.Content<out Any> =
+        when (readableContent) {
+            is MessageContent.BackupRootKeySync.Request -> GenericMessage.Content.BackupRootKeyRequest(
+                BackupRootKeyRequest(readableContent.requestId)
+            )
+
+            is MessageContent.BackupRootKeySync.Envelope -> GenericMessage.Content.BackupRootKeyEnvelope(
+                BackupRootKeyEnvelope(
+                    requestId = readableContent.requestId,
+                    keyId = readableContent.keyId,
+                    keyMaterial = ByteArr(readableContent.keyMaterial),
+                    createdAt = readableContent.createdAt.toIsoDateTimeString(),
+                    createdByClientId = readableContent.createdByClientId.value,
+                    version = readableContent.version,
+                )
+            )
+
+            is MessageContent.BackupRootKeySync.Ack -> GenericMessage.Content.BackupRootKeySyncAck(
+                BackupRootKeySyncAck(
+                    requestId = readableContent.requestId,
+                    keyId = readableContent.keyId,
+                )
+            )
+        }
 
     private fun packMultipart(
         readableContent: MessageContent.Multipart,
@@ -374,6 +404,7 @@ internal class ProtoContentMapperImpl(
             is MessageContent.DataTransfer,
             is MessageContent.InCallEmoji,
             is MessageContent.History,
+            is MessageContent.BackupRootKeySync,
             is MessageContent.Multipart -> throw IllegalArgumentException(
                 "Unexpected message content type: ${readableContent.getType()}"
             )
@@ -492,6 +523,9 @@ internal class ProtoContentMapperImpl(
             is GenericMessage.Content.HistoryClientAvailable -> unpackHistoryClientAvailable(protoContent)
             is GenericMessage.Content.HistoryClientRequest -> unpackHistoryClientRequest()
             is GenericMessage.Content.HistoryClientResponse -> unpackHistoryClientResponse(protoContent)
+            is GenericMessage.Content.BackupRootKeyRequest -> unpackBackupRootKeyRequest(protoContent)
+            is GenericMessage.Content.BackupRootKeyEnvelope -> unpackBackupRootKeyEnvelope(protoContent)
+            is GenericMessage.Content.BackupRootKeySyncAck -> unpackBackupRootKeySyncAck(protoContent)
 
             null -> {
                 kaliumLogger.w(
@@ -987,6 +1021,31 @@ internal class ProtoContentMapperImpl(
 
     private fun unpackHistoryClientAvailable(protoContent: GenericMessage.Content.HistoryClientAvailable): MessageContent.History =
         MessageContent.History.NewClientAvailable(protoHistoryClientToHistoryClient(protoContent.value.client))
+
+    private fun unpackBackupRootKeyRequest(
+        protoContent: GenericMessage.Content.BackupRootKeyRequest
+    ): MessageContent.BackupRootKeySync =
+        MessageContent.BackupRootKeySync.Request(protoContent.value.requestId)
+
+    private fun unpackBackupRootKeyEnvelope(
+        protoContent: GenericMessage.Content.BackupRootKeyEnvelope
+    ): MessageContent.BackupRootKeySync =
+        MessageContent.BackupRootKeySync.Envelope(
+            requestId = protoContent.value.requestId,
+            keyId = protoContent.value.keyId,
+            keyMaterial = protoContent.value.keyMaterial.array,
+            createdAt = Instant.parse(protoContent.value.createdAt),
+            createdByClientId = ClientId(protoContent.value.createdByClientId),
+            version = protoContent.value.version,
+        )
+
+    private fun unpackBackupRootKeySyncAck(
+        protoContent: GenericMessage.Content.BackupRootKeySyncAck
+    ): MessageContent.BackupRootKeySync =
+        MessageContent.BackupRootKeySync.Ack(
+            requestId = protoContent.value.requestId,
+            keyId = protoContent.value.keyId,
+        )
 
     private fun extractConversationId(
         qualifiedConversationID: QualifiedConversationId?,

@@ -236,6 +236,9 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupConversationResolver
 import com.wire.kalium.logic.feature.backup.BackupConversationResolverImpl
+import com.wire.kalium.logic.feature.backup.BackupRootKeyMessageHandler
+import com.wire.kalium.logic.feature.backup.BackupRootKeyMessageHandlerImpl
+import com.wire.kalium.logic.feature.backup.BackupRootKeyRepositoryImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
 import com.wire.kalium.logic.feature.backup.MultiPlatformBackupScope
 import com.wire.kalium.logic.feature.call.CallBackgroundManager
@@ -350,6 +353,7 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCa
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.feature.message.TransactionalMessageSender
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
@@ -1211,6 +1215,8 @@ public class UserSessionScope internal constructor(
             userRepository = userRepository,
             kaliumFileSystem = kaliumFileSystem,
             globalPreferences = globalPreferences,
+            selfConversationIdProvider = selfConversationIdProvider,
+            messageSender = messages.messageSender,
         )
 
     internal val persistMessage: PersistMessageUseCase
@@ -1878,6 +1884,17 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    private val backupRootKeyMessageHandler: BackupRootKeyMessageHandler
+        get() = BackupRootKeyMessageHandlerImpl(
+            selfUserId = userId,
+            currentClientIdProvider = clientIdProvider,
+            backupRootKeyRepository = BackupRootKeyRepositoryImpl(
+                selfUserId = userId,
+                passphraseStorage = globalPreferences.passphraseStorage,
+            ),
+            messageSender = messages.messageSender as TransactionalMessageSender,
+        )
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -1917,6 +1934,7 @@ public class UserSessionScope internal constructor(
             buttonActionHandler,
             MessageCompositeEditHandlerImpl(messageRepository),
             callingMessageHandler,
+            backupRootKeyMessageHandler,
             userId
         )
 

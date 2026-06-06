@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.backup.BackupRootKeyMessageHandler
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
@@ -375,6 +376,7 @@ class ApplicationMessageHandlerTest {
         val buttonActionHandler = mock<ButtonActionHandler>(MockMode.autoUnit)
         val messageCompositeEditHandler = mock<MessageCompositeEditHandler>(MockMode.autoUnit)
         val callingMessageHandler = mock<CallingMessageHandler>(MockMode.autoUnit)
+        val backupRootKeyMessageHandler = mock<BackupRootKeyMessageHandler>(MockMode.autoUnit)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
@@ -396,6 +398,7 @@ class ApplicationMessageHandlerTest {
             buttonActionHandler,
             messageCompositeEditHandler,
             callingMessageHandler,
+            backupRootKeyMessageHandler,
             TestUser.SELF.id
         )
 

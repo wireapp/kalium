@@ -433,6 +433,47 @@ sealed interface MessageContent {
         data object ClientsRequest : History
     }
 
+    sealed interface BackupRootKeySync : Signaling {
+        val requestId: String
+
+        data class Request(override val requestId: String) : BackupRootKeySync
+
+        data class Envelope(
+            override val requestId: String,
+            val keyId: String,
+            val keyMaterial: ByteArray,
+            val createdAt: Instant,
+            val createdByClientId: ClientId,
+            val version: Int,
+        ) : BackupRootKeySync {
+            override fun equals(other: Any?): Boolean {
+                if (this === other) return true
+                if (other !is Envelope) return false
+                return requestId == other.requestId &&
+                        keyId == other.keyId &&
+                        keyMaterial.contentEquals(other.keyMaterial) &&
+                        createdAt == other.createdAt &&
+                        createdByClientId == other.createdByClientId &&
+                        version == other.version
+            }
+
+            override fun hashCode(): Int {
+                var result = requestId.hashCode()
+                result = 31 * result + keyId.hashCode()
+                result = 31 * result + keyMaterial.contentHashCode()
+                result = 31 * result + createdAt.hashCode()
+                result = 31 * result + createdByClientId.hashCode()
+                result = 31 * result + version
+                return result
+            }
+        }
+
+        data class Ack(
+            override val requestId: String,
+            val keyId: String,
+        ) : BackupRootKeySync
+    }
+
     data class Multipart(
         val value: String?,
         val linkPreviews: List<MessageLinkPreview> = emptyList(),
@@ -514,6 +555,9 @@ fun MessageContent?.getType() = when (this) {
     MessageContent.History.ClientsRequest -> "History.ClientsRequest"
     is MessageContent.History.ClientsResponse -> "History.ClientsResponse"
     is MessageContent.History.NewClientAvailable -> "History.NewClientAvailable"
+    is MessageContent.BackupRootKeySync.Request -> "BackupRootKeySync.Request"
+    is MessageContent.BackupRootKeySync.Envelope -> "BackupRootKeySync.Envelope"
+    is MessageContent.BackupRootKeySync.Ack -> "BackupRootKeySync.Ack"
     null -> "null"
     MessageContent.NewConversationWithCellMessage -> "NewConversationWithCell"
     MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> "NewConversationWithCellSelfDeleteDisabled"

@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.backup
 
 import com.wire.kalium.cells.domain.usecase.BackupCellFileUseCase
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
@@ -29,11 +30,13 @@ import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import okio.Path
 import okio.buffer
 
 internal interface OnlineBackupRepository {
     suspend fun listBackups(): Either<CoreFailure, List<OnlineBackupMetadata>>
     suspend fun registerBackup(metadata: OnlineBackupMetadata): Either<CoreFailure, OnlineBackupMetadata>
+    suspend fun downloadBackup(metadata: OnlineBackupMetadata): Either<CoreFailure, Path>
 }
 
 internal class OnlineBackupDataSource(
@@ -74,6 +77,19 @@ internal class OnlineBackupDataSource(
                 kaliumFileSystem.delete(metadataPath, mustExist = false)
             }
         }
+
+    override suspend fun downloadBackup(metadata: OnlineBackupMetadata): Either<CoreFailure, Path> {
+        val remotePath = metadata.assetId.assetToken
+            ?: return Either.Left(StorageFailure.DataNotFound)
+        val outputPath = kaliumFileSystem.tempFilePath(metadata.fileName)
+        return when (val result = backupCellFile.download(remotePath, outputPath)) {
+            is Either.Left -> {
+                kaliumFileSystem.delete(outputPath, mustExist = false)
+                result
+            }
+            is Either.Right -> Either.Right(outputPath)
+        }
+    }
 
     private suspend fun readMetadataFile(remotePath: String): OnlineBackupMetadata? {
         val outputPath = kaliumFileSystem.tempFilePath("${remotePath.substringAfterLast('/')}-download")

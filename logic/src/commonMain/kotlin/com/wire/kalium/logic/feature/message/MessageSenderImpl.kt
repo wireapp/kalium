@@ -89,7 +89,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsMissingUsersMessageRejectionHandler: MLSMissingUsersMessageRejectionHandler,
     private val enqueueSelfDeletion: (Message, Message.ExpirationData) -> Unit,
     private val scope: CoroutineScope
-) : MessageSender {
+) : MessageSender, TransactionalMessageSender {
 
     private val logger get() = kaliumLogger.withFeatureId(MESSAGES)
 
@@ -122,43 +122,28 @@ internal class MessageSenderImpl internal constructor(
     }
 
     override suspend fun sendMessage(message: Message.Sendable, messageTarget: MessageTarget): Either<CoreFailure, Unit> =
+        sendInternal(message, messageTarget) { send ->
+            transactionProvider.transaction("sendMessage") { ctx -> send(ctx) }
+        }
+
+    override suspend fun sendMessage(
+        transactionContext: CryptoTransactionContext,
+        message: Message.Sendable,
+        messageTarget: MessageTarget,
+    ): Either<CoreFailure, Unit> =
+        sendInternal(message, messageTarget) { send -> send(transactionContext) }
+
+    private suspend fun sendInternal(
+        message: Message.Sendable,
+        messageTarget: MessageTarget,
+        runWithContext: suspend (suspend (CryptoTransactionContext) -> Either<CoreFailure, Unit>) -> Either<CoreFailure, Unit>,
+    ): Either<CoreFailure, Unit> =
         messageSendingInterceptor
             .prepareMessage(message)
             .flatMap { processedMessage ->
-                transactionProvider.transaction("sendMessage") { transactionContext ->
-                    attemptToSend(transactionContext, processedMessage, messageTarget).map { serverDate ->
-                        val localDate = message.date
-                        val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
-                        // If it was the "edit" message type, we need to update the id before we promote it to "sent"
-                        val isEditMessage = when (message.content) {
-                            is MessageContent.MultipartEdited -> {
-                                messageRepository.updateMultipartMessage(
-                                    conversationId = processedMessage.conversationId,
-                                    messageContent = processedMessage.content as MessageContent.MultipartEdited,
-                                    newMessageId = processedMessage.id,
-                                    editInstant = processedMessage.date
-                                )
-                                true
-                            }
-                            is MessageContent.TextEdited -> {
-                                messageRepository.updateTextMessage(
-                                    conversationId = processedMessage.conversationId,
-                                    messageContent = processedMessage.content as MessageContent.TextEdited,
-                                    newMessageId = processedMessage.id,
-                                    editInstant = processedMessage.date
-                                )
-                                true
-                            }
-                            else -> false
-                        }
-                        messageRepository.promoteMessageToSentUpdatingServerTime(
-                            conversationId = processedMessage.conversationId,
-                            messageUuid = processedMessage.id,
-                            // if it's edit then we don't want to change the original message creation time, it's already a server date
-                            serverDate = if (!isEditMessage) serverDate else null,
-                            millis = millis
-                        )
-                        Unit
+                runWithContext { ctx ->
+                    attemptToSend(ctx, processedMessage, messageTarget).map { serverDate ->
+                        finalizeSend(message, processedMessage, serverDate)
                     }
                 }.onSuccess {
                     startSelfDeletionIfNeeded(message)
@@ -166,6 +151,44 @@ internal class MessageSenderImpl internal constructor(
             }.onFailure {
                 logger.e("Failed to send message ${message::class.qualifiedName}. Failure = $it")
             }
+
+    private suspend fun finalizeSend(
+        message: Message.Sendable,
+        processedMessage: Message.Sendable,
+        serverDate: Instant,
+    ) {
+        val localDate = message.date
+        val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
+        // If it was the "edit" message type, we need to update the id before we promote it to "sent"
+        val isEditMessage = when (message.content) {
+            is MessageContent.MultipartEdited -> {
+                messageRepository.updateMultipartMessage(
+                    conversationId = processedMessage.conversationId,
+                    messageContent = processedMessage.content as MessageContent.MultipartEdited,
+                    newMessageId = processedMessage.id,
+                    editInstant = processedMessage.date
+                )
+                true
+            }
+            is MessageContent.TextEdited -> {
+                messageRepository.updateTextMessage(
+                    conversationId = processedMessage.conversationId,
+                    messageContent = processedMessage.content as MessageContent.TextEdited,
+                    newMessageId = processedMessage.id,
+                    editInstant = processedMessage.date
+                )
+                true
+            }
+            else -> false
+        }
+        messageRepository.promoteMessageToSentUpdatingServerTime(
+            conversationId = processedMessage.conversationId,
+            messageUuid = processedMessage.id,
+            // if it's edit then we don't want to change the original message creation time, it's already a server date
+            serverDate = if (!isEditMessage) serverDate else null,
+            millis = millis
+        )
+    }
 
     override suspend fun broadcastMessage(
         message: BroadcastMessage,

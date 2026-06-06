@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.message.hasValidData
 import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.backup.BackupRootKeyMessageHandler
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
@@ -103,6 +104,7 @@ internal class ApplicationMessageHandlerImpl(
     private val buttonActionHandler: ButtonActionHandler,
     private val messageCompositeEditHandler: MessageCompositeEditHandler,
     private val callingMessageHandler: CallingMessageHandler,
+    private val backupRootKeyMessageHandler: BackupRootKeyMessageHandler,
     private val selfUserId: UserId,
 ) : ApplicationMessageHandler {
 
@@ -225,7 +227,11 @@ internal class ApplicationMessageHandlerImpl(
 
             is MessageContent.MultipartEdited -> editMultipartHandler.handle(signaling, content)
 
-            is MessageContent.History -> TODO("HISTORY CLIENTS ARE NOT HANDLED YET")
+            is MessageContent.History -> {
+                logger.i(message = "Ignored History Signaling Message received: ${signaling.content.getType()}")
+            }
+
+            is MessageContent.BackupRootKeySync -> backupRootKeyMessageHandler.handle(transactionContext, signaling, content)
         }
     }
 

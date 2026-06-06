@@ -53,6 +53,9 @@ message GenericMessage {
         HistoryClientAvailable historyClientAvailable = 28;
         HistoryClientRequest historyClientRequest = 29;
         HistoryClientResponse historyClientResponse = 30;
+        BackupRootKeyRequest backupRootKeyRequest = 31;
+        BackupRootKeyEnvelope backupRootKeyEnvelope = 32;
+        BackupRootKeySyncAck backupRootKeySyncAck = 33;
     }
     optional UnknownStrategy unknownStrategy = 25 [default = IGNORE];
 
@@ -386,6 +389,24 @@ message HistoryClientRequest {}
 // Sent in a subconversation in response to a HistoryClientRequest
 message HistoryClientResponse {
     repeated HistoryClient clients = 1;
+}
+
+message BackupRootKeyRequest {
+    required string request_id = 1;
+}
+
+message BackupRootKeyEnvelope {
+    required string request_id = 1;
+    required string key_id = 2;
+    required bytes key_material = 3;
+    required string created_at = 4;
+    required string created_by_client_id = 5;
+    required int32 version = 6;
+}
+
+message BackupRootKeySyncAck {
+    required string request_id = 1;
+    required string key_id = 2;
 }
 
 // Enums have to come last because of an unresolved issue with jsdoc

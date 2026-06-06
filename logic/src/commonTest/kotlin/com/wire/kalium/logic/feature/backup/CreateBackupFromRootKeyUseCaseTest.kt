@@ -100,6 +100,7 @@ class CreateBackupFromRootKeyUseCaseTest {
             passphraseStorage = passphraseStorage,
         )
         val createMPBackup = RecordingCreateMPBackupUseCase()
+        val getOrCreateSyncedBackupRootKey = RecordingGetOrCreateSyncedBackupRootKeyUseCase(repository)
         private var generatedKeyId = "generated-key"
 
         fun withStoredRootKey(backupRootKey: BackupRootKey) = apply {
@@ -115,13 +116,9 @@ class CreateBackupFromRootKeyUseCaseTest {
         }
 
         fun arrange(): Pair<Arrangement, CreateBackupFromRootKeyUseCase> {
+            getOrCreateSyncedBackupRootKey.generatedKeyId = generatedKeyId
             return this to CreateBackupFromRootKeyUseCaseImpl(
-                getBackupRootKey = GetBackupRootKeyUseCaseImpl(repository),
-                generateBackupRootKey = GenerateBackupRootKeyUseCaseImpl(
-                    currentClientIdProvider = CurrentClientIdProvider { CLIENT_ID.right() },
-                    backupRootKeyRepository = repository,
-                    idProvider = { generatedKeyId },
-                ),
+                getOrCreateSyncedBackupRootKey = getOrCreateSyncedBackupRootKey,
                 createMPBackup = createMPBackup,
                 backupIdProvider = { "backup-id-1" },
             )
@@ -130,6 +127,21 @@ class CreateBackupFromRootKeyUseCaseTest {
         companion object {
             val SELF_USER_ID = QualifiedID("user", "example.com")
             val CLIENT_ID = ClientId("client-id")
+        }
+    }
+
+    private class RecordingGetOrCreateSyncedBackupRootKeyUseCase(
+        private val repository: BackupRootKeyRepository,
+    ) : GetOrCreateSyncedBackupRootKeyUseCase {
+        var generatedKeyId: String = "generated-key"
+
+        override suspend fun invoke(): GetOrCreateSyncedBackupRootKeyResult {
+            repository.getBackupRootKey()?.let {
+                return GetOrCreateSyncedBackupRootKeyResult.Success(it, GetOrCreateSyncedBackupRootKeyResult.Source.LOCAL)
+            }
+            val generated = backupRootKey(generatedKeyId, ByteArray(32) { 1 })
+            repository.setBackupRootKey(generated)
+            return GetOrCreateSyncedBackupRootKeyResult.Success(generated, GetOrCreateSyncedBackupRootKeyResult.Source.GENERATED)
         }
     }
 

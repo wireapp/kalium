@@ -20,6 +20,7 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.cells.domain.usecase.BackupCellFileUseCase
+import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.OnlineBackupRepository
@@ -27,6 +28,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
@@ -41,6 +43,8 @@ public class MultiPlatformBackupScope internal constructor(
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
     private val globalPreferences: GlobalPrefProvider,
+    private val selfConversationIdProvider: SelfConversationIdProvider,
+    private val messageSender: MessageSender,
 ) {
     private val backupRootKeyRepository: BackupRootKeyRepository
         get() = BackupRootKeyRepositoryImpl(
@@ -57,12 +61,54 @@ public class MultiPlatformBackupScope internal constructor(
 
     public val createFromRootKey: CreateBackupFromRootKeyUseCase
         get() = CreateBackupFromRootKeyUseCaseImpl(
-            getBackupRootKey = GetBackupRootKeyUseCaseImpl(backupRootKeyRepository),
-            generateBackupRootKey = GenerateBackupRootKeyUseCaseImpl(
-                currentClientIdProvider = clientIdProvider,
-                backupRootKeyRepository = backupRootKeyRepository,
-            ),
+            getOrCreateSyncedBackupRootKey = getOrCreateSyncedBackupRootKey,
             createMPBackup = create,
+        )
+
+    public val getBackupRootKey: GetBackupRootKeyUseCase
+        get() = GetBackupRootKeyUseCaseImpl(backupRootKeyRepository)
+
+    public val generateBackupRootKey: GenerateBackupRootKeyUseCase
+        get() = GenerateBackupRootKeyUseCaseImpl(
+            currentClientIdProvider = clientIdProvider,
+            backupRootKeyRepository = backupRootKeyRepository,
+        )
+
+    public val syncBackupRootKey: SyncBackupRootKeyUseCase
+        get() = SyncBackupRootKeyUseCaseImpl(
+            selfUserId = selfUserId,
+            currentClientIdProvider = clientIdProvider,
+            backupRootKeyRepository = backupRootKeyRepository,
+            selfConversationIdProvider = selfConversationIdProvider,
+            messageSender = messageSender,
+        )
+
+    public val pushBackupRootKey: PushBackupRootKeyUseCase
+        get() = PushBackupRootKeyUseCaseImpl(
+            selfUserId = selfUserId,
+            currentClientIdProvider = clientIdProvider,
+            selfConversationIdProvider = selfConversationIdProvider,
+            messageSender = messageSender,
+        )
+
+    public val getOrCreateSyncedBackupRootKey: GetOrCreateSyncedBackupRootKeyUseCase
+        get() = GetOrCreateSyncedBackupRootKeyUseCaseImpl(
+            backupRootKeyRepository = backupRootKeyRepository,
+            syncBackupRootKey = syncBackupRootKey,
+            generateBackupRootKey = generateBackupRootKey,
+            pushBackupRootKey = pushBackupRootKey,
+        )
+
+    public val generateAndForcePushBackupRootKey: GenerateAndForcePushBackupRootKeyUseCase
+        get() = GenerateAndForcePushBackupRootKeyUseCaseImpl(
+            generateBackupRootKey = generateBackupRootKey,
+            pushBackupRootKey = pushBackupRootKey,
+        )
+
+    public val syncBackupRootKeyIfOnlineBackupExists: SyncBackupRootKeyIfOnlineBackupExistsUseCase
+        get() = SyncBackupRootKeyIfOnlineBackupExistsUseCaseImpl(
+            onlineBackupRepository = onlineBackupRepository,
+            syncBackupRootKey = syncBackupRootKey,
         )
 
     public val createOnline: CreateOnlineBackupUseCase
@@ -82,6 +128,17 @@ public class MultiPlatformBackupScope internal constructor(
         get() = RestoreMPBackupUseCaseImpl(
             selfUserId = selfUserId,
             backupRepository = backupRepository,
+            kaliumFileSystem = kaliumFileSystem,
+        )
+
+    public val restoreLatestOnline: RestoreLatestOnlineBackupUseCase
+        get() = RestoreLatestOnlineBackupUseCaseImpl(
+            selfUserId = selfUserId,
+            backupRootKeyRepository = backupRootKeyRepository,
+            syncBackupRootKey = syncBackupRootKey,
+            onlineBackupRepository = onlineBackupRepository,
+            backupEncryptionKeyDeriver = HkdfBackupEncryptionKeyDeriver,
+            restoreMPBackup = restore,
             kaliumFileSystem = kaliumFileSystem,
         )
 }

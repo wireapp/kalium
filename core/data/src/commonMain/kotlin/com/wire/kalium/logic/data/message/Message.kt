@@ -276,6 +276,23 @@ sealed interface Message {
                 is MessageContent.History.NewClientAvailable -> mutableMapOf(
                     typeKey to "historyNewClientAvailable",
                 )
+
+                is MessageContent.BackupRootKeySync.Request -> mutableMapOf(
+                    typeKey to "backupRootKeyRequest",
+                    "requestId" to content.requestId,
+                )
+
+                is MessageContent.BackupRootKeySync.Envelope -> mutableMapOf(
+                    typeKey to "backupRootKeyEnvelope",
+                    "requestId" to content.requestId,
+                    "keyId" to content.keyId,
+                )
+
+                is MessageContent.BackupRootKeySync.Ack -> mutableMapOf(
+                    typeKey to "backupRootKeySyncAck",
+                    "requestId" to content.requestId,
+                    "keyId" to content.keyId,
+                )
             }
 
             val standardProperties = mapOf(

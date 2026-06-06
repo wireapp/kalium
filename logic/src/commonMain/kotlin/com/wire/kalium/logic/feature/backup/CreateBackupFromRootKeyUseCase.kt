@@ -49,8 +49,7 @@ public sealed interface CreateBackupFromRootKeyResult {
 }
 
 internal class CreateBackupFromRootKeyUseCaseImpl(
-    private val getBackupRootKey: GetBackupRootKeyUseCase,
-    private val generateBackupRootKey: GenerateBackupRootKeyUseCase,
+    private val getOrCreateSyncedBackupRootKey: GetOrCreateSyncedBackupRootKeyUseCase,
     private val createMPBackup: CreateMPBackupUseCase,
     private val encryptionKeyDeriver: BackupEncryptionKeyDeriver = HkdfBackupEncryptionKeyDeriver,
     private val backupIdProvider: () -> String = { Uuid.random().toString() },
@@ -58,14 +57,9 @@ internal class CreateBackupFromRootKeyUseCaseImpl(
 
     override suspend fun invoke(onProgress: (Float) -> Unit): CreateBackupFromRootKeyResult =
         try {
-            val backupRootKey = when (val result = getBackupRootKey()) {
-                is GetBackupRootKeyResult.Success -> result.backupRootKey ?: when (val generateResult = generateBackupRootKey()) {
-                    is GenerateBackupRootKeyResult.Success -> generateResult.backupRootKey
-                    is GenerateBackupRootKeyResult.Failure ->
-                        return CreateBackupFromRootKeyResult.Failure.RootKeyGenerationFailed(generateResult)
-                }
-
-                is GetBackupRootKeyResult.Failure ->
+            val backupRootKey = when (val result = getOrCreateSyncedBackupRootKey()) {
+                is GetOrCreateSyncedBackupRootKeyResult.Success -> result.backupRootKey
+                is GetOrCreateSyncedBackupRootKeyResult.Failure ->
                     return CreateBackupFromRootKeyResult.Failure.Unknown(result.cause)
             }
             val backupId = backupIdProvider()

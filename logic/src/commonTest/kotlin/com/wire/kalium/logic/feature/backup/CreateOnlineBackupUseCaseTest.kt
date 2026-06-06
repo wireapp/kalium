@@ -218,6 +218,9 @@ class CreateOnlineBackupUseCaseTest {
 
         override suspend fun registerBackup(metadata: OnlineBackupMetadata): Either<CoreFailure, OnlineBackupMetadata> =
             registerResult ?: Either.Right(metadata)
+
+        override suspend fun downloadBackup(metadata: OnlineBackupMetadata): Either<CoreFailure, okio.Path> =
+            Either.Left(CoreFailure.Unknown(null))
     }
 
     private class RecordingCreateBackupFromRootKeyUseCase : CreateBackupFromRootKeyUseCase {

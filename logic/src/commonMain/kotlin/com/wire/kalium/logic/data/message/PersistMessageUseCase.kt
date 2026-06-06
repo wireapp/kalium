@@ -149,6 +149,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.InCallEmoji -> false
             is MessageContent.Multipart -> true
             is MessageContent.History -> false
+            is MessageContent.BackupRootKeySync -> false
             is MessageContent.NewConversationWithCellMessage -> false
             is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
             is MessageContent.ConversationAppsEnabledChanged -> false
@@ -213,6 +214,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.DataTransfer,
             is MessageContent.InCallEmoji,
             is MessageContent.History,
+            is MessageContent.BackupRootKeySync,
             is MessageContent.NewConversationWithCellMessage,
             is MessageContent.ConversationAppsEnabledChanged,
             is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
