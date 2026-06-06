@@ -18,79 +18,23 @@
 package com.wire.kalium.logic.data.backup
 
 import com.wire.kalium.common.error.CoreFailure
-import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.base.authenticated.WildCardApi
-import io.ktor.http.HttpMethod
 import kotlinx.datetime.Instant
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 internal interface OnlineBackupRepository {
     suspend fun listBackups(): Either<CoreFailure, List<OnlineBackupMetadata>>
     suspend fun registerBackup(metadata: OnlineBackupMetadata): Either<CoreFailure, OnlineBackupMetadata>
 }
 
-internal class OnlineBackupDataSource(
-    private val wildCardApi: WildCardApi,
-    private val json: Json = Json {
-        ignoreUnknownKeys = true
-        explicitNulls = false
-    },
-) : OnlineBackupRepository {
+internal class OnlineBackupDataSource : OnlineBackupRepository {
 
     override suspend fun listBackups(): Either<CoreFailure, List<OnlineBackupMetadata>> =
-        wrapApiRequest {
-            wildCardApi.customRequest(
-                httpMethod = HttpMethod.Get,
-                requestPath = BACKUP_CATALOG_PATH,
-                body = null,
-                queryParam = emptyMap(),
-                customHeader = emptyMap(),
-            )
-        }.fold(
-            { Either.Left(it) },
-            { body ->
-                runCatching {
-                    json.decodeFromString(OnlineBackupsResponse.serializer(), body).backups.map(OnlineBackupMetadataDTO::toModel)
-                }.fold(
-                    onSuccess = { Either.Right(it) },
-                    onFailure = { Either.Left(CoreFailure.Unknown(it)) },
-                )
-            }
-        )
+        TODO("Online backup storage API is not implemented")
 
     override suspend fun registerBackup(metadata: OnlineBackupMetadata): Either<CoreFailure, OnlineBackupMetadata> =
-        wrapApiRequest {
-            wildCardApi.customRequest(
-                httpMethod = HttpMethod.Post,
-                requestPath = BACKUP_CATALOG_PATH,
-                body = json.encodeToString(metadata.toDTO()),
-                queryParam = emptyMap(),
-                customHeader = mapOf(CONTENT_TYPE_HEADER to APPLICATION_JSON),
-            )
-        }.fold(
-            { Either.Left(it) },
-            { body ->
-                runCatching {
-                    json.decodeFromString(OnlineBackupMetadataDTO.serializer(), body).toModel()
-                }.fold(
-                    onSuccess = { Either.Right(it) },
-                    onFailure = { Either.Left(CoreFailure.Unknown(it)) },
-                )
-            }
-        )
-
-    private companion object {
-        val BACKUP_CATALOG_PATH = listOf("backups")
-        const val CONTENT_TYPE_HEADER = "Content-Type"
-        const val APPLICATION_JSON = "application/json"
-    }
+        TODO("Online backup storage API is not implemented")
 }
 
 public data class OnlineBackupMetadata(
@@ -102,53 +46,4 @@ public data class OnlineBackupMetadata(
     public val assetId: UploadedAssetId,
     public val rootKeyId: String,
     public val encryptionAlgorithm: String,
-)
-
-@Serializable
-private data class OnlineBackupsResponse(
-    @SerialName("backups") val backups: List<OnlineBackupMetadataDTO> = emptyList(),
-)
-
-@Serializable
-private data class OnlineBackupMetadataDTO(
-    @SerialName("backup_id") val backupId: String,
-    @SerialName("user_id") val userId: String,
-    @SerialName("user_domain") val userDomain: String,
-    @SerialName("client_id") val clientId: String,
-    @SerialName("file_name") val fileName: String,
-    @SerialName("last_message_date") val lastMessageDate: String,
-    @SerialName("asset_id") val assetId: String,
-    @SerialName("asset_domain") val assetDomain: String? = null,
-    @SerialName("asset_token") val assetToken: String? = null,
-    @SerialName("root_key_id") val rootKeyId: String,
-    @SerialName("encryption_algorithm") val encryptionAlgorithm: String,
-) {
-    fun toModel(): OnlineBackupMetadata = OnlineBackupMetadata(
-        backupId = backupId,
-        userId = UserId(userId, userDomain),
-        clientId = clientId,
-        fileName = fileName,
-        lastMessageDate = Instant.parse(lastMessageDate),
-        assetId = UploadedAssetId(
-            key = assetId,
-            domain = assetDomain ?: "",
-            assetToken = assetToken,
-        ),
-        rootKeyId = rootKeyId,
-        encryptionAlgorithm = encryptionAlgorithm,
-    )
-}
-
-private fun OnlineBackupMetadata.toDTO(): OnlineBackupMetadataDTO = OnlineBackupMetadataDTO(
-    backupId = backupId,
-    userId = userId.value,
-    userDomain = userId.domain,
-    clientId = clientId,
-    fileName = fileName,
-    lastMessageDate = lastMessageDate.toString(),
-    assetId = assetId.key,
-    assetDomain = assetId.domain,
-    assetToken = assetId.assetToken,
-    rootKeyId = rootKeyId,
-    encryptionAlgorithm = encryptionAlgorithm,
 )

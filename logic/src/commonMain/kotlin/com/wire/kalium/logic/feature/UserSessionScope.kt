@@ -1177,7 +1177,7 @@ public class UserSessionScope internal constructor(
         get() = CryptoStateBackupRemoteDataSource(authenticatedNetworkContainer.nomadDeviceSyncApi)
 
     private val onlineBackupRepository: OnlineBackupRepository
-        get() = OnlineBackupDataSource(authenticatedNetworkContainer.wildCardApi)
+        get() = OnlineBackupDataSource()
 
     public val multiPlatformBackup: MultiPlatformBackupScope
         get() = MultiPlatformBackupScope(
@@ -1186,7 +1186,6 @@ public class UserSessionScope internal constructor(
             backupRepository = backupRepository,
             onlineBackupRepository = onlineBackupRepository,
             messageRepository = messageRepository,
-            assetRepository = assetRepository,
             userRepository = userRepository,
             kaliumFileSystem = kaliumFileSystem,
             globalPreferences = globalPreferences,

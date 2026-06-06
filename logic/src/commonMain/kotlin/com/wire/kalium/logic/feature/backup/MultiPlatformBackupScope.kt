@@ -20,7 +20,6 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
-import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.OnlineBackupRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -37,7 +36,6 @@ public class MultiPlatformBackupScope internal constructor(
     private val backupRepository: BackupRepository,
     private val onlineBackupRepository: OnlineBackupRepository,
     private val messageRepository: MessageRepository,
-    private val assetRepository: AssetRepository,
     private val userRepository: UserRepository,
     private val globalPreferences: GlobalPrefProvider,
 ) {
@@ -71,10 +69,7 @@ public class MultiPlatformBackupScope internal constructor(
             onlineBackupRepository = onlineBackupRepository,
             messageRepository = messageRepository,
             createBackupFromRootKey = createFromRootKey,
-            backupFileUploader = BackupFileUploaderImpl(
-                assetRepository = assetRepository,
-                kaliumFileSystem = kaliumFileSystem,
-            ),
+            backupFileUploader = BackupFileUploaderImpl(),
         )
 
     public val restore: RestoreMPBackupUseCase
