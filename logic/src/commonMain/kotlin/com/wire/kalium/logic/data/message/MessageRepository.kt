@@ -172,6 +172,8 @@ internal interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.entries
     ): Either<CoreFailure, List<String>>
 
+    suspend fun getLatestReceivedMessageDate(): Either<StorageFailure, Instant?>
+
     suspend fun updateTextMessage(
         conversationId: ConversationId,
         messageContent: MessageContent.TextEdited,
@@ -613,6 +615,9 @@ internal class MessageDataSource internal constructor(
             visibility.map { it.toEntityVisibility() }
         )
     }
+
+    override suspend fun getLatestReceivedMessageDate(): Either<StorageFailure, Instant?> =
+        wrapStorageRequest { messageDAO.getLatestReceivedMessageDate() }
 
     override suspend fun updateTextMessage(
         conversationId: ConversationId,

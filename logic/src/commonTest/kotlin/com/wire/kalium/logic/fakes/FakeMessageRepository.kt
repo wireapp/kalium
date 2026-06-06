@@ -141,6 +141,8 @@ internal open class FakeMessageRepository : MessageRepository {
         visibility: List<Message.Visibility>
     ): Either<CoreFailure, List<String>> = emptyList<String>().right()
 
+    override suspend fun getLatestReceivedMessageDate(): Either<StorageFailure, Instant?> = null.right()
+
     override suspend fun updateTextMessage(
         conversationId: ConversationId,
         messageContent: MessageContent.TextEdited,

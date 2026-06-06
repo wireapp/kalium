@@ -564,6 +564,10 @@ internal class MessageDAOImpl internal constructor(
         ).awaitAsList()
     }
 
+    override suspend fun getLatestReceivedMessageDate(): Instant? = withContext(readDispatcher.value) {
+        queries.selectLatestReceivedVisibleMessageDate().awaitAsOneOrNull()
+    }
+
     override suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode? =
         withContext(readDispatcher.value) {
             conversationsQueries.selectReceiptModeFromGroupConversationByQualifiedId(qualifiedID)

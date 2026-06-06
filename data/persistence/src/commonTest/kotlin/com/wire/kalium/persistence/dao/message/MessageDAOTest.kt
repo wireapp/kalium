@@ -142,6 +142,59 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenReceivedMessagesExist_whenGettingLatestReceivedMessageDate_thenNewestVisibleReceivedMessageDateIsReturned() = runTest {
+        insertInitialDataWithSelfUser()
+        val olderDate = Instant.parse("2026-01-01T00:00:00Z")
+        val newestDate = Instant.parse("2026-01-02T00:00:00Z")
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                createMessage("olderReceived", conversationEntity1.id, olderDate),
+                createMessage("newestReceived", conversationEntity1.id, newestDate),
+            )
+        )
+
+        val result = messageDAO.getLatestReceivedMessageDate()
+
+        assertEquals(newestDate, result)
+    }
+
+    @Test
+    fun givenOnlySelfMessagesExist_whenGettingLatestReceivedMessageDate_thenNullIsReturned() = runTest {
+        insertInitialDataWithSelfUser()
+        messageDAO.insertOrIgnoreMessage(
+            createMessage("selfMessage", conversationEntity1.id, Instant.parse("2026-01-02T00:00:00Z")).copy(
+                senderUserId = selfUserId,
+                senderName = "selfUser",
+            )
+        )
+
+        val result = messageDAO.getLatestReceivedMessageDate()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun givenNonVisibleReceivedMessagesExist_whenGettingLatestReceivedMessageDate_thenTheyAreIgnored() = runTest {
+        insertInitialDataWithSelfUser()
+        val visibleDate = Instant.parse("2026-01-01T00:00:00Z")
+        messageDAO.insertOrIgnoreMessages(
+            listOf(
+                createMessage("visibleReceived", conversationEntity1.id, visibleDate),
+                createMessage("deletedReceived", conversationEntity1.id, Instant.parse("2026-01-02T00:00:00Z")).copy(
+                    visibility = MessageEntity.Visibility.DELETED
+                ),
+                createMessage("hiddenReceived", conversationEntity1.id, Instant.parse("2026-01-03T00:00:00Z")).copy(
+                    visibility = MessageEntity.Visibility.HIDDEN
+                ),
+            )
+        )
+
+        val result = messageDAO.getLatestReceivedMessageDate()
+
+        assertEquals(visibleDate, result)
+    }
+
+    @Test
     fun givenMessageIsInserted_whenInsertingAgainSameIdAndConversationId_thenShouldKeepOriginalData() = runTest {
         insertInitialData()
         val messageId = "testMessageId"
@@ -2656,6 +2709,11 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
         conversationDAO.insertConversation(conversationEntity2)
         conversationDAO.insertConversation(conversationEntity3)
+    }
+
+    private suspend fun insertInitialDataWithSelfUser() {
+        insertInitialData()
+        userDAO.upsertUsers(listOf(newUserEntity(selfUserId, "selfUser")))
     }
 
     private fun createMessage(id: String, conversationId: QualifiedIDEntity, date: Instant) = newRegularMessageEntity(

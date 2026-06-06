@@ -20,8 +20,11 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.backup.BackupRepository
+import com.wire.kalium.logic.data.backup.OnlineBackupRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
@@ -32,6 +35,9 @@ public class MultiPlatformBackupScope internal constructor(
     private val clientIdProvider: CurrentClientIdProvider,
     private val kaliumFileSystem: KaliumFileSystem,
     private val backupRepository: BackupRepository,
+    private val onlineBackupRepository: OnlineBackupRepository,
+    private val messageRepository: MessageRepository,
+    private val assetRepository: AssetRepository,
     private val userRepository: UserRepository,
     private val globalPreferences: GlobalPrefProvider,
 ) {
@@ -56,6 +62,19 @@ public class MultiPlatformBackupScope internal constructor(
                 backupRootKeyRepository = backupRootKeyRepository,
             ),
             createMPBackup = create,
+        )
+
+    public val createOnline: CreateOnlineBackupUseCase
+        get() = CreateOnlineBackupUseCaseImpl(
+            selfUserId = selfUserId,
+            clientIdProvider = clientIdProvider,
+            onlineBackupRepository = onlineBackupRepository,
+            messageRepository = messageRepository,
+            createBackupFromRootKey = createFromRootKey,
+            backupFileUploader = BackupFileUploaderImpl(
+                assetRepository = assetRepository,
+                kaliumFileSystem = kaliumFileSystem,
+            ),
         )
 
     public val restore: RestoreMPBackupUseCase

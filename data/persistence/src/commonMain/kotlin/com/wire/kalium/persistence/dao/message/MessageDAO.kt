@@ -122,6 +122,8 @@ interface MessageDAO {
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
     ): List<String>
 
+    suspend fun getLatestReceivedMessageDate(): Instant?
+
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
 
     suspend fun promoteMessageToSentUpdatingServerTime(

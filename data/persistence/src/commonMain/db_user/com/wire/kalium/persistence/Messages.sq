@@ -492,6 +492,15 @@ WHERE
 ORDER BY
     Message.creation_date DESC;
 
+selectLatestReceivedVisibleMessageDate:
+SELECT Message.creation_date
+FROM Message
+LEFT JOIN SelfUser
+WHERE Message.visibility = 'VISIBLE'
+AND Message.sender_user_id != SelfUser.id
+ORDER BY Message.creation_date DESC
+LIMIT 1;
+
 promoteMessageToSentUpdatingServerTime {
 UPDATE Message
 SET
