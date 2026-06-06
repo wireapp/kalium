@@ -1177,9 +1177,11 @@ public class UserSessionScope internal constructor(
     public val multiPlatformBackup: MultiPlatformBackupScope
         get() = MultiPlatformBackupScope(
             selfUserId = userId,
+            clientIdProvider = clientIdProvider,
             backupRepository = backupRepository,
             userRepository = userRepository,
             kaliumFileSystem = kaliumFileSystem,
+            globalPreferences = globalPreferences,
         )
 
     internal val persistMessage: PersistMessageUseCase

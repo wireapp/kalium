@@ -21,22 +21,41 @@ package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
 public class MultiPlatformBackupScope internal constructor(
     private val selfUserId: UserId,
+    private val clientIdProvider: CurrentClientIdProvider,
     private val kaliumFileSystem: KaliumFileSystem,
     private val backupRepository: BackupRepository,
     private val userRepository: UserRepository,
+    private val globalPreferences: GlobalPrefProvider,
 ) {
+    private val backupRootKeyRepository: BackupRootKeyRepository
+        get() = BackupRootKeyRepositoryImpl(
+            selfUserId = selfUserId,
+            passphraseStorage = globalPreferences.passphraseStorage,
+        )
 
     public val create: CreateMPBackupUseCase
         get() = CreateMPBackupUseCaseImpl(
             backupRepository = backupRepository,
             userRepository = userRepository,
             kaliumFileSystem = kaliumFileSystem,
+        )
+
+    public val createFromRootKey: CreateBackupFromRootKeyUseCase
+        get() = CreateBackupFromRootKeyUseCaseImpl(
+            getBackupRootKey = GetBackupRootKeyUseCaseImpl(backupRootKeyRepository),
+            generateBackupRootKey = GenerateBackupRootKeyUseCaseImpl(
+                currentClientIdProvider = clientIdProvider,
+                backupRootKeyRepository = backupRootKeyRepository,
+            ),
+            createMPBackup = create,
         )
 
     public val restore: RestoreMPBackupUseCase
