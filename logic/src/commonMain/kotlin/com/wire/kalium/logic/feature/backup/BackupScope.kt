@@ -51,6 +51,11 @@ public class BackupScope internal constructor(
     private val rootPathsProvider: RootPathsProvider,
 ) {
     private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
+    private val backupRootKeyRepository: BackupRootKeyRepository
+        get() = BackupRootKeyRepositoryImpl(
+            selfUserId = userId,
+            passphraseStorage = globalPreferences.passphraseStorage,
+        )
 
     public val create: CreateBackupUseCase
         get() = CreateBackupUseCaseImpl(
@@ -72,6 +77,15 @@ public class BackupScope internal constructor(
             userId,
             userRepository,
             clientIdProvider,
+        )
+
+    public val getBackupRootKey: GetBackupRootKeyUseCase
+        get() = GetBackupRootKeyUseCaseImpl(backupRootKeyRepository)
+
+    public val generateBackupRootKey: GenerateBackupRootKeyUseCase
+        get() = GenerateBackupRootKeyUseCaseImpl(
+            currentClientIdProvider = clientIdProvider,
+            backupRootKeyRepository = backupRootKeyRepository,
         )
 
     @DelicateKaliumApi("this is NOT a backup feature, but a feature to create an unencrypted and obfuscated copy of the database")
