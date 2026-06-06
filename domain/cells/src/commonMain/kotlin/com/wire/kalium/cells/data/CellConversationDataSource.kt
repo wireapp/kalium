@@ -45,6 +45,9 @@ internal class CellConversationDataSource(
             }
         }
 
+    override suspend fun getCellName(conversationId: ConversationId): Either<StorageFailure, String?> =
+        getCellName(QualifiedIDEntity(conversationId.value, conversationId.domain))
+
     override suspend fun getConversationNames(): Either<StorageFailure, List<Pair<String, String>>> =
         withContext(dispatchers.io) {
             wrapStorageRequest {

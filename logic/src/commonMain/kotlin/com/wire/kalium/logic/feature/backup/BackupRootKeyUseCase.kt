@@ -26,10 +26,16 @@ import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CancellationException
 import kotlin.uuid.Uuid
 
+/**
+ * Returns the current online backup root key, if one has already been generated for this user.
+ */
 public interface GetBackupRootKeyUseCase {
     public suspend operator fun invoke(): GetBackupRootKeyResult
 }
 
+/**
+ * Generates and stores a new online backup root key for this user.
+ */
 public interface GenerateBackupRootKeyUseCase {
     public suspend operator fun invoke(): GenerateBackupRootKeyResult
 }

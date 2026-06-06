@@ -43,6 +43,8 @@ import com.wire.kalium.cells.domain.NodeServiceBuilder
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.BackupCellFileUseCase
+import com.wire.kalium.cells.domain.usecase.BackupCellFileUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCase
 import com.wire.kalium.cells.domain.usecase.DeleteCellAssetUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.DeleteMessageAttachmentsUseCase
@@ -264,6 +266,10 @@ public class CellsScope(
             repository = cellsRepository,
             uploadScope = this,
         )
+    }
+
+    public val backupCellFile: BackupCellFileUseCase by lazy {
+        BackupCellFileUseCaseImpl(cellsRepository, cellsConversationRepository, uploadManager)
     }
 
     public val addAttachment: AddAttachmentDraftUseCase by lazy {

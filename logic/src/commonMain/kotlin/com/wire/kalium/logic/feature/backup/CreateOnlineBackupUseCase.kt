@@ -28,6 +28,9 @@ import com.wire.kalium.logic.data.user.UserId
 import kotlinx.coroutines.CancellationException
 import kotlinx.datetime.Instant
 
+/**
+ * Creates and uploads an online backup when local messages are newer than the latest remote backup.
+ */
 public interface CreateOnlineBackupUseCase {
     public suspend operator fun invoke(onProgress: (Float) -> Unit): CreateOnlineBackupResult
 }

@@ -22,6 +22,9 @@ import kotlinx.coroutines.CancellationException
 import okio.Path
 import kotlin.uuid.Uuid
 
+/**
+ * Creates an encrypted backup using the persisted online backup root key.
+ */
 public interface CreateBackupFromRootKeyUseCase {
     public suspend operator fun invoke(onProgress: (Float) -> Unit): CreateBackupFromRootKeyResult
 }

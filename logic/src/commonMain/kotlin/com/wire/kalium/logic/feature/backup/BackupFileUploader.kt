@@ -17,8 +17,11 @@
  */
 package com.wire.kalium.logic.feature.backup
 
+import com.wire.kalium.cells.domain.usecase.BackupCellFileUseCase
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import okio.Path
 
@@ -26,8 +29,19 @@ internal interface BackupFileUploader {
     suspend fun upload(filePath: Path, fileName: String): Either<CoreFailure, UploadedAssetId>
 }
 
-internal class BackupFileUploaderImpl : BackupFileUploader {
+internal class BackupFileUploaderImpl(
+    private val backupConversationResolver: BackupConversationResolver,
+    private val backupCellFile: BackupCellFileUseCase,
+) : BackupFileUploader {
 
     override suspend fun upload(filePath: Path, fileName: String): Either<CoreFailure, UploadedAssetId> =
-        TODO("Online backup file upload storage is not implemented")
+        backupConversationResolver.getOrCreateBackupConversation().flatMap { conversationId ->
+            backupCellFile.upload(conversationId, filePath, fileName)
+        }.map { uploadedFile ->
+            UploadedAssetId(
+                key = uploadedFile.uuid,
+                domain = uploadedFile.versionId,
+                assetToken = uploadedFile.path,
+            )
+        }
 }

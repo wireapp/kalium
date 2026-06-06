@@ -236,7 +236,9 @@ class AddAttachmentDraftUseCaseTest {
 
         suspend fun arrange(): Pair<Arrangement, AddAttachmentDraftUseCaseImpl> {
 
-            everySuspend { conversationRepository.getCellName(any()) }.returns("wire-cells-android/$conversationId".right())
+            everySuspend {
+                conversationRepository.getCellName(any<com.wire.kalium.persistence.dao.QualifiedIDEntity>())
+            }.returns("wire-cells-android/$conversationId".right())
 
             return this to AddAttachmentDraftUseCaseImpl(
                 uploadManager = uploadManager,

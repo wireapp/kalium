@@ -68,6 +68,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.CryptoTransactionProviderImpl
 import com.wire.kalium.logic.data.client.E2EIClientProvider
+import com.wire.kalium.logic.data.conversation.CreateConversationParam
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProvider
 import com.wire.kalium.logic.data.client.IsClientAsyncNotificationsCapableProviderImpl
@@ -233,6 +234,8 @@ import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
+import com.wire.kalium.logic.feature.backup.BackupConversationResolver
+import com.wire.kalium.logic.feature.backup.BackupConversationResolverImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
 import com.wire.kalium.logic.feature.backup.MultiPlatformBackupScope
 import com.wire.kalium.logic.feature.call.CallBackgroundManager
@@ -1176,8 +1179,25 @@ public class UserSessionScope internal constructor(
     private val cryptoStateBackupRemoteRepository: CryptoStateBackupRemoteRepository
         get() = CryptoStateBackupRemoteDataSource(authenticatedNetworkContainer.nomadDeviceSyncApi)
 
+    private val backupConversationResolver: BackupConversationResolver
+        get() = BackupConversationResolverImpl(
+            selfUserId = userId,
+            createRegularGroup = conversations.createRegularGroup,
+            conversationListDetailsProvider = {
+                conversationRepository.observeConversationListDetails(fromArchive = false).first()
+            },
+            defaultProtocol = {
+                CreateConversationParam.Protocol.fromSupportedProtocolToConversationOptionsProtocol(getDefaultProtocol())
+            },
+        )
+
     private val onlineBackupRepository: OnlineBackupRepository
-        get() = OnlineBackupDataSource()
+        get() = OnlineBackupDataSource(
+            selfUserId = userId,
+            backupConversationResolver = backupConversationResolver,
+            backupCellFile = cells.backupCellFile,
+            kaliumFileSystem = kaliumFileSystem,
+        )
 
     public val multiPlatformBackup: MultiPlatformBackupScope
         get() = MultiPlatformBackupScope(
@@ -1185,6 +1205,8 @@ public class UserSessionScope internal constructor(
             clientIdProvider = clientIdProvider,
             backupRepository = backupRepository,
             onlineBackupRepository = onlineBackupRepository,
+            backupConversationResolver = backupConversationResolver,
+            backupCellFile = cells.backupCellFile,
             messageRepository = messageRepository,
             userRepository = userRepository,
             kaliumFileSystem = kaliumFileSystem,
