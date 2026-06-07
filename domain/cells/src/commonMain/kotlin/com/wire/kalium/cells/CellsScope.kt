@@ -39,8 +39,8 @@ import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsApi
 import com.wire.kalium.cells.domain.CellsRepository
 import com.wire.kalium.cells.domain.MessageAttachmentDraftRepository
+import com.wire.kalium.cells.domain.CellsNotConfiguredException
 import com.wire.kalium.cells.domain.NodeServiceBuilder
-import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCase
 import com.wire.kalium.cells.domain.usecase.AddAttachmentDraftUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.BackupCellFileUseCase
@@ -155,9 +155,7 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpRedirect
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.FileSystem
@@ -199,28 +197,41 @@ public class CellsScope(
         CellsCredentialsProvider(getCellConfig)
     }
 
-    private val cellClientCredentialsDeferred: Deferred<CellsCredentials> by lazy {
-        async { cellsCredentialsProvider.getCredentials() }
-    }
-
     private val cellAwsClient: CellsAwsClient by lazy {
-        cellsAwsClient(cellClientCredentialsDeferred, sessionManager, accessTokenApi)
+        cellsAwsClient(
+            credentialsResolver = { cellsCredentialsProvider.getCredentials() },
+            sessionManager = sessionManager,
+            accessTokenApi = accessTokenApi,
+        )
     }
 
     private val nodeServiceApiMutex = Mutex()
     private var _nodeServiceApi: NodeServiceApi? = null
+    private var _nodeServiceApiServerUrl: String? = null
 
+    // Resolve credentials per call: the cells backend URL is provisioned via feature config sync
+    // (`CellsConfigHandler`), which may not have completed on first install. Caching a stale
+    // (or empty) URL caused requests to fall back to the auth host. Mirrors the iOS
+    // `serverURLResolver` closure pattern.
     private suspend fun getNodeServiceApiCached(): NodeServiceApi {
-        // If already initialized, return it
-        _nodeServiceApi?.let { return it }
+        val credentials = cellsCredentialsProvider.getCredentials()
+            ?: throw CellsNotConfiguredException()
 
-        // Lock to ensure only one coroutine initializes
+        _nodeServiceApi?.let { cached ->
+            if (_nodeServiceApiServerUrl == credentials.serverUrl) return cached
+        }
+
         return nodeServiceApiMutex.withLock {
-            _nodeServiceApi ?: NodeServiceBuilder
-                .withHttpClient(cellsClient)
-                .withCredentials(cellClientCredentialsDeferred)
-                .build()
-                .also { _nodeServiceApi = it }
+            _nodeServiceApi?.let { cached ->
+                if (_nodeServiceApiServerUrl == credentials.serverUrl) return@withLock cached
+            }
+            NodeServiceBuilder.build(
+                serverUrl = credentials.serverUrl,
+                httpClient = cellsClient
+            ).also {
+                _nodeServiceApi = it
+                _nodeServiceApiServerUrl = credentials.serverUrl
+            }
         }
     }
 
@@ -320,11 +331,11 @@ public class CellsScope(
     }
 
     public val createPublicLinkUseCase: CreatePublicLinkUseCase by lazy {
-        CreatePublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
+        CreatePublicLinkUseCaseImpl({ cellsCredentialsProvider.getCredentials() }, cellsRepository)
     }
 
     public val getPublicLinkUseCase: GetPublicLinkUseCase by lazy {
-        GetPublicLinkUseCaseImpl(cellClientCredentialsDeferred, cellsRepository)
+        GetPublicLinkUseCaseImpl({ cellsCredentialsProvider.getCredentials() }, cellsRepository)
     }
 
     public val deletePublicLinkUseCase: DeletePublicLinkUseCase by lazy {

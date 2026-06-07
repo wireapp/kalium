@@ -22,15 +22,22 @@ import com.wire.kalium.cells.domain.usecase.GetWireCellConfigurationUseCase
 
 /**
  * Provides credentials for Cells API based on current environment.
- * Temporary solution until we make we way to get the serverUrl and gateway secret.
+ *
+ * Returns `null` when the cells backend URL has not yet been provisioned (e.g. on first
+ * install before the `cellsInternal` feature config has been synced from the server).
+ * Callers MUST treat `null` as "feature not configured yet" and avoid building any HTTP
+ * client with a blank base URL — otherwise requests resolve against the auth host instead
+ * of the cells host.
  */
 internal class CellsCredentialsProvider(
     private val getConfiguration: GetWireCellConfigurationUseCase
 ) {
-    internal suspend fun getCredentials() = CellsCredentials(
-        // Url is required and supposed to be configured if Cells Feature is enabled
-        // Setting empty URL will fail all network requests "turning off" the feature
-        serverUrl = getConfiguration()?.backendUrl ?: "",
-        gatewaySecret = "gatewaysecret"
-    )
+    internal suspend fun getCredentials(): CellsCredentials? {
+        val backendUrl = getConfiguration()?.backendUrl
+        if (backendUrl.isNullOrBlank()) return null
+        return CellsCredentials(
+            serverUrl = backendUrl,
+            gatewaySecret = "gatewaysecret"
+        )
+    }
 }
