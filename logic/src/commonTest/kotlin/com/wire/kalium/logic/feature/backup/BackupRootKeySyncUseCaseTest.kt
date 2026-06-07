@@ -226,10 +226,14 @@ class BackupRootKeySyncUseCaseTest {
     private class InMemoryBackupRootKeyRepository : BackupRootKeyRepository {
         private var backupRootKey: BackupRootKey? = null
 
-        override fun getBackupRootKey(): BackupRootKey? = backupRootKey
+        override suspend fun getBackupRootKey(): BackupRootKey? = backupRootKey
 
-        override fun setBackupRootKey(backupRootKey: BackupRootKey) {
+        override suspend fun setBackupRootKey(backupRootKey: BackupRootKey) {
             this.backupRootKey = backupRootKey
+        }
+
+        override suspend fun clearBackupRootKey() {
+            backupRootKey = null
         }
     }
 

@@ -20,8 +20,7 @@
 package com.wire.kalium.logic.feature.backup
 
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
+import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -30,30 +29,46 @@ import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
 
 internal interface BackupRootKeyRepository {
-    fun getBackupRootKey(): BackupRootKey?
-    fun setBackupRootKey(backupRootKey: BackupRootKey)
+    suspend fun getBackupRootKey(): BackupRootKey?
+    suspend fun setBackupRootKey(backupRootKey: BackupRootKey)
+    suspend fun clearBackupRootKey()
 }
 
 internal class BackupRootKeyRepositoryImpl(
-    private val selfUserId: UserId,
-    private val passphraseStorage: PassphraseStorage,
+    private val metadataDAO: MetadataDAO,
     private val json: Json = Json,
 ) : BackupRootKeyRepository {
 
-    override fun getBackupRootKey(): BackupRootKey? =
-        passphraseStorage.getPassphrase(storageKey)?.let { serializedKey ->
+    override suspend fun getBackupRootKey(): BackupRootKey? =
+        metadataDAO.valueByKey(STORAGE_KEY)?.let { serializedKey ->
             json.decodeFromString<BackupRootKeyEntity>(serializedKey).toModel()
         }
 
-    override fun setBackupRootKey(backupRootKey: BackupRootKey) {
-        passphraseStorage.setPassphrase(storageKey, json.encodeToString(backupRootKey.toEntity()))
+    override suspend fun setBackupRootKey(backupRootKey: BackupRootKey) {
+        metadataDAO.insertValue(
+            key = STORAGE_KEY,
+            value = json.encodeToString(backupRootKey.toEntity())
+        )
     }
 
-    private val storageKey: String
-        get() = "${BACKUP_ROOT_KEY_ALIAS_PREFIX}_$selfUserId"
+    override suspend fun clearBackupRootKey() {
+        metadataDAO.deleteValue(STORAGE_KEY)
+    }
 
     private companion object {
-        const val BACKUP_ROOT_KEY_ALIAS_PREFIX = "backup_root_key_alias"
+        const val STORAGE_KEY = "backup_root_key"
+    }
+}
+
+internal interface ClearBackupRootKeyUseCase {
+    suspend operator fun invoke()
+}
+
+internal class ClearBackupRootKeyUseCaseImpl(
+    private val backupRootKeyRepository: BackupRootKeyRepository,
+) : ClearBackupRootKeyUseCase {
+    override suspend fun invoke() {
+        backupRootKeyRepository.clearBackupRootKey()
     }
 }
 

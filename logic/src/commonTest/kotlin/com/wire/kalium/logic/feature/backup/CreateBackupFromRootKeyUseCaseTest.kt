@@ -21,8 +21,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import okio.Path.Companion.toPath
@@ -94,16 +92,15 @@ class CreateBackupFromRootKeyUseCaseTest {
     }
 
     private class Arrangement {
-        val passphraseStorage = InMemoryPassphraseStorage()
+        val metadataDAO = InMemoryMetadataDAO()
         val repository = BackupRootKeyRepositoryImpl(
-            selfUserId = SELF_USER_ID,
-            passphraseStorage = passphraseStorage,
+            metadataDAO = metadataDAO,
         )
         val createMPBackup = RecordingCreateMPBackupUseCase()
         val getOrCreateSyncedBackupRootKey = RecordingGetOrCreateSyncedBackupRootKeyUseCase(repository)
         private var generatedKeyId = "generated-key"
 
-        fun withStoredRootKey(backupRootKey: BackupRootKey) = apply {
+        suspend fun withStoredRootKey(backupRootKey: BackupRootKey) = apply {
             repository.setBackupRootKey(backupRootKey)
         }
 
@@ -125,7 +122,6 @@ class CreateBackupFromRootKeyUseCaseTest {
         }
 
         companion object {
-            val SELF_USER_ID = QualifiedID("user", "example.com")
             val CLIENT_ID = ClientId("client-id")
         }
     }
@@ -152,20 +148,6 @@ class CreateBackupFromRootKeyUseCaseTest {
         override suspend fun invoke(password: String, onProgress: (Float) -> Unit): CreateBackupResult {
             receivedPassphrase = password
             return result
-        }
-    }
-
-    private class InMemoryPassphraseStorage : PassphraseStorage {
-        private val values = mutableMapOf<String, String>()
-
-        override fun getPassphrase(key: String): String? = values[key]
-
-        override fun setPassphrase(key: String, passphrase: String) {
-            values[key] = passphrase
-        }
-
-        override fun clearPassphrase(key: String) {
-            values.remove(key)
         }
     }
 

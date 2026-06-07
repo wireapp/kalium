@@ -53,8 +53,7 @@ public class BackupScope internal constructor(
     private val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
     private val backupRootKeyRepository: BackupRootKeyRepository
         get() = BackupRootKeyRepositoryImpl(
-            selfUserId = userId,
-            passphraseStorage = globalPreferences.passphraseStorage,
+            metadataDAO = userStorage.database.metadataDAO,
         )
 
     public val create: CreateBackupUseCase

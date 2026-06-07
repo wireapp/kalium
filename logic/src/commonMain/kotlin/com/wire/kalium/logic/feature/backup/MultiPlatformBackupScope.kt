@@ -29,7 +29,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.messaging.sending.MessageSender
-import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.persistence.dao.MetadataDAO
 
 @Suppress("LongParameterList")
 public class MultiPlatformBackupScope internal constructor(
@@ -42,14 +42,13 @@ public class MultiPlatformBackupScope internal constructor(
     private val backupCellFile: BackupCellFileUseCase,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
-    private val globalPreferences: GlobalPrefProvider,
+    private val metadataDAO: MetadataDAO,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val messageSender: MessageSender,
 ) {
     private val backupRootKeyRepository: BackupRootKeyRepository
         get() = BackupRootKeyRepositoryImpl(
-            selfUserId = selfUserId,
-            passphraseStorage = globalPreferences.passphraseStorage,
+            metadataDAO = metadataDAO,
         )
 
     public val create: CreateMPBackupUseCase

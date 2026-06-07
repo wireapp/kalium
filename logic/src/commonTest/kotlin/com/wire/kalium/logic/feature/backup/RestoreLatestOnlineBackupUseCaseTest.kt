@@ -255,13 +255,15 @@ class RestoreLatestOnlineBackupUseCaseTest {
         var values: List<BackupRootKey?> = listOf(null)
         private var index = 0
 
-        override fun getBackupRootKey(): BackupRootKey? {
+        override suspend fun getBackupRootKey(): BackupRootKey? {
             val value = values.getOrElse(index) { values.lastOrNull() }
             index++
             return value
         }
 
-        override fun setBackupRootKey(backupRootKey: BackupRootKey) = Unit
+        override suspend fun setBackupRootKey(backupRootKey: BackupRootKey) = Unit
+
+        override suspend fun clearBackupRootKey() = Unit
     }
 
     private class RecordingOnlineBackupRepository : OnlineBackupRepository {

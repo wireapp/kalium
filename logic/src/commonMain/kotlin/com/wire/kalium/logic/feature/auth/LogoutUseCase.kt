@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.backup.ClearBackupRootKeyUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
@@ -61,6 +62,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
     private val clearClientDataUseCase: ClearClientDataUseCase,
     private val clearUserDataUseCase: ClearUserDataUseCase,
+    private val clearBackupRootKeyUseCase: ClearBackupRootKeyUseCase,
     private val userSessionScopeProvider: UserSessionScopeProvider,
     private val pushTokenRepository: PushTokenRepository,
     private val globalCoroutineScope: CoroutineScope,
@@ -138,6 +140,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private suspend fun prepareForCoreCryptoMigrationRecovery() {
+        clearBackupRootKeyUseCase()
         clearClientDataUseCase()
         logoutRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearRetainedClientId()
@@ -154,12 +157,14 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     }
 
     private suspend fun wipeAllData() {
+        clearBackupRootKeyUseCase()
         clearClientDataUseCase()
         clearUserDataUseCase() // this clears also current client id
     }
 
     private suspend fun wipeTokenAndMetadata() {
         // receiving web socket events at the exact time of logging put
+        clearBackupRootKeyUseCase()
         clearClientDataUseCase()
         logoutRepository.clearClientRelatedLocalMetadata()
         clientRepository.clearCurrentClientId()

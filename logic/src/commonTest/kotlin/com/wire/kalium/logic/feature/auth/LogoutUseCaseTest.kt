@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.feature.backup.ClearBackupRootKeyUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
@@ -133,6 +134,9 @@ class LogoutUseCaseTest {
             arrangement.clearClientDataUseCase.invoke()
         }
         verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clearBackupRootKeyUseCase.invoke()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearUserDataUseCase.invoke()
         }
     }
@@ -160,6 +164,9 @@ class LogoutUseCaseTest {
             arrangement.clearClientDataUseCase.invoke()
         }
         verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clearBackupRootKeyUseCase.invoke()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearUserDataUseCase.invoke()
         }
     }
@@ -185,6 +192,9 @@ class LogoutUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearClientDataUseCase.invoke()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clearBackupRootKeyUseCase.invoke()
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearUserDataUseCase.invoke()
@@ -219,6 +229,9 @@ class LogoutUseCaseTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearClientDataUseCase.invoke()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clearBackupRootKeyUseCase.invoke()
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearUserDataUseCase.invoke()
@@ -256,6 +269,9 @@ class LogoutUseCaseTest {
             arrangement.clearClientDataUseCase.invoke()
         }
         verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clearBackupRootKeyUseCase.invoke()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clearUserDataUseCase.invoke()
         }
     }
@@ -288,6 +304,9 @@ class LogoutUseCaseTest {
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.clearClientDataUseCase.invoke()
+            }
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.clearBackupRootKeyUseCase.invoke()
             }
 
             verifySuspend(VerifyMode.not) {
@@ -329,6 +348,9 @@ class LogoutUseCaseTest {
 
         verifySuspend(VerifyMode.not) {
             arrangement.clearClientDataUseCase.invoke()
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.clearBackupRootKeyUseCase.invoke()
         }
         verifySuspend(VerifyMode.not) {
             arrangement.clearUserDataUseCase.invoke()
@@ -432,6 +454,9 @@ class LogoutUseCaseTest {
             arrangement.clearClientDataUseCase.invoke()
         }
         verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clearBackupRootKeyUseCase.invoke()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.logoutRepository.clearClientRelatedLocalMetadata()
         }
 
@@ -451,6 +476,7 @@ class LogoutUseCaseTest {
         val deregisterTokenUseCase: DeregisterTokenUseCase = mock<DeregisterTokenUseCase>(mode = MockMode.autoUnit),
         val clearClientDataUseCase: ClearClientDataUseCase = mock<ClearClientDataUseCase>(mode = MockMode.autoUnit),
         val clearUserDataUseCase: ClearUserDataUseCase = mock<ClearUserDataUseCase>(mode = MockMode.autoUnit),
+        val clearBackupRootKeyUseCase: ClearBackupRootKeyUseCase = mock<ClearBackupRootKeyUseCase>(mode = MockMode.autoUnit),
         val userSessionScopeProvider: UserSessionScopeProvider = mock<UserSessionScopeProvider>(mode = MockMode.autoUnit),
         val pushTokenRepository: PushTokenRepository = mock<PushTokenRepository>(mode = MockMode.autoUnit),
         val userSessionWorkScheduler: UserSessionWorkScheduler = mock<UserSessionWorkScheduler>(mode = MockMode.autoUnit),
@@ -559,6 +585,7 @@ class LogoutUseCaseTest {
             deregisterTokenUseCase = deregisterTokenUseCase,
             clearClientDataUseCase = clearClientDataUseCase,
             clearUserDataUseCase = clearUserDataUseCase,
+            clearBackupRootKeyUseCase = clearBackupRootKeyUseCase,
             userSessionScopeProvider = userSessionScopeProvider,
             pushTokenRepository = pushTokenRepository,
             globalCoroutineScope = globalTestScope,

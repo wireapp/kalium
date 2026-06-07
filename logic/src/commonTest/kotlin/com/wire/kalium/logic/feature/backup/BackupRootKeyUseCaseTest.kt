@@ -20,8 +20,6 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -86,11 +84,32 @@ class BackupRootKeyUseCaseTest {
         assertEquals(generated.fingerprint(), readBack.fingerprint())
     }
 
+    @Test
+    fun givenStoredKey_whenClearingBackupRootKey_thenKeyIsRemoved() = runTest {
+        val (arrangement, generateUseCase) = Arrangement().arrangeGenerate()
+        assertIs<GenerateBackupRootKeyResult.Success>(generateUseCase())
+
+        arrangement.repository.clearBackupRootKey()
+
+        assertNull(arrangement.repository.getBackupRootKey())
+    }
+
+    @Test
+    fun givenTwoUserMetadataStores_whenOneStoresBackupRootKey_thenOtherUserCannotReadIt() = runTest {
+        val firstUserRepository = BackupRootKeyRepositoryImpl(InMemoryMetadataDAO())
+        val secondUserRepository = BackupRootKeyRepositoryImpl(InMemoryMetadataDAO())
+        val backupRootKey = backupRootKey("first-user-key")
+
+        firstUserRepository.setBackupRootKey(backupRootKey)
+
+        assertEquals("first-user-key", firstUserRepository.getBackupRootKey()?.id)
+        assertNull(secondUserRepository.getBackupRootKey())
+    }
+
     private class Arrangement {
-        val passphraseStorage = InMemoryPassphraseStorage()
+        val metadataDAO = InMemoryMetadataDAO()
         val repository = BackupRootKeyRepositoryImpl(
-            selfUserId = SELF_USER_ID,
-            passphraseStorage = passphraseStorage,
+            metadataDAO = metadataDAO,
         )
         private var idIndex = 0
 
@@ -105,22 +124,18 @@ class BackupRootKeyUseCaseTest {
             )
 
         companion object {
-            val SELF_USER_ID = QualifiedID("user", "example.com")
             val CLIENT_ID = ClientId("client-id")
         }
     }
 
-    private class InMemoryPassphraseStorage : PassphraseStorage {
-        private val values = mutableMapOf<String, String>()
-
-        override fun getPassphrase(key: String): String? = values[key]
-
-        override fun setPassphrase(key: String, passphrase: String) {
-            values[key] = passphrase
-        }
-
-        override fun clearPassphrase(key: String) {
-            values.remove(key)
-        }
+    private companion object {
+        fun backupRootKey(id: String): BackupRootKey =
+            BackupRootKey(
+                id = id,
+                keyMaterial = ByteArray(32) { it.toByte() },
+                createdAt = kotlinx.datetime.Instant.parse("2026-01-01T00:00:00Z"),
+                createdByClientId = ClientId("client-id"),
+                version = 1,
+            )
     }
 }

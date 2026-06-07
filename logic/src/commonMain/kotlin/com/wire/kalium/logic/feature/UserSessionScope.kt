@@ -240,6 +240,7 @@ import com.wire.kalium.logic.feature.backup.BackupRootKeyMessageHandler
 import com.wire.kalium.logic.feature.backup.BackupRootKeyMessageHandlerImpl
 import com.wire.kalium.logic.feature.backup.BackupRootKeyRepositoryImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
+import com.wire.kalium.logic.feature.backup.ClearBackupRootKeyUseCaseImpl
 import com.wire.kalium.logic.feature.backup.MultiPlatformBackupScope
 import com.wire.kalium.logic.feature.call.CallBackgroundManager
 import com.wire.kalium.logic.feature.call.CallBackgroundManagerImpl
@@ -1214,7 +1215,7 @@ public class UserSessionScope internal constructor(
             messageRepository = messageRepository,
             userRepository = userRepository,
             kaliumFileSystem = kaliumFileSystem,
-            globalPreferences = globalPreferences,
+            metadataDAO = userStorage.database.metadataDAO,
             selfConversationIdProvider = selfConversationIdProvider,
             messageSender = messages.messageSender,
         )
@@ -1889,8 +1890,7 @@ public class UserSessionScope internal constructor(
             selfUserId = userId,
             currentClientIdProvider = clientIdProvider,
             backupRootKeyRepository = BackupRootKeyRepositoryImpl(
-                selfUserId = userId,
-                passphraseStorage = globalPreferences.passphraseStorage,
+                metadataDAO = userStorage.database.metadataDAO,
             ),
             messageSender = messages.messageSender as TransactionalMessageSender,
         )
@@ -2639,6 +2639,9 @@ public class UserSessionScope internal constructor(
             deregisterTokenUseCase = client.deregisterNativePushToken,
             clearClientDataUseCase = client.clearClientData,
             clearUserDataUseCase = clearUserData,
+            clearBackupRootKeyUseCase = ClearBackupRootKeyUseCaseImpl(
+                BackupRootKeyRepositoryImpl(metadataDAO = userStorage.database.metadataDAO)
+            ),
             userSessionScopeProvider = userSessionScopeProvider,
             pushTokenRepository = pushTokenRepository,
             globalCoroutineScope = globalScope,

@@ -68,8 +68,6 @@ internal class RestoreLatestOnlineBackupUseCaseImpl(
 
     override suspend fun invoke(onProgress: (Float) -> Unit): RestoreLatestOnlineBackupResult =
         try {
-            val rootKey = resolveRootKey()
-                ?: return RestoreLatestOnlineBackupResult.Failure.NoBackupRootKeyAvailable
 
             val latest = when (val result = onlineBackupRepository.listBackups()) {
                 is Either.Left -> return RestoreLatestOnlineBackupResult.Failure.BackupListFailed(result.value)
@@ -79,6 +77,10 @@ internal class RestoreLatestOnlineBackupUseCaseImpl(
             if (latest.userId != selfUserId) {
                 return RestoreLatestOnlineBackupResult.Failure.BackupBelongsToAnotherUser
             }
+
+            val rootKey = resolveRootKey()
+                ?: return RestoreLatestOnlineBackupResult.Failure.NoBackupRootKeyAvailable
+
             if (latest.rootKeyId != rootKey.id) {
                 return RestoreLatestOnlineBackupResult.Failure.RootKeyIdMismatch
             }
