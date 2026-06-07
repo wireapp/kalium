@@ -1343,7 +1343,7 @@ public class UserSessionScope internal constructor(
         eventRepository.setUnprocessedEventsBatchLimit(limit)
     }
 
-    private val syncConversations: SyncConversationsUseCase
+    public val syncConversations: SyncConversationsUseCase
         get() = SyncConversationsUseCaseImpl(
             conversationRepository,
             systemMessageInserter,

@@ -29,8 +29,8 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.FetchConversationsUseCase
 
-internal interface SyncConversationsUseCase {
-    suspend operator fun invoke(): Either<CoreFailure, Unit>
+public interface SyncConversationsUseCase {
+    public suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
 /**
