@@ -17,32 +17,21 @@
  */
 package com.wire.kalium.cells.domain
 
-import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import io.ktor.client.HttpClient
-import kotlinx.coroutines.Deferred
+
+internal class CellsNotConfiguredException :
+    IllegalStateException("Cells feature config has not been synced yet; backend URL is unavailable")
 
 internal object NodeServiceBuilder {
 
     private const val API_VERSION = "v2"
 
-    private var httpClient: HttpClient? = null
-    private var baseUrl: String? = null
-
-    suspend fun withCredentials(credentials: Deferred<CellsCredentials?>): NodeServiceBuilder {
-        baseUrl = "${credentials.await()?.serverUrl}/$API_VERSION"
-        return this
-    }
-
-    fun withHttpClient(httpClient: HttpClient): NodeServiceBuilder {
-        this.httpClient = httpClient
-        return this
-    }
-
-    fun build(): NodeServiceApi {
+    fun build(serverUrl: String, httpClient: HttpClient): NodeServiceApi {
+        if (serverUrl.isBlank()) throw CellsNotConfiguredException()
         return NodeServiceApi(
-            baseUrl = baseUrl ?: error("Base URL is not set"),
-            httpClient = httpClient!!
+            baseUrl = "$serverUrl/$API_VERSION",
+            httpClient = httpClient
         )
     }
 }
