@@ -32,7 +32,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.message.linkpreview.ResolveLinkPreviewImagesUseCase
+import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
@@ -402,7 +402,7 @@ class ApplicationMessageHandlerTest {
         )
 
         verify(VerifyMode.exactly(1)) {
-            arrangement.resolveLinkPreviewImagesUseCase.invoke(messageEvent.conversationId, messageId)
+            arrangement.linkPreviewImagesResolver.invoke(messageEvent.conversationId, messageId)
         }
     }
 
@@ -427,7 +427,7 @@ class ApplicationMessageHandlerTest {
         val buttonActionHandler = mock<ButtonActionHandler>(MockMode.autoUnit)
         val messageCompositeEditHandler = mock<MessageCompositeEditHandler>(MockMode.autoUnit)
         val callingMessageHandler = mock<CallingMessageHandler>(MockMode.autoUnit)
-        val resolveLinkPreviewImagesUseCase = mock<ResolveLinkPreviewImagesUseCase>(MockMode.autoUnit)
+        val linkPreviewImagesResolver = mock<LinkPreviewImagesResolver>(MockMode.autoUnit)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
@@ -449,7 +449,7 @@ class ApplicationMessageHandlerTest {
             buttonActionHandler,
             messageCompositeEditHandler,
             callingMessageHandler,
-            resolveLinkPreviewImagesUseCase,
+            linkPreviewImagesResolver,
             TestUser.SELF.id
         )
 
@@ -458,7 +458,7 @@ class ApplicationMessageHandlerTest {
                 persistMessage.invoke(any())
             }.returns(result)
             every {
-                resolveLinkPreviewImagesUseCase.invoke(any(), any())
+                linkPreviewImagesResolver.invoke(any(), any())
             } returns Unit
         }
 

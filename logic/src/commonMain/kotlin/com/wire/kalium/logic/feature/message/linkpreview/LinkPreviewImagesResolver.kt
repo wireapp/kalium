@@ -36,18 +36,21 @@ import kotlinx.coroutines.launch
  *
  * This is intentionally fire-and-forget. It is safe to invoke from receiver paths and UI paths.
  */
-public interface ResolveLinkPreviewImagesUseCase {
+public interface LinkPreviewImagesResolver {
     public operator fun invoke(conversationId: ConversationId, messageId: String)
 }
 
-internal class ResolveLinkPreviewImagesUseCaseImpl(
+internal class LinkPreviewImagesResolverImpl(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
+    private val linkPreviewEnabled: Boolean,
     private val scope: CoroutineScope,
-    private val dispatcher: KaliumDispatcher
-) : ResolveLinkPreviewImagesUseCase {
+    private val dispatcher: KaliumDispatcher,
+) : LinkPreviewImagesResolver {
 
     override fun invoke(conversationId: ConversationId, messageId: String) {
+        if (!linkPreviewEnabled) return
+
         scope.launch(dispatcher.io) {
             messageRepository.getMessageById(conversationId, messageId).onSuccess { message ->
                 resolveMessage(conversationId, messageId, message)

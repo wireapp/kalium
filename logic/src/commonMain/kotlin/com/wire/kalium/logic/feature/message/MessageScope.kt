@@ -106,8 +106,6 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionH
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCase
 import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCaseImpl
-import com.wire.kalium.logic.feature.message.linkpreview.ResolveLinkPreviewImagesUseCase
-import com.wire.kalium.logic.feature.message.linkpreview.ResolveLinkPreviewImagesUseCaseImpl
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
@@ -167,6 +165,7 @@ public class MessageScope internal constructor(
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
+    private val linkPreviewEnabled: Boolean,
     private val scope: CoroutineScope,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
@@ -612,13 +611,5 @@ public class MessageScope internal constructor(
     }
 
     public val generateLinkPreview: GenerateLinkPreviewUseCase
-        get() = GenerateLinkPreviewUseCaseImpl(linkPreviewRepository)
-
-    public val resolveLinkPreviewImages: ResolveLinkPreviewImagesUseCase
-        get() = ResolveLinkPreviewImagesUseCaseImpl(
-            messageRepository = messageRepository,
-            assetRepository = assetRepository,
-            scope = scope,
-            dispatcher = dispatcher
-        )
+        get() = GenerateLinkPreviewUseCaseImpl(linkPreviewRepository, linkPreviewEnabled)
 }

@@ -45,7 +45,7 @@ import kotlinx.datetime.Instant
 import okio.Path.Companion.toPath
 import kotlin.test.Test
 
-class ResolveLinkPreviewImagesUseCaseTest {
+class LinkPreviewImagesResolverTest {
 
     @Test
     fun givenMessageWithRemotePreviewImage_whenInvoked_thenShouldResolveAndPersistLocalPath() = runTest {
@@ -122,6 +122,26 @@ class ResolveLinkPreviewImagesUseCaseTest {
         }
     }
 
+    @Test
+    fun givenLinkPreviewDisabled_whenInvoked_thenDoesNothing() = runTest {
+        val (arrangement, useCase) = Arrangement(this)
+            .withMessage(TEST_MESSAGE)
+            .arrangeDisabled()
+
+        useCase(TestConversation.ID, TEST_MESSAGE.id)
+        advanceUntilIdle()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageRepository.getMessageById(any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.assetRepository.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageRepository.updateLinkPreviewImageLocalPath(any(), any(), any(), any())
+        }
+    }
+
     private class Arrangement(
         private val scope: CoroutineScope
     ) {
@@ -150,11 +170,20 @@ class ResolveLinkPreviewImagesUseCaseTest {
             } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
-        fun arrange() = this to ResolveLinkPreviewImagesUseCaseImpl(
+        fun arrange() = this to LinkPreviewImagesResolverImpl(
             messageRepository = messageRepository,
             assetRepository = assetRepository,
             scope = scope,
-            dispatcher = scope.testKaliumDispatcher
+            dispatcher = scope.testKaliumDispatcher,
+            linkPreviewEnabled = true
+        )
+
+        fun arrangeDisabled() = this to LinkPreviewImagesResolverImpl(
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            scope = scope,
+            dispatcher = scope.testKaliumDispatcher,
+            linkPreviewEnabled = false
         )
     }
 }
