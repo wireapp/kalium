@@ -18,7 +18,10 @@
 
 package com.wire.kalium.userstorage.di
 
+import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
+
 public actual class PlatformUserStorageProperties(
     public val rootPath: String,
+    public val keychainConfig: ApplePersistenceConfig,
     internal val rootStoragePath: String
 )

@@ -6,8 +6,16 @@ on:
   pull_request_review_comment:
     types: [created]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
   claude-review:
+    name: Claude Review
     # Only run when the comment contains the trigger phrase,
     # and when the commenter is a maintainer/team member,
     # and when it's on a pull request (not an issue)
@@ -23,34 +31,40 @@ jobs:
 
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: write
-      issues: write
-      id-token: write
+      contents: read # required for actions/checkout to read repository sources
+      pull-requests: write # required for Claude to post pull request review feedback
+      issues: write # required to update the review progress issue comment
+      id-token: write # required by the Claude Code action
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
           fetch-depth: 1
+          persist-credentials: false
 
       - name: Get PR number
         id: pr-info
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REVIEW_COMMENT_PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           # For issue_comment events, use github.event.issue.number
           # For pull_request_review_comment events, use github.event.pull_request.number
-          if [ "${{ github.event.issue.number }}" != "" ]; then
-            echo "pr_number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+          if [ "$ISSUE_NUMBER" != "" ]; then
+            echo "pr_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
           else
-            echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+            echo "pr_number=$REVIEW_COMMENT_PR_NUMBER" >> $GITHUB_OUTPUT
           fi
 
       - name: Post initial comment
         id: initial-comment
         env:
           GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY_NAME: ${{ github.repository }}
+          STEPS_PR_INFO_OUTPUTS_PR_NUMBER: ${{ steps.pr-info.outputs.pr_number }}
         run: |
-          COMMENT_ID=$(gh api repos/${{ github.repository }}/issues/${{ steps.pr-info.outputs.pr_number }}/comments \
+          COMMENT_ID=$(gh api "repos/$GITHUB_REPOSITORY_NAME/issues/$STEPS_PR_INFO_OUTPUTS_PR_NUMBER/comments" \
             -f body="🤖 Beep boop! Claude is putting on their reading glasses and diving into your code...
 
           ⏳ This comment will be updated with the review results once I'm done pondering the mysteries of your implementation.
@@ -61,7 +75,7 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@v1
+        uses: anthropics/claude-code-action@c0deb8ed7f234ce70586d54b0685c253f5407f72
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           prompt: |

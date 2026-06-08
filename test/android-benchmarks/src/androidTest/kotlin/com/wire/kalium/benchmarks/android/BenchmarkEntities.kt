@@ -43,6 +43,18 @@ internal object BenchmarkEntities {
     val userOne: UserEntity = newUserEntity(QualifiedIDEntity("userEntity1", "wire.com"))
     val userTwo: UserEntity = newUserEntity(QualifiedIDEntity("userEntity2", "wire.com"))
 
+    fun generateConversations(count: Int): List<ConversationEntity> = buildList(count) {
+        repeat(count) { index ->
+            add(
+                newConversationEntity("conversation-$index").copy(
+                    name = "conversation $index",
+                    type = ConversationEntity.Type.GROUP,
+                    lastModifiedDate = Instant.fromEpochMilliseconds((count - index).toLong())
+                )
+            )
+        }
+    }
+
     fun generateRandomMessages(count: Int, idOffset: Int = 0): List<MessageEntity> {
         val users = listOf(userOne, userTwo)
         return buildList(count) {

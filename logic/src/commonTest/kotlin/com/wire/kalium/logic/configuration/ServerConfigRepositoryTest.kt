@@ -94,7 +94,7 @@ class ServerConfigRepositoryTest {
             arrangement.versionApi.fetchApiVersion(any())
         }
 
-        verify(VerifyMode.exactly(1)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigDAO.configById(any())
         }
 
@@ -122,7 +122,7 @@ class ServerConfigRepositoryTest {
             arrangement.versionApi.fetchApiVersion(any())
         }
 
-        verify(VerifyMode.not) {
+        verifySuspend(VerifyMode.not) {
             arrangement.serverConfigDAO.configById(any())
         }
 
@@ -157,7 +157,7 @@ class ServerConfigRepositoryTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigDAO.setFederationToTrue(any())
         }
-        verify(VerifyMode.exactly(1)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigDAO.configById(any())
         }
     }
@@ -185,7 +185,7 @@ class ServerConfigRepositoryTest {
         verifySuspend(VerifyMode.not) {
             arrangement.serverConfigDAO.setFederationToTrue(any())
         }
-        verify(VerifyMode.exactly(1)) {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.serverConfigDAO.configById(any())
         }
     }
@@ -209,14 +209,14 @@ class ServerConfigRepositoryTest {
 
         suspend fun withConfigForNewRequest(serverConfigEntity: ServerConfigEntity): Arrangement {
             everySuspend { serverConfigDAO.configByLinks(serverConfigEntity.links) } returns null
-            every {
+            everySuspend {
                 serverConfigDAO.configById(any())
             } returns newServerConfigEntity(1)
             return this
         }
 
-        fun withConfigById(serverConfig: ServerConfigEntity?): Arrangement {
-            every {
+        suspend fun withConfigById(serverConfig: ServerConfigEntity?): Arrangement {
+            everySuspend {
                 serverConfigDAO.configById(any())
             } returns serverConfig
             return this
@@ -248,7 +248,7 @@ class ServerConfigRepositoryTest {
             everySuspend {
                 serverConfigDAO.configByLinks(serverConfigEntity.links)
             } returns serverConfigEntity
-            every {
+            everySuspend {
                 serverConfigDAO.configById(any())
             } returns (
                 newServerConfigEntity

@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 import dev.mokkery.answering.returns
@@ -131,7 +131,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
             Either.Left(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.InvalidRequestError(
-                        ErrorResponse(
+                        GenericAPIErrorResponse(
                             HttpStatusCode.Forbidden.value,
                             message = "Switching teams is not allowed",
                             label = "user-already-in-a-team",
@@ -145,7 +145,7 @@ class MigrateFromPersonalToTeamUseCaseTest {
             Either.Left(
                 NetworkFailure.ServerMiscommunication(
                     KaliumException.InvalidRequestError(
-                        ErrorResponse(
+                        GenericAPIErrorResponse(
                             HttpStatusCode.NotFound.value,
                             message = "User not found",
                             label = "not-found",

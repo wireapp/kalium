@@ -142,19 +142,15 @@ class ConversationFolderDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenFolderWithConversations_whenDeletingFolder_thenFolderShouldBeRemoved() = runTest {
-        db.conversationDAO.insertConversation(conversationEntity1)
-        db.userDAO.upsertUser(userEntity1)
-        db.memberDAO.insertMember(member1, conversationEntity1.id)
-
-        val folder = folderWithConversationsEntity(
+        val folder = ConversationFolderEntity(
             id = "folderId1",
             name = "Folder 1",
             type = ConversationFolderTypeEntity.USER,
-            conversationIdList = listOf(conversationEntity1.id)
         )
 
-        db.conversationFolderDAO.updateConversationFolders(listOf(folder))
-        db.conversationFolderDAO.updateConversationFolders(listOf()) // Clear folders
+        db.conversationFolderDAO.addFolder(folder)
+        assertEquals(1, db.conversationFolderDAO.getFoldersWithConversations().size)
+        db.conversationFolderDAO.removeFolder(folder.id)
 
         val result = db.conversationFolderDAO.getFoldersWithConversations()
 

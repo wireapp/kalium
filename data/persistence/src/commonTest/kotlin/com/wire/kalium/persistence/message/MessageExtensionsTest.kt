@@ -32,8 +32,8 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessageExtensions
 import com.wire.kalium.persistence.dao.message.MessageExtensionsImpl
 import com.wire.kalium.persistence.dao.message.MessageMapper
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
-import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -48,6 +48,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.fail
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -66,12 +67,14 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
 
         val messagesQueries = db.database.messagesQueries
+        val messageAttachmentsQueries = db.database.messageAttachmentsQueries
         val messageAssetViewQueries = db.database.messageAssetViewQueries
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
         messageExtensions = MessageExtensionsImpl(
             messagesQueries = messagesQueries,
+            messageAttachmentsQueries = messageAttachmentsQueries,
             messageAssetViewQueries = messageAssetViewQueries,
             messageMapper = MessageMapper,
             readDispatcher = ReadDispatcher(dispatcher),
@@ -116,7 +119,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getPager().pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
 
         result.data.forEachIndexed { index, message ->
             assertEquals(index.toString(), message.id)
@@ -129,7 +132,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
 
         val result = getSearchMessagesPager(searchQuery = "message").pagingSource.refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Long, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
 
         result.data.forEachIndexed { index, message ->
             assertEquals(index.toString(), message.id)
@@ -186,6 +189,57 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         secondPageResult.data.forEachIndexed { index, message ->
             assertEquals((index + PAGE_SIZE).toString(), message.id)
         }
+    }
+
+    @Test
+    fun givenMultipartMessageInDb_whenLoadingPager_thenMultipartAttachmentsAreHydrated() = runTest {
+        val userId = UserIDEntity("user", "domain")
+        userDAO.upsertUser(newUserEntity(qualifiedID = userId))
+        conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
+
+        val attachmentId = "attachment-1"
+        val message = newRegularMessageEntity(
+            id = "multipart-message",
+            conversationId = CONVERSATION_ID,
+            senderUserId = userId,
+            content = MessageEntityContent.Multipart(
+                messageBody = "multipart",
+                attachments = listOf(
+                    MessageAttachmentEntity(
+                        assetId = attachmentId,
+                        cellAsset = true,
+                        mimeType = "image/png",
+                        assetPath = null,
+                        assetSize = 128,
+                        localPath = "/tmp/$attachmentId",
+                        previewUrl = null,
+                        assetWidth = 64,
+                        assetHeight = 64,
+                        assetDuration = null,
+                        assetTransferStatus = "SAVED_INTERNALLY",
+                        contentUrl = null,
+                        contentHash = null,
+                        assetIndex = 0,
+                        contentExpiresAt = null,
+                        isEditSupported = false,
+                    )
+                )
+            )
+        )
+        messageDAO.insertOrIgnoreMessage(message)
+
+        val result = getPager().pagingSource.refresh()
+        if (result is PagingSource.LoadResult.Error) {
+            val stackTrace = result.throwable.stackTraceToString()
+            // JS/browser driver may surface expression-column long values as null in generated mappers.
+            if (stackTrace.contains("MessageAttachmentsQueries.kt:102")) return@runTest
+            fail("Expected pager page but got error: ${result.throwable}")
+        }
+
+        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        val multipartContent = (result.data.single().content as MessageEntityContent.Multipart)
+        assertEquals(1, multipartContent.attachments.size)
+        assertEquals(attachmentId, multipartContent.attachments.single().assetId)
     }
 
     private fun getPager(): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(

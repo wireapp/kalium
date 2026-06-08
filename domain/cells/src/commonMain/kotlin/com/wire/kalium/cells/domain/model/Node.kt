@@ -72,6 +72,7 @@ public sealed class Node {
         val publicLinkId: String? = null,
         override val tags: List<String> = emptyList(),
         val isEditSupported: Boolean = false,
+        val conversationId: String?,
     ) : Node()
 }
 
@@ -90,7 +91,8 @@ internal fun CellNode.toFileModel() = Node.File(
     modifiedTime = modified?.let { it * 1000 },
     tags = tags,
     ownerUserId = ownerUserId,
-    userHandle = userHandle
+    userHandle = userHandle,
+    conversationId = conversationId,
 )
 
 private fun String.formatMimetype() = this.split(";")[0].trim()

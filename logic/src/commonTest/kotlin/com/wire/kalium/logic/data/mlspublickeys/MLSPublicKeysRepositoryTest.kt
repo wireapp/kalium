@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.MLSPublicKeys
 import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import dev.mokkery.MockMode
@@ -82,7 +82,7 @@ class MLSPublicKeysRepositoryTest {
     @Test
     fun givenNoKeysStoredAndFailedFetch_whenGettingKeys_thenReturnFailure() = runTest {
         // given
-        val error = KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+        val error = KaliumException.ServerError(GenericAPIErrorResponse(500, "error_message", "error_label"))
         val response = NetworkResponse.Error(error)
         val (arrangement, repository) = Arrangement(initialPublicKeys = null)
             .withGetMLSPublicKeysApiReturning(response)
@@ -171,7 +171,7 @@ class MLSPublicKeysRepositoryTest {
         // given
         val cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         val keySignature = MLSPublicKeyType.ED25519
-        val error = KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
+        val error = KaliumException.ServerError(GenericAPIErrorResponse(500, "error_message", "error_label"))
         val response = NetworkResponse.Error(error)
         val (arrangement, repository) = Arrangement(initialPublicKeys = null)
             .withGetMLSPublicKeysApiReturning(response)

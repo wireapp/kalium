@@ -34,6 +34,7 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
+import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
@@ -42,6 +43,14 @@ import kotlinx.coroutines.cancel
 
 public actual class CoreLogic(
     rootPath: String,
+    /**
+     * Apple-specific encrypted-storage configuration. Must be supplied by the consumer
+     * (host app). The `serviceName` inside must be stable across app reinstalls —
+     * typically the host app's bundle identifier — and must NOT be derived from
+     * `NSHomeDirectory()`, which embeds the iOS Application UUID and changes on every
+     * reinstall, orphaning all previously stored keychain entries.
+     */
+    private val keychainConfig: ApplePersistenceConfig,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
     useInMemoryStorage: Boolean = false,
@@ -53,7 +62,7 @@ public actual class CoreLogic(
 ) {
     actual override val globalPreferences: GlobalPrefProvider =
         GlobalPrefProvider(
-            rootPath = rootPath,
+            keychainConfig = keychainConfig,
             shouldEncryptData = kaliumConfigs.shouldEncryptData()
         )
 
@@ -84,7 +93,8 @@ public actual class CoreLogic(
             userAuthenticatedNetworkProvider,
             networkStateObserver,
             logoutCallbackManager,
-            userAgent
+            userAgent,
+            keychainConfig
         )
     }
 

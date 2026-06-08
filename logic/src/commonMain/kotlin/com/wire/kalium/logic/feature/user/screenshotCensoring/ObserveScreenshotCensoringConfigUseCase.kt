@@ -29,14 +29,14 @@ import kotlinx.coroutines.flow.combine
  * UseCase that allow us to get the configuration of screenshot censoring enabled or not
  */
 public interface ObserveScreenshotCensoringConfigUseCase {
-    public suspend operator fun invoke(): Flow<ObserveScreenshotCensoringConfigResult>
+    public operator fun invoke(): Flow<ObserveScreenshotCensoringConfigResult>
 }
 
 internal class ObserveScreenshotCensoringConfigUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
 ) : ObserveScreenshotCensoringConfigUseCase {
 
-    override suspend fun invoke(): Flow<ObserveScreenshotCensoringConfigResult> {
+    override fun invoke(): Flow<ObserveScreenshotCensoringConfigResult> {
         return combine(
             userConfigRepository.observeScreenshotCensoringConfig()
                 .mapToRightOr(false),

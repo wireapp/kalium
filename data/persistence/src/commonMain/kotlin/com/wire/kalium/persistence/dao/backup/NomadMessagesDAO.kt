@@ -18,6 +18,9 @@
 
 package com.wire.kalium.persistence.dao.backup
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
@@ -70,6 +73,7 @@ internal class NomadMessagesDAOImpl internal constructor(
     private val usersQueries: UsersQueries,
     private val conversationsQueries: ConversationsQueries,
     private val messagesQueries: MessagesQueries,
+    private val cellFilesQueries: CellFilesQueries,
     private val messageAttachmentsQueries: MessageAttachmentsQueries,
     private val reactionsQueries: ReactionsQueries,
     private val receiptsQueries: ReceiptsQueries,
@@ -80,6 +84,7 @@ internal class NomadMessagesDAOImpl internal constructor(
 
     private val contentWriter = NomadMessageContentWriter(
         messagesQueries = messagesQueries,
+        cellFilesQueries = cellFilesQueries,
         messageAttachmentsQueries = messageAttachmentsQueries,
     )
 
@@ -116,7 +121,7 @@ internal class NomadMessagesDAOImpl internal constructor(
         )
     }
 
-    private fun insertPlaceholderUsers(messages: List<NomadMessageToInsert>) {
+    private suspend fun insertPlaceholderUsers(messages: List<NomadMessageToInsert>) {
         messages
             .asSequence()
             .map { it.payload.senderUserId }
@@ -124,7 +129,7 @@ internal class NomadMessagesDAOImpl internal constructor(
             .forEach { usersQueries.insertOrIgnoreUserId(it) }
     }
 
-    private fun insertPlaceholderConversations(messages: List<NomadMessageToInsert>) {
+    private suspend fun insertPlaceholderConversations(messages: List<NomadMessageToInsert>) {
         messages
             .groupBy { it.conversationId }
             .forEach { (conversationId, conversationMessages) ->
@@ -135,7 +140,7 @@ internal class NomadMessagesDAOImpl internal constructor(
             }
     }
 
-    private fun insertMessages(
+    private suspend fun insertMessages(
         messages: List<NomadMessageToInsert>,
         lastReadDatesByConversation: Map<QualifiedIDEntity, Instant>,
     ): Int =
@@ -143,7 +148,7 @@ internal class NomadMessagesDAOImpl internal constructor(
             insertMessageWithContentOrThrow(message, lastReadDatesByConversation)
         }
 
-    private fun insertMessageWithContentOrThrow(
+    private suspend fun insertMessageWithContentOrThrow(
         message: NomadMessageToInsert,
         lastReadDatesByConversation: Map<QualifiedIDEntity, Instant>,
     ): Boolean {
@@ -161,7 +166,7 @@ internal class NomadMessagesDAOImpl internal constructor(
             expire_after_millis = null,
             self_deletion_end_date = null,
         )
-        val insertedMessage = messagesQueries.selectChanges().executeAsOne() > 0
+        val insertedMessage = messagesQueries.selectChanges().awaitAsOne() > 0
         if (!insertedMessage) {
             return false
         }
@@ -176,7 +181,7 @@ internal class NomadMessagesDAOImpl internal constructor(
         return true
     }
 
-    private fun insertReactions(message: NomadMessageToInsert) {
+    private suspend fun insertReactions(message: NomadMessageToInsert) {
         message.reactions.forEach { reaction ->
             reaction.emojis.forEach { emoji ->
                 reactionsQueries.insertReaction(
@@ -190,7 +195,7 @@ internal class NomadMessagesDAOImpl internal constructor(
         }
     }
 
-    private fun insertReadReceipts(message: NomadMessageToInsert) {
+    private suspend fun insertReadReceipts(message: NomadMessageToInsert) {
         message.readReceipts.forEach { receipt ->
             receiptsQueries.insertReceipt(
                 message.id,
@@ -208,16 +213,19 @@ internal class NomadMessagesDAOImpl internal constructor(
     }
 }
 
-private fun List<NomadMessageToInsert>.lastReadDatesByConversation(
+private suspend fun List<NomadMessageToInsert>.lastReadDatesByConversation(
     conversationsQueries: ConversationsQueries,
-): Map<QualifiedIDEntity, Instant> =
-    asSequence()
+): Map<QualifiedIDEntity, Instant> {
+    val conversations = asSequence()
         .map { it.conversationId }
         .distinct()
-        .associateWith { conversationId ->
-            conversationsQueries.getConversationLastReadDate(conversationId).executeAsOneOrNull()
+        .toList()
+
+    return conversations.associateWith { conversationId ->
+        conversationsQueries.getConversationLastReadDate(conversationId).awaitAsOneOrNull()
                 ?: Instant.DISTANT_PAST
-        }
+    }
+}
 
 private class NomadUnreadEventWriter(
     private val messagesQueries: MessagesQueries,
@@ -225,7 +233,7 @@ private class NomadUnreadEventWriter(
     private val selfUserId: UserIDEntity,
 ) {
 
-    fun insertUnreadEvent(
+    suspend fun insertUnreadEvent(
         message: NomadMessageToInsert,
         lastReadDatesByConversation: Map<QualifiedIDEntity, Instant>,
     ) {
@@ -264,13 +272,13 @@ private class NomadUnreadEventWriter(
         }
     }
 
-    private fun insertUnreadTextLikeContent(
+    private suspend fun insertUnreadTextLikeContent(
         message: NomadMessageToInsert,
         quotedMessageId: String?,
         mentions: List<MessageEntity.Mention>,
     ) {
         val isQuotingSelfUser = quotedMessageId?.let { quotedId ->
-            messagesQueries.getMessageSenderId(quotedId, message.conversationId).executeAsOneOrNull() == selfUserId
+            messagesQueries.getMessageSenderId(quotedId, message.conversationId).awaitAsOneOrNull() == selfUserId
         } ?: false
 
         val unreadType = when {
@@ -290,10 +298,11 @@ private class NomadUnreadEventWriter(
 
 private class NomadMessageContentWriter(
     private val messagesQueries: MessagesQueries,
+    private val cellFilesQueries: CellFilesQueries,
     private val messageAttachmentsQueries: MessageAttachmentsQueries,
 ) {
 
-    fun insertRegularContent(message: NomadMessageToInsert): Boolean {
+    suspend fun insertRegularContent(message: NomadMessageToInsert): Boolean {
         val content = message.payload
         return when (content) {
             is SyncableMessagePayloadEntity.Text -> insertTextContent(message, content)
@@ -308,7 +317,7 @@ private class NomadMessageContentWriter(
         }
     }
 
-    private fun insertTextContent(
+    private suspend fun insertTextContent(
         message: NomadMessageToInsert,
         content: SyncableMessagePayloadEntity.Text,
     ): Boolean {
@@ -319,7 +328,7 @@ private class NomadMessageContentWriter(
             quoted_message_id = content.quotedMessageId,
             is_quote_verified = true,
         )
-        val insertedContent = messagesQueries.selectChanges().executeAsOne() > 0
+        val insertedContent = messagesQueries.selectChanges().awaitAsOne() > 0
         content.mentions.forEach {
             messagesQueries.insertMessageMention(
                 message_id = message.id,
@@ -333,7 +342,7 @@ private class NomadMessageContentWriter(
     }
 
     @Suppress("ComplexCondition")
-    private fun insertAssetContent(
+    private suspend fun insertAssetContent(
         message: NomadMessageToInsert,
         content: SyncableMessagePayloadEntity.Asset,
     ): Boolean {
@@ -367,10 +376,10 @@ private class NomadMessageContentWriter(
             asset_duration_ms = content.durationMs,
             asset_normalized_loudness = content.normalizedLoudness,
         )
-        return messagesQueries.selectChanges().executeAsOne() > 0
+        return messagesQueries.selectChanges().awaitAsOne() > 0
     }
 
-    private fun insertLocationContent(
+    private suspend fun insertLocationContent(
         message: NomadMessageToInsert,
         content: SyncableMessagePayloadEntity.Location,
     ): Boolean {
@@ -389,10 +398,10 @@ private class NomadMessageContentWriter(
             name = content.name,
             zoom = content.zoom,
         )
-        return messagesQueries.selectChanges().executeAsOne() > 0
+        return messagesQueries.selectChanges().awaitAsOne() > 0
     }
 
-    private fun insertMultipartContent(
+    private suspend fun insertMultipartContent(
         message: NomadMessageToInsert,
         content: SyncableMessagePayloadEntity.Multipart,
     ): Boolean {
@@ -403,7 +412,7 @@ private class NomadMessageContentWriter(
             quoted_message_id = content.quotedMessageId,
             is_quote_verified = true,
         )
-        val insertedContent = messagesQueries.selectChanges().executeAsOne() > 0
+        val insertedContent = messagesQueries.selectChanges().awaitAsOne() > 0
         content.mentions.forEach {
             messagesQueries.insertMessageMention(
                 message_id = message.id,
@@ -414,27 +423,39 @@ private class NomadMessageContentWriter(
             )
         }
         content.attachments.forEachIndexed { index, attachment ->
+            cellFilesQueries.upsertAttachmentFile(
+                uuid = attachment.assetId,
+                conversationId = message.conversationId.toString(),
+                localPath = attachment.localPath,
+                size = attachment.assetSize,
+                downloadedAt = message.date.toEpochMilliseconds(),
+                modifiedAt = message.date.toEpochMilliseconds(),
+                isOffline = 0,
+                assetVersionId = attachment.assetVersionId,
+                cellAsset = 1,
+                contentUrl = attachment.contentUrl,
+                previewUrl = attachment.previewUrl,
+                assetMimeType = attachment.mimeType,
+                assetPath = attachment.assetPath,
+                contentHash = attachment.contentHash,
+                assetWidth = attachment.assetWidth?.toLong(),
+                assetHeight = attachment.assetHeight?.toLong(),
+                assetDurationMs = attachment.assetDuration,
+                assetTransferStatus = attachment.assetTransferStatus,
+                contentUrlExpiresAt = attachment.contentExpiresAt,
+                editSupported = if (attachment.isEditSupported) 1 else 0,
+            )
             messageAttachmentsQueries.insertCellAttachment(
+                asset_id = attachment.assetId,
                 message_id = message.id,
                 conversation_id = message.conversationId,
-                asset_id = attachment.assetId,
-                asset_version_id = attachment.assetVersionId,
-                cell_asset = true,
-                asset_mime_type = attachment.mimeType,
-                asset_path = attachment.assetPath,
-                asset_size = attachment.assetSize,
-                local_path = attachment.localPath ?: "",
-                asset_width = attachment.assetWidth,
-                asset_height = attachment.assetHeight,
-                asset_duration_ms = attachment.assetDuration,
-                asset_transfer_status = attachment.assetTransferStatus,
-                asset_index = index,
+                asset_index = index.toLong(),
             )
         }
         return insertedContent
     }
 
-    private fun insertUnknownContent(
+    private suspend fun insertUnknownContent(
         messageId: String,
         conversationId: QualifiedIDEntity,
         typeName: String?,
@@ -445,6 +466,6 @@ private class NomadMessageContentWriter(
             unknown_encoded_data = null,
             unknown_type_name = typeName,
         )
-        return messagesQueries.selectChanges().executeAsOne() > 0
+        return messagesQueries.selectChanges().awaitAsOne() > 0
     }
 }

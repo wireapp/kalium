@@ -26,8 +26,10 @@ import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import dev.mokkery.answering.returns
 import dev.mokkery.every
+import dev.mokkery.everySuspend
 import dev.mokkery.mock
 import dev.mokkery.verify
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import sun.misc.Unsafe
@@ -44,7 +46,7 @@ class AuthenticationScopeForConfigIdUseCaseTest {
         val authScope = allocateUninitializedInstance<AuthenticationScope>()
 
         val dao = mock<ServerConfigurationDAO> {
-            every { configById(serverConfig.id) } returns entity
+            everySuspend { configById(serverConfig.id) } returns entity
         }
         val mapper = mock<ServerConfigMapper> {
             every { fromEntity(entity) } returns serverConfig
@@ -65,7 +67,7 @@ class AuthenticationScopeForConfigIdUseCaseTest {
         assertSame(authScope, result.authenticationScope)
         assertSame(serverConfig, factoryCalledWith)
 
-        verify { dao.configById(serverConfig.id) }
+        verifySuspend { dao.configById(serverConfig.id) }
         verify { mapper.fromEntity(entity) }
     }
 
@@ -74,7 +76,7 @@ class AuthenticationScopeForConfigIdUseCaseTest {
         val configId = "non-existent-id"
 
         val dao = mock<ServerConfigurationDAO> {
-            every { configById(configId) } returns null
+            everySuspend { configById(configId) } returns null
         }
         val mapper = mock<ServerConfigMapper>()
         var factoryCalled = false
@@ -93,7 +95,7 @@ class AuthenticationScopeForConfigIdUseCaseTest {
         assertIs<StorageFailure.DataNotFound>(result.genericFailure)
         assertEquals(false, factoryCalled)
 
-        verify { dao.configById(configId) }
+        verifySuspend { dao.configById(configId) }
     }
 
     @Suppress("UNCHECKED_CAST")

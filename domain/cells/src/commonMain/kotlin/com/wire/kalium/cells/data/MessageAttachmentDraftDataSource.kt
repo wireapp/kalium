@@ -90,11 +90,10 @@ internal class MessageAttachmentDraftDataSource internal constructor(
         messageAttachmentDao.deleteAttachments(QualifiedIDEntity(conversationId.value, conversationId.domain))
     }
 
-    override suspend fun observeAllDrafts() = withContext(dispatchers.io) {
+    override fun observeAllDrafts() =
         messageAttachmentDao.observeAttachments()
             .wrapStorageRequest()
             .mapRight { list -> list.map { it.toModel() } }
-    }
 
     override suspend fun get(uuid: String) = withContext(dispatchers.io) {
         wrapStorageRequest {
