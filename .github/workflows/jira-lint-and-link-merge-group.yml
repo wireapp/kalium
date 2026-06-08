@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   add-jira-description-merge:
-    name: add-jira-description / add-jira-description
+    name: Add-jira-description / add-jira-description
     runs-on: ubuntu-latest
     steps:
       - name: Skip Jira check on merge queue
