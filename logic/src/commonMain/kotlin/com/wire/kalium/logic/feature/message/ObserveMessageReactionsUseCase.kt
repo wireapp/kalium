@@ -32,14 +32,14 @@ import kotlinx.coroutines.flow.Flow
  * That Flow emits everytime a reaction on the message is added/removed.
  */
 public interface ObserveMessageReactionsUseCase {
-    public suspend operator fun invoke(conversationId: ConversationId, messageId: String): Flow<List<MessageReaction>>
+    public operator fun invoke(conversationId: ConversationId, messageId: String): Flow<List<MessageReaction>>
 }
 
 internal class ObserveMessageReactionsUseCaseImpl(
     private val reactionRepository: ReactionRepository
 ) : ObserveMessageReactionsUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId, messageId: String): Flow<List<MessageReaction>> =
+    override fun invoke(conversationId: ConversationId, messageId: String): Flow<List<MessageReaction>> =
         reactionRepository.observeMessageReactions(
             conversationId = conversationId,
             messageId = messageId

@@ -99,7 +99,7 @@ internal class GetPaginatedNodesUseCaseImpl(
                         } else {
                             val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
                             node.toFileModel().copy(
-                                localPath = attachment?.localPath ?: assets.firstOrNull { it.first == node.uuid }?.second,
+                                localPath = attachment?.localPath ?: assets.firstOrNull { it.uuid == node.uuid }?.localPath,
                                 metadata = attachment?.metadata,
                                 userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
                                 conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,

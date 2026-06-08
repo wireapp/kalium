@@ -44,8 +44,8 @@ class AppVersioningApiImpl internal constructor(
                     host = url.host
                     protocol = url.protocol
                     // blackListUrl could already contain platform in path (after migrating from scala app)
-                    pathSegments = if (url.pathSegments.lastOrNull() == appVersioningUrlPlatformPath()) url.pathSegments
-                    else url.pathSegments + appVersioningUrlPlatformPath()
+                    pathSegments = if (url.rawSegments.lastOrNull() == appVersioningUrlPlatformPath()) url.rawSegments
+                    else url.rawSegments + appVersioningUrlPlatformPath()
                 }.buildString()
 
                 setUrl(platformBlackListUrl)

@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.dao.event
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.EventsQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -32,14 +34,14 @@ class EventDAOImpl(
     private val writeDispatcher: WriteDispatcher,
 ) : EventDAO {
 
-    override suspend fun observeEvents(fromIdExclusive: Long): Flow<List<EventEntity>> {
+    override fun observeEvents(fromIdExclusive: Long): Flow<List<EventEntity>> {
         return eventsQueries.selectAll(::mapEvent)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
     }
 
-    override suspend fun observeUnprocessedEvents(limit: Long): Flow<List<EventEntity>> {
+    override fun observeUnprocessedEvents(limit: Long): Flow<List<EventEntity>> {
         return eventsQueries.selectUnprocessedEvents(limit, ::mapEvent)
             .asFlow()
             .mapToList()
@@ -83,7 +85,7 @@ class EventDAOImpl(
     override suspend fun getEventById(id: String): EventEntity? {
         return withContext(readDispatcher.value) {
             eventsQueries.getById(id, ::mapEvent)
-                .executeAsOneOrNull()
+                .awaitAsOneOrNull()
         }
     }
 

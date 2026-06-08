@@ -31,7 +31,7 @@ internal interface PushTokenRepository {
      * next time the token changes.
      * @return [Flow] of [Boolean] that indicates if the firebase token should be registered.
      */
-    suspend fun observeUpdateFirebaseTokenFlag(): Flow<Boolean>
+    fun observeUpdateFirebaseTokenFlag(): Flow<Boolean>
 
     /**
      * Method responsible to set the flag indicating if the firebase token should be registered via the ClientRepository.registerToken
@@ -44,7 +44,7 @@ internal class PushTokenDataSource internal constructor(private val metadataDAO:
     override suspend fun setUpdateFirebaseTokenFlag(shouldUpdate: Boolean) =
         wrapStorageRequest { metadataDAO.insertValue(shouldUpdate.toString(), SHOULD_UPDATE_FIREBASE_TOKEN_KEY) }
 
-    override suspend fun observeUpdateFirebaseTokenFlag() = metadataDAO.valueByKeyFlow(SHOULD_UPDATE_FIREBASE_TOKEN_KEY)
+    override fun observeUpdateFirebaseTokenFlag() = metadataDAO.valueByKeyFlow(SHOULD_UPDATE_FIREBASE_TOKEN_KEY)
         .map {
             // if the flag is absent (null, or empty) it means it's a new user
             // so we need to register Firebase token for such a user too

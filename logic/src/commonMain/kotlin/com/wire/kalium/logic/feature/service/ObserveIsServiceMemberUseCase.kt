@@ -33,7 +33,7 @@ public interface ObserveIsServiceMemberUseCase {
      * @param conversationId ID of the conversation service will be seen, added or removed.
      * @return a [Flow] of [ObserveIsServiceMemberResult] with Success of a Qualified ID of Service in User table or NULL or an error.
      */
-    public suspend operator fun invoke(
+    public operator fun invoke(
         serviceId: ServiceId,
         conversationId: ConversationId
     ): Flow<ObserveIsServiceMemberResult>
@@ -43,7 +43,7 @@ internal class ObserveIsServiceMemberUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
 ) : ObserveIsServiceMemberUseCase {
 
-    override suspend fun invoke(serviceId: ServiceId, conversationId: ConversationId): Flow<ObserveIsServiceMemberResult> =
+    override fun invoke(serviceId: ServiceId, conversationId: ConversationId): Flow<ObserveIsServiceMemberResult> =
         serviceRepository.observeIsServiceMember(
             serviceId = serviceId,
             conversationId = conversationId

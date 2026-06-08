@@ -122,7 +122,7 @@ class FakeUserConfigStorage(
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
 
-    override suspend fun isConferenceCallingEnabledFlow(): Flow<Boolean> {
+    override fun isConferenceCallingEnabledFlow(): Flow<Boolean> {
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
 
@@ -134,7 +134,7 @@ class FakeUserConfigStorage(
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
 
-    override suspend fun areReadReceiptsEnabled(): Flow<Boolean> {
+    override fun areReadReceiptsEnabled(): Flow<Boolean> {
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
 
@@ -142,7 +142,7 @@ class FakeUserConfigStorage(
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
 
-    override suspend fun isTypingIndicatorEnabled(): Flow<Boolean> {
+    override fun isTypingIndicatorEnabled(): Flow<Boolean> {
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
 
@@ -162,7 +162,7 @@ class FakeUserConfigStorage(
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
 
-    override suspend fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> {
+    override fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> {
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
 
@@ -178,7 +178,7 @@ class FakeUserConfigStorage(
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
 
-    override suspend fun e2EINotificationTimeFlow(): Flow<Long?> {
+    override fun e2EINotificationTimeFlow(): Flow<Long?> {
         throw NotImplementedError("Implement your fake logic if needed using the map provided.")
     }
 

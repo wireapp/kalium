@@ -24,7 +24,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.exceptions.KaliumException
@@ -416,7 +416,7 @@ class UserPropertyRepositoryTest {
 
         private fun notFoundResponse(): NetworkResponse.Error = NetworkResponse.Error(
             KaliumException.InvalidRequestError(
-                ErrorResponse(
+                GenericAPIErrorResponse(
                     code = HttpStatusCode.NotFound.value,
                     label = "not_found",
                     message = "not found"
@@ -426,7 +426,7 @@ class UserPropertyRepositoryTest {
 
         private fun badRequestResponse(): NetworkResponse.Error = NetworkResponse.Error(
             KaliumException.InvalidRequestError(
-                ErrorResponse(
+                GenericAPIErrorResponse(
                     code = HttpStatusCode.BadRequest.value,
                     label = "bad_request",
                     message = "bad request"

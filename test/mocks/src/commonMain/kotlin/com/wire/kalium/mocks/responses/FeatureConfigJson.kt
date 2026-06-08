@@ -42,7 +42,7 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatu
 import com.wire.kalium.network.api.authenticated.featureConfigs.MLSConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import kotlinx.datetime.Instant
 
@@ -169,7 +169,7 @@ object FeatureConfigJson {
         featureConfigResponseSerializer
     )
 
-    private val invalidJsonProvider = { serializable: ErrorResponse ->
+    private val invalidJsonProvider = { serializable: GenericAPIErrorResponse ->
         """
         |{
         |   "code": "${serializable.code}",
@@ -180,12 +180,12 @@ object FeatureConfigJson {
     }
 
     val insufficientPermissionsErrorResponse = ValidJsonProvider(
-        serializableData = ErrorResponse(code = 403, message = "Insufficient permissions", label = "operation-denied"),
+        serializableData = GenericAPIErrorResponse(code = 403, message = "Insufficient permissions", label = "operation-denied"),
         jsonProvider = invalidJsonProvider
     )
 
     val teamNotFoundErrorResponse = ValidJsonProvider(
-        serializableData = ErrorResponse(code = 404, "Team not found", "no-team"),
+        serializableData = GenericAPIErrorResponse(code = 404, "Team not found", "no-team"),
         jsonProvider = invalidJsonProvider
     )
 

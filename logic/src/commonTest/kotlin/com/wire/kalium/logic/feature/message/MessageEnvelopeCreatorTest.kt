@@ -571,7 +571,7 @@ class MessageEnvelopeCreatorTest {
 
         fun arrange(block: Arrangement.() -> Unit = {}) = let {
             block()
-            everySuspend { conversationRepository.observeLegalHoldStatus(any()) } returns flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED))
+            every { conversationRepository.observeLegalHoldStatus(any()) } returns flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED))
             every { legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any()) } returns Conversation.LegalHoldStatus.DISABLED
 
             this to messageEnvelopeCreator

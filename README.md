@@ -66,6 +66,30 @@ Each GitHub release upload also includes a per-bundle SHA-256 manifest
 (`logic-android-aar-SHA256SUMS.txt` / `logic-kmp-SHA256SUMS.txt`) and a matching
 GitHub build provenance bundle (`*-provenance-bundle.json`).
 
+### Generating an SBOM
+
+For **file-level** license/notice
+scan of every third-party dependency (not just coordinates):
+
+```bash
+./scripts/generate-sbom.sh
+```
+
+The script runs the `:collectSbomArtifacts` Gradle task to materialise every
+runtime artifact (JVM jars, **unpacked** Android AARs, Kotlin/Native klibs,
+resolved npm packages from `kotlin-js-store`, and the prebuilt AVS native
+libs) under `build/sbom/artifacts/`, then drives
+[ScanCode-Toolkit](https://github.com/aboutcode-org/scancode-toolkit)
+(`extractcode` + `scancode`) to produce JSON, SPDX, CycloneDX, and HTML
+reports under `build/sbom/`.
+
+Scope is restricted to the licensable subset of modules: `:sample:*`,
+`:tools:*`, `:test:*`, and `:data:persistence-test` are excluded. Run on an
+**Apple Silicon Mac** to include iOS/macOS native dependencies; on other
+hosts those targets resolve empty and the SBOM will omit them.
+
+### CLI
+
 The `cli` can be executed on the terminal of any machine that 
 satisfies the dependencies mentioned above, and is capable of actions like:
 - Logging in

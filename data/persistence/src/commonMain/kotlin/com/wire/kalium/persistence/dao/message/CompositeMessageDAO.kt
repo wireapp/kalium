@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.sqldelight.async.coroutines.await
 import com.wire.kalium.persistence.content.ButtonContentQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.WriteDispatcher
@@ -45,7 +46,7 @@ internal class CompositeMessageDAOImpl internal constructor(
         buttonId: String
     ) {
         withContext(writeDispatcher.value) {
-            buttonContentQueries.markSelected(conversation_id = conversationId, message_id = messageId, id = buttonId)
+            buttonContentQueries.markSelected(conversation_id = conversationId, message_id = messageId, id = buttonId).await()
         }
     }
 

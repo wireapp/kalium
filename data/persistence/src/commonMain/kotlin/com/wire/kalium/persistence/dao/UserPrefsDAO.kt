@@ -172,7 +172,7 @@ internal class UserPrefsDAO(
         return metadataDAO.valueByKey(ENABLE_CONFERENCE_CALLING.key)?.toBoolean() ?: DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
     }
 
-    override suspend fun isConferenceCallingEnabledFlow(): Flow<Boolean> {
+    override fun isConferenceCallingEnabledFlow(): Flow<Boolean> {
         return metadataDAO.valueByKeyFlow(ENABLE_CONFERENCE_CALLING.key).map { value ->
             value?.toBoolean() ?: DEFAULT_CONFERENCE_CALLING_ENABLED_VALUE
         }
@@ -186,7 +186,7 @@ internal class UserPrefsDAO(
         return metadataDAO.valueByKey(USE_SFT_FOR_ONE_ON_ONE_CALLS.key)?.toBoolean() ?: DEFAULT_USE_SFT_FOR_ONE_ON_ONE_CALLS_VALUE
     }
 
-    override suspend fun areReadReceiptsEnabled(): Flow<Boolean> {
+    override fun areReadReceiptsEnabled(): Flow<Boolean> {
         return metadataDAO.valueByKeyFlow(ENABLE_READ_RECEIPTS.key).map {
             it?.toBoolean() ?: true
         }
@@ -196,7 +196,7 @@ internal class UserPrefsDAO(
         metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_READ_RECEIPTS.key)
     }
 
-    override suspend fun isTypingIndicatorEnabled(): Flow<Boolean> {
+    override fun isTypingIndicatorEnabled(): Flow<Boolean> {
         return metadataDAO.valueByKeyFlow(ENABLE_TYPING_INDICATOR.key).map {
             it?.toBoolean() ?: true
         }
@@ -228,7 +228,7 @@ internal class UserPrefsDAO(
         )
     }
 
-    override suspend fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> {
+    override fun isScreenshotCensoringEnabledFlow(): Flow<Boolean> {
         return metadataDAO.valueByKeyFlow(ENABLE_SCREENSHOT_CENSORING.key).map {
             it?.toBoolean() ?: false
         }
@@ -249,7 +249,7 @@ internal class UserPrefsDAO(
         return metadataDAO.valueByKey(E2EI_NOTIFICATION_TIME.key)?.toLong()
     }
 
-    override suspend fun e2EINotificationTimeFlow(): Flow<Long?> {
+    override fun e2EINotificationTimeFlow(): Flow<Long?> {
         return metadataDAO.valueByKeyFlow(E2EI_NOTIFICATION_TIME.key).map {
             it?.toLong()
         }

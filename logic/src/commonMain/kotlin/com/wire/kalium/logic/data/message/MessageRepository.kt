@@ -116,9 +116,9 @@ internal interface MessageRepository {
 
     suspend fun getMessageById(conversationId: ConversationId, messageUuid: String): Either<StorageFailure, Message>
 
-    suspend fun observeMessageById(conversationId: ConversationId, messageUuid: String): Flow<Either<StorageFailure, Message>>
+    fun observeMessageById(conversationId: ConversationId, messageUuid: String): Flow<Either<StorageFailure, Message>>
 
-    suspend fun getMessagesByConversationIdAndVisibility(
+    fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
         limit: Int,
         offset: Int,
@@ -131,7 +131,7 @@ internal interface MessageRepository {
 
     suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, List<LocalNotification>>
 
-    suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
+    fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
         date: String,
         visibility: List<Message.Visibility> = Message.Visibility.entries
@@ -223,7 +223,7 @@ internal interface MessageRepository {
         deletionEndDate: Instant
     ): Either<CoreFailure, Unit>
 
-    suspend fun observeMessageVisibility(
+    fun observeMessageVisibility(
         messageUuid: String,
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, MessageEntity.Visibility>>
@@ -285,7 +285,7 @@ internal interface MessageRepository {
         offset: Int
     ): List<AssetMessage>
 
-    suspend fun observeAssetStatuses(
+    fun observeAssetStatuses(
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, List<MessageAssetStatus>>>
 
@@ -313,7 +313,7 @@ internal interface MessageRepository {
         editInstant: Instant
     ): Either<StorageFailure, Unit>
 
-    suspend fun observeAssetStatuses(): Flow<Either<StorageFailure, List<AssetTransferStatus>>>
+    fun observeAssetStatuses(): Flow<Either<StorageFailure, List<AssetTransferStatus>>>
 
     suspend fun updateAudioMessageNormalizedLoudness(
         conversationId: ConversationId,
@@ -345,7 +345,7 @@ internal class MessageDataSource internal constructor(
         nomadMessagePagingCoordinator,
     )
 
-    override suspend fun getMessagesByConversationIdAndVisibility(
+    override fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
         limit: Int,
         offset: Int,
@@ -433,12 +433,12 @@ internal class MessageDataSource internal constructor(
             messageDAO.getMessageById(messageUuid, conversationId.toDao())
         }.map(messageMapper::fromEntityToMessage)
 
-    override suspend fun observeMessageById(conversationId: ConversationId, messageUuid: String): Flow<Either<StorageFailure, Message>> =
+    override fun observeMessageById(conversationId: ConversationId, messageUuid: String): Flow<Either<StorageFailure, Message>> =
         messageDAO.observeMessageById(messageUuid, conversationId.toDao())
             .wrapStorageRequest()
             .mapRight(messageMapper::fromEntityToMessage)
 
-    override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
+    override fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
         date: String,
         visibility: List<Message.Visibility>
@@ -722,7 +722,7 @@ internal class MessageDataSource internal constructor(
         }
     }
 
-    override suspend fun observeMessageVisibility(
+    override fun observeMessageVisibility(
         messageUuid: String,
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, MessageEntity.Visibility>> =
@@ -816,13 +816,13 @@ internal class MessageDataSource internal constructor(
         ).map { messageMapper.fromEntityToMessage(it) }
     }
 
-    override suspend fun observeAssetStatuses(
+    override fun observeAssetStatuses(
         conversationId: ConversationId
     ) = messageDAO.observeAssetStatuses(conversationId.toDao())
         .wrapStorageRequest()
         .mapRight { assetStatusEntities -> assetStatusEntities.map { it.toModel() } }
 
-    override suspend fun observeAssetStatuses() = messageDAO.observeAssetStatuses()
+    override fun observeAssetStatuses() = messageDAO.observeAssetStatuses()
         .wrapStorageRequest()
         .mapRight { assetStatusEntities -> assetStatusEntities.map { it.transfer_status.toModel() } }
 

@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.dao.message
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import com.wire.kalium.persistence.MessageMetadataQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -33,6 +35,6 @@ internal class MessageMetadataDAOImpl internal constructor(
 ) : MessageMetadataDAO {
     override suspend fun originalSenderId(conversationId: ConversationIDEntity, messageId: String): UserIDEntity? =
         withContext(readDispatcher.value) {
-            metaDataQueries.originalSenderId(conversationId, messageId).executeAsOneOrNull()
+            metaDataQueries.originalSenderId(conversationId, messageId).awaitAsOneOrNull()
         }
 }

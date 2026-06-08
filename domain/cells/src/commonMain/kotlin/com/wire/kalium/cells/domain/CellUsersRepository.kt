@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.UserDetailsEntity
 
 internal interface CellUsersRepository {
     suspend fun getUserNames(): Either<StorageFailure, List<Pair<String, String>>>
+    suspend fun getUserNameById(userId: String): Either<StorageFailure, String?>
     suspend fun getUsers(): Either<StorageFailure, List<UserDetailsEntity>>
     suspend fun getConversationMemberDetails(conversationId: QualifiedIDEntity): Either<StorageFailure, List<UserDetailsEntity>>
 }

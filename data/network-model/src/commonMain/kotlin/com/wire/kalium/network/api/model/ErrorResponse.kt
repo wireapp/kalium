@@ -25,9 +25,6 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 
 sealed interface APIErrorResponseBody
 
-@Deprecated("Use GenericErrorResponse instead")
-typealias ErrorResponse = GenericAPIErrorResponse
-
 @Serializable
 data class GenericAPIErrorResponse(
     @SerialName("code") val code: Int,

@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+import com.wire.kalium.plugins.registerSbomCollectionTasks
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsEnvSpec
 import org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsPlugin
@@ -161,6 +162,10 @@ moduleGraphConfig {
     setStyleByModuleType.set(true)
     showFullPath.set(true)
 }
+
+// Register SBOM artifact-collection task (see scripts/generate-sbom.sh for the full
+// extractcode + scancode pipeline that consumes its output).
+registerSbomCollectionTasks()
 
 tasks.register("runAllUnitTests") {
     description = "Runs all Unit Tests."

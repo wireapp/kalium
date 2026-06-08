@@ -91,7 +91,7 @@ internal interface ConversationGroupRepository {
     ): Either<NetworkFailure, EventContentDTO.Conversation.CodeUpdated>
 
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
-    suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>>
+    fun observeGuestRoomLink(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>>
     suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<CoreFailure, Unit>
     suspend fun updateGuestRoomLink(conversationId: ConversationId, accountUrl: String): Either<CoreFailure, Unit>
 }
@@ -628,7 +628,7 @@ internal class ConversationGroupRepositoryImpl(
             }
         }
 
-    override suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>> =
+    override fun observeGuestRoomLink(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>> =
         wrapNullableFlowStorageRequest {
             conversationDAO.observeGuestRoomLinkByConversationId(conversationId.toDao())
                 .map { it?.let { ConversationGuestLink(it.link, it.isPasswordProtected) } }

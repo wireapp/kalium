@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.dao.publiclink
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import com.wire.kalium.persistence.PublicLinksQueries
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkMapper.toDao
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -43,7 +45,7 @@ internal class PublicLinkDaoImpl(
 
     override suspend fun get(id: String): PublicLinkEntity? = withContext(readDispatcher.value) {
         queries.getLink(id, ::toDao)
-            .executeAsOneOrNull()
+            .awaitAsOneOrNull()
     }
 
     override suspend fun delete(id: String) {

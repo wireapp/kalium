@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import com.wire.kalium.persistence.MetadataQueries
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
@@ -36,7 +38,7 @@ internal class PrekeyDAOImpl internal constructor(
 ) : PrekeyDAO {
     override suspend fun updateMostRecentPreKeyId(newKeyId: Int) = withContext(writeDispatcher.value) {
         metadataQueries.transaction {
-            val currentId = metadataQueries.selectValueByKey(MOST_RECENT_PREKEY_ID).executeAsOneOrNull()?.toInt()
+            val currentId = metadataQueries.selectValueByKey(MOST_RECENT_PREKEY_ID).awaitAsOneOrNull()?.toInt()
             if (currentId == null || newKeyId > currentId) {
                 metadataQueries.insertValue(MOST_RECENT_PREKEY_ID, newKeyId.toString())
             }
@@ -50,7 +52,7 @@ internal class PrekeyDAOImpl internal constructor(
     }
 
     override suspend fun mostRecentPreKeyId(): Int? = withContext(readDispatcher.value) {
-        metadataQueries.selectValueByKey(MOST_RECENT_PREKEY_ID).executeAsOneOrNull()?.toInt()
+        metadataQueries.selectValueByKey(MOST_RECENT_PREKEY_ID).awaitAsOneOrNull()?.toInt()
     }
 
     private companion object {

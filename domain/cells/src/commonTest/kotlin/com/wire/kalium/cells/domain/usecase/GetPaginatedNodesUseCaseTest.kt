@@ -33,6 +33,7 @@ import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.CellAssetContent
+import com.wire.kalium.persistence.dao.cellfile.CellFileLocalPath
 import dev.mokkery.matcher.any
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
@@ -209,10 +210,10 @@ class GetPaginatedNodesUseCaseTest {
         )
 
         val testAssetPaths = listOf(
-            "attachment_id" to "local_path",
-            "attachment_id_2" to "local_path_2",
-            "attachment_id_3" to "local_path_3",
-            "attachment_id_4" to "local_path_4",
+            CellFileLocalPath("attachment_id", "local_path"),
+            CellFileLocalPath("attachment_id_2", "local_path_2"),
+            CellFileLocalPath("attachment_id_3", "local_path_3"),
+            CellFileLocalPath("attachment_id_4", "local_path_4"),
         )
 
         val testAttachments = listOf(

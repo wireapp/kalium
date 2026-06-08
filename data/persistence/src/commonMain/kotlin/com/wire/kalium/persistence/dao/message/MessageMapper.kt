@@ -31,7 +31,6 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionUserEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionsEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
@@ -521,8 +520,7 @@ object MessageMapper {
         conversationName: String?,
         reactionsJson: String,
         mentions: String,
-        linkPreviews: String,
-        attachments: String?,
+        linkPreviews: String?,
         quotedMessageId: String?,
         quotedSenderId: QualifiedIDEntity?,
         isQuoteVerified: Boolean?,
@@ -744,7 +742,6 @@ object MessageMapper {
                         accentId = quotedSenderAccentId
                     )
                 },
-                attachments = messageAttachmentsFromJsonString(attachments),
             )
 
             MessageEntity.ContentType.CONVERSATION_WITH_CELL -> MessageEntityContent.NewConversationWithCellMessage
@@ -825,16 +822,6 @@ object MessageMapper {
         } catch (e: SerializationException) {
             if (isDebug) throw e
             kaliumLogger.e("messageMentionsFromJsonString: Invalid JSON received", e)
-            emptyList()
-        }
-    } ?: emptyList()
-
-    private fun messageAttachmentsFromJsonString(messageAttachments: String?): List<MessageAttachmentEntity> = messageAttachments?.let {
-        try {
-            serializer.decodeFromString(it)
-        } catch (e: SerializationException) {
-            if (isDebug) throw e
-            kaliumLogger.e("messageAttachmentsFromJsonString: Invalid JSON received", e)
             emptyList()
         }
     } ?: emptyList()

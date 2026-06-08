@@ -22,7 +22,7 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.mocks.extensions.toJsonString
 import com.wire.kalium.mocks.mocks.connection.ConnectionMocks
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConnectionApiV4
@@ -67,7 +67,7 @@ internal class ConnectionApiV4Test : ApiTest() {
             // given
             val nonFederatingDomain = "bella.com"
             val errorResponse = ErrorResponseJson.valid(
-                ErrorResponse(
+                GenericAPIErrorResponse(
                     code = HttpStatusCode.UnprocessableEntity.value,
                     message = "Backend does not federate with the backend of $nonFederatingDomain",
                     label = "federation-denied"

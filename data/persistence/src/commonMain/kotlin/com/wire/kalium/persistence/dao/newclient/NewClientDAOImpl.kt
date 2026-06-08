@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.newclient
 
+import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.NewClientQueries
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
@@ -66,12 +67,12 @@ internal class NewClientDAOImpl(
                     model = model,
                     label = label,
                     mls_public_keys = mlsPublicKeys
-                )
+                ).await()
             }
         }
     }
 
-    override suspend fun observeNewClients(): Flow<List<NewClientEntity>> =
+    override fun observeNewClients(): Flow<List<NewClientEntity>> =
         newClientsQueries.selectNewClientsForUser(mapper::fromClient)
             .asFlow()
             .mapToList()

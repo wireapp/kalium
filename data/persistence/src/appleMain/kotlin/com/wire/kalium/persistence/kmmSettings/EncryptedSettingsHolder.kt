@@ -26,6 +26,6 @@ import com.russhwolf.settings.Settings
 internal actual fun buildSettings(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
-): Settings = KeychainSettings(param.serviceName)
+): Settings = KeychainSettings(param.keychainConfig.serviceName)
 
-internal actual class EncryptedSettingsPlatformParam(val serviceName: String)
+internal actual class EncryptedSettingsPlatformParam(val keychainConfig: ApplePersistenceConfig)

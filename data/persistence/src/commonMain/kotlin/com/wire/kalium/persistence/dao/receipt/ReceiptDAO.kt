@@ -40,7 +40,7 @@ interface ReceiptDAO {
         messageIds: List<String>
     )
 
-    suspend fun observeDetailedReceiptsForMessage(
+    fun observeDetailedReceiptsForMessage(
         conversationId: ConversationIDEntity,
         messageId: String,
         type: ReceiptTypeEntity
@@ -74,7 +74,7 @@ class ReceiptDAOImpl(
         }
     }
 
-    override suspend fun observeDetailedReceiptsForMessage(
+    override fun observeDetailedReceiptsForMessage(
         conversationId: ConversationIDEntity,
         messageId: String,
         type: ReceiptTypeEntity

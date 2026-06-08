@@ -336,7 +336,7 @@ data object ConversationMapper {
         deleted_locally: Boolean,
         history_sharing_retention_seconds: Long,
         otherUserName: String?,
-        selfIsMember: Boolean,
+        selfIsMemberInt: Long,
     ) = ConversationWithOtherUserNameEntity(
         conversation = toConversationEntity(
             qualified_id = qualified_id,
@@ -379,7 +379,7 @@ data object ConversationMapper {
             history_sharing_retention_seconds = history_sharing_retention_seconds,
         ),
         otherUserName = otherUserName,
-        selfIsMember = selfIsMember,
+        selfIsMember = selfIsMemberInt != 0L,
     )
 
     @Suppress("LongParameterList")
