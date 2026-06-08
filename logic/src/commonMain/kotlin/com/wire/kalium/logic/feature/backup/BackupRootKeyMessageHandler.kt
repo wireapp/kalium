@@ -25,9 +25,11 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.TransactionalMessageSender
+import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.uuid.Uuid
 
 internal interface BackupRootKeyMessageHandler {
@@ -36,15 +38,20 @@ internal interface BackupRootKeyMessageHandler {
         message: Message.Signaling,
         content: MessageContent.BackupRootKeySync,
     )
+
+    suspend fun flushPendingMessages()
 }
 
 internal class BackupRootKeyMessageHandlerImpl(
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val backupRootKeyRepository: BackupRootKeyRepository,
-    private val messageSender: TransactionalMessageSender,
+    private val messageSender: MessageSender,
     private val coordinator: BackupRootKeySyncCoordinator = BackupRootKeySyncCoordinator,
 ) : BackupRootKeyMessageHandler {
+
+    private val pendingMessagesMutex = Mutex()
+    private val pendingMessages = mutableListOf<PendingMessage>()
 
     override suspend fun handle(
         transactionContext: CryptoTransactionContext,
@@ -58,21 +65,19 @@ internal class BackupRootKeyMessageHandlerImpl(
         if (message.senderClientId == currentClientId) return
 
         when (content) {
-            is MessageContent.BackupRootKeySync.Request -> handleRequest(transactionContext, message, content, currentClientId)
-            is MessageContent.BackupRootKeySync.Envelope -> handleEnvelope(transactionContext, message, content, currentClientId)
+            is MessageContent.BackupRootKeySync.Request -> handleRequest(message, content, currentClientId)
+            is MessageContent.BackupRootKeySync.Envelope -> handleEnvelope(message, content, currentClientId)
             is MessageContent.BackupRootKeySync.Ack -> Unit
         }
     }
 
     private suspend fun handleRequest(
-        transactionContext: CryptoTransactionContext,
         message: Message.Signaling,
         content: MessageContent.BackupRootKeySync.Request,
         currentClientId: ClientId,
     ) {
         val backupRootKey = backupRootKeyRepository.getBackupRootKey() ?: return
-        messageSender.sendMessage(
-            transactionContext = transactionContext,
+        addPendingMessage(
             message = Message.Signaling(
                 id = Uuid.random().toString(),
                 content = backupRootKey.toEnvelope(content.requestId),
@@ -89,7 +94,6 @@ internal class BackupRootKeyMessageHandlerImpl(
     }
 
     private suspend fun handleEnvelope(
-        transactionContext: CryptoTransactionContext,
         message: Message.Signaling,
         content: MessageContent.BackupRootKeySync.Envelope,
         currentClientId: ClientId,
@@ -99,8 +103,7 @@ internal class BackupRootKeyMessageHandlerImpl(
         if (backupRootKeyRepository.getBackupRootKey() == null) {
             backupRootKeyRepository.setBackupRootKey(backupRootKey)
         }
-        messageSender.sendMessage(
-            transactionContext = transactionContext,
+        addPendingMessage(
             message = Message.Signaling(
                 id = Uuid.random().toString(),
                 content = MessageContent.BackupRootKeySync.Ack(content.requestId, content.keyId),
@@ -116,6 +119,31 @@ internal class BackupRootKeyMessageHandlerImpl(
         )
     }
 
+    private suspend fun addPendingMessage(
+        message: Message.Signaling,
+        messageTarget: MessageTarget,
+    ) {
+        pendingMessagesMutex.withLock {
+            pendingMessages.add(PendingMessage(message, messageTarget))
+        }
+    }
+
+    override suspend fun flushPendingMessages() {
+        val pending = pendingMessagesMutex.withLock {
+            if (pendingMessages.isEmpty()) {
+                emptyList()
+            } else {
+                pendingMessages.toList().also {
+                    pendingMessages.clear()
+                }
+            }
+        }
+
+        pending.forEach { (message, target) ->
+            messageSender.sendMessage(message, target)
+        }
+    }
+
     private fun BackupRootKey.toEnvelope(requestId: String): MessageContent.BackupRootKeySync.Envelope =
         MessageContent.BackupRootKeySync.Envelope(
             requestId = requestId,
@@ -125,4 +153,9 @@ internal class BackupRootKeyMessageHandlerImpl(
             createdByClientId = createdByClientId,
             version = version,
         )
+
+    private data class PendingMessage(
+        val message: Message.Signaling,
+        val target: MessageTarget,
+    )
 }

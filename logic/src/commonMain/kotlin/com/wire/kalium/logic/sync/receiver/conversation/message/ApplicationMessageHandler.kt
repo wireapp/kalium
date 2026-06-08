@@ -369,6 +369,7 @@ internal class ApplicationMessageHandlerImpl(
 
     override suspend fun flushPendingSideEffects() {
         lastReadContentHandler.flushPendingLastReads()
+        backupRootKeyMessageHandler.flushPendingMessages()
     }
 }
 

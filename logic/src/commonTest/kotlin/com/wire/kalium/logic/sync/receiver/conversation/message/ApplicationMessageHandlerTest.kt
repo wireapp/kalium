@@ -355,6 +355,23 @@ class ApplicationMessageHandlerTest {
         }
     }
 
+    @Test
+    fun givenPendingSideEffects_whenFlushing_thenLastReadsAndBackupRootKeyMessagesAreFlushed() = runTest {
+        // given
+        val (arrangement, messageHandler) = Arrangement().arrange()
+
+        // when
+        messageHandler.flushPendingSideEffects()
+
+        // then
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.lastReadContentHandler.flushPendingLastReads()
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.backupRootKeyMessageHandler.flushPendingMessages()
+        }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val persistMessage = mock<PersistMessageUseCase>(MockMode.autoUnit)

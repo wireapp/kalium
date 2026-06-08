@@ -86,11 +86,11 @@ internal class IncrementalSyncWorkerImpl(
                                         acc
                                     }
                                 }
-                                .flatMap { eventIds ->
-                                    eventProcessor.flushPendingSideEffects().map { eventIds }
-                                }
                         }
                     }
+                        .flatMap { eventIds ->
+                            eventProcessor.flushPendingSideEffects().map { eventIds }
+                        }
                         .onSuccess { eventIds ->
                             if (eventIds.isEmpty()) {
                                 logger.i("No events to mark as processed")

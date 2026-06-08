@@ -1892,7 +1892,7 @@ public class UserSessionScope internal constructor(
             backupRootKeyRepository = BackupRootKeyRepositoryImpl(
                 metadataDAO = userStorage.database.metadataDAO,
             ),
-            messageSender = messages.messageSender as TransactionalMessageSender,
+            messageSender = messages.messageSender,
         )
 
     private val applicationMessageHandler: ApplicationMessageHandler

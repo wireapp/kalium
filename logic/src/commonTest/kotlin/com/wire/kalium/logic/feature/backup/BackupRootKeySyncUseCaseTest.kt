@@ -118,6 +118,8 @@ class BackupRootKeySyncUseCaseTest {
 
         assertNull(arrangement.repository.getBackupRootKey())
         assertEquals(0, arrangement.messageSender.sentMessages.size)
+        handler.flushPendingMessages()
+        assertEquals(0, arrangement.messageSender.sentMessages.size)
     }
 
     @Test
@@ -161,7 +163,7 @@ class BackupRootKeySyncUseCaseTest {
     }
 
     @Test
-    fun givenReceivedRequestAndLocalKeyExists_whenHandled_thenEnvelopeIsSentToRequester() = runTest {
+    fun givenReceivedRequestAndLocalKeyExists_whenHandled_thenEnvelopeIsQueuedAndSentOnFlush() = runTest {
         val arrangement = Arrangement()
         arrangement.repository.setBackupRootKey(KEY)
         val handler = arrangement.arrangeHandler()
@@ -172,10 +174,39 @@ class BackupRootKeySyncUseCaseTest {
             MessageContent.BackupRootKeySync.Request(REQUEST_ID),
         )
 
+        assertEquals(0, arrangement.messageSender.sentMessages.size)
+
+        handler.flushPendingMessages()
+
         val sent = arrangement.messageSender.sentMessages.single()
         val content = assertIs<MessageContent.BackupRootKeySync.Envelope>(sent.message.content)
         assertEquals(KEY.id, content.keyId)
         assertIs<MessageTarget.Client>(sent.target)
+        assertEquals(0, arrangement.messageSender.transactionalSendCount)
+    }
+
+    @Test
+    fun givenReceivedEnvelope_whenHandled_thenKeyIsStoredAndAckIsQueuedAndSentOnFlush() = runTest {
+        val arrangement = Arrangement()
+        val handler = arrangement.arrangeHandler()
+
+        handler.handle(
+            mock<CryptoTransactionContext>(),
+            signalingMessage(OTHER_CLIENT_ID, KEY.toEnvelope(REQUEST_ID)),
+            KEY.toEnvelope(REQUEST_ID),
+        )
+
+        assertEquals(KEY.id, arrangement.repository.getBackupRootKey()?.id)
+        assertEquals(0, arrangement.messageSender.sentMessages.size)
+
+        handler.flushPendingMessages()
+
+        val sent = arrangement.messageSender.sentMessages.single()
+        val content = assertIs<MessageContent.BackupRootKeySync.Ack>(sent.message.content)
+        assertEquals(REQUEST_ID, content.requestId)
+        assertEquals(KEY.id, content.keyId)
+        assertIs<MessageTarget.Client>(sent.target)
+        assertEquals(0, arrangement.messageSender.transactionalSendCount)
     }
 
     @Test
@@ -189,6 +220,8 @@ class BackupRootKeySyncUseCaseTest {
             MessageContent.BackupRootKeySync.Request(REQUEST_ID),
         )
 
+        assertEquals(0, arrangement.messageSender.sentMessages.size)
+        handler.flushPendingMessages()
         assertEquals(0, arrangement.messageSender.sentMessages.size)
     }
 
@@ -239,6 +272,7 @@ class BackupRootKeySyncUseCaseTest {
 
     private class RecordingMessageSender : MessageSender, TransactionalMessageSender {
         val sentMessages = mutableListOf<SentMessage>()
+        var transactionalSendCount = 0
         var onSend: suspend (Message.Signaling, MessageTarget) -> Either<CoreFailure, Unit> = { _, _ -> Unit.right() }
 
         override suspend fun sendPendingMessage(conversationId: ConversationId, messageUuid: String): Either<CoreFailure, Unit> =
@@ -254,7 +288,10 @@ class BackupRootKeySyncUseCaseTest {
             transactionContext: CryptoTransactionContext,
             message: Message.Sendable,
             messageTarget: MessageTarget,
-        ): Either<CoreFailure, Unit> = sendMessage(message, messageTarget)
+        ): Either<CoreFailure, Unit> {
+            transactionalSendCount++
+            return sendMessage(message, messageTarget)
+        }
 
         override suspend fun broadcastMessage(
             message: BroadcastMessage,
@@ -283,6 +320,16 @@ class BackupRootKeySyncUseCaseTest {
                 createdAt = NOW,
                 createdByClientId = OTHER_CLIENT_ID,
                 version = 1,
+            )
+
+        private fun BackupRootKey.toEnvelope(requestId: String): MessageContent.BackupRootKeySync.Envelope =
+            MessageContent.BackupRootKeySync.Envelope(
+                requestId = requestId,
+                keyId = id,
+                keyMaterial = keyMaterial,
+                createdAt = createdAt,
+                createdByClientId = createdByClientId,
+                version = version,
             )
 
         private fun signalingMessage(

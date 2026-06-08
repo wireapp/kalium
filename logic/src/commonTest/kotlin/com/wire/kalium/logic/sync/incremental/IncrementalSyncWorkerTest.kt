@@ -23,6 +23,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
@@ -165,6 +166,37 @@ class IncrementalSyncWorkerTest {
     }
 
     @Test
+    fun givenPendingSideEffects_whenPerformingIncrementalSync_thenSideEffectsAreFlushedOutsideTransaction() = runTest {
+        val envelope = TestEvent.memberJoin().wrapInEnvelope()
+        val eventId = envelope.event.id
+
+        val (arrangement, worker) = Arrangement()
+            .withEventGathererReturning(flowOf(EventStreamData.NewEvents(listOf(envelope))))
+            .withEventProcessorReturning(Either.Right(eventId))
+            .withSetEventsAsProcessedReturning(Either.Right(Unit))
+            .arrange()
+
+        everySuspend {
+            arrangement.eventProcessor.processEvent(any(), eq(envelope))
+        } calls {
+            assertEquals(true, arrangement.transactionActive)
+            Either.Right(eventId)
+        }
+        everySuspend {
+            arrangement.eventProcessor.flushPendingSideEffects()
+        } calls {
+            assertEquals(false, arrangement.transactionActive)
+            Either.Right(Unit)
+        }
+
+        worker.processEventsFlow().collect()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.eventRepository.setEventsAsProcessed(eq(listOf(eventId)))
+        }
+    }
+
+    @Test
     fun givenProcessorReturnsNull_whenPerformingIncrementalSync_thenWorkerDoesNotMarkEventsAsProcessed() = runTest {
         val envelope = TestEvent.memberJoin().wrapInEnvelope()
 
@@ -218,6 +250,7 @@ class IncrementalSyncWorkerTest {
         val eventProcessor: EventProcessor = mock()
         val eventGatherer: EventGatherer = mock()
         val eventRepository: EventRepository = mock()
+        var transactionActive = false
         val database = TestUserDatabase(
             userId = QualifiedID("value", "domain").toDao(),
             dispatcher = TestKaliumDispatcher.default
@@ -251,6 +284,21 @@ class IncrementalSyncWorkerTest {
 
         suspend fun withSetEventsAsProcessedReturning(result: Either<StorageFailure, Unit>) = apply {
             everySuspend { eventRepository.setEventsAsProcessed(any()) } returns result
+        }
+
+        @Suppress("UNCHECKED_CAST")
+        override suspend fun <R> withTransactionReturning(result: Either<CoreFailure, R>): CryptoTransactionProviderArrangement = apply {
+            everySuspend {
+                cryptoTransactionProvider.transaction<R>(any(), any())
+            } calls {
+                val block = it.args[1] as suspend (CryptoTransactionContext) -> Either<CoreFailure, R>
+                transactionActive = true
+                try {
+                    block(transactionContext)
+                } finally {
+                    transactionActive = false
+                }
+            }
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
