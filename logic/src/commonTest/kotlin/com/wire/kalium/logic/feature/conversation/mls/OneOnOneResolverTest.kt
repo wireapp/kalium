@@ -18,13 +18,18 @@
 package com.wire.kalium.logic.feature.conversation.mls
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.MLSFailure
 import com.wire.kalium.common.error.NetworkFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -36,7 +41,7 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
@@ -271,7 +276,7 @@ class OneOnOneResolverTest {
                 Either.Left(
                     NetworkFailure.ServerMiscommunication(
                         KaliumException.InvalidRequestError(
-                            ErrorResponse(420, "", "Unknown Status Code")
+                            GenericAPIErrorResponse(420, "", "Unknown Status Code")
                         )
                     )
                 )
@@ -293,7 +298,7 @@ class OneOnOneResolverTest {
         val throttleFailure = Either.Left(
             NetworkFailure.ServerMiscommunication(
                 KaliumException.InvalidRequestError(
-                    ErrorResponse(420, "", "Unknown Status Code")
+                    GenericAPIErrorResponse(420, "", "Unknown Status Code")
                 )
             )
         )
@@ -317,6 +322,106 @@ class OneOnOneResolverTest {
         }
     }
 
+    @Test
+    fun givenPeerIsDeletedAndOneOnOneIsMls_whenResolving_thenWipesMlsGroupAndKeepsLocalConversation() = runTest {
+        val deletedPeer = TestUser.OTHER.copy(deleted = true)
+        val convId = TestConversation.ID
+        val (arrangement, resolver) = arrange {
+            withGetOneOnOnConversationIdReturning(Either.Right(convId))
+            withGetConversationProtocolInfoReturning(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
+            withLeaveGroupReturning(Either.Right(Unit))
+        }
+
+        resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, deletedPeer, false).shouldSucceed {
+            kotlin.test.assertEquals(convId, it)
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.leaveGroup(mokkeryAny(), mokkeryEq(TestConversation.MLS_PROTOCOL_INFO.groupId))
+        }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.deleteConversationLocally(mokkeryAny()) }
+        verifySuspend(VerifyMode.not) { arrangement.oneOnOneProtocolSelector.getProtocolForUser(mokkeryAny()) }
+        verifySuspend(VerifyMode.not) { arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), mokkeryAny(), mokkeryAny()) }
+        verifySuspend(VerifyMode.not) { arrangement.oneOnOneMigrator.migrateToProteus(mokkeryAny()) }
+        verifySuspend(VerifyMode.not) { arrangement.userRepository.fetchUsersByIds(mokkeryAny()) }
+    }
+
+    @Test
+    fun givenPeerIsDeletedAndOneOnOneIsProteus_whenResolving_thenDoesNotTouchCryptoAndKeepsLocalConversation() = runTest {
+        val deletedPeer = TestUser.OTHER.copy(deleted = true)
+        val convId = TestConversation.ID
+        val (arrangement, resolver) = arrange {
+            withGetOneOnOnConversationIdReturning(Either.Right(convId))
+            withGetConversationProtocolInfoReturning(Either.Right(TestConversation.PROTEUS_PROTOCOL_INFO))
+        }
+
+        resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, deletedPeer, false).shouldSucceed {
+            kotlin.test.assertEquals(convId, it)
+        }
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.leaveGroup(mokkeryAny(), mokkeryAny())
+        }
+        verifySuspend(VerifyMode.not) { arrangement.conversationRepository.deleteConversationLocally(mokkeryAny()) }
+        verifySuspend(VerifyMode.not) { arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), mokkeryAny(), mokkeryAny()) }
+    }
+
+    @Test
+    fun givenPeerIsDeletedAndNoActive1on1_whenResolving_thenReturnsLeftAndDoesNothing() = runTest {
+        val deletedPeer = TestUser.OTHER.copy(deleted = true)
+        val (arrangement, resolver) = arrange {
+            withGetOneOnOnConversationIdReturning(Either.Left(StorageFailure.DataNotFound))
+        }
+
+        resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, deletedPeer, false).shouldFail()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsConversationRepository.leaveGroup(mokkeryAny(), mokkeryAny())
+        }
+        verifySuspend(VerifyMode.not) { arrangement.oneOnOneProtocolSelector.getProtocolForUser(mokkeryAny()) }
+        verifySuspend(VerifyMode.not) { arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), mokkeryAny(), mokkeryAny()) }
+    }
+
+    @Test
+    fun givenPeerIsDeletedAndMlsGroupAlreadyWiped_whenResolving_thenStillReturnsSuccess() = runTest {
+        val deletedPeer = TestUser.OTHER.copy(deleted = true)
+        val convId = TestConversation.ID
+        val (arrangement, resolver) = arrange {
+            withGetOneOnOnConversationIdReturning(Either.Right(convId))
+            withGetConversationProtocolInfoReturning(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
+            withLeaveGroupReturning(Either.Left(MLSFailure.Generic(IllegalStateException("group not found"))))
+        }
+
+        resolver.resolveOneOnOneConversationWithUser(arrangement.transactionContext, deletedPeer, false).shouldSucceed {
+            kotlin.test.assertEquals(convId, it)
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.leaveGroup(mokkeryAny(), mokkeryAny())
+        }
+        verifySuspend(VerifyMode.not) { arrangement.oneOnOneMigrator.migrateToMLS(mokkeryAny(), mokkeryAny(), mokkeryAny()) }
+    }
+
+    @Test
+    fun givenPeerIsDeletedAndScheduledResolveById_whenResolving_thenShortCircuitsViaCleanupPath() = runTest {
+        val deletedPeer = TestUser.OTHER.copy(deleted = true)
+        val convId = TestConversation.ID
+        val (arrangement, resolver) = arrange {
+            withGetKnownUserReturning(flowOf(deletedPeer))
+            withFetchUsersByIdReturning(Either.Right(true))
+            withGetOneOnOnConversationIdReturning(Either.Right(convId))
+            withGetConversationProtocolInfoReturning(Either.Right(TestConversation.MLS_PROTOCOL_INFO))
+            withLeaveGroupReturning(Either.Right(Unit))
+        }
+
+        resolver.resolveOneOnOneConversationWithUserId(arrangement.transactionContext, deletedPeer.id, true).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.mlsConversationRepository.leaveGroup(mokkeryAny(), mokkeryAny())
+        }
+        verifySuspend(VerifyMode.not) { arrangement.oneOnOneProtocolSelector.getProtocolForUser(mokkeryAny()) }
+    }
+
     private class Arrangement(
         private val maxConcurrentResolutions: Int = 4,
         private val maxThrottleRetries: Int = 3,
@@ -329,6 +434,8 @@ class OneOnOneResolverTest {
         val oneOnOneMigrator = mock<OneOnOneMigrator>(mode = MockMode.autoUnit)
         val incrementalSyncRepository = mock<IncrementalSyncRepository>(mode = MockMode.autoUnit)
         val pendingActionsRepository = mock<PendingActionsRepository>(mode = MockMode.autoUnit)
+        val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
+        val mlsConversationRepository = mock<MLSConversationRepository>(mode = MockMode.autoUnit)
         fun arrange() = run {
             runBlocking {
                 everySuspend { pendingActionsRepository.enqueuePendingOneOnOneResolution(mokkeryAny()) } returns Unit
@@ -340,10 +447,24 @@ class OneOnOneResolverTest {
                 oneOnOneMigrator = oneOnOneMigrator,
                 incrementalSyncRepository = incrementalSyncRepository,
                 pendingActionsRepository = pendingActionsRepository,
+                conversationRepository = conversationRepository,
+                mlsConversationRepository = mlsConversationRepository,
                 maxConcurrentResolutions = maxConcurrentResolutions,
                 maxThrottleRetries = maxThrottleRetries,
                 throttleRetryDelayMs = throttleRetryDelayMs,
             )
+        }
+
+        suspend fun withGetOneOnOnConversationIdReturning(result: Either<StorageFailure, ConversationId>) {
+            everySuspend { userRepository.getOneOnOnConversationId(mokkeryAny()) } returns result
+        }
+
+        suspend fun withGetConversationProtocolInfoReturning(result: Either<StorageFailure, Conversation.ProtocolInfo>) {
+            everySuspend { conversationRepository.getConversationProtocolInfo(mokkeryAny()) } returns result
+        }
+
+        suspend fun withLeaveGroupReturning(result: Either<CoreFailure, Unit>) {
+            everySuspend { mlsConversationRepository.leaveGroup(mokkeryAny(), mokkeryAny()) } returns result
         }
 
         suspend fun withGetUsersWithOneOnOneConversationReturning(result: List<OtherUser>) {

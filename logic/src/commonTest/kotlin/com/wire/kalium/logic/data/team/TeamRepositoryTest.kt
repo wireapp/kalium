@@ -35,7 +35,7 @@ import com.wire.kalium.network.api.authenticated.client.ClientIdDTO
 import com.wire.kalium.network.api.authenticated.keypackage.LastPreKeyDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberListPaginated
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.model.ServiceDetailDTO
@@ -88,7 +88,7 @@ class TeamRepositoryTest {
 
         everySuspend {
             arrangement.teamsApi.getTeamInfo(any())
-        }.returns(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
+        }.returns(NetworkResponse.Error(KaliumException.ServerError(GenericAPIErrorResponse(500, "error_message", "error_label"))))
 
         val result = teamRepository.fetchTeamById(teamId = TeamId("teamId"))
 
@@ -131,7 +131,7 @@ class TeamRepositoryTest {
 
         everySuspend {
             arrangement.teamsApi.getTeamMembers(any(), any(), any())
-        }.returns(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
+        }.returns(NetworkResponse.Error(KaliumException.ServerError(GenericAPIErrorResponse(500, "error_message", "error_label"))))
 
         val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain", null)
 

@@ -1,6 +1,6 @@
 DROP TRIGGER IF EXISTS updateMutedConversationNotificationDateAfterNewMessage;
 
-DROP VIEW MessagePreview;
+DROP VIEW IF EXISTS MessagePreview;
 
 CREATE VIEW IF NOT EXISTS MessagePreview
 AS SELECT

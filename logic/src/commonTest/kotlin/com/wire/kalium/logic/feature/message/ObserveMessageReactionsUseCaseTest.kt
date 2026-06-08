@@ -46,7 +46,7 @@ class ObserveMessageReactionsUseCaseTest {
         var usedMessageId: String? = null
 
         val reactionRepository = object : ReactionRepositoryStub() {
-            override suspend fun observeMessageReactions(conversationId: ConversationId, messageId: String): Flow<List<MessageReaction>> {
+            override fun observeMessageReactions(conversationId: ConversationId, messageId: String): Flow<List<MessageReaction>> {
                 usedConversationId = conversationId
                 usedMessageId = messageId
 

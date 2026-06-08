@@ -19,9 +19,9 @@ package com.wire.kalium.persistence.dao.conversation
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
+import com.wire.kalium.persistence.dao.message.AsyncQueryPagingSource
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.db.ReadDispatcher
 
@@ -73,7 +73,7 @@ internal class ConversationExtensionsImpl internal constructor(
      * - SELECT still uses full ConversationDetails rules (COUNT can be a superset)
      */
     private fun pagingSource(queryConfig: QueryConfig, initialOffset: Long) = with(queryConfig) {
-        QueryPagingSource(
+        AsyncQueryPagingSource(
             countQuery =
                 if (searchQuery.isBlank()) {
                     queries.countConversations(
@@ -90,7 +90,6 @@ internal class ConversationExtensionsImpl internal constructor(
                         strict_mls = if (strictMlsFilter) 1 else 0,
                     )
                 },
-            transacter = queries,
             context = readDispatcher.value,
             initialOffset = initialOffset,
             queryProvider = { limit, offset ->

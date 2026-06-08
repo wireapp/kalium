@@ -28,14 +28,14 @@ import kotlinx.coroutines.flow.map
  * This use case is responsible for observing the ongoing and incoming calls.
  */
 internal interface ObserveOngoingAndIncomingCallsUseCase {
-    suspend operator fun invoke(): Flow<List<Call>>
+    operator fun invoke(): Flow<List<Call>>
 }
 
 internal class ObserveOngoingAndIncomingCallsUseCaseImpl(
     private val callRepository: CallRepository
 ) : ObserveOngoingAndIncomingCallsUseCase {
 
-    override suspend fun invoke(): Flow<List<Call>> {
+    override fun invoke(): Flow<List<Call>> {
         return callRepository.callsFlow().map {
             it.filter { call ->
                 call.status == CallStatus.INCOMING || call.status == CallStatus.STILL_ONGOING

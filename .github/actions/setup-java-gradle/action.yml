@@ -9,16 +9,16 @@ runs:
   using: composite
   steps:
     - name: Set up JDK
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9
       with:
         java-version: '21'
         distribution: 'temurin'
 
     - name: Gradle Cache
-      uses: gradle/actions/setup-gradle@v4
+      uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d
 
     - name: Validate Gradle wrapper
-      uses: gradle/actions/wrapper-validation@v3
+      uses: gradle/actions/wrapper-validation@6cfc8b8e8bb586cc164bef1c478c1eea3a4d6a19
 
     - name: Enable KVM (Linux only)
       if: ${{ inputs.enable-kvm == 'true' && runner.os == 'Linux' }}

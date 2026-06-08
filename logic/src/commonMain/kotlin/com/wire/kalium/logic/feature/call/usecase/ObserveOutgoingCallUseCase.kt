@@ -30,12 +30,12 @@ public interface ObserveOutgoingCallUseCase {
      * That Flow emits everytime when the list is changed
      * @return a [Flow] of outgoing calls List that should be shown to the user.
      */
-    public suspend operator fun invoke(): Flow<List<Call>>
+    public operator fun invoke(): Flow<List<Call>>
 }
 
 internal class ObserveOutgoingCallUseCaseImpl internal constructor(
     private val callRepository: CallRepository
 ) : ObserveOutgoingCallUseCase {
 
-    override suspend operator fun invoke(): Flow<List<Call>> = callRepository.outgoingCallsFlow()
+    override operator fun invoke(): Flow<List<Call>> = callRepository.outgoingCallsFlow()
 }

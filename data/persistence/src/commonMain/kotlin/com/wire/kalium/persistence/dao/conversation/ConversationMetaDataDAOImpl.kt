@@ -17,6 +17,9 @@
  */
 package com.wire.kalium.persistence.dao.conversation
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import com.wire.kalium.persistence.ConversationMetadataQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
@@ -32,7 +35,7 @@ class ConversationMetaDataDAOImpl internal constructor(
     override suspend fun isInformedAboutDegradedMLSVerification(
         conversationId: QualifiedIDEntity
     ): Boolean = withContext(readDispatcher.value) {
-        conversationMetadataQueries.isInformedAboutDegradedMLSVerification(conversationId).executeAsOne()
+        conversationMetadataQueries.isInformedAboutDegradedMLSVerification(conversationId).awaitAsOne()
     }
 
     override suspend fun setInformedAboutDegradedMLSVerificationFlag(conversationId: QualifiedIDEntity, isInformed: Boolean) {
@@ -44,7 +47,7 @@ class ConversationMetaDataDAOImpl internal constructor(
     override suspend fun typeAndProtocolInfo(
         conversationId: QualifiedIDEntity
     ): ConversationTypeAndProtocolInfo? = withContext(readDispatcher.value) {
-        conversationMetadataQueries.typeAndProtocolInfo(conversationId).executeAsOneOrNull()?.let {
+        conversationMetadataQueries.typeAndProtocolInfo(conversationId).awaitAsOneOrNull()?.let {
             ConversationTypeAndProtocolInfo(
                 type = it.type,
                 isChannel = it.is_channel,

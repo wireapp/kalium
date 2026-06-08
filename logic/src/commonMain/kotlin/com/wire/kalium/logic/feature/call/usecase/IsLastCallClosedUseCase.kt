@@ -32,14 +32,14 @@ public interface IsLastCallClosedUseCase {
      * @param conversationId the id of the conversation.
      * @return a [Flow] of a boolean that indicates whether the last call in the conversation is closed or not.
      */
-    public suspend operator fun invoke(conversationId: ConversationId, startedTime: Long): Flow<Boolean>
+    public operator fun invoke(conversationId: ConversationId, startedTime: Long): Flow<Boolean>
 }
 
 internal class IsLastCallClosedUseCaseImpl(
     private val callRepository: CallRepository
 ) : IsLastCallClosedUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId, startedTime: Long): Flow<Boolean> =
+    override fun invoke(conversationId: ConversationId, startedTime: Long): Flow<Boolean> =
         callRepository
             .getLastClosedCallCreatedByConversationId(conversationId = conversationId)
             .map {

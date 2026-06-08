@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -128,7 +128,7 @@ class SendConnectionRequestUseCaseTest {
             .withCreateConnectionResult(
                 Either.Left(
                     NetworkFailure.ServerMiscommunication(
-                        KaliumException.InvalidRequestError(ErrorResponse(403, "", "missing-legalhold-consent"))
+                        KaliumException.InvalidRequestError(GenericAPIErrorResponse(403, "", "missing-legalhold-consent"))
                     )
                 )
             )

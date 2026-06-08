@@ -404,7 +404,6 @@ class MessageMapperUserTypeMappingTest {
             reactionsJson,
             mentions,
             linkPreviews,
-            attachments,
             quotedMessageId,
             quotedSenderId,
             isQuoteVerified,

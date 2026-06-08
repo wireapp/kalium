@@ -31,6 +31,6 @@ data class NewClientEntity(
 
 interface NewClientDAO {
     suspend fun insertNewClient(client: InsertClientParam)
-    suspend fun observeNewClients(): Flow<List<NewClientEntity>>
+    fun observeNewClients(): Flow<List<NewClientEntity>>
     suspend fun clearNewClients()
 }

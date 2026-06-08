@@ -32,10 +32,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 internal interface ServiceRepository {
-    suspend fun observeAllServices(): Flow<Either<StorageFailure, List<ServiceDetails>>>
-    suspend fun searchServicesByName(name: String): Flow<Either<StorageFailure, List<ServiceDetails>>>
+    fun observeAllServices(): Flow<Either<StorageFailure, List<ServiceDetails>>>
+    fun searchServicesByName(name: String): Flow<Either<StorageFailure, List<ServiceDetails>>>
     suspend fun getServiceById(serviceId: ServiceId): Either<StorageFailure, ServiceDetails?>
-    suspend fun observeIsServiceMember(
+    fun observeIsServiceMember(
         serviceId: ServiceId,
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, UserId?>>
@@ -46,7 +46,7 @@ internal class ServiceDataSource internal constructor(
     private val serviceMapper: ServiceMapper = MapperProvider.serviceMapper()
 ) : ServiceRepository {
 
-    override suspend fun searchServicesByName(name: String): Flow<Either<StorageFailure, List<ServiceDetails>>> =
+    override fun searchServicesByName(name: String): Flow<Either<StorageFailure, List<ServiceDetails>>> =
         wrapFlowStorageRequest {
             serviceDAO.searchServicesByName(query = name).map {
                 it.map { serviceEntity ->
@@ -63,7 +63,7 @@ internal class ServiceDataSource internal constructor(
                 }
         }
 
-    override suspend fun observeIsServiceMember(
+    override fun observeIsServiceMember(
         serviceId: ServiceId,
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, UserId?>> = wrapNullableFlowStorageRequest {
@@ -73,7 +73,7 @@ internal class ServiceDataSource internal constructor(
         ).map { it?.toModel() }
     }
 
-    override suspend fun observeAllServices(): Flow<Either<StorageFailure, List<ServiceDetails>>> =
+    override fun observeAllServices(): Flow<Either<StorageFailure, List<ServiceDetails>>> =
         wrapFlowStorageRequest {
             serviceDAO.getAllServices().map {
                 it.map { serviceEntity ->

@@ -51,7 +51,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.hooks.NoOpCryptoStateChangeHookNotifier
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.unbound.acme.ACMEAuthorizationResponse
 import com.wire.kalium.network.api.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.unbound.acme.AcmeDirectoriesResponse
@@ -1237,7 +1237,7 @@ class E2EIRepositoryTest {
 
         companion object {
             val TEST_FAILURE = Either.Left(E2EIFailure.Generic(Exception("an error")))
-            val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
+            val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(GenericAPIErrorResponse(405, "", ""))
             val RANDOM_BYTE_ARRAY = "random-value".encodeToByteArray()
             val RANDOM_NONCE = Nonce("xxxxx")
             val REFRESH_TOKEN = "YRjxLpsjRqL7zYuKstXogqioA_P3Z4fiEuga0NCVRcDSc8cy_9msxg"

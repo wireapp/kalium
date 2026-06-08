@@ -20,11 +20,13 @@ package com.wire.kalium.persistence.dao.message
 
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import app.cash.sqldelight.paging3.QueryPagingSource
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import com.wire.kalium.persistence.MessageAssetViewQueries
+import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.kaliumLogger
 
@@ -60,6 +62,7 @@ interface MessageExtensions {
 
 internal class MessageExtensionsImpl internal constructor(
     private val messagesQueries: MessagesQueries,
+    private val messageAttachmentsQueries: MessageAttachmentsQueries,
     private val messageAssetViewQueries: MessageAssetViewQueries,
     private val messageMapper: MessageMapper,
     private val readDispatcher: ReadDispatcher,
@@ -124,9 +127,8 @@ internal class MessageExtensionsImpl internal constructor(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
         initialOffset: Long
-    ) = QueryPagingSource(
+    ) = AsyncQueryPagingSource(
         countQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
-        transacter = messagesQueries,
         context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->
@@ -138,16 +140,16 @@ internal class MessageExtensionsImpl internal constructor(
                 offset,
                 messageMapper::toEntityMessageFromView
             )
-        }
+        },
+        postProcessor = ::withMultipartAttachmentsList
     )
 
     private fun getMessagesSearchPagingSource(
         searchQuery: String,
         conversationId: ConversationIDEntity,
         initialOffset: Long
-    ) = QueryPagingSource(
+    ) = AsyncQueryPagingSource(
         countQuery = messagesQueries.countBySearchedMessageAndConversationId(searchQuery, conversationId),
-        transacter = messagesQueries,
         context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->
@@ -158,21 +160,21 @@ internal class MessageExtensionsImpl internal constructor(
                 offset,
                 messageMapper::toEntityMessageFromView
             )
-        }
+        },
+        postProcessor = ::withMultipartAttachmentsList
     )
 
     private fun getMessageAssetsWithoutImagePagingSource(
         conversationId: ConversationIDEntity,
         mimeTypes: Set<String>,
         initialOffset: Long
-    ) = QueryPagingSource(
+    ) = AsyncQueryPagingSource(
         countQuery = messageAssetViewQueries.countAssetMessagesByConversationIdAndMimeTypes(
             conversationId,
             listOf(MessageEntity.Visibility.VISIBLE),
             listOf(MessageEntity.ContentType.ASSET),
             mimeTypes
         ),
-        transacter = messageAssetViewQueries,
         context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->
@@ -188,18 +190,45 @@ internal class MessageExtensionsImpl internal constructor(
         }
     )
 
+    @Suppress("ReturnCount")
+    private fun withMultipartAttachments(message: MessageEntity): MessageEntity {
+        val regularMessage = message as? MessageEntity.Regular ?: return message
+        val multipartContent = regularMessage.content as? MessageEntityContent.Multipart ?: return message
+        val attachments = messageAttachmentsQueries.getAttachments(
+            regularMessage.id,
+            regularMessage.conversationId,
+            MessageAttachmentMapper::toDao
+        ).executeAsList()
+        return regularMessage.copy(content = multipartContent.copy(attachments = attachments))
+    }
+
+    private suspend fun withMultipartAttachmentsList(messages: List<MessageEntity>): List<MessageEntity> {
+        return messages.map { message ->
+            val regularMessage = message as? MessageEntity.Regular ?: return@map message
+            val multipartContent = regularMessage.content as? MessageEntityContent.Multipart ?: return@map message
+            regularMessage.copy(
+                content = multipartContent.copy(
+                    attachments = messageAttachmentsQueries.getAttachments(
+                        regularMessage.id,
+                        regularMessage.conversationId,
+                        MessageAttachmentMapper::toDao
+                    ).awaitAsList()
+                )
+            )
+        }
+    }
+
     private fun getMessageImageAssetsPagingSource(
         conversationId: ConversationIDEntity,
         mimeTypes: Set<String>,
         initialOffset: Long
-    ) = QueryPagingSource(
+    ) = AsyncQueryPagingSource(
         countQuery = messageAssetViewQueries.countImageAssetMessagesByConversationIdAndMimeTypes(
             conversationId,
             listOf(MessageEntity.Visibility.VISIBLE),
             listOf(MessageEntity.ContentType.ASSET),
             mimeTypes
         ),
-        transacter = messageAssetViewQueries,
         context = readDispatcher.value,
         initialOffset = initialOffset,
         queryProvider = { limit, offset ->

@@ -58,7 +58,7 @@ internal interface TeamRepository {
         pageSize: Int = FETCH_TEAM_MEMBER_PAGE_SIZE
     ): Either<CoreFailure, Unit>
 
-    suspend fun getTeam(teamId: TeamId): Flow<Team?>
+    fun getTeam(teamId: TeamId): Flow<Team?>
     suspend fun deleteConversation(conversationId: ConversationId, teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun syncTeam(teamId: TeamId): Either<CoreFailure, Team>
     suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit>
@@ -145,7 +145,7 @@ internal class TeamDataSource(
         }
     }
 
-    override suspend fun getTeam(teamId: TeamId): Flow<Team?> =
+    override fun getTeam(teamId: TeamId): Flow<Team?> =
         teamDAO.getTeamById(teamId.value)
             .map {
                 it?.let {

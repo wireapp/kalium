@@ -45,7 +45,7 @@ import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.ConversationId
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.QualifiedID
@@ -493,7 +493,7 @@ class ConnectionRepositoryTest {
             .withErrorUpdatingConnectionStatusResponse(
                 userId = userId.toApi(),
                 exception = KaliumException.InvalidRequestError(
-                    ErrorResponse(
+                    GenericAPIErrorResponse(
                         message = "bad connection update",
                         code = 403,
                         label = "bad-conn-update"

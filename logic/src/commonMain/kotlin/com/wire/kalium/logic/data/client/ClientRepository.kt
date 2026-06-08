@@ -107,7 +107,7 @@ internal interface ClientRepository {
 
     suspend fun deregisterToken(token: String): Either<NetworkFailure, Unit>
     suspend fun getClientsByUserId(userId: UserId): Either<StorageFailure, List<OtherUserClient>>
-    suspend fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>>
+    fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>>
     suspend fun getClientsByConversationId(conversationId: ConversationId): Either<StorageFailure, Map<UserId, List<Client>>>
 
     suspend fun updateClientProteusVerificationStatus(
@@ -118,7 +118,7 @@ internal interface ClientRepository {
 
     suspend fun saveNewClientEvent(newClientEvent: Event.User.NewClient): Either<CoreFailure, Unit>
     suspend fun clearNewClients()
-    suspend fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>>
+    fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>>
 }
 
 @Suppress("TooManyFunctions", "INAPPLICABLE_JVM_NAME", "LongParameterList")
@@ -326,7 +326,7 @@ internal class ClientDataSource(
             clientMapper.fromOtherUsersClientsDTO(clientsList)
         }
 
-    override suspend fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>> =
+    override fun observeClientsByUserId(userId: UserId): Flow<Either<StorageFailure, List<Client>>> =
         clientDAO.observeClientsByUserId(userId.toDao())
             .map { it.map { clientMapper.fromClientEntity(it) } }
             .wrapStorageRequest()
@@ -356,7 +356,7 @@ internal class ClientDataSource(
         newClientDAO.clearNewClients()
     }
 
-    override suspend fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>> =
+    override fun observeNewClients(): Flow<Either<StorageFailure, List<Client>>> =
         newClientDAO.observeNewClients()
             .map { it.map { clientMapper.fromNewClientEntity(it) } }
             .wrapStorageRequest()

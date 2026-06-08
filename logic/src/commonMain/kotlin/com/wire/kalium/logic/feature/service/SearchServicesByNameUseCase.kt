@@ -30,14 +30,14 @@ import kotlinx.coroutines.flow.map
  */
 public interface SearchServicesByNameUseCase {
 
-    public suspend operator fun invoke(search: String): Flow<List<ServiceDetails>>
+    public operator fun invoke(search: String): Flow<List<ServiceDetails>>
 }
 
 internal class SearchServicesByNameUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
 ) : SearchServicesByNameUseCase {
 
-    override suspend fun invoke(search: String): Flow<List<ServiceDetails>> =
+    override fun invoke(search: String): Flow<List<ServiceDetails>> =
         serviceRepository.searchServicesByName(name = search).map {
             it.fold({
                 listOf()

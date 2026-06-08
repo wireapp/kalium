@@ -18,6 +18,9 @@
 
 package com.wire.kalium.persistence.dao.call
 
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.CallsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -85,35 +88,35 @@ internal class CallDAOImpl(
         }
     }
 
-    override suspend fun observeCalls(): Flow<List<CallEntity>> =
+    override fun observeCalls(): Flow<List<CallEntity>> =
         callsQueries.selectAllCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
 
-    override suspend fun observeIncomingCalls(): Flow<List<CallEntity>> =
+    override fun observeIncomingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectIncomingCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
 
-    override suspend fun observeOutgoingCalls(): Flow<List<CallEntity>> =
+    override fun observeOutgoingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectOutgoingCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
 
-    override suspend fun observeEstablishedCalls(): Flow<List<CallEntity>> =
+    override fun observeEstablishedCalls(): Flow<List<CallEntity>> =
         callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
 
     override suspend fun getEstablishedCall(): CallEntity = withContext(readDispatcher.value) {
-        callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls).executeAsOne()
+        callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls).awaitAsOne()
     }
 
-    override suspend fun observeOngoingCalls(): Flow<List<CallEntity>> =
+    override fun observeOngoingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectOngoingCalls(mapper = mapper::fromCalls)
             .asFlow()
             .mapToList()
@@ -129,15 +132,15 @@ internal class CallDAOImpl(
     }
 
     override suspend fun getCallerIdByConversationId(conversationId: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
-        callsQueries.lastCallCallerIdByConversationId(conversationId).executeAsOneOrNull()
+        callsQueries.lastCallCallerIdByConversationId(conversationId).awaitAsOneOrNull()
     }
 
     override suspend fun getCallStatusByConversationId(conversationId: QualifiedIDEntity): CallEntity.Status? =
         withContext(readDispatcher.value) {
-            callsQueries.lastCallStatusByConversationId(conversationId).executeAsOneOrNull()
+            callsQueries.lastCallStatusByConversationId(conversationId).awaitAsOneOrNull()
         }
 
-    override suspend fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
+    override fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
         callsQueries.selectLastClosedCallCreationTimeConversationId(conversationId)
             .asFlow()
             .mapToOneOrNull()
@@ -147,7 +150,7 @@ internal class CallDAOImpl(
         conversationId: QualifiedIDEntity
     ): ConversationEntity.Type? = withContext(readDispatcher.value) {
         callsQueries.selectLastCallConversionTypeByConversationId(conversationId)
-            .executeAsOneOrNull()
+            .awaitAsOneOrNull()
     }
 
     override suspend fun updateOpenCallsToClosedStatus() {

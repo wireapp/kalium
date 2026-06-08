@@ -34,7 +34,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.asset.AssetResponse
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
 import com.wire.kalium.network.api.model.ConversationId
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.asset.AssetDAO
@@ -983,7 +983,7 @@ internal class AssetRepositoryTest {
                 assetApi.uploadAsset(any(), any(), any())
             } returns NetworkResponse.Error(
                 KaliumException.ServerError(
-                    ErrorResponse(500, "error_message", "error_label")
+                    GenericAPIErrorResponse(500, "error_message", "error_label")
                 )
             )
         }
@@ -993,7 +993,7 @@ internal class AssetRepositoryTest {
                 assetApi.downloadAsset(any(), any(), any(), any())
             } returns NetworkResponse.Error(
                 KaliumException.ServerError(
-                    ErrorResponse(400, "error_message", "error_label")
+                    GenericAPIErrorResponse(400, "error_message", "error_label")
                 )
             )
         }
@@ -1009,7 +1009,7 @@ internal class AssetRepositoryTest {
                 assetApi.deleteAsset(any(), any(), any())
             } returns NetworkResponse.Error(
                 KaliumException.ServerError(
-                    ErrorResponse(500, "error_message", "error_label")
+                    GenericAPIErrorResponse(500, "error_message", "error_label")
                 )
             )
         }

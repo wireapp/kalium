@@ -30,14 +30,14 @@ import kotlinx.coroutines.flow.map
  */
 public interface ObserveAllServicesUseCase {
 
-    public suspend operator fun invoke(): Flow<List<ServiceDetails>>
+    public operator fun invoke(): Flow<List<ServiceDetails>>
 }
 
 internal class ObserveAllServicesUseCaseImpl internal constructor(
     private val serviceRepository: ServiceRepository
 ) : ObserveAllServicesUseCase {
 
-    override suspend fun invoke(): Flow<List<ServiceDetails>> =
+    override fun invoke(): Flow<List<ServiceDetails>> =
         serviceRepository.observeAllServices().map { either ->
             either.fold(
                 { emptyList() },

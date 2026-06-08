@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.dao
 
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.ServiceQueries
@@ -66,9 +68,9 @@ internal fun mapToServiceEntity(
 
 interface ServiceDAO {
     suspend fun byId(id: BotIdEntity): ServiceEntity?
-    suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?>
-    suspend fun getAllServices(): Flow<List<ServiceEntity>>
-    suspend fun searchServicesByName(query: String): Flow<List<ServiceEntity>>
+    fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?>
+    fun getAllServices(): Flow<List<ServiceEntity>>
+    fun searchServicesByName(query: String): Flow<List<ServiceEntity>>
     suspend fun insert(service: ServiceEntity)
     suspend fun insertMultiple(serviceList: List<ServiceEntity>)
 
@@ -80,22 +82,22 @@ internal class ServiceDAOImpl(
     private val writeDispatcher: WriteDispatcher,
 ) : ServiceDAO {
     override suspend fun byId(id: BotIdEntity): ServiceEntity? = withContext(readDispatcher.value) {
-        serviceQueries.byId(id, mapper = ::mapToServiceEntity).executeAsOneOrNull()
+        serviceQueries.byId(id, mapper = ::mapToServiceEntity).awaitAsOneOrNull()
     }
 
-    override suspend fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?> =
+    override fun observeIsServiceMember(id: BotIdEntity, conversationId: ConversationIDEntity): Flow<QualifiedIDEntity?> =
         serviceQueries.getUserIdFromMember(conversationId, id)
             .asFlow()
             .mapToOneOrNull(readDispatcher.value)
             .flowOn(readDispatcher.value)
 
-    override suspend fun getAllServices(): Flow<List<ServiceEntity>> =
+    override fun getAllServices(): Flow<List<ServiceEntity>> =
         serviceQueries.allServices(mapper = ::mapToServiceEntity)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
 
-    override suspend fun searchServicesByName(
+    override fun searchServicesByName(
         query: String
     ): Flow<List<ServiceEntity>> =
         serviceQueries.searchByName(query, mapper = ::mapToServiceEntity)
