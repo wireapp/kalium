@@ -107,7 +107,11 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         launch { uploadAsset(message, currentAssetMessageContent) }.invokeOnCompletion { reason ->
                             if (reason is CancellationException) {
                                 scope.launch(NonCancellable) {
-                                    updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
+                                    updateAssetMessageTransferStatus(
+                                        AssetTransferStatus.FAILED_UPLOAD,
+                                        message.conversationId,
+                                        message.id
+                                    )
                                 }
                             }
                         }
@@ -115,7 +119,13 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 }
                 .onFailure {
                     updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, asset.conversationId, messageId)
-                    messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, asset.conversationId, messageId, TYPE)
+                    messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                        failure = it,
+                        conversationId = asset.conversationId,
+                        messageId = messageId,
+                        messageType = TYPE,
+                        scheduleResendIfNoNetwork = true
+                    )
                 }
         }.fold({
             Failure.Generic(it)
