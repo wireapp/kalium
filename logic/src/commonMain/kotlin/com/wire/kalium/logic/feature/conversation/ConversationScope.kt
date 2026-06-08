@@ -465,9 +465,9 @@ public class ConversationScope internal constructor(
     public val createConversationFolder: CreateConversationFolderUseCase
         get() = CreateConversationFolderUseCaseImpl(conversationFolderRepository)
 
-    public val observeSelfUserHasViewerAccess: ObserveSelfUserHasViewerAccessOnConversationUseCase
-        get() = ObserveSelfUserHasViewerAccessOnConversationUseCase(
+    public val isSelfUserViewerOnConversation: IsSelfUserViewerOnConversationUseCase
+        get() = IsSelfUserViewerOnConversationUseCase(
             conversationRepository = conversationRepository,
-            userRepository = userRepository,
+            selfTeamIdProvider = selfTeamIdProvider,
         )
 }

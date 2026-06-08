@@ -18,13 +18,14 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import app.cash.turbine.test
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -34,29 +35,14 @@ import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-class ObserveSelfUserHasViewerAccessOnConversationUseCaseTest {
-
-    private val conversationRepository: ConversationRepository = mock()
-    private val userRepository: UserRepository = mock()
-
-    private lateinit var useCase: ObserveSelfUserHasViewerAccessOnConversationUseCase
-
-    @BeforeTest
-    fun setUp() {
-        useCase = ObserveSelfUserHasViewerAccessOnConversationUseCase(
-            conversationRepository = conversationRepository,
-            userRepository = userRepository,
-            dispatcher = TestKaliumDispatcher,
-        )
-    }
+class IsSelfUserViewerOnConversationUseCaseTest {
 
     @Test
-    fun givenNonCellsGroupConversation_whenObserving_thenReturnsTrue() =
+    fun givenNonCellsGroupConversation_whenChecking_thenReturnsTrue() =
         runTest(TestKaliumDispatcher.main) {
             val conversation = TestConversation.GROUP().copy(teamId = TeamId("some-team"))
             val conversationDetails = ConversationDetails.Group.Regular(
@@ -67,18 +53,18 @@ class ObserveSelfUserHasViewerAccessOnConversationUseCaseTest {
             )
             val selfUser = TestUser.SELF.copy(teamId = TeamId("some-team"))
 
-            everySuspend { conversationRepository.observeConversationDetailsById(any()) } returns
-                    flowOf(Either.Right(conversationDetails))
-            everySuspend { userRepository.observeSelfUser() } returns flowOf(selfUser)
+            val (_, useCase) = Arrangement()
+                .withSelfTeamIdProviderReturning(Either.Right(selfUser.teamId))
+                .withConversationDetailsReturning(Either.Right(conversationDetails))
+                .arrange()
 
-            useCase(TestConversation.ID).test {
-                assertTrue(awaitItem())
-                awaitComplete()
-            }
+            val result = useCase(TestConversation.ID)
+
+            assertTrue(result)
         }
 
     @Test
-    fun givenCellsConversationOwnedBySelfTeam_whenObserving_thenReturnsTrue() =
+    fun givenCellsConversationOwnedBySelfTeam_whenChecking_thenReturnsTrue() =
         runTest(TestKaliumDispatcher.main) {
             val selfTeamId = TeamId("self-team")
             val conversation = TestConversation.GROUP().copy(teamId = selfTeamId)
@@ -90,18 +76,18 @@ class ObserveSelfUserHasViewerAccessOnConversationUseCaseTest {
             )
             val selfUser = TestUser.SELF.copy(teamId = selfTeamId)
 
-            everySuspend { conversationRepository.observeConversationDetailsById(any()) } returns
-                    flowOf(Either.Right(conversationDetails))
-            everySuspend { userRepository.observeSelfUser() } returns flowOf(selfUser)
+            val (_, useCase) = Arrangement()
+                .withSelfTeamIdProviderReturning(Either.Right(selfUser.teamId))
+                .withConversationDetailsReturning(Either.Right(conversationDetails))
+                .arrange()
 
-            useCase(TestConversation.ID).test {
-                assertTrue(awaitItem())
-                awaitComplete()
-            }
+            val result = useCase(TestConversation.ID)
+
+            assertTrue(result)
         }
 
     @Test
-    fun givenCellsConversationOwnedByForeignTeam_whenObserving_thenReturnsFalse() =
+    fun givenCellsConversationOwnedByForeignTeam_whenChecking_thenReturnsFalse() =
         runTest(TestKaliumDispatcher.main) {
             val selfTeamId = TeamId("self-team")
             val foreignTeamId = TeamId("foreign-team")
@@ -114,18 +100,18 @@ class ObserveSelfUserHasViewerAccessOnConversationUseCaseTest {
             )
             val selfUser = TestUser.SELF.copy(teamId = selfTeamId)
 
-            everySuspend { conversationRepository.observeConversationDetailsById(any()) } returns
-                    flowOf(Either.Right(conversationDetails))
-            everySuspend { userRepository.observeSelfUser() } returns flowOf(selfUser)
+            val (_, useCase) = Arrangement()
+                .withSelfTeamIdProviderReturning(Either.Right(selfUser.teamId))
+                .withConversationDetailsReturning(Either.Right(conversationDetails))
+                .arrange()
 
-            useCase(TestConversation.ID).test {
-                assertFalse(awaitItem())
-                awaitComplete()
-            }
+            val result = useCase(TestConversation.ID)
+
+            assertFalse(result)
         }
 
     @Test
-    fun givenNonGroupConversation_whenObserving_thenReturnsTrue() =
+    fun givenNonGroupConversation_whenChecking_thenReturnsTrue() =
         runTest(TestKaliumDispatcher.main) {
             val conversationDetails = ConversationDetails.OneOne(
                 conversation = TestConversation.ONE_ON_ONE(),
@@ -133,15 +119,14 @@ class ObserveSelfUserHasViewerAccessOnConversationUseCaseTest {
                 userType = TestUser.OTHER.userType,
             )
             val selfUser = TestUser.SELF
+            val (_, useCase) = Arrangement()
+                .withSelfTeamIdProviderReturning(Either.Right(selfUser.teamId))
+                .withConversationDetailsReturning(Either.Right(conversationDetails))
+                .arrange()
 
-            everySuspend { conversationRepository.observeConversationDetailsById(any()) } returns
-                    flowOf(Either.Right(conversationDetails))
-            everySuspend { userRepository.observeSelfUser() } returns flowOf(selfUser)
+            val result = useCase(TestConversation.ID)
 
-            useCase(TestConversation.ID).test {
-                assertTrue(awaitItem())
-                awaitComplete()
-            }
+            assertTrue(result)
         }
 
     @Test
@@ -149,14 +134,36 @@ class ObserveSelfUserHasViewerAccessOnConversationUseCaseTest {
         runTest(TestKaliumDispatcher.main) {
             val selfUser = TestUser.SELF
 
-            everySuspend { conversationRepository.observeConversationDetailsById(any()) } returns
-                    flowOf(Either.Left(com.wire.kalium.common.error.StorageFailure.DataNotFound))
-            everySuspend { userRepository.observeSelfUser() } returns flowOf(selfUser)
+            val (_, useCase) = Arrangement()
+                .withSelfTeamIdProviderReturning(Either.Right(selfUser.teamId))
+                .withConversationDetailsReturning(Either.Left(StorageFailure.DataNotFound))
+                .arrange()
 
-            useCase(TestConversation.ID).test {
-                assertTrue(awaitItem())
-                awaitComplete()
-            }
+            val result = useCase(TestConversation.ID)
+
+            assertTrue(result)
         }
-}
 
+    private class Arrangement {
+
+        private val conversationRepository: ConversationRepository = mock()
+        private val selfTeamIdProvider: SelfTeamIdProvider = mock()
+
+        private val isSelfUserViewerOnConversation = IsSelfUserViewerOnConversationUseCase(
+            conversationRepository = conversationRepository,
+            selfTeamIdProvider = selfTeamIdProvider,
+            dispatcher = TestKaliumDispatcher,
+        )
+
+        fun withSelfTeamIdProviderReturning(result: Either<CoreFailure, TeamId?>) = apply {
+            everySuspend { selfTeamIdProvider() } returns result
+        }
+
+        fun withConversationDetailsReturning(result: Either<StorageFailure, ConversationDetails>) = apply {
+            everySuspend { conversationRepository.observeConversationDetailsById(any()) } returns
+                    flowOf(result)
+        }
+
+        fun arrange() = this to isSelfUserViewerOnConversation
+    }
+}

@@ -22,43 +22,40 @@ import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 /**
- * Use case to observe whether the self user has viewer access to a drive conversation.
+ * Use case to check whether the self user has viewer access to a drive conversation.
  *
- * @param conversationId the id of the conversation to check viewer access for.
- * @return a [Flow] of [Boolean] — `true` if the self user has viewer access, `false` otherwise.
+ * @return [Boolean] — `true` if the self user has viewer access, `false` otherwise.
  */
-public class ObserveSelfUserHasViewerAccessOnConversationUseCase internal constructor(
+public class IsSelfUserViewerOnConversationUseCase internal constructor(
     private val conversationRepository: ConversationRepository,
-    private val userRepository: UserRepository,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
     /**
      * @param conversationId the id of the conversation to check viewer access for.
-     * @return a [Flow] of [Boolean] — `true` if the self user has viewer access, `false` otherwise.
+     * @return [Boolean] — `true` if the self user has viewer access, `false` otherwise.
      */
-    public suspend operator fun invoke(conversationId: ConversationId): Flow<Boolean> =
+    public suspend operator fun invoke(conversationId: ConversationId): Boolean =
         withContext(dispatcher.io) {
-            val conversationDetailsFlow = conversationRepository
+            val conversationDetails = conversationRepository
                 .observeConversationDetailsById(conversationId)
                 .map { it.getOrElse(null) }
+                .first()
 
-            val selfUserFlow = userRepository.observeSelfUser()
+            val selfTeamId = selfTeamIdProvider()
 
-            combine(selfUserFlow, conversationDetailsFlow) { selfUser, conversationDetails ->
-                if (conversationDetails == null) return@combine true
-                val isCellsConversation = (conversationDetails as? ConversationDetails.Group)?.wireCell != null
-                val isConversationOwnedBySelfTeam = conversationDetails.conversation.teamId == selfUser.teamId
-                !(isCellsConversation && !isConversationOwnedBySelfTeam)
-            }
+            val isCellsConversation = (conversationDetails as? ConversationDetails.Group)?.wireCell != null
+            val isConversationOwnedBySelfTeam = conversationDetails?.conversation?.teamId == selfTeamId.getOrElse(null)
+            // If it's a cells conversation not owned by the self team, the self user doesn't have viewer access.
+            return@withContext !(isCellsConversation && !isConversationOwnedBySelfTeam)
         }
 }
