@@ -8,19 +8,29 @@ on:
       - gradle.properties
       - gradle/libs.versions.toml
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
   warm-konan-cache:
+    name: Warm Konan Cache
     runs-on: macos-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
       - name: Restore Konan cache
         id: konan-cache
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ~/.konan
           key: ${{ runner.os }}-${{ runner.arch }}-konan-${{ hashFiles('gradle.properties', 'gradle/libs.versions.toml') }}
@@ -34,7 +44,7 @@ jobs:
 
       - name: Save Konan cache
         if: always() && steps.konan-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae
         with:
           path: ~/.konan
           key: ${{ steps.konan-cache.outputs.cache-primary-key }}

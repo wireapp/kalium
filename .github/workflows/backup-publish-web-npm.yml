@@ -4,15 +4,25 @@ on:
     tags:
       - "backup/*"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
   publish-web:
+    name: Publish Web
     if: github.repository == 'wireapp/kalium'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      id-token: write
+      contents: write # required to upload JS package artifacts to GitHub releases
+      id-token: write # required for npm trusted publishing
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
       - name: Fetch release tags
         run: git fetch --force --tags origin
       - name: Ensure the tag is signed
@@ -36,8 +46,9 @@ jobs:
         run: ./gradlew :domain:backup:jsBrowserProductionLibraryDistribution
 
       - name: Setup Node for npm publish (Trusted Publisher)
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
+          package-manager-cache: false
           scope: "@wireapp"
 
       - name: Pack JS/TS artifact
@@ -48,7 +59,7 @@ jobs:
           echo "package_tgz=$package_tgz" >> "$GITHUB_OUTPUT"
 
       - name: Upload JS/TS package (GH Releases)
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
         with:
           tag_name: ${{ steps.logic-release.outputs.logic_tag }}
           fail_on_unmatched_files: true
@@ -57,4 +68,6 @@ jobs:
 
       - name: Publish package to npm (OIDC Trusted Publisher)
         working-directory: domain/backup/build/dist/js/productionLibrary
-        run: npm publish "${{ steps.pack.outputs.package_tgz }}"
+        run: npm publish "${STEPS_PACK_OUTPUTS_PACKAGE_TGZ}"
+        env:
+          STEPS_PACK_OUTPUTS_PACKAGE_TGZ: ${{ steps.pack.outputs.package_tgz }}

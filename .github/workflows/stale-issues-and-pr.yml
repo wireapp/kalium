@@ -8,11 +8,19 @@ on:
     schedule:
         -   cron: '10 0 * * *'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
     stale:
+        name: Stale
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/stale@v10
+            -   uses: actions/stale@eb5cf3af3ac0a1aa4c9c45633dd1ae542a27a899
                 with:
                     days-before-stale: 30
                     days-before-close: 7

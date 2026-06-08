@@ -704,8 +704,8 @@ more-itertools==11.1.0 \
 multiregex==2.0.4 \
     --hash=sha256:2d79c21660973acfe4cc8ef4dd18e44a863ae617c8e9c3ca431a2941fe5afb6b \
     --hash=sha256:7ece35bc815bebf46cfc06774b2fc3d737f1acb43f642522d58adc08f20e2e0d
-normality==2.6.1 \
-    --hash=sha256:cdbc1edd144b3fba6d2aa457cb6abd123e7f3c6e46960c9b80321cac9caaf494
+normality==3.1.0 \
+    --hash=sha256:850419eb8cbc43c79afe005b93155cf41c5dd26c7d6e2a0aa6452f3210c0b338
 packageurl-python==0.17.6 \
     --hash=sha256:1252ce3a102372ca6f86eb968e16f9014c4ba511c5c37d95a7f023e2ca6e5c25 \
     --hash=sha256:31a85c2717bc41dd818f3c62908685ff9eebcb68588213745b14a6ee9e7df7c9

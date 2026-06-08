@@ -13,21 +13,28 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
   detekt:
+    name: Detekt
     uses: ./.github/workflows/codestyle.yml
   benchmarks-check:
+    name: Benchmarks Check
     needs: [ detekt ]
     permissions:
-      pull-requests: write
+      pull-requests: write # required for Bencher comparison comments/checks on PRs
     runs-on: ubuntu-latest
-    container: wirebot/cryptobox:1.4.0
+    container: wirebot/cryptobox:1.4.0@sha256:f0d41d90f5af96cd68a8f151fed66f83616b1b01ea6b2d71bdad319c66617e36
     env:
       BENCHER_PROJECT: kalium-hgtkc47o
       BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          persist-credentials: false
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
       - name: Run Benchmarks
@@ -36,19 +43,21 @@ jobs:
         run: ./gradlew jmhReport
       - name: Archive Reports
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: benchmarks-reports
           path: ./test/benchmarks/build/reports/benchmarks/**
       - name: Create Benchmark Table
         id: benchmark-table
-        uses: boswelja/kotlinx-benchmark-table-action@0.0.4
+        uses: boswelja/kotlinx-benchmark-table-action@0b1ff502591bcba42a55bd052eae6a82b187968b
         with:
           benchmark-results: ./test/benchmarks/build/reports/benchmarks/main/**/jvm.json
       - name: Post Results
         run: |
           echo '## Benchmarks results ⏱️' >> $GITHUB_STEP_SUMMARY
-          echo '${{steps.benchmark-table.outputs.benchmark-table}}️' >> $GITHUB_STEP_SUMMARY
+          echo '${STEPS_BENCHMARK_TABLE_OUTPUTS_BENCHMARK_TABLE}️' >> $GITHUB_STEP_SUMMARY
+        env:
+          STEPS_BENCHMARK_TABLE_OUTPUTS_BENCHMARK_TABLE: ${{steps.benchmark-table.outputs.benchmark-table}}
 
       - name: Set JMH report full path
         id: path
@@ -59,20 +68,24 @@ jobs:
           unset REPORT_FULL_PATH_REF
 
       - name: Install bencher
-        uses: bencherdev/bencher@main
+        uses: bencherdev/bencher@f6dd4bde2670dd4a55a6cd2ca1c7c47ecf6d5b5f
 
       - name: Run Bencher on PR
         if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
+        env:
+          GITHUB_ACTIONS_TOKEN: ${{ github.token }}
+          PULL_REQUEST_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          STEPS_PATH_OUTPUTS_REPORT_FULL_PATH: ${{ steps.path.outputs.report_full_path }}
         run: |
           bencher run \
-          --branch '${{ github.head_ref }}' \
-          --branch-start-point '${{ github.base_ref }}' \
-          --branch-start-point-hash '${{ github.event.pull_request.base.sha }}' \
+          --branch '${GITHUB_HEAD_REF}' \
+          --branch-start-point '${GITHUB_BASE_REF}' \
+          --branch-start-point-hash "$PULL_REQUEST_BASE_SHA" \
           --adapter java_jmh \
           --testbed ubuntu-latest \
           --err \
-          --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          --file ${{ steps.path.outputs.report_full_path }}
+          --github-actions "$GITHUB_ACTIONS_TOKEN" \
+          --file ${STEPS_PATH_OUTPUTS_REPORT_FULL_PATH}
 
       - name: Run Bencher on base branch
         if: github.event_name == 'push' && github.ref_name == 'develop'
@@ -82,7 +95,9 @@ jobs:
           --adapter java_jmh \
           --testbed ubuntu-latest \
           --err \
-          --file ${{ steps.path.outputs.report_full_path }}
+          --file ${STEPS_PATH_OUTPUTS_REPORT_FULL_PATH}
+        env:
+          STEPS_PATH_OUTPUTS_REPORT_FULL_PATH: ${{ steps.path.outputs.report_full_path }}
 
       - name: Cleanup Gradle Cache
         # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
