@@ -41,9 +41,27 @@ kotlin {
         }
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
+            dependencies {
+                api(libs.avs)
+                api(
+                    libs.jna.map {
+                        project.dependencies.create(
+                            it,
+                            closureOf<ExternalModuleDependency> {
+                                artifact {
+                                    type = "aar"
+                                }
+                            }
+                        )
+                    }
+                )
+            }
         }
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
+            dependencies {
+                implementation(libs.jna)
+            }
         }
         val commonTest by getting {
             dependencies {
