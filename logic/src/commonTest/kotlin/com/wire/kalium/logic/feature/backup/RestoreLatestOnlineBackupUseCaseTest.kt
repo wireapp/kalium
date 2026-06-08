@@ -204,6 +204,20 @@ class RestoreLatestOnlineBackupUseCaseTest {
         assertEquals("newer.wbu", result.metadata.fileName)
     }
 
+    @Test
+    fun givenRestoreReportsProgress_whenRestoringLatestOnlineBackup_thenProgressIsForwarded() = runTest {
+        val progressValues = mutableListOf<Float>()
+        val (_, useCase) = Arrangement()
+            .withLocalRootKey(ROOT_KEY)
+            .withRemoteBackups(listOf(METADATA))
+            .withRestoreProgress(0.7f)
+            .arrange()
+
+        useCase { progressValues.add(it) }
+
+        assertEquals(listOf(0.7f), progressValues)
+    }
+
     private class Arrangement {
         val rootKeyRepository = RecordingBackupRootKeyRepository()
         val onlineBackupRepository = RecordingOnlineBackupRepository()
@@ -233,6 +247,10 @@ class RestoreLatestOnlineBackupUseCaseTest {
 
         fun withRestoreResult(result: RestoreBackupResult) = apply {
             restore.result = result
+        }
+
+        fun withRestoreProgress(progress: Float) = apply {
+            restore.progress = progress
         }
 
         fun arrange(): Pair<Arrangement, RestoreLatestOnlineBackupUseCase> {
@@ -280,7 +298,16 @@ class RestoreLatestOnlineBackupUseCaseTest {
 
     private class RecordingRestoreMPBackupUseCase : RestoreMPBackupUseCase {
         var result: RestoreBackupResult = RestoreBackupResult.Success
-        override suspend fun invoke(backupFilePath: Path, password: String?, onProgress: (Float) -> Unit): RestoreBackupResult = result
+        var progress: Float? = null
+
+        override suspend fun invoke(
+            backupFilePath: Path,
+            password: String?,
+            onProgress: (Float) -> Unit
+        ): RestoreBackupResult {
+            progress?.let(onProgress)
+            return result
+        }
     }
 
     private companion object {
