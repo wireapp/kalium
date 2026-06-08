@@ -32,10 +32,10 @@ import aws.smithy.kotlin.runtime.content.fromFile
 import aws.smithy.kotlin.runtime.content.toInputStream
 import aws.smithy.kotlin.runtime.net.url.Url
 import com.wire.kalium.cells.data.model.CellNodeDTO
-import com.wire.kalium.cells.domain.CellsNotConfiguredException
 import com.wire.kalium.cells.domain.model.CellsCredentials
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.Path
@@ -47,13 +47,13 @@ import java.nio.ByteBuffer
 import kotlin.time.Duration.Companion.hours
 
 internal actual fun cellsAwsClient(
-    credentialsResolver: suspend () -> CellsCredentials?,
+    credentials: Deferred<CellsCredentials?>,
     sessionManager: SessionManager,
     accessTokenApi: AccessTokenApi
-): CellsAwsClient = CellsAwsClientJvm(credentialsResolver, sessionManager, accessTokenApi)
+): CellsAwsClient = CellsAwsClientJvm(credentials, sessionManager, accessTokenApi)
 
 private class CellsAwsClientJvm(
-    private val credentialsResolver: suspend () -> CellsCredentials?,
+    private val credentials: Deferred<CellsCredentials?>,
     private val sessionManager: SessionManager,
     private val accessTokenAPI: AccessTokenApi,
 ) : CellsAwsClient {
@@ -66,36 +66,23 @@ private class CellsAwsClientJvm(
     }
 
     private var s3Client: S3Client? = null
-    private var s3ClientServerUrl: String? = null
     private val mutex = Mutex()
 
-    // Resolve credentials per call so a fresh-install client that started without a backend URL
-    // (cells feature config not yet synced) is replaced once the URL arrives, rather than caching
-    // a broken S3 client for the rest of the session.
     suspend fun getS3Client(): S3Client {
-        val credentials = credentialsResolver() ?: throw CellsNotConfiguredException()
-
-        s3Client?.let { cached ->
-            if (s3ClientServerUrl == credentials.serverUrl) return cached
-        }
+        s3Client?.let { return it }
 
         return mutex.withLock {
-            s3Client?.let { cached ->
-                if (s3ClientServerUrl == credentials.serverUrl) return@withLock cached
-            }
-            buildS3Client(credentials).also {
-                s3Client = it
-                s3ClientServerUrl = credentials.serverUrl
-            }
+            s3Client ?: buildS3Client().also { s3Client = it }
         }
     }
-
-    private fun buildS3Client(credentials: CellsCredentials) = S3Client {
-        region = DEFAULT_REGION
-        enableAwsChunked = true
-        endpointUrl = Url.parse(credentials.serverUrl)
-        credentialsProvider = TokenRefreshingCredentialsProvider(sessionManager, accessTokenAPI, credentials.gatewaySecret)
-        interceptors.add(RemoveExpectInterceptor())
+    private suspend fun buildS3Client() = with(credentials.await()) {
+        S3Client {
+            region = DEFAULT_REGION
+            enableAwsChunked = true
+            endpointUrl = Url.parse(this@with?.serverUrl ?: "")
+            credentialsProvider = TokenRefreshingCredentialsProvider(sessionManager, accessTokenAPI, this@with?.gatewaySecret ?: "")
+            interceptors.add(RemoveExpectInterceptor())
+        }
     }
 
     override suspend fun download(objectKey: String, outFileSink: Sink, onProgressUpdate: (Long) -> Unit) {
