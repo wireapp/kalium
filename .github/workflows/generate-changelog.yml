@@ -5,19 +5,30 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
   Changelog:
+    name: Changelog
     if: "!contains(github.ref_name, '-')"
     runs-on: ubuntu-latest
 
     steps:
       - name: 'Checkout Git repository with history for all branches and tags'
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: 'Set current Git tag'
-        run: echo "CURRENT_TAG=$(git tag --points-at ${{github.sha}})" >> "$GITHUB_ENV"
+        env:
+          GITHUB_SHA_REF: ${{ github.sha }}
+        run: echo "CURRENT_TAG=$(git tag --points-at "$GITHUB_SHA_REF")" >> "$GITHUB_ENV"
 
       - name: 'Set previous Git tag'
         run: echo "PREVIOUS_TAG=$(git describe --tags --abbrev=0 --exclude "$CURRENT_TAG")" >> "$GITHUB_ENV"
@@ -34,7 +45,7 @@ jobs:
           npx generate-changelog@1.8.0 -t "$PREVIOUS_TAG...$CURRENT_TAG"
 
       - name: 'Attach changelog to tag'
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
         env:
           GITHUB_TOKEN: ${{github.token}}
         with:
