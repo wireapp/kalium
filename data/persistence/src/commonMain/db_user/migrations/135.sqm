@@ -100,6 +100,20 @@ IFNULL(
     ),
     '[]'
 ) AS mentions,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT('{
+        "url":"' || url || '",
+        "urlOffset":' || url_offset || ',
+        "permanentUrl":"' || IFNULL(permanent_url,"' || url || '") || '",
+        "title":"' || title || '",
+        "summary":"' || summary || '"}') || ']'
+    FROM MessageLinkPreview
+    WHERE MessageLinkPreview.message_id = Message.id
+        AND MessageLinkPreview.conversation_id = Message.conversation_id
+    ORDER BY MessageLinkPreview.url_offset ASC
+    ),
+    '[]'
+) AS linkPreviews,
 TextContent.quoted_message_id AS quotedMessageId,
 QuotedMessage.sender_user_id AS quotedSenderId,
 TextContent.is_quote_verified AS isQuoteVerified,
