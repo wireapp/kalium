@@ -1,12 +1,25 @@
 name: "Semantic Commit Linting of PR titles"
 
 on:
-  pull_request_target:
+  pull_request:
     types: [ opened, edited, synchronize ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
 
 jobs:
   semantic-commit-pr-title-lint:
+    name: Semantic Commit Pr Title Lint
     runs-on: ubuntu-latest
+    permissions:
+      contents: read # required for semantic PR title validation
+      issues: write # required to add or remove title-fix labels
+      pull-requests: write # required to inspect and edit pull request labels
+      statuses: write # required for action-semantic-pull-request commit statuses
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       CUSTOM_PR_LABEL: "Fix PR Title 🤦‍♂️"
@@ -15,7 +28,7 @@ jobs:
       # Please look up the latest version from
       # https://github.com/amannn/action-semantic-pull-request/releases
       - name: Run Semantic Commint Linter
-        uses: amannn/action-semantic-pull-request@v6.1.1
+        uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50
         with:
           # Configure which types are allowed.
           # Default: https://github.com/commitizen/conventional-commit-types
