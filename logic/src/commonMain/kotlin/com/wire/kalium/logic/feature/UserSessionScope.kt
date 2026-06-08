@@ -350,6 +350,7 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
+import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
 import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolverImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
@@ -1891,13 +1892,16 @@ public class UserSessionScope internal constructor(
             linkPreviewsResolver,
             userId
         )
-    private val linkPreviewsResolver = LinkPreviewImagesResolverImpl(
-        messageRepository = messageRepository,
-        assetRepository = assetRepository,
-        linkPreviewEnabled = kaliumConfigs.linkPreviewEnabled,
-        scope = this,
-        dispatcher = KaliumDispatcherImpl
-    )
+
+    private val linkPreviewsResolver: LinkPreviewImagesResolver by lazy {
+        LinkPreviewImagesResolverImpl(
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            scope = this@UserSessionScope,
+            dispatcher = KaliumDispatcherImpl,
+            linkPreviewEnabled = kaliumConfigs.linkPreviewEnabled
+        )
+    }
 
     private val staleEpochVerifier: StaleEpochVerifier
         get() = StaleEpochVerifierImpl(
