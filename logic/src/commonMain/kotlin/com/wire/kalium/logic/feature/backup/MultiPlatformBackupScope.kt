@@ -111,6 +111,13 @@ public class MultiPlatformBackupScope internal constructor(
             kaliumFileSystem = kaliumFileSystem,
         )
 
+    public val importBackupRootKey: ImportBackupRootKeyUseCase
+        get() = ImportBackupRootKeyUseCaseImpl(
+            selfUserId = selfUserId,
+            backupRootKeyRepository = backupRootKeyRepository,
+            kaliumFileSystem = kaliumFileSystem,
+        )
+
     public val syncBackupRootKeyIfOnlineBackupExists: SyncBackupRootKeyIfOnlineBackupExistsUseCase
         get() = SyncBackupRootKeyIfOnlineBackupExistsUseCaseImpl(
             onlineBackupRepository = onlineBackupRepository,
