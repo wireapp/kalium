@@ -45,7 +45,6 @@ import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 
 /**
@@ -136,12 +135,10 @@ internal class SendPendingAssetMessageUseCaseImpl(
                 downloadIfNeeded = false
             ).flatMap { fetchAssetResult ->
 
-                val updatedMetadata = async {
-                    metadata.withAudioNormalizedLoudnessIfNeeded(
-                        mimeType = mimeType,
-                        assetDataPath = fetchAssetResult.path.toString()
-                    )
-                }
+                val updatedMetadata = metadata.withAudioNormalizedLoudnessIfNeeded(
+                    mimeType = mimeType,
+                    assetDataPath = fetchAssetResult.path.toString()
+                )
 
                 assetRepository.uploadAndPersistPrivateAsset(
                     mimeType = mimeType,
@@ -156,7 +153,7 @@ internal class SendPendingAssetMessageUseCaseImpl(
                     val (uploadedAssetId, sha256Key) = uploadResult
 
                     assetContent.copy(
-                        metadata = updatedMetadata.await(),
+                        metadata = updatedMetadata,
                         remoteData = remoteData.copy(
                             sha256 = sha256Key.data,
                             assetId = uploadedAssetId.key,

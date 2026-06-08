@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.right
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
@@ -29,7 +30,6 @@ import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
@@ -37,9 +37,9 @@ import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
+import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
 import com.wire.kalium.logic.framework.TestMessage.ASSET_CONTENT
 import com.wire.kalium.logic.framework.TestMessage.assetMessage
-import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.messaging.sending.MessageSender
@@ -343,6 +343,10 @@ class SendPendingAssetMessageUseCaseTest {
         val audioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderMock(
             canReadFile = { fakeKaliumFileSystem.exists(it.toPath()) }
         )
+
+        init {
+            everySuspend { assetRepository.deleteAssetLocally(any()) } returns Unit.right()
+        }
 
         suspend fun withGetAssetMessageTransferStatus(status: AssetTransferStatus) = apply {
             everySuspend { getAssetMessageTransferStatus.invoke(any(), any()) } returns status
