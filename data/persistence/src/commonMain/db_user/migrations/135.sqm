@@ -1,15 +1,3 @@
-ALTER TABLE MessageLinkPreview ADD COLUMN image_local_path TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_width INTEGER;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_height INTEGER;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_mime_type TEXT;
-
-ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_key TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_token TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_domain TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_otr_key TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_sha256 TEXT;
-ALTER TABLE MessageLinkPreview ADD COLUMN image_encryption_algorithm TEXT;
-
 DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
@@ -118,17 +106,7 @@ IFNULL(
         "urlOffset":' || url_offset || ',
         "permanentUrl":"' || IFNULL(permanent_url,"' || url || '") || '",
         "title":"' || title || '",
-        "summary":"' || summary || '",
-        "imageLocalPath":"' || IFNULL(image_local_path,'') || '",
-        "imageWidth":' || IFNULL(image_width,0) || ',
-        "imageHeight":' || IFNULL(image_height,0) || ',
-        "imageMimeType":"' || IFNULL(image_mime_type,'') || '",
-        "imageAssetKey":"' || IFNULL(image_asset_key,'') || '",
-        "imageAssetToken":"' || IFNULL(image_asset_token,'') || '",
-        "imageAssetDomain":"' || IFNULL(image_asset_domain,'') || '",
-        "imageOtrKey":"' || IFNULL(image_otr_key,'') || '",
-        "imageSha256":"' || IFNULL(image_sha256,'') || '",
-        "imageEncryptionAlgorithm":"' || IFNULL(image_encryption_algorithm,'') || '"}') || ']'
+        "summary":"' || summary || '"}') || ']'
     FROM MessageLinkPreview
     WHERE MessageLinkPreview.message_id = Message.id
         AND MessageLinkPreview.conversation_id = Message.conversation_id
@@ -136,30 +114,6 @@ IFNULL(
     ),
     '[]'
 ) AS linkPreviews,
-IFNULL(
-    (SELECT '[' || GROUP_CONCAT('{
-        "id":"' || asset_id || '",
-        "asset_index":"' || asset_index || '",
-        "mime_type":"' || asset_mime_type || '",
-        "cell_asset":"' || cell_asset || '",
-        "asset_path":"' || IFNULL(asset_path,'') || '",
-        "asset_size":' || IFNULL(asset_size,0) || ',
-        "local_path":"' || IFNULL(local_path,'') || '",
-        "asset_width":"' || IFNULL(asset_width,0) || '",
-        "asset_height":"' || IFNULL(asset_height,0) || '",
-        "asset_transfer_status":"' || asset_transfer_status || '",
-        "asset_duration_ms":"' || IFNULL(asset_duration_ms,0) || '",
-        "content_hash":"' || IFNULL(content_hash,'') || '",
-        "content_url":"' || IFNULL(content_url,'') || '",
-        "preview_url":"' || IFNULL(preview_url,'') || '",
-        "content_url_expires_at":"' || IFNULL(content_url_expires_at,0) || '",
-        "edit_supported":"' || edit_supported || '"}') || ']'
-    FROM MessageAttachments
-    WHERE (MessageAttachments.message_id = Message.id
-        AND MessageAttachments.conversation_id = Message.conversation_id)
-    ),
-    '[]'
-) AS attachments,
 TextContent.quoted_message_id AS quotedMessageId,
 QuotedMessage.sender_user_id AS quotedSenderId,
 TextContent.is_quote_verified AS isQuoteVerified,

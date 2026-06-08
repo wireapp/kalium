@@ -18,7 +18,7 @@
 
 package com.wire.kalium.network.exceptions
 
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import io.ktor.http.HttpStatusCode
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -29,7 +29,7 @@ class KaliumExceptionTest {
     @Test
     fun given429InvalidRequest_whenCheckingTooManyRequests_thenReturnsTrue() {
         val subject = KaliumException.InvalidRequestError(
-            ErrorResponse(HttpStatusCode.TooManyRequests.value, "too-many-requests", "Please try again later.")
+            GenericAPIErrorResponse(HttpStatusCode.TooManyRequests.value, "too-many-requests", "Please try again later.")
         )
 
         assertTrue(subject.isTooManyRequests())
@@ -38,7 +38,7 @@ class KaliumExceptionTest {
     @Test
     fun given420InvalidRequest_whenCheckingTooManyRequests_thenReturnsTrue() {
         val subject = KaliumException.InvalidRequestError(
-            ErrorResponse(420, "unknown status code", "nginx throttled request")
+            GenericAPIErrorResponse(420, "unknown status code", "nginx throttled request")
         )
 
         assertTrue(subject.isTooManyRequests())
@@ -47,7 +47,7 @@ class KaliumExceptionTest {
     @Test
     fun givenNonThrottleInvalidRequest_whenCheckingTooManyRequests_thenReturnsFalse() {
         val subject = KaliumException.InvalidRequestError(
-            ErrorResponse(HttpStatusCode.BadRequest.value, "bad-request", "Bad request")
+            GenericAPIErrorResponse(HttpStatusCode.BadRequest.value, "bad-request", "Bad request")
         )
 
         assertFalse(subject.isTooManyRequests())

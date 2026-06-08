@@ -29,8 +29,16 @@ on:
         types:
             - closed
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
 jobs:
     cherry-pick:
+        name: Cherry Pick
         runs-on: ubuntu-latest
 
         env:
@@ -38,12 +46,13 @@ jobs:
 
         steps:
             - name: Checkout
-              uses: actions/checkout@v6
+              uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
               with:
                   fetch-depth: 0
+                  persist-credentials: false
 
             - name: Cherry pick to `develop`
-              uses: wireapp/action-auto-cherry-pick@v1.0.2
+              uses: wireapp/action-auto-cherry-pick@a4a732fe8b79e3fae70362e6271b8982be5b1bc1
               with:
                   target-branch: develop
                   pr-title-suffix: '🍒'

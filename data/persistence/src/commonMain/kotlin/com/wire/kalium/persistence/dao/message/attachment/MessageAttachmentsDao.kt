@@ -17,7 +17,11 @@
  */
 package com.wire.kalium.persistence.dao.message.attachment
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOne
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import app.cash.sqldelight.coroutines.asFlow
+import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.MessageAttachmentsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper.toDao
@@ -46,34 +50,34 @@ interface MessageAttachmentsDao {
     )
     suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity>
     suspend fun getAttachments(): List<MessageAttachmentEntity>
-    suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
+    fun observeAttachments(): Flow<List<MessageAttachmentEntity>>
     suspend fun setAssetPath(assetId: String, path: String)
 }
 
 internal class MessageAttachmentsDaoImpl(
     private val queries: MessageAttachmentsQueries,
+    @Suppress("unused") private val cellFilesQueries: CellFilesQueries,
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
 ) : MessageAttachmentsDao {
 
     override suspend fun getAttachments(messageId: String, conversationId: QualifiedIDEntity): List<MessageAttachmentEntity> =
         withContext(readDispatcher.value) {
-            queries.getAttachments(messageId, conversationId, ::toDao).executeAsList()
+            queries.getAttachments(messageId, conversationId, ::toDao).awaitAsList()
         }
 
     override suspend fun getAttachments(): List<MessageAttachmentEntity> = withContext(readDispatcher.value) {
-        queries.getAllAttachments(::toDao).executeAsList()
+        queries.getAllAttachments(::toDao).awaitAsList()
     }
 
-    override suspend fun observeAttachments(): Flow<List<MessageAttachmentEntity>> = withContext(readDispatcher.value) {
+    override fun observeAttachments(): Flow<List<MessageAttachmentEntity>> =
         queries.getAllAttachments(::toDao)
             .asFlow()
             .mapToList()
             .flowOn(readDispatcher.value)
-    }
 
     override suspend fun getAttachment(assetId: String): MessageAttachmentEntity = withContext(readDispatcher.value) {
-        queries.getAttachment(asset_id = assetId, ::toDao).executeAsOne()
+        queries.getAttachment(asset_id = assetId, ::toDao).awaitAsOne()
     }
 
     override suspend fun updateAttachment(
@@ -85,25 +89,25 @@ internal class MessageAttachmentsDaoImpl(
         isEditSupported: Boolean,
     ) {
         withContext(writeDispatcher.value) {
-            queries.updateAttachment(url, urlExpiresAt, hash, remotePath, isEditSupported, assetId)
+            queries.updateAttachment(url, urlExpiresAt, hash, remotePath, if (isEditSupported) 1 else 0, assetId)
         }
     }
 
     override suspend fun getAssetPath(assetId: String): String? = withContext(readDispatcher.value) {
-        queries.getAssetPath(asset_id = assetId).executeAsOneOrNull()?.asset_path
+        queries.getAssetPath(uuid = assetId).awaitAsOneOrNull()?.assetPath
     }
 
     override suspend fun setAssetPath(assetId: String, path: String) {
         withContext(writeDispatcher.value) {
-            queries.setAssetPath(asset_id = assetId, asset_path = path)
+            queries.setAssetPath(assetPath = path, uuid = assetId)
         }
     }
 
     override suspend fun setLocalPath(assetId: String, path: String?) {
         withContext(writeDispatcher.value) {
             queries.setLocalPath(
-                local_path = path,
-                asset_id = assetId
+                localPath = path,
+                uuid = assetId
             )
         }
     }
@@ -111,8 +115,8 @@ internal class MessageAttachmentsDaoImpl(
     override suspend fun setPreviewUrl(assetId: String, previewUrl: String?) {
         withContext(writeDispatcher.value) {
             queries.setPreviewUrl(
-                preview_url = previewUrl,
-                asset_id = assetId
+                previewUrl = previewUrl,
+                uuid = assetId
             )
         }
     }
@@ -120,8 +124,8 @@ internal class MessageAttachmentsDaoImpl(
     override suspend fun setTransferStatus(assetId: String, status: String) {
         withContext(writeDispatcher.value) {
             queries.setTransferStatus(
-                asset_transfer_status = status,
-                asset_id = assetId
+                assetTransferStatus = status,
+                uuid = assetId
             )
         }
     }

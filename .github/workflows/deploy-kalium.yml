@@ -27,12 +27,20 @@ on:
         type: string
         default: ""
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
-  contents: write
-  actions: read
+  contents: read # required by reusable workflow defaults
+  actions: read # required to download workflow artifacts
 
 jobs:
   deploy:
+    name: Deploy
+    permissions:
+      contents: write # required to create/update GitHub releases
+      actions: read # required to download workflow artifacts
     strategy:
       matrix:
         target: ${{ fromJson(inputs.deployment-targets) }}
@@ -40,7 +48,7 @@ jobs:
     steps:
       - name: Download artifacts
         if: matrix.target.artifacts != ''
-        uses: actions/download-artifact@v8.0.1
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
         with:
           pattern: ${{ matrix.target.artifacts }}
           path: release-artifacts/
@@ -48,7 +56,7 @@ jobs:
 
       - name: Deploy to GitHub Release
         if: matrix.target.type == 'github-release'
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
         with:
           tag_name: ${{ inputs.tag-name }}
           name: ${{ inputs.release-name }}
@@ -58,13 +66,18 @@ jobs:
           prerelease: ${{ inputs.prerelease }}
 
   deployment-summary:
+    name: Deployment Summary
     needs: deploy
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Create deployment summary
+        env:
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          INPUTS_DEPLOYMENT_TARGETS: ${{ inputs.deployment-targets }}
+          INPUTS_TAG_NAME: ${{ inputs.tag-name }}
         run: |
           echo "## Kalium Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag**: ${{ inputs.tag-name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Targets**: ${{ inputs.deployment-targets }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Status**: ${{ needs.deploy.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag**: ${INPUTS_TAG_NAME}" >> $GITHUB_STEP_SUMMARY
+          echo "**Targets**: ${INPUTS_DEPLOYMENT_TARGETS}" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: $DEPLOY_RESULT" >> $GITHUB_STEP_SUMMARY

@@ -20,6 +20,7 @@ package com.wire.kalium.cells
 import com.wire.kalium.cells.data.CellAttachmentsDataSource
 import com.wire.kalium.cells.data.CellConfigDataSource
 import com.wire.kalium.cells.data.CellConversationDataSource
+import com.wire.kalium.cells.data.CellFileDataSource
 import com.wire.kalium.cells.data.CellUploadManagerImpl
 import com.wire.kalium.cells.data.CellUsersDataSource
 import com.wire.kalium.cells.data.CellsApiImpl
@@ -32,6 +33,7 @@ import com.wire.kalium.cells.data.fileDownloader
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
 import com.wire.kalium.cells.domain.CellConfigRepository
 import com.wire.kalium.cells.domain.CellConversationRepository
+import com.wire.kalium.cells.domain.CellFileRepository
 import com.wire.kalium.cells.domain.CellUploadManager
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.domain.CellsApi
@@ -123,11 +125,25 @@ import com.wire.kalium.cells.domain.usecase.versioning.GetNodeVersionsUseCase
 import com.wire.kalium.cells.domain.usecase.versioning.GetNodeVersionsUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCase
 import com.wire.kalium.cells.domain.usecase.versioning.RestoreNodeVersionUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.offline.DeleteOfflineFileUseCase
+import com.wire.kalium.cells.domain.usecase.offline.DeleteOfflineFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetConversationNameUseCase
+import com.wire.kalium.cells.domain.usecase.GetConversationNameUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.GetUserNameUseCase
+import com.wire.kalium.cells.domain.usecase.GetUserNameUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCase
+import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesUseCase
+import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesByConversationUseCase
+import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesByConversationUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCase
+import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.asset.AssetDAO
+import com.wire.kalium.persistence.dao.cellfile.CellFileDao
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.messageattachment.MessageAttachmentDraftDao
@@ -157,7 +173,7 @@ public class CellsScope(
         val attachmentDraftDao: MessageAttachmentDraftDao,
         val conversationsDao: ConversationDAO,
         val attachmentsDao: MessageAttachmentsDao,
-        val assetsDao: AssetDAO,
+        val cellFileDao: CellFileDao,
         val userDao: UserDAO,
         val memberDao: MemberDAO,
         val publicLinkDao: PublicLinkDao,
@@ -224,7 +240,7 @@ public class CellsScope(
     }
 
     private val cellAttachmentsRepository: CellAttachmentsRepository by lazy {
-        CellAttachmentsDataSource(dao.attachmentsDao, dao.assetsDao)
+        CellAttachmentsDataSource(dao.attachmentsDao, dao.cellFileDao)
     }
 
     public val messageAttachmentsDraftRepository: MessageAttachmentDraftRepository by lazy {
@@ -237,6 +253,10 @@ public class CellsScope(
 
     private val cellConfigRepository: CellConfigRepository by lazy {
         CellConfigDataSource(dao.userConfigDAO)
+    }
+
+    private val cellFileRepository: CellFileRepository by lazy {
+        CellFileDataSource(dao.cellFileDao)
     }
 
     public val uploadManager: CellUploadManager by lazy {
@@ -403,5 +423,33 @@ public class CellsScope(
 
     public val getCellConfig: GetWireCellConfigurationUseCase by lazy {
         GetWireCellConfigurationUseCaseImpl(cellConfigRepository)
+    }
+
+    public val saveOfflineFile: SaveOfflineFileUseCase by lazy {
+        SaveOfflineFileUseCaseImpl(cellFileRepository)
+    }
+
+    public val deleteOfflineFile: DeleteOfflineFileUseCase by lazy {
+        DeleteOfflineFileUseCaseImpl(cellFileRepository)
+    }
+
+    public val observeOfflineFiles: ObserveOfflineFilesUseCase by lazy {
+        ObserveOfflineFilesUseCaseImpl(cellFileRepository)
+    }
+
+    public val observeOfflineFilesByConversation: ObserveOfflineFilesByConversationUseCase by lazy {
+        ObserveOfflineFilesByConversationUseCaseImpl(cellFileRepository)
+    }
+
+    public val getOfflineFile: GetOfflineFileUseCase by lazy {
+        GetOfflineFileUseCaseImpl(cellFileRepository)
+    }
+
+    public val getConversationName: GetConversationNameUseCase by lazy {
+        GetConversationNameUseCaseImpl(cellsConversationRepository)
+    }
+
+    public val getUserName: GetUserNameUseCase by lazy {
+        GetUserNameUseCaseImpl(usersRepository)
     }
 }

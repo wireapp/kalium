@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.framework.TestTeam
 import dev.mokkery.answering.returns
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
 import dev.mokkery.verifySuspend
@@ -220,7 +221,7 @@ class ObserveIsAppsAllowedForUsageUseCaseTest {
         val selfTeamIdProvider: SelfTeamIdProvider = mock<SelfTeamIdProvider>()
 
         suspend fun withObserveAppsEnabledResult(result: Flow<Either<StorageFailure, Boolean>>) = apply {
-            everySuspend { userConfigRepository.observeAppsEnabled() } returns result
+            every { userConfigRepository.observeAppsEnabled() } returns result
         }
 
         suspend fun withSelfTeamIdProviderResult(result: Either<StorageFailure, TeamId?>) = apply {

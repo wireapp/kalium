@@ -90,12 +90,12 @@ internal open class FakeMessageRepository : MessageRepository {
         messageUuid: String
     ): Either<StorageFailure, Message> = TestMessage.TEXT_MESSAGE.right()
 
-    override suspend fun observeMessageById(
+    override fun observeMessageById(
         conversationId: ConversationId,
         messageUuid: String
     ): Flow<Either<StorageFailure, Message>> = flowOf(TestMessage.TEXT_MESSAGE.right())
 
-    override suspend fun getMessagesByConversationIdAndVisibility(
+    override fun getMessagesByConversationIdAndVisibility(
         conversationId: ConversationId,
         limit: Int,
         offset: Int,
@@ -109,7 +109,7 @@ internal open class FakeMessageRepository : MessageRepository {
     override suspend fun getNotificationMessage(messageSizePerConversation: Int): Either<CoreFailure, List<LocalNotification>> =
         emptyList<LocalNotification>().right()
 
-    override suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
+    override fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
         date: String,
         visibility: List<Message.Visibility>
@@ -196,7 +196,7 @@ internal open class FakeMessageRepository : MessageRepository {
         deletionEndDate: Instant
     ): Either<CoreFailure, Unit> = Unit.right()
 
-    override suspend fun observeMessageVisibility(
+    override fun observeMessageVisibility(
         messageUuid: String,
         conversationId: ConversationId
     ): Flow<Either<StorageFailure, MessageEntity.Visibility>> {
@@ -231,7 +231,7 @@ internal open class FakeMessageRepository : MessageRepository {
         offset: Int
     ): List<AssetMessage> = emptyList()
 
-    override suspend fun observeAssetStatuses(conversationId: ConversationId): Flow<Either<StorageFailure, List<MessageAssetStatus>>> =
+    override fun observeAssetStatuses(conversationId: ConversationId): Flow<Either<StorageFailure, List<MessageAssetStatus>>> =
         flowOf(emptyList<MessageAssetStatus>().right())
 
     override suspend fun getMessageAssetTransferStatus(
@@ -265,7 +265,7 @@ internal open class FakeMessageRepository : MessageRepository {
         editInstant: Instant
     ): Either<StorageFailure, Unit> = Unit.right()
 
-    override suspend fun observeAssetStatuses(): Flow<Either<StorageFailure, List<AssetTransferStatus>>> =
+    override fun observeAssetStatuses(): Flow<Either<StorageFailure, List<AssetTransferStatus>>> =
         flowOf(emptyList<AssetTransferStatus>().right())
 
     override suspend fun updateAudioMessageNormalizedLoudness(

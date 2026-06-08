@@ -27,7 +27,7 @@ plugins {
 
 kaliumLibrary {
     multiplatform {
-        enableJsTests.set(false)
+        enableJsTests.set(true)
     }
 }
 
@@ -36,6 +36,7 @@ sqldelight {
         create("UserDatabase") {
             dialect(libs.sqldelight.dialect.get().toString())
             packageName.set("com.wire.kalium.persistence")
+            generateAsync.set(true)
             val sourceFolderName = "db_user"
             srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))
             schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
@@ -45,6 +46,7 @@ sqldelight {
         create("GlobalDatabase") {
             dialect(libs.sqldelight.dialect.get().toString())
             packageName.set("com.wire.kalium.persistence")
+            generateAsync.set(true)
             val sourceFolderName = "db_global"
             srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))
             schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
@@ -63,6 +65,7 @@ kotlin {
 
                 implementation(libs.sqldelight.runtime)
                 implementation(libs.sqldelight.coroutinesExtension)
+                implementation(libs.sqldelight.async)
                 implementation(libs.sqldelight.primitiveAdapters)
                 implementation(libs.ktxSerialization)
                 implementation(libs.settings.kmp)
@@ -97,7 +100,9 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation(libs.sqldelight.jsDriver)
-                implementation(npm("sql.js", "1.6.2"))
+                implementation(npm("@cashapp/sqldelight-sqljs-worker", libs.versions.sqldelightSqljsWorker.get()))
+                implementation(npm("sql.js", "1.8.0"))
+                implementation(devNpm("webpack", "^5.1.0"))
                 implementation(devNpm("copy-webpack-plugin", "9.1.0"))
             }
         }

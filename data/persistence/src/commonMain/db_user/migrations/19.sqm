@@ -6,7 +6,7 @@ BEGIN
  WHERE qualified_id = new.conversation_id AND muted_status = 'ALL_MUTED';
 END;
 
-DROP VIEW MessagePreview;
+DROP VIEW IF EXISTS MessagePreview;
 CREATE VIEW IF NOT EXISTS MessagePreview
 AS SELECT
 Message.id AS id,

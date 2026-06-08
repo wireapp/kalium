@@ -18,6 +18,8 @@
 
 package com.wire.kalium.persistence.dao.backup
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.RemotebackupChangeLogQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -97,7 +99,7 @@ internal class RemoteBackupChangeLogDAOImpl(
             conversationId = conversationId,
             eventType = ChangeLogEventType.CONVERSATION_DELETE,
             timestampMs = timestampMs
-        )
+        ).await()
     }
 
     override suspend fun logConversationClear(
@@ -108,7 +110,7 @@ internal class RemoteBackupChangeLogDAOImpl(
             conversationId = conversationId,
             eventType = ChangeLogEventType.CONVERSATION_CLEAR,
             timestampMs = timestampMs
-        )
+        ).await()
     }
 
     override suspend fun logConversationMetadataSync(
@@ -124,7 +126,7 @@ internal class RemoteBackupChangeLogDAOImpl(
 
     override suspend fun getPendingChanges(): List<ChangeLogEntry> =
         withContext(readDispatcher.value) {
-            queries.getPendingChanges(mapper = mapper::toChangeLogEntry).executeAsList()
+            queries.getPendingChanges(mapper = mapper::toChangeLogEntry).awaitAsList()
         }
 
     override suspend fun getLastPendingChangesBatch(limit: Long): ChangeLogSyncBatch =
@@ -133,11 +135,11 @@ internal class RemoteBackupChangeLogDAOImpl(
                 val events = queries.getLastPendingChangesWithPayload(
                     limit = limit,
                     mapper = mapper::toChangeLogSyncEvent
-                ).executeAsList()
+                ).awaitAsList()
                 val conversationMetadata = queries.getConversationMetadataForLastPendingChanges(
                     limit = limit,
                     mapper = mapper::toConversationMetadataSyncEntity
-                ).executeAsList()
+                ).awaitAsList()
                 ChangeLogSyncBatch(
                     events = events,
                     conversationMetadata = conversationMetadata

@@ -22,6 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageAttachment
+import com.wire.kalium.persistence.dao.cellfile.CellFileLocalPath
 
 internal interface CellAttachmentsRepository {
     suspend fun getAssetPath(assetId: String): Either<StorageFailure, String?>
@@ -41,8 +42,16 @@ internal interface CellAttachmentsRepository {
     ): Either<StorageFailure, Unit>
     suspend fun getAttachments(messageId: String, conversationId: ConversationId): Either<StorageFailure, List<MessageAttachment>>
     suspend fun getAttachments(): Either<StorageFailure, List<MessageAttachment>>
-    suspend fun saveStandaloneAssetPath(assetId: String, path: String, size: Long): Either<StorageFailure, Unit>
-    suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<Pair<String, String>>>
+    suspend fun saveStandaloneAssetPath(
+        assetId: String,
+        conversationId: String?,
+        path: String,
+        size: Long,
+        name: String? = null,
+        ownerId: String? = null,
+    ): Either<StorageFailure, Unit>
+    suspend fun setStandaloneAssetTransferStatus(assetId: String, status: AssetTransferStatus): Either<StorageFailure, Unit>
+    suspend fun getStandaloneAssetPaths(): Either<StorageFailure, List<CellFileLocalPath>>
     suspend fun deleteStandaloneAsset(assetId: String): Either<StorageFailure, Unit>
     suspend fun updateAssetPath(assetId: String, remotePath: String): Either<StorageFailure, Unit>
 }

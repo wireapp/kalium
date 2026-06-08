@@ -25,12 +25,12 @@ import kotlinx.coroutines.flow.Flow
  * The result is presented as a continuous flow, updating whenever the count changes.
  */
 public interface ObserveArchivedUnreadConversationsCountUseCase {
-    public suspend operator fun invoke(): Flow<Long>
+    public operator fun invoke(): Flow<Long>
 }
 
 internal class ObserveArchivedUnreadConversationsCountUseCaseImpl(
     private val conversationRepository: ConversationRepository
 ) : ObserveArchivedUnreadConversationsCountUseCase {
 
-    override suspend fun invoke(): Flow<Long> = conversationRepository.observeUnreadArchivedConversationsCount()
+    override fun invoke(): Flow<Long> = conversationRepository.observeUnreadArchivedConversationsCount()
 }

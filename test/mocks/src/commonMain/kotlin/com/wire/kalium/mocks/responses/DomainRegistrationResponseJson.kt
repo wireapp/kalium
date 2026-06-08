@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.unauthenticated.domainregistration.Backend
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRedirect
 import com.wire.kalium.network.api.unauthenticated.domainregistration.DomainRegistrationDTO
@@ -69,7 +69,7 @@ object DomainRegistrationResponseJson {
     )
 
     val invalidDomain = ValidJsonProvider(
-        serializableData = ErrorResponse(
+        serializableData = GenericAPIErrorResponse(
             code = 400,
             label = "invalid-domain",
             message = "invalid-domain"

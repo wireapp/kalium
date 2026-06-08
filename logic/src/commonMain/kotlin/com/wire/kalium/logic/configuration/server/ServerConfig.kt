@@ -66,7 +66,7 @@ public data class ServerConfig(
                 val url = Url(accounts)
                 host = url.host
                 protocol = url.protocol
-                pathSegments = url.pathSegments + FORGOT_PASSWORD_PATH
+                pathSegments = url.rawSegments + FORGOT_PASSWORD_PATH
             }.buildString()
 
         val pricing: String
@@ -74,7 +74,7 @@ public data class ServerConfig(
                 val url = Url(website)
                 host = url.host
                 protocol = url.protocol
-                pathSegments = url.pathSegments + PRICING_PATH
+                pathSegments = url.rawSegments + PRICING_PATH
             }.buildString()
 
         val tos: String
@@ -82,7 +82,7 @@ public data class ServerConfig(
                 val url = Url(website)
                 host = url.host
                 protocol = url.protocol
-                pathSegments = url.pathSegments + TOS_PATH
+                pathSegments = url.rawSegments + TOS_PATH
             }.buildString()
     }
 

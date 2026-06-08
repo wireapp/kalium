@@ -263,7 +263,6 @@ class MessageMapperTest {
                 reactionsJson,
                 mentions,
                 linkPreviews,
-                attachments,
                 quotedMessageId,
                 quotedSenderId,
                 isQuoteVerified,

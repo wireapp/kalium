@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.auth.LoginDomainPath
 import com.wire.kalium.logic.data.auth.login.DomainLookupResult
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
-import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -69,7 +69,7 @@ class GetLoginFlowForDomainUseCaseTest {
 
     @Test
     fun givenEmail_whenSsoCodeByEmailReturnsNotFound_thenFallbackToDomainRegistration() = runTest {
-        val notFoundError = KaliumException.InvalidRequestError(ErrorResponse(404, "", "not-found"))
+        val notFoundError = KaliumException.InvalidRequestError(GenericAPIErrorResponse(404, "", "not-found"))
         val (arrangement, useCase) = Arrangement()
             .withSsoCodeByEmailResult(NetworkFailure.ServerMiscommunication(notFoundError).left())
             .withDomainRegistrationResult(LoginDomainPath.Default.right())
@@ -142,7 +142,7 @@ class GetLoginFlowForDomainUseCaseTest {
 
     @Test
     fun givenEmail_whenInvokedAndErrorBecauseOfEnterpriseServiceNotEnabled_thenReturnSuccessNoRegistration() = runTest {
-        val enterpriseServiceNotEnabledError = KaliumException.ServerError(ErrorResponse(503, "", "enterprise-service-not-enabled"))
+        val enterpriseServiceNotEnabledError = KaliumException.ServerError(GenericAPIErrorResponse(503, "", "enterprise-service-not-enabled"))
         val (arrangement, useCase) = Arrangement()
             .withDomainRegistrationResult(NetworkFailure.ServerMiscommunication(enterpriseServiceNotEnabledError).left())
             .arrange()

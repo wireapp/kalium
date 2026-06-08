@@ -2,7 +2,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity;
 
 -- Delete the ReceiptDetails View
-DROP VIEW ReceiptDetails;
+DROP VIEW IF EXISTS ReceiptDetails;
 
 -- Create new table with ON UPDATE CASCADE
 CREATE TABLE ReceiptTemp (

@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.migrations
 
+import app.cash.sqldelight.async.coroutines.await
+import app.cash.sqldelight.async.coroutines.awaitMigrate
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.UserDatabase
@@ -24,13 +26,14 @@ import com.wire.kalium.persistence.migrations.dump.SchemaDump
 import com.wire.kalium.persistence.migrations.dump.SqliteSchemaDumper
 import dev.andrewbailey.diff.differenceOf
 import java.io.File
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class VerifyDatabaseMigrationsTest {
 
     @Test
-    fun verifyUserDatabaseMigrations() {
+    fun verifyUserDatabaseMigrations() = runTest {
         // given
         // clean up and prepare base schema for derivation
         File("build/user-schema-dumps").deleteRecursively()
@@ -61,7 +64,7 @@ class VerifyDatabaseMigrationsTest {
     }
 
     @Test
-    fun verifyGlobalDatabaseMigrations() {
+    fun verifyGlobalDatabaseMigrations() = runTest {
         // given
         // clean up and prepare base schema for derivation
         File("build/global-schema-dumps").deleteRecursively()
@@ -112,32 +115,32 @@ class VerifyDatabaseMigrationsTest {
 
     private class Arrangement(private val databaseSchemaSource: DatabaseSchemaSource) {
 
-        fun withFreshDatabaseSchemaFromDefinitions() = apply {
+        suspend fun withFreshDatabaseSchemaFromDefinitions() = apply {
             val dbFile = File(databaseSchemaSource.freshSchemaDbPath)
             dbFile.parentFile.mkdirs()
             val driver = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
 
             when (databaseSchemaSource) {
-                is DatabaseSchemaSource.UserDatabaseDefaults -> UserDatabase.Companion.Schema.create(driver)
-                is DatabaseSchemaSource.GlobalDatabaseDefaults -> GlobalDatabase.Companion.Schema.create(driver)
+                is DatabaseSchemaSource.UserDatabaseDefaults -> UserDatabase.Companion.Schema.create(driver).await()
+                is DatabaseSchemaSource.GlobalDatabaseDefaults -> GlobalDatabase.Companion.Schema.create(driver).await()
             }
             driver.close()
             println("Fresh-schema DB created at: ${dbFile.absolutePath}")
         }
 
-        fun withDerivedUserDatabaseFromMigrations() = apply {
+        suspend fun withDerivedUserDatabaseFromMigrations() = apply {
             val dbFile = File(databaseSchemaSource.derivedSchemaDbPath)
             dbFile.parentFile.mkdirs()
             val driver = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
 
             when (databaseSchemaSource) {
-                is DatabaseSchemaSource.UserDatabaseDefaults -> UserDatabase.Companion.Schema.migrate(
+                is DatabaseSchemaSource.UserDatabaseDefaults -> UserDatabase.Companion.Schema.awaitMigrate(
                     driver,
                     34, // Starting from 34 since 33.sqm has errors.
                     UserDatabase.Companion.Schema.version
                 )
 
-                is DatabaseSchemaSource.GlobalDatabaseDefaults -> GlobalDatabase.Companion.Schema.migrate(
+                is DatabaseSchemaSource.GlobalDatabaseDefaults -> GlobalDatabase.Companion.Schema.awaitMigrate(
                     driver,
                     5, // Starting from 5 since 4.sqm has errors.
                     GlobalDatabase.Companion.Schema.version
