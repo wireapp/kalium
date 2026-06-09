@@ -56,7 +56,7 @@ internal actual fun createPlatformAvsCallNotificationProcessor(
         FailedAvsCallNotificationProcessor(
             AvsCallNotificationProcessingFailure.NativeFailure(
                 operation = AvsCallNotificationNativeOperation.Create,
-                message = throwable.message ?: throwable::class.simpleName
+                message = throwable.toString()
             )
         )
     }
@@ -132,7 +132,7 @@ private fun Throwable.toNativeFailure(
         AvsCallNotificationProcessingFailure.NativeFailure(
             operation = operation,
             eventIndex = eventIndex,
-            message = message ?: this::class.simpleName
+            message = toString()
         )
     )
 

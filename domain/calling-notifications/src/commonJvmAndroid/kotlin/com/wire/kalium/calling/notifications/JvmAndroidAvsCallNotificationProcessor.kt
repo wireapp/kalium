@@ -31,18 +31,19 @@ internal actual fun createPlatformAvsCallNotificationProcessor(
 ): AvsCallNotificationProcessor =
     JvmAndroidAvsCallNotificationProcessorFactory.create(selfUserId, selfClientId, callbacks)
 
-private object JvmAndroidAvsCallNotificationProcessorFactory {
+internal object JvmAndroidAvsCallNotificationProcessorFactory {
     fun create(
         selfUserId: String,
         selfClientId: String,
-        callbacks: AvsCallNotificationCallbacks
+        callbacks: AvsCallNotificationCallbacks,
+        calling: AvsEventCalling = AvsEventCalling.INSTANCE
     ): AvsCallNotificationProcessor {
         val incomingHandler = callbacks.incomingCallHandler()
         val missedHandler = callbacks.missedCallHandler()
         val closeHandler = callbacks.closeCallHandler()
 
         return runCatching {
-            val handle = AvsEventCalling.INSTANCE.wcall_event_create(
+            val handle = calling.wcall_event_create(
                 userId = selfUserId,
                 clientId = selfClientId,
                 incomingCallHandler = incomingHandler,
@@ -53,6 +54,7 @@ private object JvmAndroidAvsCallNotificationProcessorFactory {
             DefaultAvsCallNotificationProcessor(
                 JvmAndroidAvsCallNotificationNativeGateway(
                     handle = handle,
+                    calling = calling,
                     incomingHandler = incomingHandler,
                     missedHandler = missedHandler,
                     closeHandler = closeHandler
@@ -62,14 +64,14 @@ private object JvmAndroidAvsCallNotificationProcessorFactory {
             FailedAvsCallNotificationProcessor(
                 AvsCallNotificationProcessingFailure.NativeFailure(
                     operation = AvsCallNotificationNativeOperation.Create,
-                    message = throwable.message ?: throwable::class.simpleName
+                    message = throwable.toString()
                 )
             )
         }
     }
 }
 
-private fun AvsCallNotificationCallbacks.incomingCallHandler(): IncomingCallHandler =
+internal fun AvsCallNotificationCallbacks.incomingCallHandler(): IncomingCallHandler =
     IncomingCallHandler { conversationId, messageTime, userId, clientId, isVideoCall, shouldRing, conversationType, _ ->
         onIncomingCall(
             AvsIncomingCallNotification(
@@ -84,7 +86,7 @@ private fun AvsCallNotificationCallbacks.incomingCallHandler(): IncomingCallHand
         )
     }
 
-private fun AvsCallNotificationCallbacks.missedCallHandler(): MissedCallHandler =
+internal fun AvsCallNotificationCallbacks.missedCallHandler(): MissedCallHandler =
     MissedCallHandler { conversationId, messageTime, userId, isVideoCall, _ ->
         onMissedCall(
             AvsMissedCallNotification(
@@ -96,7 +98,7 @@ private fun AvsCallNotificationCallbacks.missedCallHandler(): MissedCallHandler 
         )
     }
 
-private fun AvsCallNotificationCallbacks.closeCallHandler(): CloseCallHandler =
+internal fun AvsCallNotificationCallbacks.closeCallHandler(): CloseCallHandler =
     CloseCallHandler { reason, conversationId, messageTime, userId, clientId, _ ->
         onClosedCall(
             AvsClosedCallNotification(
@@ -111,20 +113,21 @@ private fun AvsCallNotificationCallbacks.closeCallHandler(): CloseCallHandler =
 
 private class JvmAndroidAvsCallNotificationNativeGateway(
     private val handle: Handle,
+    private val calling: AvsEventCalling,
     @Suppress("unused") private val incomingHandler: IncomingCallHandler,
     @Suppress("unused") private val missedHandler: MissedCallHandler,
     @Suppress("unused") private val closeHandler: CloseCallHandler
 ) : AvsCallNotificationNativeGateway {
 
     override fun start(): AvsCallNotificationNativeResult = runCatching {
-        AvsEventCalling.INSTANCE.wcall_event_start(handle)
+        calling.wcall_event_start(handle)
         AvsCallNotificationNativeResult.Success
     }.getOrElse {
         it.toNativeFailure(AvsCallNotificationNativeOperation.Start)
     }
 
     override fun process(notification: AvsCallNotification, notificationIndex: Int): AvsCallNotificationNativeResult = runCatching {
-        val result = AvsEventCalling.INSTANCE.wcall_event_process(
+        val result = calling.wcall_event_process(
             inst = handle,
             msg = notification.payload,
             len = notification.payload.size,
@@ -151,7 +154,7 @@ private class JvmAndroidAvsCallNotificationNativeGateway(
     }
 
     override fun end(): AvsCallNotificationNativeResult = runCatching {
-        AvsEventCalling.INSTANCE.wcall_event_end(handle)
+        calling.wcall_event_end(handle)
         AvsCallNotificationNativeResult.Success
     }.getOrElse {
         it.toNativeFailure(AvsCallNotificationNativeOperation.End)
@@ -177,12 +180,12 @@ private fun Throwable.toNativeFailure(
         AvsCallNotificationProcessingFailure.NativeFailure(
             operation = operation,
             eventIndex = notificationIndex,
-            message = message ?: this::class.simpleName
+            message = toString()
         )
     )
 
 @Suppress("FunctionNaming")
-private interface AvsEventCalling : Library {
+internal interface AvsEventCalling : Library {
     fun wcall_event_create(
         userId: String,
         clientId: String,
@@ -214,7 +217,7 @@ private interface AvsEventCalling : Library {
     }
 }
 
-private fun interface IncomingCallHandler : Callback {
+internal fun interface IncomingCallHandler : Callback {
     @Suppress("LongParameterList")
     fun onIncomingCall(
         conversationId: String,
@@ -228,7 +231,7 @@ private fun interface IncomingCallHandler : Callback {
     )
 }
 
-private fun interface MissedCallHandler : Callback {
+internal fun interface MissedCallHandler : Callback {
     fun onMissedCall(
         conversationId: String,
         messageTime: UInt32,
@@ -238,7 +241,7 @@ private fun interface MissedCallHandler : Callback {
     )
 }
 
-private fun interface CloseCallHandler : Callback {
+internal fun interface CloseCallHandler : Callback {
     fun onClosedCall(
         reason: Int,
         conversationId: String,
@@ -249,11 +252,11 @@ private fun interface CloseCallHandler : Callback {
     )
 }
 
-private typealias Handle = UInt32
+internal typealias Handle = UInt32
 
 private const val INTEGER_SIZE = 4
 
-private data class UInt32(val value: Long = 0) : IntegerType(INTEGER_SIZE, value, true) {
+internal data class UInt32(val value: Long = 0) : IntegerType(INTEGER_SIZE, value, true) {
     override fun toByte(): Byte = value.toByte()
 
     override fun toChar(): Char = value.toInt().toChar()
