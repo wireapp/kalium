@@ -322,8 +322,9 @@ internal class ApplicationMessageHandlerImpl(
             return quotedReference.copy(isVerified = false)
         }
 
+        val quotedMessageConversationId = quotedReference.quotedMessageConversationId ?: message.conversationId
         val originalHash =
-            messageRepository.getMessageById(message.conversationId, quotedReference.quotedMessageId).map { originalMessage ->
+            messageRepository.getMessageById(quotedMessageConversationId, quotedReference.quotedMessageId).map { originalMessage ->
                 messageEncoder.encodeMessageContent(originalMessage.date, originalMessage.content)
             }.getOrElse(null)
 

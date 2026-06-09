@@ -26,6 +26,14 @@ data object MessageDraftMapper {
         text: String?,
         editMessageId: String?,
         quotedMessageId: String?,
-        mentionList: List<MessageEntity.Mention>
-    ): MessageDraftEntity = MessageDraftEntity(conversationId, text.orEmpty(), editMessageId, quotedMessageId, mentionList)
+        mentionList: List<MessageEntity.Mention>,
+        quotedMessageConversationId: QualifiedIDEntity?
+    ): MessageDraftEntity = MessageDraftEntity(
+        conversationId,
+        text.orEmpty(),
+        editMessageId,
+        quotedMessageId,
+        mentionList,
+        quotedMessageConversationId
+    )
 }

@@ -80,6 +80,7 @@ CREATE TABLE MessageTextContent (
       quoted_message_id TEXT,
       is_quote_verified INTEGER AS Boolean,
       is_quoting_self INTEGER AS Boolean NOT NULL,
+      quoted_message_conversation_id TEXT AS QualifiedIDEntity,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id)
@@ -295,8 +296,22 @@ INSERT OR IGNORE INTO MessageMention(message_id, conversation_id, start, length,
 VALUES (?, ?, ?, ?, ?);
 
 insertMessageTextContent:
-INSERT OR IGNORE INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified, is_quoting_self)
-VALUES(:message_id, :conversation_id, :text_body, :quoted_message_id, :is_quote_verified,
+INSERT OR IGNORE INTO MessageTextContent(
+    message_id,
+    conversation_id,
+    text_body,
+    quoted_message_id,
+    quoted_message_conversation_id,
+    is_quote_verified,
+    is_quoting_self
+)
+VALUES(
+    :message_id,
+    :conversation_id,
+    :text_body,
+    :quoted_message_id,
+    :quoted_message_conversation_id,
+    :is_quote_verified,
 CASE WHEN
                 :quoted_message_id IS NULL
                     THEN 0
@@ -305,9 +320,9 @@ CASE WHEN
                         (SELECT (Message.sender_user_id == SelfUser.id)
                             FROM Message
                             LEFT JOIN SelfUser
-                            WHERE
-                                Message.id = :quoted_message_id AND
-                                conversation_id = :conversation_id),
+                                WHERE
+                                    Message.id = :quoted_message_id AND
+                                    Message.conversation_id = COALESCE(CAST(:quoted_message_conversation_id AS TEXT), :conversation_id)),
                         0 ))END);
 
 insertMessageRestrictedAssetContent:

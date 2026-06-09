@@ -91,6 +91,7 @@ sealed interface MessageContent {
 
     data class QuoteReference(
         val quotedMessageId: String,
+        val quotedMessageConversationId: ConversationId? = null,
         /**
          * The hash of the text of the quoted message
          */
@@ -104,6 +105,7 @@ sealed interface MessageContent {
             other as QuoteReference
 
             if (quotedMessageId != other.quotedMessageId) return false
+            if (quotedMessageConversationId != other.quotedMessageConversationId) return false
             if (quotedMessageSha256 != null) {
                 if (other.quotedMessageSha256 == null) return false
                 if (!quotedMessageSha256.contentEquals(other.quotedMessageSha256)) return false
@@ -114,6 +116,7 @@ sealed interface MessageContent {
 
         override fun hashCode(): Int {
             var result = quotedMessageId.hashCode()
+            result = 31 * result + (quotedMessageConversationId?.hashCode() ?: 0)
             result = 31 * result + (quotedMessageSha256?.contentHashCode() ?: 0)
             return result
         }

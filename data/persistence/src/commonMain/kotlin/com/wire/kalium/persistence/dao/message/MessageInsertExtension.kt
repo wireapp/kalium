@@ -147,6 +147,7 @@ internal class MessageInsertExtensionImpl(
                     conversation_id = message.conversationId,
                     text_body = content.messageBody,
                     quoted_message_id = content.quotedMessageId,
+                    quoted_message_conversation_id = content.quotedMessageConversationId,
                     is_quote_verified = content.isQuoteVerified
                 )
                 content.linkPreview.forEach {
@@ -337,6 +338,7 @@ internal class MessageInsertExtensionImpl(
                     conversation_id = message.conversationId,
                     text_body = content.messageBody,
                     quoted_message_id = content.quotedMessageId,
+                    quoted_message_conversation_id = content.quotedMessageConversationId,
                     is_quote_verified = content.isQuoteVerified
                 )
                 content.linkPreview.forEach {
@@ -481,7 +483,7 @@ internal class MessageInsertExtensionImpl(
         if (textContent.quotedMessageId != null) {
             val senderId = messagesQueries.getMessageSenderId(
                 textContent.quotedMessageId,
-                message.conversationId
+                textContent.quotedMessageConversationId ?: message.conversationId
             )
                 .awaitAsOneOrNull()
             isQuotingSelfUser = senderId == selfUserIDEntity
@@ -521,6 +523,7 @@ internal class MessageInsertExtensionImpl(
                 conversation_id = message.conversationId,
                 text_body = text.messageBody,
                 quoted_message_id = text.quotedMessageId,
+                quoted_message_conversation_id = text.quotedMessageConversationId,
                 is_quote_verified = text.isQuoteVerified
             )
         }

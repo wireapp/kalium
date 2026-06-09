@@ -229,6 +229,7 @@ message MessageEdit {
 message Quote {
     required string quoted_message_id = 1;
     optional bytes quoted_message_sha256 = 2;
+    optional QualifiedConversationId quoted_conversation_id = 3;
 }
 
 message Confirmation {

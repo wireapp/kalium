@@ -435,6 +435,7 @@ internal class MessageMapperImpl(
                 attachmentsMapper.fromModelToDao(attachment)?.copy(assetIndex = index)
             },
             quotedMessageId = regularMessage.quotedMessageReference?.quotedMessageId,
+            quotedMessageConversationId = regularMessage.quotedMessageReference?.quotedMessageConversationId?.toDao(),
             isQuoteVerified = regularMessage.quotedMessageReference?.isVerified,
         )
     }
@@ -444,6 +445,7 @@ internal class MessageMapperImpl(
         linkPreview = textContent.linkPreviews.map(linkPreviewMapper::fromModelToDao),
         mentions = textContent.mentions.map(messageMentionMapper::fromModelToDao),
         quotedMessageId = textContent.quotedMessageReference?.quotedMessageId,
+        quotedMessageConversationId = textContent.quotedMessageReference?.quotedMessageConversationId?.toDao(),
         isQuoteVerified = textContent.quotedMessageReference?.isVerified,
     )
 }
@@ -636,6 +638,7 @@ internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, self
             quotedMessageReference = quotedMessageId?.let {
                 MessageContent.QuoteReference(
                     quotedMessageId = it,
+                    quotedMessageConversationId = quotedMessageConversationId?.toModel(),
                     quotedMessageSha256 = null,
                     isVerified = quotedMessageDetails?.isVerified ?: false
                 )
@@ -703,6 +706,7 @@ internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, self
             quotedMessageReference = quotedMessageId?.let {
                 MessageContent.QuoteReference(
                     quotedMessageId = it,
+                    quotedMessageConversationId = quotedMessageConversationId?.toModel(),
                     quotedMessageSha256 = null,
                     isVerified = quotedMessageDetails?.isVerified ?: false
                 )

@@ -153,7 +153,8 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter
     )
     val messageTextContentAdapter = MessageTextContent.Adapter(
-        conversation_idAdapter = QualifiedIDAdapter
+        conversation_idAdapter = QualifiedIDAdapter,
+        quoted_message_conversation_idAdapter = QualifiedIDAdapter
     )
     val messageUnknownContentAdapter = MessageUnknownContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
@@ -230,6 +231,7 @@ internal object TableMapper {
 
     val messageDraftsAdapter = MessageDraft.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
+        quoted_message_conversation_idAdapter = QualifiedIDAdapter,
         mention_listAdapter = MentionListAdapter()
     )
 

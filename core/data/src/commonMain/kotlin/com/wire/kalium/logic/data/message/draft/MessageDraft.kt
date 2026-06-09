@@ -26,5 +26,6 @@ data class MessageDraft(
     val editMessageId: String?,
     val quotedMessageId: String?,
     val selectedMentionList: List<MessageMention>,
+    val quotedMessageConversationId: ConversationId? = null,
     val isMultipartEdit: Boolean = false,
 )

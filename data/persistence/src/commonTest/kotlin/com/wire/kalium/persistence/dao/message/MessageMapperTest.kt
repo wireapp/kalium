@@ -102,6 +102,45 @@ class MessageMapperTest {
         assertEquals(content.type, type)
     }
 
+    @Test
+    fun givenTextMessageWithCrossConversationQuote_whenMappingToEntityMessage_thenQuoteConversationIsPreserved() {
+        // given
+        val currentConversationId = QualifiedIDEntity("oneToOne", "wire.com")
+        val quotedConversationId = QualifiedIDEntity("group", "wire.com")
+
+        // when
+        val messageEntity = Arrangement().toEntityFromView(
+            conversationId = currentConversationId,
+            text = "reply",
+            quotedMessageId = "quotedMessageId",
+            quotedMessageConversationId = quotedConversationId
+        )
+
+        // then
+        val content = messageEntity.content
+        assertIs<MessageEntityContent.Text>(content)
+        assertEquals(quotedConversationId, content.quotedMessageConversationId)
+    }
+
+    @Test
+    fun givenTextMessageWithLegacyQuote_whenMappingToEntityMessage_thenQuoteConversationFallsBackToCurrentConversation() {
+        // given
+        val currentConversationId = QualifiedIDEntity("group", "wire.com")
+
+        // when
+        val messageEntity = Arrangement().toEntityFromView(
+            conversationId = currentConversationId,
+            text = "reply",
+            quotedMessageId = "quotedMessageId",
+            quotedMessageConversationId = null
+        )
+
+        // then
+        val content = messageEntity.content
+        assertIs<MessageEntityContent.Text>(content)
+        assertEquals(currentConversationId, content.quotedMessageConversationId)
+    }
+
     private class Arrangement {
         @Suppress("LongParameterList")
         fun toEntityFromView(
@@ -168,6 +207,7 @@ class MessageMapperTest {
             reactionsJson: String = "[]",
             mentions: String = "[]",
             quotedMessageId: String? = null,
+            quotedMessageConversationId: QualifiedIDEntity? = null,
             quotedSenderId: QualifiedIDEntity? = null,
             isQuoteVerified: Boolean? = null,
             quotedSenderName: String? = null,
@@ -196,7 +236,6 @@ class MessageMapperTest {
             locationZoom: Int? = null,
             legalHoldMemberList: List<QualifiedIDEntity>? = null,
             legalHoldType: MessageEntity.LegalHoldType? = null,
-            attachments: String? = null,
         ): MessageEntity {
             return MessageMapper.toEntityMessageFromView(
                 id,
@@ -261,8 +300,8 @@ class MessageMapperTest {
                 conversationName,
                 reactionsJson,
                 mentions,
-                attachments,
                 quotedMessageId,
+                quotedMessageConversationId,
                 quotedSenderId,
                 isQuoteVerified,
                 quotedSenderName,

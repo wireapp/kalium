@@ -326,6 +326,7 @@ private class NomadMessageContentWriter(
             conversation_id = message.conversationId,
             text_body = content.text,
             quoted_message_id = content.quotedMessageId,
+            quoted_message_conversation_id = null,
             is_quote_verified = true,
         )
         val insertedContent = messagesQueries.selectChanges().awaitAsOne() > 0
@@ -410,6 +411,7 @@ private class NomadMessageContentWriter(
             conversation_id = message.conversationId,
             text_body = content.text,
             quoted_message_id = content.quotedMessageId,
+            quoted_message_conversation_id = null,
             is_quote_verified = true,
         )
         val insertedContent = messagesQueries.selectChanges().awaitAsOne() > 0

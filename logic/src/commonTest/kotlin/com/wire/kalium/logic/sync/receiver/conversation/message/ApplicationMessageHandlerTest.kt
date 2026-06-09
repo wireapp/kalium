@@ -32,6 +32,8 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
@@ -351,6 +353,47 @@ class ApplicationMessageHandlerTest {
         // then
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.callingMessageHandler.handle(any(), callingContent)
+        }
+    }
+
+    @Test
+    fun givenTextQuoteFromAnotherConversation_whenHandling_thenQuotedMessageIsFetchedFromSourceConversation() = runTest {
+        val quotedMessageId = "quotedMessageId"
+        val quotedConversationId = TestConversation.id(1)
+        val destinationConversationId = TestConversation.id(2)
+        val validTextContent = MessageContent.Text(
+            value = "private reply",
+            quotedMessageReference = MessageContent.QuoteReference(
+                quotedMessageId = quotedMessageId,
+                quotedMessageConversationId = quotedConversationId,
+                quotedMessageSha256 = byteArrayOf(1, 2, 3),
+                isVerified = false
+            )
+        )
+        val protoContent = ProtoContent.Readable(
+            messageUid = "messageId",
+            messageContent = validTextContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withErrorGetMessageById(StorageFailure.DataNotFound)
+            .arrange()
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            destinationConversationId,
+            messageEvent.messageInstant,
+            TestUser.USER_ID,
+            TestClient.CLIENT_ID,
+            protoContent
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.getMessageById(quotedConversationId, quotedMessageId)
         }
     }
 

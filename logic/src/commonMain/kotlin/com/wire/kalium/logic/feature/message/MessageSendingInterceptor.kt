@@ -37,17 +37,14 @@ internal class MessageSendingInterceptorImpl internal constructor(
 
     override suspend fun prepareMessage(originalMessage: Message.Sendable): Either<CoreFailure, Message.Sendable> {
 
-        val replyMessageContent = originalMessage.content
-
-        val quotedReference = (replyMessageContent as? MessageContent.Text)?.quotedMessageReference
-        if (replyMessageContent !is MessageContent.Text
-            || originalMessage !is Message.Regular
-            || quotedReference == null
-        ) {
+        if (originalMessage !is Message.Regular) {
             return Either.Right(originalMessage)
         }
 
-        return messageRepository.getMessageById(originalMessage.conversationId, quotedReference.quotedMessageId)
+        val quotedReference = originalMessage.content.quotedMessageReference() ?: return Either.Right(originalMessage)
+        val quotedMessageConversationId = quotedReference.quotedMessageConversationId ?: originalMessage.conversationId
+
+        return messageRepository.getMessageById(quotedMessageConversationId, quotedReference.quotedMessageId)
             .map { persistedMessage ->
                 val encodedMessageContent = messageContentEncoder.encodeMessageContent(
                     messageInstant = persistedMessage.date,
@@ -55,12 +52,32 @@ internal class MessageSendingInterceptorImpl internal constructor(
                 )
 
                 originalMessage.copy(
-                    content = replyMessageContent.copy(
-                        quotedMessageReference = quotedReference.copy(
-                            quotedMessageSha256 = encodedMessageContent?.sha256Digest
-                        )
+                    content = originalMessage.content.withQuoteSha256(
+                        quoteReference = quotedReference,
+                        quotedMessageSha256 = encodedMessageContent?.sha256Digest
                     )
                 )
             }
+    }
+
+    private fun MessageContent.quotedMessageReference(): MessageContent.QuoteReference? = when (this) {
+        is MessageContent.Text -> quotedMessageReference
+        is MessageContent.Multipart -> quotedMessageReference
+        else -> null
+    }
+
+    private fun MessageContent.Regular.withQuoteSha256(
+        quoteReference: MessageContent.QuoteReference,
+        quotedMessageSha256: ByteArray?
+    ): MessageContent.Regular = when (this) {
+        is MessageContent.Text -> copy(
+            quotedMessageReference = quoteReference.copy(quotedMessageSha256 = quotedMessageSha256)
+        )
+
+        is MessageContent.Multipart -> copy(
+            quotedMessageReference = quoteReference.copy(quotedMessageSha256 = quotedMessageSha256)
+        )
+
+        else -> this
     }
 }

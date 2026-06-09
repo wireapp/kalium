@@ -97,6 +97,7 @@ data object ConversationDetailsWithEventsMapper {
         messageDraftText: String?,
         messageDraftEditMessageId: String?,
         messageDraftQuotedMessageId: String?,
+        messageDraftQuotedMessageConversationId: QualifiedIDEntity?,
         messageDraftMentionList: List<MessageEntity.Mention>?,
         lastMessageId: String?,
         lastMessageContentType: MessageEntity.ContentType?,
@@ -220,6 +221,7 @@ data object ConversationDetailsWithEventsMapper {
                 text = messageDraftText,
                 editMessageId = messageDraftEditMessageId,
                 quotedMessageId = messageDraftQuotedMessageId,
+                quotedMessageConversationId = messageDraftQuotedMessageConversationId,
                 mentionList = messageDraftMentionList ?: emptyList(),
             )
         } else null,
