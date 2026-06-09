@@ -2279,6 +2279,7 @@ public class UserSessionScope internal constructor(
             messageSender = messages.messageSender,
             userId = userId,
             sendPendingAssetMessage = messages.sendPendingAssetMessage,
+            messageSendFailureHandler = messages.messageSendFailureHandler,
         )
     }
 
