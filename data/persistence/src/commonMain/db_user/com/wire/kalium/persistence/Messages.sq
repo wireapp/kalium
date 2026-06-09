@@ -54,6 +54,16 @@ CREATE TABLE MessageLinkPreview (
       permanent_url TEXT,
       title TEXT NOT NULL,
       summary TEXT NOT NULL,
+      image_local_path TEXT,
+      image_width INTEGER AS Int,
+      image_height INTEGER AS Int,
+      image_mime_type TEXT,
+      image_asset_key TEXT,
+      image_asset_token TEXT,
+      image_asset_domain TEXT,
+      image_otr_key TEXT,
+      image_sha256 TEXT,
+      image_encryption_algorithm TEXT,
 
       FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
       PRIMARY KEY (message_id, conversation_id, url_offset) -- there should not be any overlapping link previews
@@ -287,8 +297,8 @@ INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, 
 SELECT ?, ?, qualified_id, ?, ?, ?, ?, ?, ? FROM Conversation WHERE type IN ('ONE_ON_ONE', 'GROUP');
 
 insertMessageLinkPreview:
-INSERT OR IGNORE INTO MessageLinkPreview(message_id, conversation_id, url, url_offset, permanent_url, title, summary)
-VALUES (?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO MessageLinkPreview(message_id, conversation_id, url, url_offset, permanent_url, title, summary, image_local_path, image_width, image_height, image_mime_type, image_asset_key, image_asset_token, image_asset_domain, image_otr_key, image_sha256, image_encryption_algorithm)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessageMention:
 INSERT OR IGNORE INTO MessageMention(message_id, conversation_id, start, length, user_id)

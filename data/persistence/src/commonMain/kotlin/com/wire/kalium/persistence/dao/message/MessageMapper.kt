@@ -851,4 +851,31 @@ object MessageMapper {
                 }
             } ?: emptyList()
         )
+
+    fun toLinkPreviewEntity(
+        url: String,
+        urlOffset: Int,
+        permanentUrl: String?,
+        title: String,
+        summary: String
+    ) = MessageEntity.LinkPreview(
+        url = url.escapeForJsonStorage(),
+        urlOffset = urlOffset,
+        permanentUrl = (permanentUrl ?: url).escapeForJsonStorage(),
+        title = title.escapeForJsonStorage(),
+        summary = summary.escapeForJsonStorage()
+    )
+
+    private fun String.escapeForJsonStorage(): String = buildString(length) {
+        this@escapeForJsonStorage.forEach { character ->
+            when (character) {
+                '\\' -> append("\\\\")
+                '"' -> append("\\\"")
+                '\n' -> append("\\n")
+                '\r' -> append("\\r")
+                '\t' -> append("\\t")
+                else -> append(character)
+            }
+        }
+    }
 }

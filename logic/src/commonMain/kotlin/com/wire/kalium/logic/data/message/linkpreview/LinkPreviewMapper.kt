@@ -18,10 +18,14 @@
 package com.wire.kalium.logic.data.message.linkpreview
 
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LinkPreview
+import com.wire.kalium.util.string.hexToByteArray
+import com.wire.kalium.util.string.toHexString
+import okio.Path.Companion.toPath
 import pbandk.ByteArr
 
 internal interface LinkPreviewMapper {
@@ -36,22 +40,56 @@ internal class LinkPreviewMapperImpl(
 ) : LinkPreviewMapper {
 
     override fun fromDaoToModel(linkPreview: MessageEntity.LinkPreview): MessageLinkPreview {
+        val hasRemoteImageData = !linkPreview.imageAssetKey.isNullOrEmpty() ||
+                !linkPreview.imageAssetToken.isNullOrEmpty() ||
+                !linkPreview.imageAssetDomain.isNullOrEmpty() ||
+                !linkPreview.imageOtrKey.isNullOrEmpty() ||
+                !linkPreview.imageSha256.isNullOrEmpty() ||
+                !linkPreview.imageEncryptionAlgorithm.isNullOrEmpty()
+        val image = when {
+            !linkPreview.imageLocalPath.isNullOrEmpty() || hasRemoteImageData -> LinkPreviewAsset(
+                mimeType = linkPreview.imageMimeType ?: "*/*",
+                assetDataPath = linkPreview.imageLocalPath?.takeIf { it.isNotEmpty() }?.toPath(),
+                assetDataSize = 0L,
+                assetWidth = linkPreview.imageWidth ?: 0,
+                assetHeight = linkPreview.imageHeight ?: 0,
+                assetKey = linkPreview.imageAssetKey,
+                assetToken = linkPreview.imageAssetToken,
+                assetDomain = linkPreview.imageAssetDomain,
+                otrKey = linkPreview.imageOtrKey?.hexToByteArray() ?: ByteArray(0),
+                sha256Key = linkPreview.imageSha256?.hexToByteArray() ?: ByteArray(0),
+                encryptionAlgorithm = linkPreview.imageEncryptionAlgorithm.toMessageEncryptionAlgorithm()
+            )
+
+            else -> null
+        }
         return MessageLinkPreview(
             url = linkPreview.url,
             urlOffset = linkPreview.urlOffset,
             permanentUrl = linkPreview.permanentUrl,
             title = linkPreview.title,
-            summary = linkPreview.summary
+            summary = linkPreview.summary,
+            image = image
         )
     }
 
     override fun fromModelToDao(linkPreview: MessageLinkPreview): MessageEntity.LinkPreview {
         return MessageEntity.LinkPreview(
-            url = linkPreview.url,
+            url = linkPreview.url.escapeForJsonStorage(),
             urlOffset = linkPreview.urlOffset,
-            permanentUrl = linkPreview.permanentUrl ?: "",
-            title = linkPreview.title ?: "",
-            summary = linkPreview.summary ?: ""
+            permanentUrl = (linkPreview.permanentUrl ?: "").escapeForJsonStorage(),
+            title = (linkPreview.title ?: "").escapeForJsonStorage(),
+            summary = (linkPreview.summary ?: "").escapeForJsonStorage(),
+            imageLocalPath = linkPreview.image?.assetDataPath?.toString()?.escapeForJsonStorage(),
+            imageWidth = linkPreview.image?.assetWidth,
+            imageHeight = linkPreview.image?.assetHeight,
+            imageMimeType = linkPreview.image?.mimeType?.escapeForJsonStorage(),
+            imageAssetKey = linkPreview.image?.assetKey?.escapeForJsonStorage(),
+            imageAssetToken = linkPreview.image?.assetToken?.escapeForJsonStorage(),
+            imageAssetDomain = linkPreview.image?.assetDomain?.escapeForJsonStorage(),
+            imageOtrKey = linkPreview.image?.otrKey?.toHexString()?.escapeForJsonStorage(),
+            imageSha256 = linkPreview.image?.sha256Key?.toHexString()?.escapeForJsonStorage(),
+            imageEncryptionAlgorithm = linkPreview.image?.encryptionAlgorithm?.name?.escapeForJsonStorage(),
         )
     }
 
@@ -78,7 +116,11 @@ internal class LinkPreviewMapperImpl(
                     assetDataPath = null,
                     assetToken = linkPreview.image?.uploaded?.assetToken,
                     assetDomain = linkPreview.image?.uploaded?.assetDomain,
-                    assetKey = linkPreview.image?.uploaded?.assetId
+                    assetKey = linkPreview.image?.uploaded?.assetId,
+                    otrKey = linkPreview.image?.uploaded?.otrKey?.array ?: ByteArray(0),
+                    sha256Key = linkPreview.image?.uploaded?.sha256?.array ?: ByteArray(0),
+                    encryptionAlgorithm = encryptionAlgorithmMapper.fromProtobufModel(linkPreview.image?.uploaded?.encryption)
+                        ?: MessageEncryptionAlgorithm.AES_CBC
                 )
             }
         )
@@ -116,3 +158,22 @@ internal class LinkPreviewMapperImpl(
         }
     )
 }
+
+private fun String.escapeForJsonStorage(): String = buildString(length) {
+    this@escapeForJsonStorage.forEach { character ->
+        when (character) {
+            '\\' -> append("\\\\")
+            '"' -> append("\\\"")
+            '\n' -> append("\\n")
+            '\r' -> append("\\r")
+            '\t' -> append("\\t")
+            else -> append(character)
+        }
+    }
+}
+
+private fun String?.toMessageEncryptionAlgorithm(): MessageEncryptionAlgorithm =
+    when (this) {
+        MessageEncryptionAlgorithm.AES_GCM.name -> MessageEncryptionAlgorithm.AES_GCM
+        else -> MessageEncryptionAlgorithm.AES_CBC
+    }

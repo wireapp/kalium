@@ -1,14 +1,16 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntityContent;
-import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
-import kotlin.Boolean;
-import kotlin.Int;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_local_path TEXT;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_width INTEGER;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_height INTEGER;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_mime_type TEXT;
+
+ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_key TEXT;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_token TEXT;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_asset_domain TEXT;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_otr_key TEXT;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_sha256 TEXT;
+ALTER TABLE MessageLinkPreview ADD COLUMN image_encryption_algorithm TEXT;
+
+DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
@@ -198,4 +200,5 @@ LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent ON QuotedL
 -- end joins for quoted messages
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
 LEFT JOIN SelfUser;
--- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
+
+PRAGMA optimize;
