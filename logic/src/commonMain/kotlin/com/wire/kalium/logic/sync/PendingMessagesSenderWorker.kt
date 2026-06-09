@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.sending.MessageSender
@@ -33,7 +35,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 internal class PendingMessagesSenderWorker(
     private val messageRepository: MessageRepository,
     private val messageSender: MessageSender,
-    private val userId: UserId
+    private val userId: UserId,
+    private val sendPendingAssetMessage: SendPendingAssetMessageUseCase,
 ) : DefaultWorker {
 
     /**
@@ -50,7 +53,12 @@ internal class PendingMessagesSenderWorker(
             .onSuccess { pendingMessages ->
                 pendingMessages.forEach { message ->
                     kaliumLogger.withFeatureId(SYNC).i("Attempting scheduled sending of message $message")
-                    messageSender.sendPendingMessage(message.conversationId, message.id)
+                    when {
+                        message is Message.Regular && message.content is MessageContent.Asset ->
+                            sendPendingAssetMessage(message)
+                        else ->
+                            messageSender.sendPendingMessage(message.conversationId, message.id)
+                    }
                 }
             }.onFailure {
                 kaliumLogger.withFeatureId(SYNC).w("Failed to fetch and attempt retry of pending messages: $it")

@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.framework.TestMessage.assetMessage
@@ -233,6 +234,7 @@ class UploadAssetUseCaseTest {
         val persistMessage: PersistMessageUseCase = mock(mode = MockMode.autoUnit)
         val audioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderMock()
         var persistMessageResult: Either<CoreFailure, Unit> = Unit.right()
+        var updateAudioNormalizedLoudness: UpdateAudioMessageNormalizedLoudnessUseCase = mock(mode = MockMode.autoUnit)
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, UploadAssetUseCaseImpl> {
             block()
@@ -258,6 +260,7 @@ class UploadAssetUseCaseTest {
                 messageSender,
                 messageSendFailureHandler,
                 updateAssetMessageTransferStatus,
+                updateAudioNormalizedLoudness,
                 persistMessage,
                 audioNormalizedLoudnessBuilder,
                 testDispatcher
