@@ -2497,6 +2497,7 @@ public class UserSessionScope internal constructor(
             audioNormalizedLoudnessScheduler,
             userPropertyRepository,
             incrementalSyncRepository,
+            kaliumFileSystem,
             protoContentMapper,
             observeSelfDeletingMessages,
             messageMetadataRepository,
