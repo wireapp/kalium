@@ -45,6 +45,7 @@ public class MultiPlatformBackupScope internal constructor(
     private val metadataDAO: MetadataDAO,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val messageSender: MessageSender,
+    private val backupRootKeyPendingRequestStore: BackupRootKeyPendingRequestStore,
 ) {
     private val backupRootKeyRepository: BackupRootKeyRepository
         get() = BackupRootKeyRepositoryImpl(
@@ -122,6 +123,24 @@ public class MultiPlatformBackupScope internal constructor(
         get() = SyncBackupRootKeyIfOnlineBackupExistsUseCaseImpl(
             onlineBackupRepository = onlineBackupRepository,
             syncBackupRootKey = syncBackupRootKey,
+        )
+
+    public val observePendingBackupRootKeyRequests: ObservePendingBackupRootKeyRequestsUseCase
+        get() = ObservePendingBackupRootKeyRequestsUseCaseImpl(
+            pendingRequestStore = backupRootKeyPendingRequestStore,
+        )
+
+    public val approveBackupRootKeyRequest: ApproveBackupRootKeyRequestUseCase
+        get() = ApproveBackupRootKeyRequestUseCaseImpl(
+            selfUserId = selfUserId,
+            currentClientIdProvider = clientIdProvider,
+            messageSender = messageSender,
+            pendingRequestStore = backupRootKeyPendingRequestStore,
+        )
+
+    public val declineBackupRootKeyRequest: DeclineBackupRootKeyRequestUseCase
+        get() = DeclineBackupRootKeyRequestUseCaseImpl(
+            pendingRequestStore = backupRootKeyPendingRequestStore,
         )
 
     public val createOnline: CreateOnlineBackupUseCase

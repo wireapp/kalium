@@ -26,16 +26,22 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.messaging.sending.MessageTarget
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.datetime.Instant
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.Uuid
 
 /**
@@ -72,6 +78,25 @@ public interface GenerateAndForcePushBackupRootKeyUseCase {
 public interface SyncBackupRootKeyIfOnlineBackupExistsUseCase {
     public suspend operator fun invoke(): SyncBackupRootKeyIfOnlineBackupExistsResult
 }
+
+public interface ObservePendingBackupRootKeyRequestsUseCase {
+    public operator fun invoke(): StateFlow<List<PendingBackupRootKeyRequest>>
+}
+
+public interface ApproveBackupRootKeyRequestUseCase {
+    public suspend operator fun invoke(requestId: String, requesterClientId: ClientId): BackupRootKeyRequestDecisionResult
+}
+
+public interface DeclineBackupRootKeyRequestUseCase {
+    public suspend operator fun invoke(requestId: String, requesterClientId: ClientId): BackupRootKeyRequestDecisionResult
+}
+
+public data class PendingBackupRootKeyRequest(
+    val requestId: String,
+    val requesterClientId: ClientId,
+    val requestedAt: Instant,
+    val backupRootKeyInfo: BackupRootKeyInfo,
+)
 
 public sealed interface SyncBackupRootKeyResult {
     public data class Found(val backupRootKey: BackupRootKey) : SyncBackupRootKeyResult
@@ -114,6 +139,12 @@ public sealed interface SyncBackupRootKeyIfOnlineBackupExistsResult {
     public data class Failure(val cause: Throwable) : SyncBackupRootKeyIfOnlineBackupExistsResult
 }
 
+public sealed interface BackupRootKeyRequestDecisionResult {
+    public data object Success : BackupRootKeyRequestDecisionResult
+    public data object RequestNotFound : BackupRootKeyRequestDecisionResult
+    public data class Failure(val cause: Throwable) : BackupRootKeyRequestDecisionResult
+}
+
 internal class SyncBackupRootKeyUseCaseImpl(
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
@@ -121,7 +152,7 @@ internal class SyncBackupRootKeyUseCaseImpl(
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val messageSender: MessageSender,
     private val coordinator: BackupRootKeySyncCoordinator = BackupRootKeySyncCoordinator,
-    private val timeout: Duration = 10.seconds,
+    private val timeout: Duration = DEFAULT_BACKUP_ROOT_KEY_SYNC_TIMEOUT,
     private val requestIdProvider: () -> String = { Uuid.random().toString() },
 ) : SyncBackupRootKeyUseCase {
 
@@ -181,6 +212,73 @@ internal class SyncBackupRootKeyUseCaseImpl(
             isSelfMessage = true,
             expirationData = null,
         )
+}
+
+internal val DEFAULT_BACKUP_ROOT_KEY_SYNC_TIMEOUT: Duration = 10.minutes
+
+internal class ObservePendingBackupRootKeyRequestsUseCaseImpl(
+    private val pendingRequestStore: BackupRootKeyPendingRequestStore,
+) : ObservePendingBackupRootKeyRequestsUseCase {
+    override fun invoke(): StateFlow<List<PendingBackupRootKeyRequest>> = pendingRequestStore.observePendingRequests()
+}
+
+internal class ApproveBackupRootKeyRequestUseCaseImpl(
+    private val selfUserId: UserId,
+    private val currentClientIdProvider: CurrentClientIdProvider,
+    private val messageSender: MessageSender,
+    private val pendingRequestStore: BackupRootKeyPendingRequestStore,
+) : ApproveBackupRootKeyRequestUseCase {
+
+    override suspend fun invoke(requestId: String, requesterClientId: ClientId): BackupRootKeyRequestDecisionResult =
+        try {
+            val pendingRequest = pendingRequestStore.remove(requestId, requesterClientId)
+                ?: return BackupRootKeyRequestDecisionResult.RequestNotFound
+            val currentClientId = when (val result = currentClientIdProvider()) {
+                is Either.Left -> return BackupRootKeyRequestDecisionResult.Failure(IllegalStateException(result.value.toString()))
+                is Either.Right -> result.value
+            }
+            val message = Message.Signaling(
+                id = Uuid.random().toString(),
+                content = pendingRequest.backupRootKey.toEnvelope(requestId),
+                conversationId = pendingRequest.conversationId,
+                date = DateTimeUtil.currentInstant(),
+                senderUserId = selfUserId,
+                senderClientId = currentClientId,
+                status = Message.Status.Pending,
+                isSelfMessage = true,
+                expirationData = null,
+            )
+            val target = MessageTarget.Client(listOf(Recipient(selfUserId, listOf(requesterClientId))))
+            when (val result = messageSender.sendMessage(message, target)) {
+                is Either.Left -> BackupRootKeyRequestDecisionResult.Failure(IllegalStateException(result.value.toString()))
+                is Either.Right -> BackupRootKeyRequestDecisionResult.Success
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            BackupRootKeyRequestDecisionResult.Failure(e)
+        }
+
+    private fun BackupRootKey.toEnvelope(requestId: String): MessageContent.BackupRootKeySync.Envelope =
+        MessageContent.BackupRootKeySync.Envelope(
+            requestId = requestId,
+            keyId = id,
+            keyMaterial = keyMaterial,
+            createdAt = createdAt,
+            createdByClientId = createdByClientId,
+            version = version,
+        )
+}
+
+internal class DeclineBackupRootKeyRequestUseCaseImpl(
+    private val pendingRequestStore: BackupRootKeyPendingRequestStore,
+) : DeclineBackupRootKeyRequestUseCase {
+    override suspend fun invoke(requestId: String, requesterClientId: ClientId): BackupRootKeyRequestDecisionResult =
+        if (pendingRequestStore.remove(requestId, requesterClientId) == null) {
+            BackupRootKeyRequestDecisionResult.RequestNotFound
+        } else {
+            BackupRootKeyRequestDecisionResult.Success
+        }
 }
 
 internal class PushBackupRootKeyUseCaseImpl(
@@ -373,3 +471,54 @@ internal object BackupRootKeySyncCoordinator {
         }?.complete(backupRootKey)
     }
 }
+
+internal class BackupRootKeyPendingRequestStore {
+    private val mutex = Mutex()
+    private val pendingRequests = mutableMapOf<BackupRootKeyPendingRequestKey, BackupRootKeyPendingRequestEntry>()
+    private val pendingRequestsFlow = MutableStateFlow<List<PendingBackupRootKeyRequest>>(emptyList())
+
+    fun observePendingRequests(): StateFlow<List<PendingBackupRootKeyRequest>> = pendingRequestsFlow.asStateFlow()
+
+    suspend fun add(entry: BackupRootKeyPendingRequestEntry) {
+        mutex.withLock {
+            pendingRequests[entry.key] = entry
+            emitLocked()
+        }
+    }
+
+    suspend fun remove(requestId: String, requesterClientId: ClientId): BackupRootKeyPendingRequestEntry? =
+        mutex.withLock {
+            pendingRequests.remove(BackupRootKeyPendingRequestKey(requestId, requesterClientId)).also {
+                emitLocked()
+            }
+        }
+
+    suspend fun clear() {
+        mutex.withLock {
+            pendingRequests.clear()
+            emitLocked()
+        }
+    }
+
+    private fun emitLocked() {
+        pendingRequestsFlow.value = pendingRequests.values
+            .sortedBy { it.request.requestedAt }
+            .map { it.request }
+    }
+}
+
+internal data class BackupRootKeyPendingRequestEntry(
+    val request: PendingBackupRootKeyRequest,
+    val conversationId: ConversationId,
+    val backupRootKey: BackupRootKey,
+) {
+    val key: BackupRootKeyPendingRequestKey = BackupRootKeyPendingRequestKey(
+        requestId = request.requestId,
+        requesterClientId = request.requesterClientId,
+    )
+}
+
+internal data class BackupRootKeyPendingRequestKey(
+    val requestId: String,
+    val requesterClientId: ClientId,
+)

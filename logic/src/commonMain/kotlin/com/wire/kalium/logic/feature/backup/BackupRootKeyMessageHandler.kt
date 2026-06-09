@@ -48,6 +48,7 @@ internal class BackupRootKeyMessageHandlerImpl(
     private val backupRootKeyRepository: BackupRootKeyRepository,
     private val messageSender: MessageSender,
     private val coordinator: BackupRootKeySyncCoordinator = BackupRootKeySyncCoordinator,
+    private val pendingRequestStore: BackupRootKeyPendingRequestStore,
 ) : BackupRootKeyMessageHandler {
 
     private val pendingMessagesMutex = Mutex()
@@ -65,7 +66,7 @@ internal class BackupRootKeyMessageHandlerImpl(
         if (message.senderClientId == currentClientId) return
 
         when (content) {
-            is MessageContent.BackupRootKeySync.Request -> handleRequest(message, content, currentClientId)
+            is MessageContent.BackupRootKeySync.Request -> handleRequest(message, content)
             is MessageContent.BackupRootKeySync.Envelope -> handleEnvelope(message, content, currentClientId)
             is MessageContent.BackupRootKeySync.Ack -> Unit
         }
@@ -74,22 +75,19 @@ internal class BackupRootKeyMessageHandlerImpl(
     private suspend fun handleRequest(
         message: Message.Signaling,
         content: MessageContent.BackupRootKeySync.Request,
-        currentClientId: ClientId,
     ) {
         val backupRootKey = backupRootKeyRepository.getBackupRootKey() ?: return
-        addPendingMessage(
-            message = Message.Signaling(
-                id = Uuid.random().toString(),
-                content = backupRootKey.toEnvelope(content.requestId),
+        pendingRequestStore.add(
+            BackupRootKeyPendingRequestEntry(
+                request = PendingBackupRootKeyRequest(
+                    requestId = content.requestId,
+                    requesterClientId = message.senderClientId,
+                    requestedAt = DateTimeUtil.currentInstant(),
+                    backupRootKeyInfo = backupRootKey.toBackupRootKeyInfo(),
+                ),
                 conversationId = message.conversationId,
-                date = DateTimeUtil.currentInstant(),
-                senderUserId = selfUserId,
-                senderClientId = currentClientId,
-                status = Message.Status.Pending,
-                isSelfMessage = true,
-                expirationData = null,
-            ),
-            messageTarget = MessageTarget.Client(listOf(Recipient(selfUserId, listOf(message.senderClientId)))),
+                backupRootKey = backupRootKey,
+            )
         )
     }
 
@@ -143,16 +141,6 @@ internal class BackupRootKeyMessageHandlerImpl(
             messageSender.sendMessage(message, target)
         }
     }
-
-    private fun BackupRootKey.toEnvelope(requestId: String): MessageContent.BackupRootKeySync.Envelope =
-        MessageContent.BackupRootKeySync.Envelope(
-            requestId = requestId,
-            keyId = id,
-            keyMaterial = keyMaterial,
-            createdAt = createdAt,
-            createdByClientId = createdByClientId,
-            version = version,
-        )
 
     private data class PendingMessage(
         val message: Message.Signaling,

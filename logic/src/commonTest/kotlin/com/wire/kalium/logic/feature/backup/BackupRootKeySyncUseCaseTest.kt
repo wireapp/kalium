@@ -34,11 +34,15 @@ import com.wire.kalium.messaging.sending.BroadcastMessage
 import com.wire.kalium.messaging.sending.BroadcastMessageTarget
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.messaging.sending.MessageTarget
+import kotlinx.coroutines.async
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.milliseconds
@@ -86,6 +90,23 @@ class BackupRootKeySyncUseCaseTest {
 
         assertEquals(SyncBackupRootKeyResult.Unavailable, result)
         assertNull(arrangement.repository.getBackupRootKey())
+    }
+
+    @Test
+    fun givenDefaultTimeout_whenEnvelopeArrivesAfterUserDelay_thenKeyIsStoredAndReturned() = runTest {
+        val arrangement = Arrangement()
+        val sync = arrangement.arrangeSyncWithDefaultTimeout()
+
+        val result = async { sync() }
+        runCurrent()
+
+        advanceTimeBy(30.seconds)
+        assertFalse(result.isCompleted)
+
+        BackupRootKeySyncCoordinator.onEnvelope(REQUEST_ID, KEY)
+
+        assertIs<SyncBackupRootKeyResult.Found>(result.await())
+        assertEquals(KEY.id, arrangement.repository.getBackupRootKey()?.id)
     }
 
     @Test
@@ -163,7 +184,7 @@ class BackupRootKeySyncUseCaseTest {
     }
 
     @Test
-    fun givenReceivedRequestAndLocalKeyExists_whenHandled_thenEnvelopeIsQueuedAndSentOnFlush() = runTest {
+    fun givenReceivedRequestAndLocalKeyExists_whenHandled_thenApprovalRequestIsStoredAndNoEnvelopeIsSentOnFlush() = runTest {
         val arrangement = Arrangement()
         arrangement.repository.setBackupRootKey(KEY)
         val handler = arrangement.arrangeHandler()
@@ -175,14 +196,75 @@ class BackupRootKeySyncUseCaseTest {
         )
 
         assertEquals(0, arrangement.messageSender.sentMessages.size)
+        val pendingRequest = arrangement.pendingRequestStore.observePendingRequests().value.single()
+        assertEquals(REQUEST_ID, pendingRequest.requestId)
+        assertEquals(OTHER_CLIENT_ID, pendingRequest.requesterClientId)
+        assertEquals(KEY.id, pendingRequest.backupRootKeyInfo.id)
 
         handler.flushPendingMessages()
 
+        assertEquals(0, arrangement.messageSender.sentMessages.size)
+    }
+
+    @Test
+    fun givenPendingApprovalRequest_whenApproved_thenEnvelopeIsSentAndRequestIsRemoved() = runTest {
+        val arrangement = Arrangement()
+        arrangement.repository.setBackupRootKey(KEY)
+        val handler = arrangement.arrangeHandler()
+
+        handler.handle(
+            mock<CryptoTransactionContext>(),
+            signalingMessage(OTHER_CLIENT_ID, MessageContent.BackupRootKeySync.Request(REQUEST_ID)),
+            MessageContent.BackupRootKeySync.Request(REQUEST_ID),
+        )
+
+        val approve = arrangement.arrangeApprove()
+
+        assertEquals(BackupRootKeyRequestDecisionResult.Success, approve(REQUEST_ID, OTHER_CLIENT_ID))
         val sent = arrangement.messageSender.sentMessages.single()
         val content = assertIs<MessageContent.BackupRootKeySync.Envelope>(sent.message.content)
         assertEquals(KEY.id, content.keyId)
         assertIs<MessageTarget.Client>(sent.target)
         assertEquals(0, arrangement.messageSender.transactionalSendCount)
+        assertEquals(emptyList(), arrangement.pendingRequestStore.observePendingRequests().value)
+    }
+
+    @Test
+    fun givenPendingApprovalRequest_whenDeclined_thenRequestIsRemovedAndNothingIsSent() = runTest {
+        val arrangement = Arrangement()
+        arrangement.repository.setBackupRootKey(KEY)
+        val handler = arrangement.arrangeHandler()
+
+        handler.handle(
+            mock<CryptoTransactionContext>(),
+            signalingMessage(OTHER_CLIENT_ID, MessageContent.BackupRootKeySync.Request(REQUEST_ID)),
+            MessageContent.BackupRootKeySync.Request(REQUEST_ID),
+        )
+
+        val decline = DeclineBackupRootKeyRequestUseCaseImpl(arrangement.pendingRequestStore)
+
+        assertEquals(BackupRootKeyRequestDecisionResult.Success, decline(REQUEST_ID, OTHER_CLIENT_ID))
+        assertEquals(0, arrangement.messageSender.sentMessages.size)
+        assertEquals(emptyList(), arrangement.pendingRequestStore.observePendingRequests().value)
+    }
+
+    @Test
+    fun givenDuplicateApprovalRequests_whenHandled_thenOnlyOneRequestIsStored() = runTest {
+        val arrangement = Arrangement()
+        arrangement.repository.setBackupRootKey(KEY)
+        val handler = arrangement.arrangeHandler()
+
+        repeat(2) {
+            handler.handle(
+                mock<CryptoTransactionContext>(),
+                signalingMessage(OTHER_CLIENT_ID, MessageContent.BackupRootKeySync.Request(REQUEST_ID)),
+                MessageContent.BackupRootKeySync.Request(REQUEST_ID),
+            )
+        }
+
+        assertEquals(1, arrangement.pendingRequestStore.observePendingRequests().value.size)
+        handler.flushPendingMessages()
+        assertEquals(0, arrangement.messageSender.sentMessages.size)
     }
 
     @Test
@@ -228,6 +310,7 @@ class BackupRootKeySyncUseCaseTest {
     private class Arrangement {
         val repository = InMemoryBackupRootKeyRepository()
         val messageSender = RecordingMessageSender()
+        val pendingRequestStore = BackupRootKeyPendingRequestStore()
         val pushedKeys = mutableListOf<BackupRootKey>()
         val pushUseCase = object : PushBackupRootKeyUseCase {
             override suspend fun invoke(backupRootKey: BackupRootKey): PushBackupRootKeyResult {
@@ -247,12 +330,31 @@ class BackupRootKeySyncUseCaseTest {
                 requestIdProvider = { REQUEST_ID },
             )
 
+        fun arrangeSyncWithDefaultTimeout(): SyncBackupRootKeyUseCase =
+            SyncBackupRootKeyUseCaseImpl(
+                selfUserId = SELF_USER_ID,
+                currentClientIdProvider = CurrentClientIdProvider { CLIENT_ID.right() },
+                backupRootKeyRepository = repository,
+                selfConversationIdProvider = SelfConversationIdProvider { listOf(CONVERSATION_ID).right() },
+                messageSender = messageSender,
+                requestIdProvider = { REQUEST_ID },
+            )
+
         fun arrangeHandler(): BackupRootKeyMessageHandler =
             BackupRootKeyMessageHandlerImpl(
                 selfUserId = SELF_USER_ID,
                 currentClientIdProvider = CurrentClientIdProvider { CLIENT_ID.right() },
                 backupRootKeyRepository = repository,
                 messageSender = messageSender,
+                pendingRequestStore = pendingRequestStore,
+            )
+
+        fun arrangeApprove(): ApproveBackupRootKeyRequestUseCase =
+            ApproveBackupRootKeyRequestUseCaseImpl(
+                selfUserId = SELF_USER_ID,
+                currentClientIdProvider = CurrentClientIdProvider { CLIENT_ID.right() },
+                messageSender = messageSender,
+                pendingRequestStore = pendingRequestStore,
             )
     }
 

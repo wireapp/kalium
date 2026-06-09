@@ -238,6 +238,7 @@ import com.wire.kalium.logic.feature.backup.BackupConversationResolver
 import com.wire.kalium.logic.feature.backup.BackupConversationResolverImpl
 import com.wire.kalium.logic.feature.backup.BackupRootKeyMessageHandler
 import com.wire.kalium.logic.feature.backup.BackupRootKeyMessageHandlerImpl
+import com.wire.kalium.logic.feature.backup.BackupRootKeyPendingRequestStore
 import com.wire.kalium.logic.feature.backup.BackupRootKeyRepositoryImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
 import com.wire.kalium.logic.feature.backup.ClearBackupRootKeyUseCaseImpl
@@ -1218,7 +1219,12 @@ public class UserSessionScope internal constructor(
             metadataDAO = userStorage.database.metadataDAO,
             selfConversationIdProvider = selfConversationIdProvider,
             messageSender = messages.messageSender,
+            backupRootKeyPendingRequestStore = backupRootKeyPendingRequestStore,
         )
+
+    private val backupRootKeyPendingRequestStore: BackupRootKeyPendingRequestStore by lazy {
+        BackupRootKeyPendingRequestStore()
+    }
 
     internal val persistMessage: PersistMessageUseCase
         get() = PersistMessageUseCaseImpl(
@@ -1893,6 +1899,7 @@ public class UserSessionScope internal constructor(
                 metadataDAO = userStorage.database.metadataDAO,
             ),
             messageSender = messages.messageSender,
+            pendingRequestStore = backupRootKeyPendingRequestStore,
         )
 
     private val applicationMessageHandler: ApplicationMessageHandler
