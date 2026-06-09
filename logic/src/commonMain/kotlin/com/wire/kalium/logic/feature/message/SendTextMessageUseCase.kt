@@ -121,7 +121,8 @@ public class SendTextMessageUseCase internal constructor(
                 failure = it,
                 conversationId = conversationId,
                 messageId = generatedMessageUuid,
-                messageType = TYPE
+                messageType = TYPE,
+                scheduleResendIfNoNetwork = true,
             )
         }.fold(
             { MessageOperationResult.Failure(it) },

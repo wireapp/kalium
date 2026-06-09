@@ -18,8 +18,12 @@
 package com.wire.kalium.logic.feature.asset
 
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
-class AudioNormalizedLoudnessBuilderMock(private val defaultResult: ByteArray? = null) : AudioNormalizedLoudnessBuilder {
+class AudioNormalizedLoudnessBuilderMock(
+    private val defaultResult: ByteArray? = null,
+    private val canReadFile: (String) -> Boolean = { true },
+) : AudioNormalizedLoudnessBuilder {
     private val results = mutableMapOf<String, Pair<ByteArray?, Int>>()
 
     fun every(filePath: String, result: ByteArray?) { results[filePath] = result to 0 }
@@ -33,7 +37,10 @@ class AudioNormalizedLoudnessBuilderMock(private val defaultResult: ByteArray? =
         )
     }
 
-    override suspend fun invoke(filePath: String): ByteArray? = (results[filePath]?.first ?: defaultResult).also { result ->
-        results[filePath] = result to (results[filePath]?.second ?: 0) + 1 // increment call count
+    override suspend fun invoke(filePath: String): ByteArray? {
+        assertTrue(canReadFile(filePath), "AudioNormalizedLoudnessBuilderMock could not read $filePath")
+        return (results[filePath]?.first ?: defaultResult).also { result ->
+            results[filePath] = result to (results[filePath]?.second ?: 0) + 1 // increment call count
+        }
     }
 }
