@@ -19,17 +19,23 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.daokaliumdb.GlobalPushRegistrationEntity
+import com.wire.kalium.persistence.daokaliumdb.DatabaseBackedGlobalSecretsCache
 import com.wire.kalium.persistence.daokaliumdb.GlobalSecretsDAO
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 
 internal class DatabaseBackedTokenStorage(
-    private val globalSecretsDAO: GlobalSecretsDAO,
+    private val globalSecretsCache: DatabaseBackedGlobalSecretsCache,
     private val clock: Clock = Clock.System
 ) : TokenStorage {
+    constructor(
+        globalSecretsDAO: GlobalSecretsDAO,
+        clock: Clock = Clock.System
+    ) : this(DatabaseBackedGlobalSecretsCache(globalSecretsDAO), clock)
+
     override fun saveToken(token: String, transport: String, applicationId: String) {
         runBlocking {
-            globalSecretsDAO.upsertPushRegistration(
+            globalSecretsCache.upsertPushRegistration(
                 GlobalPushRegistrationEntity(
                     token = token,
                     transport = transport,
@@ -41,7 +47,7 @@ internal class DatabaseBackedTokenStorage(
     }
 
     override fun getToken(): NotificationTokenEntity? = runBlocking {
-        globalSecretsDAO.pushRegistration()?.let {
+        globalSecretsCache.pushRegistration()?.let {
             NotificationTokenEntity(
                 token = it.token,
                 transport = it.transport,

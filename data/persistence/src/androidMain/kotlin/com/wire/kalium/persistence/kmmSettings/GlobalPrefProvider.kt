@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.client.DatabaseBackedAuthTokenStorage
 import com.wire.kalium.persistence.client.DatabaseBackedTokenStorage
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
+import com.wire.kalium.persistence.daokaliumdb.DatabaseBackedGlobalSecretsCache
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.dbPassphrase.DatabaseBackedPassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
@@ -34,6 +35,9 @@ actual class GlobalPrefProvider {
 
     private val encryptedSettingsHolder: KaliumPreferences?
     private val globalDatabaseBuilder: GlobalDatabaseBuilder?
+    private val globalSecretsCache: DatabaseBackedGlobalSecretsCache? by lazy {
+        globalDatabaseBuilder?.let { DatabaseBackedGlobalSecretsCache(it.globalSecretsDAO) }
+    }
 
     constructor(context: Context, shouldEncryptData: Boolean = true) {
         encryptedSettingsHolder = KaliumPreferencesSettings(
@@ -47,13 +51,16 @@ actual class GlobalPrefProvider {
         this.globalDatabaseBuilder = globalDatabaseBuilder
     }
 
-    actual val authTokenStorage: AuthTokenStorage
-        get() = globalDatabaseBuilder?.let { DatabaseBackedAuthTokenStorage(it.globalSecretsDAO) }
+    actual val authTokenStorage: AuthTokenStorage by lazy {
+        globalSecretsCache?.let { DatabaseBackedAuthTokenStorage(it) }
             ?: AuthTokenStorageImpl(requireNotNull(encryptedSettingsHolder))
-    actual val passphraseStorage: PassphraseStorage
-        get() = globalDatabaseBuilder?.let { DatabaseBackedPassphraseStorage(it.globalSecretsDAO) }
+    }
+    actual val passphraseStorage: PassphraseStorage by lazy {
+        globalSecretsCache?.let { DatabaseBackedPassphraseStorage(it) }
             ?: PassphraseStorageImpl(requireNotNull(encryptedSettingsHolder))
-    actual val tokenStorage: TokenStorage
-        get() = globalDatabaseBuilder?.let { DatabaseBackedTokenStorage(it.globalSecretsDAO) }
+    }
+    actual val tokenStorage: TokenStorage by lazy {
+        globalSecretsCache?.let { DatabaseBackedTokenStorage(it) }
             ?: TokenStorageImpl(requireNotNull(encryptedSettingsHolder))
+    }
 }

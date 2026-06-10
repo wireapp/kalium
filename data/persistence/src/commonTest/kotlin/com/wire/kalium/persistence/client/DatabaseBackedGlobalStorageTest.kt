@@ -19,10 +19,12 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.daokaliumdb.DatabaseBackedGlobalSecretsCache
 import com.wire.kalium.persistence.daokaliumdb.GlobalAuthSessionEntity
 import com.wire.kalium.persistence.daokaliumdb.GlobalDbSecretEntity
 import com.wire.kalium.persistence.daokaliumdb.GlobalProxyCredentialsEntity
 import com.wire.kalium.persistence.daokaliumdb.GlobalPushRegistrationEntity
+import com.wire.kalium.persistence.daokaliumdb.GlobalSecretsSnapshot
 import com.wire.kalium.persistence.daokaliumdb.GlobalSecretsDAO
 import com.wire.kalium.persistence.dbPassphrase.DatabaseBackedPassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
@@ -37,13 +39,15 @@ class DatabaseBackedGlobalStorageTest {
     private lateinit var authTokenStorage: AuthTokenStorage
     private lateinit var tokenStorage: TokenStorage
     private lateinit var passphraseStorage: PassphraseStorage
+    private lateinit var globalSecretsDAO: FakeGlobalSecretsDAO
 
     @BeforeTest
     fun setUp() {
-        val globalSecretsDAO = FakeGlobalSecretsDAO()
-        authTokenStorage = DatabaseBackedAuthTokenStorage(globalSecretsDAO)
-        tokenStorage = DatabaseBackedTokenStorage(globalSecretsDAO)
-        passphraseStorage = DatabaseBackedPassphraseStorage(globalSecretsDAO)
+        globalSecretsDAO = FakeGlobalSecretsDAO()
+        val globalSecretsCache = DatabaseBackedGlobalSecretsCache(globalSecretsDAO)
+        authTokenStorage = DatabaseBackedAuthTokenStorage(globalSecretsCache)
+        tokenStorage = DatabaseBackedTokenStorage(globalSecretsCache)
+        passphraseStorage = DatabaseBackedPassphraseStorage(globalSecretsCache)
     }
 
     @Test
@@ -100,11 +104,39 @@ class DatabaseBackedGlobalStorageTest {
         }
     }
 
+    @Test
+    fun givenSharedDatabaseBackedStorages_whenReadingStartupSecrets_thenLoadsSnapshotOnce() {
+        val expectedToken = NotificationTokenEntity("push-token", "GCM", "application-id")
+
+        authTokenStorage.addOrReplace(TEST_AUTH_TOKEN, TEST_PROXY_CREDENTIALS)
+        tokenStorage.saveToken(expectedToken.token, expectedToken.transport, expectedToken.applicationId)
+        passphraseStorage.setPassphrase(TEST_PASSPHRASE_ALIAS, TEST_PASSPHRASE)
+
+        assertEquals(TEST_AUTH_TOKEN, authTokenStorage.getToken(TEST_USER_ID))
+        assertEquals(TEST_PROXY_CREDENTIALS, authTokenStorage.proxyCredentials(TEST_USER_ID))
+        assertEquals(expectedToken, tokenStorage.getToken())
+        assertEquals(TEST_PASSPHRASE, passphraseStorage.getPassphrase(TEST_PASSPHRASE_ALIAS))
+        assertEquals(1, globalSecretsDAO.startupSecretsCallCount)
+    }
+
     private class FakeGlobalSecretsDAO : GlobalSecretsDAO {
+        var startupSecretsCallCount = 0
+            private set
+
         private val authSessions = mutableMapOf<UserIDEntity, GlobalAuthSessionEntity>()
         private val proxyCredentials = mutableMapOf<UserIDEntity, GlobalProxyCredentialsEntity>()
         private var pushRegistration: GlobalPushRegistrationEntity? = null
         private val dbSecrets = mutableMapOf<String, GlobalDbSecretEntity>()
+
+        override suspend fun startupSecrets(): GlobalSecretsSnapshot {
+            startupSecretsCallCount++
+            return GlobalSecretsSnapshot(
+                authSessions = authSessions.toMap(),
+                proxyCredentials = proxyCredentials.toMap(),
+                pushRegistration = pushRegistration,
+                dbSecrets = dbSecrets.toMap()
+            )
+        }
 
         override suspend fun upsertAuthSession(authSession: GlobalAuthSessionEntity) {
             authSessions[authSession.userId] = authSession

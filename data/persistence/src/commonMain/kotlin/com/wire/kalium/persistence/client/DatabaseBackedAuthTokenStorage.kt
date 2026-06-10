@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.client
 
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.daokaliumdb.DatabaseBackedGlobalSecretsCache
 import com.wire.kalium.persistence.daokaliumdb.GlobalAuthSessionEntity
 import com.wire.kalium.persistence.daokaliumdb.GlobalProxyCredentialsEntity
 import com.wire.kalium.persistence.daokaliumdb.GlobalSecretsDAO
@@ -26,14 +27,19 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 
 internal class DatabaseBackedAuthTokenStorage(
-    private val globalSecretsDAO: GlobalSecretsDAO,
+    private val globalSecretsCache: DatabaseBackedGlobalSecretsCache,
     private val clock: Clock = Clock.System
 ) : AuthTokenStorage {
+    constructor(
+        globalSecretsDAO: GlobalSecretsDAO,
+        clock: Clock = Clock.System
+    ) : this(DatabaseBackedGlobalSecretsCache(globalSecretsDAO), clock)
+
     override fun addOrReplace(authTokenEntity: AuthTokenEntity, proxyCredentialsEntity: ProxyCredentialsEntity?) {
         runBlocking {
-            globalSecretsDAO.upsertAuthSession(authTokenEntity.toGlobalEntity(clock.now().toEpochMilliseconds()))
+            globalSecretsCache.upsertAuthSession(authTokenEntity.toGlobalEntity(clock.now().toEpochMilliseconds()))
             proxyCredentialsEntity?.let {
-                globalSecretsDAO.upsertProxyCredentials(
+                globalSecretsCache.upsertProxyCredentials(
                     it.toGlobalEntity(
                         userId = authTokenEntity.userId,
                         updatedAt = clock.now().toEpochMilliseconds()
@@ -49,7 +55,7 @@ internal class DatabaseBackedAuthTokenStorage(
         tokenType: String,
         refreshToken: String?
     ): AuthTokenEntity = runBlocking {
-        val currentToken = globalSecretsDAO.authSession(userId)
+        val currentToken = globalSecretsCache.authSession(userId)
             ?: error("No token found for user ${userId.toLogString()}")
         val updatedToken = currentToken.copy(
             accessToken = accessToken,
@@ -57,23 +63,23 @@ internal class DatabaseBackedAuthTokenStorage(
             tokenType = tokenType,
             updatedAt = clock.now().toEpochMilliseconds()
         )
-        globalSecretsDAO.upsertAuthSession(updatedToken)
+        globalSecretsCache.upsertAuthSession(updatedToken)
         updatedToken.toAuthTokenEntity()
     }
 
     override fun getToken(userId: UserIDEntity): AuthTokenEntity? = runBlocking {
-        globalSecretsDAO.authSession(userId)?.toAuthTokenEntity()
+        globalSecretsCache.authSession(userId)?.toAuthTokenEntity()
     }
 
     override fun deleteToken(userId: UserIDEntity) {
         runBlocking {
-            globalSecretsDAO.deleteAuthSession(userId)
-            globalSecretsDAO.deleteProxyCredentials(userId)
+            globalSecretsCache.deleteAuthSession(userId)
+            globalSecretsCache.deleteProxyCredentials(userId)
         }
     }
 
     override fun proxyCredentials(userId: UserIDEntity): ProxyCredentialsEntity? = runBlocking {
-        globalSecretsDAO.proxyCredentials(userId)?.toProxyCredentialsEntity()
+        globalSecretsCache.proxyCredentials(userId)?.toProxyCredentialsEntity()
     }
 
     private fun AuthTokenEntity.toGlobalEntity(updatedAt: Long): GlobalAuthSessionEntity =

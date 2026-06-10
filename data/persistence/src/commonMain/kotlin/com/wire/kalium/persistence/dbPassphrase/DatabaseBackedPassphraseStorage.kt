@@ -19,16 +19,22 @@
 package com.wire.kalium.persistence.dbPassphrase
 
 import com.wire.kalium.persistence.daokaliumdb.GlobalDbSecretEntity
+import com.wire.kalium.persistence.daokaliumdb.DatabaseBackedGlobalSecretsCache
 import com.wire.kalium.persistence.daokaliumdb.GlobalSecretsDAO
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Clock
 
 internal class DatabaseBackedPassphraseStorage(
-    private val globalSecretsDAO: GlobalSecretsDAO,
+    private val globalSecretsCache: DatabaseBackedGlobalSecretsCache,
     private val clock: Clock = Clock.System
 ) : PassphraseStorage {
+    constructor(
+        globalSecretsDAO: GlobalSecretsDAO,
+        clock: Clock = Clock.System
+    ) : this(DatabaseBackedGlobalSecretsCache(globalSecretsDAO), clock)
+
     override fun getPassphrase(key: String): String? = runBlocking {
-        globalSecretsDAO.dbSecret(key)?.secret?.decodeToString()
+        globalSecretsCache.dbSecret(key)?.secret?.decodeToString()
     }
 
     override fun setPassphrase(key: String, passphrase: String) {
@@ -36,9 +42,9 @@ internal class DatabaseBackedPassphraseStorage(
             "Database passphrase must not be empty"
         }
         runBlocking {
-            val currentSecret = globalSecretsDAO.dbSecret(key)
+            val currentSecret = globalSecretsCache.dbSecret(key)
             val now = clock.now().toEpochMilliseconds()
-            globalSecretsDAO.upsertDbSecret(
+            globalSecretsCache.upsertDbSecret(
                 GlobalDbSecretEntity(
                     alias = key,
                     secret = passphrase.encodeToByteArray(),
@@ -52,7 +58,7 @@ internal class DatabaseBackedPassphraseStorage(
 
     override fun clearPassphrase(key: String) {
         runBlocking {
-            globalSecretsDAO.deleteDbSecret(key)
+            globalSecretsCache.deleteDbSecret(key)
         }
     }
 

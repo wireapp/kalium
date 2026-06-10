@@ -160,6 +160,50 @@ class GlobalSecretsDAOTest : GlobalDBBaseTest() {
         }
     }
 
+    @Test
+    fun givenAllGlobalSecrets_whenLoadingStartupSecrets_thenReturnsSingleSnapshot() = runTest {
+        val authSession = GlobalAuthSessionEntity(
+            userId = USER_ID,
+            accessToken = "access-token",
+            refreshToken = "refresh-token",
+            tokenType = "Bearer",
+            cookieLabel = "cookie-label",
+            updatedAt = 1L
+        )
+        val proxyCredentials = GlobalProxyCredentialsEntity(
+            userId = USER_ID,
+            username = "proxy-user",
+            password = "proxy-password",
+            updatedAt = 2L
+        )
+        val pushRegistration = GlobalPushRegistrationEntity(
+            token = "push-token",
+            transport = "GCM",
+            applicationId = "application-id",
+            updatedAt = 3L
+        )
+        val dbSecret = GlobalDbSecretEntity(
+            alias = SECRET_ALIAS,
+            secret = byteArrayOf(1, 2, 3),
+            version = 1,
+            createdAt = 4L,
+            updatedAt = 5L
+        )
+
+        globalSecretsDAO.upsertAuthSession(authSession)
+        globalSecretsDAO.upsertProxyCredentials(proxyCredentials)
+        globalSecretsDAO.upsertPushRegistration(pushRegistration)
+        globalSecretsDAO.upsertDbSecret(dbSecret)
+
+        val snapshot = globalSecretsDAO.startupSecrets()
+
+        assertEquals(authSession, snapshot.authSessions[USER_ID])
+        assertEquals(proxyCredentials, snapshot.proxyCredentials[USER_ID])
+        assertEquals(pushRegistration, snapshot.pushRegistration)
+        assertEquals(dbSecret.copy(secret = byteArrayOf()), snapshot.dbSecrets[SECRET_ALIAS]?.copy(secret = byteArrayOf()))
+        assertContentEquals(dbSecret.secret, snapshot.dbSecrets[SECRET_ALIAS]?.secret)
+    }
+
     private companion object {
         val USER_ID = UserIDEntity("user-id", "domain.example")
         const val SECRET_ALIAS = "user_db_secret_alias_user-id"
