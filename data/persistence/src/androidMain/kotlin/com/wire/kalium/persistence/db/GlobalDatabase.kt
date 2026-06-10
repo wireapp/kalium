@@ -34,12 +34,19 @@ actual fun globalDatabaseProvider(
     val driver = databaseDriver(
         platformDatabaseData.context,
         dbName,
-        passphrase?.value,
+        passphrase?.validatedValue(),
         schema
     ) {
         isWALEnabled = enableWAL
     }
     return GlobalDatabaseBuilder(driver, platformDatabaseData, queriesContext)
+}
+
+private fun GlobalDatabaseSecret.validatedValue(): ByteArray {
+    require(value.isNotEmpty()) {
+        "Global SQLCipher passphrase must not be empty when encryption is enabled"
+    }
+    return value
 }
 
 actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
