@@ -143,19 +143,18 @@ internal data class EncryptedBootstrapSecret(
 
 internal class AndroidKeyStoreBootstrapSecretCipher(
     context: Context,
-    override val keyAlias: String = BOOTSTRAP_KEY_ALIAS,
-    private val secureRandom: SecureRandom = SecureRandom()
+    override val keyAlias: String = BOOTSTRAP_KEY_ALIAS
 ) : BootstrapSecretCipher {
 
     private val appContext = context.applicationContext
 
     override fun encrypt(plainText: ByteArray, aad: ByteArray): EncryptedBootstrapSecret {
-        val iv = ByteArray(GCM_IV_SIZE_BYTES).also(secureRandom::nextBytes)
         val key = getOrCreateKey()
         val cipher = Cipher.getInstance(BOOTSTRAP_CIPHER_TRANSFORMATION).apply {
-            init(Cipher.ENCRYPT_MODE, key.secretKey, GCMParameterSpec(GCM_TAG_SIZE_BITS, iv))
+            init(Cipher.ENCRYPT_MODE, key.secretKey)
             updateAAD(aad)
         }
+        val iv = cipher.iv
         return EncryptedBootstrapSecret(
             iv = iv,
             cipherText = cipher.doFinal(plainText),
@@ -242,7 +241,6 @@ private fun String.decodeBase64(): ByteArray = Base64.decode(this, Base64.NO_WRA
 internal const val BOOTSTRAP_SECRET_FILE_NAME = "bootstrap-secrets.json"
 private const val BOOTSTRAP_SECRET_VERSION = 1
 private const val GLOBAL_DB_PASSPHRASE_SIZE_BYTES = 32
-private const val GCM_IV_SIZE_BYTES = 12
 private const val GCM_TAG_SIZE_BITS = 128
 private const val ANDROID_KEY_STORE = "AndroidKeyStore"
 private const val BOOTSTRAP_KEY_ALIAS = "kalium.bootstrap.v1"
