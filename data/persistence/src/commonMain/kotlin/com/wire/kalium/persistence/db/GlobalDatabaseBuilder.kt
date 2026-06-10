@@ -22,13 +22,18 @@ import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.Accounts
+import com.wire.kalium.persistence.AuthSession
 import com.wire.kalium.persistence.CurrentAccount
+import com.wire.kalium.persistence.DbSecret
 import com.wire.kalium.persistence.GlobalDatabase
+import com.wire.kalium.persistence.ProxyCredentials
 import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
+import com.wire.kalium.persistence.daokaliumdb.GlobalSecretsDAO
+import com.wire.kalium.persistence.daokaliumdb.GlobalSecretsDAOImpl
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -56,7 +61,16 @@ class GlobalDatabaseBuilder internal constructor(
             logout_reasonAdapter = LogoutReasonAdapter,
             managed_byAdapter = EnumColumnAdapter()
         ),
+        AuthSessionAdapter = AuthSession.Adapter(
+            user_idAdapter = QualifiedIDAdapter
+        ),
         CurrentAccountAdapter = CurrentAccount.Adapter(
+            user_idAdapter = QualifiedIDAdapter
+        ),
+        DbSecretAdapter = DbSecret.Adapter(
+            versionAdapter = IntColumnAdapter
+        ),
+        ProxyCredentialsAdapter = ProxyCredentials.Adapter(
             user_idAdapter = QualifiedIDAdapter
         )
     )
@@ -74,6 +88,9 @@ class GlobalDatabaseBuilder internal constructor(
 
     val accountsDAO: AccountsDAO
         get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries, queriesContext)
+
+    val globalSecretsDAO: GlobalSecretsDAO
+        get() = GlobalSecretsDAOImpl(database.globalSecretsQueries, queriesContext)
 
     fun nuke(): Boolean {
         sqlDriver.close()

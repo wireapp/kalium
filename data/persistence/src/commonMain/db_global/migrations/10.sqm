@@ -1,0 +1,34 @@
+import com.wire.kalium.persistence.dao.UserIDEntity;
+import kotlin.Int;
+
+CREATE TABLE AuthSession (
+    user_id TEXT AS UserIDEntity PRIMARY KEY NOT NULL,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    token_type TEXT NOT NULL,
+    cookie_label TEXT,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE ProxyCredentials (
+    user_id TEXT AS UserIDEntity PRIMARY KEY NOT NULL,
+    username TEXT NOT NULL,
+    password TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE PushRegistration (
+    id INTEGER PRIMARY KEY NOT NULL,
+    token TEXT NOT NULL,
+    transport TEXT NOT NULL,
+    application_id TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE DbSecret (
+    alias TEXT PRIMARY KEY NOT NULL,
+    secret BLOB NOT NULL,
+    version INTEGER AS Int NOT NULL,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
