@@ -37,7 +37,7 @@ import javax.crypto.SecretKey
 import javax.crypto.SecretKeyFactory
 import javax.crypto.spec.GCMParameterSpec
 
-internal interface BootstrapSecretStore {
+interface BootstrapSecretStore {
     fun getGlobalDbPassphrase(): ByteArray?
     fun getOrCreateGlobalDbPassphrase(): ByteArray
     fun putGlobalDbPassphrase(passphrase: ByteArray)
@@ -45,12 +45,19 @@ internal interface BootstrapSecretStore {
     fun <T> withGlobalDbPassphrase(block: (ByteArray) -> T): T?
 }
 
-internal class AndroidBootstrapSecretStore(
+class AndroidBootstrapSecretStore internal constructor(
     context: Context,
-    private val cipher: BootstrapSecretCipher = AndroidKeyStoreBootstrapSecretCipher(context),
-    private val secureRandom: SecureRandom = SecureRandom(),
-    fileName: String = BOOTSTRAP_SECRET_FILE_NAME
+    private val cipher: BootstrapSecretCipher,
+    private val secureRandom: SecureRandom,
+    fileName: String
 ) : BootstrapSecretStore {
+
+    constructor(context: Context) : this(
+        context = context,
+        cipher = AndroidKeyStoreBootstrapSecretCipher(context),
+        secureRandom = SecureRandom(),
+        fileName = BOOTSTRAP_SECRET_FILE_NAME
+    )
 
     private val secretFile = File(context.applicationContext.filesDir, fileName)
 

@@ -21,21 +21,39 @@ package com.wire.kalium.persistence.kmmSettings
 import android.content.Context
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.client.AuthTokenStorageImpl
+import com.wire.kalium.persistence.client.DatabaseBackedAuthTokenStorage
+import com.wire.kalium.persistence.client.DatabaseBackedTokenStorage
 import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.dbPassphrase.DatabaseBackedPassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
 
-actual class GlobalPrefProvider(context: Context, shouldEncryptData: Boolean = true) {
+actual class GlobalPrefProvider {
 
-    private val encryptedSettingsHolder: KaliumPreferences = KaliumPreferencesSettings(
-        buildSettings(SettingOptions.AppSettings(shouldEncryptData), EncryptedSettingsPlatformParam(context))
-    )
+    private val encryptedSettingsHolder: KaliumPreferences?
+    private val globalDatabaseBuilder: GlobalDatabaseBuilder?
+
+    constructor(context: Context, shouldEncryptData: Boolean = true) {
+        encryptedSettingsHolder = KaliumPreferencesSettings(
+            buildSettings(SettingOptions.AppSettings(shouldEncryptData), EncryptedSettingsPlatformParam(context))
+        )
+        globalDatabaseBuilder = null
+    }
+
+    constructor(globalDatabaseBuilder: GlobalDatabaseBuilder) {
+        encryptedSettingsHolder = null
+        this.globalDatabaseBuilder = globalDatabaseBuilder
+    }
 
     actual val authTokenStorage: AuthTokenStorage
-        get() = AuthTokenStorageImpl(encryptedSettingsHolder)
+        get() = globalDatabaseBuilder?.let { DatabaseBackedAuthTokenStorage(it.globalSecretsDAO) }
+            ?: AuthTokenStorageImpl(requireNotNull(encryptedSettingsHolder))
     actual val passphraseStorage: PassphraseStorage
-        get() = PassphraseStorageImpl(encryptedSettingsHolder)
+        get() = globalDatabaseBuilder?.let { DatabaseBackedPassphraseStorage(it.globalSecretsDAO) }
+            ?: PassphraseStorageImpl(requireNotNull(encryptedSettingsHolder))
     actual val tokenStorage: TokenStorage
-        get() = TokenStorageImpl(encryptedSettingsHolder)
+        get() = globalDatabaseBuilder?.let { DatabaseBackedTokenStorage(it.globalSecretsDAO) }
+            ?: TokenStorageImpl(requireNotNull(encryptedSettingsHolder))
 }

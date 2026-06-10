@@ -32,12 +32,13 @@ import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.logic.sync.WorkSchedulerProviderImpl
 import com.wire.kalium.logic.util.PlatformContext
-import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.persistence.secret.AndroidBootstrapSecretStore
 import com.wire.kalium.usernetwork.di.PlatformUserAuthenticatedNetworkProvider
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -55,21 +56,20 @@ public actual class CoreLogic(
     private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider = PlatformUserAuthenticatedNetworkProvider()
 ) : CoreLogicCommon(rootPath, userAgent, kaliumConfigs) {
 
-    actual override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(
-        appContext,
-        kaliumConfigs.shouldEncryptData()
-    )
+    private val bootstrapSecretStore = AndroidBootstrapSecretStore(appContext)
 
     actual override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(appContext),
         queriesContext = KaliumDispatcherImpl.io,
         passphrase = if (kaliumConfigs.shouldEncryptData()) {
-            SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret()
+            GlobalDatabaseSecret(bootstrapSecretStore.getOrCreateGlobalDbPassphrase())
         } else {
             null
         },
         enableWAL = true
     )
+
+    actual override val globalPreferences: GlobalPrefProvider = GlobalPrefProvider(globalDatabaseBuilder)
 
     public actual override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
