@@ -597,14 +597,15 @@ public class MessageScope internal constructor(
         LinkPreviewRepositoryImpl(
             httpClient = io.ktor.client.HttpClient {
                 install(io.ktor.client.plugins.HttpTimeout) {
-                    requestTimeoutMillis = 10.seconds.inWholeMilliseconds
-                    socketTimeoutMillis = 20.seconds.inWholeMilliseconds
+                    requestTimeoutMillis = 5.seconds.inWholeMilliseconds
+                    connectTimeoutMillis = 3.seconds.inWholeMilliseconds
+                    socketTimeoutMillis = 5.seconds.inWholeMilliseconds
                 }
                 install(io.ktor.client.plugins.UserAgent) {
                     agent = "Wire LinkPreviewFetcher"
                 }
                 followRedirects = true
-                expectSuccess = false
+                expectSuccess = true
             },
             kaliumFileSystem = kaliumFileSystem
         )
