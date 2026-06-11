@@ -47,45 +47,46 @@ internal object OpenGraphScanner {
     private fun extractOpenGraphData(document: Document, originalUrl: String): OpenGraphData? {
         val ogData = mutableMapOf<String, String>()
         var firstImageUrl: String? = null
-        var pageTitle: String? = null
 
-        // Extract all meta tags
         document.select("meta").forEach { metaTag ->
-            val property = metaTag.attr("property").takeIf { it.isNotEmpty() }
-            val name = metaTag.attr("name").takeIf { it.isNotEmpty() }
-            val content = metaTag.attr("content").trim()
-
-            when {
-                property != null && content.isNotEmpty() -> {
-                    when (property) {
-                        "og:image" -> {
-                            if (firstImageUrl == null) firstImageUrl = content
-                        }
-                        else -> ogData[property] = content
-                    }
-                }
-                name != null && content.isNotEmpty() -> {
-                    val lowerName = name.lowercase()
-                    if (lowerName == "description" && "og:description" !in ogData) {
-                        ogData["og:description"] = content
-                    }
-                }
+            processMetaTag(metaTag, ogData) { imageUrl ->
+                if (firstImageUrl == null) firstImageUrl = imageUrl
             }
         }
 
-        // Extract page title as fallback
-        document.selectFirst("title")?.let { titleTag ->
-            pageTitle = titleTag.text().trim().takeIf { it.isNotEmpty() }
-        }
+        val pageTitle = extractPageTitle(document)
+        return buildOpenGraphData(ogData, pageTitle, originalUrl, firstImageUrl)
+    }
 
-        // Determine final values with fallbacks
+    private fun processMetaTag(metaTag: com.fleeksoft.ksoup.nodes.Element, ogData: MutableMap<String, String>, onImageFound: (String) -> Unit) {
+        val property = metaTag.attr("property").takeIf { it.isNotEmpty() }
+        val name = metaTag.attr("name").takeIf { it.isNotEmpty() }
+        val content = metaTag.attr("content").trim()
+
+        if (content.isEmpty()) return
+
+        when {
+            property == "og:image" -> onImageFound(content)
+            property != null -> ogData[property] = content
+            name != null && name.lowercase() == "description" && "og:description" !in ogData -> ogData["og:description"] = content
+        }
+    }
+
+    private fun extractPageTitle(document: Document): String? =
+        document.selectFirst("title")?.text()?.trim()?.takeIf { it.isNotEmpty() }
+
+    private fun buildOpenGraphData(
+        ogData: Map<String, String>,
+        pageTitle: String?,
+        originalUrl: String,
+        firstImageUrl: String?
+    ): OpenGraphData? {
         val title = ogData["og:title"] ?: pageTitle
         val url = ogData["og:url"] ?: originalUrl
         val description = ogData["og:description"]
         val siteName = ogData["og:site_name"]
         val type = ogData["og:type"] ?: "website"
 
-        // Require title and URL
         if (title.isNullOrBlank() || url.isBlank()) return null
 
         return OpenGraphData(
