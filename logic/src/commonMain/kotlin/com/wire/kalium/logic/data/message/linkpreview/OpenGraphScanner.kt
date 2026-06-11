@@ -17,26 +17,16 @@
  */
 package com.wire.kalium.logic.data.message.linkpreview
 
+import com.fleeksoft.ksoup.Ksoup
+import com.fleeksoft.ksoup.nodes.Document
+
 /**
- * Scans HTML head for Open Graph metadata.
+ * Scans HTML head for Open Graph metadata using DOM-based parsing (Ksoup).
  *
- * Uses simple regex-based parsing (temporary MVP implementation).
- * TODO: Replace with Ksoup when ADR is approved.
+ * Handles various HTML formatting edge cases: attribute order, extra attributes,
+ * self-closing tags, malformed heads, and HTML entity decoding.
  */
 internal object OpenGraphScanner {
-    private val metaPropertyRegex = Regex("""<meta\s+property=["']([^"']+)["']\s+content=["']([^"']*)["']""", RegexOption.IGNORE_CASE)
-    private val metaNameRegex = Regex("""<meta\s+name=["']([^"']+)["']\s+content=["']([^"']*)["']""", RegexOption.IGNORE_CASE)
-    private val titleRegex = Regex("""<title>([^<]*)</title>""", RegexOption.IGNORE_CASE)
-
-    private val OG_KEYS = setOf(
-        "og:title",
-        "og:type",
-        "og:image",
-        "og:url",
-        "og:description",
-        "og:site_name",
-        "og:image:user_generated"
-    )
 
     /**
      * Parses HTML head section and extracts Open Graph data.
@@ -46,33 +36,46 @@ internal object OpenGraphScanner {
      * @return OpenGraphData with extracted metadata, or null if critical fields are missing.
      */
     fun scan(htmlHead: String, originalUrl: String): OpenGraphData? {
+        return try {
+            val document = Ksoup.parse(htmlHead)
+            extractOpenGraphData(document, originalUrl)
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun extractOpenGraphData(document: Document, originalUrl: String): OpenGraphData? {
         val ogData = mutableMapOf<String, String>()
-        val imageUrls = mutableListOf<String>()
+        var firstImageUrl: String? = null
         var pageTitle: String? = null
 
-        // Extract meta tags with property attribute
-        metaPropertyRegex.findAll(htmlHead).forEach { match ->
-            val property = match.groupValues[1]
-            val content = match.groupValues[2].unescapeHtml()
+        // Extract all meta tags
+        document.select("meta").forEach { metaTag ->
+            val property = metaTag.attr("property").takeIf { it.isNotEmpty() }
+            val name = metaTag.attr("name").takeIf { it.isNotEmpty() }
+            val content = metaTag.attr("content").trim()
 
-            when (property) {
-                "og:image" if content.isNotEmpty() -> imageUrls.add(content)
-                in OG_KEYS if content.isNotEmpty() -> ogData[property] = content
+            when {
+                property != null && content.isNotEmpty() -> {
+                    when (property) {
+                        "og:image" -> {
+                            if (firstImageUrl == null) firstImageUrl = content
+                        }
+                        else -> ogData[property] = content
+                    }
+                }
+                name != null && content.isNotEmpty() -> {
+                    val lowerName = name.lowercase()
+                    if (lowerName == "description" && "og:description" !in ogData) {
+                        ogData["og:description"] = content
+                    }
+                }
             }
         }
 
-        // Extract title from <title> tag as fallback
-        titleRegex.find(htmlHead)?.let { match ->
-            pageTitle = match.groupValues[1].unescapeHtml()
-        }
-
-        // Extract title from meta description as fallback
-        metaNameRegex.findAll(htmlHead).forEach { match ->
-            val name = match.groupValues[1].lowercase()
-            val content = match.groupValues[2].unescapeHtml()
-            if (name == "description" && "og:description" !in ogData) {
-                ogData["og:description"] = content
-            }
+        // Extract page title as fallback
+        document.selectFirst("title")?.let { titleTag ->
+            pageTitle = titleTag.text().trim().takeIf { it.isNotEmpty() }
         }
 
         // Determine final values with fallbacks
@@ -90,20 +93,8 @@ internal object OpenGraphScanner {
             type = type,
             url = url,
             description = description,
-            imageUrls = imageUrls,
+            imageUrls = firstImageUrl?.let { listOf(it) } ?: emptyList(),
             siteName = siteName
         )
-    }
-
-    private fun String.unescapeHtml(): String {
-        return this
-            .replace("&quot;", "\"")
-            .replace("&#34;", "\"")
-            .replace("&apos;", "'")
-            .replace("&#39;", "'")
-            .replace("&amp;", "&")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&nbsp;", " ")
     }
 }

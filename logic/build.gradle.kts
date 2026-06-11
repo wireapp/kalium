@@ -86,6 +86,9 @@ kotlin {
                 // Okio
                 implementation(libs.okio.core)
 
+                // HTML parsing
+                implementation(libs.ksoup)
+
                 implementation(libs.sqldelight.androidxPaging)
                 api(libs.paging.common)
                 // Concurrent collections
