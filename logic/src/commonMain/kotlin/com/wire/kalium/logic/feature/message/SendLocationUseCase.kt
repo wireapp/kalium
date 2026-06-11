@@ -103,7 +103,13 @@ public class SendLocationUseCase internal constructor(
                 .flatMap { messageSender.sendMessage(message) }
         }.fold(
             {
-                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, generatedMessageUuid, TYPE)
+                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    failure = it,
+                    conversationId = conversationId,
+                    messageId = generatedMessageUuid,
+                    messageType = TYPE,
+                    scheduleResendIfNoNetwork = true,
+                )
                 MessageOperationResult.Failure(it)
             },
             {

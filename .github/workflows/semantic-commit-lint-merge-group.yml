@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   semantic-commit-pr-title-lint-merge:
-    name: semantic-commit-pr-title-lint
+    name: Semantic Commit Pr Title Lint
     runs-on: ubuntu-latest
     steps:
       - name: Skip semantic PR title check on merge queue

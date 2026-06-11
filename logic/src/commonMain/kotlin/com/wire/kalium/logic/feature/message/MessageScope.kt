@@ -111,6 +111,8 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTim
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
+import com.wire.kalium.logic.sync.SendPendingAssetMessageUseCase
+import com.wire.kalium.logic.sync.SendPendingAssetMessageUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -172,7 +174,7 @@ public class MessageScope internal constructor(
     private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
 ) {
 
-    private val messageSendFailureHandler: MessageSendFailureHandler
+    internal val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandlerImpl(
             userRepository,
             clientRepository,
@@ -323,10 +325,21 @@ public class MessageScope internal constructor(
             getMessageAttachments = getMessageAttachmentsUseCase.value,
         )
 
-    private val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
+    internal val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
         get() = GetAssetMessageTransferStatusUseCaseImpl(
             messageRepository,
             dispatcher
+        )
+
+    internal val sendPendingAssetMessage: SendPendingAssetMessageUseCase
+        get() = SendPendingAssetMessageUseCaseImpl(
+            assetRepository,
+            persistMessage,
+            updateAssetMessageTransferStatus,
+            getAssetMessageTransferStatus,
+            messageSender,
+            messageSendFailureHandler,
+            audioNormalizedLoudnessBuilder,
         )
 
     public val retryFailedMessage: RetryFailedMessageUseCase
@@ -367,6 +380,7 @@ public class MessageScope internal constructor(
             messageSender,
             messageSendFailureHandler,
             updateAssetMessageTransferStatus,
+            updateAudioMessageNormalizedLoudnessUseCase,
             persistMessage,
             audioNormalizedLoudnessBuilder,
             dispatcher,
