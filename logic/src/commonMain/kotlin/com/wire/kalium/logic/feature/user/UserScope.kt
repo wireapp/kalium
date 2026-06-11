@@ -62,6 +62,8 @@ import com.wire.kalium.logic.feature.client.IsWireCellsEnabledForConversationUse
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCase
 import com.wire.kalium.logic.feature.client.IsWireCellsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
+import com.wire.kalium.logic.feature.client.ObserveIsWireCellsEnabledUseCase
+import com.wire.kalium.logic.feature.client.ObserveIsWireCellsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
@@ -301,6 +303,12 @@ public class UserScope internal constructor(
         get() = IsWireCellsEnabledUseCaseImpl(
             userConfigRepository = userConfigRepository,
         )
+
+    public val observeIsWireCellsEnabled: ObserveIsWireCellsEnabledUseCase
+        get() = ObserveIsWireCellsEnabledUseCaseImpl(
+            userConfigRepository = userConfigRepository,
+        )
+
     public val isWireCellsEnabledForConversation: IsWireCellsEnabledForConversationUseCase
         get() = IsWireCellsEnabledForConversationUseCaseImpl(
             conversationRepository = conversationRepository

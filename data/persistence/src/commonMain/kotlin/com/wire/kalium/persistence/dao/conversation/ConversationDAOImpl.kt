@@ -21,8 +21,6 @@ package com.wire.kalium.persistence.dao.conversation
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
-import app.cash.sqldelight.async.coroutines.await
-
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationDetailsQueries
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
@@ -747,6 +745,11 @@ internal class ConversationDAOImpl internal constructor(
     override suspend fun hasConversationWithCell() = withContext(readDispatcher.value) {
         conversationQueries.hasConversationWithCell().awaitAsOne()
     }
+
+    override suspend fun observeHasConversationWithCell(): Flow<Boolean> =
+        conversationQueries.hasConversationWithCell().asFlow()
+            .mapToOneOrDefault(false)
+            .flowOn(readDispatcher.value)
 
     override suspend fun updateReadDateAndGetHasUnreadEvents(
         conversationID: QualifiedIDEntity,
