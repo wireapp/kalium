@@ -44,6 +44,7 @@ CREATE INDEX message_self_deletion_end_date ON Message(self_deletion_end_date);
 
 CREATE INDEX idx_msg_conv_date_desc ON Message(conversation_id, creation_date DESC);
 CREATE INDEX idx_msg_conv_vis_date_desc ON Message(conversation_id, visibility, creation_date DESC);
+CREATE INDEX idx_msg_pending ON Message(conversation_id, creation_date DESC) WHERE status = 'PENDING';
 
 CREATE TABLE MessageLinkPreview (
       message_id TEXT NOT NULL,
@@ -440,11 +441,32 @@ SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 countByConversationIdAndVisibility:
 SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ?;
 
+countPendingByConversationIdAndVisibility:
+SELECT count(*) FROM Message WHERE conversation_id = ? AND visibility IN ? AND status = 'PENDING';
+
 selectOldestVisibleMessageTimestampByConversationId:
 SELECT MIN(creation_date) FROM Message WHERE conversation_id = ? AND visibility = "VISIBLE";
 
 selectByConversationIdAndVisibility:
 SELECT * FROM MessageDetailsView WHERE conversationId = :conversationId AND visibility IN :visibility ORDER BY date DESC LIMIT :limit OFFSET :offset;
+
+selectPendingByConversationIdAndVisibility:
+SELECT *
+FROM MessageDetailsView
+WHERE conversationId = :conversationId
+    AND visibility IN :visibility
+    AND status = 'PENDING'
+ORDER BY date DESC
+LIMIT :limit OFFSET :offset;
+
+selectNonPendingByConversationIdAndVisibility:
+SELECT *
+FROM MessageDetailsView
+WHERE conversationId = :conversationId
+    AND visibility IN :visibility
+    AND status != 'PENDING'
+ORDER BY date DESC
+LIMIT :limit OFFSET :offset;
 
 countBackupMessages:
 SELECT count(*) FROM Message WHERE visibility = "VISIBLE" AND self_deletion_end_date IS NULL AND content_type IN :contentType;
