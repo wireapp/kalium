@@ -33,18 +33,211 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlinx.coroutines.test.runTest
 
 @OptIn(ExperimentalEncodingApi::class)
 class LinkPreviewRepositoryTest {
 
     @Test
-    fun givenRasterImageResponse_whenFetchingImage_thenReturnsPreviewAsset() = kotlinx.coroutines.test.runTest {
+    fun givenValidOgPage_whenFetchingOpenGraph_thenReturnsPreviewData() = runTest {
+        val repository = newRepository(
+            responses = mapOf(
+                "https://example.com/page" to htmlResponse(
+                    """
+                    <html>
+                        <head>
+                            <meta property="og:title" content="Example title" />
+                            <meta property="og:url" content="https://example.com/og" />
+                        </head>
+                    </html>
+                    """.trimIndent()
+                )
+            )
+        )
+
+        val result = repository.fetchOpenGraph(
+            url = "https://example.com/page",
+            originalUrl = "https://example.com/page"
+        ).getOrNull()
+
+        assertNotNull(result)
+        assertEquals("Example title", result.title)
+        assertEquals("https://example.com/og", result.url)
+    }
+
+    @Test
+    fun givenNonHttpsUrl_whenFetchingOpenGraph_thenReturnsNull() = runTest {
+        val repository = newRepository()
+
+        val result = repository.fetchOpenGraph(
+            url = "http://example.com/page",
+            originalUrl = "http://example.com/page"
+        ).getOrNull()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun givenLocalHostTarget_whenFetchingOpenGraph_thenReturnsNull() = runTest {
+        val repository = newRepository()
+
+        val result = repository.fetchOpenGraph(
+            url = "https://localhost/page",
+            originalUrl = "https://localhost/page"
+        ).getOrNull()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun givenPrivateResolvedAddress_whenFetchingOpenGraph_thenReturnsNull() = runTest {
+        val repository = newRepository(
+            hostResolver = { listOf("10.0.0.1") }
+        )
+
+        val result = repository.fetchOpenGraph(
+            url = "https://example.com/page",
+            originalUrl = "https://example.com/page"
+        ).getOrNull()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun givenThreeRedirects_whenFetchingOpenGraph_thenReturnsPreviewData() = runTest {
+        val repository = newRepository(
+            responses = mapOf(
+                "https://example.com/start" to redirectResponse("https://example.com/step-1"),
+                "https://example.com/step-1" to redirectResponse("https://example.com/step-2"),
+                "https://example.com/step-2" to redirectResponse("https://example.com/final"),
+                "https://example.com/final" to htmlResponse(
+                    """
+                    <head>
+                        <meta property="og:title" content="Redirected title" />
+                    </head>
+                    """.trimIndent()
+                )
+            )
+        )
+
+        val result = repository.fetchOpenGraph(
+            url = "https://example.com/start",
+            originalUrl = "https://example.com/start"
+        ).getOrNull()
+
+        assertNotNull(result)
+        assertEquals("Redirected title", result.title)
+        assertEquals("https://example.com/start", result.url)
+    }
+
+    @Test
+    fun givenFourthRedirect_whenFetchingOpenGraph_thenReturnsNull() = runTest {
+        val repository = newRepository(
+            responses = mapOf(
+                "https://example.com/start" to redirectResponse("https://example.com/step-1"),
+                "https://example.com/step-1" to redirectResponse("https://example.com/step-2"),
+                "https://example.com/step-2" to redirectResponse("https://example.com/step-3"),
+                "https://example.com/step-3" to redirectResponse("https://example.com/final")
+            )
+        )
+
+        val result = repository.fetchOpenGraph(
+            url = "https://example.com/start",
+            originalUrl = "https://example.com/start"
+        ).getOrNull()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun givenRedirectLoop_whenFetchingOpenGraph_thenReturnsNull() = runTest {
+        val repository = newRepository(
+            responses = mapOf(
+                "https://example.com/start" to redirectResponse("https://example.com/next"),
+                "https://example.com/next" to redirectResponse("https://example.com/start")
+            )
+        )
+
+        val result = repository.fetchOpenGraph(
+            url = "https://example.com/start",
+            originalUrl = "https://example.com/start"
+        ).getOrNull()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun givenMissingRedirectLocation_whenFetchingOpenGraph_thenReturnsNull() = runTest {
+        val repository = newRepository(
+            responses = mapOf(
+                "https://example.com/start" to MockResponse(
+                    status = HttpStatusCode.Found,
+                    body = ByteArray(0)
+                )
+            )
+        )
+
+        val result = repository.fetchOpenGraph(
+            url = "https://example.com/start",
+            originalUrl = "https://example.com/start"
+        ).getOrNull()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun givenResponseExceedsMetadataCapBeforeHead_whenFetchingOpenGraph_thenReturnsNull() = runTest {
+        val repository = newRepository(
+            responses = mapOf(
+                "https://example.com/page" to htmlResponse("x".repeat(METADATA_CAP_BYTES + 32))
+            )
+        )
+
+        val result = repository.fetchOpenGraph(
+            url = "https://example.com/page",
+            originalUrl = "https://example.com/page"
+        ).getOrNull()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun givenHeadEndsBeforeLargeBodyTail_whenFetchingOpenGraph_thenReturnsPreviewData() = runTest {
+        val repository = newRepository(
+            responses = mapOf(
+                "https://example.com/page" to htmlResponse(
+                    buildString {
+                        append("<html><head>")
+                        append("""<meta property="og:title" content="Large tail title" />""")
+                        append("</head>")
+                        append("x".repeat(METADATA_CAP_BYTES + 128))
+                        append("</html>")
+                    }
+                )
+            )
+        )
+
+        val result = repository.fetchOpenGraph(
+            url = "https://example.com/page",
+            originalUrl = "https://example.com/page"
+        ).getOrNull()
+
+        assertNotNull(result)
+        assertEquals("Large tail title", result.title)
+    }
+
+    @Test
+    fun givenRasterImageResponse_whenFetchingImage_thenReturnsPreviewAsset() = runTest {
         val imageBytes = Base64.decode(ONE_BY_ONE_PNG_BASE64)
         val fileSystem = FakeKaliumFileSystem()
         val repository = newRepository(
             fileSystem = fileSystem,
-            contentType = "image/png",
-            body = imageBytes
+            responses = mapOf(
+                "https://example.com/image.png" to imageResponse(
+                    contentType = "image/png",
+                    body = imageBytes
+                )
+            )
         )
 
         val result = repository.fetchImage("https://example.com/image.png").getOrNull()
@@ -60,10 +253,14 @@ class LinkPreviewRepositoryTest {
     }
 
     @Test
-    fun givenSvgImageResponse_whenFetchingImage_thenReturnsNull() = kotlinx.coroutines.test.runTest {
+    fun givenSvgImageResponse_whenFetchingImage_thenReturnsNull() = runTest {
         val repository = newRepository(
-            contentType = "image/svg+xml",
-            body = "<svg></svg>".encodeToByteArray()
+            responses = mapOf(
+                "https://example.com/image.svg" to imageResponse(
+                    contentType = "image/svg+xml",
+                    body = "<svg></svg>".encodeToByteArray()
+                )
+            )
         )
 
         val result = repository.fetchImage("https://example.com/image.svg").getOrNull()
@@ -72,10 +269,14 @@ class LinkPreviewRepositoryTest {
     }
 
     @Test
-    fun givenNonImageResponse_whenFetchingImage_thenReturnsNull() = kotlinx.coroutines.test.runTest {
+    fun givenNonImageResponse_whenFetchingImage_thenReturnsNull() = runTest {
         val repository = newRepository(
-            contentType = "text/plain",
-            body = "not-an-image".encodeToByteArray()
+            responses = mapOf(
+                "https://example.com/file.txt" to imageResponse(
+                    contentType = "text/plain",
+                    body = "not-an-image".encodeToByteArray()
+                )
+            )
         )
 
         val result = repository.fetchImage("https://example.com/file.txt").getOrNull()
@@ -84,10 +285,14 @@ class LinkPreviewRepositoryTest {
     }
 
     @Test
-    fun givenUnreadableImageBytes_whenFetchingImage_thenReturnsNull() = kotlinx.coroutines.test.runTest {
+    fun givenUnreadableImageBytes_whenFetchingImage_thenReturnsNull() = runTest {
         val repository = newRepository(
-            contentType = "image/png",
-            body = "not-a-real-png".encodeToByteArray()
+            responses = mapOf(
+                "https://example.com/broken.png" to imageResponse(
+                    contentType = "image/png",
+                    body = "not-a-real-png".encodeToByteArray()
+                )
+            )
         )
 
         val result = repository.fetchImage("https://example.com/broken.png").getOrNull()
@@ -95,28 +300,101 @@ class LinkPreviewRepositoryTest {
         assertNull(result)
     }
 
+    @Test
+    fun givenOversizedImageByContentLength_whenFetchingImage_thenReturnsNull() = runTest {
+        val repository = newRepository(
+            responses = mapOf(
+                "https://example.com/image.png" to imageResponse(
+                    contentType = "image/png",
+                    body = byteArrayOf(1, 2, 3),
+                    contentLength = IMAGE_CAP_BYTES.toLong() + 1
+                )
+            )
+        )
+
+        val result = repository.fetchImage("https://example.com/image.png").getOrNull()
+
+        assertNull(result)
+    }
+
+    @Test
+    fun givenOversizedImageStreamWithoutContentLength_whenFetchingImage_thenReturnsNull() = runTest {
+        val repository = newRepository(
+            responses = mapOf(
+                "https://example.com/image.png" to imageResponse(
+                    contentType = "image/png",
+                    body = ByteArray(IMAGE_CAP_BYTES + 1) { 1 }
+                )
+            )
+        )
+
+        val result = repository.fetchImage("https://example.com/image.png").getOrNull()
+
+        assertNull(result)
+    }
+
     private fun newRepository(
         fileSystem: FakeKaliumFileSystem = FakeKaliumFileSystem(),
-        contentType: String,
-        body: ByteArray
+        responses: Map<String, MockResponse> = emptyMap(),
+        hostResolver: suspend (String) -> List<String> = { listOf(PUBLIC_IPV4_ADDRESS) }
     ): LinkPreviewRepository {
-        val mockEngine = MockEngine {
+        val mockEngine = MockEngine { request ->
+            val response = responses[request.url.toString()]
+                ?: error("No mocked response for ${request.url}")
+
             respond(
-                content = ByteReadChannel(body),
-                status = HttpStatusCode.OK,
-                headers = Headers.build {
-                    append(HttpHeaders.ContentType, contentType)
-                }
+                content = ByteReadChannel(response.body),
+                status = response.status,
+                headers = response.headers
             )
         }
 
         return LinkPreviewRepositoryImpl(
             httpClient = HttpClient(mockEngine),
-            kaliumFileSystem = fileSystem
+            kaliumFileSystem = fileSystem,
+            resolveHostAddresses = hostResolver
         )
     }
 
+    private fun htmlResponse(body: String): MockResponse = MockResponse(
+        status = HttpStatusCode.OK,
+        body = body.encodeToByteArray(),
+        headers = Headers.build {
+            append(HttpHeaders.ContentType, "text/html; charset=utf-8")
+        }
+    )
+
+    private fun imageResponse(
+        contentType: String,
+        body: ByteArray,
+        contentLength: Long? = body.size.toLong()
+    ): MockResponse = MockResponse(
+        status = HttpStatusCode.OK,
+        body = body,
+        headers = Headers.build {
+            append(HttpHeaders.ContentType, contentType)
+            contentLength?.let { append(HttpHeaders.ContentLength, it.toString()) }
+        }
+    )
+
+    private fun redirectResponse(location: String): MockResponse = MockResponse(
+        status = HttpStatusCode.Found,
+        body = ByteArray(0),
+        headers = Headers.build {
+            append(HttpHeaders.Location, location)
+        }
+    )
+
+    private data class MockResponse(
+        val status: HttpStatusCode,
+        val body: ByteArray,
+        val headers: Headers = Headers.Empty
+    )
+
     private companion object {
+        const val PUBLIC_IPV4_ADDRESS = "93.184.216.34"
+        const val METADATA_CAP_BYTES = 64 * 1024
+        const val IMAGE_CAP_BYTES = 5 * 1024 * 1024
         const val ONE_BY_ONE_PNG_BASE64 =
             "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aW4QAAAAASUVORK5CYII="
     }
