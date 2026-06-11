@@ -1886,6 +1886,12 @@ public class UserSessionScope internal constructor(
             buttonActionHandler,
             MessageCompositeEditHandlerImpl(messageRepository),
             callingMessageHandler,
+            com.wire.kalium.logic.feature.message.linkpreview.ResolveLinkPreviewImagesUseCaseImpl(
+                messageRepository = messageRepository,
+                assetRepository = assetRepository,
+                scope = this,
+                dispatcher = com.wire.kalium.util.KaliumDispatcherImpl
+            ),
             userId
         )
 

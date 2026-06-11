@@ -253,6 +253,13 @@ DELETE FROM Message WHERE id = ? AND conversation_id = ?;
 deleteMessageLinkPreviews:
 DELETE FROM MessageLinkPreview WHERE message_id = ? AND conversation_id = ?;
 
+updateMessageLinkPreviewImageLocalPath:
+UPDATE MessageLinkPreview
+SET image_local_path = ?
+WHERE message_id = ?
+  AND conversation_id = ?
+  AND url_offset = ?;
+
 deleteMessageMentions:
 DELETE FROM MessageMention WHERE message_id = ? AND conversation_id = ?;
 

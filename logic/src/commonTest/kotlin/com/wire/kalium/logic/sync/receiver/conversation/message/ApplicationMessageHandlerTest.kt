@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.message.linkpreview.ResolveLinkPreviewImagesUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
@@ -52,10 +53,12 @@ import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProvider
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.matches
 import dev.mokkery.mock
+import dev.mokkery.verify
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
@@ -354,6 +357,55 @@ class ApplicationMessageHandlerTest {
         }
     }
 
+    @Test
+    fun givenTextMessageWithLinkPreviewImage_whenHandling_thenLinkPreviewResolutionIsTriggered() = runTest {
+        val messageId = "messageId"
+        val textContent = MessageContent.Text(
+            value = "hello https://example.com",
+            linkPreviews = listOf(
+                com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview(
+                    url = "https://example.com",
+                    urlOffset = 6,
+                    image = com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset(
+                        mimeType = "image/png",
+                        assetDataPath = null,
+                        assetDataSize = 0,
+                        assetHeight = 100,
+                        assetWidth = 100,
+                        assetKey = "asset-key",
+                        assetToken = "asset-token",
+                        assetDomain = "wire.com",
+                        otrKey = byteArrayOf(1),
+                        sha256Key = byteArrayOf(2)
+                    )
+                )
+            )
+        )
+        val protoContent = ProtoContent.Readable(
+            messageUid = messageId,
+            messageContent = textContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        val messageEvent = TestEvent.newMessageEvent(Base64.encode("Hello".encodeToByteArray()))
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        verify(VerifyMode.exactly(1)) {
+            arrangement.resolveLinkPreviewImagesUseCase.invoke(messageEvent.conversationId, messageId)
+        }
+    }
+
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
 
         val persistMessage = mock<PersistMessageUseCase>(MockMode.autoUnit)
@@ -375,6 +427,7 @@ class ApplicationMessageHandlerTest {
         val buttonActionHandler = mock<ButtonActionHandler>(MockMode.autoUnit)
         val messageCompositeEditHandler = mock<MessageCompositeEditHandler>(MockMode.autoUnit)
         val callingMessageHandler = mock<CallingMessageHandler>(MockMode.autoUnit)
+        val resolveLinkPreviewImagesUseCase = mock<ResolveLinkPreviewImagesUseCase>(MockMode.autoUnit)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
@@ -396,6 +449,7 @@ class ApplicationMessageHandlerTest {
             buttonActionHandler,
             messageCompositeEditHandler,
             callingMessageHandler,
+            resolveLinkPreviewImagesUseCase,
             TestUser.SELF.id
         )
 
@@ -403,6 +457,9 @@ class ApplicationMessageHandlerTest {
             everySuspend {
                 persistMessage.invoke(any())
             }.returns(result)
+            every {
+                resolveLinkPreviewImagesUseCase.invoke(any(), any())
+            } returns Unit
         }
 
         fun withFileSharingEnabled() = apply {
