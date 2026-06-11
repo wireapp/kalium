@@ -41,34 +41,37 @@ public interface GenerateLinkPreviewUseCase {
  * Default implementation of GenerateLinkPreviewUseCase.
  */
 internal class GenerateLinkPreviewUseCaseImpl(
-    private val repository: LinkPreviewRepository
+    private val repository: LinkPreviewRepository,
+    private val linkPreviewEnabled: Boolean,
 ) : GenerateLinkPreviewUseCase {
     override suspend fun invoke(
         text: String,
         mentions: List<MessageMention>
     ): MessageLinkPreview? {
+        if (!linkPreviewEnabled) return null
+
         val excludedRanges = ExclusionRanges.compute(text, mentions)
         val matches = UrlDetector.detect(text, excludedRanges)
-
         val firstMatch = matches
             .filterNot { PreviewBlacklist.isBlacklisted(it.url) }
-            .firstOrNull() ?: return null
+            .firstOrNull()
 
-        val originalUrl = firstMatch.url
-        val normalizedUrl = normalizeUrl(originalUrl)
-
-        return repository.fetchOpenGraph(normalizedUrl, originalUrl).getOrNull()?.let { ogData ->
-            val image = ogData.imageUrls.firstOrNull()?.let { imageUrl ->
-                repository.fetchImage(imageUrl).getOrNull()
+        return firstMatch?.let { match ->
+            val originalUrl = match.url
+            val normalizedUrl = normalizeUrl(originalUrl)
+            repository.fetchOpenGraph(normalizedUrl, originalUrl).getOrNull()?.let { ogData ->
+                val image = ogData.imageUrls.firstOrNull()?.let { imageUrl ->
+                    repository.fetchImage(imageUrl).getOrNull()
+                }
+                MessageLinkPreview(
+                    url = originalUrl,
+                    urlOffset = match.start,
+                    permanentUrl = ogData.url,
+                    title = ogData.title,
+                    summary = ogData.description,
+                    image = image
+                )
             }
-            MessageLinkPreview(
-                url = originalUrl,
-                urlOffset = firstMatch.start,
-                permanentUrl = ogData.url,
-                title = ogData.title,
-                summary = ogData.description,
-                image = image
-            )
         }
     }
 

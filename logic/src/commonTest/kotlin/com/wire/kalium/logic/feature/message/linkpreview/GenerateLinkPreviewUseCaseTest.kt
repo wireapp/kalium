@@ -26,6 +26,8 @@ import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.mock
+import dev.mokkery.verifySuspend
+import dev.mokkery.verify.VerifyMode
 import kotlinx.coroutines.test.runTest
 import okio.Path.Companion.toPath
 import kotlin.test.Test
@@ -56,7 +58,7 @@ class GenerateLinkPreviewUseCaseTest {
         )
         everySuspend { repository.fetchImage("https://example.com/image.png") } returns Either.Right(expectedImage)
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, linkPreviewEnabled = true)
             .invoke("see https://example.com")
 
         assertNotNull(result)
@@ -76,7 +78,7 @@ class GenerateLinkPreviewUseCaseTest {
             )
         )
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, linkPreviewEnabled = true)
             .invoke("see https://example.com")
 
         assertNotNull(result)
@@ -99,10 +101,23 @@ class GenerateLinkPreviewUseCaseTest {
             NetworkFailure.NoNetworkConnection(null)
         )
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, linkPreviewEnabled = true)
             .invoke("see https://example.com")
 
         assertNotNull(result)
         assertNull(result.image)
+    }
+
+    @Test
+    fun givenLinkPreviewDisabled_whenInvoked_thenReturnsNullWithoutCallingRepository() = runTest {
+        val repository = mock<LinkPreviewRepository>()
+
+        val result = GenerateLinkPreviewUseCaseImpl(repository, linkPreviewEnabled = false)
+            .invoke("see https://example.com")
+
+        assertNull(result)
+        verifySuspend(VerifyMode.not) {
+            repository.fetchOpenGraph(any(), any())
+        }
     }
 }

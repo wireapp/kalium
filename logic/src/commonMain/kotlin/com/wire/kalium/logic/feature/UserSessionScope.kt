@@ -350,6 +350,8 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
+import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
+import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolverImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
@@ -387,10 +389,10 @@ import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
-import com.wire.kalium.logic.feature.user.IsPreventAdminlessGroupsEnabledUseCase
-import com.wire.kalium.logic.feature.user.IsPreventAdminlessGroupsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.IsPreventAdminlessGroupsEnabledUseCase
+import com.wire.kalium.logic.feature.user.IsPreventAdminlessGroupsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.user.MarkFileSharingChangeAsNotifiedUseCase
@@ -511,7 +513,6 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUn
 import com.wire.kalium.logic.sync.receiver.conversation.message.ProteusMessageUnpackerImpl
 import com.wire.kalium.logic.sync.receiver.handler.AllowedGlobalOperationsHandler
 import com.wire.kalium.logic.sync.receiver.handler.AssetAuditLogConfigHandler
-import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionHandler
@@ -533,6 +534,7 @@ import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
+import com.wire.kalium.logic.sync.receiver.handler.PreventAdminlessGroupsConfigHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventHandlerImpl
@@ -576,6 +578,7 @@ import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.DelicateKaliumApi
+import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
@@ -1886,14 +1889,19 @@ public class UserSessionScope internal constructor(
             buttonActionHandler,
             MessageCompositeEditHandlerImpl(messageRepository),
             callingMessageHandler,
-            com.wire.kalium.logic.feature.message.linkpreview.ResolveLinkPreviewImagesUseCaseImpl(
-                messageRepository = messageRepository,
-                assetRepository = assetRepository,
-                scope = this,
-                dispatcher = com.wire.kalium.util.KaliumDispatcherImpl
-            ),
+            linkPreviewsResolver,
             userId
         )
+
+    private val linkPreviewsResolver: LinkPreviewImagesResolver by lazy {
+        LinkPreviewImagesResolverImpl(
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            scope = this@UserSessionScope,
+            dispatcher = KaliumDispatcherImpl,
+            linkPreviewEnabled = kaliumConfigs.linkPreviewEnabled
+        )
+    }
 
     private val staleEpochVerifier: StaleEpochVerifier
         get() = StaleEpochVerifierImpl(
@@ -2521,6 +2529,7 @@ public class UserSessionScope internal constructor(
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
             currentPersistenceEventHookNotifier,
+            kaliumConfigs.linkPreviewEnabled,
             this,
             userScopedLogger
         )
