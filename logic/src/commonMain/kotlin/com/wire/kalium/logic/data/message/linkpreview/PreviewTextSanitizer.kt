@@ -50,6 +50,7 @@ internal fun sanitizePreviewText(input: String?, maxLength: Int, collapseWhitesp
     return truncated.takeIf { it.isNotEmpty() }
 }
 
+@Suppress("MagicNumber")
 private fun Char.isUnsafeControlCharacter(): Boolean {
     if (this == '\n' || this == '\r' || this == '\t') return false
     return code in 0x00..0x1F || code in 0x7F..0x9F

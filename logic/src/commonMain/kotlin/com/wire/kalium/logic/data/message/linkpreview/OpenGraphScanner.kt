@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.message.linkpreview
 
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
+import com.fleeksoft.ksoup.nodes.Element
 
 /**
  * Scans HTML head for Open Graph metadata using DOM-based parsing (Ksoup).
@@ -60,7 +61,7 @@ internal object OpenGraphScanner {
         return buildOpenGraphData(ogData, pageTitle, originalUrl, firstImageUrl)
     }
 
-    private fun processMetaTag(metaTag: com.fleeksoft.ksoup.nodes.Element, ogData: MutableMap<String, String>, onImageFound: (String) -> Unit) {
+    private fun processMetaTag(metaTag: Element, ogData: MutableMap<String, String>, onImageFound: (String) -> Unit) {
         val property = metaTag.attr("property").takeIf { it.isNotEmpty() }
         val name = metaTag.attr("name").takeIf { it.isNotEmpty() }
         val content = metaTag.attr("content").trim()

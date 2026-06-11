@@ -15,18 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("TooManyFunctions", "ReturnCount")
+
 package com.wire.kalium.logic.data.message.linkpreview
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
-import io.ktor.client.call.body
 import io.ktor.client.HttpClient
+import io.ktor.client.call.body
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpHeaders
-import io.ktor.http.Url
 import io.ktor.http.URLBuilder
+import io.ktor.http.Url
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readAvailable
 import okio.Buffer
@@ -58,7 +60,7 @@ internal interface LinkPreviewRepository {
 /**
  * Default implementation of LinkPreviewRepository.
  */
-@Suppress("TooGenericExceptionCaught", "MagicNumber")
+@Suppress("TooGenericExceptionCaught", "MagicNumber", "CyclomaticComplexMethod", "ComplexCondition")
 internal class LinkPreviewRepositoryImpl(
     private val httpClient: HttpClient,
     private val kaliumFileSystem: KaliumFileSystem,
