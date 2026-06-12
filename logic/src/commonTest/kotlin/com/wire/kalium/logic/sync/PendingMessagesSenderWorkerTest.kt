@@ -20,8 +20,11 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.messaging.sending.MessageSender
@@ -30,10 +33,12 @@ import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
+import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -42,6 +47,7 @@ class PendingMessagesSenderWorkerTest {
     private val messageRepository = mock<MessageRepository>()
     private val messageSender = mock<MessageSender>()
     private val sendPendingAssetMessage = mock<SendPendingAssetMessageUseCase>(mode = MockMode.autoUnit)
+    private val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
 
     private lateinit var pendingMessagesSenderWorker: PendingMessagesSenderWorker
 
@@ -52,6 +58,7 @@ class PendingMessagesSenderWorkerTest {
             messageSender,
             TestUser.USER_ID,
             sendPendingAssetMessage,
+            messageSendFailureHandler,
         )
     }
 
@@ -72,6 +79,9 @@ class PendingMessagesSenderWorkerTest {
         }
         verifySuspend(VerifyMode.not) {
             sendPendingAssetMessage.invoke(any<Message.Regular>())
+        }
+        verifySuspend(VerifyMode.not) {
+            messageSender.sendMessage(any(), any())
         }
     }
 
@@ -109,6 +119,63 @@ class PendingMessagesSenderWorkerTest {
         }
         verifySuspend(VerifyMode.not) {
             sendPendingAssetMessage.invoke(any<Message.Regular>())
+        }
+    }
+
+    @Test
+    fun givenPendingTextMessageWithEditedStatus_whenExecutingWorker_thenTextEditedSignalingIsSent() = runTest {
+        val editedMessage = TestMessage.TEXT_MESSAGE.copy(
+            editStatus = Message.EditStatus.Edited(Instant.fromEpochMilliseconds(123L))
+        )
+        everySuspend {
+            messageRepository.getAllPendingMessagesFromUser(eq(TestUser.USER_ID))
+        } returns Either.Right(listOf(editedMessage))
+        everySuspend {
+            messageSender.sendMessage(any(), any())
+        } returns Either.Right(Unit)
+
+        pendingMessagesSenderWorker.doWork()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            messageSender.sendMessage(
+                matching { signaling ->
+                    signaling is Message.Signaling &&
+                            signaling.content is MessageContent.TextEdited &&
+                            (signaling.content as MessageContent.TextEdited).editMessageId == editedMessage.id &&
+                            (signaling.content as MessageContent.TextEdited).newContent ==
+                            (editedMessage.content as MessageContent.Text).value
+                },
+                any()
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            messageSender.sendPendingMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenPendingEditedMessageFailsWithNoNetwork_whenExecutingWorker_thenFailureHandlerCalledWithoutReschedule() = runTest {
+        val editedMessage = TestMessage.TEXT_MESSAGE.copy(
+            editStatus = Message.EditStatus.Edited(Instant.fromEpochMilliseconds(123L))
+        )
+        val failure = NetworkFailure.NoNetworkConnection(null)
+        everySuspend {
+            messageRepository.getAllPendingMessagesFromUser(eq(TestUser.USER_ID))
+        } returns Either.Right(listOf(editedMessage))
+        everySuspend {
+            messageSender.sendMessage(any(), any())
+        } returns Either.Left(failure)
+
+        pendingMessagesSenderWorker.doWork()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                failure = eq(failure),
+                conversationId = eq(editedMessage.conversationId),
+                messageId = eq(editedMessage.id),
+                messageType = eq("TextEdited"),
+                scheduleResendIfNoNetwork = eq(false),
+            )
         }
     }
 }
