@@ -31,7 +31,7 @@ import kotlinx.coroutines.coroutineScope
 /**
  * Use case for searching users by their handle.
  */
-public interface SearchByHandleUseCase {
+public interface SearchUsersByHandleUseCase {
     /**
      * @param searchHandle The search query.
      * @param excludingConversation The conversation to exclude its members from the search.
@@ -46,11 +46,11 @@ public interface SearchByHandleUseCase {
     ): SearchUserResult
 }
 
-public class SearchByHandleUseCaseImpl internal constructor(
+public class SearchUsersByHandleUseCaseImpl internal constructor(
     private val searchUserRepository: SearchUserRepository,
     private val selfUserId: UserId,
     private val maxRemoteSearchResultCount: Int
-) : SearchByHandleUseCase {
+) : SearchUsersByHandleUseCase {
     public override suspend operator fun invoke(
         searchHandle: String,
         excludingConversation: ConversationId?,

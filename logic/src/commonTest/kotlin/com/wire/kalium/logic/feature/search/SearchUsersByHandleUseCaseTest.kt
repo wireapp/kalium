@@ -455,8 +455,8 @@ class SearchUsersByHandleUseCaseTest {
 
     private class Arrangement {
         val searchUserRepository = mock<SearchUserRepository>(mode = MockMode.autoUnit)
-        private val useCase: SearchByHandleUseCase by lazy {
-            SearchByHandleUseCaseImpl(
+        private val useCase: SearchUsersByHandleUseCase by lazy {
+            SearchUsersByHandleUseCaseImpl(
                 searchUserRepository = searchUserRepository,
                 selfUserId = selfUserId,
                 maxRemoteSearchResultCount = 30

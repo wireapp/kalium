@@ -42,8 +42,8 @@ public class SearchScope internal constructor(
             kaliumConfigs.maxRemoteSearchResultCount
         )
 
-    public val searchUsersByHandle: SearchByHandleUseCase
-        get() = SearchByHandleUseCaseImpl(
+    public val searchUsersByHandle: SearchUsersByHandleUseCase
+        get() = SearchUsersByHandleUseCaseImpl(
             searchUserRepository,
             selfUserId,
             kaliumConfigs.maxRemoteSearchResultCount
