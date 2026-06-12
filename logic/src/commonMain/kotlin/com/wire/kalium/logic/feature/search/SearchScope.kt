@@ -35,15 +35,15 @@ public class SearchScope internal constructor(
     private val selfUserId: UserId,
     private val kaliumConfigs: KaliumConfigs
 ) {
-    public val searchUsers: SearchUsersUseCase
-        get() = SearchUsersUseCaseImpl(
+    public val searchUsersByName: SearchUsersByNameUseCase
+        get() = SearchUsersByNameUseCaseImpl(
             searchUserRepository,
             selfUserId,
             kaliumConfigs.maxRemoteSearchResultCount
         )
 
-    public val searchByHandle: SearchByHandleUseCase
-        get() = SearchByHandleUseCase(
+    public val searchUsersByHandle: SearchByHandleUseCase
+        get() = SearchByHandleUseCaseImpl(
             searchUserRepository,
             selfUserId,
             kaliumConfigs.maxRemoteSearchResultCount

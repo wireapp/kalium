@@ -30,12 +30,13 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.common.functional.right
+import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
+import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
-import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -43,7 +44,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class SearchUseCaseTest {
+class SearchUsersByNameUseCaseTest {
 
     @Test
     fun givenEmptySearchQueryAndNoExcludedConversation_whenInvokingSearch_thenRespondWithAllKnownContacts() = runTest {
@@ -64,12 +65,12 @@ class SearchUseCaseTest {
             actual = result.connected
         )
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.getKnownContacts(null)
+            arrangement.searchUserRepository.getKnownContacts(excludeConversation = null)
         }
     }
 
     @Test
-    fun givenEmptySearchQueryAndExcludedConversation_whenInvokingSearch_thenRespondWithAllKnownContacts() = runTest {
+    fun givenEmptySearchQueryAndExcludedConversation_whenInvokingSearch_thenReturnAllKnownContactsExcludingConversationId() = runTest {
 
         val conversationId = ConversationId("conversationId", "conversationDomain")
         val (arrangement, searchUseCase) = Arrangement().arrange {
@@ -89,12 +90,12 @@ class SearchUseCaseTest {
             actual = result.connected
         )
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.getKnownContacts(eq(conversationId))
+            arrangement.searchUserRepository.getKnownContacts(excludeConversation = conversationId)
         }
     }
 
     @Test
-    fun givenNonEmptySearchQueryAndNoExcludedConversation_whenInvokingSearch_thenRespondWithAllKnownContacts() = runTest {
+    fun givenNonEmptySearchQueryAndNoExcludedConversation_whenInvokingSearch_thenSearchRemoteAndLocalNotExcludingAnyConversation() = runTest {
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchLocalByName(
                 result = emptyList<UserSearchDetails>().right(),
@@ -114,8 +115,176 @@ class SearchUseCaseTest {
             expected = emptyList(),
             actual = result.connected
         )
+
+        val expectedSearchUsersOptions = SearchUsersOptions(
+            conversationExcluded = ConversationMemberExcludedOptions.None,
+            selfUserIncluded = false
+        )
+
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.searchUserRemoteDirectory(eq("searchquery"), any(), any(), any())
+            arrangement.searchUserRepository.searchUserRemoteDirectory(
+                searchQuery = "searchquery", domain = any(), maxResultSize = any(), searchUsersOptions = expectedSearchUsersOptions
+            )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchUserRepository.searchLocalByName(name = "searchquery", excludeMembersOfConversation = null)
+        }
+    }
+
+    @Test
+    fun givenNonEmptySearchQueryAndExcludedConversation_whenInvokingSearch_thenSearchRemoteAndLocalExcludingConversationId() = runTest {
+        val conversationId = ConversationId("conversationId", "conversationDomain")
+        val (arrangement, searchUseCase) = Arrangement().arrange {
+            withSearchLocalByName(
+                result = emptyList<UserSearchDetails>().right(),
+            )
+            withSearchUserRemoteDirectory(
+                result = UserSearchResult(emptyList()).right(),
+            )
+        }
+
+        val result = searchUseCase(
+            searchQuery = "searchQuery",
+            excludingMembersOfConversation = conversationId,
+            customDomain = null
+        )
+
+        assertEquals(
+            expected = emptyList(),
+            actual = result.connected
+        )
+
+        val expectedSearchUsersOptions = SearchUsersOptions(
+            conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(conversationId),
+            selfUserIncluded = false
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchUserRepository.searchUserRemoteDirectory(
+                searchQuery = "searchquery", domain = any(), maxResultSize = any(), searchUsersOptions = expectedSearchUsersOptions
+            )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchUserRepository.searchLocalByName(name = "searchquery", excludeMembersOfConversation = conversationId)
+        }
+    }
+
+    @Test
+    fun givenEmptySearchQueryAndNoExcludedRemote_whenInvokingSearch_thenRespondWithAllKnownContacts() = runTest {
+        val (arrangement, searchUseCase) = Arrangement().arrange {
+            withGetKnownContacts(
+                result = emptyList<UserSearchDetails>().right()
+            )
+        }
+
+        val result = searchUseCase(
+            searchQuery = "",
+            excludingMembersOfConversation = null,
+            excludingRemote = false,
+            customDomain = null
+        )
+
+        assertEquals(
+            expected = emptyList(),
+            actual = result.connected
+        )
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchUserRepository.getKnownContacts(excludeConversation = null)
+        }
+    }
+
+    @Test
+    fun givenEmptySearchQueryAndExcludedRemote_whenInvokingSearch_thenReturnAllKnownContacts() = runTest {
+        val (arrangement, searchUseCase) = Arrangement().arrange {
+            withGetKnownContacts(
+                result = emptyList<UserSearchDetails>().right()
+            )
+        }
+
+        val result = searchUseCase(
+            searchQuery = "",
+            excludingMembersOfConversation = null,
+            excludingRemote = true,
+            customDomain = null
+        )
+
+        assertEquals(
+            expected = emptyList(),
+            actual = result.connected
+        )
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchUserRepository.getKnownContacts(excludeConversation = null)
+        }
+    }
+
+    @Test
+    fun givenNonEmptySearchQueryAndNoExcludedRemote_whenInvokingSearch_thenSearchRemoteAndLocal() = runTest {
+        val (arrangement, searchUseCase) = Arrangement().arrange {
+            withSearchLocalByName(
+                result = emptyList<UserSearchDetails>().right(),
+            )
+            withSearchUserRemoteDirectory(
+                result = UserSearchResult(emptyList()).right(),
+            )
+        }
+
+        val result = searchUseCase(
+            searchQuery = "searchQuery",
+            excludingMembersOfConversation = null,
+            excludingRemote = false,
+            customDomain = null
+        )
+
+        assertEquals(
+            expected = emptyList(),
+            actual = result.connected
+        )
+
+        val expectedSearchUsersOptions = SearchUsersOptions(
+            conversationExcluded = ConversationMemberExcludedOptions.None,
+            selfUserIncluded = false
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchUserRepository.searchUserRemoteDirectory(
+                searchQuery = "searchquery", domain = any(), maxResultSize = any(), searchUsersOptions = expectedSearchUsersOptions
+            )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchUserRepository.searchLocalByName(name = "searchquery", excludeMembersOfConversation = null)
+        }
+    }
+
+    @Test
+    fun givenNonEmptySearchQueryAndExcludedRemote_whenInvokingSearch_thenSearchLocalOnly() = runTest {
+        val (arrangement, searchUseCase) = Arrangement().arrange {
+            withSearchLocalByName(
+                result = emptyList<UserSearchDetails>().right(),
+            )
+            withSearchUserRemoteDirectory(
+                result = UserSearchResult(emptyList()).right(),
+            )
+        }
+
+        val result = searchUseCase(
+            searchQuery = "searchQuery",
+            excludingMembersOfConversation = null,
+            excludingRemote = true,
+            customDomain = null
+        )
+
+        assertEquals(
+            expected = emptyList(),
+            actual = result.connected
+        )
+
+        verifySuspend(VerifyMode.exactly(0)) {
+            arrangement.searchUserRepository.searchUserRemoteDirectory(
+                searchQuery = "searchquery", domain = any(), maxResultSize = any(), searchUsersOptions = any()
+            )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.searchUserRepository.searchLocalByName(name = "searchquery", excludeMembersOfConversation = null)
         }
     }
 
@@ -167,10 +336,10 @@ class SearchUseCaseTest {
             actual = result
         )
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.searchUserRemoteDirectory(eq("searchquery"), any(), any(), any())
+            arrangement.searchUserRepository.searchUserRemoteDirectory("searchquery", any(), any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.searchLocalByName(eq("searchquery"), any())
+            arrangement.searchUserRepository.searchLocalByName("searchquery", any())
         }
     }
 
@@ -200,10 +369,10 @@ class SearchUseCaseTest {
             actual = result.connected
         )
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.searchUserRemoteDirectory(eq(cleanQuery), any(), any(), any())
+            arrangement.searchUserRepository.searchUserRemoteDirectory(cleanQuery, any(), any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.searchUserRepository.searchLocalByName(eq(cleanQuery), any())
+            arrangement.searchUserRepository.searchLocalByName(cleanQuery, any())
         }
     }
 
@@ -245,7 +414,7 @@ class SearchUseCaseTest {
     private class Arrangement {
         val searchUserRepository = mock<SearchUserRepository>(mode = MockMode.autoUnit)
 
-        private val searchUseCase: SearchUsersUseCase = SearchUsersUseCaseImpl(
+        private val searchUseCase: SearchUsersByNameUseCase = SearchUsersByNameUseCaseImpl(
             searchUserRepository = searchUserRepository,
             selfUserId = selfUserID,
             maxRemoteSearchResultCount = 30
@@ -255,30 +424,30 @@ class SearchUseCaseTest {
             block()
         }.run { this to searchUseCase }
 
-        suspend fun withGetKnownContacts(result: com.wire.kalium.common.functional.Either<com.wire.kalium.common.error.StorageFailure, List<UserSearchDetails>>) {
-            everySuspend { searchUserRepository.getKnownContacts(any()) } returns result
+        fun withGetKnownContacts(result: com.wire.kalium.common.functional.Either<com.wire.kalium.common.error.StorageFailure, List<UserSearchDetails>>) {
+            everySuspend { searchUserRepository.getKnownContacts(excludeConversation = any()) } returns result
         }
 
-        suspend fun withSearchUserRemoteDirectory(
+        fun withSearchUserRemoteDirectory(
             result: com.wire.kalium.common.functional.Either<com.wire.kalium.common.error.CoreFailure, UserSearchResult>,
             searchQuery: String? = null
         ) {
             everySuspend {
                 searchUserRepository.searchUserRemoteDirectory(
-                    if (searchQuery == null) any() else eq(searchQuery),
-                    any(),
-                    any(),
-                    any()
+                    searchQuery = searchQuery ?: any(),
+                    domain = any(),
+                    maxResultSize = any(),
+                    searchUsersOptions = any()
                 )
             } returns result
         }
 
-        suspend fun withSearchLocalByName(
+        fun withSearchLocalByName(
             result: com.wire.kalium.common.functional.Either<com.wire.kalium.common.error.StorageFailure, List<UserSearchDetails>>,
             searchQuery: String? = null
         ) {
             everySuspend {
-                searchUserRepository.searchLocalByName(if (searchQuery == null) any() else eq(searchQuery), any())
+                searchUserRepository.searchLocalByName(name = searchQuery ?: any(), excludeMembersOfConversation = any())
             } returns result
         }
     }
