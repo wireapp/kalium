@@ -35,13 +35,13 @@ public interface SearchByHandleUseCase {
     /**
      * @param searchHandle The search query.
      * @param excludingConversation The conversation to exclude its members from the search.
-     * @param excludingRemote Whether to exclude remote results from the search (not execute remote search at all, only local).
+     * @param excludingNotConnected Whether to exclude not connected users from the search (not execute remote search at all, only local).
      * @param customDomain The custom domain to search in if null the search will be on the self user domain.
      */
     public suspend operator fun invoke(
         searchHandle: String,
         excludingConversation: ConversationId?,
-        excludingRemote: Boolean = false,
+        excludingNotConnected: Boolean = false,
         customDomain: String?
     ): SearchUserResult
 }
@@ -54,7 +54,7 @@ public class SearchByHandleUseCaseImpl internal constructor(
     public override suspend operator fun invoke(
         searchHandle: String,
         excludingConversation: ConversationId?,
-        excludingRemote: Boolean,
+        excludingNotConnected: Boolean,
         customDomain: String?
     ): SearchUserResult = coroutineScope {
         val cleanSearchQuery = searchHandle
@@ -67,7 +67,7 @@ public class SearchByHandleUseCaseImpl internal constructor(
         }
 
         val remoteResultsDeferred = async {
-            if (excludingRemote) return@async mutableMapOf()
+            if (excludingNotConnected) return@async mutableMapOf()
 
             searchUserRepository.searchUserRemoteDirectory(
                 cleanSearchQuery,

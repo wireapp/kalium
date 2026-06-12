@@ -170,7 +170,7 @@ class SearchUsersByNameUseCaseTest {
     }
 
     @Test
-    fun givenEmptySearchQueryAndNoExcludedRemote_whenInvokingSearch_thenRespondWithAllKnownContacts() = runTest {
+    fun givenEmptySearchQueryAndNoExcludedNotConnected_whenInvokingSearch_thenRespondWithAllKnownContacts() = runTest {
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withGetKnownContacts(
                 result = emptyList<UserSearchDetails>().right()
@@ -180,7 +180,7 @@ class SearchUsersByNameUseCaseTest {
         val result = searchUseCase(
             searchQuery = "",
             excludingMembersOfConversation = null,
-            excludingRemote = false,
+            excludingNotConnected = false,
             customDomain = null
         )
 
@@ -194,7 +194,7 @@ class SearchUsersByNameUseCaseTest {
     }
 
     @Test
-    fun givenEmptySearchQueryAndExcludedRemote_whenInvokingSearch_thenReturnAllKnownContacts() = runTest {
+    fun givenEmptySearchQueryAndExcludedNotConnected_whenInvokingSearch_thenReturnAllKnownContacts() = runTest {
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withGetKnownContacts(
                 result = emptyList<UserSearchDetails>().right()
@@ -204,7 +204,7 @@ class SearchUsersByNameUseCaseTest {
         val result = searchUseCase(
             searchQuery = "",
             excludingMembersOfConversation = null,
-            excludingRemote = true,
+            excludingNotConnected = true,
             customDomain = null
         )
 
@@ -218,7 +218,7 @@ class SearchUsersByNameUseCaseTest {
     }
 
     @Test
-    fun givenNonEmptySearchQueryAndNoExcludedRemote_whenInvokingSearch_thenSearchRemoteAndLocal() = runTest {
+    fun givenNonEmptySearchQueryAndNoExcludedNotConnected_whenInvokingSearch_thenSearchRemoteAndLocal() = runTest {
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchLocalByName(
                 result = emptyList<UserSearchDetails>().right(),
@@ -231,7 +231,7 @@ class SearchUsersByNameUseCaseTest {
         val result = searchUseCase(
             searchQuery = "searchQuery",
             excludingMembersOfConversation = null,
-            excludingRemote = false,
+            excludingNotConnected = false,
             customDomain = null
         )
 
@@ -256,7 +256,7 @@ class SearchUsersByNameUseCaseTest {
     }
 
     @Test
-    fun givenNonEmptySearchQueryAndExcludedRemote_whenInvokingSearch_thenSearchLocalOnly() = runTest {
+    fun givenNonEmptySearchQueryAndExcludedNotConnected_whenInvokingSearch_thenSearchLocalOnly() = runTest {
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchLocalByName(
                 result = emptyList<UserSearchDetails>().right(),
@@ -269,7 +269,7 @@ class SearchUsersByNameUseCaseTest {
         val result = searchUseCase(
             searchQuery = "searchQuery",
             excludingMembersOfConversation = null,
-            excludingRemote = true,
+            excludingNotConnected = true,
             customDomain = null
         )
 

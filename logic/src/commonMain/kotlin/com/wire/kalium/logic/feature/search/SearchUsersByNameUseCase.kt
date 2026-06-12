@@ -35,13 +35,13 @@ public interface SearchUsersByNameUseCase {
     /**
      * @param searchQuery The search query.
      * @param excludingMembersOfConversation The conversation to exclude its members from the search.
-     * @param excludingRemote Whether to exclude remote results from the search (not execute remote search at all, only local).
+     * @param excludingNotConnected Whether to exclude not connected users from the search (not execute remote search at all, only local).
      * @param customDomain The custom domain to search in if null the search will be on the self user domain.
      */
     public suspend operator fun invoke(
         searchQuery: String,
         excludingMembersOfConversation: ConversationId?,
-        excludingRemote: Boolean = false,
+        excludingNotConnected: Boolean = false,
         customDomain: String?
     ): SearchUserResult
 }
@@ -54,7 +54,7 @@ internal class SearchUsersByNameUseCaseImpl internal constructor(
     override suspend operator fun invoke(
         searchQuery: String,
         excludingMembersOfConversation: ConversationId?,
-        excludingRemote: Boolean,
+        excludingNotConnected: Boolean,
         customDomain: String?
     ): SearchUserResult {
         return if (searchQuery.isBlank()) {
@@ -63,7 +63,7 @@ internal class SearchUsersByNameUseCaseImpl internal constructor(
                 notConnected = emptyList()
             )
         } else {
-            handleSearch(searchQuery, excludingMembersOfConversation, excludingRemote, customDomain)
+            handleSearch(searchQuery, excludingMembersOfConversation, excludingNotConnected, customDomain)
         }
     }
 
