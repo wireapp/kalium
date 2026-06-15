@@ -53,6 +53,7 @@ import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppLockEditableUseCa
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCaseImpl
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
+import com.wire.kalium.logic.feature.server.IsCrossBackendLoginBlockedUseCase
 import com.wire.kalium.logic.feature.server.ServerConfigForAccountUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCaseImpl
@@ -195,6 +196,17 @@ public class GlobalKaliumScope internal constructor(
 
     public val serverConfigForAccounts: ServerConfigForAccountUseCase
         get() = ServerConfigForAccountUseCase(globalDatabase.serverConfigurationDAO)
+
+    public val isCrossBackendLoginBlocked: IsCrossBackendLoginBlockedUseCase
+        get() {
+            val currentSessionUseCase = session.currentSession
+            val serverConfigForAccountUseCase = serverConfigForAccounts
+            return IsCrossBackendLoginBlockedUseCase(
+                kaliumConfigs = kaliumConfigs,
+                currentSession = { currentSessionUseCase() },
+                serverConfigForAccount = { userId -> serverConfigForAccountUseCase(userId) },
+            )
+        }
 
     public val authenticationScopeForConfigId: AuthenticationScopeForConfigIdUseCase
         get() = AuthenticationScopeForConfigIdUseCase(
