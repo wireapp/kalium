@@ -16,13 +16,9 @@ CREATE TABLE MessageDraft (
 );
 
 deleteDraft:
--- @NotifyCustomKey conversation_list_draft
--- @NotifyCustomKey MessageDraft
 DELETE FROM MessageDraft WHERE conversation_id = ?;
 
 upsertDraft:
--- @NotifyCustomKey conversation_list_draft
--- @NotifyCustomKey MessageDraft
 INSERT INTO MessageDraft(conversation_id, text, edit_message_id, quoted_message_id, mention_list)
 VALUES( ?, ?, ?, ?, ?)
 ON CONFLICT(conversation_id) DO UPDATE SET
