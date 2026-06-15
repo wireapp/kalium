@@ -34,6 +34,13 @@ ORDER BY
     conversationFolder.name COLLATE NOCASE ASC;
 
 getConversationsFromFolder:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_order
+-- @CustomKey conversation_list_last_message
+-- @CustomKey conversation_list_draft
+-- @CustomKey conversation_list_unread
+-- @CustomKey conversation_list_calls
+-- @CustomKey conversation_list_folders
 SELECT ConversationDetailsWithEvents.*
 FROM LabeledConversation
 JOIN ConversationDetailsWithEvents
@@ -50,6 +57,8 @@ SELECT * FROM ConversationFolder WHERE folder_type = 'FAVORITE'
 LIMIT 1;
 
 upsertFolder:
+-- @NotifyCustomKey conversation_list_folders
+-- @NotifyCustomKey ConversationFolder
 INSERT INTO ConversationFolder(id, name, folder_type)
 VALUES( ?, ?, ?)
 ON CONFLICT(id) DO UPDATE SET
@@ -57,17 +66,27 @@ name = excluded.name,
 folder_type = excluded.folder_type;
 
 insertLabeledConversation:
+-- @NotifyCustomKey conversation_list_folders
+-- @NotifyCustomKey LabeledConversation
 INSERT OR IGNORE INTO LabeledConversation(conversation_id, folder_id)
 VALUES(?, ?);
 
 deleteLabeledConversation:
+-- @NotifyCustomKey conversation_list_folders
+-- @NotifyCustomKey LabeledConversation
 DELETE FROM LabeledConversation WHERE conversation_id = ? AND folder_id = ?;
 
 clearLabeledConversations:
+-- @NotifyCustomKey conversation_list_folders
+-- @NotifyCustomKey LabeledConversation
 DELETE FROM LabeledConversation;
 
 clearFolders:
+-- @NotifyCustomKey conversation_list_folders
+-- @NotifyCustomKey ConversationFolder
 DELETE FROM ConversationFolder;
 
 deleteFolder:
+-- @NotifyCustomKey conversation_list_folders
+-- @NotifyCustomKey ConversationFolder
 DELETE FROM ConversationFolder WHERE id = ?;
