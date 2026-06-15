@@ -238,7 +238,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversationListPageLoaded_whenDraftIsUpserted_thenPagingSourceShouldBeInvalidated() = runTest(dispatcher) {
+    fun givenConversationListPageLoaded_whenDraftIsUpserted_thenPagingSourceShouldNotBeInvalidated() = runTest(dispatcher) {
         populateData(count = 1, isChannel = false)
         val pagingSource = getPager().pagingSource
 
@@ -251,7 +251,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
             newDraftMessageEntity(conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain"))
         )
 
-        assertTrue { pagingSource.invalid }
+        assertFalse { pagingSource.invalid }
     }
 
     @Test

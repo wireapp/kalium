@@ -81,7 +81,6 @@ selectAllConversationDetailsWithEvents:
 -- @CustomKey conversation_list_membership
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
--- @CustomKey conversation_list_draft
 -- @CustomKey conversation_list_unread
 -- @CustomKey conversation_list_calls
 -- @CustomKey conversation_list_folders
@@ -107,7 +106,6 @@ selectConversationDetailsWithEvents:
 -- @CustomKey conversation_list_membership
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
--- @CustomKey conversation_list_draft
 -- @CustomKey conversation_list_unread
 -- @CustomKey conversation_list_calls
 -- @CustomKey conversation_list_folders
@@ -148,7 +146,6 @@ selectConversationDetailsWithEventsFromSearch:
 -- @CustomKey conversation_list_membership
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
--- @CustomKey conversation_list_draft
 -- @CustomKey conversation_list_unread
 -- @CustomKey conversation_list_calls
 -- @CustomKey conversation_list_folders
