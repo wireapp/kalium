@@ -44,7 +44,7 @@ class IsCrossBackendLoginBlockedUseCaseTest {
     fun givenNoCurrentSession_whenInvoked_thenReturnsFalse() = runTest {
         val useCase = arrange(
             blockFlag = true,
-            currentSession = CurrentSessionResult.Failure.SessionNotFound,
+            currentSession = CurrentSessionResult.Failure.SessionNotFound
         )
 
         val result = useCase(IsCrossBackendLoginBlockedUseCase.Target.Links(newServerConfig(2).links))
