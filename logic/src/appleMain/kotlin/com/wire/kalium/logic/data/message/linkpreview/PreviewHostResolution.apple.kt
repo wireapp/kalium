@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.message.linkpreview
 
 import kotlinx.cinterop.ByteVar
+import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.CPointerVar
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.allocArray
@@ -26,6 +27,7 @@ import kotlinx.cinterop.pointed
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.sizeOf
 import kotlinx.cinterop.toKString
+import kotlinx.cinterop.value
 import platform.posix.AF_UNSPEC
 import platform.posix.NI_MAXHOST
 import platform.posix.NI_NUMERICHOST
@@ -45,14 +47,16 @@ internal actual suspend fun resolvePreviewHostAddresses(host: String): List<Stri
         return@memScoped emptyList()
     }
 
+    val firstResult: CPointer<addrinfo> = result.value ?: return@memScoped emptyList()
     val addresses = mutableSetOf<String>()
     try {
-        var current = result.value
+        var current: CPointer<addrinfo>? = firstResult
         while (current != null) {
-            val hostBuffer = allocArray<ByteVar>(NI_MAXHOST.toInt())
+            val currentValue = current.pointed
+            val hostBuffer = allocArray<ByteVar>(NI_MAXHOST)
             if (getnameinfo(
-                    current.pointed.ai_addr,
-                    current.pointed.ai_addrlen,
+                    currentValue.ai_addr,
+                    currentValue.ai_addrlen,
                     hostBuffer,
                     NI_MAXHOST.toUInt(),
                     null,
@@ -62,10 +66,10 @@ internal actual suspend fun resolvePreviewHostAddresses(host: String): List<Stri
             ) {
                 addresses += hostBuffer.toKString().substringBefore('%')
             }
-            current = current.pointed.ai_next
+            current = currentValue.ai_next
         }
     } finally {
-        freeaddrinfo(result.value)
+        freeaddrinfo(firstResult)
     }
 
     addresses.toList()

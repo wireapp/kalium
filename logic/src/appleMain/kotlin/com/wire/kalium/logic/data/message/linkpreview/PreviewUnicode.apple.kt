@@ -17,7 +17,4 @@
  */
 package com.wire.kalium.logic.data.message.linkpreview
 
-import platform.Foundation.NSString
-
-internal actual fun normalizePreviewUnicode(input: String): String =
-    (input as NSString).precomposedStringWithCompatibilityMapping
+internal actual fun normalizePreviewUnicode(input: String): String = input
