@@ -23,7 +23,6 @@ import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
@@ -187,6 +186,27 @@ class MessageTextEditTest : BaseMessageTest() {
         val editStatus = result.editStatus
         assertIs<MessageEntity.EditStatus.Edited>(editStatus)
         assertEquals(editDate, editStatus.lastDate)
+    }
+
+    @Test
+    fun givenTextWasInserted_whenUpdatingContentWithoutEditInstant_thenShouldNotMarkAsEdited() = runTest {
+        insertInitialData()
+
+        val newMessageBody = "newBody"
+        messageDAO.updateTextMessageContent(
+            conversationId = CONVERSATION_ID,
+            messageId = ORIGINAL_MESSAGE_ID,
+            textContent = ORIGINAL_CONTENT.copy(messageBody = newMessageBody),
+        )
+
+        val result = messageDAO.getMessageById(ORIGINAL_MESSAGE_ID, CONVERSATION_ID)!!
+
+        val content = result.content
+        assertIs<MessageEntityContent.Text>(content)
+        assertEquals(newMessageBody, content.messageBody)
+
+        assertIs<MessageEntity.Regular>(result)
+        assertIs<MessageEntity.EditStatus.NotEdited>(result.editStatus)
     }
 
     @Test

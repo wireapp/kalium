@@ -22,11 +22,14 @@ import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
@@ -38,6 +41,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -54,6 +58,7 @@ class SendEditTextMessageUseCaseTest {
         // Given
         val (arrangement, sendEditTextMessage) = Arrangement(testKaliumDispatcher)
             .withSlowSyncStatusComplete()
+            .withGetMessageByIdSuccess(Message.Status.Sent)
             .withCurrentClientProviderSuccess()
             .withUpdateTextMessageSuccess()
             .withUpdateMessageStatusSuccess()
@@ -87,6 +92,7 @@ class SendEditTextMessageUseCaseTest {
         // Given
         val (arrangement, sendEditTextMessage) = Arrangement(testKaliumDispatcher)
             .withSlowSyncStatusComplete()
+            .withGetMessageByIdSuccess(Message.Status.Sent)
             .withCurrentClientProviderSuccess()
             .withUpdateTextMessageSuccess()
             .withUpdateMessageStatusSuccess()
@@ -118,6 +124,37 @@ class SendEditTextMessageUseCaseTest {
         }
     }
 
+    @Test
+    fun givenMessageIsPending_whenSendingEditText_thenUpdateContentOnlyAndReturnSuccess() = runTest {
+        // Given
+        val (arrangement, sendEditTextMessage) = Arrangement(testKaliumDispatcher)
+            .withSlowSyncStatusComplete()
+            .withGetMessageByIdSuccess(Message.Status.Pending)
+            .withUpdateTextMessageSuccess()
+            .arrange()
+        val originalMessageId = "message id"
+        val editedMessageId = "edited message id"
+        val editedMessageText = "text"
+
+        // When
+        val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
+
+        // Then
+        assertIs<MessageOperationResult.Success>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageRepository.updateTextMessage(any(), eq(originalMessageId), any<MessageContent.Text>())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageRepository.updateMessageStatus(any(), any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
     private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         val messageRepository = mock<MessageRepository>(mode = MockMode.autoUnit)
         val currentClientIdProvider = mock<CurrentClientIdProvider>(mode = MockMode.autoUnit)
@@ -137,6 +174,12 @@ class SendEditTextMessageUseCaseTest {
             } returns Either.Left(NetworkFailure.NoNetworkConnection(null))
         }
 
+        suspend fun withGetMessageByIdSuccess(status: Message.Status) = apply {
+            everySuspend {
+                messageRepository.getMessageById(any(), any())
+            } returns Either.Right(TestMessage.TEXT_MESSAGE.copy(status = status))
+        }
+
         fun withSlowSyncStatusComplete() = apply {
             val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
             every {
@@ -152,7 +195,10 @@ class SendEditTextMessageUseCaseTest {
 
         suspend fun withUpdateTextMessageSuccess() = apply {
             everySuspend {
-                messageRepository.updateTextMessage(any(), any(), any(), any())
+                messageRepository.updateTextMessage(any(), any<MessageContent.TextEdited>(), any(), any())
+            } returns Either.Right(Unit)
+            everySuspend {
+                messageRepository.updateTextMessage(any(), any<String>(), any<MessageContent.Text>())
             } returns Either.Right(Unit)
         }
 
