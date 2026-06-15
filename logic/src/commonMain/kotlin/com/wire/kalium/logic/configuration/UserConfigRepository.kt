@@ -156,6 +156,7 @@ internal interface UserConfigRepository {
     suspend fun isAsyncNotificationsEnabled(): Boolean
     suspend fun setCellsEnabled(enabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isCellsEnabled(): Boolean
+    suspend fun observeIsCellsEnabled(): Flow<Boolean>
     suspend fun setAppsEnabled(isAppsEnabled: Boolean): Either<StorageFailure, Unit>
     suspend fun isAppsEnabled(): Boolean
     fun observeAppsEnabled(): Flow<Either<StorageFailure, Boolean>>
@@ -583,6 +584,8 @@ internal class UserConfigDataSource internal constructor(
         }
 
     override suspend fun isCellsEnabled(): Boolean = userConfigDAO.isCellsEnabled()
+
+    override suspend fun observeIsCellsEnabled(): Flow<Boolean> = userConfigDAO.observeIsCellsEnabled()
 
     override suspend fun setAppsEnabled(isAppsEnabled: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest {

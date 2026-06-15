@@ -73,6 +73,7 @@ interface UserConfigDAO {
     suspend fun getAsyncNotificationsEnabled(): Boolean
     suspend fun setCellsEnabled(enabled: Boolean)
     suspend fun isCellsEnabled(): Boolean
+    suspend fun observeIsCellsEnabled(): Flow<Boolean>
     suspend fun setAppsEnabled(isAppsEnabled: Boolean)
     suspend fun getAppsEnabled(): Boolean
     fun observeAppsEnabled(): Flow<Boolean>
@@ -265,6 +266,9 @@ internal class UserConfigDAOImpl internal constructor(
 
     override suspend fun isCellsEnabled(): Boolean =
         metadataDAO.valueByKey(CELLS_ENABLED)?.toBoolean() ?: false
+
+    override suspend fun observeIsCellsEnabled(): Flow<Boolean> =
+        metadataDAO.valueByKeyFlow(CELLS_ENABLED).map { it.toBoolean() }
 
     override suspend fun setProfileQRCodeEnabled(enabled: Boolean) {
         metadataDAO.insertValue(enabled.toString(), PROFILE_QR_CODE_ENABLED)
