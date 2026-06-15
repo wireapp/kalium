@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read # required for actions/checkout and repository metadata reads
+  contents: write # required for pushing to gh-pages branch
 
 jobs:
   publish:
