@@ -78,49 +78,85 @@ public class SendEditTextMessageUseCase internal constructor(
             it is SlowSyncStatus.Complete
         }
 
-        provideClientId().flatMap { clientId ->
-            val content = MessageContent.TextEdited(
-                editMessageId = originalMessageId,
-                newContent = text,
-                newMentions = mentions
-            )
-            val message = Message.Signaling(
-                id = editedMessageId,
-                content = content,
-                conversationId = conversationId,
-                date = Clock.System.now(),
-                senderUserId = selfUserId,
-                senderClientId = clientId,
-                status = Message.Status.Pending,
-                isSelfMessage = true,
-                expirationData = null
-            )
-            // until the edit send is completed and accepted by the backend, we don't change the message id to be able to handle any
-            // incoming edits from other clients that happened in the meantime and already changed the message id
-            messageRepository.updateTextMessage(
-                conversationId = message.conversationId,
-                messageContent = content,
-                newMessageId = originalMessageId,
-                editInstant = message.date
-            ).flatMap {
-                messageRepository.updateMessageStatus(
-                    messageStatus = MessageEntity.Status.PENDING,
-                    conversationId = message.conversationId,
-                    messageUuid = originalMessageId
-                )
-            }
-                .flatMap {
-                    messageSender.sendMessage(message)
-                }
-        }.fold(
+        messageRepository.getMessageById(conversationId, originalMessageId).fold(
             {
-                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, originalMessageId, TYPE)
                 MessageOperationResult.Failure(it)
             },
-            {
-                MessageOperationResult.Success
+            { originalMessage ->
+                if (originalMessage.status == Message.Status.Pending) {
+                    // Message is PENDING, so only update the text
+                    messageRepository.updateTextMessage(
+                        conversationId = conversationId,
+                        messageId = originalMessageId,
+                        messageContent = MessageContent.Text(
+                            value = text,
+                            mentions = mentions,
+                        ),
+                    ).fold(
+                        { MessageOperationResult.Failure(it) },
+                        { MessageOperationResult.Success }
+                    )
+                } else {
+                    val content = MessageContent.TextEdited(
+                        editMessageId = originalMessageId,
+                        newContent = text,
+                        newMentions = mentions
+                    )
+
+                    sendEditMessage(conversationId, originalMessageId, editedMessageId, content).fold(
+                        {
+                            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                                failure = it,
+                                conversationId = conversationId,
+                                messageId = originalMessageId,
+                                messageType = TYPE,
+                                scheduleResendIfNoNetwork = true
+                            )
+                            MessageOperationResult.Failure(it)
+                        },
+                        {
+                            MessageOperationResult.Success
+                        }
+                    )
+                }
             }
         )
+    }
+
+    private suspend fun sendEditMessage(
+        conversationId: ConversationId,
+        originalMessageId: String,
+        editedMessageId: String,
+        content: MessageContent.TextEdited
+    ) = provideClientId().flatMap { clientId ->
+        val message = Message.Signaling(
+            id = editedMessageId,
+            content = content,
+            conversationId = conversationId,
+            date = Clock.System.now(),
+            senderUserId = selfUserId,
+            senderClientId = clientId,
+            status = Message.Status.Pending,
+            isSelfMessage = true,
+            expirationData = null
+        )
+        // until the edit send is completed and accepted by the backend, we don't change the message id to be able to handle any
+        // incoming edits from other clients that happened in the meantime and already changed the message id
+        messageRepository.updateTextMessage(
+            conversationId = message.conversationId,
+            messageContent = content,
+            newMessageId = originalMessageId,
+            editInstant = message.date
+        ).flatMap {
+            messageRepository.updateMessageStatus(
+                messageStatus = MessageEntity.Status.PENDING,
+                conversationId = message.conversationId,
+                messageUuid = originalMessageId
+            )
+        }
+            .flatMap {
+                messageSender.sendMessage(message)
+            }
     }
 
     internal companion object {

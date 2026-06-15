@@ -67,7 +67,7 @@ jobs:
             ./**/build/test-results/**/*.xml
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/linux@2ceeed2b8f26e15b06c3846719f75354febd9e7b
+        uses: EnricoMi/publish-unit-test-result-action/linux@c950f6fb443cb5af20a377fd0dfaa78838901040
         if: ${{ always() }}
         with:
           files: |

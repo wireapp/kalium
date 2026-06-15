@@ -450,18 +450,36 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updateTextMessageContent(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        textContent: MessageEntityContent.Text,
+    ): Unit = withContext(writeDispatcher.value) {
+        queries.transaction {
+            updateTextMessageContentInDB(
+                conversationId = conversationId,
+                currentMessageId = messageId,
+                newTextContent = textContent,
+                newMessageId = messageId,
+                editInstant = null,
+            )
+        }
+    }
+
     /**
      * Be careful and run this operation in ONE wrapping transaction.
      */
     private suspend fun updateTextMessageContentInDB(
-        editInstant: Instant,
+        editInstant: Instant?,
         conversationId: QualifiedIDEntity,
         currentMessageId: String,
         newTextContent: MessageEntityContent.Text,
         newMessageId: String
     ) {
         // do not add withContext
-        queries.markMessageAsEdited(editInstant, currentMessageId, conversationId)
+        editInstant?.let {
+            queries.markMessageAsEdited(it, currentMessageId, conversationId)
+        }
         reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
         queries.deleteMessageMentions(currentMessageId, conversationId)
         queries.deleteMessageLinkPreviews(currentMessageId, conversationId)
