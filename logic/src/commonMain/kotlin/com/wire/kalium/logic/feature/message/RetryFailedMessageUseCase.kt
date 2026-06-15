@@ -54,8 +54,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlin.uuid.Uuid
 
 // todo(interface). extract interface for use case
 @Suppress("LongParameterList")
@@ -139,27 +137,8 @@ public class RetryFailedMessageUseCase internal constructor(
 
     private suspend fun retrySendingEditMessage(message: Message.Regular): Either<CoreFailure, Unit> =
         when (val content = message.content) {
-            is MessageContent.Text -> {
-                val editContent = MessageContent.TextEdited(
-                    editMessageId = message.id,
-                    newContent = content.value,
-                    newMentions = content.mentions
-                )
-                // Create new unique message ID
-                val generatedMessageUuid = Uuid.random().toString()
-                val editMessage = Message.Signaling(
-                    id = generatedMessageUuid,
-                    content = editContent,
-                    conversationId = message.conversationId,
-                    date = Clock.System.now(),
-                    senderUserId = message.senderUserId,
-                    senderClientId = message.senderClientId,
-                    status = Message.Status.Pending,
-                    isSelfMessage = true,
-                    expirationData = null
-                )
-                retrySendingMessage(editMessage)
-            }
+            is MessageContent.Text ->
+                retrySendingMessage(EditMessageBuilder.buildTextEditSignaling(message, content))
 
             else -> handleError("Message edit with content of type ${content::class.simpleName} cannot be retried")
         }
