@@ -201,7 +201,7 @@ class SearchUsersByHandleUseCaseTest {
         val result = searchUseCase(
             searchHandle = "",
             excludingConversation = null,
-            excludingNotConnected = false,
+            skipRemoteSearch = false,
             customDomain = null
         )
 
@@ -232,7 +232,7 @@ class SearchUsersByHandleUseCaseTest {
         val result = searchUseCase(
             searchHandle = "",
             excludingConversation = null,
-            excludingNotConnected = true,
+            skipRemoteSearch = true,
             customDomain = null
         )
 
@@ -271,7 +271,7 @@ class SearchUsersByHandleUseCaseTest {
         val result = searchUseCase(
             searchHandle = "searchQuery",
             excludingConversation = null,
-            excludingNotConnected = false,
+            skipRemoteSearch = false,
             customDomain = null
         )
 
@@ -309,7 +309,7 @@ class SearchUsersByHandleUseCaseTest {
         val result = searchUseCase(
             searchHandle = "searchQuery",
             excludingConversation = null,
-            excludingNotConnected = true,
+            skipRemoteSearch = true,
             customDomain = null
         )
 

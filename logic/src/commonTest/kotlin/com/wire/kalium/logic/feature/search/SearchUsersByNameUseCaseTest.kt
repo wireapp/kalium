@@ -180,7 +180,7 @@ class SearchUsersByNameUseCaseTest {
         val result = searchUseCase(
             searchQuery = "",
             excludingMembersOfConversation = null,
-            excludingNotConnected = false,
+            skipRemoteSearch = false,
             customDomain = null
         )
 
@@ -204,7 +204,7 @@ class SearchUsersByNameUseCaseTest {
         val result = searchUseCase(
             searchQuery = "",
             excludingMembersOfConversation = null,
-            excludingNotConnected = true,
+            skipRemoteSearch = true,
             customDomain = null
         )
 
@@ -231,7 +231,7 @@ class SearchUsersByNameUseCaseTest {
         val result = searchUseCase(
             searchQuery = "searchQuery",
             excludingMembersOfConversation = null,
-            excludingNotConnected = false,
+            skipRemoteSearch = false,
             customDomain = null
         )
 
@@ -269,7 +269,7 @@ class SearchUsersByNameUseCaseTest {
         val result = searchUseCase(
             searchQuery = "searchQuery",
             excludingMembersOfConversation = null,
-            excludingNotConnected = true,
+            skipRemoteSearch = true,
             customDomain = null
         )
 
