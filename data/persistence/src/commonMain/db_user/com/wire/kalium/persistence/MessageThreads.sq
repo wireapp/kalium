@@ -65,11 +65,48 @@ DELETE FROM MessageMainList
 WHERE conversation_id = :conversation_id
 AND message_id = :message_id;
 
+deleteMainListItemsForThreadReplies:
+DELETE FROM MessageMainList
+WHERE conversation_id = :conversation_id
+AND message_id IN (
+    SELECT message_id
+    FROM MessageThreadItem
+    WHERE conversation_id = :conversation_id
+    AND thread_id = :thread_id
+    AND is_root = 0
+);
+
 updateMainListVisibility:
 UPDATE MessageMainList
 SET visibility = :visibility
 WHERE conversation_id = :conversation_id
 AND message_id = :message_id;
+
+insertMissingThreadRootMessageFromReply:
+INSERT OR IGNORE INTO Message(
+    id,
+    content_type,
+    conversation_id,
+    creation_date,
+    sender_user_id,
+    sender_client_id,
+    status,
+    visibility,
+    expects_read_confirmation
+)
+SELECT
+    :thread_id,
+    'MISSING_THREAD_ROOT',
+    :conversation_id,
+    :created_at,
+    Message.sender_user_id,
+    Message.sender_client_id,
+    'SENT',
+    'VISIBLE',
+    0
+FROM Message
+WHERE Message.conversation_id = :conversation_id
+AND Message.id = :reply_message_id;
 
 upsertThreadRoot:
 INSERT INTO MessageThreadRoot(conversation_id, root_message_id, thread_id, created_at)

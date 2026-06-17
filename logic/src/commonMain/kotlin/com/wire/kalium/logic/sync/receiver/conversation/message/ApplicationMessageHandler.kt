@@ -136,6 +136,7 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.Composite -> Message.Visibility.VISIBLE
                     is MessageContent.Location -> Message.Visibility.VISIBLE
                     is MessageContent.Multipart -> Message.Visibility.VISIBLE
+                    is MessageContent.MissingThreadRoot -> Message.Visibility.VISIBLE
                 }
                 val message = Message.Regular(
                     id = content.messageUid,
@@ -286,6 +287,9 @@ internal class ApplicationMessageHandlerImpl(
             is MessageContent.Composite -> persistRegularMessage(message, threadId)
             is MessageContent.Location -> persistRegularMessage(message, threadId)
             is MessageContent.Multipart -> handleMultipartMessage(message, content, threadId)
+            is MessageContent.MissingThreadRoot -> {
+                logger.i(message = "Missing thread root placeholder ignored in incoming content handling.")
+            }
         }
     }
 
