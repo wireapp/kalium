@@ -37,6 +37,7 @@ public fun MessageContent.Regular.toThreadPayloadOrNull(): ThreadPayload? = when
     is MessageContent.Location,
     is MessageContent.RestrictedAsset,
     is MessageContent.FailedDecryption,
+    MessageContent.MissingThreadRoot,
     is MessageContent.Unknown -> null
 }
 

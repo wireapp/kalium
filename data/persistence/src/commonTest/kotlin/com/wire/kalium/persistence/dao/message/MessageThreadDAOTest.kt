@@ -147,6 +147,81 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenThreadReplyWithoutKnownRoot_whenGettingConversationMessages_thenFakeRootIsShownInMainList() = runTest {
+        insertInitialData()
+        val beforeUpsert = kotlinx.datetime.Clock.System.now()
+        val reply = createMessage("orphan-reply-main", Instant.parse("2026-01-01T00:00:00Z"))
+        val nonThread = createMessage("non-thread-orphan-main", Instant.parse("2026-01-01T00:00:01Z"))
+        messageDAO.insertOrIgnoreMessages(listOf(reply, nonThread))
+
+        messageThreadDAO.upsertThreadItem(conversation.id, reply.id, THREAD_ID_1, false, reply.date, reply.visibility)
+        val afterUpsert = kotlinx.datetime.Clock.System.now()
+
+        val mainList = messageDAO.getMessagesByConversationAndVisibility(
+            conversationId = conversation.id,
+            limit = 50,
+            offset = 0,
+            visibility = listOf(MessageEntity.Visibility.VISIBLE)
+        ).first()
+        val ids = mainList.map { it.id }
+        val fakeRoot = messageDAO.getMessageById(THREAD_ID_1, conversation.id)
+        val rootMapping = messageThreadDAO.getThreadByRootMessage(conversation.id, THREAD_ID_1)
+        val summaries = messageThreadDAO.observeThreadSummariesForRoots(conversation.id, listOf(THREAD_ID_1)).first()
+
+        assertContains(ids, THREAD_ID_1)
+        assertContains(ids, nonThread.id)
+        assertFalse(ids.contains(reply.id))
+        assertIs<MessageEntity.Regular>(fakeRoot)
+        assertIs<MessageEntityContent.MissingThreadRoot>(fakeRoot.content)
+        assertEquals(THREAD_ID_1, rootMapping?.rootMessageId)
+        assertEquals(THREAD_ID_1, rootMapping?.threadId)
+        assertEquals(1L, rootMapping?.visibleReplyCount)
+        val fakeRootCreatedAt = assertNotNull(rootMapping?.createdAt)
+        assertEquals(true, fakeRootCreatedAt >= beforeUpsert)
+        assertEquals(true, fakeRootCreatedAt <= afterUpsert)
+        assertEquals(1, summaries.size)
+        assertEquals(1L, summaries.single().visibleReplyCount)
+    }
+
+    @Test
+    fun givenThreadReplyArrivesBeforeRealRoot_whenRootIsPersisted_thenFakeRootIsReplaced() = runTest {
+        insertInitialData()
+        val root = createMessage(
+            id = THREAD_ID_1,
+            date = Instant.parse("2026-01-01T00:00:00Z"),
+            content = MessageEntityContent.Text("Real root")
+        )
+        val reply = createMessage("early-reply-main", Instant.parse("2026-01-01T00:00:01Z"))
+        val nonThread = createMessage("non-thread-late-root-main", Instant.parse("2026-01-01T00:00:02Z"))
+        messageDAO.insertOrIgnoreMessages(listOf(reply, nonThread))
+
+        messageThreadDAO.upsertThreadItem(conversation.id, reply.id, THREAD_ID_1, false, reply.date, reply.visibility)
+        messageDAO.insertOrIgnoreMessages(listOf(root))
+        messageThreadDAO.upsertThreadRoot(conversation.id, root.id, THREAD_ID_1, root.date)
+        messageThreadDAO.upsertThreadItem(conversation.id, root.id, THREAD_ID_1, true, root.date, root.visibility)
+
+        val mainList = messageDAO.getMessagesByConversationAndVisibility(
+            conversationId = conversation.id,
+            limit = 50,
+            offset = 0,
+            visibility = listOf(MessageEntity.Visibility.VISIBLE)
+        ).first()
+        val ids = mainList.map { it.id }
+        val summary = messageThreadDAO.observeThreadSummariesForRoots(conversation.id, listOf(root.id)).first().single()
+        val persistedRoot = messageDAO.getMessageById(root.id, conversation.id)
+
+        assertContains(ids, root.id)
+        assertContains(ids, nonThread.id)
+        assertFalse(ids.contains(reply.id))
+        assertIs<MessageEntity.Regular>(persistedRoot)
+        val rootContent = assertIs<MessageEntityContent.Text>(persistedRoot.content)
+        assertEquals("Real root", rootContent.messageBody)
+        assertEquals(root.id, summary.rootMessageId)
+        assertEquals(THREAD_ID_1, summary.threadId)
+        assertEquals(1L, summary.visibleReplyCount)
+    }
+
+    @Test
     fun givenThreadPager_whenLoadingThreadMessages_thenOnlyThreadMessagesAreReturned() = runTest {
         insertInitialData()
         val root = createMessage("root-thread", Instant.parse("2026-01-01T00:00:00Z"))

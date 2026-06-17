@@ -152,6 +152,7 @@ internal class AssetMessageHandlerImpl(
             is MessageContent.Composite,
             is MessageContent.Text,
             is MessageContent.Multipart,
+            is MessageContent.MissingThreadRoot,
             is MessageContent.Unknown -> {
                 kaliumLogger.e(
                     "Invalid asset message content type=${persistedMessage.content.getType()} " +

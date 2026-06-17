@@ -107,6 +107,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.RestrictedAsset -> true
             is MessageContent.DeleteForMe -> false
             is MessageContent.Unknown -> false
+            is MessageContent.MissingThreadRoot -> false
             is MessageContent.Availability -> false
             is MessageContent.FailedDecryption -> true
             is MessageContent.MissedCall -> true
@@ -174,6 +175,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.MultipartEdited,
             is MessageContent.DeleteForMe,
             is MessageContent.Unknown,
+            is MessageContent.MissingThreadRoot,
             is MessageContent.Availability,
             is MessageContent.FailedDecryption,
             is MessageContent.Ignored,

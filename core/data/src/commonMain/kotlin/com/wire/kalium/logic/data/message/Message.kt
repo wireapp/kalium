@@ -136,6 +136,10 @@ sealed interface Message {
                     typeKey to "unknown"
                 )
 
+                MessageContent.MissingThreadRoot -> mutableMapOf(
+                    typeKey to "missingThreadRoot"
+                )
+
                 is MessageContent.Composite -> mutableMapOf(
                     typeKey to "composite"
                 )

@@ -24,6 +24,7 @@ inline fun MessageContent.FromProto.typeDescription(): String = when (this) {
     is MessageContent.FailedDecryption -> "FailedDecryption"
     is MessageContent.Knock -> "Knock"
     is MessageContent.Location -> "Location"
+    MessageContent.MissingThreadRoot -> "MissingThreadRoot"
     is MessageContent.RestrictedAsset -> "RestrictedAsset"
     is MessageContent.Text -> "Text"
     is MessageContent.Unknown -> "Unknown"

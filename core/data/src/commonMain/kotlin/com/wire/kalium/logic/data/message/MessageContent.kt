@@ -271,6 +271,8 @@ sealed interface MessageContent {
         val hidden: Boolean = false
     ) : Regular()
 
+    data object MissingThreadRoot : Regular()
+
     data class Cleared(
         val conversationId: ConversationId,
         val time: Instant,
@@ -498,6 +500,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.ConversationProtocolChanged -> "ConversationProtocolChanged"
     is MessageContent.ConversationProtocolChangedDuringACall -> "ConversationProtocolChangedDuringACall"
     is MessageContent.Unknown -> "Unknown"
+    MessageContent.MissingThreadRoot -> "MissingThreadRoot"
     MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
     MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"
     is MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
@@ -591,6 +594,8 @@ sealed interface MessagePreviewContent {
     ) : MessagePreviewContent
 
     data object CryptoSessionReset : MessagePreviewContent
+
+    data object MissingThreadRoot : MessagePreviewContent
 
     data object Unknown : MessagePreviewContent
 

@@ -32,6 +32,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 data class MessageThreadRootEntity(
@@ -130,16 +131,22 @@ internal class MessageThreadDAOImpl internal constructor(
         createdAt: Instant,
     ) {
         withContext(writeDispatcher.value) {
-            queries.upsertThreadRoot(
-                conversation_id = conversationId,
-                root_message_id = rootMessageId,
-                thread_id = threadId,
-                created_at = createdAt,
-            )
-            queries.refreshThreadVisibleReplyCount(
-                conversation_id = conversationId,
-                thread_id = threadId,
-            )
+            queries.transaction {
+                queries.upsertThreadRoot(
+                    conversation_id = conversationId,
+                    root_message_id = rootMessageId,
+                    thread_id = threadId,
+                    created_at = createdAt,
+                )
+                queries.refreshThreadVisibleReplyCount(
+                    conversation_id = conversationId,
+                    thread_id = threadId,
+                )
+                queries.deleteMainListItemsForThreadReplies(
+                    conversation_id = conversationId,
+                    thread_id = threadId,
+                )
+            }
         }
     }
 
@@ -168,14 +175,31 @@ internal class MessageThreadDAOImpl internal constructor(
                     visibility = visibility,
                 )
 
-                if (isRoot) {
-                    queries.upsertMainListItem(
-                        conversation_id = conversationId,
-                        message_id = messageId,
-                        creation_date = creationDate,
-                        visibility = visibility,
+                val threadHasRoot = queries.getRootMessageIdByThreadId(
+                    conversation_id = conversationId,
+                    thread_id = threadId
+                ).executeAsOneOrNull() != null
+
+                val missingRootCreatedAt = if (!isRoot && !threadHasRoot) {
+                    upsertMissingThreadRootFromReply(
+                        conversationId = conversationId,
+                        replyMessageId = messageId,
+                        threadId = threadId,
                     )
                 } else {
+                    null
+                }
+
+                if (isRoot || !threadHasRoot) {
+                    queries.upsertMainListItem(
+                        conversation_id = conversationId,
+                        message_id = if (isRoot) messageId else threadId,
+                        creation_date = if (isRoot) creationDate else missingRootCreatedAt ?: creationDate,
+                        visibility = if (isRoot) visibility else MessageEntity.Visibility.VISIBLE,
+                    )
+                }
+
+                if (!isRoot) {
                     queries.deleteMainListItem(
                         conversation_id = conversationId,
                         message_id = messageId,
@@ -192,6 +216,35 @@ internal class MessageThreadDAOImpl internal constructor(
                 )
             }
         }
+    }
+
+    private suspend fun upsertMissingThreadRootFromReply(
+        conversationId: QualifiedIDEntity,
+        replyMessageId: String,
+        threadId: String,
+    ): Instant {
+        val createdAt = Clock.System.now()
+        queries.insertMissingThreadRootMessageFromReply(
+            thread_id = threadId,
+            conversation_id = conversationId,
+            created_at = createdAt,
+            reply_message_id = replyMessageId,
+        )
+        queries.upsertThreadRoot(
+            conversation_id = conversationId,
+            root_message_id = threadId,
+            thread_id = threadId,
+            created_at = createdAt,
+        )
+        queries.upsertThreadItem(
+            conversation_id = conversationId,
+            thread_id = threadId,
+            message_id = threadId,
+            creation_date = createdAt,
+            is_root = true,
+            visibility = MessageEntity.Visibility.VISIBLE,
+        )
+        return createdAt
     }
 
     private suspend fun updateThreadCountersAfterUpsert(
