@@ -41,12 +41,10 @@ internal actual open class FlowManagerServiceImpl(
     }
 
     actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
-        val videoView = view.view
-        if (videoView == null) {
+        if (!flowManager.attachPlatformVideoView(view)) {
             kaliumLogger.w("AVS iOS: setVideoPreview ignored because view is null")
             return
         }
-        flowManager.attachVideoView(videoView)
         callingLogger.i("AVS iOS: attached remote video view for conversation=${conversationId.value}")
     }
 
@@ -73,3 +71,5 @@ internal actual open class FlowManagerServiceImpl(
         flowManager
     }
 }
+
+internal expect fun AVSFlowManager.attachPlatformVideoView(view: PlatformView): Boolean
