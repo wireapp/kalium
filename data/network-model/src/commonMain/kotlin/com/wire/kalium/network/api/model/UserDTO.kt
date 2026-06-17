@@ -81,7 +81,8 @@ data class SelfUserDTO(
     @SerialName("locale") val locale: String,
     @SerialName("managed_by") val managedByDTO: ManagedByDTO?,
     @SerialName("phone") val phone: String?,
-    @SerialName("sso_id") val ssoID: UserSsoIdDTO?
+    @SerialName("sso_id") val ssoID: UserSsoIdDTO?,
+    @SerialName("text_status") val textStatus: String? = null
 ) : UserDTO()
 
 @Serializable

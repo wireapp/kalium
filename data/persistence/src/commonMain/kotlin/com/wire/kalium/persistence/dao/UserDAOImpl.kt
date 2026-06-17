@@ -52,6 +52,7 @@ class UserMapper {
             previewAssetId = user.preview_asset_id,
             completeAssetId = user.complete_asset_id,
             availabilityStatus = user.user_availability_status,
+            textStatus = user.text_status,
             userType = user.user_type,
             botService = user.bot_service,
             deleted = user.deleted,
@@ -78,6 +79,7 @@ class UserMapper {
             previewAssetId = user.preview_asset_id,
             completeAssetId = user.complete_asset_id,
             availabilityStatus = user.user_availability_status,
+            textStatus = user.text_status,
             userType = user.user_type,
             botService = user.bot_service,
             deleted = user.deleted,
@@ -102,6 +104,7 @@ class UserMapper {
         previewAssetId: QualifiedIDEntity?,
         completeAssetId: QualifiedIDEntity?,
         userAvailabilityStatus: UserAvailabilityStatusEntity,
+        textStatus: String?,
         userType: UserTypeEntity,
         botService: BotIdEntity?,
         deleted: Boolean,
@@ -128,6 +131,7 @@ class UserMapper {
             previewAssetId = previewAssetId,
             completeAssetId = completeAssetId,
             availabilityStatus = userAvailabilityStatus,
+            textStatus = textStatus,
             userType = userType,
             botService = botService,
             deleted = deleted,
@@ -188,6 +192,7 @@ class UserDAOImpl internal constructor(
                     team = user.team,
                     preview_asset_id = user.previewAssetId,
                     complete_asset_id = user.completeAssetId,
+                    text_status = user.textStatus,
                     user_type = user.userType,
                     bot_service = user.botService,
                     incomplete_metadata = false,
@@ -209,6 +214,7 @@ class UserDAOImpl internal constructor(
                 accent_id = update.accentId?.toLong(),
                 preview_asset_id = update.previewAssetId,
                 complete_asset_id = update.completeAssetId,
+                text_status = update.textStatus,
                 supported_protocols = update.supportedProtocols,
                 update.id
             )
@@ -225,6 +231,7 @@ class UserDAOImpl internal constructor(
                     accent_id = user.accentId?.toLong(),
                     preview_asset_id = user.previewAssetId,
                     complete_asset_id = user.completeAssetId,
+                    text_status = user.textStatus,
                     supported_protocols = user.supportedProtocols,
                     user.id
                 )
@@ -243,6 +250,7 @@ class UserDAOImpl internal constructor(
             team = user.team,
             preview_asset_id = user.previewAssetId,
             complete_asset_id = user.completeAssetId,
+            text_status = user.textStatus,
             user_type = user.userType,
             bot_service = user.botService,
             incomplete_metadata = user.hasIncompleteMetadata,
@@ -406,6 +414,12 @@ class UserDAOImpl internal constructor(
     override suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity) {
         withContext(writeDispatcher.value) {
             userQueries.updateUserAvailabilityStatus(status, qualifiedID)
+        }
+    }
+
+    override suspend fun updateUserTextStatus(qualifiedID: QualifiedIDEntity, textStatus: String?) {
+        withContext(writeDispatcher.value) {
+            userQueries.updateUserTextStatus(textStatus, qualifiedID)
         }
     }
 

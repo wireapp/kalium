@@ -21,6 +21,7 @@ CREATE TABLE User (
     preview_asset_id TEXT AS QualifiedIDEntity,
     complete_asset_id TEXT AS QualifiedIDEntity,
     user_availability_status TEXT AS UserAvailabilityStatusEntity NOT NULL DEFAULT 'NONE',
+    text_status TEXT,
     user_type TEXT AS UserTypeEntity NOT NULL DEFAULT 'STANDARD',
     bot_service TEXT AS BotIdEntity,
     deleted INTEGER AS Boolean NOT NULL DEFAULT 0,
@@ -38,8 +39,8 @@ deleteUser:
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
-INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, text_status, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
     name = excluded.name,
     handle = excluded.handle,
@@ -49,6 +50,7 @@ ON CONFLICT(qualified_id) DO UPDATE SET
     team = excluded.team,
     preview_asset_id = excluded.preview_asset_id,
     complete_asset_id = excluded.complete_asset_id,
+    text_status = excluded.text_status,
     user_type = excluded.user_type,
     bot_service = excluded.bot_service,
     deleted = excluded.deleted,
@@ -65,6 +67,7 @@ WHERE -- execute the update only if any of the fields changed
     OR User.team IS NOT excluded.team
     OR User.preview_asset_id IS NOT excluded.preview_asset_id
     OR User.complete_asset_id IS NOT excluded.complete_asset_id
+    OR User.text_status IS NOT excluded.text_status
     OR User.user_type IS NOT excluded.user_type
     OR User.bot_service IS NOT excluded.bot_service
     OR User.deleted IS NOT excluded.deleted
@@ -77,8 +80,8 @@ selectChanges:
 SELECT changes();
 
 insertOrIgnoreUser:
-INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, text_status, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateUser:
 UPDATE OR FAIL User
@@ -89,6 +92,7 @@ email = coalesce(:email, email),
 accent_id = coalesce(:accent_id, accent_id),
 preview_asset_id = :preview_asset_id, preview_asset_id = coalesce(:preview_asset_id, preview_asset_id),
 complete_asset_id = :complete_asset_id, complete_asset_id = coalesce(:complete_asset_id, complete_asset_id),
+text_status = coalesce(:text_status, text_status),
 supported_protocols = :supported_protocols, supported_protocols = coalesce(:supported_protocols, supported_protocols)
 WHERE qualified_id = ?;
 
@@ -101,6 +105,7 @@ email = coalesce(:email, email),
 accent_id = coalesce(:accent_id, accent_id),
 preview_asset_id = :preview_asset_id, preview_asset_id = coalesce(:preview_asset_id, preview_asset_id),
 complete_asset_id = :complete_asset_id, complete_asset_id = coalesce(:complete_asset_id, complete_asset_id),
+text_status = coalesce(:text_status, text_status),
 supported_protocols = :supported_protocols, supported_protocols = coalesce(:supported_protocols, supported_protocols)
 WHERE qualified_id = ?;
 
@@ -160,6 +165,7 @@ User.connection_status,
 User.preview_asset_id,
 User.complete_asset_id,
 User.user_availability_status,
+User.text_status,
 User.user_type,
 User.bot_service,
 User.deleted,
@@ -223,6 +229,9 @@ UPDATE User SET complete_asset_id = ?, preview_asset_id = ? WHERE complete_asset
 
 updateUserAvailabilityStatus:
 UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;
+
+updateUserTextStatus:
+UPDATE User SET text_status = ? WHERE qualified_id = ?;
 
 getUsersNotInConversationByNameOrHandleOrEmail:
 SELECT * FROM UserDetails AS user

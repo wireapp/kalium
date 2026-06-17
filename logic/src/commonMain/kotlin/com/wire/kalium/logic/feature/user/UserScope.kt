@@ -212,6 +212,8 @@ public class UserScope internal constructor(
     public val getUserInfo: GetUserInfoUseCase get() = GetUserInfoUseCaseImpl(userRepository, teamRepository)
     public val updateSelfAvailabilityStatus: UpdateSelfAvailabilityStatusUseCase
         get() = UpdateSelfAvailabilityStatusUseCase(accountRepository, messageSender, clientIdProvider, selfUserId)
+    public val updateSelfTextStatus: UpdateSelfTextStatusUseCase
+        get() = UpdateSelfTextStatusUseCase(accountRepository)
     public val getAllContactsNotInConversation: GetAllContactsNotInConversationUseCase
         get() = GetAllContactsNotInConversationUseCase(userRepository)
 
