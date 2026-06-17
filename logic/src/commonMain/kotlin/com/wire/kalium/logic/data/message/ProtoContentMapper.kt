@@ -198,7 +198,9 @@ internal class ProtoContentMapperImpl(
             is MessageContent.CompositeEdited,
             is MessageContent.FailedDecryption,
             is MessageContent.RestrictedAsset,
-            is MessageContent.Unknown, MessageContent.Ignored ->
+            is MessageContent.Unknown,
+            is MessageContent.MissingThreadRoot,
+            MessageContent.Ignored ->
                 throw IllegalArgumentException(
                     "Unexpected message content type: ${readableContent.getType()}"
                 )
@@ -399,6 +401,7 @@ internal class ProtoContentMapperImpl(
             is MessageContent.FailedDecryption,
             is MessageContent.RestrictedAsset,
             is MessageContent.Unknown,
+            is MessageContent.MissingThreadRoot,
             is MessageContent.Availability,
             is MessageContent.Calling,
             is MessageContent.Cleared,

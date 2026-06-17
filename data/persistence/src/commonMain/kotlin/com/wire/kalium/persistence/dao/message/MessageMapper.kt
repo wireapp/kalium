@@ -225,6 +225,7 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_MESSAGE_TIMER_CHANGED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_CREATED -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.MLS_WRONG_EPOCH_WARNING -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.MISSING_THREAD_ROOT -> MessagePreviewEntityContent.MissingThreadRoot
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> MessagePreviewEntityContent.ConversationVerificationDegradedMls
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PROTEUS -> MessagePreviewEntityContent.ConversationVerificationDegradedProteus
             MessageEntity.ContentType.UNKNOWN -> MessagePreviewEntityContent.Unknown
@@ -799,6 +800,8 @@ object MessageMapper {
                 encodedData = unknownContentData
             )
 
+            MessageEntity.ContentType.MISSING_THREAD_ROOT -> MessageEntityContent.MissingThreadRoot
+
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessageEntityContent.FailedDecryption(
                 encodedData = failedToDecryptData,
                 code = decryptionErrorCode?.toInt(),
@@ -1120,6 +1123,8 @@ object MessageMapper {
                 quotedMessage = quotedMessage,
                 attachments = messageAttachmentsFromJsonString(attachments),
             )
+
+            MessageEntity.ContentType.MISSING_THREAD_ROOT -> MessageEntityContent.MissingThreadRoot
 
             else -> {
                 MessageEntityContent.Unknown("Unsupported content type for thread pagination: $contentType")

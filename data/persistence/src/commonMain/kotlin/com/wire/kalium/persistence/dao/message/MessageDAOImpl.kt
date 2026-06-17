@@ -233,6 +233,10 @@ internal class MessageDAOImpl internal constructor(
      */
     private suspend fun insertInDB(message: MessageEntity, withUnreadEvents: Boolean = true, checkAssetUpdate: Boolean = true) {
         // do not add withContext
+        if (replaceMissingThreadRootPlaceholderIfNeeded(message)) {
+            return
+        }
+
         if (!updateIdIfAlreadyExists(message)) {
             if (checkAssetUpdate && isValidAssetMessageUpdate(message)) {
                 updateAssetMessage(message)
