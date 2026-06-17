@@ -27,6 +27,8 @@ message BackupData {
     repeated ExportedMessage messages = 3;
     repeated ExportUser users = 4;
     repeated ExportedReaction reactions = 5;
+    repeated ExportedMessageThreadRoot message_thread_roots = 6;
+    repeated ExportedMessageThreadItem message_thread_items = 7;
 }
 
 message BackupInfo {
@@ -68,6 +70,21 @@ message ExportedMessage {
     optional int64 web_pk = 9; // WARNING: Only for development. Web-specific for assisting with debugging
     optional int64 lastEditTime = 10;
     optional string thread_id = 11;
+}
+
+message ExportedMessageThreadRoot {
+    required string root_message_id = 1;
+    required ExportedQualifiedId conversation_id = 2;
+    required string thread_id = 3;
+    required int64 created_at = 4;
+}
+
+message ExportedMessageThreadItem {
+    required string message_id = 1;
+    required ExportedQualifiedId conversation_id = 2;
+    required string thread_id = 3;
+    required int64 creation_date = 4;
+    required bool is_root = 5;
 }
 
 message ExportedReaction {
