@@ -37,7 +37,11 @@ public class BackupData(
     @ShouldRefineInSwift
     public val messages: Array<BackupMessage>,
     @ShouldRefineInSwift
-    public val reactions: Array<BackupReaction> = emptyArray()
+    public val reactions: Array<BackupReaction> = emptyArray(),
+    @ShouldRefineInSwift
+    public val messageThreadRoots: Array<BackupMessageThreadRoot> = emptyArray(),
+    @ShouldRefineInSwift
+    public val messageThreadItems: Array<BackupMessageThreadItem> = emptyArray()
 ) {
     @ObjCName("users")
     public val userList: List<BackupUser> get() = users.toList()
@@ -50,6 +54,12 @@ public class BackupData(
 
     @ObjCName("reactions")
     public val reactionList: List<BackupReaction> get() = reactions.toList()
+
+    @ObjCName("messageThreadRoots")
+    public val messageThreadRootList: List<BackupMessageThreadRoot> get() = messageThreadRoots.toList()
+
+    @ObjCName("messageThreadItems")
+    public val messageThreadItemList: List<BackupMessageThreadItem> get() = messageThreadItems.toList()
 }
 
 @JsExport
@@ -305,3 +315,59 @@ public sealed class BackupMessageContent {
         val zoom: Int?,
     ) : BackupMessageContent()
 }
+
+/**
+ * Represents the root message of a thread in a backup.
+ * Captures metadata about the thread including creation time and reply count.
+ *
+ * @property rootMessageId The unique identifier of the message that starts the thread.
+ * @property conversationId The qualified ID of the conversation containing this thread.
+ * @property threadId The unique identifier of the thread.
+ * @property createdAt The timestamp when the thread was created.
+ * @property visibleReplyCount The number of visible replies in the thread.
+ * @property lastReplyDate The timestamp of the last reply in the thread, if any.
+ */
+@JsExport
+@Serializable
+public data class BackupMessageThreadRoot(
+    @SerialName("rootMessageId")
+    val rootMessageId: String,
+    @SerialName("conversationId")
+    val conversationId: BackupQualifiedId,
+    @SerialName("threadId")
+    val threadId: String,
+    @SerialName("createdAt")
+    val createdAt: BackupDateTime,
+    @SerialName("visibleReplyCount")
+    val visibleReplyCount: Int,
+    @SerialName("lastReplyDate")
+    val lastReplyDate: BackupDateTime? = null,
+)
+
+/**
+ * Represents a message that is part of a thread in a backup.
+ * Captures information about each message in the thread.
+ *
+ * @property messageId The unique identifier of the message.
+ * @property conversationId The qualified ID of the conversation containing this thread.
+ * @property threadId The unique identifier of the thread this message belongs to.
+ * @property creationDate The timestamp when the thread was created.
+ * @property isRoot Whether this message is the root of the thread.
+ * @property visibility The visibility state of the message.
+ */
+@JsExport
+@Serializable
+public data class BackupMessageThreadItem(
+    @SerialName("messageId")
+    val messageId: String,
+    @SerialName("conversationId")
+    val conversationId: BackupQualifiedId,
+    @SerialName("threadId")
+    val threadId: String,
+    @SerialName("creationDate")
+    val creationDate: BackupDateTime,
+    @SerialName("isRoot")
+    val isRoot: Boolean,
+    @SerialName("visibility")
+    val visibility: String,
+)
