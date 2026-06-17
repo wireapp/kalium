@@ -320,6 +320,7 @@ internal class MessageMapperImpl(
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null
             MessageEntity.ContentType.UNKNOWN -> null
+            MessageEntity.ContentType.MISSING_THREAD_ROOT -> null
             MessageEntity.ContentType.FAILED_DECRYPTION -> null
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> null
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> null
@@ -409,6 +410,7 @@ internal class MessageMapperImpl(
 
         // We store the unknown fields of the message in case we want to start handling them in the future
         is MessageContent.Unknown -> MessageEntityContent.Unknown(regularMessage.typeName, regularMessage.encodedData)
+        MessageContent.MissingThreadRoot -> MessageEntityContent.MissingThreadRoot
 
         // We don't care about the content of these messages as they are only used to perform other actions, i.e. update the content of a
         // previously stored message, delete the content of a previously stored message, etc... Therefore, we map their content to Unknown
@@ -581,6 +583,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.TeamMemberRemoved_Legacy -> MessagePreviewContent.WithUser.TeamMemberRemoved(userName)
     is MessagePreviewEntityContent.Text -> MessagePreviewContent.WithUser.Text(username = senderName, messageBody = messageBody)
     is MessagePreviewEntityContent.CryptoSessionReset -> MessagePreviewContent.CryptoSessionReset
+    MessagePreviewEntityContent.MissingThreadRoot -> MessagePreviewContent.MissingThreadRoot
     MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
     is MessagePreviewEntityContent.Composite -> MessagePreviewContent.WithUser.Composite(username = senderName, messageBody = messageBody)
     is MessagePreviewEntityContent.ConversationVerifiedMls -> MessagePreviewContent.VerificationChanged.VerifiedMls
@@ -661,6 +664,7 @@ internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, self
     )
 
     is MessageEntityContent.Unknown -> MessageContent.Unknown(this.typeName, this.encodedData, hidden)
+    MessageEntityContent.MissingThreadRoot -> MessageContent.MissingThreadRoot
     is MessageEntityContent.FailedDecryption -> MessageContent.FailedDecryption(
         this.encodedData,
         this.code,

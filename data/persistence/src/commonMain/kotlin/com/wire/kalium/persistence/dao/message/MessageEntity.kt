@@ -148,7 +148,8 @@ sealed interface MessageEntity {
         CONVERSATION_DEGRADED_PROTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PROTEUS, COMPOSITE, FEDERATION,
         CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_PROTOCOL_CHANGED_DURING_CALL,
         CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD, MULTIPART,
-        CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED, CONVERSATION_APPS_ENABLED_CHANGED
+        CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED, CONVERSATION_APPS_ENABLED_CHANGED,
+        MISSING_THREAD_ROOT
     }
 
     enum class MemberChangeType {
@@ -322,6 +323,8 @@ sealed class MessageEntityContent {
         val encodedData: ByteArray? = null
     ) : Regular()
 
+    data object MissingThreadRoot : Regular()
+
     data class FailedDecryption(
         val encodedData: ByteArray? = null,
         val code: Int?,
@@ -428,6 +431,7 @@ data class NotificationMessageEntity(
 sealed class MessagePreviewEntityContent {
 
     data class Deleted(val senderName: String?) : MessagePreviewEntityContent()
+    data object MissingThreadRoot : MessagePreviewEntityContent()
     data class Text(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
 
     data class Composite(val senderName: String?, val messageBody: String?) : MessagePreviewEntityContent()

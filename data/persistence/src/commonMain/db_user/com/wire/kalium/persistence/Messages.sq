@@ -275,6 +275,38 @@ SELECT sender_user_id FROM Message WHERE id = ? AND conversation_id = ?;
 selectChanges:
 SELECT changes();
 
+isMissingThreadRootPlaceholder:
+SELECT COUNT(*)
+FROM Message
+WHERE id = :message_id
+AND conversation_id = :conversation_id
+AND content_type = 'MISSING_THREAD_ROOT';
+
+replaceMissingThreadRootMessage:
+UPDATE Message
+SET
+    content_type = :content_type,
+    creation_date = :creation_date,
+    sender_user_id = :sender_user_id,
+    sender_client_id = :sender_client_id,
+    status = :status,
+    last_edit_date = :last_edit_date,
+    visibility = :visibility,
+    expects_read_confirmation = :expects_read_confirmation,
+    expire_after_millis = :expire_after_millis,
+    self_deletion_end_date = :self_deletion_end_date
+WHERE id = :id
+AND conversation_id = :conversation_id;
+
+clearMessageContentForReplacement {
+   DELETE FROM MessageTextContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageSystemContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageUnknownContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageRestrictedAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageConversationLocationContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+}
+
 insertOrIgnoreMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, last_edit_date, visibility, expects_read_confirmation, expire_after_millis, self_deletion_end_date)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);

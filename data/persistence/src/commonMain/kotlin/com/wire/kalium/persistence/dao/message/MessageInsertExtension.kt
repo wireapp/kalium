@@ -52,6 +52,7 @@ internal interface MessageInsertExtension {
      */
     suspend fun isValidAssetMessageUpdate(message: MessageEntity): Boolean
     suspend fun updateAssetMessage(message: MessageEntity)
+    suspend fun replaceMissingThreadRootPlaceholderIfNeeded(message: MessageEntity): Boolean
     fun contentTypeOf(content: MessageEntityContent): MessageEntity.ContentType
     suspend fun insertMessageOrIgnore(message: MessageEntity, withUnreadEvents: Boolean = true)
 }
@@ -115,6 +116,49 @@ internal class MessageInsertExtensionImpl(
                 newVisibility = message.visibility,
             )
         }
+    }
+
+    override suspend fun replaceMissingThreadRootPlaceholderIfNeeded(message: MessageEntity): Boolean {
+        val isPlaceholder = messagesQueries.isMissingThreadRootPlaceholder(
+            message_id = message.id,
+            conversation_id = message.conversationId,
+        ).awaitAsList().firstOrNull() == 1L
+
+        if (!isPlaceholder) return false
+
+        messagesQueries.replaceMissingThreadRootMessage(
+            content_type = contentTypeOf(message.content),
+            creation_date = message.date,
+            sender_user_id = message.senderUserId,
+            sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
+            status = message.status,
+            last_edit_date =
+                if (message is MessageEntity.Regular && message.editStatus is MessageEntity.EditStatus.Edited) message.editStatus.lastDate
+                else null,
+            visibility = message.visibility,
+            expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false,
+            expire_after_millis = if (message is MessageEntity.Regular) message.expireAfterMs else null,
+            self_deletion_end_date = if (message is MessageEntity.Regular) message.selfDeletionEndDate else null,
+            id = message.id,
+            conversation_id = message.conversationId,
+        )
+        messagesQueries.clearMessageContentForReplacement(
+            message_id = message.id,
+            conversation_id = message.conversationId,
+        )
+        insertMessageContent(message)
+        messageThreadsQueries.upsertMainListItem(
+            conversation_id = message.conversationId,
+            message_id = message.id,
+            creation_date = message.date,
+            visibility = message.visibility,
+        )
+        messageThreadsQueries.syncThreadItemVisibilityIfNeeded(
+            conversationId = message.conversationId,
+            messageId = message.id,
+            newVisibility = message.visibility,
+        )
+        return true
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -419,6 +463,10 @@ internal class MessageInsertExtensionImpl(
                 /* no-op */
             }
 
+            MessageEntityContent.MissingThreadRoot -> {
+                /* no-op */
+            }
+
             is MessageEntityContent.ConversationAppsAccessChanged -> messagesQueries.insertSystemConversationAppsEnabledChanged(
                 message_id = message.id,
                 conversation_id = message.conversationId,
@@ -489,6 +537,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.NewConversationWithCellMessage,
                 is MessageEntityContent.ConversationAppsAccessChanged,
                 is MessageEntityContent.NewConversationWithCellSelfDeleteDisabledMessage,
+                MessageEntityContent.MissingThreadRoot,
                     -> {
                     /* no-op */
                 }
@@ -562,6 +611,7 @@ internal class MessageInsertExtensionImpl(
         is MessageEntityContent.MemberChange -> MessageEntity.ContentType.MEMBER_CHANGE
         is MessageEntityContent.MissedCall -> MessageEntity.ContentType.MISSED_CALL
         is MessageEntityContent.Unknown -> MessageEntity.ContentType.UNKNOWN
+        MessageEntityContent.MissingThreadRoot -> MessageEntity.ContentType.MISSING_THREAD_ROOT
         is MessageEntityContent.FailedDecryption -> MessageEntity.ContentType.FAILED_DECRYPTION
         is MessageEntityContent.RestrictedAsset -> MessageEntity.ContentType.RESTRICTED_ASSET
         is MessageEntityContent.ConversationRenamed -> MessageEntity.ContentType.CONVERSATION_RENAMED
