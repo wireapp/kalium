@@ -113,6 +113,17 @@ internal interface MessageThreadRepository {
         messageId: String,
     ): Either<StorageFailure, String?>
 
+    suspend fun getThreadParticipantIds(
+        conversationId: ConversationId,
+        threadId: String,
+    ): Either<StorageFailure, List<UserId>>
+
+    suspend fun moveThreadMessagesToConversation(
+        sourceConversationId: ConversationId,
+        threadId: String,
+        targetConversationId: ConversationId,
+    ): Either<StorageFailure, Unit>
+
     fun observeThreadSummariesForRoots(
         conversationId: ConversationId,
         rootMessageIds: List<String>,
@@ -186,6 +197,28 @@ internal class MessageThreadRepositoryImpl internal constructor(
         messageId: String,
     ): Either<StorageFailure, String?> = wrapStorageNullableRequest {
         dao.getThreadIdByMessageId(conversationId.toDao(), messageId)
+    }
+
+    override suspend fun getThreadParticipantIds(
+        conversationId: ConversationId,
+        threadId: String,
+    ): Either<StorageFailure, List<UserId>> = wrapStorageRequest {
+        dao.getThreadParticipantIds(
+            conversationId = conversationId.toDao(),
+            threadId = threadId,
+        ).map { it.toModel() }
+    }
+
+    override suspend fun moveThreadMessagesToConversation(
+        sourceConversationId: ConversationId,
+        threadId: String,
+        targetConversationId: ConversationId,
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        dao.moveThreadMessagesToConversation(
+            sourceConversationId = sourceConversationId.toDao(),
+            threadId = threadId,
+            targetConversationId = targetConversationId.toDao(),
+        )
     }
 
     override fun observeThreadSummariesForRoots(

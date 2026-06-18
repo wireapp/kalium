@@ -132,6 +132,17 @@ interface MessageThreadDAO {
         messageId: String,
     ): String?
 
+    suspend fun getThreadParticipantIds(
+        conversationId: QualifiedIDEntity,
+        threadId: String,
+    ): List<QualifiedIDEntity>
+
+    suspend fun moveThreadMessagesToConversation(
+        sourceConversationId: QualifiedIDEntity,
+        threadId: String,
+        targetConversationId: QualifiedIDEntity,
+    )
+
     suspend fun countThreadRootsForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
 
     suspend fun getThreadRootsForBackup(
@@ -420,6 +431,44 @@ internal class MessageThreadDAOImpl internal constructor(
             conversation_id = conversationId,
             message_id = messageId
         ).executeAsOneOrNull()
+    }
+
+    override suspend fun getThreadParticipantIds(
+        conversationId: QualifiedIDEntity,
+        threadId: String,
+    ): List<QualifiedIDEntity> = withContext(readDispatcher.value) {
+        queries.selectThreadParticipantIds(
+            conversation_id = conversationId,
+            thread_id = threadId,
+        ).executeAsList()
+    }
+
+    override suspend fun moveThreadMessagesToConversation(
+        sourceConversationId: QualifiedIDEntity,
+        threadId: String,
+        targetConversationId: QualifiedIDEntity,
+    ) {
+        withContext(writeDispatcher.value) {
+            queries.transaction {
+                queries.moveThreadMessagesToConversation(
+                    source_conversation_id = sourceConversationId,
+                    thread_id = threadId,
+                    target_conversation_id = targetConversationId,
+                )
+                queries.upsertMovedThreadMessagesIntoMainList(
+                    conversation_id = targetConversationId,
+                    thread_id = threadId,
+                )
+                queries.deleteThreadItemsByThreadId(
+                    conversation_id = targetConversationId,
+                    thread_id = threadId,
+                )
+                queries.deleteThreadRootByThreadId(
+                    conversation_id = targetConversationId,
+                    thread_id = threadId,
+                )
+            }
+        }
     }
 
     override suspend fun countThreadRootsForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long =

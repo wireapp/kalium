@@ -2425,6 +2425,7 @@ public class UserSessionScope internal constructor(
             refreshUsersWithoutMetadata,
             sessionManager.getServerConfig().links,
             messages.messageRepository,
+            messageThreadRepository,
             assetRepository,
             newGroupConversationSystemMessagesCreator,
             deleteConversationUseCase,
