@@ -224,13 +224,6 @@ public class ConversationScope internal constructor(
     public val createRegularGroup: CreateRegularGroupUseCase
         get() = CreateRegularGroupUseCaseImpl(createGroupConversation)
 
-    public val createConversationFromThread: CreateConversationFromThreadUseCase
-        get() = CreateConversationFromThreadUseCase(
-            messageThreadRepository = messageThreadRepository,
-            createRegularGroup = createRegularGroup,
-            selfUserId = selfUserId,
-        )
-
     public val createChannel: CreateChannelUseCase
         get() = CreateChannelUseCase(createGroupConversation)
 
