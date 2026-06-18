@@ -223,6 +223,7 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.DataTransfer -> dataTransferEventHandler.handle(signaling, content)
+            is MessageContent.ThreadFollow -> handleThreadFollow(signaling, content)
             is MessageContent.InCallEmoji -> inCallReactionsRepository.addInCallReaction(
                 conversationId = signaling.conversationId,
                 senderUserId = signaling.senderUserId,
@@ -255,6 +256,24 @@ internal class ApplicationMessageHandlerImpl(
 
         logger.i(message = "Persisting crypto session reset system message..")
         persistMessage(message)
+    }
+
+    private suspend fun handleThreadFollow(
+        signaling: Message.Signaling,
+        content: MessageContent.ThreadFollow,
+    ) {
+        if (signaling.senderUserId != selfUserId) return
+
+        messageThreadRepository.updateThreadFollowState(
+            conversationId = content.conversationId,
+            threadId = content.threadId,
+            isFollowing = content.isFollowing,
+        ).onFailure {
+            logger.e(
+                "Failed to update thread follow state for conversation=${content.conversationId} " +
+                    "threadId=${content.threadId}"
+            )
+        }
     }
 
     private suspend fun processMessage(message: Message.Regular, threadId: String?) {

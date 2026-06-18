@@ -264,6 +264,13 @@ sealed interface Message {
                     "content" to content.emojis
                 )
 
+                is MessageContent.ThreadFollow -> mutableMapOf(
+                    typeKey to "threadFollow",
+                    "conversationId" to content.conversationId.toLogString(),
+                    "threadId" to content.threadId,
+                    "isFollowing" to content.isFollowing,
+                )
+
                 is MessageContent.CompositeEdited -> mutableMapOf(
                     typeKey to "compositeEdited"
                 )

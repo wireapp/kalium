@@ -78,6 +78,23 @@ class MessageNotificationsTest : BaseMessageTest() {
     }
 
     @Test
+    fun givenMessageInUnfollowedThread_whenNotificationsAreChecked_thenNotificationIsSuppressed() = runTest {
+        val root = SELF_MESSAGE.copy(id = "UNFOLLOWED_THREAD_ROOT")
+        val reply = OTHER_MESSAGE.copy(id = "UNFOLLOWED_THREAD_REPLY", date = root.date.plus(1.hours))
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessages(listOf(root, reply))
+        messageThreadDAO.upsertThreadRoot(TEST_CONVERSATION_1.id, root.id, THREAD_ID, root.date)
+        messageThreadDAO.upsertThreadItem(TEST_CONVERSATION_1.id, root.id, THREAD_ID, true, root.date, root.visibility)
+        messageThreadDAO.upsertThreadItem(TEST_CONVERSATION_1.id, reply.id, THREAD_ID, false, reply.date, reply.visibility)
+        messageThreadDAO.updateThreadFollowState(TEST_CONVERSATION_1.id, THREAD_ID, isFollowing = false)
+
+        val needsNotification = messageDAO.needsToBeNotified(reply.id, reply.conversationId)
+
+        assertFalse(needsNotification)
+        assertEquals(0, messageDAO.getNotificationMessage().size)
+    }
+
+    @Test
     fun givenConversation_whenMessageWithReplyOnMyMessageInserted_thenNotificationMarkedAsReply() = runTest {
         val message = SELF_MESSAGE
         val replyMessage = OTHER_QUOTING_SELF
@@ -439,5 +456,7 @@ class MessageNotificationsTest : BaseMessageTest() {
                 messageBody = "@${SELF_USER.name} @${OTHER_USER_2.name}", mentions = listOf(SELF_MENTION)
             )
         )
+
+        const val THREAD_ID = "thread-id"
     }
 }

@@ -292,6 +292,80 @@ class ApplicationMessageHandlerTest {
     }
 
     @Test
+    fun givenThreadFollowStatusFromSelf_whenHandling_thenThreadFollowStateIsUpdated() = runTest {
+        val messageId = "messageId"
+        val threadId = "thread-id"
+        val threadFollowContent = MessageContent.ThreadFollow(
+            conversationId = TestConversation.ID,
+            threadId = threadId,
+            isFollowing = false,
+        )
+        val protoContent = ProtoContent.Readable(
+            messageUid = messageId,
+            messageContent = threadFollowContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withThreadFollowStateUpdateReturning(Either.Right(Unit))
+            .arrange()
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent, senderUserId = TestUser.SELF.id)
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageThreadRepository.updateThreadFollowState(
+                TestConversation.ID,
+                threadId,
+                false,
+            )
+        }
+    }
+
+    @Test
+    fun givenThreadFollowStatusFromOtherUser_whenHandling_thenThreadFollowStateIsIgnored() = runTest {
+        val messageId = "messageId"
+        val threadId = "thread-id"
+        val threadFollowContent = MessageContent.ThreadFollow(
+            conversationId = TestConversation.ID,
+            threadId = threadId,
+            isFollowing = false,
+        )
+        val protoContent = ProtoContent.Readable(
+            messageUid = messageId,
+            messageContent = threadFollowContent,
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withThreadFollowStateUpdateReturning(Either.Right(Unit))
+            .arrange()
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent, senderUserId = TestUser.USER_ID)
+
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageThreadRepository.updateThreadFollowState(any(), any(), any())
+        }
+    }
+
+    @Test
     fun givenInCallReactionReceived_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
         // given
         val messageId = "messageId"
@@ -393,7 +467,7 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageThreadRepository.upsertThreadItem(
                 messageEvent.conversationId,
                 messageId,
@@ -402,16 +476,16 @@ class ApplicationMessageHandlerTest {
                 messageEvent.messageInstant,
                 Message.Visibility.VISIBLE,
             )
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageThreadRepository.upsertThreadRoot(
                 messageEvent.conversationId,
                 threadId,
                 threadId,
                 messageEvent.messageInstant
             )
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageThreadRepository.upsertThreadItem(
                 messageEvent.conversationId,
                 threadId,
@@ -420,7 +494,7 @@ class ApplicationMessageHandlerTest {
                 messageEvent.messageInstant,
                 Message.Visibility.VISIBLE,
             )
-        }.wasInvoked(exactly = once)
+        }
     }
 
     @Test
@@ -465,7 +539,7 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        coVerify {
+        verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageThreadRepository.upsertThreadItem(
                 messageEvent.conversationId,
                 messageId,
@@ -474,16 +548,16 @@ class ApplicationMessageHandlerTest {
                 messageEvent.messageInstant,
                 Message.Visibility.VISIBLE,
             )
-        }.wasInvoked(exactly = once)
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.messageThreadRepository.upsertThreadRoot(
                 any(),
                 any(),
                 any(),
                 any(),
             )
-        }.wasNotInvoked()
-        coVerify {
+        }
+        verifySuspend(VerifyMode.not) {
             arrangement.messageThreadRepository.upsertThreadItem(
                 any(),
                 threadId,
@@ -492,7 +566,7 @@ class ApplicationMessageHandlerTest {
                 any(),
                 any(),
             )
-        }.wasNotInvoked()
+        }
     }
 
     private class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -516,7 +590,7 @@ class ApplicationMessageHandlerTest {
         val buttonActionHandler = mock<ButtonActionHandler>(MockMode.autoUnit)
         val messageCompositeEditHandler = mock<MessageCompositeEditHandler>(MockMode.autoUnit)
         val callingMessageHandler = mock<CallingMessageHandler>(MockMode.autoUnit)
-        val messageThreadRepository = mock(MessageThreadRepository::class)
+        val messageThreadRepository = mock<MessageThreadRepository>(MockMode.autoUnit)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
@@ -537,8 +611,8 @@ class ApplicationMessageHandlerTest {
             inCallReactionsRepository,
             buttonActionHandler,
             messageCompositeEditHandler,
-            callingMessageHandler,
             messageThreadRepository,
+            callingMessageHandler,
             TestUser.SELF.id
         )
 
@@ -604,6 +678,12 @@ class ApplicationMessageHandlerTest {
             everySuspend {
                 messageThreadRepository.upsertThreadItem(any(), any(), any(), any(), any(), any())
             }.returns(Either.Right(Unit))
+        }
+
+        fun withThreadFollowStateUpdateReturning(result: Either<StorageFailure, Unit>) = apply {
+            everySuspend {
+                messageThreadRepository.updateThreadFollowState(any(), any(), any())
+            }.returns(result)
         }
 
         fun arrange() = this to applicationMessageHandler

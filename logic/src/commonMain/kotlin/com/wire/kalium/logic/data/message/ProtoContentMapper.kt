@@ -71,6 +71,7 @@ import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
+import com.wire.kalium.protobuf.messages.ThreadFollow
 import com.wire.kalium.protobuf.messages.TrackingIdentifier
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
@@ -212,6 +213,7 @@ internal class ProtoContentMapperImpl(
             is MessageContent.Location -> packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
 
             is MessageContent.DataTransfer -> packDataTransfer(readableContent)
+            is MessageContent.ThreadFollow -> packThreadFollow(readableContent)
             is MessageContent.InCallEmoji -> packInCallEmoji(readableContent)
             is MessageContent.Multipart -> packMultipart(readableContent, expectsReadConfirmation, legalHoldStatus)
             is MessageContent.History -> packHistoryMessage(readableContent)
@@ -419,6 +421,7 @@ internal class ProtoContentMapperImpl(
             is MessageContent.CompositeEdited,
             is MessageContent.MultipartEdited,
             is MessageContent.DataTransfer,
+            is MessageContent.ThreadFollow,
             is MessageContent.InCallEmoji,
             is MessageContent.History,
             is MessageContent.Multipart -> throw IllegalArgumentException(
@@ -482,6 +485,7 @@ internal class ProtoContentMapperImpl(
                 is GenericMessage.Content.Knock,
                 is GenericMessage.Content.LastRead,
                 is GenericMessage.Content.Reaction,
+                is GenericMessage.Content.ThreadFollow,
                 null -> false
             }
             val legalHoldStatus = getLegalHoldStatusFromProtoContent(genericMessage)
@@ -573,6 +577,7 @@ internal class ProtoContentMapperImpl(
             is GenericMessage.Content.ClientAction -> MessageContent.ClientAction
             is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
             is GenericMessage.Content.DataTransfer -> unpackDataTransfer(protoContent)
+            is GenericMessage.Content.ThreadFollow -> unpackThreadFollow(protoContent)
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
             is GenericMessage.Content.Edited -> unpackEdited(protoContent, genericMessage)
             is GenericMessage.Content.Ephemeral -> unpackEphemeral(protoContent)
@@ -864,6 +869,20 @@ internal class ProtoContentMapperImpl(
                 identifier = trackingIdentifier.identifier
             )
         }
+    )
+
+    private fun packThreadFollow(readableContent: MessageContent.ThreadFollow) = GenericMessage.Content.ThreadFollow(
+        ThreadFollow(
+            qualifiedConversationId = idMapper.toProtoModel(readableContent.conversationId),
+            threadId = readableContent.threadId,
+            isFollowing = readableContent.isFollowing,
+        )
+    )
+
+    private fun unpackThreadFollow(protoContent: GenericMessage.Content.ThreadFollow) = MessageContent.ThreadFollow(
+        conversationId = idMapper.fromProtoModel(protoContent.value.qualifiedConversationId),
+        threadId = protoContent.value.threadId,
+        isFollowing = protoContent.value.isFollowing,
     )
 
     private fun packCleared(readableContent: MessageContent.Cleared) = GenericMessage.Content.Cleared(

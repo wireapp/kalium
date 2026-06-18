@@ -135,6 +135,30 @@ class ProtoContentMapperTest {
     }
 
     @Test
+    fun givenThreadFollowContent_whenMappingToProtoDataAndBack_thenFollowStateShouldBePreserved() {
+        val protoContent = ProtoContent.Readable(
+            messageUid = TEST_MESSAGE_UUID,
+            messageContent = MessageContent.ThreadFollow(
+                conversationId = TEST_CONVERSATION_ID,
+                threadId = TEST_THREAD_ID,
+                isFollowing = false,
+            ),
+            expectsReadConfirmation = false,
+            legalHoldStatus = Conversation.LegalHoldStatus.DISABLED
+        )
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val genericMessage = GenericMessage.decodeFromByteArray(encoded.data)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        val genericContent = genericMessage.content
+        assertIs<GenericMessage.Content.ThreadFollow>(genericContent)
+        assertEquals(TEST_THREAD_ID, genericContent.value.threadId)
+        assertEquals(false, genericContent.value.isFollowing)
+        assertEquals(decoded, protoContent)
+    }
+
+    @Test
     fun givenThreadedTextContent_whenDecoding_thenKeepsOriginalRegularContent() {
         val genericMessage = GenericMessage(
             messageId = TEST_MESSAGE_UUID,

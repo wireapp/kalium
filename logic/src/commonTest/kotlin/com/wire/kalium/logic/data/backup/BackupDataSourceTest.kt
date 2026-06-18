@@ -366,6 +366,44 @@ class BackupDataSourceTest {
         assertContentEquals(listOf(mainMessage.id, threadId), mainListIds)
     }
 
+    @Test
+    fun givenThreadFollowStateAlreadyExists_whenRestoringThreadRoot_thenBackupStateIsIgnored() = runTest {
+        val conversation = createTestConversation("restore-stale-follow-state-conversation")
+        val root = createTestMessage(conversation.id, "restore-stale-follow-state-root", userId)
+        val threadId = root.id
+
+        subject.insertUsers(listOf(createTestUser(userId.value)))
+        subject.insertConversations(listOf(conversation))
+        subject.insertMessages(listOf(root))
+        subject.insertThreadRoots(
+            listOf(
+                BackupThreadRootData(
+                    conversationId = conversation.id,
+                    rootMessageId = root.id,
+                    threadId = threadId,
+                    createdAt = root.date,
+                    isFollowing = false,
+                )
+            )
+        )
+
+        subject.insertThreadRoots(
+            listOf(
+                BackupThreadRootData(
+                    conversationId = conversation.id,
+                    rootMessageId = root.id,
+                    threadId = threadId,
+                    createdAt = root.date,
+                    isFollowing = true,
+                )
+            )
+        )
+
+        val followState = testDatabase.builder.messageThreadDAO.getThreadFollowState(conversation.id.toDao(), threadId)
+
+        assertEquals(false, followState)
+    }
+
     private fun createTestUser(id: String) = TestUser.OTHER.copy(id = UserId(id, userId.domain))
 
     private fun createTestConversation(id: String) =

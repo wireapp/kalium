@@ -171,6 +171,7 @@ internal class BackupDataSource(
                                 rootMessageId = root.rootMessageId,
                                 threadId = root.threadId,
                                 createdAt = root.createdAt,
+                                isFollowing = root.isFollowing,
                             )
                         },
                         totalPages = totalPages,
@@ -249,14 +250,16 @@ internal class BackupDataSource(
         threadRoots.forEach { root ->
             val conversationId = root.conversationId.toDao()
             if (messageDAO.getMessageById(root.rootMessageId, conversationId) == null) {
-                pendingMissingThreadRootCreatedAt[BackupThreadReference(root.conversationId, root.threadId)] = root.createdAt
+                pendingMissingThreadRootState[BackupThreadReference(root.conversationId, root.threadId)] =
+                    BackupMissingThreadRootState(root.createdAt, root.isFollowing)
                 return@forEach
             }
-            messageThreadDAO.upsertThreadRoot(
+            messageThreadDAO.upsertThreadRootFromBackup(
                 conversationId = conversationId,
                 rootMessageId = root.rootMessageId,
                 threadId = root.threadId,
                 createdAt = root.createdAt,
+                isFollowing = root.isFollowing,
             )
         }
     }
@@ -267,19 +270,20 @@ internal class BackupDataSource(
             val threadReference = BackupThreadReference(item.conversationId, item.threadId)
             if (messageDAO.getMessageById(item.messageId, conversationId) == null) {
                 if (item.isRoot) {
-                    pendingMissingThreadRootCreatedAt[threadReference] = item.creationDate
+                    pendingMissingThreadRootState[threadReference] = BackupMissingThreadRootState(item.creationDate)
                 }
                 return@forEach
             }
             if (item.isRoot) {
-                pendingMissingThreadRootCreatedAt.remove(threadReference)
+                pendingMissingThreadRootState.remove(threadReference)
             } else {
-                pendingMissingThreadRootCreatedAt.remove(threadReference)?.let { missingRootCreatedAt ->
+                pendingMissingThreadRootState.remove(threadReference)?.let { missingRootState ->
                     messageThreadDAO.upsertMissingThreadRootFromBackup(
                         conversationId = conversationId,
                         replyMessageId = item.messageId,
                         threadId = item.threadId,
-                        createdAt = missingRootCreatedAt,
+                        createdAt = missingRootState.createdAt,
+                        isFollowing = missingRootState.isFollowing,
                     )
                 }
             }
@@ -346,7 +350,7 @@ internal class BackupDataSource(
         val BACKUP_THREAD_CONTENT_TYPES = BACKUP_MESSAGE_CONTENT_TYPES + MessageEntity.ContentType.MISSING_THREAD_ROOT
     }
 
-    private val pendingMissingThreadRootCreatedAt = mutableMapOf<BackupThreadReference, Instant>()
+    private val pendingMissingThreadRootState = mutableMapOf<BackupThreadReference, BackupMissingThreadRootState>()
 }
 
 internal data class PagedData<T>(
@@ -367,6 +371,7 @@ internal data class BackupThreadRootData(
     val rootMessageId: String,
     val threadId: String,
     val createdAt: Instant,
+    val isFollowing: Boolean = true,
 )
 
 internal data class BackupThreadItemData(
@@ -380,6 +385,11 @@ internal data class BackupThreadItemData(
 internal data class BackupThreadReference(
     val conversationId: ConversationId,
     val threadId: String,
+)
+
+private data class BackupMissingThreadRootState(
+    val createdAt: Instant,
+    val isFollowing: Boolean = true,
 )
 
 private fun Int.toPageCount(pageSize: Int): Int =

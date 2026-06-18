@@ -481,6 +481,18 @@ public class MessageScope internal constructor(
     public val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase
         get() = MarkMessagesAsNotifiedUseCase(conversationRepository)
 
+    public val observeThreadFollowState: ObserveThreadFollowStateUseCase
+        get() = ObserveThreadFollowStateUseCase(messageThreadRepository)
+
+    public val setThreadFollowState: SetThreadFollowStateUseCase
+        get() = SetThreadFollowStateUseCase(
+            messageThreadRepository = messageThreadRepository,
+            selfConversationIdProvider = selfConversationIdProvider,
+            currentClientIdProvider = currentClientIdProvider,
+            selfUserId = selfUserId,
+            messageSender = messageSender,
+        )
+
     public val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase
         get() = UpdateAssetMessageTransferStatusUseCaseImpl(
             messageRepository

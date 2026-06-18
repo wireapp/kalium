@@ -43,6 +43,7 @@ inline fun MessageContent.FromProto.typeDescription(): String = when (this) {
     is MessageContent.TextEdited -> "TextEdited"
     is MessageContent.DataTransfer -> "DataTransfer"
     is MessageContent.InCallEmoji -> "InCallEmoji"
+    is MessageContent.ThreadFollow -> "ThreadFollow"
     is MessageContent.Multipart -> "Multipart"
     is MessageContent.CompositeEdited -> "CompositeEdited"
     MessageContent.History.ClientsRequest -> "History.ClientsRequest"
