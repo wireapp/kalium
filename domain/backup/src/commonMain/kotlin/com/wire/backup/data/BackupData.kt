@@ -28,6 +28,7 @@ import kotlin.native.ObjCName
 import kotlin.native.ShouldRefineInSwift
 
 @JsExport
+@Suppress("LongParameterList")
 public class BackupData(
     public val metadata: BackupMetadata,
     @ShouldRefineInSwift
@@ -324,8 +325,6 @@ public sealed class BackupMessageContent {
  * @property conversationId The qualified ID of the conversation containing this thread.
  * @property threadId The unique identifier of the thread.
  * @property createdAt The timestamp when the thread was created.
- * @property visibleReplyCount The number of visible replies in the thread.
- * @property lastReplyDate The timestamp of the last reply in the thread, if any.
  */
 @JsExport
 @Serializable
@@ -338,10 +337,6 @@ public data class BackupMessageThreadRoot(
     val threadId: String,
     @SerialName("createdAt")
     val createdAt: BackupDateTime,
-    @SerialName("visibleReplyCount")
-    val visibleReplyCount: Int,
-    @SerialName("lastReplyDate")
-    val lastReplyDate: BackupDateTime? = null,
 )
 
 /**
@@ -353,7 +348,6 @@ public data class BackupMessageThreadRoot(
  * @property threadId The unique identifier of the thread this message belongs to.
  * @property creationDate The timestamp when the thread was created.
  * @property isRoot Whether this message is the root of the thread.
- * @property visibility The visibility state of the message.
  */
 @JsExport
 @Serializable
@@ -368,6 +362,4 @@ public data class BackupMessageThreadItem(
     val creationDate: BackupDateTime,
     @SerialName("isRoot")
     val isRoot: Boolean,
-    @SerialName("visibility")
-    val visibility: String,
 )

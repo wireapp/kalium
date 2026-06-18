@@ -32,6 +32,8 @@ import com.wire.kalium.logic.feature.backup.BackupConstants.createBackupFileName
 import com.wire.kalium.logic.feature.backup.CreateBackupResult.Failure
 import com.wire.kalium.logic.feature.backup.mapper.toBackupConversation
 import com.wire.kalium.logic.feature.backup.mapper.toBackupMessage
+import com.wire.kalium.logic.feature.backup.mapper.toBackupMessageThreadItem
+import com.wire.kalium.logic.feature.backup.mapper.toBackupMessageThreadRoot
 import com.wire.kalium.logic.feature.backup.mapper.toBackupReaction
 import com.wire.kalium.logic.feature.backup.mapper.toBackupUser
 import com.wire.kalium.logic.feature.backup.provider.BackupExporter
@@ -70,7 +72,7 @@ internal class CreateMPBackupUseCaseImpl(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : CreateMPBackupUseCase {
 
-    @Suppress("TooGenericExceptionCaught")
+    @Suppress("TooGenericExceptionCaught", "LongMethod")
     override suspend fun invoke(
         password: String,
         onProgress: (Float) -> Unit
@@ -111,6 +113,18 @@ internal class CreateMPBackupUseCaseImpl(
                     async {
                         getReactions().buffer().collect { (page, _) ->
                             page.map(MessageReactions::toBackupReaction)
+                                .forEach { mpBackupExporter.add(it) }
+                        }
+                    }
+                    async {
+                        getThreadRoots().buffer().collect { (page, _) ->
+                            page.map { it.toBackupMessageThreadRoot() }
+                                .forEach { mpBackupExporter.add(it) }
+                        }
+                    }
+                    async {
+                        getThreadItems().buffer().collect { (page, _) ->
+                            page.map { it.toBackupMessageThreadItem() }
                                 .forEach { mpBackupExporter.add(it) }
                         }
                     }

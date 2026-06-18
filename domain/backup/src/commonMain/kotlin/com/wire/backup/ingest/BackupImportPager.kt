@@ -19,6 +19,8 @@ package com.wire.backup.ingest
 
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupMessageThreadItem
+import com.wire.backup.data.BackupMessageThreadRoot
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
 import com.wire.backup.filesystem.BackupPage
@@ -35,6 +37,8 @@ public interface ImportResultPager : Closeable {
     public val messagesPager: ImportDataPager<BackupMessage>
     public val usersPager: ImportDataPager<BackupUser>
     public val reactionsPager: ImportDataPager<BackupReaction>
+    public val messageThreadRootsPager: ImportDataPager<BackupMessageThreadRoot>
+    public val messageThreadItemsPager: ImportDataPager<BackupMessageThreadItem>
 }
 
 @JsExport
@@ -56,6 +60,14 @@ public class BackupImportPager internal constructor(private val entries: List<Ba
 
     public override val reactionsPager: ReactionPager by lazy {
         ReactionPager(entries.filter { it.name.startsWith(BackupPage.REACTIONS_PREFIX) })
+    }
+
+    public override val messageThreadRootsPager: MessageThreadRootPager by lazy {
+        MessageThreadRootPager(entries.filter { it.name.startsWith(BackupPage.MESSAGE_THREAD_ROOTS_PREFIX) })
+    }
+
+    public override val messageThreadItemsPager: MessageThreadItemPager by lazy {
+        MessageThreadItemPager(entries.filter { it.name.startsWith(BackupPage.MESSAGE_THREAD_ITEMS_PREFIX) })
     }
 
     override fun close() {
@@ -136,6 +148,24 @@ public class MessagePager internal constructor(entries: List<BackupPage>) : Back
 public class ReactionPager internal constructor(entries: List<BackupPage>) : BackupImportDataPager<BackupReaction>(entries) {
     override fun mapPageData(mapper: MPBackupMapper, bytes: ByteArray): Array<BackupReaction> {
         return mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(bytes)).reactions
+    }
+}
+
+@JsExport
+public class MessageThreadRootPager internal constructor(
+    entries: List<BackupPage>
+) : BackupImportDataPager<BackupMessageThreadRoot>(entries) {
+    override fun mapPageData(mapper: MPBackupMapper, bytes: ByteArray): Array<BackupMessageThreadRoot> {
+        return mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(bytes)).messageThreadRoots
+    }
+}
+
+@JsExport
+public class MessageThreadItemPager internal constructor(
+    entries: List<BackupPage>
+) : BackupImportDataPager<BackupMessageThreadItem>(entries) {
+    override fun mapPageData(mapper: MPBackupMapper, bytes: ByteArray): Array<BackupMessageThreadItem> {
+        return mapper.fromProtoToBackupModel(BackupData.decodeFromByteArray(bytes)).messageThreadItems
     }
 }
 

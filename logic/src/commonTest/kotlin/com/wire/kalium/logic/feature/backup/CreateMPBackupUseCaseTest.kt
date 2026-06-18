@@ -23,6 +23,9 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.backup.BackupThreadData
+import com.wire.kalium.logic.data.backup.BackupThreadItemData
+import com.wire.kalium.logic.data.backup.BackupThreadReference
+import com.wire.kalium.logic.data.backup.BackupThreadRootData
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.PagedData
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -187,6 +190,10 @@ class CreateMPBackupUseCaseTest {
             override suspend fun getThreadIdForMessage(conversationId: ConversationId, messageId: String): String? =
                 threadIdsByConversationAndMessage[conversationId to messageId]
 
+            override suspend fun getThreadRoots(pageSize: Int): Flow<PagedData<BackupThreadRootData>> = flowOf()
+
+            override suspend fun getThreadItems(pageSize: Int): Flow<PagedData<BackupThreadItemData>> = flowOf()
+
             override suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit> = Unit.right()
 
             override suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit> = Unit.right()
@@ -194,6 +201,12 @@ class CreateMPBackupUseCaseTest {
             override suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit> = Unit.right()
 
             override suspend fun insertReactions(reactions: List<MessageReactions>): Either<CoreFailure, Unit> = Unit.right()
+
+            override suspend fun insertThreadRoots(threadRoots: List<BackupThreadRootData>): Either<CoreFailure, Unit> = Unit.right()
+
+            override suspend fun insertThreadItems(threadItems: List<BackupThreadItemData>): Either<CoreFailure, Unit> = Unit.right()
+
+            override suspend fun refreshThreadMetadata(threads: Set<BackupThreadReference>): Either<CoreFailure, Unit> = Unit.right()
 
             override suspend fun insertThreadData(threadData: List<BackupThreadData>): Either<CoreFailure, Unit> = Unit.right()
         }

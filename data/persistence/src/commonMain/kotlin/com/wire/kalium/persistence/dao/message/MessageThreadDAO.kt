@@ -44,6 +44,21 @@ data class MessageThreadRootEntity(
     val lastReplyDate: Instant?,
 )
 
+data class MessageThreadBackupRootEntity(
+    val conversationId: QualifiedIDEntity,
+    val rootMessageId: String,
+    val threadId: String,
+    val createdAt: Instant,
+)
+
+data class MessageThreadBackupItemEntity(
+    val conversationId: QualifiedIDEntity,
+    val threadId: String,
+    val messageId: String,
+    val creationDate: Instant,
+    val isRoot: Boolean,
+)
+
 data class MessageThreadSummaryEntity(
     val conversationId: QualifiedIDEntity,
     val rootMessageId: String,
@@ -95,6 +110,13 @@ interface MessageThreadDAO {
         visibility: MessageEntity.Visibility,
     )
 
+    suspend fun upsertMissingThreadRootFromBackup(
+        conversationId: QualifiedIDEntity,
+        replyMessageId: String,
+        threadId: String,
+        createdAt: Instant,
+    )
+
     suspend fun getThreadByRootMessage(
         conversationId: QualifiedIDEntity,
         rootMessageId: String,
@@ -110,6 +132,27 @@ interface MessageThreadDAO {
         messageId: String,
     ): String?
 
+    suspend fun countThreadRootsForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
+
+    suspend fun getThreadRootsForBackup(
+        contentTypes: Collection<MessageEntity.ContentType>,
+        limit: Long,
+        offset: Long,
+    ): List<MessageThreadBackupRootEntity>
+
+    suspend fun countThreadItemsForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long
+
+    suspend fun getThreadItemsForBackup(
+        contentTypes: Collection<MessageEntity.ContentType>,
+        limit: Long,
+        offset: Long,
+    ): List<MessageThreadBackupItemEntity>
+
+    suspend fun refreshThreadMetadata(
+        conversationId: QualifiedIDEntity,
+        threadId: String,
+    )
+
     fun observeThreadSummariesForRoots(
         conversationId: QualifiedIDEntity,
         rootMessageIds: List<String>,
@@ -118,6 +161,7 @@ interface MessageThreadDAO {
     fun observeGlobalThreads(): Flow<List<GlobalThreadSummaryEntity>>
 }
 
+@Suppress("TooManyFunctions")
 internal class MessageThreadDAOImpl internal constructor(
     private val queries: MessageThreadsQueries,
     private val readDispatcher: ReadDispatcher,
@@ -218,12 +262,36 @@ internal class MessageThreadDAOImpl internal constructor(
         }
     }
 
+    override suspend fun upsertMissingThreadRootFromBackup(
+        conversationId: QualifiedIDEntity,
+        replyMessageId: String,
+        threadId: String,
+        createdAt: Instant,
+    ) {
+        withContext(writeDispatcher.value) {
+            queries.transaction {
+                upsertMissingThreadRootFromReply(
+                    conversationId = conversationId,
+                    replyMessageId = replyMessageId,
+                    threadId = threadId,
+                    createdAt = createdAt,
+                )
+                queries.upsertMainListItem(
+                    conversation_id = conversationId,
+                    message_id = threadId,
+                    creation_date = createdAt,
+                    visibility = MessageEntity.Visibility.VISIBLE,
+                )
+            }
+        }
+    }
+
     private suspend fun upsertMissingThreadRootFromReply(
         conversationId: QualifiedIDEntity,
         replyMessageId: String,
         threadId: String,
+        createdAt: Instant = Clock.System.now(),
     ): Instant {
-        val createdAt = Clock.System.now()
         queries.insertMissingThreadRootMessageFromReply(
             thread_id = threadId,
             conversation_id = conversationId,
@@ -247,6 +315,7 @@ internal class MessageThreadDAOImpl internal constructor(
         return createdAt
     }
 
+    @Suppress("LongMethod", "ReturnCount")
     private suspend fun updateThreadCountersAfterUpsert(
         conversationId: QualifiedIDEntity,
         previous: MessageThreadItemStateEntity?,
@@ -351,6 +420,53 @@ internal class MessageThreadDAOImpl internal constructor(
             conversation_id = conversationId,
             message_id = messageId
         ).executeAsOneOrNull()
+    }
+
+    override suspend fun countThreadRootsForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long =
+        withContext(readDispatcher.value) {
+            queries.countThreadRootsForBackup(content_type = contentTypes).executeAsOne()
+        }
+
+    override suspend fun getThreadRootsForBackup(
+        contentTypes: Collection<MessageEntity.ContentType>,
+        limit: Long,
+        offset: Long,
+    ): List<MessageThreadBackupRootEntity> = withContext(readDispatcher.value) {
+        queries.selectThreadRootsForBackup(
+            content_type = contentTypes,
+            limit = limit,
+            offset = offset,
+            mapper = ::MessageThreadBackupRootEntity,
+        ).executeAsList()
+    }
+
+    override suspend fun countThreadItemsForBackup(contentTypes: Collection<MessageEntity.ContentType>): Long =
+        withContext(readDispatcher.value) {
+            queries.countThreadItemsForBackup(content_type = contentTypes).executeAsOne()
+        }
+
+    override suspend fun getThreadItemsForBackup(
+        contentTypes: Collection<MessageEntity.ContentType>,
+        limit: Long,
+        offset: Long,
+    ): List<MessageThreadBackupItemEntity> = withContext(readDispatcher.value) {
+        queries.selectThreadItemsForBackup(
+            content_type = contentTypes,
+            limit = limit,
+            offset = offset,
+            mapper = ::MessageThreadBackupItemEntity,
+        ).executeAsList()
+    }
+
+    override suspend fun refreshThreadMetadata(
+        conversationId: QualifiedIDEntity,
+        threadId: String,
+    ) = withContext(writeDispatcher.value) {
+        queries.refreshThreadVisibleReplyCount(
+            conversation_id = conversationId,
+            thread_id = threadId,
+        )
+        Unit
     }
 
     override fun observeThreadSummariesForRoots(
