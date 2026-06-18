@@ -138,6 +138,10 @@ sealed interface Message {
                     typeKey to "composite"
                 )
 
+                is MessageContent.Poll -> mutableMapOf(
+                    typeKey to "poll"
+                )
+
                 is MessageContent.Location -> mutableMapOf(
                     typeKey to "location",
                 )
@@ -248,6 +252,14 @@ sealed interface Message {
 
                 is MessageContent.ButtonActionConfirmation -> mutableMapOf(
                     typeKey to "buttonActionConfirmation"
+                )
+
+                is MessageContent.Poll -> mutableMapOf(
+                    typeKey to "poll"
+                )
+
+                is MessageContent.PollVote -> mutableMapOf(
+                    typeKey to "pollVote"
                 )
 
                 is MessageContent.DataTransfer -> mutableMapOf(

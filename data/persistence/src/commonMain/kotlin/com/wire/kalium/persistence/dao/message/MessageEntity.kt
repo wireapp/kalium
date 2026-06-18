@@ -148,7 +148,7 @@ sealed interface MessageEntity {
         CONVERSATION_DEGRADED_PROTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PROTEUS, COMPOSITE, FEDERATION,
         CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_PROTOCOL_CHANGED_DURING_CALL,
         CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD, MULTIPART,
-        CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED, CONVERSATION_APPS_ENABLED_CHANGED
+        CONVERSATION_WITH_CELL, CONVERSATION_WITH_CELL_SELF_DELETE_DISABLED, CONVERSATION_APPS_ENABLED_CHANGED, POLL
     }
 
     enum class MemberChangeType {
@@ -348,6 +348,14 @@ sealed class MessageEntityContent {
         val buttonList: List<ButtonEntity>
     ) : Regular()
 
+    data class Poll(
+        val question: String,
+        val options: List<PollOptionEntity>,
+        val allowMultipleAnswers: Boolean,
+        val hideVoterNames: Boolean,
+        val votes: List<PollVoteEntity> = emptyList()
+    ) : Regular()
+
     data object MissedCall : System()
     data object CryptoSessionReset : System()
     data class ConversationRenamed(val conversationName: String) : System()
@@ -431,6 +439,8 @@ sealed class MessagePreviewEntityContent {
     data class Text(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
 
     data class Composite(val senderName: String?, val messageBody: String?) : MessagePreviewEntityContent()
+
+    data class Poll(val senderName: String?, val question: String?) : MessagePreviewEntityContent()
 
     data class Asset(val senderName: String?, val type: AssetTypeEntity) : MessagePreviewEntityContent()
 
@@ -544,6 +554,17 @@ class ButtonEntity(
     @SerialName("id") val id: String,
     @Serializable(with = BooleanIntSerializer::class)
     @SerialName("is_selected") val isSelected: Boolean
+)
+
+data class PollOptionEntity(
+    val id: String,
+    val text: String
+)
+
+data class PollVoteEntity(
+    val voterId: QualifiedIDEntity,
+    val selectedOptionIds: List<String>,
+    val date: Instant
 )
 
 @OptIn(ExperimentalSerializationApi::class)

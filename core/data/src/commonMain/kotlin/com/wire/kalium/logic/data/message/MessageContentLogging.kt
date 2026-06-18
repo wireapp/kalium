@@ -28,6 +28,8 @@ inline fun MessageContent.FromProto.typeDescription(): String = when (this) {
     is MessageContent.Text -> "Text"
     is MessageContent.Unknown -> "Unknown"
     is MessageContent.Availability -> "Availability"
+    is MessageContent.Poll -> "Poll"
+    is MessageContent.PollVote -> "PollVote"
     is MessageContent.ButtonAction -> "ButtonAction"
     is MessageContent.ButtonActionConfirmation -> "ButtonActionConfirmation"
     is MessageContent.Calling -> "Calling"

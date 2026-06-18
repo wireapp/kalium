@@ -46,6 +46,7 @@ import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.handler.PollVoteHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -138,6 +139,39 @@ class ApplicationMessageHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.buttonActionHandler.handle(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenPollVoteMessage_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
+        val messageId = "messageId"
+        val pollVoteContent = MessageContent.PollVote(
+            referencedMessageId = messageId,
+            selectedOptionIds = listOf("optionId")
+        )
+        val protoContent = ProtoContent.Readable(
+            messageId,
+            pollVoteContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encode("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent)
+        messageHandler.handleContent(
+            arrangement.transactionContext,
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.pollVoteHandler.handle(any(), pollVoteContent)
         }
     }
 
@@ -375,6 +409,7 @@ class ApplicationMessageHandlerTest {
         val buttonActionHandler = mock<ButtonActionHandler>(MockMode.autoUnit)
         val messageCompositeEditHandler = mock<MessageCompositeEditHandler>(MockMode.autoUnit)
         val callingMessageHandler = mock<CallingMessageHandler>(MockMode.autoUnit)
+        val pollVoteHandler = mock<PollVoteHandler>(MockMode.autoUnit)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
@@ -396,6 +431,7 @@ class ApplicationMessageHandlerTest {
             buttonActionHandler,
             messageCompositeEditHandler,
             callingMessageHandler,
+            pollVoteHandler,
             TestUser.SELF.id
         )
 

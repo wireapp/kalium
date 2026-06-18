@@ -53,6 +53,8 @@ message GenericMessage {
         HistoryClientAvailable historyClientAvailable = 28;
         HistoryClientRequest historyClientRequest = 29;
         HistoryClientResponse historyClientResponse = 30;
+        Poll poll = 31;
+        PollVote pollVote = 32;
     }
     optional UnknownStrategy unknownStrategy = 25 [default = IGNORE];
 
@@ -100,6 +102,23 @@ message ButtonAction {
 message ButtonActionConfirmation {
     required string reference_message_id = 1;
     optional string button_id = 2; // if not present, no button is accepted
+}
+
+message Poll {
+    required string question = 1;
+    repeated PollOption options = 2;
+    optional bool allow_multiple_answers = 3 [default = false];
+    optional bool hide_voter_names = 4 [default = false];
+}
+
+message PollOption {
+    required string id = 1;
+    required string text = 2;
+}
+
+message PollVote {
+    required string reference_message_id = 1;
+    repeated string selected_option_ids = 2;
 }
 
 message Availability {

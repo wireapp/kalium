@@ -39,12 +39,26 @@ import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.persistence.util.isDebug
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 
 @Suppress("LongParameterList", "LargeClass")
 object MessageMapper {
 
     private val serializer = JsonSerializer()
+
+    @Serializable
+    private data class PollOptionJson(
+        val id: String,
+        val text: String
+    )
+
+    @Serializable
+    private data class PollVoteJson(
+        val voterId: QualifiedIDEntity,
+        val selectedOptionIds: List<String>,
+        val date: Long
+    )
 
     @Suppress("ComplexMethod", "LongMethod")
     private fun toMessagePreviewEntityContent(
@@ -107,6 +121,11 @@ object MessageMapper {
             MessageEntity.ContentType.COMPOSITE -> MessagePreviewEntityContent.Composite(
                 senderName = senderName,
                 messageBody = text
+            )
+
+            MessageEntity.ContentType.POLL -> MessagePreviewEntityContent.Poll(
+                senderName = senderName,
+                question = text
             )
 
             MessageEntity.ContentType.TEXT -> when {
@@ -541,6 +560,11 @@ object MessageMapper {
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
         buttonsJson: String,
+        pollQuestion: String?,
+        pollAllowMultipleAnswers: Boolean?,
+        pollHideVoterNames: Boolean?,
+        pollOptionsJson: String,
+        pollVotesJson: String,
         federationDomainList: String?,
         federationType: String?,
         conversationProtocolChanged: String?,
@@ -633,6 +657,11 @@ object MessageMapper {
         recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
         recipientsFailedDeliveryList = recipientsFailedDeliveryList,
         buttonsJson = buttonsJson,
+        pollQuestion = pollQuestion,
+        pollAllowMultipleAnswers = pollAllowMultipleAnswers,
+        pollHideVoterNames = pollHideVoterNames,
+        pollOptionsJson = pollOptionsJson,
+        pollVotesJson = pollVotesJson,
         federationDomainList = federationDomainList,
         federationType = federationType,
         conversationProtocolChanged = conversationProtocolChanged,
@@ -728,6 +757,11 @@ object MessageMapper {
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
         buttonsJson: String,
+        pollQuestion: String?,
+        pollAllowMultipleAnswers: Boolean?,
+        pollHideVoterNames: Boolean?,
+        pollOptionsJson: String,
+        pollVotesJson: String,
         federationDomainList: String?,
         federationType: String?,
         conversationProtocolChanged: String?,
@@ -844,6 +878,22 @@ object MessageMapper {
                     JsonSerializer().decodeFromString(buttonsJson)
                 )
             }
+
+            MessageEntity.ContentType.POLL -> MessageEntityContent.Poll(
+                question = pollQuestion.requireField("pollQuestion"),
+                options = serializer.decodeFromString<List<PollOptionJson>>(pollOptionsJson).map {
+                    PollOptionEntity(id = it.id, text = it.text)
+                },
+                allowMultipleAnswers = pollAllowMultipleAnswers ?: false,
+                hideVoterNames = pollHideVoterNames ?: false,
+                votes = serializer.decodeFromString<List<PollVoteJson>>(pollVotesJson).map {
+                    PollVoteEntity(
+                        voterId = it.voterId,
+                        selectedOptionIds = it.selectedOptionIds,
+                        date = Instant.fromEpochMilliseconds(it.date)
+                    )
+                }
+            )
 
             MessageEntity.ContentType.CONVERSATION_RENAMED -> MessageEntityContent.ConversationRenamed(conversationName.orEmpty())
             MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessageEntityContent.TeamMemberRemoved(senderName.orEmpty())

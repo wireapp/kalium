@@ -50,6 +50,7 @@ import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageCompositeEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageMultipartEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
+import com.wire.kalium.logic.sync.receiver.handler.PollVoteHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
@@ -103,6 +104,7 @@ internal class ApplicationMessageHandlerImpl(
     private val buttonActionHandler: ButtonActionHandler,
     private val messageCompositeEditHandler: MessageCompositeEditHandler,
     private val callingMessageHandler: CallingMessageHandler,
+    private val pollVoteHandler: PollVoteHandler,
     private val selfUserId: UserId,
 ) : ApplicationMessageHandler {
 
@@ -127,6 +129,7 @@ internal class ApplicationMessageHandlerImpl(
                     is MessageContent.RestrictedAsset -> Message.Visibility.VISIBLE
                     is MessageContent.FailedDecryption -> Message.Visibility.VISIBLE
                     is MessageContent.Composite -> Message.Visibility.VISIBLE
+                    is MessageContent.Poll -> Message.Visibility.VISIBLE
                     is MessageContent.Location -> Message.Visibility.VISIBLE
                     is MessageContent.Multipart -> Message.Visibility.VISIBLE
                 }
@@ -214,6 +217,8 @@ internal class ApplicationMessageHandlerImpl(
                 )
             }
 
+            is MessageContent.PollVote -> pollVoteHandler.handle(signaling, content)
+
             is MessageContent.DataTransfer -> dataTransferEventHandler.handle(signaling, content)
             is MessageContent.InCallEmoji -> inCallReactionsRepository.addInCallReaction(
                 conversationId = signaling.conversationId,
@@ -276,6 +281,7 @@ internal class ApplicationMessageHandlerImpl(
             }
 
             is MessageContent.Composite -> persistMessage(message)
+            is MessageContent.Poll -> persistMessage(message)
             is MessageContent.Location -> persistMessage(message)
             is MessageContent.Multipart -> handleMultipartMessage(message, content)
         }

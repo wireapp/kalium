@@ -228,6 +228,30 @@ sealed interface MessageContent {
         val buttonList: List<Button>
     ) : Regular()
 
+    data class Poll(
+        val question: String,
+        val options: List<Option>,
+        val allowMultipleAnswers: Boolean,
+        val hideVoterNames: Boolean,
+        val votes: List<Vote> = emptyList()
+    ) : Regular() {
+        data class Option(
+            val id: String,
+            val text: String
+        )
+
+        data class Vote(
+            val voterId: UserId,
+            val selectedOptionIds: List<String>,
+            val date: Instant
+        )
+    }
+
+    data class PollVote(
+        val referencedMessageId: MessageId,
+        val selectedOptionIds: List<String>
+    ) : Signaling
+
     /**
      * Notifies the author of a [Composite] message that a user has
      * selected one of its buttons.
@@ -489,6 +513,8 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.ConversationDegradedMLS -> "ConversationVerification.Degraded.MLS"
     is MessageContent.ConversationDegradedProteus -> "ConversationVerification.Degraded.Proteus"
     is MessageContent.Composite -> "Composite"
+    is MessageContent.Poll -> "Poll"
+    is MessageContent.PollVote -> "PollVote"
     is MessageContent.ButtonAction -> "ButtonAction"
     is MessageContent.ButtonActionConfirmation -> "ButtonActionConfirmation"
     is MessageContent.MemberChange.FederationRemoved -> "MemberChange.FederationRemoved"
@@ -529,6 +555,8 @@ sealed interface MessagePreviewContent {
         data class Text(override val username: String?, val messageBody: String) : WithUser
 
         data class Composite(override val username: String?, val messageBody: String?) : WithUser
+
+        data class Poll(override val username: String?, val question: String?) : WithUser
 
         data class Asset(override val username: String?, val type: AssetType) : WithUser
 

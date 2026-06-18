@@ -132,8 +132,10 @@ internal class PersistMessageUseCaseImpl(
             MessageContent.ConversationDegradedProteus -> false
             MessageContent.ConversationVerifiedProteus -> false
             is MessageContent.Composite -> true
+            is MessageContent.Poll -> true
             is MessageContent.ButtonAction -> false
             is MessageContent.ButtonActionConfirmation -> false
+            is MessageContent.PollVote -> false
             is MessageContent.MemberChange.FederationRemoved -> false
             is MessageContent.FederationStopped.ConnectionRemoved -> false
             is MessageContent.FederationStopped.Removed -> false
@@ -148,6 +150,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.DataTransfer -> false
             is MessageContent.InCallEmoji -> false
             is MessageContent.Multipart -> true
+            is MessageContent.Poll -> true
             is MessageContent.History -> false
             is MessageContent.NewConversationWithCellMessage -> false
             is MessageContent.NewConversationWithCellSelfDeleteDisabledMessage -> false
@@ -163,6 +166,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.RestrictedAsset,
             is MessageContent.MissedCall,
             is MessageContent.Location,
+            is MessageContent.Poll,
             is MessageContent.Multipart -> true
 
             is MessageContent.MemberChange.Added,
@@ -198,6 +202,7 @@ internal class PersistMessageUseCaseImpl(
             MessageContent.ConversationDegradedProteus,
             MessageContent.ConversationVerifiedProteus,
             is MessageContent.Composite,
+            is MessageContent.PollVote,
             is MessageContent.ButtonAction,
             is MessageContent.ButtonActionConfirmation,
             is MessageContent.MemberChange.FederationRemoved,

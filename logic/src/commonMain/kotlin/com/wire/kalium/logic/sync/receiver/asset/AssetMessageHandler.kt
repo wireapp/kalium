@@ -150,6 +150,7 @@ internal class AssetMessageHandlerImpl(
             is MessageContent.Knock,
             is MessageContent.Location,
             is MessageContent.Composite,
+            is MessageContent.Poll,
             is MessageContent.Text,
             is MessageContent.Multipart,
             is MessageContent.Unknown -> {

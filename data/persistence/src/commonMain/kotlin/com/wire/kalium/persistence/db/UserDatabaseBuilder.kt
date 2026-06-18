@@ -79,6 +79,8 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
+import com.wire.kalium.persistence.dao.message.PollMessageDAO
+import com.wire.kalium.persistence.dao.message.PollMessageDAOImpl
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDao
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentsDaoImpl
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAOImpl
@@ -192,6 +194,9 @@ class UserDatabaseBuilder internal constructor(
         NewClientAdapter = TableMapper.newClientAdapter,
         MessageRecipientFailureAdapter = TableMapper.messageRecipientFailureAdapter,
         ButtonContentAdapter = TableMapper.buttonContentAdapter,
+        PollContentAdapter = TableMapper.pollContentAdapter,
+        PollOptionContentAdapter = TableMapper.pollOptionContentAdapter,
+        PollVoteContentAdapter = TableMapper.pollVoteContentAdapter,
         MessageConversationLocationContentAdapter = TableMapper.messageConversationLocationContentAdapter,
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
         MessageAssetTransferStatusAdapter = TableMapper.messageAssetTransferStatusAdapter,
@@ -362,7 +367,8 @@ class UserDatabaseBuilder internal constructor(
             readDispatcher,
             writeDispatcher,
             database.messageAssetTransferStatusQueries,
-            database.buttonContentQueries
+            database.buttonContentQueries,
+            database.pollContentQueries
         )
 
     val messageDraftDAO = MessageDraftDAOImpl(
@@ -372,6 +378,9 @@ class UserDatabaseBuilder internal constructor(
         readDispatcher,
         writeDispatcher,
     )
+
+    val pollMessageDAO: PollMessageDAO
+        get() = PollMessageDAOImpl(database.pollContentQueries, writeDispatcher)
 
     val assetDAO: AssetDAO
         get() = AssetDAOImpl(

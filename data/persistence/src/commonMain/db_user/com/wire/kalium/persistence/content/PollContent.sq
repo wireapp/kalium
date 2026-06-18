@@ -1,0 +1,60 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Boolean;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE PollContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      question TEXT NOT NULL,
+      allow_multiple_answers INTEGER AS Boolean NOT NULL DEFAULT(0),
+      hide_voter_names INTEGER AS Boolean NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (conversation_id, message_id) REFERENCES Message(conversation_id, id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, message_id)
+);
+
+CREATE TABLE PollOptionContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      id TEXT NOT NULL,
+      text TEXT NOT NULL,
+      position INTEGER NOT NULL,
+
+      FOREIGN KEY (conversation_id, message_id) REFERENCES PollContent(conversation_id, message_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, message_id, id)
+);
+
+CREATE TABLE PollVoteContent (
+      poll_message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      voter_user_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      selected_option_ids TEXT NOT NULL,
+      creation_date INTEGER AS Instant NOT NULL,
+
+      FOREIGN KEY (conversation_id, poll_message_id) REFERENCES PollContent(conversation_id, message_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, poll_message_id, voter_user_id)
+);
+
+insertPoll:
+INSERT OR IGNORE INTO PollContent(message_id, conversation_id, question, allow_multiple_answers, hide_voter_names)
+VALUES(:message_id, :conversation_id, :question, :allow_multiple_answers, :hide_voter_names);
+
+insertPollOption:
+INSERT OR IGNORE INTO PollOptionContent(message_id, conversation_id, id, text, position)
+VALUES(:message_id, :conversation_id, :id, :text, :position);
+
+upsertVote:
+INSERT OR REPLACE INTO PollVoteContent(poll_message_id, conversation_id, voter_user_id, selected_option_ids, creation_date)
+VALUES(:poll_message_id, :conversation_id, :voter_user_id, :selected_option_ids, :creation_date);
+
+getPoll:
+SELECT * FROM PollContent
+WHERE message_id = :message_id AND conversation_id = :conversation_id;
+
+getPollOptions:
+SELECT * FROM PollOptionContent
+WHERE message_id = :message_id AND conversation_id = :conversation_id
+ORDER BY position ASC;

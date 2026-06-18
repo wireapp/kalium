@@ -1,14 +1,45 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntityContent;
-import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
 import kotlin.Boolean;
-import kotlin.Int;
-import kotlin.collections.List;
 import kotlinx.datetime.Instant;
+
+CREATE TABLE PollContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      question TEXT NOT NULL,
+      allow_multiple_answers INTEGER AS Boolean NOT NULL DEFAULT(0),
+      hide_voter_names INTEGER AS Boolean NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (conversation_id, message_id) REFERENCES Message(conversation_id, id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, message_id)
+);
+
+CREATE TABLE PollOptionContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      id TEXT NOT NULL,
+      text TEXT NOT NULL,
+      position INTEGER NOT NULL,
+
+      FOREIGN KEY (conversation_id, message_id) REFERENCES PollContent(conversation_id, message_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, message_id, id)
+);
+
+CREATE TABLE PollVoteContent (
+      poll_message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      voter_user_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      selected_option_ids TEXT NOT NULL,
+      creation_date INTEGER AS Instant NOT NULL,
+
+      FOREIGN KEY (conversation_id, poll_message_id) REFERENCES PollContent(conversation_id, message_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (conversation_id, poll_message_id, voter_user_id)
+);
+
+DROP VIEW IF EXISTS MessageDetailsView;
+DROP VIEW IF EXISTS MessagePreview;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
@@ -197,13 +228,46 @@ LEFT JOIN PollContent AS PollContent ON Message.id = PollContent.message_id AND 
 LEFT JOIN MessageRecipientFailure AS FailedRecipientsWithNoClients ON Message.id = FailedRecipientsWithNoClients.message_id AND Message.conversation_id = FailedRecipientsWithNoClients.conversation_id AND FailedRecipientsWithNoClients.recipient_failure_type = 'NO_CLIENTS_TO_DELIVER'
 LEFT JOIN MessageRecipientFailure AS FailedRecipientsDeliveryFailed ON Message.id = FailedRecipientsDeliveryFailed.message_id AND Message.conversation_id = FailedRecipientsDeliveryFailed.conversation_id AND FailedRecipientsDeliveryFailed.recipient_failure_type = 'MESSAGE_DELIVERY_FAILED'
 
--- joins for quoted messages
 LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_message_id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
 LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent ON QuotedLocationContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
--- end joins for quoted messages
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
 LEFT JOIN SelfUser;
--- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
+
+CREATE VIEW IF NOT EXISTS MessagePreview
+AS SELECT
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.visibility AS visibility,
+    Message.sender_user_id AS senderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS isEphemeral,
+    User.name AS senderName,
+    User.connection_status AS senderConnectionStatus,
+    User.deleted AS senderIsDeleted,
+    SelfUser.id AS selfUserId,
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.list_1 END AS memberChangeList,
+    CASE WHEN SystemContent.content_type = 'MEMBER_CHANGE' THEN SystemContent.enum_1 END AS memberChangeType,
+    CASE WHEN SystemContent.content_type = 'CONVERSATION_RENAMED' THEN SystemContent.text_1 END AS updateConversationName,
+    Conversation.name AS conversationName,
+    (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
+    TextContent.is_quoting_self AS isQuotingSelfUser,
+    COALESCE(TextContent.text_body, PollContent.question) AS text,
+    AssetContent.asset_mime_type AS assetMimeType,
+    (Message.creation_date > Conversation.last_read_date) AS isUnread,
+    IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
+    Conversation.muted_status AS mutedStatus,
+    Conversation.type AS conversationType
+FROM Message
+LEFT JOIN SelfUser
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
+LEFT JOIN MessageSystemContent AS SystemContent ON Message.id = SystemContent.message_id AND Message.conversation_id = SystemContent.conversation_id
+LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN PollContent AS PollContent ON Message.id = PollContent.message_id AND Message.conversation_id = PollContent.conversation_id;

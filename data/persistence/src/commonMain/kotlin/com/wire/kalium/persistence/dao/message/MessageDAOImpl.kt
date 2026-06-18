@@ -38,6 +38,7 @@ import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.content.ButtonContentQueries
+import com.wire.kalium.persistence.content.PollContentQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -79,7 +80,8 @@ internal class MessageDAOImpl internal constructor(
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
     private val assetStatusQueries: MessageAssetTransferStatusQueries,
-    private val buttonContentQueries: ButtonContentQueries
+    private val buttonContentQueries: ButtonContentQueries,
+    private val pollContentQueries: PollContentQueries
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
         queries,
@@ -88,6 +90,7 @@ internal class MessageDAOImpl internal constructor(
         unreadEventsQueries,
         conversationsQueries,
         buttonContentQueries,
+        pollContentQueries,
         selfUserId
     ) {
     private val mapper = MessageMapper

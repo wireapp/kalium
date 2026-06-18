@@ -329,6 +329,13 @@ internal class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_DEGRADED_MLS -> null
             MessageEntity.ContentType.CONVERSATION_DEGRADED_PROTEUS -> null
             MessageEntity.ContentType.COMPOSITE -> null
+            MessageEntity.ContentType.POLL -> LocalNotificationMessage.Text(
+                messageId = message.id,
+                author = sender,
+                text = message.text.orEmpty(),
+                time = message.date,
+                isQuotingSelfUser = message.isQuotingSelf
+            )
             MessageEntity.ContentType.FEDERATION -> null
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> null
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> null
@@ -418,6 +425,25 @@ internal class MessageMapperImpl(
                     isSelected = it.isSelected
                 )
             },
+        )
+
+        is MessageContent.Poll -> MessageEntityContent.Poll(
+            question = regularMessage.question,
+            options = regularMessage.options.map {
+                com.wire.kalium.persistence.dao.message.PollOptionEntity(
+                    id = it.id,
+                    text = it.text
+                )
+            },
+            allowMultipleAnswers = regularMessage.allowMultipleAnswers,
+            hideVoterNames = regularMessage.hideVoterNames,
+            votes = regularMessage.votes.map {
+                com.wire.kalium.persistence.dao.message.PollVoteEntity(
+                    voterId = it.voterId.toDao(),
+                    selectedOptionIds = it.selectedOptionIds,
+                    date = it.date
+                )
+            }
         )
 
         is MessageContent.Location -> MessageEntityContent.Location(
@@ -579,6 +605,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.CryptoSessionReset -> MessagePreviewContent.CryptoSessionReset
     MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
     is MessagePreviewEntityContent.Composite -> MessagePreviewContent.WithUser.Composite(username = senderName, messageBody = messageBody)
+    is MessagePreviewEntityContent.Poll -> MessagePreviewContent.WithUser.Poll(username = senderName, question = question)
     is MessagePreviewEntityContent.ConversationVerifiedMls -> MessagePreviewContent.VerificationChanged.VerifiedMls
     is MessagePreviewEntityContent.ConversationVerifiedProteus -> MessagePreviewContent.VerificationChanged.VerifiedProteus
     is MessagePreviewEntityContent.ConversationVerificationDegradedMls -> MessagePreviewContent.VerificationChanged.DegradedMls
@@ -672,6 +699,25 @@ internal fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, self
                 text = it.text,
                 id = it.id,
                 isSelected = it.isSelected
+            )
+        }
+    )
+
+    is MessageEntityContent.Poll -> MessageContent.Poll(
+        question = this.question,
+        options = this.options.map {
+            MessageContent.Poll.Option(
+                id = it.id,
+                text = it.text
+            )
+        },
+        allowMultipleAnswers = this.allowMultipleAnswers,
+        hideVoterNames = this.hideVoterNames,
+        votes = this.votes.map {
+            MessageContent.Poll.Vote(
+                voterId = it.voterId.toModel(),
+                selectedOptionIds = it.selectedOptionIds,
+                date = it.date
             )
         }
     )

@@ -67,6 +67,7 @@ import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
 import com.wire.kalium.protobuf.messages.Multipart
+import com.wire.kalium.protobuf.messages.PollOption
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
@@ -76,6 +77,8 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import pbandk.ByteArr
 import com.wire.kalium.protobuf.messages.HistoryClient as ProtoHistoryClient
+import com.wire.kalium.protobuf.messages.Poll as ProtoPoll
+import com.wire.kalium.protobuf.messages.PollVote as ProtoPollVote
 
 internal interface ProtoContentMapper {
     fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob
@@ -160,9 +163,11 @@ internal class ProtoContentMapperImpl(
                 )
 
             is MessageContent.Composite -> packComposite(readableContent, expectsReadConfirmation, legalHoldStatus)
+            is MessageContent.Poll -> packPoll(readableContent)
             is MessageContent.ButtonAction -> packButtonAction(readableContent)
 
             is MessageContent.ButtonActionConfirmation -> packButtonActionConfirmation(readableContent)
+            is MessageContent.PollVote -> packPollVote(readableContent)
             is MessageContent.Location -> packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
 
             is MessageContent.DataTransfer -> packDataTransfer(readableContent)
@@ -290,6 +295,24 @@ internal class ProtoContentMapperImpl(
             )
         )
 
+    private fun packPoll(readableContent: MessageContent.Poll): GenericMessage.Content.Poll =
+        GenericMessage.Content.Poll(
+            ProtoPoll(
+                question = readableContent.question,
+                options = readableContent.options.map { PollOption(id = it.id, text = it.text) },
+                allowMultipleAnswers = readableContent.allowMultipleAnswers,
+                hideVoterNames = readableContent.hideVoterNames
+            )
+        )
+
+    private fun packPollVote(readableContent: MessageContent.PollVote): GenericMessage.Content.PollVote =
+        GenericMessage.Content.PollVote(
+            ProtoPollVote(
+                referenceMessageId = readableContent.referencedMessageId,
+                selectedOptionIds = readableContent.selectedOptionIds
+            )
+        )
+
     private fun packComposite(
         readableContent: MessageContent.Composite,
         expectsReadConfirmation: Boolean,
@@ -366,8 +389,10 @@ internal class ProtoContentMapperImpl(
             is MessageContent.Reaction,
             is MessageContent.Receipt,
             is MessageContent.Composite,
+            is MessageContent.Poll,
             is MessageContent.ButtonAction,
             is MessageContent.ButtonActionConfirmation,
+            is MessageContent.PollVote,
             is MessageContent.TextEdited,
             is MessageContent.CompositeEdited,
             is MessageContent.MultipartEdited,
@@ -456,6 +481,7 @@ internal class ProtoContentMapperImpl(
             )
 
             is GenericMessage.Content.Composite -> unpackComposite(protoContent)
+            is GenericMessage.Content.Poll -> unpackPoll(protoContent)
 
             is GenericMessage.Content.ButtonAction -> MessageContent.ButtonAction(
                 buttonId = protoContent.value.buttonId,
@@ -465,6 +491,11 @@ internal class ProtoContentMapperImpl(
             is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.ButtonActionConfirmation(
                 referencedMessageId = protoContent.value.referenceMessageId,
                 buttonId = protoContent.value.buttonId
+            )
+
+            is GenericMessage.Content.PollVote -> MessageContent.PollVote(
+                referencedMessageId = protoContent.value.referenceMessageId,
+                selectedOptionIds = protoContent.value.selectedOptionIds
             )
 
             is GenericMessage.Content.Calling -> unpackCalling(protoContent)
@@ -949,6 +980,16 @@ internal class ProtoContentMapperImpl(
             buttonList = buttonList
         )
     }
+
+    private fun unpackPoll(protoContent: GenericMessage.Content.Poll): MessageContent.Poll =
+        MessageContent.Poll(
+            question = protoContent.value.question,
+            options = protoContent.value.options.map {
+                MessageContent.Poll.Option(id = it.id, text = it.text)
+            },
+            allowMultipleAnswers = protoContent.value.allowMultipleAnswers ?: false,
+            hideVoterNames = protoContent.value.hideVoterNames ?: false
+        )
 
     private fun unpackInCallEmoji(protoContent: GenericMessage.Content.InCallEmoji): MessageContent.InCallEmoji {
         return MessageContent.InCallEmoji(
