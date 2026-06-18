@@ -19,6 +19,8 @@ package com.wire.kalium.logic.feature.backup.provider
 
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupMessageThreadItem
+import com.wire.backup.data.BackupMessageThreadRoot
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
@@ -34,6 +36,8 @@ internal interface BackupExporter {
     fun add(conversation: BackupConversation)
     fun add(message: BackupMessage)
     fun add(reaction: BackupReaction)
+    fun add(messageThreadRoot: BackupMessageThreadRoot)
+    fun add(messageThreadItem: BackupMessageThreadItem)
     suspend fun finalize(password: String): BackupExportResult
 }
 
@@ -82,6 +86,14 @@ internal class MPBackupExporterProviderImpl(
 
             override fun add(reaction: BackupReaction) {
                 exporter.add(reaction)
+            }
+
+            override fun add(messageThreadRoot: BackupMessageThreadRoot) {
+                exporter.add(messageThreadRoot)
+            }
+
+            override fun add(messageThreadItem: BackupMessageThreadItem) {
+                exporter.add(messageThreadItem)
             }
 
             override suspend fun finalize(password: String): BackupExportResult = exporter.finalize(password)

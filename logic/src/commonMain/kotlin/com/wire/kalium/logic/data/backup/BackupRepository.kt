@@ -46,20 +46,27 @@ import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
+@Suppress("TooManyFunctions")
 internal interface BackupRepository {
     suspend fun getUsers(): List<OtherUser>
     suspend fun getConversations(): List<Conversation>
     suspend fun getMessages(pageSize: Int = DEFAULT_PAGE_SIZE): Flow<PagedData<Message.Standalone>>
     suspend fun getReactions(pageSize: Int = DEFAULT_PAGE_SIZE): Flow<PagedData<MessageReactions>>
     suspend fun getThreadIdForMessage(conversationId: ConversationId, messageId: String): String?
+    suspend fun getThreadRoots(pageSize: Int = DEFAULT_PAGE_SIZE): Flow<PagedData<BackupThreadRootData>>
+    suspend fun getThreadItems(pageSize: Int = DEFAULT_PAGE_SIZE): Flow<PagedData<BackupThreadItemData>>
     suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun insertMessages(messages: List<Message.Standalone>): Either<CoreFailure, Unit>
     suspend fun insertReactions(reactions: List<MessageReactions>): Either<CoreFailure, Unit>
+    suspend fun insertThreadRoots(threadRoots: List<BackupThreadRootData>): Either<CoreFailure, Unit>
+    suspend fun insertThreadItems(threadItems: List<BackupThreadItemData>): Either<CoreFailure, Unit>
+    suspend fun refreshThreadMetadata(threads: Set<BackupThreadReference>): Either<CoreFailure, Unit>
     suspend fun insertThreadData(threadData: List<BackupThreadData>): Either<CoreFailure, Unit>
 
     private companion object {
@@ -67,7 +74,7 @@ internal interface BackupRepository {
     }
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class BackupDataSource(
     private val selfUserId: UserId,
     private val userDAO: UserDAO,
@@ -93,19 +100,11 @@ internal class BackupDataSource(
             .firstOrNull() ?: emptyList()
 
     override suspend fun getMessages(pageSize: Int): Flow<PagedData<Message.Standalone>> {
-        val contentTypes = listOf(
-            MessageEntity.ContentType.TEXT,
-            MessageEntity.ContentType.ASSET,
-            MessageEntity.ContentType.LOCATION,
-            MessageEntity.ContentType.MULTIPART,
-            MessageEntity.ContentType.COMPOSITE,
-        )
-
-        val totalMessages = messageDAO.countMessagesForBackup(contentTypes).toInt()
-        val totalPages = (totalMessages / pageSize).coerceAtLeast(1)
+        val totalMessages = messageDAO.countMessagesForBackup(BACKUP_MESSAGE_CONTENT_TYPES).toInt()
+        val totalPages = totalMessages.toPageCount(pageSize)
 
         return messageDAO.getPagedMessagesFlow(
-            contentTypes = contentTypes,
+            contentTypes = BACKUP_MESSAGE_CONTENT_TYPES,
             pageSize = pageSize,
         ).map { page ->
             PagedData(
@@ -151,6 +150,69 @@ internal class BackupDataSource(
             messageId = messageId,
         )
 
+    override suspend fun getThreadRoots(pageSize: Int): Flow<PagedData<BackupThreadRootData>> {
+        val totalRoots = messageThreadDAO.countThreadRootsForBackup(BACKUP_THREAD_CONTENT_TYPES).toInt()
+        val totalPages = totalRoots.toPageCount(pageSize)
+
+        return flow {
+            var offset = 0
+            while (offset < totalRoots) {
+                val page = messageThreadDAO.getThreadRootsForBackup(
+                    contentTypes = BACKUP_THREAD_CONTENT_TYPES,
+                    limit = pageSize.toLong(),
+                    offset = offset.toLong(),
+                )
+                if (page.isEmpty()) break
+                emit(
+                    PagedData(
+                        data = page.map { root ->
+                            BackupThreadRootData(
+                                conversationId = root.conversationId.toModel(),
+                                rootMessageId = root.rootMessageId,
+                                threadId = root.threadId,
+                                createdAt = root.createdAt,
+                            )
+                        },
+                        totalPages = totalPages,
+                    )
+                )
+                offset += page.size
+            }
+        }.buffer()
+    }
+
+    override suspend fun getThreadItems(pageSize: Int): Flow<PagedData<BackupThreadItemData>> {
+        val totalItems = messageThreadDAO.countThreadItemsForBackup(BACKUP_THREAD_CONTENT_TYPES).toInt()
+        val totalPages = totalItems.toPageCount(pageSize)
+
+        return flow {
+            var offset = 0
+            while (offset < totalItems) {
+                val page = messageThreadDAO.getThreadItemsForBackup(
+                    contentTypes = BACKUP_THREAD_CONTENT_TYPES,
+                    limit = pageSize.toLong(),
+                    offset = offset.toLong(),
+                )
+                if (page.isEmpty()) break
+                emit(
+                    PagedData(
+                        data = page.map { item ->
+                            BackupThreadItemData(
+                                conversationId = item.conversationId.toModel(),
+                                messageId = item.messageId,
+                                threadId = item.threadId,
+                                isRoot = item.isRoot,
+                                creationDate = item.creationDate,
+                            )
+                        },
+                        totalPages = totalPages,
+                    )
+                )
+                offset += page.size
+            }
+        }.buffer()
+    }
+
     override suspend fun insertUsers(users: List<OtherUser>) = wrapStorageRequest {
         userDAO.insertOrIgnoreUsers(users.map { userMapper.fromOtherToUserEntity(it) })
     }
@@ -183,6 +245,64 @@ internal class BackupDataSource(
         }
     }
 
+    override suspend fun insertThreadRoots(threadRoots: List<BackupThreadRootData>) = wrapStorageRequest {
+        threadRoots.forEach { root ->
+            val conversationId = root.conversationId.toDao()
+            if (messageDAO.getMessageById(root.rootMessageId, conversationId) == null) {
+                pendingMissingThreadRootCreatedAt[BackupThreadReference(root.conversationId, root.threadId)] = root.createdAt
+                return@forEach
+            }
+            messageThreadDAO.upsertThreadRoot(
+                conversationId = conversationId,
+                rootMessageId = root.rootMessageId,
+                threadId = root.threadId,
+                createdAt = root.createdAt,
+            )
+        }
+    }
+
+    override suspend fun insertThreadItems(threadItems: List<BackupThreadItemData>) = wrapStorageRequest {
+        threadItems.forEach { item ->
+            val conversationId = item.conversationId.toDao()
+            val threadReference = BackupThreadReference(item.conversationId, item.threadId)
+            if (messageDAO.getMessageById(item.messageId, conversationId) == null) {
+                if (item.isRoot) {
+                    pendingMissingThreadRootCreatedAt[threadReference] = item.creationDate
+                }
+                return@forEach
+            }
+            if (item.isRoot) {
+                pendingMissingThreadRootCreatedAt.remove(threadReference)
+            } else {
+                pendingMissingThreadRootCreatedAt.remove(threadReference)?.let { missingRootCreatedAt ->
+                    messageThreadDAO.upsertMissingThreadRootFromBackup(
+                        conversationId = conversationId,
+                        replyMessageId = item.messageId,
+                        threadId = item.threadId,
+                        createdAt = missingRootCreatedAt,
+                    )
+                }
+            }
+            messageThreadDAO.upsertThreadItem(
+                conversationId = conversationId,
+                messageId = item.messageId,
+                threadId = item.threadId,
+                isRoot = item.isRoot,
+                creationDate = item.creationDate,
+                visibility = MessageEntity.Visibility.VISIBLE,
+            )
+        }
+    }
+
+    override suspend fun refreshThreadMetadata(threads: Set<BackupThreadReference>) = wrapStorageRequest {
+        threads.forEach { thread ->
+            messageThreadDAO.refreshThreadMetadata(
+                conversationId = thread.conversationId.toDao(),
+                threadId = thread.threadId,
+            )
+        }
+    }
+
     override suspend fun insertThreadData(threadData: List<BackupThreadData>) = wrapStorageRequest {
         threadData.filter { it.isRoot }.forEach { thread ->
             messageThreadDAO.upsertThreadRoot(
@@ -203,7 +323,30 @@ internal class BackupDataSource(
                 visibility = MessageEntity.Visibility.VISIBLE,
             )
         }
+
+        threadData
+            .map { BackupThreadReference(it.conversationId, it.threadId) }
+            .toSet()
+            .forEach { thread ->
+                messageThreadDAO.refreshThreadMetadata(
+                    conversationId = thread.conversationId.toDao(),
+                    threadId = thread.threadId,
+                )
+            }
     }
+
+    private companion object {
+        val BACKUP_MESSAGE_CONTENT_TYPES = listOf(
+            MessageEntity.ContentType.TEXT,
+            MessageEntity.ContentType.ASSET,
+            MessageEntity.ContentType.LOCATION,
+            MessageEntity.ContentType.MULTIPART,
+            MessageEntity.ContentType.COMPOSITE,
+        )
+        val BACKUP_THREAD_CONTENT_TYPES = BACKUP_MESSAGE_CONTENT_TYPES + MessageEntity.ContentType.MISSING_THREAD_ROOT
+    }
+
+    private val pendingMissingThreadRootCreatedAt = mutableMapOf<BackupThreadReference, Instant>()
 }
 
 internal data class PagedData<T>(
@@ -218,3 +361,26 @@ internal data class BackupThreadData(
     val isRoot: Boolean,
     val creationDate: Instant,
 )
+
+internal data class BackupThreadRootData(
+    val conversationId: ConversationId,
+    val rootMessageId: String,
+    val threadId: String,
+    val createdAt: Instant,
+)
+
+internal data class BackupThreadItemData(
+    val conversationId: ConversationId,
+    val messageId: String,
+    val threadId: String,
+    val isRoot: Boolean,
+    val creationDate: Instant,
+)
+
+internal data class BackupThreadReference(
+    val conversationId: ConversationId,
+    val threadId: String,
+)
+
+private fun Int.toPageCount(pageSize: Int): Int =
+    if (this == 0) 1 else ((this + pageSize - 1) / pageSize).coerceAtLeast(1)
