@@ -28,8 +28,46 @@ jobs:
           persist-credentials: false
       - name: Fetch release tags
         run: git fetch --force --tags origin
-      - name: Ensure the tag is signed
-        run: git cat-file commit HEAD | grep -q -- '-----BEGIN PGP SIGNATURE-----'
+      - name: Ensure the backup tag is signed
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          api_url="https://api.github.com/repos/$GITHUB_REPOSITORY"
+          tag_name="$GITHUB_REF_NAME"
+
+          ref_response=$(curl -fsSL \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$api_url/git/ref/tags/$tag_name")
+
+          ref_object_type=$(echo "$ref_response" | jq -r '.object.type')
+          ref_object_sha=$(echo "$ref_response" | jq -r '.object.sha')
+
+          if [[ "$ref_object_type" != "tag" ]]; then
+            echo "::error::Tag $tag_name must be an annotated signed tag."
+            exit 1
+          fi
+
+          tag_response=$(curl -fsSL \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "$api_url/git/tags/$ref_object_sha")
+
+          verified=$(echo "$tag_response" | jq -r '.verification.verified')
+          reason=$(echo "$tag_response" | jq -r '.verification.reason // "unknown"')
+          target_type=$(echo "$tag_response" | jq -r '.object.type')
+          target_sha=$(echo "$tag_response" | jq -r '.object.sha')
+          head_sha=$(git rev-parse HEAD)
+
+          if [[ "$target_type" != "commit" || "$target_sha" != "$head_sha" ]]; then
+            echo "::error::Tag $tag_name does not point to the checked-out commit."
+            exit 1
+          fi
+
+          if [[ "$verified" != "true" ]]; then
+            echo "::error::Tag $tag_name signature is not verified by GitHub (reason: $reason)."
+            exit 1
+          fi
       - name: Resolve logic release tag
         id: logic-release
         run: |
