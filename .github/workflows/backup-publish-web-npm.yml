@@ -94,6 +94,6 @@ jobs:
 
       - name: Publish package to npm (OIDC Trusted Publisher)
         working-directory: domain/backup/build/dist/js/productionLibrary
-        run: npm publish "${STEPS_PACK_OUTPUTS_PACKAGE_TGZ}"
+        run: npm publish "${STEPS_PACK_OUTPUTS_PACKAGE_TGZ}" --provenance --access public
         env:
           STEPS_PACK_OUTPUTS_PACKAGE_TGZ: ${{ steps.pack.outputs.package_tgz }}
