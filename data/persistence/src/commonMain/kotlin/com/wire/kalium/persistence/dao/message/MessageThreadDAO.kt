@@ -28,6 +28,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
@@ -42,6 +43,7 @@ data class MessageThreadRootEntity(
     val createdAt: Instant,
     val visibleReplyCount: Long,
     val lastReplyDate: Instant?,
+    val isFollowing: Boolean,
 )
 
 data class MessageThreadBackupRootEntity(
@@ -49,6 +51,7 @@ data class MessageThreadBackupRootEntity(
     val rootMessageId: String,
     val threadId: String,
     val createdAt: Instant,
+    val isFollowing: Boolean,
 )
 
 data class MessageThreadBackupItemEntity(
@@ -115,6 +118,15 @@ interface MessageThreadDAO {
         replyMessageId: String,
         threadId: String,
         createdAt: Instant,
+        isFollowing: Boolean = true,
+    )
+
+    suspend fun upsertThreadRootFromBackup(
+        conversationId: QualifiedIDEntity,
+        rootMessageId: String,
+        threadId: String,
+        createdAt: Instant,
+        isFollowing: Boolean,
     )
 
     suspend fun getThreadByRootMessage(
@@ -126,6 +138,22 @@ interface MessageThreadDAO {
         conversationId: QualifiedIDEntity,
         threadId: String,
     ): String?
+
+    suspend fun getThreadFollowState(
+        conversationId: QualifiedIDEntity,
+        threadId: String,
+    ): Boolean?
+
+    suspend fun updateThreadFollowState(
+        conversationId: QualifiedIDEntity,
+        threadId: String,
+        isFollowing: Boolean,
+    )
+
+    fun observeThreadFollowState(
+        conversationId: QualifiedIDEntity,
+        threadId: String,
+    ): Flow<Boolean?>
 
     suspend fun getThreadIdByMessageId(
         conversationId: QualifiedIDEntity,
@@ -278,6 +306,7 @@ internal class MessageThreadDAOImpl internal constructor(
         replyMessageId: String,
         threadId: String,
         createdAt: Instant,
+        isFollowing: Boolean,
     ) {
         withContext(writeDispatcher.value) {
             queries.transaction {
@@ -286,6 +315,7 @@ internal class MessageThreadDAOImpl internal constructor(
                     replyMessageId = replyMessageId,
                     threadId = threadId,
                     createdAt = createdAt,
+                    isFollowing = isFollowing,
                 )
                 queries.upsertMainListItem(
                     conversation_id = conversationId,
@@ -297,11 +327,40 @@ internal class MessageThreadDAOImpl internal constructor(
         }
     }
 
+    override suspend fun upsertThreadRootFromBackup(
+        conversationId: QualifiedIDEntity,
+        rootMessageId: String,
+        threadId: String,
+        createdAt: Instant,
+        isFollowing: Boolean,
+    ) {
+        withContext(writeDispatcher.value) {
+            queries.transaction {
+                queries.upsertThreadRootWithFollowState(
+                    conversation_id = conversationId,
+                    root_message_id = rootMessageId,
+                    thread_id = threadId,
+                    created_at = createdAt,
+                    is_following = isFollowing,
+                )
+                queries.refreshThreadVisibleReplyCount(
+                    conversation_id = conversationId,
+                    thread_id = threadId,
+                )
+                queries.deleteMainListItemsForThreadReplies(
+                    conversation_id = conversationId,
+                    thread_id = threadId,
+                )
+            }
+        }
+    }
+
     private suspend fun upsertMissingThreadRootFromReply(
         conversationId: QualifiedIDEntity,
         replyMessageId: String,
         threadId: String,
         createdAt: Instant = Clock.System.now(),
+        isFollowing: Boolean = true,
     ): Instant {
         queries.insertMissingThreadRootMessageFromReply(
             thread_id = threadId,
@@ -309,11 +368,12 @@ internal class MessageThreadDAOImpl internal constructor(
             created_at = createdAt,
             reply_message_id = replyMessageId,
         )
-        queries.upsertThreadRoot(
+        queries.upsertThreadRootWithFollowState(
             conversation_id = conversationId,
             root_message_id = threadId,
             thread_id = threadId,
             created_at = createdAt,
+            is_following = isFollowing,
         )
         queries.upsertThreadItem(
             conversation_id = conversationId,
@@ -422,6 +482,42 @@ internal class MessageThreadDAOImpl internal constructor(
                 thread_id = threadId
             ).executeAsOneOrNull()
         }
+
+    override suspend fun getThreadFollowState(
+        conversationId: QualifiedIDEntity,
+        threadId: String,
+    ): Boolean? = withContext(readDispatcher.value) {
+        queries.getThreadFollowState(
+            conversation_id = conversationId,
+            thread_id = threadId,
+        ).executeAsOneOrNull()
+    }
+
+    override suspend fun updateThreadFollowState(
+        conversationId: QualifiedIDEntity,
+        threadId: String,
+        isFollowing: Boolean,
+    ) {
+        withContext(writeDispatcher.value) {
+            queries.updateThreadFollowState(
+                conversation_id = conversationId,
+                thread_id = threadId,
+                is_following = isFollowing,
+            )
+        }
+    }
+
+    override fun observeThreadFollowState(
+        conversationId: QualifiedIDEntity,
+        threadId: String,
+    ): Flow<Boolean?> =
+        queries.getThreadFollowState(
+            conversation_id = conversationId,
+            thread_id = threadId,
+        )
+            .asFlow()
+            .mapToOneOrNull()
+            .flowOn(readDispatcher.value)
 
     override suspend fun getThreadIdByMessageId(
         conversationId: QualifiedIDEntity,

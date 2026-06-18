@@ -48,4 +48,14 @@ WHERE
     AND m.visibility = 'VISIBLE'
     AND m.content_type IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION')
     AND NOT EXISTS (SELECT 1 FROM SelfUser WHERE id = m.sender_user_id)
+    AND NOT EXISTS (
+        SELECT 1
+        FROM MessageThreadItem ti
+        INNER JOIN MessageThreadRoot tr
+            ON tr.conversation_id = ti.conversation_id
+            AND tr.thread_id = ti.thread_id
+        WHERE ti.conversation_id = uc.messageConversationId
+        AND ti.message_id = uc.messageId
+        AND tr.is_following = 0
+    )
 ORDER BY m.creation_date DESC;

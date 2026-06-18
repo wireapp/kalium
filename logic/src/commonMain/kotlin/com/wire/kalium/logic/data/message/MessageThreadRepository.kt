@@ -53,6 +53,7 @@ internal data class MessageThreadRoot(
     val createdAt: Instant,
     val visibleReplyCount: Long = 0,
     val lastReplyDate: Instant? = null,
+    val isFollowing: Boolean = true,
 )
 
 internal data class MessageThreadSummary(
@@ -107,6 +108,22 @@ internal interface MessageThreadRepository {
         conversationId: ConversationId,
         threadId: String,
     ): Either<StorageFailure, String?>
+
+    suspend fun getThreadFollowState(
+        conversationId: ConversationId,
+        threadId: String,
+    ): Either<StorageFailure, Boolean?>
+
+    suspend fun updateThreadFollowState(
+        conversationId: ConversationId,
+        threadId: String,
+        isFollowing: Boolean,
+    ): Either<StorageFailure, Unit>
+
+    fun observeThreadFollowState(
+        conversationId: ConversationId,
+        threadId: String,
+    ): Flow<Either<StorageFailure, Boolean?>>
 
     suspend fun getThreadIdByMessageId(
         conversationId: ConversationId,
@@ -192,6 +209,36 @@ internal class MessageThreadRepositoryImpl internal constructor(
         dao.getRootMessageIdByThreadId(conversationId.toDao(), threadId)
     }
 
+    override suspend fun getThreadFollowState(
+        conversationId: ConversationId,
+        threadId: String,
+    ): Either<StorageFailure, Boolean?> = wrapStorageNullableRequest {
+        dao.getThreadFollowState(conversationId.toDao(), threadId)
+    }
+
+    override suspend fun updateThreadFollowState(
+        conversationId: ConversationId,
+        threadId: String,
+        isFollowing: Boolean,
+    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+        dao.updateThreadFollowState(
+            conversationId = conversationId.toDao(),
+            threadId = threadId,
+            isFollowing = isFollowing,
+        )
+    }
+
+    override fun observeThreadFollowState(
+        conversationId: ConversationId,
+        threadId: String,
+    ): Flow<Either<StorageFailure, Boolean?>> =
+        wrapFlowStorageRequest {
+            dao.observeThreadFollowState(
+                conversationId = conversationId.toDao(),
+                threadId = threadId,
+            )
+        }
+
     override suspend fun getThreadIdByMessageId(
         conversationId: ConversationId,
         messageId: String,
@@ -265,6 +312,7 @@ private fun MessageThreadRootEntity.toModel() = MessageThreadRoot(
     createdAt = createdAt,
     visibleReplyCount = visibleReplyCount,
     lastReplyDate = lastReplyDate,
+    isFollowing = isFollowing,
 )
 
 private fun MessageThreadSummaryEntity.toModel() = MessageThreadSummary(

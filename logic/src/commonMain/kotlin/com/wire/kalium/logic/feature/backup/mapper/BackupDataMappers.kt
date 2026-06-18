@@ -90,6 +90,7 @@ internal fun BackupThreadRootData.toBackupMessageThreadRoot() = BackupMessageThr
     conversationId = conversationId.toBackupQualifiedId(),
     threadId = threadId,
     createdAt = BackupDateTime(createdAt.toEpochMilliseconds()),
+    isFollowing = isFollowing,
 )
 
 internal fun BackupThreadItemData.toBackupMessageThreadItem() = BackupMessageThreadItem(

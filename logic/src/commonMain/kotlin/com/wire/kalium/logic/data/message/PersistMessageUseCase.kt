@@ -148,6 +148,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.TeamMemberRemoved -> false
             is MessageContent.DataTransfer -> false
             is MessageContent.InCallEmoji -> false
+            is MessageContent.ThreadFollow -> false
             is MessageContent.Multipart -> true
             is MessageContent.History -> false
             is MessageContent.NewConversationWithCellMessage -> false
@@ -214,6 +215,7 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.TeamMemberRemoved,
             is MessageContent.DataTransfer,
             is MessageContent.InCallEmoji,
+            is MessageContent.ThreadFollow,
             is MessageContent.History,
             is MessageContent.NewConversationWithCellMessage,
             is MessageContent.ConversationAppsEnabledChanged,

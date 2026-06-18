@@ -52,6 +52,7 @@ message GenericMessage {
         HistoryClientAvailable historyClientAvailable = 28;
         HistoryClientRequest historyClientRequest = 29;
         HistoryClientResponse historyClientResponse = 30;
+        ThreadFollow threadFollow = 31;
     }
     optional UnknownStrategy unknownStrategy = 25 [default = IGNORE];
 
@@ -71,6 +72,12 @@ message QualifiedUserId {
 message QualifiedConversationId {
     required string id = 1;
     required string domain = 2;
+}
+
+message ThreadFollow {
+    required QualifiedConversationId qualified_conversation_id = 1;
+    required string thread_id = 2;
+    required bool is_following = 3;
 }
 
 message Composite {

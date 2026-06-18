@@ -77,6 +77,7 @@ message ExportedMessageThreadRoot {
     required ExportedQualifiedId conversation_id = 2;
     required string thread_id = 3;
     required int64 created_at = 4;
+    optional bool is_following = 5 [default = true];
 }
 
 message ExportedMessageThreadItem {

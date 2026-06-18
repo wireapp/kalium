@@ -199,6 +199,12 @@ sealed interface MessageContent {
         )
     }
 
+    data class ThreadFollow(
+        val conversationId: ConversationId,
+        val threadId: String,
+        val isFollowing: Boolean,
+    ) : Signaling
+
     data class DeleteMessage(val messageId: String) : Signaling
 
     data class TextEdited(
@@ -512,6 +518,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.LegalHold.ForMembers.Enabled -> "LegalHold.ForMembers.Enabled"
     is MessageContent.DataTransfer -> "DataTransfer"
     is MessageContent.InCallEmoji -> "InCallEmoji"
+    is MessageContent.ThreadFollow -> "ThreadFollow"
     is MessageContent.Multipart -> "Multipart"
     is MessageContent.CompositeEdited -> "CompositeEdited"
     MessageContent.History.ClientsRequest -> "History.ClientsRequest"

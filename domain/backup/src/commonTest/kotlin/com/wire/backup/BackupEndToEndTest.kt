@@ -128,6 +128,7 @@ class BackupEndToEndTest {
             conversationId = conversationId,
             threadId = "thread-id",
             createdAt = BackupDateTime(10L),
+            isFollowing = false,
         )
         val item = BackupMessageThreadItem(
             messageId = "reply-message-id",

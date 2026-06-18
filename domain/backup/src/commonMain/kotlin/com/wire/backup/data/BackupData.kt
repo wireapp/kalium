@@ -325,6 +325,7 @@ public sealed class BackupMessageContent {
  * @property conversationId The qualified ID of the conversation containing this thread.
  * @property threadId The unique identifier of the thread.
  * @property createdAt The timestamp when the thread was created.
+ * @property isFollowing Whether this thread should notify the user and appear in the global threads list.
  */
 @JsExport
 @Serializable
@@ -337,6 +338,8 @@ public data class BackupMessageThreadRoot(
     val threadId: String,
     @SerialName("createdAt")
     val createdAt: BackupDateTime,
+    @SerialName("isFollowing")
+    val isFollowing: Boolean = true,
 )
 
 /**

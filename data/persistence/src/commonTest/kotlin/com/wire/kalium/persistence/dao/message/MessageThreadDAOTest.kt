@@ -219,6 +219,18 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenNewThreadRoot_whenReadingFollowState_thenItDefaultsToFollowing() = runTest {
+        insertInitialData()
+        val root = createMessage("follow-default-root", Instant.parse("2026-01-01T00:00:00Z"))
+        messageDAO.insertOrIgnoreMessage(root)
+
+        messageThreadDAO.upsertThreadRoot(conversation.id, root.id, THREAD_ID_1, root.date)
+
+        assertEquals(true, messageThreadDAO.getThreadFollowState(conversation.id, THREAD_ID_1))
+        assertEquals(true, messageThreadDAO.observeThreadFollowState(conversation.id, THREAD_ID_1).first())
+    }
+
+    @Test
     fun givenThreadReplyArrivesBeforeRealRoot_whenRootIsPersisted_thenFakeRootIsReplaced() = runTest {
         insertInitialData()
         val root = createMessage(
@@ -461,6 +473,27 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
         assertEquals(1L, globalThreads.first().visibleReplyCount)
         assertIs<MessagePreviewEntityContent.Text>(globalThreads.first().rootMessage.content)
         assertEquals(THREAD_ID_1, globalThreads.last().threadId)
+    }
+
+    @Test
+    fun givenThreadIsUnfollowed_whenObservingGlobalThreads_thenThreadIsHidden() = runTest {
+        insertInitialData()
+        val root = createMessage(
+            id = "unfollowed-global-root",
+            date = Instant.parse("2026-01-01T00:00:00Z"),
+            content = MessageEntityContent.Text("Unfollowed thread topic")
+        )
+        val reply = createMessage("unfollowed-global-reply", Instant.parse("2026-01-01T00:00:01Z"))
+        messageDAO.insertOrIgnoreMessages(listOf(root, reply))
+        messageThreadDAO.upsertThreadRoot(conversation.id, root.id, THREAD_ID_1, root.date)
+        messageThreadDAO.upsertThreadItem(conversation.id, root.id, THREAD_ID_1, true, root.date, root.visibility)
+        messageThreadDAO.upsertThreadItem(conversation.id, reply.id, THREAD_ID_1, false, reply.date, reply.visibility)
+
+        assertEquals(1, messageThreadDAO.observeGlobalThreads().first().size)
+
+        messageThreadDAO.updateThreadFollowState(conversation.id, THREAD_ID_1, isFollowing = false)
+
+        assertEquals(emptyList(), messageThreadDAO.observeGlobalThreads().first())
     }
 
     @Test

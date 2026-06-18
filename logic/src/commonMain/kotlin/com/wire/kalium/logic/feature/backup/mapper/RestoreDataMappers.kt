@@ -163,6 +163,7 @@ internal fun BackupMessageThreadRoot.toThreadRootDataOrNull(): BackupThreadRootD
             rootMessageId = rootMessageId,
             threadId = threadId,
             createdAt = createdAt.instant,
+            isFollowing = isFollowing,
         )
     }
 }

@@ -171,6 +171,7 @@ internal class MPBackupMapper {
             conversationId = it.conversationId.toProtoModel(),
             threadId = it.threadId,
             createdAt = it.createdAt.toLongMilliseconds(),
+            isFollowing = it.isFollowing,
         )
 
     fun mapMessageThreadItemToProtobuf(it: BackupMessageThreadItem): ExportedMessageThreadItem =
@@ -219,6 +220,7 @@ internal class MPBackupMapper {
             conversationId = root.conversationId.toModel(),
             threadId = root.threadId,
             createdAt = BackupDateTime(root.createdAt),
+            isFollowing = root.isFollowing ?: true,
         )
 
     private fun fromMessageThreadItemProtoToBackupModel(item: ExportedMessageThreadItem): BackupMessageThreadItem =
