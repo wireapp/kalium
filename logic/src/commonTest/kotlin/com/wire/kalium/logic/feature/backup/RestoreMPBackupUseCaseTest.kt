@@ -20,6 +20,8 @@ package com.wire.kalium.logic.feature.backup
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupEmojiReaction
 import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupMessageThreadItem
+import com.wire.backup.data.BackupMessageThreadRoot
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
@@ -278,8 +280,11 @@ class RestoreMPBackupUseCaseTest {
         val conversationsPager = mock<ImportDataPagerForMocking<BackupConversation>>(mode = MockMode.autoUnit)
         val messagesPager = mock<ImportDataPagerForMocking<BackupMessage>>(mode = MockMode.autoUnit)
         val reactionsPager = mock<ImportDataPagerForMocking<BackupReaction>>(mode = MockMode.autoUnit)
+        val messageThreadRootsPager = mock<ImportDataPagerForMocking<BackupMessageThreadRoot>>(mode = MockMode.autoUnit)
+        val messageThreadItemsPager = mock<ImportDataPagerForMocking<BackupMessageThreadItem>>(mode = MockMode.autoUnit)
         val importer = mock<BackupImporter>(mode = MockMode.autoUnit)
         var usersPages: List<Array<BackupUser>> = listOf(arrayOf(testUser.toBackupUser()))
+        var backupMessages: List<BackupMessage> = listOf(TestMessage.TEXT_MESSAGE.toBackupMessage()!!)
         var usersInsertStubConfigured = false
         var conversationsInsertStubConfigured = false
         var messagesInsertStubConfigured = false
@@ -370,6 +375,9 @@ class RestoreMPBackupUseCaseTest {
                 everySuspend { backupRepository.insertMessages(any()) } returns (Unit.right())
             }
             everySuspend { backupRepository.insertThreadData(any()) }.returns(Unit.right())
+            everySuspend { backupRepository.insertThreadRoots(any()) }.returns(Unit.right())
+            everySuspend { backupRepository.insertThreadItems(any()) }.returns(Unit.right())
+            everySuspend { backupRepository.refreshThreadMetadata(any()) }.returns(Unit.right())
             coEvery { backupRepository.insertReactions(any()) } returns (Unit.right())
 
             val usersHasMorePagesValues = MutableList(usersPages.size) { true } + false
@@ -390,10 +398,15 @@ class RestoreMPBackupUseCaseTest {
             every { reactionsPager.hasMorePages() } calls { reactionsHasMorePagesIndex++ == 0 }
             every { reactionsPager.nextPage() } returns (arrayOf(testReaction))
 
+            every { messageThreadRootsPager.hasMorePages() } returns false
+            every { messageThreadItemsPager.hasMorePages() } returns false
+
             every { resultPager.usersPager } returns (usersPager)
             every { resultPager.conversationsPager } returns (conversationsPager)
             every { resultPager.messagesPager } returns (messagesPager)
             every { resultPager.reactionsPager } returns (reactionsPager)
+            every { resultPager.messageThreadRootsPager } returns (messageThreadRootsPager)
+            every { resultPager.messageThreadItemsPager } returns (messageThreadItemsPager)
             every { resultPager.totalPagesCount } returns (1)
 
             return this to RestoreMPBackupUseCaseImpl(

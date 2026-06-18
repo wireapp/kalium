@@ -23,6 +23,7 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.backup.BackupThreadReference
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
 import com.wire.kalium.logic.data.message.reaction.MessageReactions
@@ -30,6 +31,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.backup.mapper.toQualifiedIdOrNull
 import com.wire.kalium.logic.feature.backup.mapper.toConversation
 import com.wire.kalium.logic.feature.backup.mapper.toMessage
+import com.wire.kalium.logic.feature.backup.mapper.toThreadItemDataOrNull
+import com.wire.kalium.logic.feature.backup.mapper.toThreadRootDataOrNull
 import com.wire.kalium.logic.feature.backup.mapper.toThreadDataOrNull
 import com.wire.kalium.logic.feature.backup.mapper.toUser
 import com.wire.kalium.logic.feature.backup.provider.ImportResult
@@ -131,11 +134,18 @@ internal class RestoreMPBackupUseCaseImpl(
         resultData.use { pager ->
 
             var processedPageCount = 0
+            val hasDedicatedThreadPages =
+                pager.messageThreadRootsPager.hasMorePages() || pager.messageThreadItemsPager.hasMorePages()
 
             pager.persistUsers { onProgress(processedPageCount++, pager.totalPagesCount) }
             pager.persistConversations { onProgress(processedPageCount++, pager.totalPagesCount) }
-            pager.persistMessages { onProgress(processedPageCount++, pager.totalPagesCount) }
+            pager.persistMessages(
+                useLegacyThreadData = !hasDedicatedThreadPages,
+            ) { onProgress(processedPageCount++, pager.totalPagesCount) }
             pager.persistReactions { onProgress(processedPageCount++, pager.totalPagesCount) }
+            if (hasDedicatedThreadPages) {
+                pager.persistThreadData { onProgress(processedPageCount++, pager.totalPagesCount) }
+            }
         }
     }
 
@@ -163,18 +173,55 @@ internal class RestoreMPBackupUseCaseImpl(
     }
 
     @Suppress("MagicNumber")
-    private suspend fun ImportResultPager.persistMessages(onPageProcessed: () -> Unit) {
+    private suspend fun ImportResultPager.persistMessages(
+        useLegacyThreadData: Boolean,
+        onPageProcessed: () -> Unit,
+    ) {
         messagesPager.pages().asFlow().buffer(10)
             .collect { page ->
                 backupRepository.insertMessages(page.mapNotNull { it.toMessage(selfUserId) })
                     .onFailure { error ->
                         kaliumLogger.e("Restore messages error: $error")
                     }
-                backupRepository.insertThreadData(page.mapNotNull { it.toThreadDataOrNull() })
-                    .onFailure { error ->
-                        kaliumLogger.e("Restore thread data error: $error")
-                    }
+                if (useLegacyThreadData) {
+                    backupRepository.insertThreadData(page.mapNotNull { it.toThreadDataOrNull() })
+                        .onFailure { error ->
+                            kaliumLogger.e("Restore legacy thread data error: $error")
+                        }
+                }
                 onPageProcessed()
+            }
+    }
+
+    @Suppress("MagicNumber")
+    private suspend fun ImportResultPager.persistThreadData(onPageProcessed: () -> Unit) {
+        val touchedThreads = mutableSetOf<BackupThreadReference>()
+
+        messageThreadRootsPager.pages().asFlow().buffer(10)
+            .collect { page ->
+                val roots = page.mapNotNull { it.toThreadRootDataOrNull() }
+                backupRepository.insertThreadRoots(roots)
+                    .onFailure { error ->
+                        kaliumLogger.e("Restore thread roots error: $error")
+                    }
+                touchedThreads += roots.map { BackupThreadReference(it.conversationId, it.threadId) }
+                onPageProcessed()
+            }
+
+        messageThreadItemsPager.pages().asFlow().buffer(10)
+            .collect { page ->
+                val items = page.mapNotNull { it.toThreadItemDataOrNull() }
+                backupRepository.insertThreadItems(items)
+                    .onFailure { error ->
+                        kaliumLogger.e("Restore thread items error: $error")
+                    }
+                touchedThreads += items.map { BackupThreadReference(it.conversationId, it.threadId) }
+                onPageProcessed()
+            }
+
+        backupRepository.refreshThreadMetadata(touchedThreads)
+            .onFailure { error ->
+                kaliumLogger.e("Refresh restored thread metadata error: $error")
             }
     }
 
