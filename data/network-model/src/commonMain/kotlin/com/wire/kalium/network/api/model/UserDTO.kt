@@ -54,6 +54,7 @@ data class UserProfileDTO(
     @SerialName("service") override val service: ServiceDTO?,
     @SerialName("supported_protocols") override val supportedProtocols: List<SupportedProtocolDTO>?,
     @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusDTO,
+    @SerialName("text_status") val textStatus: String? = null,
     @SerialName("type") val type: UserTypeDTO?,
     @SerialName("app") val app: AppDTO?
 ) : UserDTO()

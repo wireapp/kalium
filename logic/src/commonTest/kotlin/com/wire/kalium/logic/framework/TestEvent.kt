@@ -99,6 +99,7 @@ internal object TestEvent {
         name = "newName",
         handle = null,
         email = null,
+        textStatus = null,
         previewAssetId = null,
         completeAssetId = null,
         supportedProtocols = null
