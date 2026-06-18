@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.conversation.folders.ConversationFolderReposit
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
@@ -141,6 +142,7 @@ public class ConversationScope internal constructor(
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
     private val serverConfigLinks: ServerConfig.Links,
     internal val messageRepository: MessageRepository,
+    private val messageThreadRepository: MessageThreadRepository,
     internal val assetRepository: AssetRepository,
     private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
     private val deleteConversationUseCase: DeleteConversationUseCase,
@@ -228,6 +230,13 @@ public class ConversationScope internal constructor(
 
     public val createRegularGroup: CreateRegularGroupUseCase
         get() = CreateRegularGroupUseCaseImpl(createGroupConversation)
+
+    public val createConversationFromThread: CreateConversationFromThreadUseCase
+        get() = CreateConversationFromThreadUseCase(
+            messageThreadRepository = messageThreadRepository,
+            createRegularGroup = createRegularGroup,
+            selfUserId = selfUserId,
+        )
 
     public val createChannel: CreateChannelUseCase
         get() = CreateChannelUseCase(createGroupConversation)

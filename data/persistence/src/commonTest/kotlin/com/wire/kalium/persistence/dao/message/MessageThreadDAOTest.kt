@@ -43,6 +43,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class MessageThreadDAOTest : BaseDatabaseTest() {
 
@@ -460,6 +461,49 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
         assertEquals(1L, globalThreads.first().visibleReplyCount)
         assertIs<MessagePreviewEntityContent.Text>(globalThreads.first().rootMessage.content)
         assertEquals(THREAD_ID_1, globalThreads.last().threadId)
+    }
+
+    @Test
+    fun givenThreadMessages_whenMovingToAnotherConversation_thenMessagesAreFlattenedInTargetConversation() = runTest {
+        insertInitialData()
+        val targetConversation = newConversationEntity("Promoted Thread")
+        conversationDAO.insertConversation(targetConversation)
+        val root = createMessage("move-root", Instant.parse("2026-01-01T00:00:00Z"))
+        val reply = createMessage("move-reply", Instant.parse("2026-01-01T00:00:01Z"))
+        val nonThread = createMessage("move-non-thread", Instant.parse("2026-01-01T00:00:02Z"))
+        messageDAO.insertOrIgnoreMessages(listOf(root, reply, nonThread))
+
+        messageThreadDAO.upsertThreadRoot(conversation.id, root.id, THREAD_ID_1, root.date)
+        messageThreadDAO.upsertThreadItem(conversation.id, root.id, THREAD_ID_1, true, root.date, root.visibility)
+        messageThreadDAO.upsertThreadItem(conversation.id, reply.id, THREAD_ID_1, false, reply.date, reply.visibility)
+
+        assertContentEquals(
+            listOf(senderUser.id),
+            messageThreadDAO.getThreadParticipantIds(conversation.id, THREAD_ID_1)
+        )
+
+        messageThreadDAO.moveThreadMessagesToConversation(
+            sourceConversationId = conversation.id,
+            threadId = THREAD_ID_1,
+            targetConversationId = targetConversation.id,
+        )
+
+        val sourceMessageIds = messageDAO.getMessagesByConversationAndVisibility(
+            conversationId = conversation.id,
+            limit = 50,
+            offset = 0,
+        ).first().map { it.id }
+        val targetMessageIds = messageDAO.getMessagesByConversationAndVisibility(
+            conversationId = targetConversation.id,
+            limit = 50,
+            offset = 0,
+        ).first().map { it.id }
+
+        assertContentEquals(listOf(nonThread.id), sourceMessageIds)
+        assertContains(targetMessageIds, root.id)
+        assertContains(targetMessageIds, reply.id)
+        assertNull(messageThreadDAO.getThreadIdByMessageId(targetConversation.id, reply.id))
+        assertNull(messageThreadDAO.getThreadByRootMessage(targetConversation.id, root.id))
     }
 
     private suspend fun insertInitialData() {

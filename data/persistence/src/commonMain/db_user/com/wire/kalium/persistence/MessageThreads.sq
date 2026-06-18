@@ -142,6 +142,50 @@ WHERE conversation_id = :conversation_id
 AND message_id = :message_id
 LIMIT 1;
 
+selectThreadParticipantIds:
+SELECT DISTINCT Message.sender_user_id
+FROM MessageThreadItem
+INNER JOIN Message
+    ON Message.id = MessageThreadItem.message_id
+    AND Message.conversation_id = MessageThreadItem.conversation_id
+WHERE MessageThreadItem.conversation_id = :conversation_id
+AND MessageThreadItem.thread_id = :thread_id
+AND MessageThreadItem.visibility = 'VISIBLE';
+
+moveThreadMessagesToConversation:
+UPDATE OR REPLACE Message
+SET conversation_id = :target_conversation_id
+WHERE conversation_id = :source_conversation_id
+AND id IN (
+    SELECT message_id
+    FROM MessageThreadItem
+    WHERE conversation_id = :source_conversation_id
+    AND thread_id = :thread_id
+);
+
+upsertMovedThreadMessagesIntoMainList:
+INSERT INTO MessageMainList(conversation_id, message_id, creation_date, visibility)
+SELECT Message.conversation_id, Message.id, Message.creation_date, Message.visibility
+FROM MessageThreadItem
+INNER JOIN Message
+    ON Message.id = MessageThreadItem.message_id
+    AND Message.conversation_id = MessageThreadItem.conversation_id
+WHERE MessageThreadItem.conversation_id = :conversation_id
+AND MessageThreadItem.thread_id = :thread_id
+ON CONFLICT(conversation_id, message_id) DO UPDATE SET
+    creation_date = excluded.creation_date,
+    visibility = excluded.visibility;
+
+deleteThreadItemsByThreadId:
+DELETE FROM MessageThreadItem
+WHERE conversation_id = :conversation_id
+AND thread_id = :thread_id;
+
+deleteThreadRootByThreadId:
+DELETE FROM MessageThreadRoot
+WHERE conversation_id = :conversation_id
+AND thread_id = :thread_id;
+
 countThreadRootsForBackup:
 SELECT COUNT(*)
 FROM MessageThreadRoot
