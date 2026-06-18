@@ -74,8 +74,9 @@ jobs:
       - name: Setup Node for npm publish (Trusted Publisher)
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
         with:
-          package-manager-cache: false
+          registry-url: https://registry.npmjs.org
           scope: "@wireapp"
+          package-manager-cache: false
 
       - name: Pack JS/TS artifact
         id: pack
