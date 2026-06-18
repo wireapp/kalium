@@ -96,4 +96,5 @@ jobs:
         working-directory: domain/backup/build/dist/js/productionLibrary
         run: npm publish "${STEPS_PACK_OUTPUTS_PACKAGE_TGZ}"
         env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           STEPS_PACK_OUTPUTS_PACKAGE_TGZ: ${{ steps.pack.outputs.package_tgz }}
