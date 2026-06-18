@@ -20,12 +20,16 @@ package com.wire.kalium.logic.feature.backup.mapper
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
+import com.wire.backup.data.BackupMessageThreadItem
+import com.wire.backup.data.BackupMessageThreadRoot
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupUser
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
+import com.wire.kalium.logic.data.backup.BackupThreadItemData
+import com.wire.kalium.logic.data.backup.BackupThreadRootData
 import com.wire.kalium.logic.data.backup.BackupThreadData
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
@@ -128,14 +132,60 @@ internal fun BackupMessage.toMessage(selfUserId: UserId): Message.Standalone? =
     }
 
 internal fun BackupMessage.toThreadDataOrNull(): BackupThreadData? {
-    val messageThreadId = threadId ?: return null
-    return BackupThreadData(
-        conversationId = conversationId.toQualifiedIdOrNull("toThreadDataOrNull") ?: error(""),
-        messageId = id,
-        threadId = messageThreadId,
-        isRoot = id == messageThreadId,
-        creationDate = creationDate.instant,
-    )
+    val messageThreadId = threadId
+    val qualifiedConversationId = conversationId.toQualifiedIdOrNull("restore.legacyThread.conversationId")
+    return if (messageThreadId == null || qualifiedConversationId == null) {
+        null
+    } else {
+        BackupThreadData(
+            conversationId = qualifiedConversationId,
+            messageId = id,
+            threadId = messageThreadId,
+            isRoot = id == messageThreadId,
+            creationDate = creationDate.instant,
+        )
+    }
+}
+
+internal fun BackupMessageThreadRoot.toThreadRootDataOrNull(): BackupThreadRootData? {
+    val qualifiedConversationId = conversationId.toQualifiedIdOrNull("restore.threadRoot.conversationId")
+    return if (qualifiedConversationId == null) {
+        null
+    } else if (rootMessageId.isBlank() || threadId.isBlank()) {
+        kaliumLogger.e(
+            "Skipping malformed backup thread root because rootMessageId or threadId is blank. " +
+                "rootMessageId=$rootMessageId threadId=$threadId"
+        )
+        null
+    } else {
+        BackupThreadRootData(
+            conversationId = qualifiedConversationId,
+            rootMessageId = rootMessageId,
+            threadId = threadId,
+            createdAt = createdAt.instant,
+        )
+    }
+}
+
+internal fun BackupMessageThreadItem.toThreadItemDataOrNull(): BackupThreadItemData? {
+    val qualifiedConversationId = conversationId.toQualifiedIdOrNull("restore.threadItem.conversationId")
+    return if (qualifiedConversationId == null) {
+        null
+    } else if (messageId.isBlank() || threadId.isBlank()) {
+        kaliumLogger.e(
+            "Skipping malformed backup thread item because messageId or threadId is blank. " +
+                "messageId=$messageId threadId=$threadId"
+        )
+        null
+    } else {
+        BackupThreadItemData(
+            conversationId = qualifiedConversationId,
+            messageId = messageId,
+            threadId = threadId,
+            isRoot = isRoot,
+            creationDate = creationDate.instant,
+        )
+    }
 }
 
 private fun BackupMessageContent.toMessageContent(selfUserId: UserId) =

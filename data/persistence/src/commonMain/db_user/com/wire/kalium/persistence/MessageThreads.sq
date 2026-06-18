@@ -142,6 +142,63 @@ WHERE conversation_id = :conversation_id
 AND message_id = :message_id
 LIMIT 1;
 
+countThreadRootsForBackup:
+SELECT COUNT(*)
+FROM MessageThreadRoot
+INNER JOIN Message
+    ON Message.id = MessageThreadRoot.root_message_id
+    AND Message.conversation_id = MessageThreadRoot.conversation_id
+WHERE Message.visibility = 'VISIBLE'
+AND Message.self_deletion_end_date IS NULL
+AND Message.content_type IN :content_type;
+
+selectThreadRootsForBackup:
+SELECT
+    MessageThreadRoot.conversation_id,
+    MessageThreadRoot.root_message_id,
+    MessageThreadRoot.thread_id,
+    MessageThreadRoot.created_at
+FROM MessageThreadRoot
+INNER JOIN Message
+    ON Message.id = MessageThreadRoot.root_message_id
+    AND Message.conversation_id = MessageThreadRoot.conversation_id
+WHERE Message.visibility = 'VISIBLE'
+AND Message.self_deletion_end_date IS NULL
+AND Message.content_type IN :content_type
+ORDER BY MessageThreadRoot.conversation_id ASC, MessageThreadRoot.thread_id ASC
+LIMIT :limit OFFSET :offset;
+
+countThreadItemsForBackup:
+SELECT COUNT(*)
+FROM MessageThreadItem
+INNER JOIN Message
+    ON Message.id = MessageThreadItem.message_id
+    AND Message.conversation_id = MessageThreadItem.conversation_id
+WHERE Message.visibility = 'VISIBLE'
+AND Message.self_deletion_end_date IS NULL
+AND Message.content_type IN :content_type;
+
+selectThreadItemsForBackup:
+SELECT
+    MessageThreadItem.conversation_id,
+    MessageThreadItem.thread_id,
+    MessageThreadItem.message_id,
+    MessageThreadItem.creation_date,
+    MessageThreadItem.is_root
+FROM MessageThreadItem
+INNER JOIN Message
+    ON Message.id = MessageThreadItem.message_id
+    AND Message.conversation_id = MessageThreadItem.conversation_id
+WHERE Message.visibility = 'VISIBLE'
+AND Message.self_deletion_end_date IS NULL
+AND Message.content_type IN :content_type
+ORDER BY
+    MessageThreadItem.conversation_id ASC,
+    MessageThreadItem.thread_id ASC,
+    MessageThreadItem.is_root DESC,
+    MessageThreadItem.message_id ASC
+LIMIT :limit OFFSET :offset;
+
 getThreadItemByMessageId:
 SELECT
     thread_id,

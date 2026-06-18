@@ -22,9 +22,14 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.asset.KaliumFileSystem
+import com.wire.kalium.logic.data.backup.BackupThreadData
+import com.wire.kalium.logic.data.backup.BackupThreadItemData
+import com.wire.kalium.logic.data.backup.BackupThreadReference
+import com.wire.kalium.logic.data.backup.BackupThreadRootData
 import com.wire.kalium.logic.data.backup.BackupRepository
 import com.wire.kalium.logic.data.backup.PagedData
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.reaction.MessageReactionWithUsers
 import com.wire.kalium.logic.data.message.reaction.MessageReactions
@@ -156,6 +161,15 @@ class MPBackupRealCompressionIntegrationTest {
             PagedData(reactions, totalPages = 1)
         )
 
+        override suspend fun getThreadIdForMessage(
+            conversationId: ConversationId,
+            messageId: String,
+        ): String? = null
+
+        override suspend fun getThreadRoots(pageSize: Int): Flow<PagedData<BackupThreadRootData>> = flowOf()
+
+        override suspend fun getThreadItems(pageSize: Int): Flow<PagedData<BackupThreadItemData>> = flowOf()
+
         override suspend fun insertUsers(users: List<OtherUser>): Either<CoreFailure, Unit> {
             insertedUsers += users
             return Unit.right()
@@ -175,6 +189,14 @@ class MPBackupRealCompressionIntegrationTest {
             insertedReactions += reactions
             return Unit.right()
         }
+
+        override suspend fun insertThreadRoots(threadRoots: List<BackupThreadRootData>): Either<CoreFailure, Unit> = Unit.right()
+
+        override suspend fun insertThreadItems(threadItems: List<BackupThreadItemData>): Either<CoreFailure, Unit> = Unit.right()
+
+        override suspend fun refreshThreadMetadata(threads: Set<BackupThreadReference>): Either<CoreFailure, Unit> = Unit.right()
+
+        override suspend fun insertThreadData(threadData: List<BackupThreadData>): Either<CoreFailure, Unit> = Unit.right()
     }
 
     private class RealKaliumFileSystem(private val rootDir: Path) : KaliumFileSystem {

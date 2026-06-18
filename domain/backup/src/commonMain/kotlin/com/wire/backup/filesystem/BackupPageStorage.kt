@@ -48,6 +48,8 @@ internal data class BackupPage(
         const val MESSAGES_PREFIX = "messages_"
         const val USERS_PREFIX = "users_"
         const val REACTIONS_PREFIX = "reactions_"
+        const val MESSAGE_THREAD_ROOTS_PREFIX = "message_thread_roots_"
+        const val MESSAGE_THREAD_ITEMS_PREFIX = "message_thread_items_"
         const val PAGE_SUFFIX = ".binpb"
     }
 }

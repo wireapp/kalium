@@ -19,6 +19,8 @@ package com.wire.backup.dump
 
 import com.wire.backup.data.BackupConversation
 import com.wire.backup.data.BackupMessage
+import com.wire.backup.data.BackupMessageThreadItem
+import com.wire.backup.data.BackupMessageThreadRoot
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
@@ -38,6 +40,8 @@ import com.wire.kalium.protobuf.backup.BackupInfo
 import com.wire.kalium.protobuf.backup.ExportUser
 import com.wire.kalium.protobuf.backup.ExportedConversation
 import com.wire.kalium.protobuf.backup.ExportedMessage
+import com.wire.kalium.protobuf.backup.ExportedMessageThreadItem
+import com.wire.kalium.protobuf.backup.ExportedMessageThreadRoot
 import com.wire.kalium.protobuf.backup.ExportedReaction
 import kotlinx.coroutines.Deferred
 import kotlinx.datetime.Clock
@@ -55,6 +59,7 @@ import kotlin.js.JsName
  * into a cross-platform [BackupData] format.
  */
 @JsExport
+@Suppress("TooManyFunctions")
 public abstract class CommonMPBackupExporter(
     private val selfUserId: BackupQualifiedId,
     internal val logger: BackupLogger? = null,
@@ -64,15 +69,19 @@ public abstract class CommonMPBackupExporter(
     private val conversationsChunk = mutableListOf<ExportedConversation>()
     private val messagesChunk = mutableListOf<ExportedMessage>()
     private val reactionsChunk = mutableListOf<ExportedReaction>()
+    private val messageThreadRootsChunk = mutableListOf<ExportedMessageThreadRoot>()
+    private val messageThreadItemsChunk = mutableListOf<ExportedMessageThreadItem>()
     private var persistedUserChunks = 0
     private var persistedConversationsChunks = 0
     private var persistedMessagesChunks = 0
     private var persistedReactionsChunks = 0
+    private var persistedMessageThreadRootsChunks = 0
+    private var persistedMessageThreadItemsChunks = 0
 
     private val backupInfo by lazy {
         BackupInfo(
             platform = "Common",
-            version = "1.0",
+            version = "1.1",
             userId = selfUserId.toProtoModel(),
             creationTime = Clock.System.now().toEpochMilliseconds(),
             clientId = "lol"
@@ -169,11 +178,55 @@ public abstract class CommonMPBackupExporter(
         reactionsChunk.clear()
     }
 
+    @JsName("addMessageThreadRoot")
+    public fun add(messageThreadRoot: BackupMessageThreadRoot) {
+        messageThreadRootsChunk.add(mapper.mapMessageThreadRootToProtobuf(messageThreadRoot))
+        if (messageThreadRootsChunk.size > ITEMS_CHUNK_SIZE) {
+            flushMessageThreadRoots()
+        }
+    }
+
+    private fun flushMessageThreadRoots() {
+        if (messageThreadRootsChunk.isEmpty()) return
+        val backupData = BackupData(backupInfo, messageThreadRoots = messageThreadRootsChunk)
+        storage.persistEntry(
+            BackupPage(
+                name = BackupPage.MESSAGE_THREAD_ROOTS_PREFIX + persistedMessageThreadRootsChunks + BackupPage.PAGE_SUFFIX,
+                data = backupData.asSource()
+            )
+        )
+        persistedMessageThreadRootsChunks++
+        messageThreadRootsChunk.clear()
+    }
+
+    @JsName("addMessageThreadItem")
+    public fun add(messageThreadItem: BackupMessageThreadItem) {
+        messageThreadItemsChunk.add(mapper.mapMessageThreadItemToProtobuf(messageThreadItem))
+        if (messageThreadItemsChunk.size > ITEMS_CHUNK_SIZE) {
+            flushMessageThreadItems()
+        }
+    }
+
+    private fun flushMessageThreadItems() {
+        if (messageThreadItemsChunk.isEmpty()) return
+        val backupData = BackupData(backupInfo, messageThreadItems = messageThreadItemsChunk)
+        storage.persistEntry(
+            BackupPage(
+                name = BackupPage.MESSAGE_THREAD_ITEMS_PREFIX + persistedMessageThreadItemsChunks + BackupPage.PAGE_SUFFIX,
+                data = backupData.asSource()
+            )
+        )
+        persistedMessageThreadItemsChunks++
+        messageThreadItemsChunk.clear()
+    }
+
     private fun flushAll() {
         flushUsers()
         flushConversations()
         flushMessages()
         flushReactions()
+        flushMessageThreadRoots()
+        flushMessageThreadItems()
     }
 
     private fun BackupData.asSource(): Source {

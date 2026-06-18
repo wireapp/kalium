@@ -38,6 +38,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContains
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
@@ -181,6 +182,39 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
         assertEquals(true, fakeRootCreatedAt <= afterUpsert)
         assertEquals(1, summaries.size)
         assertEquals(1L, summaries.single().visibleReplyCount)
+    }
+
+    @Test
+    fun givenBackupMissingThreadRoot_whenUpsertingFromBackup_thenFakeRootUsesBackedUpCreationDate() = runTest {
+        insertInitialData()
+        val fakeRootCreatedAt = Instant.parse("2026-01-01T00:00:00Z")
+        val reply = createMessage("backup-orphan-reply-main", Instant.parse("2026-01-02T00:00:00Z"))
+        val nonThread = createMessage("backup-non-thread-orphan-main", Instant.parse("2026-01-03T00:00:00Z"))
+        messageDAO.insertOrIgnoreMessages(listOf(reply, nonThread))
+
+        messageThreadDAO.upsertMissingThreadRootFromBackup(
+            conversationId = conversation.id,
+            replyMessageId = reply.id,
+            threadId = THREAD_ID_1,
+            createdAt = fakeRootCreatedAt,
+        )
+        messageThreadDAO.upsertThreadItem(conversation.id, reply.id, THREAD_ID_1, false, reply.date, reply.visibility)
+
+        val mainList = messageDAO.getMessagesByConversationAndVisibility(
+            conversationId = conversation.id,
+            limit = 50,
+            offset = 0,
+            visibility = listOf(MessageEntity.Visibility.VISIBLE)
+        ).first()
+        val fakeRoot = messageDAO.getMessageById(THREAD_ID_1, conversation.id)
+        val rootMapping = messageThreadDAO.getThreadByRootMessage(conversation.id, THREAD_ID_1)
+
+        assertContentEquals(listOf(nonThread.id, THREAD_ID_1), mainList.map { it.id })
+        assertIs<MessageEntity.Regular>(fakeRoot)
+        assertIs<MessageEntityContent.MissingThreadRoot>(fakeRoot.content)
+        assertEquals(fakeRootCreatedAt, fakeRoot.date)
+        assertEquals(fakeRootCreatedAt, rootMapping?.createdAt)
+        assertEquals(1L, rootMapping?.visibleReplyCount)
     }
 
     @Test
@@ -330,6 +364,52 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenThreadData_whenGettingBackupRows_thenOnlyVisibleSupportedMessagesAreReturned() = runTest {
+        insertInitialData()
+        val root = createMessage("backup-root", Instant.parse("2026-01-01T00:00:00Z"))
+        val visibleReply = createMessage("backup-reply-visible", Instant.parse("2026-01-01T00:00:01Z"))
+        val deletedReply = createMessage(
+            id = "backup-reply-deleted",
+            date = Instant.parse("2026-01-01T00:00:02Z"),
+            visibility = MessageEntity.Visibility.DELETED
+        )
+        val unsupportedReply = createMessage(
+            id = "backup-reply-knock",
+            date = Instant.parse("2026-01-01T00:00:03Z"),
+            content = MessageEntityContent.Knock(false)
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(root, visibleReply, deletedReply, unsupportedReply))
+
+        messageThreadDAO.upsertThreadRoot(conversation.id, root.id, THREAD_ID_1, root.date)
+        messageThreadDAO.upsertThreadItem(conversation.id, root.id, THREAD_ID_1, true, root.date, root.visibility)
+        messageThreadDAO.upsertThreadItem(conversation.id, visibleReply.id, THREAD_ID_1, false, visibleReply.date, visibleReply.visibility)
+        messageThreadDAO.upsertThreadItem(conversation.id, deletedReply.id, THREAD_ID_1, false, deletedReply.date, deletedReply.visibility)
+        messageThreadDAO.upsertThreadItem(
+            conversation.id,
+            unsupportedReply.id,
+            THREAD_ID_1,
+            false,
+            unsupportedReply.date,
+            unsupportedReply.visibility
+        )
+
+        val contentTypes = listOf(
+            MessageEntity.ContentType.TEXT,
+            MessageEntity.ContentType.ASSET,
+            MessageEntity.ContentType.LOCATION,
+            MessageEntity.ContentType.MULTIPART,
+            MessageEntity.ContentType.COMPOSITE,
+        )
+        val roots = messageThreadDAO.getThreadRootsForBackup(contentTypes, limit = 50, offset = 0)
+        val items = messageThreadDAO.getThreadItemsForBackup(contentTypes, limit = 50, offset = 0)
+
+        assertEquals(1L, messageThreadDAO.countThreadRootsForBackup(contentTypes))
+        assertEquals(2L, messageThreadDAO.countThreadItemsForBackup(contentTypes))
+        assertEquals(root.id, roots.single().rootMessageId)
+        assertContentEquals(listOf(root.id, visibleReply.id), items.map { it.messageId })
+    }
+
+    @Test
     fun givenThreadsAcrossConversations_whenObservingGlobalThreads_thenThreadsAreSortedByLatestActivity() = runTest {
         insertInitialData()
         val secondConversation = newConversationEntity("Second Thread Test")
@@ -363,7 +443,14 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
 
         messageThreadDAO.upsertThreadRoot(secondConversation.id, secondRoot.id, THREAD_ID_2, secondRoot.date)
         messageThreadDAO.upsertThreadItem(secondConversation.id, secondRoot.id, THREAD_ID_2, true, secondRoot.date, secondRoot.visibility)
-        messageThreadDAO.upsertThreadItem(secondConversation.id, secondReply.id, THREAD_ID_2, false, secondReply.date, secondReply.visibility)
+        messageThreadDAO.upsertThreadItem(
+            secondConversation.id,
+            secondReply.id,
+            THREAD_ID_2,
+            false,
+            secondReply.date,
+            secondReply.visibility
+        )
 
         val globalThreads = messageThreadDAO.observeGlobalThreads().first()
 

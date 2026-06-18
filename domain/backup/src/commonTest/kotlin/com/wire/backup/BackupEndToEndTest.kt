@@ -20,6 +20,8 @@ package com.wire.backup
 import com.wire.backup.data.BackupDateTime
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
+import com.wire.backup.data.BackupMessageThreadItem
+import com.wire.backup.data.BackupMessageThreadRoot
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupEmojiReaction
 import com.wire.backup.data.BackupQualifiedId
@@ -116,6 +118,43 @@ class BackupEndToEndTest {
             allMessages.addAll(pager.messagesPager.nextPage())
         }
         assertContentEquals(arrayOf(expectedMessage), allMessages.toTypedArray())
+    }
+
+    @Test
+    fun givenBackedUpThreadData_whenRestoring_thenShouldReadTheSameThreadData() = runTest {
+        val conversationId = BackupQualifiedId("conversation-id", "domain")
+        val root = BackupMessageThreadRoot(
+            rootMessageId = "root-message-id",
+            conversationId = conversationId,
+            threadId = "thread-id",
+            createdAt = BackupDateTime(10L),
+        )
+        val item = BackupMessageThreadItem(
+            messageId = "reply-message-id",
+            conversationId = conversationId,
+            threadId = "thread-id",
+            creationDate = BackupDateTime(20L),
+            isRoot = false,
+        )
+
+        val result = subject.exportImportDataTest(BackupQualifiedId("self", "domain"), "") {
+            add(root)
+            add(item)
+        }
+
+        assertIs<BackupImportResult.Success>(result)
+        val pager = result.pager
+        val roots = mutableListOf<BackupMessageThreadRoot>()
+        while (pager.messageThreadRootsPager.hasMorePages()) {
+            roots.addAll(pager.messageThreadRootsPager.nextPage())
+        }
+        val items = mutableListOf<BackupMessageThreadItem>()
+        while (pager.messageThreadItemsPager.hasMorePages()) {
+            items.addAll(pager.messageThreadItemsPager.nextPage())
+        }
+
+        assertContentEquals(arrayOf(root), roots.toTypedArray())
+        assertContentEquals(arrayOf(item), items.toTypedArray())
     }
 
     @Test

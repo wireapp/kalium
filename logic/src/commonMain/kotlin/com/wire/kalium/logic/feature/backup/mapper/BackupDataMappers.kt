@@ -22,9 +22,13 @@ import com.wire.backup.data.BackupDateTime
 import com.wire.backup.data.BackupEmojiReaction
 import com.wire.backup.data.BackupMessage
 import com.wire.backup.data.BackupMessageContent
+import com.wire.backup.data.BackupMessageThreadItem
+import com.wire.backup.data.BackupMessageThreadRoot
 import com.wire.backup.data.BackupQualifiedId
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupUser
+import com.wire.kalium.logic.data.backup.BackupThreadItemData
+import com.wire.kalium.logic.data.backup.BackupThreadRootData
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.AssetContent
@@ -81,6 +85,22 @@ internal fun MessageReactions.toBackupReaction() =
         },
     )
 
+internal fun BackupThreadRootData.toBackupMessageThreadRoot() = BackupMessageThreadRoot(
+    rootMessageId = rootMessageId,
+    conversationId = conversationId.toBackupQualifiedId(),
+    threadId = threadId,
+    createdAt = BackupDateTime(createdAt.toEpochMilliseconds()),
+)
+
+internal fun BackupThreadItemData.toBackupMessageThreadItem() = BackupMessageThreadItem(
+    messageId = messageId,
+    conversationId = conversationId.toBackupQualifiedId(),
+    threadId = threadId,
+    creationDate = BackupDateTime(creationDate.toEpochMilliseconds()),
+    isRoot = isRoot,
+)
+
+@Suppress("CyclomaticComplexMethod")
 private fun Message.backupMessageContent(): BackupMessageContent? = when (this) {
     is Message.Regular -> when (content) {
         is MessageContent.Text -> with(content as MessageContent.Text) {

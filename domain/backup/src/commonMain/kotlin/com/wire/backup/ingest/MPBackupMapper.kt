@@ -27,6 +27,8 @@ import com.wire.backup.data.BackupMetadata
 import com.wire.backup.data.BackupUser
 import com.wire.backup.data.BackupReaction
 import com.wire.backup.data.BackupEmojiReaction
+import com.wire.backup.data.BackupMessageThreadItem
+import com.wire.backup.data.BackupMessageThreadRoot
 import com.wire.backup.data.toLongMilliseconds
 import com.wire.backup.data.toModel
 import com.wire.backup.data.toProtoModel
@@ -41,6 +43,8 @@ import com.wire.kalium.protobuf.backup.ExportedLocation
 import com.wire.kalium.protobuf.backup.ExportedMention
 import com.wire.kalium.protobuf.backup.ExportedMessage
 import com.wire.kalium.protobuf.backup.ExportedMessage.Content
+import com.wire.kalium.protobuf.backup.ExportedMessageThreadItem
+import com.wire.kalium.protobuf.backup.ExportedMessageThreadRoot
 import com.wire.kalium.protobuf.backup.ExportedText
 import com.wire.kalium.protobuf.backup.ExportedReaction
 import com.wire.kalium.protobuf.backup.EmojiReaction
@@ -161,6 +165,23 @@ internal class MPBackupMapper {
         }
     )
 
+    fun mapMessageThreadRootToProtobuf(it: BackupMessageThreadRoot): ExportedMessageThreadRoot =
+        ExportedMessageThreadRoot(
+            rootMessageId = it.rootMessageId,
+            conversationId = it.conversationId.toProtoModel(),
+            threadId = it.threadId,
+            createdAt = it.createdAt.toLongMilliseconds(),
+        )
+
+    fun mapMessageThreadItemToProtobuf(it: BackupMessageThreadItem): ExportedMessageThreadItem =
+        ExportedMessageThreadItem(
+            messageId = it.messageId,
+            conversationId = it.conversationId.toProtoModel(),
+            threadId = it.threadId,
+            creationDate = it.creationDate.toLongMilliseconds(),
+            isRoot = it.isRoot,
+        )
+
     fun fromProtoToBackupModel(
         protobufData: ProtoBackupData
     ): BackupData = protobufData.run {
@@ -182,9 +203,32 @@ internal class MPBackupMapper {
             }.toTypedArray(),
             reactions = reactions.map { reaction ->
                 fromReactionProtoToBackupModel(reaction)
-            }.toTypedArray()
+            }.toTypedArray(),
+            messageThreadRoots = messageThreadRoots.map { root ->
+                fromMessageThreadRootProtoToBackupModel(root)
+            }.toTypedArray(),
+            messageThreadItems = messageThreadItems.map { item ->
+                fromMessageThreadItemProtoToBackupModel(item)
+            }.toTypedArray(),
         )
     }
+
+    private fun fromMessageThreadRootProtoToBackupModel(root: ExportedMessageThreadRoot): BackupMessageThreadRoot =
+        BackupMessageThreadRoot(
+            rootMessageId = root.rootMessageId,
+            conversationId = root.conversationId.toModel(),
+            threadId = root.threadId,
+            createdAt = BackupDateTime(root.createdAt),
+        )
+
+    private fun fromMessageThreadItemProtoToBackupModel(item: ExportedMessageThreadItem): BackupMessageThreadItem =
+        BackupMessageThreadItem(
+            messageId = item.messageId,
+            conversationId = item.conversationId.toModel(),
+            threadId = item.threadId,
+            creationDate = BackupDateTime(item.creationDate),
+            isRoot = item.isRoot,
+        )
 
     private fun fromReactionProtoToBackupModel(reaction: ExportedReaction): BackupReaction =
         BackupReaction(
