@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.asset.upload
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.data.asset.isAudioMimeType
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
@@ -53,6 +55,7 @@ internal class UploadAssetUseCaseImpl(
     private val updateAudioNormalizedLoudness: UpdateAudioMessageNormalizedLoudnessUseCase,
     private val persistMessage: PersistMessageUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
+    private val messageThreadRepository: MessageThreadRepository,
     private val dispatcher: KaliumDispatcher
 ) : UploadAssetUseCase {
 
@@ -119,7 +122,10 @@ internal class UploadAssetUseCaseImpl(
                     // Keep the temporary asset around until the message points at the uploaded asset id.
                     assetDataSource.deleteAssetLocally(metadata.assetId.key)
                     // Finally we try to send the Asset Message to the recipients of the given conversation
-                    messageSender.sendMessage(updatedMessage).onFailure {
+                    messageSender.sendMessage(
+                        updatedMessage,
+                        threadId = resolveThreadIdForMessage(updatedMessage)
+                    ).onFailure {
                         messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                             failure = it,
                             conversationId = message.conversationId,
@@ -131,6 +137,12 @@ internal class UploadAssetUseCaseImpl(
                 }
         }
     }
+
+    private suspend fun resolveThreadIdForMessage(message: Message.Regular): String? =
+        messageThreadRepository.getThreadIdByMessageId(message.conversationId, message.id).nullableFold(
+            { null },
+            { it }
+        )
 
     private companion object {
         const val TYPE = "Asset"

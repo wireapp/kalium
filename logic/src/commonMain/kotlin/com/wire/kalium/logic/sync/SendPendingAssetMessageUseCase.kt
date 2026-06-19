@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.map
+import com.wire.kalium.common.functional.nullableFold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.functional.right
@@ -36,6 +37,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
@@ -68,6 +70,7 @@ internal class SendPendingAssetMessageUseCaseImpl(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
+    private val messageThreadRepository: MessageThreadRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : SendPendingAssetMessageUseCase {
 
@@ -95,7 +98,10 @@ internal class SendPendingAssetMessageUseCaseImpl(
             .onSuccess { updatedMessage ->
                 updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
                 assetRepository.deleteAssetLocally(content.remoteData.assetId)
-                messageSender.sendMessage(updatedMessage).onFailure {
+                messageSender.sendMessage(
+                    updatedMessage,
+                    threadId = resolveThreadIdForMessage(updatedMessage)
+                ).onFailure {
                     messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                         failure = it,
                         conversationId = message.conversationId,
@@ -117,6 +123,12 @@ internal class SendPendingAssetMessageUseCaseImpl(
             }
             .map { }
     }
+
+    private suspend fun resolveThreadIdForMessage(message: Message.Regular): String? =
+        messageThreadRepository.getThreadIdByMessageId(message.conversationId, message.id).nullableFold(
+            { null },
+            { it }
+        )
 
     private suspend fun uploadAsset(
         conversationId: ConversationId,

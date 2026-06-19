@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.asset.FetchedAssetData
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
 import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
@@ -48,6 +49,7 @@ import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -131,8 +133,36 @@ class SendPendingAssetMessageUseCaseTest {
                     m.id == message.id && m.content is MessageContent.Asset
                             && (m.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
                 },
+                any(),
                 any()
             )
+        }
+    }
+
+    @Test
+    fun givenThreadedMessageWithFailedUploadStatus_whenUploadSucceeds_thenSendsWithThreadId() = runTest {
+        val name = "photo.jpg"
+        val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name))
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
+        val message = assetMessage().copy(content = content)
+        val uploadedAssetId = UploadedAssetId("remote_key", "remote_domain", "remote_token")
+        val uploadedSha = SHA256Key(byteArrayOf())
+
+        val (arrangement, useCase) = Arrangement()
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+            .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+            .withFetchPrivateDecodedAsset(Either.Right(path))
+            .withStoredData(mockedLongAssetData(), path)
+            .withUploadAndPersistPrivateAsset(Either.Right(uploadedAssetId to uploadedSha))
+            .withPersistMessage(Either.Right(Unit))
+            .withThreadIdForMessage(TEST_THREAD_ID)
+            .withSendMessage(Either.Right(Unit))
+            .arrange()
+
+        useCase(message)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(any(), any(), eq(TEST_THREAD_ID))
         }
     }
 
@@ -340,12 +370,14 @@ class SendPendingAssetMessageUseCaseTest {
         val getAssetMessageTransferStatus = mock<GetAssetMessageTransferStatusUseCase>(mode = MockMode.autoUnit)
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
         val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
+        val messageThreadRepository = mock<MessageThreadRepository>(mode = MockMode.autoUnit)
         val audioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderMock(
             canReadFile = { fakeKaliumFileSystem.exists(it.toPath()) }
         )
 
         init {
             everySuspend { assetRepository.deleteAssetLocally(any()) } returns Unit.right()
+            everySuspend { messageThreadRepository.getThreadIdByMessageId(any(), any()) } returns null.right()
         }
 
         suspend fun withGetAssetMessageTransferStatus(status: AssetTransferStatus) = apply {
@@ -412,7 +444,11 @@ class SendPendingAssetMessageUseCaseTest {
         }
 
         suspend fun withSendMessage(result: Either<CoreFailure, Unit>) = apply {
-            everySuspend { messageSender.sendMessage(any(), any()) } returns result
+            everySuspend { messageSender.sendMessage(any(), any(), any()) } returns result
+        }
+
+        suspend fun withThreadIdForMessage(threadId: String?) = apply {
+            everySuspend { messageThreadRepository.getThreadIdByMessageId(any(), any()) } returns threadId.right()
         }
 
         suspend fun withSendPendingMessage(result: Either<CoreFailure, Unit>) = apply {
@@ -427,10 +463,12 @@ class SendPendingAssetMessageUseCaseTest {
             messageSender = messageSender,
             messageSendFailureHandler = messageSendFailureHandler,
             audioNormalizedLoudnessBuilder = audioNormalizedLoudnessBuilder,
+            messageThreadRepository = messageThreadRepository,
         )
     }
 
     companion object {
         val fakeKaliumFileSystem = FakeKaliumFileSystem()
+        const val TEST_THREAD_ID = "thread-id"
     }
 }

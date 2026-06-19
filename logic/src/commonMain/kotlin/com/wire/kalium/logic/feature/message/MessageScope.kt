@@ -337,6 +337,7 @@ public class MessageScope internal constructor(
             messageSender,
             messageSendFailureHandler,
             audioNormalizedLoudnessBuilder,
+            messageThreadRepository,
         )
 
     public val retryFailedMessage: RetryFailedMessageUseCase
@@ -382,6 +383,7 @@ public class MessageScope internal constructor(
             updateAudioMessageNormalizedLoudnessUseCase,
             persistMessage,
             audioNormalizedLoudnessBuilder,
+            messageThreadRepository,
             dispatcher,
         )
 
