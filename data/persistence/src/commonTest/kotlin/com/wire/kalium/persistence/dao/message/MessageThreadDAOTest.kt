@@ -498,6 +498,49 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenThreadIsUnfollowed_whenObservingConversationThreads_thenThreadIsStillShown() = runTest {
+        insertInitialData()
+        val root = createMessage(
+            id = "unfollowed-conversation-root",
+            date = Instant.parse("2026-01-01T00:00:00Z"),
+            content = MessageEntityContent.Text("Unfollowed thread topic")
+        )
+        val reply = createMessage("unfollowed-conversation-reply", Instant.parse("2026-01-01T00:00:01Z"))
+        messageDAO.insertOrIgnoreMessages(listOf(root, reply))
+        messageThreadDAO.upsertThreadRoot(conversation.id, root.id, THREAD_ID_1, root.date)
+        messageThreadDAO.upsertThreadItem(conversation.id, root.id, THREAD_ID_1, true, root.date, root.visibility)
+        messageThreadDAO.upsertThreadItem(conversation.id, reply.id, THREAD_ID_1, false, reply.date, reply.visibility)
+        messageThreadDAO.updateThreadFollowState(conversation.id, THREAD_ID_1, isFollowing = false)
+
+        val conversationThreads = messageThreadDAO.observeConversationThreads(conversation.id).first()
+
+        assertEquals(1, conversationThreads.size)
+        assertEquals(THREAD_ID_1, conversationThreads.single().threadId)
+    }
+
+    @Test
+    fun givenThreadsInMultipleConversations_whenObservingConversationThreads_thenOnlyRequestedConversationThreadsAreShown() = runTest {
+        insertInitialData()
+        val secondConversation = newConversationEntity("Other Thread Test")
+        conversationDAO.insertConversation(secondConversation)
+        val firstRoot = createMessage("conversation-root-1", Instant.parse("2026-01-01T00:00:00Z"))
+        val secondRoot = createMessage(
+            id = "conversation-root-2",
+            date = Instant.parse("2026-01-01T00:00:01Z"),
+            conversationId = secondConversation.id
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(firstRoot, secondRoot))
+        messageThreadDAO.upsertThreadRoot(conversation.id, firstRoot.id, THREAD_ID_1, firstRoot.date)
+        messageThreadDAO.upsertThreadItem(conversation.id, firstRoot.id, THREAD_ID_1, true, firstRoot.date, firstRoot.visibility)
+        messageThreadDAO.upsertThreadRoot(secondConversation.id, secondRoot.id, THREAD_ID_2, secondRoot.date)
+        messageThreadDAO.upsertThreadItem(secondConversation.id, secondRoot.id, THREAD_ID_2, true, secondRoot.date, secondRoot.visibility)
+
+        val conversationThreads = messageThreadDAO.observeConversationThreads(conversation.id).first()
+
+        assertEquals(listOf(THREAD_ID_1), conversationThreads.map { it.threadId })
+    }
+
+    @Test
     fun givenThreadMessages_whenMovingToAnotherConversation_thenMessagesAreFlattenedInTargetConversation() = runTest {
         insertInitialData()
         val targetConversation = newConversationEntity("Promoted Thread")

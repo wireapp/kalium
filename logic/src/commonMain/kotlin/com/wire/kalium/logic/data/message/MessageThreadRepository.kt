@@ -149,6 +149,8 @@ internal interface MessageThreadRepository {
 
     fun observeGlobalThreads(): Flow<Either<StorageFailure, List<GlobalThreadSummary>>>
 
+    fun observeConversationThreads(conversationId: ConversationId): Flow<Either<StorageFailure, List<GlobalThreadSummary>>>
+
     /**
      * If [threadId] is non-null, upserts the message as a non-root thread reply.
      * No-op when [threadId] is null.
@@ -281,6 +283,13 @@ internal class MessageThreadRepositoryImpl internal constructor(
     override fun observeGlobalThreads(): Flow<Either<StorageFailure, List<GlobalThreadSummary>>> =
         wrapFlowStorageRequest {
             dao.observeGlobalThreads().map { summaries ->
+                summaries.map(::toModel)
+            }
+        }
+
+    override fun observeConversationThreads(conversationId: ConversationId): Flow<Either<StorageFailure, List<GlobalThreadSummary>>> =
+        wrapFlowStorageRequest {
+            dao.observeConversationThreads(conversationId.toDao()).map { summaries ->
                 summaries.map(::toModel)
             }
         }

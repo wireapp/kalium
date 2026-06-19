@@ -199,6 +199,8 @@ interface MessageThreadDAO {
     ): Flow<List<MessageThreadSummaryEntity>>
 
     fun observeGlobalThreads(): Flow<List<GlobalThreadSummaryEntity>>
+
+    fun observeConversationThreads(conversationId: QualifiedIDEntity): Flow<List<GlobalThreadSummaryEntity>>
 }
 
 @Suppress("TooManyFunctions")
@@ -632,6 +634,15 @@ internal class MessageThreadDAOImpl internal constructor(
 
     override fun observeGlobalThreads(): Flow<List<GlobalThreadSummaryEntity>> =
         queries.selectGlobalThreads(
+            mapper = ::toGlobalThreadSummaryEntity
+        )
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
+
+    override fun observeConversationThreads(conversationId: QualifiedIDEntity): Flow<List<GlobalThreadSummaryEntity>> =
+        queries.selectConversationThreads(
+            conversation_id = conversationId,
             mapper = ::toGlobalThreadSummaryEntity
         )
             .asFlow()
