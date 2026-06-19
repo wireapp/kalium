@@ -89,3 +89,43 @@ public class ObserveGlobalThreadsUseCase internal constructor(
             )
         }
 }
+
+public sealed interface ObserveConversationThreadsResult {
+    public data class Success(val threads: List<GlobalThreadSummary>) : ObserveConversationThreadsResult
+    public data object Failure : ObserveConversationThreadsResult
+}
+
+public class ObserveConversationThreadsUseCase internal constructor(
+    private val messageThreadRepository: MessageThreadRepository,
+) {
+    public operator fun invoke(conversationId: ConversationId): Flow<ObserveConversationThreadsResult> =
+        messageThreadRepository.observeConversationThreads(conversationId).map { result ->
+            result.fold(
+                { ObserveConversationThreadsResult.Failure },
+                { threads ->
+                    ObserveConversationThreadsResult.Success(
+                        threads = threads.map {
+                            GlobalThreadSummary(
+                                conversationId = it.conversationId,
+                                conversationName = it.conversationName,
+                                conversationType = it.conversationType,
+                                otherUserPreviewAssetId = it.otherUserPreviewAssetId,
+                                otherUserAvailabilityStatus = it.otherUserAvailabilityStatus,
+                                otherUserConnectionStatus = it.otherUserConnectionStatus,
+                                otherUserId = it.otherUserId,
+                                otherUserAccentId = it.otherUserAccentId,
+                                otherUserDeleted = it.otherUserDeleted,
+                                rootMessageId = it.rootMessageId,
+                                threadId = it.threadId,
+                                visibleReplyCount = it.visibleReplyCount,
+                                createdAt = it.createdAt,
+                                lastReplyDate = it.lastReplyDate,
+                                rootMessage = it.rootMessage,
+                                rootMessageSelfDeletionDurationMillis = it.rootMessageSelfDeletionDurationMillis,
+                            )
+                        }
+                    )
+                }
+            )
+        }
+}
