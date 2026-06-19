@@ -334,7 +334,8 @@ SELECT
     root.conversation_id AS conversationId,
     root.root_message_id AS rootMessageId,
     root.thread_id AS threadId,
-    root.visible_reply_count AS visibleReplyCount
+    root.visible_reply_count AS visibleReplyCount,
+    root.last_reply_date AS lastReplyDate
 FROM MessageThreadRoot AS root
 WHERE root.conversation_id = :conversation_id
 AND root.root_message_id IN :root_message_ids;

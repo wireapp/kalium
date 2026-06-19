@@ -67,6 +67,7 @@ data class MessageThreadSummaryEntity(
     val rootMessageId: String,
     val threadId: String,
     val visibleReplyCount: Long,
+    val lastReplyDate: Instant?,
 )
 
 data class GlobalThreadSummaryEntity(
