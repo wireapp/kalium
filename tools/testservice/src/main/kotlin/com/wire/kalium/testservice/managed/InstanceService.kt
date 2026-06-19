@@ -304,7 +304,8 @@ class InstanceService(
                                 instanceRequest = instanceRequest,
                                 coreLogic = coreLogic,
                                 instancePath = instancePath,
-                                before = before
+                                before = before,
+                                userId = userId
                             )
 
                         is RegisterClientResult.Failure.TooManyClients ->
@@ -338,7 +339,8 @@ class InstanceService(
         instanceRequest: InstanceRequest,
         coreLogic: CoreLogic,
         instancePath: String,
-        before: Long
+        before: Long,
+        userId: UserId
     ): Instance {
         log.info("Instance $instanceId: Client registration requires E2EI enrollment")
         val startTime = System.currentTimeMillis()
