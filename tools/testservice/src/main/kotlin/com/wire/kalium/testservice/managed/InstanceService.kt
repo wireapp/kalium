@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.StoreSessionParam
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
@@ -58,8 +59,8 @@ import io.dropwizard.lifecycle.Managed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
@@ -91,9 +92,11 @@ class InstanceService(
     private val scope = CoroutineScope(Dispatchers.Default)
     private val maximumRuntime: Duration = Duration.ofMinutes(configuration.getInstanceMaximumRuntimeInMinutes())
     private val deleteLocalFilesTimeoutInMinutes: Duration = Duration.ofMinutes(2)
+    private val logoutTimeout: Duration = Duration.ofSeconds(30)
     private val cleanupPeriod: Duration = Duration.ofMinutes(configuration.getInstanceCleanupPeriodInMinutes())
     private var cleanupTask: ScheduledFuture<*>? = null
     private val e2eiInitializations: MutableMap<String, E2EIEnrollmentResult.Initialized> = ConcurrentHashMap()
+    private val instanceUserIds: MutableMap<String, UserId> = ConcurrentHashMap()
 
     override fun start() {
         log.info("Instance service started.")
@@ -280,6 +283,7 @@ class InstanceService(
                                 startTime
                             )
                             instances.put(instanceId, instance)
+                            instanceUserIds[instanceId] = userId
 
                             syncExecutor.request {
                                 keepSyncAlwaysOn()
@@ -352,6 +356,7 @@ class InstanceService(
             startTime
         )
         instances[instanceId] = instance
+        instanceUserIds[instanceId] = userId
         return instance
     }
 
@@ -423,22 +428,58 @@ class InstanceService(
     }
 
     fun deleteInstance(id: String) {
-        val instance = getInstanceOrThrow(id)
-        log.info("Instance $id: Remove device ${instance.clientId}")
+        val startedAt = System.currentTimeMillis()
+        val instance = instances.remove(id) ?: throw WebApplicationException(
+            "Instance $id: Instance not found or already destroyed"
+        )
+        log.info("Instance $id: cleanup starting")
         e2eiInitializations.remove(id)
-        instance.coreLogic?.globalScope {
-            scope.launch {
-                val result = session.currentSession()
-                if (result is CurrentSessionResult.Success) {
-                    instance.coreLogic.sessionScope(result.accountInfo.userId) {
-                        log.info("Instance $id: Logout device ${instance.clientId}")
+
+        runBlocking {
+            cleanupKaliumResources(instance, instanceUserIds.remove(id))
+        }
+
+        log.info("Instance $id: cleanup finished after ${System.currentTimeMillis() - startedAt}ms")
+        scheduleLocalFileDeletion(instance)
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun cleanupKaliumResources(instance: Instance, userId: UserId?) {
+        val instanceId = instance.instanceId
+
+        try {
+            userId?.let { sessionUserId ->
+                val logoutCompleted = withTimeoutOrNull(logoutTimeout.toMillis()) {
+                    instance.coreLogic.sessionScope(sessionUserId) {
+                        log.info("Instance $instanceId: logout device ${instance.clientId}")
                         logout(reason = LogoutReason.SELF_HARD_LOGOUT, waitUntilCompletes = true)
                     }
+                    true
+                } ?: false
+
+                if (!logoutCompleted) {
+                    log.warn("Instance $instanceId: logout timed out after ${logoutTimeout.seconds}s")
                 }
             }
+        } catch (exception: Exception) {
+            log.warn("Instance $instanceId: cleanup logout failed: ${exception.message}")
+        } finally {
+            closeCoreLogic(instance, userId)
         }
-        instances.remove(id)
-        log.info("Instance $id: Schedule deletion of local files")
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun closeCoreLogic(instance: Instance, userId: UserId?) {
+        try {
+            instance.coreLogic.close(userId)
+            log.info("Instance ${instance.instanceId}: Kalium resources closed")
+        } catch (exception: Exception) {
+            log.warn("Instance ${instance.instanceId}: Kalium resource close failed: ${exception.message}")
+        }
+    }
+
+    private fun scheduleLocalFileDeletion(instance: Instance) {
+        log.info("Instance ${instance.instanceId}: schedule local file deletion")
         cleanupPool.schedule({
             log.info("Instance ${instance.instanceId}: Delete local files in ${instance.instancePath}")
             instance.instancePath?.let {

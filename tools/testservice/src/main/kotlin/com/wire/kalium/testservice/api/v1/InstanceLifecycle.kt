@@ -66,28 +66,26 @@ class InstanceLifecycle(
     fun createInstance(@Valid instanceRequest: InstanceRequest, @Suspended ar: AsyncResponse) {
         val instanceId = UUID.randomUUID().toString()
         val timeout = configuration.getInstanceCreationTimeoutInSeconds()
+        val startedAt = System.currentTimeMillis()
+        log.info("Instance $instanceId: create request received")
 
         // handles unresponsive instances
         ar.setTimeout(timeout, TimeUnit.SECONDS)
         ar.setTimeoutHandler { asyncResponse: AsyncResponse ->
-            log.error("Instance $instanceId: Async create instance request timed out after $timeout seconds")
+            log.error("Instance $instanceId: create request timed out after $timeout seconds")
             asyncResponse.resume(
                 Response
                     .status(Response.Status.GATEWAY_TIMEOUT)
                     .entity("Instance $instanceId: Async create instance request timed out after $timeout seconds")
                     .build()
             )
-            if (instanceService.getInstance(instanceId) != null) {
-                instanceService.deleteInstance(instanceId)
-            }
+            cleanupIfCreated(instanceId)
         }
         // handles client disconnect
         ar.register(
             ConnectionCallback { disconnected: AsyncResponse? ->
-            log.error("Instance $instanceId: Client disconnected from async create instance request")
-            if (instanceService.getInstance(instanceId) != null) {
-                instanceService.deleteInstance(instanceId)
-            }
+            log.error("Instance $instanceId: client disconnected from create request")
+            cleanupIfCreated(instanceId)
         }
         )
 
@@ -96,12 +94,16 @@ class InstanceLifecycle(
                 instanceService.createInstance(instanceId, instanceRequest)
             }
         } catch (we: WebApplicationException) {
+            cleanupIfCreated(instanceId)
+            log.error("Instance $instanceId: create request failed after ${elapsedMs(startedAt)}ms", we)
             throw we
         } catch (e: Exception) {
-            log.error("Instance $instanceId: Could not create instance: " + e.message, e)
+            cleanupIfCreated(instanceId)
+            log.error("Instance $instanceId: create request failed after ${elapsedMs(startedAt)}ms: " + e.message, e)
             throw WebApplicationException("Could not create instance: " + e.message)
         }
 
+        log.info("Instance $instanceId: create request succeeded after ${elapsedMs(startedAt)}ms")
         ar.resume(createdInstance)
     }
 
@@ -120,5 +122,18 @@ class InstanceLifecycle(
         instanceService.getInstance(id) ?: throw WebApplicationException("No instance found with id $id")
         instanceService.deleteInstance(id)
     }
+
+    private fun cleanupIfCreated(instanceId: String) {
+        if (instanceService.getInstance(instanceId) != null) {
+            log.info("Instance $instanceId: cleanup after create timeout/failure")
+            try {
+                instanceService.deleteInstance(instanceId)
+            } catch (exception: WebApplicationException) {
+                log.info("Instance $instanceId: cleanup skipped: ${exception.message}")
+            }
+        }
+    }
+
+    private fun elapsedMs(startedAt: Long): Long = System.currentTimeMillis() - startedAt
 
 }

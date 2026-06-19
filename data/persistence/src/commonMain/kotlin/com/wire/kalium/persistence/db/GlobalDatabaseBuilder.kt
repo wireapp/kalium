@@ -71,8 +71,12 @@ class GlobalDatabaseBuilder internal constructor(
     val accountsDAO: AccountsDAO
         get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries, queriesContext)
 
-    fun nuke(): Boolean {
+    fun close() {
         sqlDriver.close()
+    }
+
+    fun nuke(): Boolean {
+        close()
         return nuke(platformDatabaseData)
     }
 }

@@ -50,7 +50,7 @@ public actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
-    useInMemoryStorage: Boolean = false,
+    private val useInMemoryStorage: Boolean = false,
     private val userAuthenticatedNetworkProvider: UserAuthenticatedNetworkProvider = PlatformUserAuthenticatedNetworkProvider(),
 ) : CoreLogicCommon(
     rootPath = rootPath,
@@ -82,6 +82,17 @@ public actual class CoreLogic(
     actual override suspend fun deleteSessionScope(userId: UserId) {
         userSessionScopeProvider.value.get(userId)?.cancel()
         userSessionScopeProvider.value.delete(userId)
+    }
+
+    public suspend fun close(userId: UserId? = null) {
+        if (userId != null) {
+            userSessionScopeProvider.value.get(userId)?.cancel()
+            if (!useInMemoryStorage) {
+                userStorageProvider.remove(userId)?.database?.close()
+            }
+            userSessionScopeProvider.value.delete(userId)
+        }
+        globalDatabaseBuilder.close()
     }
 
     public actual override val networkStateObserver: NetworkStateObserver =
