@@ -23,11 +23,13 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageThreadRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
 
 public data class ThreadRootSummary(
     val rootMessageId: String,
     val threadId: String,
     val visibleReplyCount: Long,
+    val lastReplyDate: Instant?,
 )
 
 public sealed interface ObserveThreadSummariesForRootsResult {
@@ -35,6 +37,10 @@ public sealed interface ObserveThreadSummariesForRootsResult {
     public data object Failure : ObserveThreadSummariesForRootsResult
 }
 
+/**
+ * Observes thread summaries (visible reply count and last reply date) for the given root message ids
+ * within a conversation, so they can be displayed inline on the root messages in the main message list.
+ */
 public class ObserveThreadSummariesForRootsUseCase internal constructor(
     private val messageThreadRepository: MessageThreadRepository,
 ) {
@@ -52,6 +58,7 @@ public class ObserveThreadSummariesForRootsUseCase internal constructor(
                                 rootMessageId = it.rootMessageId,
                                 threadId = it.threadId,
                                 visibleReplyCount = it.visibleReplyCount,
+                                lastReplyDate = it.lastReplyDate,
                             )
                         }
                     )

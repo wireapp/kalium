@@ -121,6 +121,7 @@ class MessageThreadDAOTest : BaseDatabaseTest() {
         assertEquals(THREAD_ID_2, messageThreadId)
         assertEquals(1, summaries.size)
         assertEquals(1L, summaries.first().visibleReplyCount)
+        assertEquals(reply.date, summaries.first().lastReplyDate)
     }
 
     @Test

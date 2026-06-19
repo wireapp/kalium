@@ -61,6 +61,7 @@ internal data class MessageThreadSummary(
     val rootMessageId: String,
     val threadId: String,
     val visibleReplyCount: Long,
+    val lastReplyDate: Instant?,
 )
 
 internal data class GlobalThreadSummary(
@@ -320,6 +321,7 @@ private fun MessageThreadSummaryEntity.toModel() = MessageThreadSummary(
     rootMessageId = rootMessageId,
     threadId = threadId,
     visibleReplyCount = visibleReplyCount,
+    lastReplyDate = lastReplyDate,
 )
 
 private fun MessageThreadRepositoryImpl.toModel(summary: GlobalThreadSummaryEntity) = GlobalThreadSummary(
