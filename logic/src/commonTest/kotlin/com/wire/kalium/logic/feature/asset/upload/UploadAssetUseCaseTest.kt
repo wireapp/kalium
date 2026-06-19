@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.message.MessageThreadRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
@@ -182,7 +183,21 @@ class UploadAssetUseCaseTest {
         uploadAsset(assetMessage(), uploadMetadata)
 
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSender.sendMessage(any(), any())
+            arrangement.messageSender.sendMessage(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenThreadedMessage_whenUploadSucceeds_thenAssetMessageIsSentWithThreadId() = runTest(testDispatcher.default) {
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadSuccess()
+            withThreadIdForMessage(TEST_THREAD_ID)
+        }
+
+        uploadAsset(assetMessage(), uploadMetadata)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(any(), any(), eq(TEST_THREAD_ID))
         }
     }
 
@@ -241,9 +256,16 @@ class UploadAssetUseCaseTest {
             persistMessageResult = CoreFailure.Unknown(null).left()
         }
 
+        suspend fun withThreadIdForMessage(threadId: String?) = apply {
+            everySuspend {
+                messageThreadRepository.getThreadIdByMessageId(any(), any())
+            } returns threadId.right()
+        }
+
         val assetDataSource: AssetRepository = mock(mode = MockMode.autoUnit)
         val messageSender: MessageSender = mock(mode = MockMode.autoUnit)
         val messageSendFailureHandler: MessageSendFailureHandler = mock(mode = MockMode.autoUnit)
+        val messageThreadRepository = mock<MessageThreadRepository>(mode = MockMode.autoUnit)
         val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase =
             mock(mode = MockMode.autoUnit)
         val persistMessage: PersistMessageUseCase = mock(mode = MockMode.autoUnit)
@@ -257,6 +279,7 @@ class UploadAssetUseCaseTest {
         }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, UploadAssetUseCaseImpl> {
+            withThreadIdForMessage(null)
             block()
 
             everySuspend {
@@ -272,7 +295,7 @@ class UploadAssetUseCaseTest {
             } returns persistMessageResult
 
             everySuspend {
-                messageSender.sendMessage(any(), any())
+                messageSender.sendMessage(any(), any(), any())
             } returns Unit.right()
 
             return this to UploadAssetUseCaseImpl(
@@ -284,6 +307,7 @@ class UploadAssetUseCaseTest {
                 persistMessage = persistMessage,
                 audioNormalizedLoudnessBuilder = audioNormalizedLoudnessBuilder,
                 pendingMessagesEnabled = pendingMessages,
+                messageThreadRepository = messageThreadRepository,
                 dispatcher = testDispatcher,
             )
 
@@ -292,6 +316,7 @@ class UploadAssetUseCaseTest {
 
     private companion object {
         val testDispatcher = TestKaliumDispatcher
+        private const val TEST_THREAD_ID = "thread-id"
         private val uploadMetadata = UploadAssetMessageMetadata(
             conversationId = QualifiedID("some-id", "some-domain"),
             mimeType = "",

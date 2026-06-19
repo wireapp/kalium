@@ -350,6 +350,7 @@ public class MessageScope internal constructor(
             messageSendFailureHandler = messageSendFailureHandler,
             audioNormalizedLoudnessBuilder = audioNormalizedLoudnessBuilder,
             pendingMessagesEnabled = kaliumConfigs.pendingMessages,
+            messageThreadRepository = messageThreadRepository,
         )
 
     public val retryFailedMessage: RetryFailedMessageUseCase
@@ -395,8 +396,9 @@ public class MessageScope internal constructor(
             updateAudioNormalizedLoudness = updateAudioMessageNormalizedLoudnessUseCase,
             persistMessage = persistMessage,
             audioNormalizedLoudnessBuilder = audioNormalizedLoudnessBuilder,
-            dispatcher = dispatcher,
             pendingMessagesEnabled = kaliumConfigs.pendingMessages,
+            messageThreadRepository = messageThreadRepository,
+            dispatcher = dispatcher,
         )
 
     public val sendAssetMessage: ScheduleNewAssetMessageUseCase

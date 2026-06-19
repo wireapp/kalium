@@ -1,3 +1,0 @@
-ALTER TABLE MessageThreadRoot ADD COLUMN is_following INTEGER NOT NULL DEFAULT 1;
-
-PRAGMA optimize;
