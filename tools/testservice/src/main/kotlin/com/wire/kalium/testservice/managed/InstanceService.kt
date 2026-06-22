@@ -59,6 +59,7 @@ import io.dropwizard.lifecycle.Managed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import org.slf4j.LoggerFactory
@@ -164,7 +165,8 @@ class InstanceService(
         log.info("Instance $instanceId: Creating $instancePath")
         val kaliumConfigs = KaliumConfigs(
             encryptProteusStorage = true,
-            developmentApiEnabled = instanceRequest.developmentApiEnabled ?: false
+            developmentApiEnabled = instanceRequest.developmentApiEnabled ?: false,
+            enableCalling = false
         )
         val coreLogic = CoreLogic(instancePath, kaliumConfigs, userAgent)
         CoreLogger.init(KaliumLogger.Config(KaliumLogLevel.VERBOSE, listOf(KaliumLogWriter(instanceId))))
@@ -285,15 +287,7 @@ class InstanceService(
                             instances.put(instanceId, instance)
                             instanceUserIds[instanceId] = userId
 
-                            syncExecutor.request {
-                                keepSyncAlwaysOn()
-                                when (val syncResult = waitUntilLiveOrFailure()) {
-                                    is SyncRequestResult.Failure ->
-                                        log.error("Instance $instanceId: Sync failed with ${syncResult.error}")
-
-                                    SyncRequestResult.Success -> Unit
-                                }
-                            }
+                            scheduleSync(instanceId, coreLogic, userId)
                             return@runBlocking instance
                         }
 
@@ -331,6 +325,27 @@ class InstanceService(
         }
 
         return response
+    }
+
+    @Suppress("TooGenericExceptionCaught")
+    private fun scheduleSync(instanceId: String, coreLogic: CoreLogic, userId: UserId) {
+        scope.launch {
+            try {
+                coreLogic.sessionScope(userId) {
+                    syncExecutor.request {
+                        keepSyncAlwaysOn()
+                        when (val syncResult = waitUntilLiveOrFailure()) {
+                            is SyncRequestResult.Failure ->
+                                log.error("Instance $instanceId: Sync failed with ${syncResult.error}")
+
+                            SyncRequestResult.Success -> Unit
+                        }
+                    }
+                }
+            } catch (exception: Exception) {
+                log.warn("Instance $instanceId: background sync failed: ${exception.message}")
+            }
+        }
     }
 
     private fun handleE2EIRequired(
