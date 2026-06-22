@@ -59,7 +59,6 @@ import io.dropwizard.lifecycle.Managed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import org.slf4j.LoggerFactory
@@ -98,6 +97,7 @@ class InstanceService(
     private var cleanupTask: ScheduledFuture<*>? = null
     private val e2eiInitializations: MutableMap<String, E2EIEnrollmentResult.Initialized> = ConcurrentHashMap()
     private val instanceUserIds: MutableMap<String, UserId> = ConcurrentHashMap()
+    private val destroyedInstanceIds: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     override fun start() {
         log.info("Instance service started.")
@@ -170,6 +170,20 @@ class InstanceService(
         )
         val coreLogic = CoreLogic(instancePath, kaliumConfigs, userAgent)
         CoreLogger.init(KaliumLogger.Config(KaliumLogLevel.VERBOSE, listOf(KaliumLogWriter(instanceId))))
+        storeInstanceOrThrow(
+            Instance(
+                instanceRequest.backend,
+                null,
+                instanceId,
+                instanceRequest.name,
+                false,
+                coreLogic,
+                instancePath,
+                instanceRequest.password,
+                0,
+                before
+            )
+        )
 
         val serverConfig = if (instanceRequest.customBackend != null) {
             log.info("Instance $instanceId: Login with ${instanceRequest.email} on ${instanceRequest.customBackend.rest}")
@@ -249,6 +263,7 @@ class InstanceService(
             }
             loginResult.authData.userId
         }
+        instanceUserIds[instanceId] = userId
 
         log.info("Instance $instanceId: Register client device")
         val response = runBlocking {
@@ -284,10 +299,17 @@ class InstanceService(
                                 startupTime,
                                 startTime
                             )
-                            instances.put(instanceId, instance)
-                            instanceUserIds[instanceId] = userId
+                            storeInstanceOrThrow(instance)
 
-                            scheduleSync(instanceId, coreLogic, userId)
+                            syncExecutor.request {
+                                keepSyncAlwaysOn()
+                                when (val syncResult = waitUntilLiveOrFailure()) {
+                                    is SyncRequestResult.Failure ->
+                                        log.error("Instance $instanceId: Sync failed with ${syncResult.error}")
+
+                                    SyncRequestResult.Success -> Unit
+                                }
+                            }
                             return@runBlocking instance
                         }
 
@@ -327,27 +349,6 @@ class InstanceService(
         return response
     }
 
-    @Suppress("TooGenericExceptionCaught")
-    private fun scheduleSync(instanceId: String, coreLogic: CoreLogic, userId: UserId) {
-        scope.launch {
-            try {
-                coreLogic.sessionScope(userId) {
-                    syncExecutor.request {
-                        keepSyncAlwaysOn()
-                        when (val syncResult = waitUntilLiveOrFailure()) {
-                            is SyncRequestResult.Failure ->
-                                log.error("Instance $instanceId: Sync failed with ${syncResult.error}")
-
-                            SyncRequestResult.Success -> Unit
-                        }
-                    }
-                }
-            } catch (exception: Exception) {
-                log.warn("Instance $instanceId: background sync failed: ${exception.message}")
-            }
-        }
-    }
-
     private fun handleE2EIRequired(
         instanceId: String,
         clientId: String,
@@ -372,9 +373,15 @@ class InstanceService(
             startupTime,
             startTime
         )
-        instances[instanceId] = instance
-        instanceUserIds[instanceId] = userId
+        storeInstanceOrThrow(instance)
         return instance
+    }
+
+    private fun storeInstanceOrThrow(instance: Instance) {
+        if (destroyedInstanceIds.contains(instance.instanceId)) {
+            throw WebApplicationException("Instance ${instance.instanceId}: Instance was already destroyed")
+        }
+        instances[instance.instanceId] = instance
     }
 
     suspend fun initializeE2EI(instanceId: String): E2EIInitializationResponse {
@@ -446,6 +453,7 @@ class InstanceService(
 
     fun deleteInstance(id: String) {
         val startedAt = System.currentTimeMillis()
+        destroyedInstanceIds.add(id)
         val instance = instances.remove(id) ?: throw WebApplicationException(
             "Instance $id: Instance not found or already destroyed"
         )
