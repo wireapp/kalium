@@ -81,6 +81,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val observeFileSharingStatus: ObserveFileSharingStatusUseCase,
     private val validateAssetFileUseCase: ValidateAssetFileTypeUseCase,
     private val messageSendFailureHandler: MessageSendFailureHandler,
+    private val pendingMessagesEnabled: Boolean = true,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
@@ -124,7 +125,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         conversationId = asset.conversationId,
                         messageId = messageId,
                         messageType = TYPE,
-                        scheduleResendIfNoNetwork = true
+                        scheduleResendIfNoNetwork = pendingMessagesEnabled
                     )
                 }
         }.fold({

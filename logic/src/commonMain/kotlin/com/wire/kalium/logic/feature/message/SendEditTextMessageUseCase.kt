@@ -53,7 +53,8 @@ public class SendEditTextMessageUseCase internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val pendingMessagesEnabled: Boolean = true,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
     /**
@@ -110,7 +111,7 @@ public class SendEditTextMessageUseCase internal constructor(
                                 conversationId = conversationId,
                                 messageId = originalMessageId,
                                 messageType = TYPE,
-                                scheduleResendIfNoNetwork = true
+                                scheduleResendIfNoNetwork = pendingMessagesEnabled
                             )
                             MessageOperationResult.Failure(it)
                         },
