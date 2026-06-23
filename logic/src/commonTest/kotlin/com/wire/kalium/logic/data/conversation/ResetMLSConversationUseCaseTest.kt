@@ -325,7 +325,7 @@ class ResetMLSConversationUseCaseTest {
 
             coEvery {
                 mlsConversationRepository.establishMLSGroup(any(), any(), any(), any(), any())
-            } returns MLSAdditionResult(emptySet(), emptySet()).right()
+            } returns MLSAdditionResult(emptySet(), emptySet(), emptySet()).right()
 
             coEvery {
                 fetchConversationUseCase(any(), any(), reason = eq(ConversationSyncReason.ConversationReset))

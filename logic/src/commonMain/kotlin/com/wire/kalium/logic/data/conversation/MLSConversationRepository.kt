@@ -502,15 +502,26 @@ internal class MLSConversationDataSource(
             retryOnMissingUsers = retryOnMissingUsers
         ) {
             keyPackageRepository.claimKeyPackages(userIdList, cipherSuite).flatMap { result ->
-                if (result.usersWithoutKeyPackagesAvailable.isNotEmpty() && !allowPartialMemberList) {
-                    logger.d(
-                        "add members to MLS Group: failed " +
-                                "${result.usersWithoutKeyPackagesAvailable.count()} user(s) missing KeyPackages"
-                    )
-                    Either.Left(CoreFailure.MissingKeyPackages(result.usersWithoutKeyPackagesAvailable))
-                } else {
-                    logger.d("add members to MLS Group: claiming KeyPackages succeed")
-                    Either.Right(result)
+                when {
+                    result.usersWithoutKeyPackages.isNotEmpty() && !allowPartialMemberList -> {
+                        logger.d(
+                            "add members to MLS Group: failed " +
+                                    "${result.usersWithoutKeyPackages.count()} user(s) missing KeyPackages"
+                        )
+                        Either.Left(CoreFailure.MissingKeyPackages(result.usersWithoutKeyPackages))
+                    }
+                    result.usersWithUnreachableBackend.isNotEmpty() && !allowPartialMemberList -> {
+                        val domains = result.usersWithUnreachableBackend.map { it.domain }.distinct()
+                        logger.d(
+                            "add members to MLS Group: failed " +
+                                    "${result.usersWithUnreachableBackend.count()} user(s) on unreachable backend(s): $domains"
+                        )
+                        Either.Left(NetworkFailure.FederatedBackendFailure.FailedDomains(domains))
+                    }
+                    else -> {
+                        logger.d("add members to MLS Group: claiming KeyPackages succeed")
+                        Either.Right(result)
+                    }
                 }
             }.flatMap { result ->
                 val keyPackages = result.successfullyFetchedKeyPackages
@@ -533,11 +544,12 @@ internal class MLSConversationDataSource(
                         checkRevocationList(mlsContext, revocationList)
                     }
                 }.map {
-                    val additionResult = MLSAdditionResult(
-                        result.successfullyFetchedKeyPackages.map { user -> UserId(user.userId, user.domain) }.toSet(),
-                        result.usersWithoutKeyPackagesAvailable.toSet()
+                    MLSAdditionResult(
+                        successfullyAddedUsers = result.successfullyFetchedKeyPackages
+                            .map { user -> UserId(user.userId, user.domain) }.toSet(),
+                        usersWithoutKeyPackages = result.usersWithoutKeyPackages,
+                        usersWithUnreachableBackend = result.usersWithUnreachableBackend
                     )
-                    additionResult
                 }
             }
         }
