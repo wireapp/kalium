@@ -297,6 +297,36 @@ class SendPendingAssetMessageUseCaseTest {
     }
 
     @Test
+    fun givenFailedUploadStatusAndPendingMessagesDisabled_whenUploadFails_thenDoesNotScheduleResend() = runTest {
+        val name = "photo.jpg"
+        val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name))
+        val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
+        val message = assetMessage().copy(content = content)
+
+        val (arrangement, useCase) = Arrangement()
+            .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
+            .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+            .withFetchPrivateDecodedAsset(Either.Right(path))
+            .withStoredData(mockedLongAssetData(), path)
+            .withUploadAndPersistPrivateAsset(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)))
+            .withPendingMessagesDisabled()
+            .arrange()
+
+        useCase(message)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                failure = any(),
+                conversationId = message.conversationId,
+                messageId = message.id,
+                messageType = any(),
+                scheduleResendIfNoNetwork = false
+            )
+        }
+    }
+
+
+    @Test
     fun givenUploadedStatus_whenInvoked_thenCallsSendPendingMessageDirectly() = runTest {
         val message = assetMessage()
 
@@ -343,9 +373,14 @@ class SendPendingAssetMessageUseCaseTest {
         val audioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderMock(
             canReadFile = { fakeKaliumFileSystem.exists(it.toPath()) }
         )
+        private var pendingMessages = true
 
         init {
             everySuspend { assetRepository.deleteAssetLocally(any()) } returns Unit.right()
+        }
+
+        fun withPendingMessagesDisabled() = apply {
+            pendingMessages = false
         }
 
         suspend fun withGetAssetMessageTransferStatus(status: AssetTransferStatus) = apply {
@@ -427,6 +462,7 @@ class SendPendingAssetMessageUseCaseTest {
             messageSender = messageSender,
             messageSendFailureHandler = messageSendFailureHandler,
             audioNormalizedLoudnessBuilder = audioNormalizedLoudnessBuilder,
+            pendingMessagesEnabled = pendingMessages,
         )
     }
 

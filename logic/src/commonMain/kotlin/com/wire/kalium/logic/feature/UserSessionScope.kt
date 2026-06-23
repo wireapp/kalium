@@ -2517,6 +2517,7 @@ public class UserSessionScope internal constructor(
             mlsMissingUsersRejectionHandlerProvider,
             currentPersistenceEventHookNotifier,
             this,
+            kaliumConfigs,
             userScopedLogger
         )
     }
