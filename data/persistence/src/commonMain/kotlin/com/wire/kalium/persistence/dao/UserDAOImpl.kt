@@ -529,7 +529,7 @@ class UserDAOImpl internal constructor(
     }
 
     override suspend fun getTeamIdByQualifiedID(qualifiedID: QualifiedIDEntity): String? = withContext(readDispatcher.value) {
-        userQueries.selectTeamByQualifiedId(qualifiedID).executeAsOneOrNull()?.team
+        userQueries.selectTeamByQualifiedId(qualifiedID).awaitAsOneOrNull()?.team
     }
 
     override suspend fun updateTeamId(userId: UserIDEntity, teamId: String) {

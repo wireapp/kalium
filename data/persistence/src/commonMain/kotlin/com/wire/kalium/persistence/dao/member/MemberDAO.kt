@@ -173,7 +173,7 @@ internal class MemberDAOImpl internal constructor(
 
     override suspend fun isMemberAdmin(conversationId: QualifiedIDEntity, userId: QualifiedIDEntity): Boolean =
         withContext(readDispatcher.value) {
-            memberQueries.isMemberAdmin(conversationId, userId).executeAsOne()
+            memberQueries.isMemberAdmin(conversationId, userId).awaitAsOne()
         }
 
     override suspend fun getConversationMemberCounts(conversationId: QualifiedIDEntity): ConversationMemberCountsEntity =
@@ -185,7 +185,7 @@ internal class MemberDAOImpl internal constructor(
                     guestsCount = guestsCount.toInt(),
                     guestsProCount = guestsProCount.toInt()
                 )
-            }.executeAsOne()
+            }.awaitAsOne()
         }
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: MemberEntity.Role) {

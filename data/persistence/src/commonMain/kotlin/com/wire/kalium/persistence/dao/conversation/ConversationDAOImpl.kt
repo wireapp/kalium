@@ -80,13 +80,13 @@ internal class ConversationDAOImpl internal constructor(
         qualifiedID: QualifiedIDEntity
     ): ConversationEntity? = withContext(readDispatcher.value) {
         conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::fromViewToModel)
-            .executeAsOneOrNull()
+            .awaitAsOneOrNull()
     }
 
     override suspend fun getConversationLastReadDate(
         qualifiedID: QualifiedIDEntity
     ): Instant? = withContext(readDispatcher.value) {
-        conversationQueries.getConversationLastReadDate(qualifiedID).executeAsOneOrNull()
+        conversationQueries.getConversationLastReadDate(qualifiedID).awaitAsOneOrNull()
     }
 
     override suspend fun getNonDeletedConversationById(
@@ -107,7 +107,7 @@ internal class ConversationDAOImpl internal constructor(
         qualifiedID: QualifiedIDEntity
     ): ConversationViewEntity? = withContext(readDispatcher.value) {
         conversationDetailsQueries.selectConversationDetailsByQualifiedId(qualifiedID, conversationMapper::fromViewToModel)
-            .executeAsOneOrNull()
+            .awaitAsOneOrNull()
     }
 
     // endregion
