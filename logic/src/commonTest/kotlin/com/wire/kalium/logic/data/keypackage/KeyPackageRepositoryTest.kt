@@ -28,9 +28,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepositoryTest.Arrangemen
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
-import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMockativeImpl
-import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
@@ -42,6 +41,7 @@ import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import io.ktor.client.request.invoke
 import io.ktor.util.encodeBase64
 import io.mockative.any
 import io.mockative.coEvery
