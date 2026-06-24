@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -194,6 +195,55 @@ class CallDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenNoActiveCalls_whenObservingActiveCalls_thenReturnEmptyList() = runTest {
+        // given
+        nonActiveCalls.forEach {
+            callDAO.insertCall(it)
+        }
+
+        // when
+        callDAO.observeActiveCalls().test {
+            // then
+            assertEquals(emptyList(), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenNonActiveAndActiveCalls_whenObservingActiveCalls_thenReturnOnlyActiveCalls() = runTest {
+        // given
+        (nonActiveCalls + activeCalls).forEach {
+            callDAO.insertCall(it)
+        }
+
+        // when
+        callDAO.observeActiveCalls().test {
+            // then
+            assertEquals(activeCalls.toSet(), awaitItem().toSet())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenNonActiveAndActiveCalls_andSomeCallIsUpdated_whenObservingActiveCalls_thenReturnUpdatedActiveCalls() = runTest {
+        // given
+        val callToUpdate = callEntity.copy(id = "id_to_update", status = CallEntity.Status.ESTABLISHED) // now it's active
+        (nonActiveCalls + activeCalls + callToUpdate).forEach {
+            callDAO.insertCall(it)
+        }
+
+        // when
+        callDAO.observeActiveCalls().test {
+            // then
+            assertEquals((activeCalls + callToUpdate).toSet(), awaitItem().toSet())
+
+            callDAO.updateLastCallStatusByConversationId(CallEntity.Status.CLOSED, callToUpdate.conversationId) // now it's not active
+            assertEquals(activeCalls.toSet(), awaitItem().toSet())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     companion object {
         // given
         val convId = QualifiedIDEntity(
@@ -209,5 +259,20 @@ class CallDAOTest : BaseDatabaseTest() {
             conversationType = ConversationEntity.Type.GROUP,
             type = CallEntity.Type.CONFERENCE
         )
+
+        val nonActiveCalls = listOf(
+            CallEntity.Status.CLOSED,
+            CallEntity.Status.REJECTED,
+            CallEntity.Status.MISSED,
+            CallEntity.Status.CLOSED_INTERNALLY
+        ).map { status -> callEntity.copy(id = "id_${status.ordinal}", status = status) }
+
+        val activeCalls = listOf(
+            CallEntity.Status.STARTED,
+            CallEntity.Status.INCOMING,
+            CallEntity.Status.ANSWERED,
+            CallEntity.Status.ESTABLISHED,
+            CallEntity.Status.STILL_ONGOING
+        ).map { status -> callEntity.copy(id = "id_${status.ordinal}", status = status) }
     }
 }
