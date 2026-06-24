@@ -22,9 +22,9 @@ import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.call.CallDAOTest.Companion.callEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -265,7 +265,7 @@ class CallDAOTest : BaseDatabaseTest() {
             CallEntity.Status.REJECTED,
             CallEntity.Status.MISSED,
             CallEntity.Status.CLOSED_INTERNALLY
-        ).map { status -> callEntity.copy(id = "id_${status.ordinal}", status = status) }
+        ).map(CallEntity.Status::createCallEntityFromStatus)
 
         val activeCalls = listOf(
             CallEntity.Status.STARTED,
@@ -273,6 +273,13 @@ class CallDAOTest : BaseDatabaseTest() {
             CallEntity.Status.ANSWERED,
             CallEntity.Status.ESTABLISHED,
             CallEntity.Status.STILL_ONGOING
-        ).map { status -> callEntity.copy(id = "id_${status.ordinal}", status = status) }
+        ).map(CallEntity.Status::createCallEntityFromStatus)
     }
 }
+
+private fun CallEntity.Status.createCallEntityFromStatus(): CallEntity = callEntity.copy(
+    id = "id_${this.ordinal}",
+    conversationId = QualifiedIDEntity("conversation_id_${this.ordinal}", "domain"),
+    status = this
+)
+
