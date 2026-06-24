@@ -66,7 +66,8 @@ public class SendTextMessageUseCase internal constructor(
     private val userPropertyRepository: UserPropertyRepository,
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
-    private val scope: CoroutineScope
+    private val pendingMessagesEnabled: Boolean = true,
+    private val scope: CoroutineScope,
 ) {
 
     public suspend operator fun invoke(
@@ -121,7 +122,8 @@ public class SendTextMessageUseCase internal constructor(
                 failure = it,
                 conversationId = conversationId,
                 messageId = generatedMessageUuid,
-                messageType = TYPE
+                messageType = TYPE,
+                scheduleResendIfNoNetwork = pendingMessagesEnabled,
             )
         }.fold(
             { MessageOperationResult.Failure(it) },

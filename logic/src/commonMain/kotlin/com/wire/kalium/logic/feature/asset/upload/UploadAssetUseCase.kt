@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilder
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.messaging.sending.MessageSender
@@ -49,9 +50,11 @@ internal class UploadAssetUseCaseImpl(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase,
+    private val updateAudioNormalizedLoudness: UpdateAudioMessageNormalizedLoudnessUseCase,
     private val persistMessage: PersistMessageUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
-    private val dispatcher: KaliumDispatcher
+    private val pendingMessagesEnabled: Boolean = true,
+    private val dispatcher: KaliumDispatcher,
 ) : UploadAssetUseCase {
 
     private suspend fun getOrBuildAudioNormalizedLoudnessIfNeeded(metadata: UploadAssetMessageMetadata): ByteArray? = when {
@@ -76,7 +79,22 @@ internal class UploadAssetUseCaseImpl(
             filetype = metadata.mimeType,
         ).onFailure {
             updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
-            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, message.conversationId, message.id, TYPE)
+            messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                failure = it,
+                conversationId = message.conversationId,
+                messageId = message.id,
+                messageType = TYPE,
+                scheduleResendIfNoNetwork = pendingMessagesEnabled
+            )
+
+            audioNormalizedLoudnessDeferred.await()?.let { normalizedLoudness ->
+                updateAudioNormalizedLoudness(
+                    conversationId = message.conversationId,
+                    messageId = message.id,
+                    normalizedLoudness = normalizedLoudness
+                )
+            }
+
         }.flatMap { (assetId, sha256) ->
             // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload,
             // we also update the generated audio normalized loudness if applicable,
@@ -103,7 +121,13 @@ internal class UploadAssetUseCaseImpl(
                     assetDataSource.deleteAssetLocally(metadata.assetId.key)
                     // Finally we try to send the Asset Message to the recipients of the given conversation
                     messageSender.sendMessage(updatedMessage).onFailure {
-                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, message.conversationId, message.id, TYPE)
+                        messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                            failure = it,
+                            conversationId = message.conversationId,
+                            messageId = message.id,
+                            messageType = TYPE,
+                            scheduleResendIfNoNetwork = pendingMessagesEnabled
+                        )
                     }
                 }
         }

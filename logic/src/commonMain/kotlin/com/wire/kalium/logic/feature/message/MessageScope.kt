@@ -79,6 +79,7 @@ import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.upload.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCase
 import com.wire.kalium.logic.feature.asset.upload.UploadAssetUseCaseImpl
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.feature.incallreaction.SendInCallReactionUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
@@ -106,6 +107,8 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTim
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
+import com.wire.kalium.logic.sync.SendPendingAssetMessageUseCase
+import com.wire.kalium.logic.sync.SendPendingAssetMessageUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessScheduler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -159,12 +162,13 @@ public class MessageScope internal constructor(
     private val mlsMissingUsersMessageRejectionHandlerProvider: () -> MLSMissingUsersMessageRejectionHandler,
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val scope: CoroutineScope,
+    private val kaliumConfigs: KaliumConfigs,
     kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
 ) {
 
-    private val messageSendFailureHandler: MessageSendFailureHandler
+    internal val messageSendFailureHandler: MessageSendFailureHandler
         get() = MessageSendFailureHandlerImpl(
             userRepository,
             clientRepository,
@@ -272,7 +276,8 @@ public class MessageScope internal constructor(
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
             selfDeleteTimer = observeSelfDeletingMessages,
-            scope = scope
+            scope = scope,
+            pendingMessagesEnabled = kaliumConfigs.pendingMessages
         )
 
     public val sendMultipartMessage: SendMultipartMessageUseCase
@@ -296,12 +301,13 @@ public class MessageScope internal constructor(
 
     public val sendEditTextMessage: SendEditTextMessageUseCase
         get() = SendEditTextMessageUseCase(
-            messageRepository,
-            selfUserId,
-            currentClientIdProvider,
-            slowSyncRepository,
-            messageSender,
-            messageSendFailureHandler
+            messageRepository = messageRepository,
+            selfUserId = selfUserId,
+            provideClientId = currentClientIdProvider,
+            slowSyncRepository = slowSyncRepository,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            pendingMessagesEnabled = kaliumConfigs.pendingMessages
         )
 
     public val sendEditMultipartMessage: SendEditMultipartMessageUseCase
@@ -315,10 +321,22 @@ public class MessageScope internal constructor(
             getMessageAttachments = getMessageAttachmentsUseCase.value,
         )
 
-    private val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
+    internal val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
         get() = GetAssetMessageTransferStatusUseCaseImpl(
             messageRepository,
             dispatcher
+        )
+
+    internal val sendPendingAssetMessage: SendPendingAssetMessageUseCase
+        get() = SendPendingAssetMessageUseCaseImpl(
+            assetRepository = assetRepository,
+            persistMessage = persistMessage,
+            updateAssetMessageTransferStatus = updateAssetMessageTransferStatus,
+            getAssetMessageTransferStatus = getAssetMessageTransferStatus,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            audioNormalizedLoudnessBuilder = audioNormalizedLoudnessBuilder,
+            pendingMessagesEnabled = kaliumConfigs.pendingMessages,
         )
 
     public val retryFailedMessage: RetryFailedMessageUseCase
@@ -355,28 +373,31 @@ public class MessageScope internal constructor(
 
     private val uploadAssetUseCase: UploadAssetUseCase
         get() = UploadAssetUseCaseImpl(
-            assetRepository,
-            messageSender,
-            messageSendFailureHandler,
-            updateAssetMessageTransferStatus,
-            persistMessage,
-            audioNormalizedLoudnessBuilder,
-            dispatcher,
+            assetDataSource = assetRepository,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            updateAssetMessageTransferStatus = updateAssetMessageTransferStatus,
+            updateAudioNormalizedLoudness = updateAudioMessageNormalizedLoudnessUseCase,
+            persistMessage = persistMessage,
+            audioNormalizedLoudnessBuilder = audioNormalizedLoudnessBuilder,
+            dispatcher = dispatcher,
+            pendingMessagesEnabled = kaliumConfigs.pendingMessages,
         )
 
     public val sendAssetMessage: ScheduleNewAssetMessageUseCase
         get() = ScheduleNewAssetMessageUseCaseImpl(
-            persistNewAssetMessageUseCase,
-            uploadAssetUseCase,
-            updateAssetMessageTransferStatus,
-            selfUserId,
-            slowSyncRepository,
-            messageRepository,
-            observeFileSharingStatusUseCase,
-            validateAssetMimeTypeUseCase,
-            messageSendFailureHandler,
-            scope,
-            dispatcher,
+            persistNewAssetMessage = persistNewAssetMessageUseCase,
+            uploadAsset = uploadAssetUseCase,
+            updateAssetMessageTransferStatus = updateAssetMessageTransferStatus,
+            userId = selfUserId,
+            slowSyncRepository = slowSyncRepository,
+            messageRepository = messageRepository,
+            observeFileSharingStatus = observeFileSharingStatusUseCase,
+            validateAssetFileUseCase = validateAssetMimeTypeUseCase,
+            messageSendFailureHandler = messageSendFailureHandler,
+            scope = scope,
+            dispatcher = dispatcher,
+            pendingMessagesEnabled = kaliumConfigs.pendingMessages,
         )
 
     public val getAssetMessage: GetMessageAssetUseCase
@@ -448,13 +469,14 @@ public class MessageScope internal constructor(
 
     public val sendLocation: SendLocationUseCase
         get() = SendLocationUseCase(
-            persistMessage,
-            selfUserId,
-            currentClientIdProvider,
-            slowSyncRepository,
-            messageSender,
-            messageSendFailureHandler,
-            observeSelfDeletingMessages
+            persistMessage = persistMessage,
+            selfUserId = selfUserId,
+            currentClientIdProvider = currentClientIdProvider,
+            slowSyncRepository = slowSyncRepository,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            selfDeleteTimer = observeSelfDeletingMessages,
+            pendingMessagesEnabled = kaliumConfigs.pendingMessages
         )
 
     public val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase

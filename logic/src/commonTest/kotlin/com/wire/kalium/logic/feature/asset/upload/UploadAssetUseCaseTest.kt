@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.feature.asset.AudioNormalizedLoudnessBuilderMock
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAudioMessageNormalizedLoudnessUseCase
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.framework.TestMessage.assetMessage
@@ -39,6 +40,7 @@ import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -145,6 +147,20 @@ class UploadAssetUseCaseTest {
     }
 
     @Test
+    fun givenUploadFailsAndPendingMessagesDisabled_whenUploadingAsset_thenDoesNotScheduleResend() = runTest(testDispatcher.default) {
+        val (arrangement, uploadAsset) = Arrangement().arrange {
+            withUploadFailure()
+            withPendingMessagesDisabled()
+        }
+
+        uploadAsset(assetMessage(), uploadMetadata)
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+        }
+    }
+
+    @Test
     fun givenAValidMessage_whenUploadSucceeds_thenAssetMessageIsPersisted() = runTest(testDispatcher.default) {
         val (arrangement, uploadAsset) = Arrangement().arrange {
             withUploadSuccess()
@@ -233,6 +249,12 @@ class UploadAssetUseCaseTest {
         val persistMessage: PersistMessageUseCase = mock(mode = MockMode.autoUnit)
         val audioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderMock()
         var persistMessageResult: Either<CoreFailure, Unit> = Unit.right()
+        var updateAudioNormalizedLoudness: UpdateAudioMessageNormalizedLoudnessUseCase = mock(mode = MockMode.autoUnit)
+        private var pendingMessages = true
+
+        fun withPendingMessagesDisabled() = apply {
+            pendingMessages = false
+        }
 
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, UploadAssetUseCaseImpl> {
             block()
@@ -254,13 +276,15 @@ class UploadAssetUseCaseTest {
             } returns Unit.right()
 
             return this to UploadAssetUseCaseImpl(
-                assetDataSource,
-                messageSender,
-                messageSendFailureHandler,
-                updateAssetMessageTransferStatus,
-                persistMessage,
-                audioNormalizedLoudnessBuilder,
-                testDispatcher
+                assetDataSource = assetDataSource,
+                messageSender = messageSender,
+                messageSendFailureHandler = messageSendFailureHandler,
+                updateAssetMessageTransferStatus = updateAssetMessageTransferStatus,
+                updateAudioNormalizedLoudness = updateAudioNormalizedLoudness,
+                persistMessage = persistMessage,
+                audioNormalizedLoudnessBuilder = audioNormalizedLoudnessBuilder,
+                pendingMessagesEnabled = pendingMessages,
+                dispatcher = testDispatcher,
             )
 
         }

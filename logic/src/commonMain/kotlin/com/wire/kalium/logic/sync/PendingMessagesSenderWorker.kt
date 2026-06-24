@@ -19,8 +19,12 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.EditMessageBuilder
+import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -33,7 +37,9 @@ import com.wire.kalium.common.logger.kaliumLogger
 internal class PendingMessagesSenderWorker(
     private val messageRepository: MessageRepository,
     private val messageSender: MessageSender,
-    private val userId: UserId
+    private val userId: UserId,
+    private val sendPendingAssetMessage: SendPendingAssetMessageUseCase,
+    private val messageSendFailureHandler: MessageSendFailureHandler,
 ) : DefaultWorker {
 
     /**
@@ -50,7 +56,18 @@ internal class PendingMessagesSenderWorker(
             .onSuccess { pendingMessages ->
                 pendingMessages.forEach { message ->
                     kaliumLogger.withFeatureId(SYNC).i("Attempting scheduled sending of message $message")
-                    messageSender.sendPendingMessage(message.conversationId, message.id)
+                    when {
+                        message is Message.Regular && message.content is MessageContent.Asset ->
+                            sendPendingAssetMessage(message)
+
+                        message is Message.Regular &&
+                                message.content is MessageContent.Text &&
+                                message.editStatus is Message.EditStatus.Edited ->
+                            resendPendingTextEdit(message, message.content as MessageContent.Text)
+
+                        else ->
+                            messageSender.sendPendingMessage(message.conversationId, message.id)
+                    }
                 }
             }.onFailure {
                 kaliumLogger.withFeatureId(SYNC).w("Failed to fetch and attempt retry of pending messages: $it")
@@ -60,7 +77,27 @@ internal class PendingMessagesSenderWorker(
         return Result.Success
     }
 
+    private suspend fun resendPendingTextEdit(
+        originalMessage: Message.Regular,
+        originalContent: MessageContent.Text,
+    ) {
+        val signaling = EditMessageBuilder.buildTextEditSignaling(originalMessage, originalContent)
+        messageSender.sendMessage(signaling)
+            .onFailure { failure ->
+                kaliumLogger.withFeatureId(SYNC)
+                    .i("Failed to resend pending text edit for message ${originalMessage.id}. Failure = $failure")
+                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    failure = failure,
+                    conversationId = originalMessage.conversationId,
+                    messageId = originalMessage.id,
+                    messageType = TEXT_EDITED_TYPE,
+                    scheduleResendIfNoNetwork = false,
+                )
+            }
+    }
+
     companion object {
         const val NAME_PREFIX = "scheduled-message-"
+        private const val TEXT_EDITED_TYPE = "TextEdited"
     }
 }
