@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2025 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,22 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.v16.authenticated
 
-package com.wire.kalium.api.common
+import com.wire.kalium.network.AuthenticatedNetworkClient
+import com.wire.kalium.network.api.v15.authenticated.E2EIApiV15
 
-import com.wire.kalium.network.SupportedApiVersions
-import kotlin.test.Test
-import kotlin.test.fail
-
-class SupportedApiVersionTest {
-
-    @Test
-    fun givenEmptySupportedApiVersionList_thenFail() {
-        if (SupportedApiVersions.isNullOrEmpty()) fail()
-    }
-
-    @Test
-    fun apiV3ShouldNotBeSupported() {
-        if (SupportedApiVersions.contains(3)) fail()
-    }
-}
+internal open class E2EIApiV16 internal constructor(
+    authenticatedNetworkClient: AuthenticatedNetworkClient
+) : E2EIApiV15(authenticatedNetworkClient)

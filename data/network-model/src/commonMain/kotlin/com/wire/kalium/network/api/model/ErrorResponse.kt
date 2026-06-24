@@ -37,6 +37,18 @@ data class GenericAPIErrorResponse(
 }
 
 @Serializable
+data class AdminlessConversationErrorResponse(
+    @SerialName("code") val code: Int,
+    @SerialName("message") val message: String,
+    @SerialName("label") val label: String,
+    @SerialName("eligible_members") val eligibleMembers: List<QualifiedID>,
+) : APIErrorResponseBody {
+    companion object {
+        const val LABEL = "adminless-conversation"
+    }
+}
+
+@Serializable
 sealed interface FederationErrorResponse : APIErrorResponseBody {
     @Serializable
     data class Conflict(
