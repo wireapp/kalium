@@ -68,6 +68,7 @@ internal class SendPendingAssetMessageUseCaseImpl(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
+    private val pendingMessagesEnabled: Boolean = true,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : SendPendingAssetMessageUseCase {
 
@@ -101,7 +102,7 @@ internal class SendPendingAssetMessageUseCaseImpl(
                         conversationId = message.conversationId,
                         messageId = message.id,
                         messageType = TYPE,
-                        scheduleResendIfNoNetwork = true
+                        scheduleResendIfNoNetwork = pendingMessagesEnabled
                     )
                 }
             }
@@ -112,7 +113,7 @@ internal class SendPendingAssetMessageUseCaseImpl(
                     conversationId = message.conversationId,
                     messageId = message.id,
                     messageType = TYPE,
-                    scheduleResendIfNoNetwork = true
+                    scheduleResendIfNoNetwork = pendingMessagesEnabled
                 )
             }
             .map { }

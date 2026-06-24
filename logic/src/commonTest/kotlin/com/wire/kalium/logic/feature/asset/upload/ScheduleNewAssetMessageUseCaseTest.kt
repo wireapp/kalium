@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.feature.asset.ValidateAssetFileTypeUseCase
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
@@ -41,6 +42,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verify
@@ -135,6 +137,24 @@ class ScheduleNewAssetMessageUseCaseTest {
     }
 
     @Test
+    fun givenPersistAssetMessageFailsAndPendingMessagesDisabled_whenSending_thenDoesNotScheduleResend() = runTest(testDispatcher.default) {
+        // Given
+        val (arrangement, sendAssetUseCase) = Arrangement(this)
+            .withAssetMessagePersistFailure()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+            .withPendingMessagesDisabled()
+            .arrange()
+
+        // When
+        sendAssetUseCase.invoke(assetUploadParams)
+
+        // Then
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
+        }
+    }
+
+    @Test
     fun givenAseetMimeTypeRestricted_whenSending_thenReturnRestrictedFileType() = runTest {
         // Given
         val (arrangement, sendAssetUseCase) = Arrangement(this)
@@ -208,6 +228,18 @@ class ScheduleNewAssetMessageUseCaseTest {
             } returns Pair(uploadMetadata, TestMessage.assetMessage()).right()
         }
 
+        suspend fun withAssetMessagePersistFailure() = apply {
+            everySuspend {
+                persistNewAssetMessage.invoke(any(), any(), any())
+            } returns CoreFailure.Unknown(null).left()
+        }
+
+        private var pendingMessages = true
+
+        fun withPendingMessagesDisabled() = apply {
+            pendingMessages = false
+        }
+
         suspend fun withUploadSuccess() = apply {
             everySuspend {
                 uploadAsset.invoke(any(), any())
@@ -239,19 +271,21 @@ class ScheduleNewAssetMessageUseCaseTest {
         }
 
         fun arrange() = this to ScheduleNewAssetMessageUseCaseImpl(
-            persistNewAssetMessage,
-            uploadAsset,
-            updateTransferStatus,
-            QualifiedID("some-id", "some-domain"),
-            slowSyncRepository,
-            messageRepository,
-            observerFileSharingStatusUseCase,
-            validateAssetMimeTypeUseCase,
-            messageSendFailureHandler,
-            coroutineScope,
-            testDispatcher
+            persistNewAssetMessage = persistNewAssetMessage,
+            uploadAsset = uploadAsset,
+            updateAssetMessageTransferStatus = updateTransferStatus,
+            userId = QualifiedID("some-id", "some-domain"),
+            slowSyncRepository = slowSyncRepository,
+            messageRepository = messageRepository,
+            observeFileSharingStatus = observerFileSharingStatusUseCase,
+            validateAssetFileUseCase = validateAssetMimeTypeUseCase,
+            messageSendFailureHandler = messageSendFailureHandler,
+            pendingMessagesEnabled = pendingMessages,
+            scope = coroutineScope,
+            dispatcher = testDispatcher,
         ).also {
             every { slowSyncRepository.slowSyncStatus } returns completeStateFlow
+            everySuspend { updateTransferStatus(any(), any(), any()) } returns UpdateTransferStatusResult.Success
         }
     }
 
