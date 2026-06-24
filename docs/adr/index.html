@@ -1290,6 +1290,175 @@ is not something we'll run in default CI without more work.</li>
                 </div>
             </div>
             
+            <div class="panel panel-default">
+                <div class="panel-heading adr-pending">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" href="#collapse9">9. Public API, ABI, and Changelog Governance</a>
+
+                        
+                        <i class="adr-icon fas fa-fw fa-hourglass-half"></i>
+                        
+
+                    </h4>
+                </div>
+                <div id="collapse9" class="panel-collapse collapse">
+                    <div class="panel-body"><h1>9. Public API, ABI, and Changelog Governance</h1>
+<p>Date: 2026-06-15</p>
+<h2>Status</h2>
+<p>Proposed</p>
+<h2>Context</h2>
+<p>Kalium is consumed as an SDK by external Android, JVM, iOS, and multiplatform clients. Those
+consumers need two guarantees when upgrading:</p>
+<ol>
+<li>Existing compiled applications should keep running when a release claims binary compatibility.</li>
+<li>Source-level API changes should be documented clearly enough that consumers know what changed,
+what they need to migrate, and whether the change is safe to adopt immediately.</li>
+</ol>
+<p>ADR 6 already introduced <code>explicitApi()</code> for <code>:logic</code> so public declarations are intentional.
+However, explicit API mode does not detect whether a public declaration changed in a binary
+incompatible way after it was published. A change can be source-compatible but still break already
+compiled Kotlin/JVM consumers, for example by changing a return type, changing constructor
+parameters on a public data class, or adding default parameters to a public function.</p>
+<p>Kalium also has a tag-triggered <code>generate-changelog.yml</code> workflow that generates release notes from
+commits. That is useful for release automation, but it does not force pull requests that change the
+consumer-facing API to include migration guidance. Release notes generated only from commit messages
+are not enough for SDK consumers.</p>
+<p>Kotlin Gradle Plugin 2.2.0 and newer includes built-in ABI validation through
+<code>kotlin { abiValidation() }</code>, with <code>checkKotlinAbi</code> and <code>updateKotlinAbi</code> Gradle tasks. Kalium is on
+Kotlin 2.3.0, so this can be adopted without adding the older
+<code>org.jetbrains.kotlinx.binary-compatibility-validator</code> plugin.</p>
+<h2>Decision</h2>
+<p>Adopt a public API and ABI governance workflow for published Kalium artifacts.</p>
+<h3>Compatibility Policy</h3>
+<p>Kalium will distinguish between:</p>
+<ul>
+<li><strong>Binary compatibility</strong>: already compiled consumers can replace the previous Kalium artifact with
+the new one without recompiling.</li>
+<li><strong>Source compatibility</strong>: consumers can recompile their source code against the new Kalium version
+without changing their code.</li>
+<li><strong>Behavioral compatibility</strong>: existing API keeps the same documented semantics, except for bug
+fixes or explicitly documented behavior changes.</li>
+</ul>
+<p>Stable public APIs should preserve binary and source compatibility within the supported release
+line. Breaking changes should go through a deprecation cycle where possible, and should be reserved
+for major releases or release lines that explicitly allow breaking changes.</p>
+<p>APIs annotated with Kalium opt-in markers such as <code>@InternalKaliumApi</code>, <code>@DebugKaliumApi</code>, and
+<code>@DelicateKaliumApi</code> have the stability guarantees described by those annotations and their KDoc.
+These annotations must be used deliberately, not as a way to avoid documenting consumer-impacting
+changes.</p>
+<h3>ABI Validation</h3>
+<p>Use Kotlin Gradle Plugin's built-in ABI validation instead of adding the standalone binary
+compatibility validator plugin.</p>
+<p>The initial rollout should cover the published artifact surface, starting with <code>:logic</code> because it
+is the main SDK entry point and already uses <code>explicitApi()</code>. Additional published modules should be
+added as their public surface is classified.</p>
+<p>Expected Gradle shape:</p>
+<pre><code class="language-kotlin">kotlin {
+    abiValidation {
+        filters {
+            excluded {
+                annotatedWith.add(&quot;com.wire.kalium.util.InternalKaliumApi&quot;)
+                annotatedWith.add(&quot;com.wire.kalium.util.DebugKaliumApi&quot;)
+            }
+        }
+    }
+}
+</code></pre>
+<p>If the Kotlin Gradle Plugin version still requires the experimental opt-in for this DSL, the module
+build file should opt in to <code>org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation</code>.</p>
+<p>CI must run:</p>
+<pre><code class="language-bash">./gradlew checkKotlinAbi
+</code></pre>
+<p>Developers must run this locally before finishing public API changes. If the ABI change is
+intentional and accepted, update the checked-in ABI dumps with:</p>
+<pre><code class="language-bash">./gradlew updateKotlinAbi
+</code></pre>
+<p>ABI dump updates are reviewable API changes. Reviewers should treat them like source changes, not
+generated noise.</p>
+<h3>Changelog Enforcement</h3>
+<p>Any pull request that changes public API or ABI must include consumer-facing release notes.</p>
+<p>CI should enforce this by requiring one of the following when public ABI dumps change, or when the
+pull request is labelled as an API-impacting change:</p>
+<ul>
+<li>A changelog fragment was added or updated.</li>
+<li>The pull request has an explicit <code>no-changelog-needed</code> label with a reviewer-accepted reason.</li>
+<li>The pull request has an explicit <code>internal-only</code> label and the ABI/API gate confirms no published
+consumer surface changed.</li>
+</ul>
+<p>Direct edits to a single <code>CHANGELOG.md</code> on every pull request should be avoided because they cause
+frequent merge conflicts. Prefer a fragment-based workflow:</p>
+<pre><code class="language-text">changelog.d/
+  1234-added-backup-status-api.md
+  1235-deprecated-old-login-flow.md
+</code></pre>
+<p>Each fragment should be short and consumer-focused:</p>
+<pre><code class="language-markdown">### Added
+- Added `BackupStatus.InProgress` for observing backup progress.
+
+### Migration
+No action required unless consumers exhaustively match `BackupStatus`.
+
+### Compatibility
+ABI: additive.
+Source: additive.
+Behavior: no behavior change.
+</code></pre>
+<p>The release workflow should collect accepted fragments into release notes or <code>CHANGELOG.md</code>, then
+clear or archive consumed fragments. The existing tag-triggered generated changelog may still be
+used, but consumer-facing API notes must not depend only on generated commit summaries.</p>
+<h3>Pull Request Expectations</h3>
+<p>Pull requests that affect public APIs should include:</p>
+<ul>
+<li>The ABI dump diff, when applicable.</li>
+<li>A changelog fragment or accepted skip label.</li>
+<li>Migration guidance for deprecations, replacements, removals, and behavior changes.</li>
+<li>Tests for new or changed behavior.</li>
+<li>A note when an API is intentionally experimental, delicate, debug-only, or internal.</li>
+</ul>
+<p>Reviewers should block public API changes that:</p>
+<ul>
+<li>Break ABI unintentionally.</li>
+<li>Add public APIs without explicit stability classification.</li>
+<li>Remove or rename stable public APIs without deprecation or release-line approval.</li>
+<li>Add consumer-impacting behavior changes without release notes.</li>
+<li>Update ABI dumps without explaining why the change is acceptable.</li>
+</ul>
+<h2>Consequences</h2>
+<p><strong>Easier:</strong></p>
+<ul>
+<li>CI catches accidental public ABI changes before they reach a release.</li>
+<li>Reviewers can inspect API evolution through explicit ABI dump diffs.</li>
+<li>Consumers get release notes that explain how to migrate, not only what commits landed.</li>
+<li>The policy builds on existing Kalium practices: <code>explicitApi()</code>, opt-in API annotations, and
+generated release automation.</li>
+<li>No new Gradle dependency is needed because ABI validation is provided by Kotlin Gradle Plugin.</li>
+</ul>
+<p><strong>More difficult:</strong></p>
+<ul>
+<li>Public API changes require one more artifact to review: the ABI dump.</li>
+<li>Intentional API changes require changelog fragments, even when the code change is small.</li>
+<li>The team must maintain a clear list of published modules covered by ABI validation.</li>
+<li>Some KMP/host-target combinations may need careful ABI validation configuration so unsupported
+local targets do not create false confidence or false failures.</li>
+</ul>
+<p><strong>Future work:</strong></p>
+<ul>
+<li>Add the ABI validation Gradle configuration for <code>:logic</code>.</li>
+<li>Decide which additional published modules are part of the external API contract.</li>
+<li>Add a CI workflow that runs <code>checkKotlinAbi</code>.</li>
+<li>Add a PR changelog check that understands <code>changelog.d/</code>, <code>no-changelog-needed</code>, and
+<code>internal-only</code>.</li>
+<li>Update the release workflow to merge changelog fragments into the final GitHub release notes.</li>
+</ul>
+<p><strong>References:</strong></p>
+<ul>
+<li><a href="https://kotlinlang.org/docs/api-guidelines-backward-compatibility.html">Kotlin backward compatibility guidelines</a></li>
+<li><a href="https://kotlinlang.org/docs/gradle-binary-compatibility-validation.html">Kotlin Gradle Plugin ABI validation</a></li>
+</ul>
+</div>
+                </div>
+            </div>
+            
         </div>
         <footer>
             Generated with &lt;3 using ADR Viewer
