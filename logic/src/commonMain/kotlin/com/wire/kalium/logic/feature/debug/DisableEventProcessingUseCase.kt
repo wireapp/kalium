@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.sync.incremental.EventProcessor
+import com.wire.kalium.util.DebugKaliumApi
 
 /**
  * Disables processing of incoming events but still mark them as processed.
@@ -25,6 +26,7 @@ import com.wire.kalium.logic.sync.incremental.EventProcessor
  * This use case useful for testing error scenarios where messages have been lost,
  * putting the client in an inconsistent state with the backend.
  */
+@DebugKaliumApi("Debug-only API for disabling event processing.")
 public interface DisableEventProcessingUseCase {
     public suspend operator fun invoke(disabled: Boolean)
 }
