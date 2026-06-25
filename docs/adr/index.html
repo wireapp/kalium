@@ -1291,12 +1291,12 @@ is not something we'll run in default CI without more work.</li>
             </div>
             
             <div class="panel panel-default">
-                <div class="panel-heading adr-pending">
+                <div class="panel-heading adr-unknown">
                     <h4 class="panel-title">
                         <a data-toggle="collapse" href="#collapse9">9. Public API, ABI, and Changelog Governance</a>
 
                         
-                        <i class="adr-icon fas fa-fw fa-hourglass-half"></i>
+                        <i class="adr-icon fas fa-fw fa-question"></i>
                         
 
                     </h4>
@@ -1305,7 +1305,7 @@ is not something we'll run in default CI without more work.</li>
                     <div class="panel-body"><h1>9. Public API, ABI, and Changelog Governance</h1>
 <p>Date: 2026-06-15</p>
 <h2>Status</h2>
-<p>Proposed</p>
+<p>Implemented</p>
 <h2>Context</h2>
 <p>Kalium is consumed as an SDK by external Android, JVM, iOS, and multiplatform clients. Those
 consumers need two guarantees when upgrading:</p>
@@ -1355,8 +1355,9 @@ added as their public surface is classified.</p>
 <p>Expected Gradle shape:</p>
 <pre><code class="language-kotlin">kotlin {
     abiValidation {
+        enabled.set(true)
         filters {
-            excluded {
+            exclude {
                 annotatedWith.add(&quot;com.wire.kalium.util.InternalKaliumApi&quot;)
                 annotatedWith.add(&quot;com.wire.kalium.util.DebugKaliumApi&quot;)
             }
@@ -1369,9 +1370,17 @@ build file should opt in to <code>org.jetbrains.kotlin.gradle.dsl.abi.Experiment
 <p>CI must run:</p>
 <pre><code class="language-bash">./gradlew checkKotlinAbi
 </code></pre>
+<p>For the initial <code>:logic</code>-only rollout, CI runs the scoped task:</p>
+<pre><code class="language-bash">./gradlew :logic:checkKotlinAbi -PUSE_UNIFIED_CORE_CRYPTO=true
+</code></pre>
+<p>The unqualified root task should be used once additional KMP modules have been classified and
+their ABI tasks can run without compiling unsupported or unpublished targets.</p>
 <p>Developers must run this locally before finishing public API changes. If the ABI change is
 intentional and accepted, update the checked-in ABI dumps with:</p>
 <pre><code class="language-bash">./gradlew updateKotlinAbi
+</code></pre>
+<p>For the initial <code>:logic</code>-only rollout, update the checked-in ABI dumps with:</p>
+<pre><code class="language-bash">./gradlew :logic:updateKotlinAbi -PUSE_UNIFIED_CORE_CRYPTO=true
 </code></pre>
 <p>ABI dump updates are reviewable API changes. Reviewers should treat them like source changes, not
 generated noise.</p>
