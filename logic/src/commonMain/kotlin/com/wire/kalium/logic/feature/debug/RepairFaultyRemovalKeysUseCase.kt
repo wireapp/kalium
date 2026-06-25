@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.util.string.toHexString
@@ -43,6 +44,7 @@ import kotlinx.coroutines.withContext
  * Use case to recover from an invalid removal key state on all MLS conversations.
  * This is an experimental feature to be trigger manually via debug options for now.
  */
+@DebugKaliumApi("Debug-only API for targeted repair of faulty MLS removal keys.")
 public interface RepairFaultyRemovalKeysUseCase {
     public suspend operator fun invoke(param: TargetedRepairParam): RepairResult
 }
@@ -140,6 +142,7 @@ internal class RepairFaultyRemovalKeysUseCaseImpl(
  * @property faultyKeys The faulty removal key to be repaired in hex string format.
  * @property domain The target domain in which the repair should be performed for the user and conversations.
  */
+@DebugKaliumApi("Debug-only parameters for targeted faulty removal-key repair.")
 public data class TargetedRepairParam(
     val domain: String,
     val faultyKeys: List<String>
@@ -148,9 +151,15 @@ public data class TargetedRepairParam(
 /**
  * Result of the repair operation for faulty removal keys.
  */
+@DebugKaliumApi("Debug-only result for targeted faulty removal-key repair.")
 public sealed interface RepairResult {
+    @DebugKaliumApi("Debug-only error result for targeted faulty removal-key repair.")
     public data object Error : RepairResult
+
+    @DebugKaliumApi("Debug-only no-op result for targeted faulty removal-key repair.")
     public data object RepairNotNeeded : RepairResult
+
+    @DebugKaliumApi("Debug-only empty-target result for targeted faulty removal-key repair.")
     public data object NoConversationsToRepair : RepairResult
 
     /**
@@ -160,6 +169,7 @@ public sealed interface RepairResult {
      * @property successfullyRepairedConversations Number of conversations that were successfully repaired.
      * @property failedRepairs List of conversation IDs where repair failed.
      */
+    @DebugKaliumApi("Debug-only performed result for targeted faulty removal-key repair.")
     public data class RepairPerformed(
         val totalConversationsChecked: Int,
         val conversationsWithFaultyKeys: Int,

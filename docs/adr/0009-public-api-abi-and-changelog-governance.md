@@ -4,7 +4,7 @@ Date: 2026-06-15
 
 ## Status
 
-Proposed
+Implemented
 
 ## Context
 
@@ -69,8 +69,9 @@ Expected Gradle shape:
 ```kotlin
 kotlin {
     abiValidation {
+        enabled.set(true)
         filters {
-            excluded {
+            exclude {
                 annotatedWith.add("com.wire.kalium.util.InternalKaliumApi")
                 annotatedWith.add("com.wire.kalium.util.DebugKaliumApi")
             }
@@ -88,11 +89,26 @@ CI must run:
 ./gradlew checkKotlinAbi
 ```
 
+For the initial `:logic`-only rollout, CI runs the scoped task:
+
+```bash
+./gradlew :logic:checkKotlinAbi -PUSE_UNIFIED_CORE_CRYPTO=true
+```
+
+The unqualified root task should be used once additional KMP modules have been classified and
+their ABI tasks can run without compiling unsupported or unpublished targets.
+
 Developers must run this locally before finishing public API changes. If the ABI change is
 intentional and accepted, update the checked-in ABI dumps with:
 
 ```bash
 ./gradlew updateKotlinAbi
+```
+
+For the initial `:logic`-only rollout, update the checked-in ABI dumps with:
+
+```bash
+./gradlew :logic:updateKotlinAbi -PUSE_UNIFIED_CORE_CRYPTO=true
 ```
 
 ABI dump updates are reviewable API changes. Reviewers should treat them like source changes, not
