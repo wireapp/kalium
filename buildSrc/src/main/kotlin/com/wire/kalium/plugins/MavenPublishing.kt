@@ -70,13 +70,6 @@ internal fun Project.configureKaliumMavenPublishingIfNeeded() {
         archivesName.set(baseArtifactId)
     }
 
-    val javadocJar = tasks.register<Jar>("mavenCentralJavadocJar") {
-        archiveClassifier.set("javadoc")
-        from(rootProject.file("README.md")) {
-            into("META-INF")
-        }
-    }
-
     val signingKeyId = providers.gradleProperty(SIGNING_KEY_ID_PROPERTY)
     val signingKey = providers.gradleProperty(SIGNING_KEY_PROPERTY)
     val signingPassword = providers.gradleProperty(SIGNING_PASSWORD_PROPERTY)
@@ -110,7 +103,14 @@ internal fun Project.configureKaliumMavenPublishingIfNeeded() {
 
             publications.withType<MavenPublication>().configureEach {
                 artifactId = publicationArtifactId(baseArtifactId)
-                artifact(javadocJar)
+                val publicationJavadocJar = tasks.register<Jar>("mavenCentral${name.taskNameSuffix()}JavadocJar") {
+                    archiveBaseName.set(artifactId)
+                    archiveClassifier.set("javadoc")
+                    from(rootProject.file("README.md")) {
+                        into("META-INF")
+                    }
+                }
+                artifact(publicationJavadocJar)
                 pom {
                     name.set("Kalium ${project.path.removePrefix(":").replace(':', ' ')}")
                     description.set("Kotlin Multiplatform messaging SDK for the Wire messaging platform.")
@@ -181,4 +181,13 @@ private fun MavenPublication.publicationArtifactId(baseArtifactId: String): Stri
         baseArtifactId
     } else {
         "$baseArtifactId-${name.lowercase()}"
+    }
+
+private fun String.taskNameSuffix(): String =
+    replaceFirstChar { firstChar ->
+        if (firstChar.isLowerCase()) {
+            firstChar.titlecase()
+        } else {
+            firstChar.toString()
+        }
     }
