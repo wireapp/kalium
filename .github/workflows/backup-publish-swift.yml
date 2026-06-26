@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: write # required to upload backup XCFrameworks to GitHub releases
     steps:
-      - uses: maxim-lobanov/setup-xcode@1242409711ff5721add51979e9e11e23ebb7e5a4
+      - uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90
         with:
           xcode-version: '16.1.0'
 
