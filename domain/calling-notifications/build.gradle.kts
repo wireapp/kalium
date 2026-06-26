@@ -34,9 +34,15 @@ kotlin {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
 
-        val appleMain by getting {
-            dependencies {
-                api(libs.avsKmp)
+        val appleAvsMainSourceDir = "src/appleAvsMain/kotlin"
+        listOf(
+            getByName("iosArm64Main"),
+            getByName("iosSimulatorArm64Main"),
+            getByName("macosArm64Main")
+        ).forEach { appleTargetMain ->
+            appleTargetMain.kotlin.srcDir(appleAvsMainSourceDir)
+            appleTargetMain.dependencies {
+                implementation(libs.avsKmp)
             }
         }
         val androidMain by getting {
