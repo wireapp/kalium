@@ -50,7 +50,10 @@ private val excludedMavenCentralProjectPathPrefixes = setOf(
 )
 
 private val excludedMavenCentralProjectPaths = setOf(
-    ":data:persistence-test"
+    ":data:persistence-test",
+    ":domain:calling-notifications",
+    ":domain:conversation-history",
+    ":domain:messaging:receiving"
 )
 
 internal fun Project.configureKaliumMavenPublishingIfNeeded() {
