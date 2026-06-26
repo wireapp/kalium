@@ -41,14 +41,17 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">c8d0e54
+        <div class="library-version" id="library-version">5b214f9
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
                 <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":logic:dokkaHtmlPartial/androidMain">android</button>
                 <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/appleMain">apple</button>
                 <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
+                <button class="platform-tag platform-selector native-like" data-active="" data-filter=":logic:dokkaHtmlPartial/iosArm64Main">iosArm64</button>
+                <button class="platform-tag platform-selector native-like" data-active="" data-filter=":logic:dokkaHtmlPartial/iosSimulatorArm64Main">iosSimulatorArm64</button>
                 <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":logic:dokkaHtmlPartial/jvmMain">jvm</button>
+                <button class="platform-tag platform-selector native-like" data-active="" data-filter=":logic:dokkaHtmlPartial/macosArm64Main">macosArm64</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
                 <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
@@ -78,11 +81,32 @@
                                 common
                             </label>
                         </li>
+                        <li role="option" class="dropdown--option platform-selector-option native-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/iosArm64Main" data-filter=":logic:dokkaHtmlPartial/iosArm64Main">
+                                <span class="checkbox--icon"></span>
+                                iosArm64
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option native-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/iosSimulatorArm64Main" data-filter=":logic:dokkaHtmlPartial/iosSimulatorArm64Main">
+                                <span class="checkbox--icon"></span>
+                                iosSimulatorArm64
+                            </label>
+                        </li>
                         <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
                             <label class="checkbox">
                                 <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/jvmMain" data-filter=":logic:dokkaHtmlPartial/jvmMain">
                                 <span class="checkbox--icon"></span>
                                 jvm
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option native-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/macosArm64Main" data-filter=":logic:dokkaHtmlPartial/macosArm64Main">
+                                <span class="checkbox--icon"></span>
+                                macosArm64
                             </label>
                         </li>
                 </ul>
@@ -114,14 +138,14 @@
                 </div>
             </div>
             <div id="main">
-<div class="main-content" data-page-type="member" id="content" pageids="logic::com.wire.kalium.logic.feature.call/MediaManagerServiceImpl/turnLoudSpeakerOff/#/PointingToDeclaration//1228878352">
+<div class="main-content" data-page-type="member" id="content" pageids="logic::com.wire.kalium.logic.feature.call/MediaManagerServiceImpl/turnLoudSpeakerOff/#/PointingToDeclaration//-421165011">
   <div class="breadcrumbs"><a href="../../index.html">logic</a><span class="delimiter">/</span><a href="../index.html">com.wire.kalium.logic.feature.call</a><span class="delimiter">/</span><a href="index.html">MediaManagerServiceImpl</a><span class="delimiter">/</span><span class="current">turnLoudSpeakerOff</span></div>
   <div class="cover ">
     <h1 class="cover"><span>turn</span><wbr><span>Loud</span><wbr><span>Speaker</span><wbr><span><span>Off</span></span></h1>
   </div>
   <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
-    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/jvmMain" data-toggle=":logic:dokkaHtmlPartial/jvmMain">jvm</button></div>
-<div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="turn-loud-speaker-off.html"><span class="token function">turnLoudSpeakerOff</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">open </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="turn-loud-speaker-off.html"><span class="token function">turnLoudSpeakerOff</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">expect </span><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="turn-loud-speaker-off.html"><span class="token function">turnLoudSpeakerOff</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="turn-loud-speaker-off.html"><span class="token function">turnLoudSpeakerOff</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>  </div>
+    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/iosArm64Main" data-filterable-set=":logic:dokkaHtmlPartial/iosArm64Main" data-toggle=":logic:dokkaHtmlPartial/iosArm64Main">iosArm64</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/iosSimulatorArm64Main" data-filterable-set=":logic:dokkaHtmlPartial/iosSimulatorArm64Main" data-toggle=":logic:dokkaHtmlPartial/iosSimulatorArm64Main">iosSimulatorArm64</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/jvmMain" data-toggle=":logic:dokkaHtmlPartial/jvmMain">jvm</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/macosArm64Main" data-filterable-set=":logic:dokkaHtmlPartial/macosArm64Main" data-toggle=":logic:dokkaHtmlPartial/macosArm64Main">macosArm64</button></div>
+<div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="turn-loud-speaker-off.html"><span class="token function">turnLoudSpeakerOff</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">open </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="turn-loud-speaker-off.html"><span class="token function">turnLoudSpeakerOff</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">expect </span><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="turn-loud-speaker-off.html"><span class="token function">turnLoudSpeakerOff</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/iosArm64Main"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">open </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="turn-loud-speaker-off.html"><span class="token function">turnLoudSpeakerOff</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/iosSimulatorArm64Main"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">open </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="turn-loud-speaker-off.html"><span class="token function">turnLoudSpeakerOff</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">open </span><span class="token keyword">suspend override </span><span class="token keyword">fun </span><a href="turn-loud-speaker-off.html"><span class="token function">turnLoudSpeakerOff</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/macosArm64Main"><div class="symbol monospace"><span class="token keyword">actual </span><span class="token keyword">open </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="turn-loud-speaker-off.html"><span class="token function">turnLoudSpeakerOff</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span></div></div>  </div>
 </div>
     <div class="footer">
         <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
