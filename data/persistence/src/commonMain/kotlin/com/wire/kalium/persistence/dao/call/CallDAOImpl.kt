@@ -112,6 +112,12 @@ internal class CallDAOImpl(
             .mapToList()
             .flowOn(readDispatcher.value)
 
+    override fun observeActiveCalls(): Flow<List<CallEntity>> =
+        callsQueries.selectActiveCalls(mapper = mapper::fromCalls)
+            .asFlow()
+            .mapToList()
+            .flowOn(readDispatcher.value)
+
     override suspend fun getEstablishedCall(): CallEntity = withContext(readDispatcher.value) {
         callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls).awaitAsOne()
     }

@@ -68,18 +68,6 @@ jobs:
             echo "::error::Tag $tag_name signature is not verified by GitHub (reason: $reason)."
             exit 1
           fi
-      - name: Resolve logic release tag
-        id: logic-release
-        run: |
-          logic_tag=$(git for-each-ref --sort=-v:refname --format='%(refname:strip=2)' --points-at HEAD 'refs/tags/v*' | head -n 1)
-          if [ -z "$logic_tag" ]; then
-            echo "::error::No logic release tag matching v* points at commit $(git rev-parse HEAD)."
-            exit 1
-          fi
-
-          echo "logic_tag=$logic_tag" >> "$GITHUB_OUTPUT"
-          echo "Using logic release tag: $logic_tag"
-
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
@@ -93,7 +81,7 @@ jobs:
       - name: Upload XCFramework (GH Releases)
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda
         with:
-          tag_name: ${{ steps.logic-release.outputs.logic_tag }}
+          tag_name: ${{ github.ref_name }}
           fail_on_unmatched_files: true
           files: |
             domain/backup/build/XCFrameworks/release/KaliumBackup.xcframework.zip

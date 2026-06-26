@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.InternalKaliumApi
 
 @InternalKaliumApi
@@ -41,8 +42,12 @@ public interface EstablishSessionUseCase {
     public suspend operator fun invoke(userId: UserId, clientId: ClientId): EstablishSessionResult
 }
 
+@DebugKaliumApi("Debug-only result for establishing Proteus sessions.")
 public sealed class EstablishSessionResult {
+    @DebugKaliumApi("Debug-only success result for establishing Proteus sessions.")
     public data object Success : EstablishSessionResult()
+
+    @DebugKaliumApi("Debug-only failure result for establishing Proteus sessions.")
     public data class Failure(val coreFailure: CoreFailure) : EstablishSessionResult()
 }
 

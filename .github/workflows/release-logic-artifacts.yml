@@ -58,3 +58,14 @@ jobs:
             "fail-on-unmatched": true
           }
         ]
+
+  publish-maven-central:
+    name: Publish Maven Central
+    needs: build
+    permissions:
+      contents: read # required for actions/checkout in the reusable workflow
+    uses: ./.github/workflows/publish-maven-central.yml
+    with:
+      tag-name: ${{ github.ref_name }}
+      publishing-type: AUTOMATIC
+    secrets: inherit

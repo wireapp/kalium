@@ -104,8 +104,12 @@ val kaliumGitHash: Provider<String> = providers.environmentVariable("GITHUB_SHA"
         }.standardOutput.asText.map { it.trim() }
     )
 
+val kaliumProjectVersion: Provider<String> = providers.gradleProperty("kalium.publish.version")
+    .orElse(providers.environmentVariable("KALIUM_PUBLISH_VERSION"))
+    .orElse(kaliumGitHash)
+
 allprojects {
-    version = kaliumGitHash.get()
+    version = kaliumProjectVersion.get()
     repositories {
         google()
         mavenCentral()

@@ -53,7 +53,8 @@ internal class UploadAssetUseCaseImpl(
     private val updateAudioNormalizedLoudness: UpdateAudioMessageNormalizedLoudnessUseCase,
     private val persistMessage: PersistMessageUseCase,
     private val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder,
-    private val dispatcher: KaliumDispatcher
+    private val pendingMessagesEnabled: Boolean = true,
+    private val dispatcher: KaliumDispatcher,
 ) : UploadAssetUseCase {
 
     private suspend fun getOrBuildAudioNormalizedLoudnessIfNeeded(metadata: UploadAssetMessageMetadata): ByteArray? = when {
@@ -83,7 +84,7 @@ internal class UploadAssetUseCaseImpl(
                 conversationId = message.conversationId,
                 messageId = message.id,
                 messageType = TYPE,
-                scheduleResendIfNoNetwork = true
+                scheduleResendIfNoNetwork = pendingMessagesEnabled
             )
 
             audioNormalizedLoudnessDeferred.await()?.let { normalizedLoudness ->
@@ -125,7 +126,7 @@ internal class UploadAssetUseCaseImpl(
                             conversationId = message.conversationId,
                             messageId = message.id,
                             messageType = TYPE,
-                            scheduleResendIfNoNetwork = true
+                            scheduleResendIfNoNetwork = pendingMessagesEnabled
                         )
                     }
                 }

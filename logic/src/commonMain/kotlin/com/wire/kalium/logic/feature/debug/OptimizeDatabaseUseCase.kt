@@ -24,19 +24,25 @@ import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.persistence.db.DatabaseOptimizer
+import com.wire.kalium.util.DebugKaliumApi
 
 /**
  * Use case responsible for optimizing the local SQLCipher database by invoking `PRAGMA optimize`.
  * This operation analyzes and optimizes indexes, potentially improving the performance of read-heavy queries,
  * especially on large datasets (e.g., conversations and messages).
  */
+@DebugKaliumApi("Debug-only API for manually optimizing local database tables.")
 public interface OptimizeDatabaseUseCase {
     public suspend operator fun invoke(): OptimizeDatabaseResult
     public suspend fun optimizeAllTables(): OptimizeDatabaseResult
 }
 
+@DebugKaliumApi("Debug-only result for manual database optimization.")
 public sealed class OptimizeDatabaseResult {
+    @DebugKaliumApi("Debug-only success result for manual database optimization.")
     public data object Success : OptimizeDatabaseResult()
+
+    @DebugKaliumApi("Debug-only failure result for manual database optimization.")
     public data class Failure(val error: StorageFailure) : OptimizeDatabaseResult()
 }
 
