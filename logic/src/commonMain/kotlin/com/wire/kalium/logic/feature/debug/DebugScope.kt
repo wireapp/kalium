@@ -82,6 +82,7 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -91,6 +92,7 @@ import kotlinx.coroutines.flow.Flow
 /*
  * This scope can be used to test client behaviour. Debug functions are not needed for normal client activity.
  */
+@DebugKaliumApi("Debug-only scope for developer tooling, QA, and profiling APIs.")
 @Suppress("LongParameterList")
 public class DebugScope internal constructor(
     internal val messageRepository: MessageRepository,

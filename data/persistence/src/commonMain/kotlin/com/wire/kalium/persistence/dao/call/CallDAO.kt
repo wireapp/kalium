@@ -57,6 +57,7 @@ interface CallDAO {
     fun observeIncomingCalls(): Flow<List<CallEntity>>
     fun observeOutgoingCalls(): Flow<List<CallEntity>>
     fun observeEstablishedCalls(): Flow<List<CallEntity>>
+    fun observeActiveCalls(): Flow<List<CallEntity>>
     suspend fun getEstablishedCall(): CallEntity
     fun observeOngoingCalls(): Flow<List<CallEntity>>
     suspend fun updateLastCallStatusByConversationId(status: CallEntity.Status, conversationId: QualifiedIDEntity)

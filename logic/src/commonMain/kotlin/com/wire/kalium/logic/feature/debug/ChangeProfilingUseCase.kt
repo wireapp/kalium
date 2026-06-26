@@ -17,9 +17,11 @@
  */
 package com.wire.kalium.logic.feature.debug
 
+import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.userstorage.di.UserStorage
 
 // todo(interface). extract interface for use case
+@DebugKaliumApi("Debug-only API for changing database profiling state.")
 public class ChangeProfilingUseCase internal constructor(
     private val userStorage: UserStorage,
 ) {
