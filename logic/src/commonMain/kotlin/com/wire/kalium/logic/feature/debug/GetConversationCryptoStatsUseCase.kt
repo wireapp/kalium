@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationWithOtherUserName
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.util.DebugKaliumApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.first
  * Returns counts of Proteus, MLS, and Mixed conversations,
  * and checks which MLS/Mixed conversations are established in core crypto.
  */
+@DebugKaliumApi("Debug-only API for inspecting conversation crypto statistics.")
 public interface GetConversationCryptoStatsUseCase {
     public suspend operator fun invoke(): GetConversationCryptoStatsResult
 }
@@ -159,6 +161,7 @@ internal class GetConversationCryptoStatsUseCaseImpl(
     }
 }
 
+@DebugKaliumApi("Debug-only model for conversation crypto statistics.")
 public data class ConversationCryptoStats(
     val totalConversations: Int,
     val proteusCount: Int,
@@ -172,6 +175,7 @@ public data class ConversationCryptoStats(
     val conversationDetails: List<ConversationCryptoDetail>,
 )
 
+@DebugKaliumApi("Debug-only model for conversation crypto details.")
 public data class ConversationCryptoDetail(
     val conversationId: ConversationId,
     val conversationName: String?,
@@ -184,6 +188,7 @@ public data class ConversationCryptoDetail(
     val selfIsMember: Boolean,
 )
 
+@DebugKaliumApi("Debug-only model for MLS group state details.")
 public enum class DetailGroupState {
     PENDING_CREATION,
     PENDING_JOIN,
@@ -200,12 +205,17 @@ private fun Conversation.ProtocolInfo.MLSCapable.GroupState.toDetailGroupState()
     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET -> DetailGroupState.PENDING_AFTER_RESET
 }
 
+@DebugKaliumApi("Debug-only model for conversation crypto protocol type.")
 public enum class ConversationCryptoProtocolType {
     PROTEUS, MLS, MIXED
 }
 
+@DebugKaliumApi("Debug-only result for conversation crypto statistics.")
 public sealed class GetConversationCryptoStatsResult {
+    @DebugKaliumApi("Debug-only success result for conversation crypto statistics.")
     public data class Success(val stats: ConversationCryptoStats) : GetConversationCryptoStatsResult()
+
+    @DebugKaliumApi("Debug-only failure result for conversation crypto statistics.")
     public data class Failure(val coreFailure: CoreFailure) : GetConversationCryptoStatsResult()
 }
 

@@ -18,11 +18,13 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.util.DebugKaliumApi
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Use case to observe if the client has consumable notifications enabled.
  */
+@DebugKaliumApi("Debug-only API for observing consumable-notification capability state.")
 public interface ObserveIsConsumableNotificationsEnabledUseCase {
     public suspend operator fun invoke(): Flow<Boolean>
 }

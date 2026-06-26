@@ -37,6 +37,16 @@ val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toS
 
 kotlin {
     explicitApi()
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    abiValidation {
+        enabled.set(true)
+        filters {
+            exclude {
+                annotatedWith.add("com.wire.kalium.util.InternalKaliumApi")
+                annotatedWith.add("com.wire.kalium.util.DebugKaliumApi")
+            }
+        }
+    }
 
     val xcf = XCFramework("KaliumLogic")
     val appleTargets = listOf(iosArm64(), iosSimulatorArm64(), macosArm64())

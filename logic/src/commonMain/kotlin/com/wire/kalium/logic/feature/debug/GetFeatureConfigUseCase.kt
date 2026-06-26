@@ -21,7 +21,9 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
+import com.wire.kalium.util.DebugKaliumApi
 
+@DebugKaliumApi("Debug-only API for fetching feature configuration.")
 public interface GetFeatureConfigUseCase {
     /**
      * Fetch features configuration from server. Only used in debug menu.
@@ -43,7 +45,11 @@ internal class GetFeatureConfigUseCaseImpl(
     }
 }
 
+@DebugKaliumApi("Debug-only result for fetching feature configuration.")
 public sealed class GetFeatureConfigResult {
+    @DebugKaliumApi("Debug-only success result for fetching feature configuration.")
     public data class Success(val featureConfigModel: FeatureConfigModel) : GetFeatureConfigResult()
+
+    @DebugKaliumApi("Debug-only failure result for fetching feature configuration.")
     public data class Failure(val coreFailure: CoreFailure) : GetFeatureConfigResult()
 }

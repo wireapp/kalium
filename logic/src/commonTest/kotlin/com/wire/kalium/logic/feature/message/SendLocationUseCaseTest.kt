@@ -42,6 +42,7 @@ import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
 import dev.mokkery.matcher.matching
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
@@ -106,7 +107,31 @@ class SendLocationUseCaseTest {
             arrangement.messageSender.sendMessage(any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(true))
+        }
+    }
+
+    @Test
+    fun givenNoNetworkAndPendingMessagesDisabled_whenSendingLocation_thenDoesNotScheduleResend() = runTest {
+        // Given
+        val conversationId = ConversationId("some-convo-id", "some-domain-id")
+        val (arrangement, sendLocationUseCase) = Arrangement(testKaliumDispatcher)
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withSendMessageFailure()
+            .withPendingMessagesDisabled()
+            .arrange {
+                withConversationTimer(flowOf(SelfDeletionTimer.Disabled))
+            }
+
+        // When
+        val result = sendLocationUseCase.invoke(conversationId, LATITUDE, LONGITUDE, NAME, ZOOM)
+
+        // Then
+        result.toEither().shouldFail()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
         }
     }
 
@@ -151,6 +176,7 @@ class SendLocationUseCaseTest {
         val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
         val observeSelfDeletionTimerSettingsForConversation =
             mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>(mode = MockMode.autoUnit)
+        private var pendingMessages = true
 
         suspend fun withSendMessageSuccess() = apply {
             everySuspend {
@@ -189,17 +215,22 @@ class SendLocationUseCaseTest {
             } returns result
         }
 
+        fun withPendingMessagesDisabled() = apply {
+            pendingMessages = false
+        }
+
         fun arrange(block: suspend (Arrangement.() -> Unit) = {}): Pair<Arrangement, SendLocationUseCase> {
             runBlocking { block() }
             return this to SendLocationUseCase(
-                persistMessage,
-                TestUser.SELF.id,
-                currentClientIdProvider,
-                slowSyncRepository,
-                messageSender,
-                messageSendFailureHandler,
-                observeSelfDeletionTimerSettingsForConversation,
-                dispatcher
+                persistMessage = persistMessage,
+                selfUserId = TestUser.SELF.id,
+                currentClientIdProvider = currentClientIdProvider,
+                slowSyncRepository = slowSyncRepository,
+                messageSender = messageSender,
+                messageSendFailureHandler = messageSendFailureHandler,
+                selfDeleteTimer = observeSelfDeletionTimerSettingsForConversation,
+                pendingMessagesEnabled = pendingMessages,
+                dispatcher = dispatcher,
             )
         }
     }

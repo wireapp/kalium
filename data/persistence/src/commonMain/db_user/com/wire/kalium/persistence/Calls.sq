@@ -27,6 +27,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?);
 selectAllCalls:
 SELECT * FROM Call;
 
+selectActiveCalls:
+SELECT * FROM Call WHERE status IN ('STARTED', 'INCOMING', 'ANSWERED', 'ESTABLISHED', 'STILL_ONGOING');
+
 selectEstablishedCalls:
 SELECT * FROM Call WHERE status = 'ESTABLISHED' OR status = 'ANSWERED';
 

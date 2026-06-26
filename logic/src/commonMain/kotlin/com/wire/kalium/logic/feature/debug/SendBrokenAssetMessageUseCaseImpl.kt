@@ -45,6 +45,7 @@ import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.util.fileExtension
+import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
@@ -220,8 +221,12 @@ internal class SendBrokenAssetMessageUseCaseImpl(
     }
 }
 
+@DebugKaliumApi("Debug-only result for sending intentionally broken asset messages.")
 public sealed class SendBrokenAssetMessageResult {
+    @DebugKaliumApi("Debug-only success result for sending intentionally broken asset messages.")
     public data object Success : SendBrokenAssetMessageResult()
+
+    @DebugKaliumApi("Debug-only failure result for sending intentionally broken asset messages.")
     public data class Failure(val coreFailure: CoreFailure) : SendBrokenAssetMessageResult()
 }
 
@@ -238,6 +243,7 @@ private data class AssetMessageMetadata(
     val sha256Key: SHA256Key
 )
 
+@DebugKaliumApi("Debug-only configuration for intentionally broken asset messages.")
 public data class BrokenState(
     val invalidHash: Boolean,
     val otherHash: Boolean,
