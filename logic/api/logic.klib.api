@@ -442,6 +442,10 @@ abstract interface com.wire.kalium.logic.feature.call.usecase/MuteCallUseCase { 
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/Boolean = ...) // com.wire.kalium.logic.feature.call.usecase/MuteCallUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.Boolean){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.call.usecase/ObserveActiveCallsUseCase { // com.wire.kalium.logic.feature.call.usecase/ObserveActiveCallsUseCase|null[0]
+    abstract fun invoke(): kotlinx.coroutines.flow/Flow<kotlin.collections/List<com.wire.kalium.logic.data.call/Call>> // com.wire.kalium.logic.feature.call.usecase/ObserveActiveCallsUseCase.invoke|invoke(){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.call.usecase/ObserveAskCallFeedbackUseCase { // com.wire.kalium.logic.feature.call.usecase/ObserveAskCallFeedbackUseCase|null[0]
     abstract suspend fun invoke(): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.feature.user/ShouldAskCallFeedbackUseCaseResult> // com.wire.kalium.logic.feature.call.usecase/ObserveAskCallFeedbackUseCase.invoke|invoke(){}[0]
 }
@@ -3424,6 +3428,8 @@ final class com.wire.kalium.logic.feature.call/CallsScope { // com.wire.kalium.l
         final fun <get-isLastCallClosed>(): com.wire.kalium.logic.feature.call.usecase/IsLastCallClosedUseCase // com.wire.kalium.logic.feature.call/CallsScope.isLastCallClosed.<get-isLastCallClosed>|<get-isLastCallClosed>(){}[0]
     final val muteCall // com.wire.kalium.logic.feature.call/CallsScope.muteCall|{}muteCall[0]
         final fun <get-muteCall>(): com.wire.kalium.logic.feature.call.usecase/MuteCallUseCase // com.wire.kalium.logic.feature.call/CallsScope.muteCall.<get-muteCall>|<get-muteCall>(){}[0]
+    final val observeActiveCalls // com.wire.kalium.logic.feature.call/CallsScope.observeActiveCalls|{}observeActiveCalls[0]
+        final fun <get-observeActiveCalls>(): com.wire.kalium.logic.feature.call.usecase/ObserveActiveCallsUseCase // com.wire.kalium.logic.feature.call/CallsScope.observeActiveCalls.<get-observeActiveCalls>|<get-observeActiveCalls>(){}[0]
     final val observeAskCallFeedbackUseCase // com.wire.kalium.logic.feature.call/CallsScope.observeAskCallFeedbackUseCase|{}observeAskCallFeedbackUseCase[0]
         final fun <get-observeAskCallFeedbackUseCase>(): com.wire.kalium.logic.feature.call.usecase/ObserveAskCallFeedbackUseCase // com.wire.kalium.logic.feature.call/CallsScope.observeAskCallFeedbackUseCase.<get-observeAskCallFeedbackUseCase>|<get-observeAskCallFeedbackUseCase>(){}[0]
     final val observeCallModerationActions // com.wire.kalium.logic.feature.call/CallsScope.observeCallModerationActions|{}observeCallModerationActions[0]
