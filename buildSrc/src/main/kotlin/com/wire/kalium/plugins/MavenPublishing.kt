@@ -170,11 +170,11 @@ private fun Project.isPublishedToMavenCentral(): Boolean =
                 path == excludedPrefix || path.startsWith("$excludedPrefix:")
             }
 
-private fun Project.mavenCentralArtifactId(): String = "kalium" +
-        path
-            .split(':')
-            .filter { it.isNotBlank() }
-            .joinToString(separator = "-", prefix = "-") { it.replace('_', '-') }
+private fun Project.mavenCentralArtifactId(): String =
+    path
+        .split(':')
+        .filter { it.isNotBlank() }
+        .joinToString(separator = "-") { it.replace('_', '-') }
 
 private fun MavenPublication.publicationArtifactId(baseArtifactId: String): String =
     if (name == "kotlinMultiplatform") {
