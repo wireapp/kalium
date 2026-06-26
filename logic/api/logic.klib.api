@@ -6,7 +6,7 @@
 // - Show manifest properties: true
 // - Show declarations: true
 
-// Library unique name: <com.wire:kalium-logic>
+// Library unique name: <com.wire.kalium:logic>
 final enum class com.wire.kalium.logic.data.auth.verification/VerifiableAction : kotlin/Enum<com.wire.kalium.logic.data.auth.verification/VerifiableAction> { // com.wire.kalium.logic.data.auth.verification/VerifiableAction|null[0]
     enum entry CREATE_SCIM_TOKEN // com.wire.kalium.logic.data.auth.verification/VerifiableAction.CREATE_SCIM_TOKEN|null[0]
     enum entry DELETE_TEAM // com.wire.kalium.logic.data.auth.verification/VerifiableAction.DELETE_TEAM|null[0]
