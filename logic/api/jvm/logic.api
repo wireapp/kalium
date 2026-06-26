@@ -2431,6 +2431,7 @@ public final class com/wire/kalium/logic/feature/call/CallsScope {
 	public final fun getFlipToFrontCamera ()Lcom/wire/kalium/logic/feature/call/usecase/FlipToFrontCameraUseCase;
 	public final fun getGetIncomingCalls ()Lcom/wire/kalium/logic/feature/call/usecase/GetIncomingCallsUseCase;
 	public final fun getMuteCall ()Lcom/wire/kalium/logic/feature/call/usecase/MuteCallUseCase;
+	public final fun getObserveActiveCalls ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveActiveCallsUseCase;
 	public final fun getObserveAskCallFeedbackUseCase ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveAskCallFeedbackUseCase;
 	public final fun getObserveCallModerationActions ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveCallModerationActionsUseCase;
 	public final fun getObserveCallQualityData ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveCallQualityDataUseCase;
@@ -2542,6 +2543,10 @@ public abstract interface class com/wire/kalium/logic/feature/call/usecase/MuteC
 
 public final class com/wire/kalium/logic/feature/call/usecase/MuteCallUseCase$DefaultImpls {
 	public static synthetic fun invoke$default (Lcom/wire/kalium/logic/feature/call/usecase/MuteCallUseCase;Lcom/wire/kalium/logic/data/id/QualifiedID;ZLkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/call/usecase/ObserveActiveCallsUseCase {
+	public abstract fun invoke ()Lkotlinx/coroutines/flow/Flow;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/call/usecase/ObserveAskCallFeedbackUseCase {
