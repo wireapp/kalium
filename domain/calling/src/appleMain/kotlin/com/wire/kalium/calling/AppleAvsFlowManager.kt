@@ -16,10 +16,11 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.call
+package com.wire.kalium.calling
 
-import com.wire.kalium.calling.AppleAvsFlowManager
-import com.wire.kalium.logic.util.PlatformView
-
-internal fun AppleAvsFlowManager.attachPlatformVideoView(view: PlatformView): Boolean =
-    attachVideoView(view.view)
+expect class AppleAvsFlowManager() {
+    fun attachVideoView(view: Any?): Boolean
+    fun setVideoCaptureDevice(deviceId: String, forConversation: String)
+    fun startAudio()
+    fun startIfAvailable(): Boolean
+}

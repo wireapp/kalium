@@ -128,7 +128,20 @@ kotlin {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
 
-        val appleMain by getting
+        val appleMain by getting {
+            kotlin.exclude("com/wire/kalium/logic/feature/call/**")
+        }
+        val appleCallSourceDir = "src/appleMain/kotlin/com/wire/kalium/logic/feature/call"
+        listOf(
+            getByName("iosArm64Main"),
+            getByName("iosSimulatorArm64Main"),
+            getByName("macosArm64Main")
+        ).forEach { appleTargetMain ->
+            appleTargetMain.kotlin.srcDir(appleCallSourceDir)
+            appleTargetMain.dependencies {
+                implementation(libs.avsKmp)
+            }
+        }
 
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
