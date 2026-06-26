@@ -28,7 +28,7 @@ on:
         default: ""
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: deploy-kalium-${{ inputs.tag-name }}
   cancel-in-progress: true
 
 permissions:
