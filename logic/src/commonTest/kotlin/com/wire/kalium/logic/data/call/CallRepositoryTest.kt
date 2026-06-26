@@ -43,6 +43,7 @@ import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -127,6 +128,7 @@ class CallRepositoryTest {
     fun breakDown() {
         Dispatchers.resetMain()
     }
+
     @Test
     fun whenRequestingCallConfig_withNoLimitParam_ThenAResultIsReturned() = runTest {
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
@@ -1939,6 +1941,61 @@ class CallRepositoryTest {
     }
 
     @Test
+    fun givenNoActiveCalls_whenObservingActiveCalls_thenReturnEmptyList() = runTest {
+        // given
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withObserveActiveCallsReturning(flowOf(emptyList()))
+            .withInitialCallMetadataProfile(CallMetadataProfile(emptyMap()))
+            .arrange()
+        // when
+        callRepository.activeCallsFlow().test {
+            // then
+            assertEquals(emptyList(), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenActiveCall_whenObservingActiveCalls_thenReturnActiveCall() = runTest {
+        // given
+        val activeCallEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED)
+        val activeCallMetadata = createCallMetadata().copy(callStatus = CallStatus.ESTABLISHED)
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withObserveActiveCallsReturning(flowOf(listOf(activeCallEntity)))
+            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(activeCallEntity.conversationId.toModel() to activeCallMetadata)))
+            .arrange()
+        // when
+        callRepository.activeCallsFlow().test {
+            // then
+            assertEquals(listOf(arrangement.callMapper.toCall(activeCallEntity, activeCallMetadata)), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenActiveCallIsUpdated_whenObservingActiveCalls_thenReturnUpdatedList() = runTest {
+        // given
+        val activeCallEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED) // not it's active
+        val activeCallMetadata = createCallMetadata().copy(callStatus = CallStatus.ESTABLISHED)
+        val activeCallsFlow = MutableStateFlow(listOf(activeCallEntity))
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withObserveActiveCallsReturning(activeCallsFlow)
+            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(activeCallEntity.conversationId.toModel() to activeCallMetadata)))
+            .arrange()
+        // when
+        callRepository.activeCallsFlow().test {
+            // then
+            assertEquals(listOf(arrangement.callMapper.toCall(activeCallEntity, activeCallMetadata)), awaitItem())
+
+            activeCallsFlow.emit(emptyList())
+            callRepository.updateCallStatusById(activeCallEntity.conversationId.toModel(), CallStatus.CLOSED) // now it's not active
+            advanceUntilIdle()
+            assertEquals(emptyList(), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun givenACall_whenUpdatingCallQualityData_thenCallQualityDataIsUpdatedCorrectlyAndCallQualityDataObserverEmitsData() = runTest {
         // given
         val conversationId = Arrangement.randomConversationId
@@ -2027,7 +2084,7 @@ class CallRepositoryTest {
         val callDAO = mock<CallDAO>(mode = MockMode.autoUnit)
         val serverTimeApi: ServerTimeApi = mock<ServerTimeApi>()
 
-        private val callMapper = CallMapperImpl(qualifiedIdMapper)
+        val callMapper = CallMapperImpl(qualifiedIdMapper)
         private val federatedIdMapper = FederatedIdMapperImpl(TestUser.SELF.id, qualifiedIdMapper, sessionRepository)
         private var initialCallMetadataProfile: CallMetadataProfile = CallMetadataProfile()
 
@@ -2238,6 +2295,12 @@ class CallRepositoryTest {
         fun withObserveLastActiveCallReturning(result: Flow<CallEntity?>) = apply {
             every {
                 callDAO.observeLastActiveCallByConversationId(any())
+            } returns result
+        }
+
+        fun withObserveActiveCallsReturning(result: Flow<List<CallEntity>>) = apply {
+            every {
+                callDAO.observeActiveCalls()
             } returns result
         }
 

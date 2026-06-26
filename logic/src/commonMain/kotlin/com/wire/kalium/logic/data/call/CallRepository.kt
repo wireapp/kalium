@@ -111,6 +111,7 @@ internal interface CallRepository {
     fun outgoingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
     fun establishedCallsFlow(): Flow<List<Call>>
+    fun activeCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallConversationId(): ConversationId?
     fun observeLastActiveCallByConversationId(conversationId: ConversationId): Flow<Call?>
 
@@ -216,6 +217,8 @@ internal class CallDataSource(
     override fun ongoingCallsFlow(): Flow<List<Call>> = callDAO.observeOngoingCalls().combineWithCallsMetadata()
 
     override fun establishedCallsFlow(): Flow<List<Call>> = callDAO.observeEstablishedCalls().combineWithCallsMetadata()
+
+    override fun activeCallsFlow(): Flow<List<Call>> = callDAO.observeActiveCalls().combineWithCallsMetadata()
 
     private val mutexProvider = MutexProvider<ConversationId>()
 

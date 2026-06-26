@@ -29,10 +29,12 @@ import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
+import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
+@DebugKaliumApi("Debug-only API for intentionally breaking Proteus sessions.")
 public interface BreakSessionUseCase {
     /**
      * Function that can be used to create a broken session with another user on purpose. This debug function
@@ -79,7 +81,11 @@ internal class BreakSessionUseCaseImpl internal constructor(
     }
 }
 
+@DebugKaliumApi("Debug-only result for intentionally broken Proteus sessions.")
 public sealed class BreakSessionResult {
+    @DebugKaliumApi("Debug-only success result for intentionally broken Proteus sessions.")
     public data object Success : BreakSessionResult()
+
+    @DebugKaliumApi("Debug-only failure result for intentionally broken Proteus sessions.")
     public data class Failure(val coreFailure: CoreFailure) : BreakSessionResult()
 }

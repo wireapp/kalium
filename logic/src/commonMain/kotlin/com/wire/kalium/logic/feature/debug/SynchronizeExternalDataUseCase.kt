@@ -24,7 +24,9 @@ import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.sync.incremental.EventProcessor
+import com.wire.kalium.util.DebugKaliumApi
 
+@DebugKaliumApi("Debug-only API for consuming externally supplied event data.")
 public fun interface SynchronizeExternalDataUseCase {
 
     /**
@@ -39,8 +41,12 @@ public fun interface SynchronizeExternalDataUseCase {
 
 }
 
+@DebugKaliumApi("Debug-only result for consuming externally supplied event data.")
 public sealed class SynchronizeExternalDataResult {
+    @DebugKaliumApi("Debug-only success result for consuming externally supplied event data.")
     public data object Success : SynchronizeExternalDataResult()
+
+    @DebugKaliumApi("Debug-only failure result for consuming externally supplied event data.")
     public data class Failure(val coreFailure: CoreFailure) : SynchronizeExternalDataResult()
 }
 
