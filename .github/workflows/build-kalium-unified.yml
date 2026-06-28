@@ -214,7 +214,7 @@ jobs:
     runs-on: macos-15
     steps:
       - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@1242409711ff5721add51979e9e11e23ebb7e5a4 # v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
         with:
           xcode-version: "16.1.0"
 
@@ -255,7 +255,7 @@ jobs:
     steps:
       - name: Setup Xcode
         if: runner.os == 'macOS'
-        uses: maxim-lobanov/setup-xcode@1242409711ff5721add51979e9e11e23ebb7e5a4 # v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
         with:
           xcode-version: "16.1.0"
 
@@ -342,7 +342,7 @@ jobs:
 
       - name: Post-build — attest release artifacts
         id: attest
-        uses: actions/attest-build-provenance@b3e506e8c389afc651c5bacf2b8f2a1ea0557215 # v4
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4
         with:
           subject-checksums: release/${{ matrix.artifact-name }}/${{ matrix.artifact-name }}-SHA256SUMS.txt
 
