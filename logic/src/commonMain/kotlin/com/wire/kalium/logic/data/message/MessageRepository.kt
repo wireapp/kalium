@@ -179,6 +179,12 @@ internal interface MessageRepository {
         editInstant: Instant
     ): Either<CoreFailure, Unit>
 
+    suspend fun updateTextMessage(
+        conversationId: ConversationId,
+        messageId: String,
+        messageContent: MessageContent.Text,
+    ): Either<CoreFailure, Unit>
+
     suspend fun updateLegalHoldMessageMembers(
         messageId: String,
         conversationId: ConversationId,
@@ -637,6 +643,24 @@ internal class MessageDataSource internal constructor(
                     messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
                 ),
                 newMessageId = newMessageId
+            )
+        }
+    }
+
+    override suspend fun updateTextMessage(
+        conversationId: ConversationId,
+        messageId: String,
+        messageContent: MessageContent.Text,
+    ): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            messageDAO.updateTextMessageContent(
+                conversationId = conversationId.toDao(),
+                messageId = messageId,
+                textContent = MessageEntityContent.Text(
+                    messageContent.value,
+                    messageContent.linkPreviews.map { linkPreviewMapper.fromModelToDao(it) },
+                    messageContent.mentions.map { messageMentionMapper.fromModelToDao(it) }
+                ),
             )
         }
     }

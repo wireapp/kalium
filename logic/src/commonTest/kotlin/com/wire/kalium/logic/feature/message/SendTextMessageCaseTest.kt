@@ -44,6 +44,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.sending.MessageSender
 import dev.mokkery.MockMode
 import dev.mokkery.matcher.any
+import dev.mokkery.matcher.eq
 import dev.mokkery.everySuspend
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -125,7 +126,30 @@ class SendTextMessageCaseTest {
             arrangement.messageSender.sendMessage(any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(true))
+        }
+    }
+
+    @Test
+    fun givenNoNetworkAndPendingMessagesDisabled_whenSendingSomeText_thenDoesNotScheduleResend() = runTest {
+        // Given
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withSendMessageFailure()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withPendingMessagesDisabled()
+            .arrange()
+
+        // When
+        val result = sendTextMessage(TestConversation.ID, "some-text")
+
+        // Then
+        result.toEither().shouldFail()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
         }
     }
 
@@ -340,6 +364,7 @@ class SendTextMessageCaseTest {
         val userPropertyRepository = mock<UserPropertyRepository>(mode = MockMode.autoUnit)
         val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
         val observeSelfDeletionTimerSettingsForConversation = mock<ObserveSelfDeletionTimerSettingsForConversationUseCase>(mode = MockMode.autoUnit)
+        private var pendingMessages = true
 
         suspend fun withSendMessageSuccess() = apply {
             everySuspend {
@@ -399,18 +424,23 @@ class SendTextMessageCaseTest {
             } returns flowOf(result)
         }
 
+        fun withPendingMessagesDisabled() = apply {
+            pendingMessages = false
+        }
+
         fun arrange() = this to SendTextMessageUseCase(
-            persistMessage,
-            TestUser.SELF.id,
-            currentClientIdProvider,
-            assetRepository,
-            slowSyncRepository,
-            messageSender,
-            messageSendFailureHandler,
-            userPropertyRepository,
-            observeSelfDeletionTimerSettingsForConversation,
+            persistMessage = persistMessage,
+            selfUserId = TestUser.SELF.id,
+            provideClientId = currentClientIdProvider,
+            assetDataSource = assetRepository,
+            slowSyncRepository = slowSyncRepository,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            userPropertyRepository = userPropertyRepository,
+            selfDeleteTimer = observeSelfDeletionTimerSettingsForConversation,
             scope = coroutineScope,
-            dispatchers = coroutineScope.testKaliumDispatcher
+            dispatchers = coroutineScope.testKaliumDispatcher,
+            pendingMessagesEnabled = pendingMessages
         )
     }
 

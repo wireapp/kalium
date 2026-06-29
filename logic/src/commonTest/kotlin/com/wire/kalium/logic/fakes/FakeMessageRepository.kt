@@ -148,6 +148,12 @@ internal open class FakeMessageRepository : MessageRepository {
         editInstant: Instant
     ): Either<CoreFailure, Unit> = Unit.right()
 
+    override suspend fun updateTextMessage(
+        conversationId: ConversationId,
+        messageId: String,
+        messageContent: MessageContent.Text,
+    ): Either<CoreFailure, Unit> = Unit.right()
+
     override suspend fun updateLegalHoldMessageMembers(
         messageId: String,
         conversationId: ConversationId,

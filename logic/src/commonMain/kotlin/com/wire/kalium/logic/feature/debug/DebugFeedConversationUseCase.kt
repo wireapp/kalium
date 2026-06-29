@@ -91,13 +91,16 @@ internal class DebugFeedConversationUseCaseImpl(
     }
 }
 
+@DebugKaliumApi("Debug-only configuration for synthetic conversation data feeders.")
 public data class DebugFeedConfig(
     val messages: Boolean = false,
     val reactions: Boolean = false,
     val unreadEvents: Boolean = false,
     val mentions: Boolean = false
 ) {
+    @DebugKaliumApi("Debug-only constants for synthetic conversation data feeders.")
     public companion object {
+        @DebugKaliumApi("Debug-only configuration enabling all synthetic conversation data feeders.")
         public val All: DebugFeedConfig = DebugFeedConfig(
             messages = true,
             reactions = true,
@@ -107,7 +110,11 @@ public data class DebugFeedConfig(
     }
 }
 
+@DebugKaliumApi("Debug-only result for synthetic conversation data feeders.")
 public sealed class DebugFeedResult {
+    @DebugKaliumApi("Debug-only success result for synthetic conversation data feeders.")
     public data object Success : DebugFeedResult()
+
+    @DebugKaliumApi("Debug-only failure result for synthetic conversation data feeders.")
     public data class Failure(val coreFailure: CoreFailure) : DebugFeedResult()
 }

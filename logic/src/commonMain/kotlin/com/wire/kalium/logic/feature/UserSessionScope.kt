@@ -577,6 +577,7 @@ import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.userstorage.di.UserStorageProvider
+import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.DelicateKaliumApi
 import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.work.LongWorkScope
@@ -2293,6 +2294,7 @@ public class UserSessionScope internal constructor(
             messageSender = messages.messageSender,
             userId = userId,
             sendPendingAssetMessage = messages.sendPendingAssetMessage,
+            messageSendFailureHandler = messages.messageSendFailureHandler,
         )
     }
 
@@ -2450,6 +2452,7 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    @DebugKaliumApi("Debug-only scope for developer tooling, QA, and profiling APIs.")
     public val debug: DebugScope by lazy {
         DebugScope(
             messageRepository,
@@ -2532,6 +2535,7 @@ public class UserSessionScope internal constructor(
             currentPersistenceEventHookNotifier,
             kaliumConfigs.linkPreviewEnabled,
             this,
+            kaliumConfigs,
             userScopedLogger
         )
     }

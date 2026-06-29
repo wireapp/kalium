@@ -29,49 +29,46 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
 /**
- * Use case for searching users.
+ * Use case for searching users by their handle.
  */
-public interface SearchUsersUseCase {
+public interface SearchUsersByHandleUseCase {
     /**
-     * @param searchQuery The search query.
-     * @param excludingMembersOfConversation The conversation to exclude its members from the search.
+     * @param searchHandle The search query.
+     * @param excludingConversation The conversation to exclude its members from the search.
+     * @param skipRemoteSearch Whether to skip remote search and only search locally, e.g. exclude not connected users from the search.
      * @param customDomain The custom domain to search in if null the search will be on the self user domain.
      */
     public suspend operator fun invoke(
-        searchQuery: String,
-        excludingMembersOfConversation: ConversationId?,
+        searchHandle: String,
+        excludingConversation: ConversationId?,
+        skipRemoteSearch: Boolean = false,
         customDomain: String?
     ): SearchUserResult
 }
 
-internal class SearchUsersUseCaseImpl internal constructor(
+public class SearchUsersByHandleUseCaseImpl internal constructor(
     private val searchUserRepository: SearchUserRepository,
     private val selfUserId: UserId,
     private val maxRemoteSearchResultCount: Int
-) : SearchUsersUseCase {
-    override suspend operator fun invoke(
-        searchQuery: String,
-        excludingMembersOfConversation: ConversationId?,
-        customDomain: String?
-    ): SearchUserResult {
-        return if (searchQuery.isBlank()) {
-            SearchUserResult(
-                connected = searchUserRepository.getKnownContacts(excludingMembersOfConversation).getOrElse(emptyList()),
-                notConnected = emptyList()
-            )
-        } else {
-            handleSearch(searchQuery, excludingMembersOfConversation, customDomain)
-        }
-    }
-
-    private suspend fun handleSearch(
-        searchQuery: String,
+) : SearchUsersByHandleUseCase {
+    public override suspend operator fun invoke(
+        searchHandle: String,
         excludingConversation: ConversationId?,
+        skipRemoteSearch: Boolean,
         customDomain: String?
     ): SearchUserResult = coroutineScope {
-        val cleanSearchQuery = searchQuery.trim().lowercase()
+        val cleanSearchQuery = searchHandle
+            .trim()
+            .removePrefix("@")
+            .lowercase()
+
+        if (cleanSearchQuery.isBlank()) {
+            return@coroutineScope SearchUserResult(emptyList(), emptyList())
+        }
 
         val remoteResultsDeferred = async {
+            if (skipRemoteSearch) return@async mutableMapOf()
+
             searchUserRepository.searchUserRemoteDirectory(
                 cleanSearchQuery,
                 customDomain ?: selfUserId.domain,
@@ -99,8 +96,10 @@ internal class SearchUsersUseCaseImpl internal constructor(
         }
 
         val localSearchResultDeferred = async {
-            searchUserRepository.searchLocalByName(cleanSearchQuery, excludingConversation)
-                .getOrElse(emptyList())
+            searchUserRepository.searchLocalByHandle(
+                cleanSearchQuery,
+                excludingConversation
+            ).getOrElse(emptyList())
                 .associateBy { it.id }
                 .toMutableMap()
         }

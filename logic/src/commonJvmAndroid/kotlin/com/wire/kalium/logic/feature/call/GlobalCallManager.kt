@@ -51,10 +51,10 @@ import kotlinx.coroutines.CoroutineScope
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
-internal actual class GlobalCallManager(
-    appContext: PlatformContext,
+internal actual class GlobalCallManager actual constructor(
     scope: CoroutineScope,
-    networkStateObserver: NetworkStateObserver
+    networkStateObserver: NetworkStateObserver,
+    platformContext: PlatformContext
 ) : CallNetworkChangeManager(scope, networkStateObserver) {
     private val callManagerHolder: ConcurrentMap<QualifiedID, CallManager> by lazy {
         ConcurrentHashMap()
@@ -134,12 +134,12 @@ internal actual class GlobalCallManager(
     }
 
     // Initialize it eagerly, so it's already initialized when `calling` is initialized
-    private val flowManager by lazy { FlowManagerServiceImpl(appContext, scope) }
+    private val flowManager by lazy { FlowManagerServiceImpl(platformContext, scope) }
 
     internal actual fun getFlowManager(): FlowManagerService = flowManager
 
     // Initialize it eagerly, so it's already initialized when `calling` is initialized
-    private val mediaManager by lazy { MediaManagerServiceImpl(appContext, scope) }
+    private val mediaManager by lazy { MediaManagerServiceImpl(platformContext, scope) }
 
     internal actual fun getMediaManager(): MediaManagerService = mediaManager
 

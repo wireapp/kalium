@@ -30,14 +30,13 @@ class LibraryPlugin : Plugin<Project> {
     @Suppress("MagicNumber")
     override fun apply(target: Project): Unit = with(target) {
         group = KaliumBuild.GROUP
-        version = providers.environmentVariable("GITHUB_SHA")
-            .map { it.take(7) }
 
         target.pluginManager.apply {
             apply("org.jetbrains.kotlin.multiplatform")
             // android library plugin
             apply("com.android.kotlin.multiplatform.library")
         }
+        configureKaliumMavenPublishingIfNeeded()
 
         extensions.create("kaliumLibrary", Extension::class.java)
     }

@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
 
@@ -69,6 +70,13 @@ internal class CellConversationDataSource(
         withContext(dispatchers.io) {
             wrapStorageRequest {
                 conversationDao.hasConversationWithCell()
+            }
+        }
+
+    override suspend fun observeHasConversationWithCell(): Either<StorageFailure, Flow<Boolean>> =
+        withContext(dispatchers.io) {
+            wrapStorageRequest {
+                conversationDao.observeHasConversationWithCell()
             }
         }
 

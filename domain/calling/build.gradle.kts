@@ -65,11 +65,26 @@ kotlin {
                 implementation(libs.jna)
             }
         }
-        val appleMain by getting {
-            dependencies {
-                api(libs.avsKmp)
+        val appleMain by getting
+        val appleAvsMainSourceDir = "src/appleAvsMain/kotlin"
+        listOf(
+            getByName("iosArm64Main"),
+            getByName("iosSimulatorArm64Main"),
+            getByName("macosArm64Main")
+        ).forEach { appleTargetMain ->
+            appleTargetMain.kotlin.srcDir(appleAvsMainSourceDir)
+            appleTargetMain.dependencies {
+                implementation(libs.avsKmp)
             }
         }
+        val appleAvsIosMainSourceDir = "src/appleAvsIosMain/kotlin"
+        listOf(
+            getByName("iosArm64Main"),
+            getByName("iosSimulatorArm64Main")
+        ).forEach { iosTargetMain ->
+            iosTargetMain.kotlin.srcDir(appleAvsIosMainSourceDir)
+        }
+        getByName("macosArm64Main").kotlin.srcDir("src/appleAvsMacosMain/kotlin")
 
         val commonTest by getting {
             dependencies { }

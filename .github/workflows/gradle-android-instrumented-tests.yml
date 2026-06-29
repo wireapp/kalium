@@ -95,7 +95,7 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Android Instrumentation Tests
-        uses: reactivecircus/android-emulator-runner@0a638108440efd5c7f980e6ba145dbcdd8f32009
+        uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -128,7 +128,7 @@ jobs:
             ./**/build/outputs/androidTest-results/**/*.xml
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/linux@2ceeed2b8f26e15b06c3846719f75354febd9e7b
+        uses: EnricoMi/publish-unit-test-result-action/linux@c950f6fb443cb5af20a377fd0dfaa78838901040
         if: ${{ always() }}
         with:
           files: |

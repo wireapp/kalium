@@ -56,10 +56,15 @@ public data class KaliumConfigs(
     val securePublicLinkSettings: Boolean = false,
     val collaboraIntegration: Boolean = false,
     val dbInvalidationControlEnabled: Boolean = false,
+    val pendingMessages: Boolean = true,
     val linkPreviewEnabled: Boolean = false,
     val domainWithFaultyKeysMap: Map<String, List<String>> = emptyMap(),
     // Consumer-provided debug mode used by persistence and debug-only flows.
     val isDebug: Boolean = false,
+
+    // When true, cross-backend login from deep links is blocked while another
+    // session is active on a different backend.
+    val blockCrossBackendLogin: Boolean = false,
 
     /**
      * Optional transformer for call configuration JSON.

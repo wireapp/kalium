@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.messaging.sending.MessageSender
+import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.InternalKaliumApi
 import kotlinx.coroutines.flow.first
 import kotlinx.datetime.Clock
@@ -92,7 +93,11 @@ public class SendConfirmationUseCase internal constructor(
     }
 }
 
+@DebugKaliumApi("Debug-only result for sending receipt confirmations.")
 public sealed class SendConfirmationResult {
+    @DebugKaliumApi("Debug-only success result for sending receipt confirmations.")
     public data object Success : SendConfirmationResult()
+
+    @DebugKaliumApi("Debug-only failure result for sending receipt confirmations.")
     public data class Failure(val failure: CoreFailure) : SendConfirmationResult()
 }

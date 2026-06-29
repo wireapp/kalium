@@ -18,7 +18,7 @@
 
 @file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
 
-package com.wire.kalium.logic.feature.call
+package com.wire.kalium.calling
 
 import avs.wcall_answer
 import avs.wcall_config_update
@@ -46,7 +46,6 @@ import avs.wcall_set_video_send_state
 import avs.wcall_sft_resp
 import avs.wcall_setup
 import avs.wcall_start
-import com.wire.kalium.common.logger.kaliumLogger
 import kotlinx.cinterop.ByteVar
 import kotlinx.cinterop.COpaquePointer
 import kotlinx.cinterop.CPointer
@@ -60,53 +59,18 @@ import kotlinx.cinterop.staticCFunction
 import kotlinx.cinterop.toKString
 import kotlinx.cinterop.usePinned
 
-@Suppress("LongParameterList", "ReturnCount", "TooManyFunctions")
-internal object AppleAvsInterop {
-    interface Callbacks {
-        fun onReady(version: Int)
-        fun onSend(
-            context: COpaquePointer?,
-            conversationId: String?,
-            selfUserId: String?,
-            selfClientId: String?,
-            targetRecipientsJson: String?,
-            clientIdDestination: String?,
-            data: ByteArray,
-            transient: Boolean,
-            myClientsOnly: Boolean
-        ): Int
-        fun onSftRequest(context: COpaquePointer?, url: String?, data: ByteArray): Int
-        fun onIncomingCall(
-            conversationId: String?,
-            messageTime: UInt,
-            userId: String?,
-            clientId: String?,
-            video: Boolean,
-            shouldRing: Boolean,
-            conversationType: Int
-        )
-        fun onMissedCall(conversationId: String?, messageTime: UInt, userId: String?, video: Boolean)
-        fun onAnsweredCall(conversationId: String?)
-        fun onEstablishedCall(conversationId: String?, userId: String?, clientId: String?)
-        fun onClosedCall(reason: Int, conversationId: String?, messageTime: UInt, userId: String?, clientId: String?)
-        fun onMetrics(conversationId: String?, metricsJson: String?)
-        fun onConfigRequest(handle: UInt, context: COpaquePointer?): Int
-        fun onAudioCbrChanged(userId: String?, clientId: String?, enabled: Boolean)
-        fun onVideoStateChanged(conversationId: String?, userId: String?, clientId: String?, state: Int)
-        fun onParticipantChanged(conversationId: String?, data: String?)
-        fun onNetworkQualityChanged(conversationId: String?, userId: String?, clientId: String?, qualityInfoJson: String?)
-        fun onRequestNewEpoch(handle: UInt, conversationId: String?)
-        fun onClientsRequest(handle: UInt, conversationId: String?)
-        fun onActiveSpeakersChanged(handle: UInt, conversationId: String?, data: String?)
-        fun onMuteStateChanged(isMuted: Boolean)
-    }
+actual object AppleAvs {
+    actual val bridge: AppleAvsBridge = AppleAvsBridgeImpl
+}
 
-    data class CreatedHandle(val handle: UInt, val stableRef: StableRef<Callbacks>)
+@Suppress("LongParameterList", "ReturnCount", "TooManyFunctions")
+private object AppleAvsBridgeImpl : AppleAvsBridge {
+    data class CreatedHandle(val handle: UInt, val stableRef: StableRef<AppleAvsCallbacks>)
 
     private var isStarted = false
     private val handles = mutableMapOf<String, CreatedHandle>()
 
-    private fun callbacks(arg: COpaquePointer?): Callbacks? = arg?.asStableRef<Callbacks>()?.get()
+    private fun callbacks(arg: COpaquePointer?): AppleAvsCallbacks? = arg?.asStableRef<AppleAvsCallbacks>()?.get()
     private fun CPointer<ByteVar>?.string(): String? = this?.toKString()
     private fun CPointer<UByteVar>?.bytes(length: ULong): ByteArray = this?.readBytes(length.toInt()) ?: byteArrayOf()
 
@@ -137,7 +101,7 @@ internal object AppleAvsInterop {
             data = data.bytes(length),
             transient = transient != 0,
             myClientsOnly = myClientsOnly != 0
-        ) ?: AvsCallBackError.INVALID_ARGUMENT.value
+        ) ?: INVALID_ARGUMENT_ERROR
     }
 
     private val sftRequestHandler = staticCFunction {
@@ -146,7 +110,7 @@ internal object AppleAvsInterop {
             data: CPointer<UByteVar>?,
             length: ULong,
             arg: COpaquePointer? ->
-        callbacks(arg)?.onSftRequest(context, url.string(), data.bytes(length)) ?: AvsCallBackError.INVALID_ARGUMENT.value
+        callbacks(arg)?.onSftRequest(context, url.string(), data.bytes(length)) ?: INVALID_ARGUMENT_ERROR
     }
 
     private val incomingHandler = staticCFunction {
@@ -215,7 +179,7 @@ internal object AppleAvsInterop {
     }
 
     private val configRequestHandler = staticCFunction { handle: UInt, arg: COpaquePointer? ->
-        callbacks(arg)?.onConfigRequest(handle, arg) ?: AvsCallBackError.INVALID_ARGUMENT.value
+        callbacks(arg)?.onConfigRequest(handle, arg) ?: INVALID_ARGUMENT_ERROR
     }
 
     private val audioCbrHandler = staticCFunction {
@@ -279,22 +243,20 @@ internal object AppleAvsInterop {
         Unit
     }
 
-    fun startIfAvailable(): Boolean {
+    override fun startIfAvailable(): Boolean {
         if (isStarted) return true
 
         return runCatching {
-            val setupResult = wcall_setup()
-            val runResult = wcall_run()
+            wcall_setup()
+            wcall_run()
             isStarted = true
-            kaliumLogger.i("AVS iOS smoke: started AVS via cinterop (wcall_setup=$setupResult, wcall_run=$runResult)")
             true
-        }.getOrElse { error ->
-            kaliumLogger.w("AVS iOS smoke: failed to start AVS via cinterop (${error.message ?: error::class.simpleName})")
+        }.getOrElse {
             false
         }
     }
 
-    fun userHandle(selfUserId: String, selfClientId: String, callbacks: Callbacks): UInt? {
+    override fun userHandle(selfUserId: String, selfClientId: String, callbacks: AppleAvsCallbacks): UInt? {
         if (!startIfAvailable()) return null
 
         val key = "$selfUserId:$selfClientId"
@@ -322,10 +284,8 @@ internal object AppleAvsInterop {
             )
             registerAdditionalHandlers(handle, arg)
             handles[key] = CreatedHandle(handle, stableRef)
-            kaliumLogger.i("AVS iOS smoke: created wcall user handle=$handle for user=$selfUserId client=$selfClientId")
             handle
-        }.getOrElse { error ->
-            kaliumLogger.w("AVS iOS smoke: failed to create wcall user (${error.message ?: error::class.simpleName})")
+        }.getOrElse {
             null
         }
     }
@@ -340,7 +300,7 @@ internal object AppleAvsInterop {
         wcall_set_group_changed_handler(handle, null, arg)
     }
 
-    fun receiveCallingMessage(
+    override fun receiveCallingMessage(
         handle: UInt,
         payload: ByteArray,
         currentTimeSeconds: UInt,
@@ -354,7 +314,7 @@ internal object AppleAvsInterop {
         if (payload.isEmpty()) return false
 
         return runCatching {
-            val result = payload.usePinned { pinned ->
+            payload.usePinned { pinned ->
                 wcall_recv_msg(
                     wuser = handle,
                     buf = pinned.addressOf(0).reinterpret(),
@@ -368,85 +328,81 @@ internal object AppleAvsInterop {
                     meeting = 0
                 )
             }
-            kaliumLogger.i("AVS iOS smoke: wcall_recv_msg result=$result conversation=$conversationId")
             true
-        }.getOrElse { error ->
-            kaliumLogger.w("AVS iOS smoke: wcall_recv_msg failed (${error.message ?: error::class.simpleName})")
+        }.getOrElse {
             false
         }
     }
 
-    fun respondToSend(handle: UInt, status: Int, reason: String, context: COpaquePointer?) {
+    override fun respondToSend(handle: UInt, status: Int, reason: String, context: COpaquePointer?) {
         if (!startIfAvailable()) return
         wcall_resp(handle, status, reason, context)
     }
 
-    fun respondToSft(handle: UInt, error: Int, data: ByteArray, context: COpaquePointer?) {
+    override fun respondToSft(handle: UInt, error: Int, data: ByteArray, context: COpaquePointer?) {
         if (!startIfAvailable()) return
         data.usePinned { pinned ->
             wcall_sft_resp(handle, error, pinned.addressOf(0).reinterpret(), data.size.toULong(), context)
         }
     }
 
-    fun updateConfig(handle: UInt, error: Int, json: String) {
+    override fun updateConfig(handle: UInt, error: Int, json: String) {
         if (!startIfAvailable()) return
         wcall_config_update(handle, error, json)
     }
 
-    fun startCall(handle: UInt, conversationId: String, callType: Int, conversationType: Int, audioCbr: Boolean): Int =
+    override fun startCall(handle: UInt, conversationId: String, callType: Int, conversationType: Int, audioCbr: Boolean): Int =
         if (startIfAvailable()) wcall_start(handle, conversationId, callType, conversationType, audioCbr.toAvsInt(), 0) else -1
 
-    fun answerCall(handle: UInt, conversationId: String, callType: Int, audioCbr: Boolean): Int =
+    override fun answerCall(handle: UInt, conversationId: String, callType: Int, audioCbr: Boolean): Int =
         if (startIfAvailable()) wcall_answer(handle, conversationId, callType, audioCbr.toAvsInt()) else -1
 
-    fun endCall(handle: UInt, conversationId: String) {
+    override fun endCall(handle: UInt, conversationId: String) {
         if (!startIfAvailable()) return
         wcall_end(handle, conversationId)
     }
 
-    fun rejectCall(handle: UInt, conversationId: String): Int =
+    override fun rejectCall(handle: UInt, conversationId: String): Int =
         if (startIfAvailable()) wcall_reject(handle, conversationId) else -1
 
-    fun setMute(handle: UInt, muted: Boolean) {
+    override fun setMute(handle: UInt, muted: Boolean) {
         if (!startIfAvailable()) return
         wcall_set_mute(handle, muted.toAvsInt())
     }
 
-    fun setVideoSendState(handle: UInt, conversationId: String, state: Int) {
+    override fun setVideoSendState(handle: UInt, conversationId: String, state: Int) {
         if (!startIfAvailable()) return
         wcall_set_video_send_state(handle, conversationId, state)
     }
 
-    fun requestVideoStreams(handle: UInt, conversationId: String, mode: Int, json: String): Int =
+    override fun requestVideoStreams(handle: UInt, conversationId: String, mode: Int, json: String): Int =
         if (startIfAvailable()) wcall_request_video_streams(handle, conversationId, mode, json) else -1
 
-    fun setEpochInfo(handle: UInt, conversationId: String, epoch: UInt, clientsJson: String, keyBase64: String): Int =
+    override fun setEpochInfo(handle: UInt, conversationId: String, epoch: UInt, clientsJson: String, keyBase64: String): Int =
         if (startIfAvailable()) wcall_set_epoch_info(handle, conversationId, epoch, clientsJson, keyBase64) else -1
 
-    fun setClientsForConversation(handle: UInt, conversationId: String, clients: String): Int =
+    override fun setClientsForConversation(handle: UInt, conversationId: String, clients: String): Int =
         if (startIfAvailable()) wcall_set_clients_for_conv(handle, conversationId, clients) else -1
 
-    fun processNotifications(handle: UInt, isStarted: Boolean): Int =
+    override fun processNotifications(handle: UInt, isStarted: Boolean): Int =
         if (startIfAvailable()) wcall_process_notifications(handle, isStarted.toAvsInt()) else -1
 
-    fun setBackground(handle: UInt, background: Boolean): Int =
+    override fun setBackground(handle: UInt, background: Boolean): Int =
         if (startIfAvailable()) wcall_set_background(handle, background.toAvsInt()) else -1
 
-    fun setNetworkQualityInterval(handle: UInt, callbacks: Callbacks, intervalInSeconds: Int) {
+    override fun setNetworkQualityInterval(handle: UInt, callbacks: AppleAvsCallbacks, intervalInSeconds: Int) {
         if (!startIfAvailable()) return
         val arg = handles.values.firstOrNull { it.stableRef.get() === callbacks }?.stableRef?.asCPointer()
         wcall_set_network_quality_handler(handle, networkQualityHandler, intervalInSeconds, arg)
     }
 
-    fun notifyNetworkChangedIfAvailable(): Boolean {
+    override fun notifyNetworkChangedIfAvailable(): Boolean {
         if (!startIfAvailable()) return false
 
         return runCatching {
             wcall_network_changed()
-            kaliumLogger.i("AVS iOS smoke: networkChanged propagated to AVS via cinterop")
             true
-        }.getOrElse { error ->
-            kaliumLogger.w("AVS iOS smoke: failed to propagate networkChanged (${error.message ?: error::class.simpleName})")
+        }.getOrElse {
             false
         }
     }
@@ -454,4 +410,5 @@ internal object AppleAvsInterop {
     private fun Boolean.toAvsInt() = if (this) 1 else 0
 
     private const val DEFAULT_NETWORK_QUALITY_INTERVAL_SECONDS = 1
+    private const val INVALID_ARGUMENT_ERROR = 1
 }

@@ -29,6 +29,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.WorkSchedulerProvider
 import com.wire.kalium.logic.sync.WorkSchedulerProviderImpl
+import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
@@ -109,7 +110,7 @@ public actual class CoreLogic(
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
     public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
     actual override val globalCallManager: GlobalCallManager by lazy {
-        GlobalCallManager(getGlobalScope(), networkStateObserver)
+        GlobalCallManager(getGlobalScope(), networkStateObserver, PlatformContext())
     }
 }
 

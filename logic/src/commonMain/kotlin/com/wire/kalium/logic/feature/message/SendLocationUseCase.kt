@@ -51,7 +51,8 @@ public class SendLocationUseCase internal constructor(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
-    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val pendingMessagesEnabled: Boolean = true,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
     /**
@@ -108,7 +109,7 @@ public class SendLocationUseCase internal constructor(
                     conversationId = conversationId,
                     messageId = generatedMessageUuid,
                     messageType = TYPE,
-                    scheduleResendIfNoNetwork = true,
+                    scheduleResendIfNoNetwork = pendingMessagesEnabled,
                 )
                 MessageOperationResult.Failure(it)
             },

@@ -68,7 +68,7 @@ kotlin {
     explicitApi()
     sourceSets {
         val commonMain by getting {
-            kotlin.srcDir(generatedCommonMainKotlinDir)
+            kotlin.srcDir(generateUserNetworkApiCacheConfig)
             dependencies {
                 api(projects.data.network)
                 implementation(libs.concurrentCollections)
@@ -76,10 +76,4 @@ kotlin {
             }
         }
     }
-}
-
-tasks.matching { task ->
-    task.name.contains("compile", ignoreCase = true)
-}.configureEach {
-    dependsOn(generateUserNetworkApiCacheConfig)
 }

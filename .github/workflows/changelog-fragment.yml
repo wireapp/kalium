@@ -1,0 +1,33 @@
+name: "Changelog Fragment"
+
+on:
+  merge_group:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # required for actions/checkout and repository metadata reads
+
+jobs:
+  changelog-fragment:
+    name: Check Changelog Fragment
+    # PR labels are unavailable in merge_group payloads. The PR run enforces
+    # label-dependent exemptions before the merge queue is entered.
+    if: github.event_name != 'merge_group'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check changelog fragment
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          HEAD_REF: HEAD
+        run: scripts/check-changelog-fragment.sh

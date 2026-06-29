@@ -1,0 +1,75 @@
+name: Publish Maven Central Snapshot
+
+on:
+  schedule:
+    - cron: "15 2 * * *"
+  workflow_dispatch:
+    inputs:
+      snapshot-version:
+        description: "Snapshot version to publish"
+        required: false
+        type: string
+        default: "0.0.0-develop-SNAPSHOT"
+
+concurrency:
+  group: ${{ github.workflow }}-develop
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish develop snapshot
+    if: github.repository == 'wireapp/kalium'
+    runs-on: macos-15
+    steps:
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@1242409711ff5721add51979e9e11e23ebb7e5a4 # v1
+        with:
+          xcode-version: "16.1.0"
+
+      - name: Checkout develop
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          ref: develop
+          persist-credentials: false
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Resolve snapshot version
+        env:
+          INPUT_SNAPSHOT_VERSION: ${{ inputs.snapshot-version }}
+        run: |
+          version="${INPUT_SNAPSHOT_VERSION:-0.0.0-develop-SNAPSHOT}"
+          case "$version" in
+            *-SNAPSHOT) ;;
+            *)
+              echo "::error::Snapshot version must end with -SNAPSHOT: $version"
+              exit 1
+              ;;
+          esac
+
+          echo "KALIUM_PUBLISH_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Publish snapshot
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.PGP_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.PGP_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.PGP_PASSPHRASE }}
+        run: |
+          ./gradlew publishAllPublicationsToMavenCentralSnapshotsRepository \
+            -PUSE_UNIFIED_CORE_CRYPTO=true \
+            -Pkalium.publish.version="$KALIUM_PUBLISH_VERSION" \
+            -Pkalium.mavenCentral.signingRequired=true
+
+      - name: Snapshot summary
+        if: always()
+        run: |
+          echo "## Maven Central Snapshot Publish" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Branch**: develop" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Version**: ${KALIUM_PUBLISH_VERSION:-not-resolved}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Repository**: https://central.sonatype.com/repository/maven-snapshots/" >> "$GITHUB_STEP_SUMMARY"
