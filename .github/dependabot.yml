@@ -27,6 +27,8 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "chore(deps): [WPB-9777] "
+    cooldown:
+      default-days: 14
 
   # Pinned, hash-locked SBOM toolchain for scripts/generate-sbom.sh.
   # Dependabot bumps the pins and regenerates the --hash lines automatically,
