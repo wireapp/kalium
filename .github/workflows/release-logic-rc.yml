@@ -76,4 +76,9 @@ jobs:
     with:
       tag-name: ${{ github.ref_name }}
       publishing-type: AUTOMATIC
-    secrets: inherit
+    secrets:
+      SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+      SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+      PGP_KEY_ID: ${{ secrets.PGP_KEY_ID }}
+      PGP_SIGNING_KEY: ${{ secrets.PGP_SIGNING_KEY }}
+      PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
