@@ -6,39 +6,16 @@
 version: 2
 updates:
   - package-ecosystem: "gradle"
-    open-pull-requests-limit: 5
     directory: "/"
     schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 14
-      exclude:
-        - "com.wire:avs"
-        - "com.wire:core-crypto-android"
-        - "com.wire:core-crypto-jvm"
-        - "io.github.mohamadjaara:core-crypto-kmp"
-    commit-message:
-      prefix: "chore(deps): [WPB-9777] "
-
-  - package-ecosystem: "github-actions"
-    open-pull-requests-limit: 2
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    commit-message:
-      prefix: "chore(deps): [WPB-9777] "
-    cooldown:
-      default-days: 14
-
-  # Pinned, hash-locked SBOM toolchain for scripts/generate-sbom.sh.
-  # Dependabot bumps the pins and regenerates the --hash lines automatically,
-  # so the lockfile stays current without losing supply-chain integrity.
-  - package-ecosystem: "pip"
-    open-pull-requests-limit: 2
-    directory: "/scripts"
-    schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 14
+      interval: "daily"
+      time: "08:00"
+      timezone: "Europe/Berlin"
+    allow:
+      - dependency-name: "com.wire:avs"
+      - dependency-name: "com.wire:avs-kmp"
+      - dependency-name: "com.wire:core-crypto-android"
+      - dependency-name: "com.wire:core-crypto-jvm"
+      - dependency-name: "io.github.mohamadjaara:core-crypto-kmp"
     commit-message:
       prefix: "chore(deps): [WPB-9777] "
