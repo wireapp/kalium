@@ -19,6 +19,7 @@ package com.wire.kalium.logic.data.message.linkpreview
 
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Document
+import com.fleeksoft.ksoup.nodes.Element
 
 /**
  * Scans HTML head for Open Graph metadata using DOM-based parsing (Ksoup).
@@ -27,6 +28,8 @@ import com.fleeksoft.ksoup.nodes.Document
  * self-closing tags, malformed heads, and HTML entity decoding.
  */
 internal object OpenGraphScanner {
+
+    private const val MAX_PREVIEW_TYPE_LENGTH = 64
 
     /**
      * Parses HTML head section and extracts Open Graph data.
@@ -58,7 +61,7 @@ internal object OpenGraphScanner {
         return buildOpenGraphData(ogData, pageTitle, originalUrl, firstImageUrl)
     }
 
-    private fun processMetaTag(metaTag: com.fleeksoft.ksoup.nodes.Element, ogData: MutableMap<String, String>, onImageFound: (String) -> Unit) {
+    private fun processMetaTag(metaTag: Element, ogData: MutableMap<String, String>, onImageFound: (String) -> Unit) {
         val property = metaTag.attr("property").takeIf { it.isNotEmpty() }
         val name = metaTag.attr("name").takeIf { it.isNotEmpty() }
         val content = metaTag.attr("content").trim()
@@ -81,20 +84,42 @@ internal object OpenGraphScanner {
         originalUrl: String,
         firstImageUrl: String?
     ): OpenGraphData? {
-        val title = ogData["og:title"] ?: pageTitle
-        val url = ogData["og:url"] ?: originalUrl
-        val description = ogData["og:description"]
-        val siteName = ogData["og:site_name"]
-        val type = ogData["og:type"] ?: "website"
+        val title = sanitizePreviewText(
+            ogData["og:title"] ?: pageTitle,
+            MAX_PREVIEW_TITLE_LENGTH
+        )
+        val url = sanitizePreviewText(
+            ogData["og:url"] ?: originalUrl,
+            MAX_PREVIEW_URL_LENGTH,
+            collapseWhitespace = false
+        )
+        val description = sanitizePreviewText(
+            ogData["og:description"],
+            MAX_PREVIEW_DESCRIPTION_LENGTH
+        )
+        val siteName = sanitizePreviewText(
+            ogData["og:site_name"],
+            MAX_PREVIEW_SITE_NAME_LENGTH
+        )
+        val type = sanitizePreviewText(
+            ogData["og:type"],
+            MAX_PREVIEW_TYPE_LENGTH,
+            collapseWhitespace = false
+        ) ?: "website"
+        val imageUrl = sanitizePreviewText(
+            firstImageUrl,
+            MAX_PREVIEW_URL_LENGTH,
+            collapseWhitespace = false
+        )
 
-        if (title.isNullOrBlank() || url.isBlank()) return null
+        if (title.isNullOrBlank() || url?.isBlank() == true) return null
 
         return OpenGraphData(
             title = title,
             type = type,
             url = url,
             description = description,
-            imageUrls = firstImageUrl?.let { listOf(it) } ?: emptyList(),
+            imageUrls = imageUrl?.let { listOf(it) } ?: emptyList(),
             siteName = siteName
         )
     }

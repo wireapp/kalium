@@ -618,8 +618,8 @@ public class MessageScope internal constructor(
                 install(io.ktor.client.plugins.UserAgent) {
                     agent = "Wire LinkPreviewFetcher"
                 }
-                followRedirects = true
-                expectSuccess = true
+                followRedirects = false
+                expectSuccess = false
             },
             kaliumFileSystem = kaliumFileSystem
         )
