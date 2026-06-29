@@ -18,11 +18,8 @@
 
 package com.wire.kalium.logic.feature.call
 
-import avs.AVSFlowManager
+import com.wire.kalium.calling.AppleAvsFlowManager
 import com.wire.kalium.logic.util.PlatformView
 
-internal actual fun AVSFlowManager.attachPlatformVideoView(view: PlatformView): Boolean {
-    val videoView = view.view ?: return false
-    attachVideoView(videoView)
-    return true
-}
+internal fun AppleAvsFlowManager.attachPlatformVideoView(view: PlatformView): Boolean =
+    attachVideoView(view.view)

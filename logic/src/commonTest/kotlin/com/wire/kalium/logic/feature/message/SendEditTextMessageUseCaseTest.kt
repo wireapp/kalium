@@ -117,10 +117,36 @@ class SendEditTextMessageUseCaseTest {
             arrangement.messageRepository.updateMessageStatus(MessageEntity.Status.PENDING, any(), any())
         }
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(true))
         }
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenNoNetworkAndPendingMessagesDisabled_whenSendingEditText_thenDoesNotScheduleResend() = runTest {
+        // Given
+        val (arrangement, sendEditTextMessage) = Arrangement(testKaliumDispatcher)
+            .withSlowSyncStatusComplete()
+            .withGetMessageByIdSuccess(Message.Status.Sent)
+            .withCurrentClientProviderSuccess()
+            .withUpdateTextMessageSuccess()
+            .withUpdateMessageStatusSuccess()
+            .withSendMessageFailure()
+            .withPendingMessagesDisabled()
+            .arrange()
+        val originalMessageId = "message id"
+        val editedMessageId = "edited message id"
+        val editedMessageText = "text"
+
+        // When
+        val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
+
+        // Then
+        assertIs<MessageOperationResult.Failure>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), eq(false))
         }
     }
 
@@ -161,6 +187,7 @@ class SendEditTextMessageUseCaseTest {
         val slowSyncRepository = mock<SlowSyncRepository>(mode = MockMode.autoUnit)
         val messageSender = mock<MessageSender>(mode = MockMode.autoUnit)
         val messageSendFailureHandler = mock<MessageSendFailureHandler>(mode = MockMode.autoUnit)
+        private var pendingMessages = true
 
         suspend fun withSendMessageSuccess() = apply {
             everySuspend {
@@ -208,14 +235,19 @@ class SendEditTextMessageUseCaseTest {
             } returns Either.Right(Unit)
         }
 
+        fun withPendingMessagesDisabled() = apply {
+            pendingMessages = false
+        }
+
         fun arrange() = this to SendEditTextMessageUseCase(
-            messageRepository,
-            TestUser.SELF.id,
-            currentClientIdProvider,
-            slowSyncRepository,
-            messageSender,
-            messageSendFailureHandler,
-            dispatcher
+            messageRepository = messageRepository,
+            selfUserId = TestUser.SELF.id,
+            provideClientId = currentClientIdProvider,
+            slowSyncRepository = slowSyncRepository,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            pendingMessagesEnabled = pendingMessages,
+            dispatchers = dispatcher,
         )
     }
 }

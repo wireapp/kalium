@@ -87,9 +87,9 @@ public actual class CoreLogic(
     public actual override val networkStateObserver: NetworkStateObserver =
         kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
     actual override val globalCallManager: GlobalCallManager = GlobalCallManager(
-        appContext = PlatformContext(),
         scope = CoroutineScope(KaliumDispatcherImpl.io),
         networkStateObserver = networkStateObserver,
+        platformContext = PlatformContext(),
     )
 
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()

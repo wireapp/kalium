@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read # required for actions/checkout and repository metadata reads
+  contents: write # required to update GitHub release notes
 
 jobs:
   Changelog:
@@ -43,6 +43,12 @@ jobs:
         run: |
           echo "{}" > ./package.json
           npx generate-changelog@1.8.0 -t "$PREVIOUS_TAG...$CURRENT_TAG"
+
+      - name: 'Collect consumer-facing changelog fragments'
+        env:
+          BASE_REF: ${{ env.PREVIOUS_TAG }}
+          HEAD_REF: ${{ env.CURRENT_TAG }}
+        run: scripts/collect-changelog-fragments.sh
 
       - name: 'Attach changelog to tag'
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda

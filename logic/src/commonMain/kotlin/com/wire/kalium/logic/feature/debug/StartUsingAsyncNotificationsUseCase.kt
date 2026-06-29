@@ -22,11 +22,13 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.configuration.server.ServerConfig.Companion.PRODUCTION
 import com.wire.kalium.logic.feature.client.UpdateSelfClientCapabilityToConsumableNotificationsUseCase
 import com.wire.kalium.logic.feature.user.SelfServerConfigUseCase
+import com.wire.kalium.util.DebugKaliumApi
 
 /**
  * Forces the usage of async notifications system.
  * This will register the client capability to consume async notifications.
  */
+@DebugKaliumApi("Debug-only API for forcing async notification capability registration.")
 public interface StartUsingAsyncNotificationsUseCase {
     public suspend operator fun invoke(): StartUsingAsyncNotificationsResult
 }
@@ -53,7 +55,11 @@ internal class StartUsingAsyncNotificationsUseCaseImpl(
     }
 }
 
+@DebugKaliumApi("Debug-only result for forcing async notification capability registration.")
 public sealed class StartUsingAsyncNotificationsResult {
+    @DebugKaliumApi("Debug-only success result for forcing async notification capability registration.")
     public data object Success : StartUsingAsyncNotificationsResult()
+
+    @DebugKaliumApi("Debug-only failure result for forcing async notification capability registration.")
     public data class Failure(val coreFailure: CoreFailure) : StartUsingAsyncNotificationsResult()
 }
