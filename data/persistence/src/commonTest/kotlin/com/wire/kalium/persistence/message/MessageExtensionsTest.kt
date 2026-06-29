@@ -33,6 +33,8 @@ import com.wire.kalium.persistence.dao.message.MessageExtensions
 import com.wire.kalium.persistence.dao.message.MessageExtensionsImpl
 import com.wire.kalium.persistence.dao.message.MessageMapper
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
+import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
+import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
@@ -59,6 +61,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     private lateinit var messageDAO: MessageDAO
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
+    private lateinit var receiptDAO: ReceiptDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -73,6 +76,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
+        receiptDAO = db.receiptDAO
         messageExtensions = MessageExtensionsImpl(
             messagesQueries = messagesQueries,
             messageAttachmentsQueries = messageAttachmentsQueries,
@@ -289,6 +293,114 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         assertEquals(attachmentId, multipartContent.attachments.single().assetId)
     }
 
+    @Test
+    fun givenMessageListPageLoaded_whenMessageIsInsertedInSameConversation_thenPagingSourceShouldBeInvalidated() = runTest {
+        populateMessageData()
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = "new-message",
+                conversationId = CONVERSATION_ID,
+                senderUserId = USER_ID
+            )
+        )
+
+        assertTrue { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenMessageListPageLoaded_whenMessageIsInsertedInDifferentConversation_thenPagingSourceShouldNotBeInvalidated() = runTest {
+        populateMessageData()
+        conversationDAO.insertConversation(newConversationEntity(id = OTHER_CONVERSATION_ID))
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = "other-new-message",
+                conversationId = OTHER_CONVERSATION_ID,
+                senderUserId = USER_ID
+            )
+        )
+
+        assertFalse { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenMessageListPageLoaded_whenReceiptIsInsertedInSameConversation_thenPagingSourceShouldBeInvalidated() = runTest {
+        populateMessageData()
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        receiptDAO.insertReceipts(
+            userId = USER_ID,
+            conversationId = CONVERSATION_ID,
+            date = Instant.fromEpochSeconds(1),
+            type = ReceiptTypeEntity.DELIVERY,
+            messageIds = listOf("0")
+        )
+
+        assertTrue { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenMessageListPageLoaded_whenReceiptIsInsertedInDifferentConversation_thenPagingSourceShouldNotBeInvalidated() = runTest {
+        populateMessageData()
+        conversationDAO.insertConversation(newConversationEntity(id = OTHER_CONVERSATION_ID))
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = "other-message",
+                conversationId = OTHER_CONVERSATION_ID,
+                senderUserId = USER_ID
+            )
+        )
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        receiptDAO.insertReceipts(
+            userId = USER_ID,
+            conversationId = OTHER_CONVERSATION_ID,
+            date = Instant.fromEpochSeconds(1),
+            type = ReceiptTypeEntity.DELIVERY,
+            messageIds = listOf("other-message")
+        )
+
+        assertFalse { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenMessageListPageLoaded_whenSenderNameIsUpdated_thenPagingSourceShouldNotBeInvalidated() = runTest {
+        populateMessageData()
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        userDAO.updateUserDisplayName(USER_ID, "Updated User")
+
+        assertFalse { pagingSource.invalid }
+    }
+
     private fun getPager(): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(
         conversationId = CONVERSATION_ID,
         visibilities = MessageEntity.Visibility.entries.toList(),
@@ -312,8 +424,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     )
 
     private suspend fun populateMessageData(prefix: String = "") {
-        val userId = UserIDEntity("user", "domain")
-        userDAO.upsertUser(newUserEntity(qualifiedID = userId))
+        userDAO.upsertUser(newUserEntity(qualifiedID = USER_ID))
         conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
         val messages = buildList<MessageEntity> {
             repeat(MESSAGE_COUNT) {
@@ -321,7 +432,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
                     newRegularMessageEntity(
                         id = it.toString(),
                         conversationId = CONVERSATION_ID,
-                        senderUserId = userId,
+                        senderUserId = USER_ID,
                         content = MessageEntityContent.Text("message $it"),
                         // Ordered by date - Inserting with decreasing date is important to assert pagination
                         date = Instant.fromEpochSeconds(MESSAGE_COUNT - it.toLong())
@@ -333,8 +444,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     }
 
     private suspend fun populatePendingAndNonPendingMessageData() {
-        val userId = UserIDEntity("user", "domain")
-        userDAO.upsertUser(newUserEntity(qualifiedID = userId))
+        userDAO.upsertUser(newUserEntity(qualifiedID = USER_ID))
         conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
         val messages = buildList<MessageEntity> {
             repeat(PENDING_MESSAGE_COUNT) {
@@ -342,7 +452,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
                     newRegularMessageEntity(
                         id = "pending-$it",
                         conversationId = CONVERSATION_ID,
-                        senderUserId = userId,
+                        senderUserId = USER_ID,
                         status = MessageEntity.Status.PENDING,
                         content = MessageEntityContent.Text("pending message $it"),
                         date = Instant.fromEpochSeconds(PENDING_MESSAGE_COUNT - it.toLong())
@@ -354,7 +464,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
                     newRegularMessageEntity(
                         id = "non-pending-$it",
                         conversationId = CONVERSATION_ID,
-                        senderUserId = userId,
+                        senderUserId = USER_ID,
                         status = MessageEntity.Status.SENT,
                         content = MessageEntityContent.Text("non-pending message $it"),
                         date = Instant.fromEpochSeconds(NON_PENDING_MESSAGE_COUNT - it.toLong())
@@ -371,6 +481,8 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         const val PENDING_MESSAGE_COUNT = 25
         const val NON_PENDING_MESSAGE_COUNT = 40
         const val MIXED_MESSAGE_COUNT = PENDING_MESSAGE_COUNT + NON_PENDING_MESSAGE_COUNT
+        val USER_ID = UserIDEntity("user", "domain")
         val CONVERSATION_ID = ConversationIDEntity("conversation", "domain")
+        val OTHER_CONVERSATION_ID = ConversationIDEntity("otherConversation", "domain")
     }
 }
