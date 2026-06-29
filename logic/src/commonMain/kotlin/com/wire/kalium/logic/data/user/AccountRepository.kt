@@ -46,6 +46,7 @@ internal interface AccountRepository {
     suspend fun updateSelfEmail(email: String): Either<NetworkFailure, Boolean>
     suspend fun updateLocalSelfUserHandle(handle: String): Either<CoreFailure, Unit>
     suspend fun updateSelfUserAvailabilityStatus(status: UserAvailabilityStatus): Either<StorageFailure, Unit>
+    suspend fun updateSelfUserTextStatus(textStatus: String?): Either<CoreFailure, Unit>
 }
 
 internal class AccountRepositoryImpl(
@@ -92,5 +93,14 @@ internal class AccountRepositoryImpl(
             availabilityStatusMapper.fromModelAvailabilityStatusToDao(status)
         )
     }
+
+    override suspend fun updateSelfUserTextStatus(textStatus: String?): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            selfApi.updateSelf(UserUpdateRequest(name = null, assets = null, accentId = null, textStatus = textStatus))
+        }.flatMap {
+            wrapStorageRequest {
+                userDAO.updateUserTextStatus(selfUserId.toDao(), textStatus)
+            }
+        }
 
 }

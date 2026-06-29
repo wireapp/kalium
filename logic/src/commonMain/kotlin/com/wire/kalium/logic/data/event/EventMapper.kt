@@ -652,6 +652,7 @@ internal class EventMapper(
         name = event.userData.name,
         handle = event.userData.handle,
         email = event.userData.email,
+        textStatus = event.userData.textStatus,
         previewAssetId = event.userData.assets?.getPreviewAssetOrNull()?.key,
         completeAssetId = event.userData.assets?.getCompleteAssetOrNull()?.key,
         supportedProtocols = event.userData.supportedProtocols?.toModel()

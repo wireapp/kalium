@@ -36,6 +36,7 @@ data class UserUpdateEventData(
     @SerialName("name") val name: String?,
     @SerialName("handle") val handle: String?,
     @SerialName("email") val email: String?,
+    @SerialName("text_status") val textStatus: String?,
     @SerialName("sso_id_deleted") val ssoIdDeleted: Boolean?,
     @SerialName("assets") val assets: List<UserAssetDTO>?,
     @SerialName("supported_protocols")val supportedProtocols: List<SupportedProtocolDTO>?

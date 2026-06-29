@@ -53,6 +53,7 @@ private val MOKKERY_USER_UPDATE_EVENT = Event.User.Update(
     name = null,
     handle = null,
     email = null,
+    textStatus = null,
     previewAssetId = null,
     completeAssetId = null,
     supportedProtocols = null

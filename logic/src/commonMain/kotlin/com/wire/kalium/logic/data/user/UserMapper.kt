@@ -127,6 +127,7 @@ internal class UserMapperImpl(
             completePicture = completeAssetId?.toModel(),
             userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            textStatus = textStatus,
             expiresAt = expiresAt,
             supportedProtocols = supportedProtocols?.toModel()
         )
@@ -146,6 +147,7 @@ internal class UserMapperImpl(
             completePicture = completeAssetId?.toModel(),
             userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            textStatus = textStatus,
             expiresAt = expiresAt,
             supportedProtocols = supportedProtocols?.toModel(),
             isUnderLegalHold = userEntity.isUnderLegalHold,
@@ -164,6 +166,7 @@ internal class UserMapperImpl(
         previewPicture = userEntity.previewAssetId?.toModel(),
         completePicture = userEntity.completeAssetId?.toModel(),
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
+        textStatus = userEntity.textStatus,
         userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
@@ -186,6 +189,7 @@ internal class UserMapperImpl(
         previewPicture = userEntity.previewAssetId?.toModel(),
         completePicture = userEntity.completeAssetId?.toModel(),
         availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(userEntity.availabilityStatus),
+        textStatus = userEntity.textStatus,
         userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
         botService = userEntity.botService?.let { BotService(it.id, it.provider) },
         deleted = userEntity.deleted,
@@ -233,6 +237,7 @@ internal class UserMapperImpl(
             previewAssetId = previewPicture?.toDao(),
             completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
+            textStatus = textStatus,
             userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = false,
@@ -256,6 +261,7 @@ internal class UserMapperImpl(
             previewAssetId = previewPicture?.toDao(),
             completeAssetId = completePicture?.toDao(),
             availabilityStatus = availabilityStatusMapper.fromModelAvailabilityStatusToDao(availabilityStatus),
+            textStatus = textStatus,
             userType = userEntityTypeMapper.fromUserTypeInfo(userType),
             botService = botService?.let { BotIdEntity(it.id, it.provider) },
             deleted = deleted,
@@ -288,6 +294,7 @@ internal class UserMapperImpl(
             previewAssetId = assets.getPreviewAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             completeAssetId = assets.getCompleteAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            textStatus = textStatus,
             userType = userTypeEntity,
             botService = null,
             deleted = userDTO.deleted ?: false,
@@ -306,7 +313,8 @@ internal class UserMapperImpl(
         return UserUpdateRequest(
             name = newName,
             accentId = newAccent,
-                assets = if (newAssetId != null) {
+            textStatus = null,
+            assets = if (newAssetId != null) {
                 listOf(
                     UserAssetDTO(newAssetId, AssetSizeDTO.COMPLETE, UserAssetTypeDTO.IMAGE),
                     UserAssetDTO(newAssetId, AssetSizeDTO.PREVIEW, UserAssetTypeDTO.IMAGE)
@@ -323,6 +331,7 @@ internal class UserMapperImpl(
     ): PartialUserEntity = PartialUserEntity(
         previewAssetId = updateRequest.assets.getPreviewAssetOrNull()?.toDao(selfUserId.domain),
         completeAssetId = updateRequest.assets.getCompleteAssetOrNull()?.toDao(selfUserId.domain),
+        textStatus = updateRequest.textStatus,
         id = selfUserId.toDao()
     )
 
@@ -346,6 +355,7 @@ internal class UserMapperImpl(
             ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) },
         connectionStatus = connectionState,
         availabilityStatus = UserAvailabilityStatusEntity.NONE,
+        textStatus = userProfile.textStatus,
         userType = userTypeEntity,
         botService = userProfile.service?.let { BotIdEntity(it.id, it.provider) },
         deleted = userProfile.deleted ?: false,
@@ -374,6 +384,7 @@ internal class UserMapperImpl(
             completePicture = userProfile.assets.getCompleteAssetOrNull()
                 ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) }?.toModel(),
             availabilityStatus = UserAvailabilityStatus.NONE,
+            textStatus = userProfile.textStatus,
             userType = domainUserTypeMapper.fromUserTypeEntity(
                 userEntityTypeMapper.fromApiTypeAndTeamAndDomain(
                     apiUserTypeDTO = userProfile.type,
@@ -398,6 +409,7 @@ internal class UserMapperImpl(
             name = event.name,
             handle = event.handle,
             accentId = event.accentId,
+            textStatus = event.textStatus,
             previewAssetId = event.previewAssetId?.let { QualifiedIDEntity(it, event.userId.domain) },
             completeAssetId = event.completeAssetId?.let { QualifiedIDEntity(it, event.userId.domain) },
             supportedProtocols = event.supportedProtocols?.toDao(),
@@ -421,6 +433,7 @@ internal class UserMapperImpl(
             previewAssetId = null,
             completeAssetId = null,
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            textStatus = null,
             userType = UserTypeEntity.STANDARD,
             botService = null,
             deleted = false,

@@ -690,6 +690,7 @@ internal sealed class Event(open val id: String) {
             val name: String?,
             val handle: String?,
             val email: String?,
+            val textStatus: String?,
             val previewAssetId: String?,
             val completeAssetId: String?,
             val supportedProtocols: Set<SupportedProtocol>?

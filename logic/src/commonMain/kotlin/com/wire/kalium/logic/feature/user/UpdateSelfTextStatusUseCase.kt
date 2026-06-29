@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,20 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network.api.authenticated.self
+package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.network.api.model.UserAssetDTO
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.user.AccountRepository
 
-@Serializable
-data class UserUpdateRequest(
-    @SerialName("name")
-    val name: String?,
-    @SerialName("assets")
-    val assets: List<UserAssetDTO>?,
-    @SerialName("accent_id")
-    val accentId: Int?,
-    @SerialName("text_status")
-    val textStatus: String? = null
-)
+public class UpdateSelfTextStatusUseCase internal constructor(
+    private val accountRepository: AccountRepository,
+) {
+    public suspend operator fun invoke(textStatus: String?): Either<CoreFailure, Unit> =
+        accountRepository.updateSelfUserTextStatus(textStatus)
+}
