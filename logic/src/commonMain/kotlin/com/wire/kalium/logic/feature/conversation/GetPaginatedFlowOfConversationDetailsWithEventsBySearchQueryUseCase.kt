@@ -49,8 +49,8 @@ public class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase
         pagingConfig: PagingConfig,
         startingOffset: Long,
         strictMlsFilter: Boolean
-    ): Flow<PagingData<ConversationDetailsWithEvents>> = callRepository.ongoingCallsFlow()
-        .map { ongoingCalls -> ongoingCalls.map { it.conversationId }.toSet() }
+    ): Flow<PagingData<ConversationDetailsWithEvents>> = callRepository.joinableCallsFlow()
+        .map { joinableCalls -> joinableCalls.map { it.conversationId }.toSet() }
         .distinctUntilChanged()
         .flatMapLatest { ongoingCallConversationIds ->
             conversationRepository.extensions

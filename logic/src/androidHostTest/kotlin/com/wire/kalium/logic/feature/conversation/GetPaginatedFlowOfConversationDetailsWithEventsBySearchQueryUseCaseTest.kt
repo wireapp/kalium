@@ -159,13 +159,13 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
                 conversationRepository.extensions
             }.returns(conversationRepositoryExtensions)
             every {
-                callRepository.ongoingCallsFlow()
+                callRepository.joinableCallsFlow()
             }.returns(flowOf(emptyList()))
         }
 
         fun withOngoingCallsFlow(result: Flow<List<Call>>) = apply {
             every {
-                callRepository.ongoingCallsFlow()
+                callRepository.joinableCallsFlow()
             }.returns(result)
         }
 

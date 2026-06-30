@@ -184,13 +184,13 @@ class ObserveConversationListDetailsWithEventsUseCaseImplTest {
 
         init {
             every {
-                callRepository.ongoingCallsFlow()
+                callRepository.joinableCallsFlow()
             } returns flowOf(emptyList())
         }
 
         fun withOngoingCalls(vararg conversationIds: ConversationId) = apply {
             every {
-                callRepository.ongoingCallsFlow()
+                callRepository.joinableCallsFlow()
             } returns flowOf(conversationIds.map { TestCall.groupIncomingCall(it) })
         }
 

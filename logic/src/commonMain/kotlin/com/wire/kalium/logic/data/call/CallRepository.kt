@@ -111,6 +111,7 @@ internal interface CallRepository {
     fun incomingCallsFlow(): Flow<List<Call>>
     fun outgoingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
+    fun joinableCallsFlow(): Flow<List<Call>>
     fun establishedCallsFlow(): Flow<List<Call>>
     fun activeCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallConversationId(): ConversationId?
@@ -216,6 +217,8 @@ internal class CallDataSource(
 
     override fun ongoingCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.STILL_ONGOING)
 
+    override fun joinableCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.INCOMING, CallStatus.STILL_ONGOING)
+
     override fun establishedCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.ANSWERED, CallStatus.ESTABLISHED)
 
     override fun activeCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(
@@ -304,12 +307,14 @@ internal class CallDataSource(
             )
         }
 
-        if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
-            // Save into metadata
+        val currentCallStatus = _callMetadataProfile.value[conversationId]?.callStatus
+        if (shouldUpdateCallMetadataFromCreateCall(currentCallStatus, currentSessionLastCallStatus, activeCallStatus, status)) {
             _callMetadataProfile.update { callMetadataProfile ->
                 callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
             }
+        }
 
+        if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
             if ((currentSessionLastCallStatus !in activeCallStatus && isGroupCall) || isOneOnOneCall) {
                 callingLogger.i(
                     "[CallRepository][createCall] -> Update.2 | lastCallStatus: [$currentSessionLastCallStatus] " +
@@ -328,17 +333,8 @@ internal class CallDataSource(
             )
             if (currentSessionLastCallStatus == callMapper.toCallEntityStatus(status)) {
                 callingLogger.i("[CallRepository][createCall] -> Update Call with same status")
-                // Update the metadata
-                _callMetadataProfile.update { callMetadataProfile ->
-                    callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
-                }
             } else if (currentSessionLastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
                 callingLogger.i("[CallRepository][createCall] -> Insert Call")
-                // Save into metadata
-                _callMetadataProfile.update { callMetadataProfile ->
-                    callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
-                }
-
                 // Save into database
                 wrapStorageRequest {
                     callDAO.insertCall(call = callEntity)
@@ -787,3 +783,13 @@ private fun CallMetadata.toCall(conversationId: ConversationId): Call = Call(
     participants = getFullParticipants(),
     maxParticipants = maxParticipants
 )
+
+private fun shouldUpdateCallMetadataFromCreateCall(
+    currentCallStatus: CallStatus?,
+    currentSessionLastCallStatus: CallEntity.Status?,
+    activeCallStatus: List<CallEntity.Status>,
+    status: CallStatus
+): Boolean =
+    currentCallStatus !in listOf(CallStatus.ANSWERED, CallStatus.ESTABLISHED) ||
+            currentSessionLastCallStatus !in activeCallStatus ||
+            status == CallStatus.STARTED
