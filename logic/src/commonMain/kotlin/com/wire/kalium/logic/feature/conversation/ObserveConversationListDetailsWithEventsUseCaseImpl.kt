@@ -18,13 +18,16 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationFilter
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 
 /**
@@ -42,7 +45,8 @@ public interface ObserveConversationListDetailsWithEventsUseCase {
 internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val conversationFolderRepository: ConversationFolderRepository,
-    private val getFavoriteFolder: GetFavoriteFolderUseCase
+    private val getFavoriteFolder: GetFavoriteFolderUseCase,
+    private val callRepository: CallRepository
 ) : ObserveConversationListDetailsWithEventsUseCase {
 
     override suspend operator fun invoke(
@@ -59,11 +63,13 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
 
                     is GetFavoriteFolderUseCase.Result.Success ->
                         conversationFolderRepository.observeConversationsFromFolder(result.folder.id)
+                            .withOngoingCalls()
                 }
             }
 
             is ConversationFilter.Folder -> {
                 conversationFolderRepository.observeConversationsFromFolder(conversationFilter.folderId)
+                    .withOngoingCalls()
             }
 
             ConversationFilter.All,
@@ -71,6 +77,44 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
             ConversationFilter.Groups,
             ConversationFilter.OneOnOne ->
                 conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter, strictMlsFilter)
+                    .withOngoingCalls(fromArchive)
         }
     }
+
+    private fun Flow<List<ConversationDetailsWithEvents>>.withOngoingCalls(
+        fromArchive: Boolean = false
+    ): Flow<List<ConversationDetailsWithEvents>> =
+        if (fromArchive) {
+            this
+        } else {
+            combine(callRepository.ongoingCallsFlow()) { conversations, ongoingCalls ->
+                conversations.withOngoingCalls(ongoingCalls.map { it.conversationId }.toSet())
+            }
+        }
+
+    private fun List<ConversationDetailsWithEvents>.withOngoingCalls(
+        ongoingCallConversationIds: Set<ConversationId>
+    ): List<ConversationDetailsWithEvents> =
+        map { conversation ->
+            val hasOngoingCall =
+                conversation.conversationDetails.conversation.id in ongoingCallConversationIds &&
+                        conversation.conversationDetails is ConversationDetails.Group
+            conversation.withOngoingCall(hasOngoingCall)
+        }.sortedByDescending {
+            it.conversationDetails.conversation.id in ongoingCallConversationIds &&
+                    it.conversationDetails is ConversationDetails.Group
+        }
+
+    private fun ConversationDetailsWithEvents.withOngoingCall(hasOngoingCall: Boolean): ConversationDetailsWithEvents =
+        when (val details = conversationDetails) {
+            is ConversationDetails.Group.Channel -> copy(
+                conversationDetails = details.copy(hasOngoingCall = hasOngoingCall),
+                hasNewActivitiesToShow = hasNewActivitiesToShow || hasOngoingCall
+            )
+            is ConversationDetails.Group.Regular -> copy(
+                conversationDetails = details.copy(hasOngoingCall = hasOngoingCall),
+                hasNewActivitiesToShow = hasNewActivitiesToShow || hasOngoingCall
+            )
+            else -> this
+        }
 }

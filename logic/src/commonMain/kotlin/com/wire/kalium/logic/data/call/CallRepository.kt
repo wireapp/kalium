@@ -77,6 +77,7 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -84,7 +85,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flattenConcat
@@ -209,16 +210,22 @@ internal class CallDataSource(
 
     override fun getCallMetadata(conversationId: ConversationId): CallMetadata? = _callMetadataProfile[conversationId]
 
-    override fun callsFlow(): Flow<List<Call>> = callDAO.observeCalls().combineWithCallsMetadata()
+    override fun callsFlow(): Flow<List<Call>> = callMetadataProfileFlow()
 
-    override fun incomingCallsFlow(): Flow<List<Call>> = callDAO.observeIncomingCalls().combineWithCallsMetadata()
-    override fun outgoingCallsFlow(): Flow<List<Call>> = callDAO.observeOutgoingCalls().combineWithCallsMetadata()
+    override fun incomingCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.INCOMING)
+    override fun outgoingCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.STARTED)
 
-    override fun ongoingCallsFlow(): Flow<List<Call>> = callDAO.observeOngoingCalls().combineWithCallsMetadata()
+    override fun ongoingCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.STILL_ONGOING)
 
-    override fun establishedCallsFlow(): Flow<List<Call>> = callDAO.observeEstablishedCalls().combineWithCallsMetadata()
+    override fun establishedCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.ANSWERED, CallStatus.ESTABLISHED)
 
-    override fun activeCallsFlow(): Flow<List<Call>> = callDAO.observeActiveCalls().combineWithCallsMetadata()
+    override fun activeCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(
+        CallStatus.STARTED,
+        CallStatus.INCOMING,
+        CallStatus.ANSWERED,
+        CallStatus.ESTABLISHED,
+        CallStatus.STILL_ONGOING
+    )
 
     private val mutexProvider = MutexProvider<ConversationId>()
 
@@ -397,7 +404,7 @@ internal class CallDataSource(
     }
 
     override suspend fun updateIsCbrEnabled(isCbrEnabled: Boolean) {
-        val conversationId = callDAO.getEstablishedCall().conversationId.toModel()
+        val conversationId = establishedCallsFlow().first().firstOrNull()?.conversationId ?: return
         _callMetadataProfile.update(conversationId) { callMetadata ->
             callMetadata.copy(isCbrEnabled = isCbrEnabled)
         }
@@ -567,24 +574,19 @@ internal class CallDataSource(
     override fun observeStaleOpenCallsCleanupFinished(): Flow<Boolean> = staleOpenCallsCleanupFinishedFlow
 
     override suspend fun establishedCallConversationId(): ConversationId? =
-        callDAO
-            .observeEstablishedCalls()
-            .combineWithCallsMetadata()
+        establishedCallsFlow()
             .first()
             .firstOrNull()
             ?.conversationId
 
-    private fun Flow<List<CallEntity>>.combineWithCallsMetadata(): Flow<List<Call>> =
-        this.combine(_callMetadataProfile) { calls, callMetadataProfile ->
-            calls.map { callEntity ->
-                callMapper.toCall(callEntity = callEntity, metadata = callMetadataProfile[callEntity.conversationId.toModel()])
+    private fun callMetadataProfileFlow(vararg statuses: CallStatus): Flow<List<Call>> =
+        _callMetadataProfile.map { callMetadataProfile ->
+            val statusFilter = statuses.toSet()
+            callMetadataProfile.mapNotNull { (conversationId, metadata) ->
+                metadata.takeIf { statusFilter.isEmpty() || it.callStatus in statusFilter }
+                    ?.toCall(conversationId)
             }
-        }
-
-    private fun Flow<CallEntity?>.combineWithCallMetadata(): Flow<Call?> =
-        this.map { listOfNotNull(it) } // create a list to re-use combineWithCallsMetadata
-            .combineWithCallsMetadata()
-            .map { it.firstOrNull() } // get the call from the list or null if there is no call
+        }.distinctUntilChanged()
 
     override suspend fun leavePreviouslyJoinedMlsConferences() {
         callingLogger.i("Leaving previously joined MLS conferences")
@@ -690,6 +692,7 @@ internal class CallDataSource(
             epochInfo
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>> =
         conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
@@ -742,8 +745,19 @@ internal class CallDataSource(
     }
 
     override fun observeLastActiveCallByConversationId(conversationId: ConversationId): Flow<Call?> =
-        callDAO.observeLastActiveCallByConversationId(callMapper.fromConversationIdToQualifiedIDEntity(conversationId))
-            .combineWithCallMetadata()
+        _callMetadataProfile.map { callMetadataProfile ->
+            callMetadataProfile[conversationId]
+                ?.takeIf { metadata ->
+                    metadata.callStatus in listOf(
+                        CallStatus.STARTED,
+                        CallStatus.INCOMING,
+                        CallStatus.ANSWERED,
+                        CallStatus.ESTABLISHED,
+                        CallStatus.STILL_ONGOING
+                    )
+                }
+                ?.toCall(conversationId)
+        }.distinctUntilChanged()
 
     override fun updateCallQualityData(conversationId: ConversationId, callQualityData: CallQualityData) =
         _callQualityDataProfile.update { it.plus(conversationId, callQualityData) }
@@ -762,3 +776,19 @@ private inline fun MutableStateFlow<CallMetadataProfile>.update(conversationId: 
     updateAndGet {
         it[conversationId]?.let { currentMetadata -> it.plus(conversationId, function(currentMetadata)) } ?: it
     }[conversationId]
+
+private fun CallMetadata.toCall(conversationId: ConversationId): Call = Call(
+    conversationId = conversationId,
+    status = callStatus,
+    isMuted = isMuted,
+    isCameraOn = isCameraOn,
+    isCbrEnabled = isCbrEnabled,
+    callerId = callerId,
+    conversationName = conversationName,
+    conversationType = conversationType,
+    callerName = callerName,
+    callerTeamName = callerTeamName,
+    establishedTime = establishedTime,
+    participants = getFullParticipants(),
+    maxParticipants = maxParticipants
+)

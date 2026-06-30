@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationQueryConfig
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -32,7 +33,8 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -42,19 +44,25 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
     @Test
     fun givenSearchQuery_whenGettingPaginatedList_thenCallUseCaseWithProperParams() = runTest(dispatcher.default) {
         // Given
-        val (arrangement, useCase) = Arrangement().withPaginatedConversationResult(emptyFlow()).arrange()
+        val (arrangement, useCase) = Arrangement().withPaginatedConversationResult(flowOf(PagingData.empty())).arrange()
         with(arrangement) {
             // When
-            useCase(queryConfig = queryConfig, pagingConfig = pagingConfig, startingOffset = startingOffset, strictMlsFilter = false)
+            useCase(
+                queryConfig = queryConfig,
+                pagingConfig = pagingConfig,
+                startingOffset = startingOffset,
+                strictMlsFilter = false
+            ).first()
             // Then
             verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.extensions
-                    .getPaginatedConversationDetailsWithEventsBySearchQuery(queryConfig, pagingConfig, startingOffset, false)
+                    .getPaginatedConversationDetailsWithEventsBySearchQuery(queryConfig, pagingConfig, startingOffset, false, emptyList())
             }
         }
     }
 
     inner class Arrangement {
+        val callRepository = mock<CallRepository>()
         val conversationRepository = mock<ConversationRepository>()
         val conversationRepositoryExtensions = mock<ConversationRepositoryExtensions>()
 
@@ -66,14 +74,21 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
             every {
                 conversationRepository.extensions
             }.returns(conversationRepositoryExtensions)
+            every {
+                callRepository.ongoingCallsFlow()
+            }.returns(flowOf(emptyList()))
         }
 
         suspend fun withPaginatedConversationResult(result: Flow<PagingData<ConversationDetailsWithEvents>>) = apply {
             everySuspend {
-                conversationRepositoryExtensions.getPaginatedConversationDetailsWithEventsBySearchQuery(any(), any(), any(), any())
+                conversationRepositoryExtensions.getPaginatedConversationDetailsWithEventsBySearchQuery(any(), any(), any(), any(), any())
             } returns result
         }
 
-        fun arrange() = this to GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase(dispatcher, conversationRepository)
+        fun arrange() = this to GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase(
+            dispatcher,
+            conversationRepository,
+            callRepository
+        )
     }
 }
