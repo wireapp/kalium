@@ -1,6 +1,9 @@
 public final class com/wire/kalium/logic/CoreLogic : com/wire/kalium/logic/CoreLogicCommon {
 	public fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;Ljava/lang/String;ZLcom/wire/kalium/usernetwork/di/UserAuthenticatedNetworkProvider;)V
 	public synthetic fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;Ljava/lang/String;ZLcom/wire/kalium/usernetwork/di/UserAuthenticatedNetworkProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getAudioNormalizedLoudnessBuilder ()Lcom/wire/kalium/logic/feature/asset/AudioNormalizedLoudnessBuilder;
+	public synthetic fun getAudioNormalizedLoudnessBuilder$logic ()Lcom/wire/kalium/logic/feature/asset/AudioNormalizedLoudnessBuilder;
+	public fun getNetworkStateObserver ()Lcom/wire/kalium/network/NetworkStateObserver;
 	public fun getSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/UserSessionScope;
 }
 
@@ -11,6 +14,7 @@ public abstract class com/wire/kalium/logic/CoreLogicCommon {
 	public final fun getGlobalScope ()Lcom/wire/kalium/logic/GlobalKaliumScope;
 	protected final fun getIdMapper ()Lcom/wire/kalium/logic/data/id/IdMapper;
 	protected final fun getKaliumConfigs ()Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;
+	public abstract fun getNetworkStateObserver ()Lcom/wire/kalium/network/NetworkStateObserver;
 	protected final fun getRootPath ()Ljava/lang/String;
 	public abstract fun getSessionScope (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/feature/UserSessionScope;
 	protected final fun getUserAgent ()Ljava/lang/String;

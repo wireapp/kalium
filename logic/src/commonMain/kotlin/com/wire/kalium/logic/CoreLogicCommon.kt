@@ -120,7 +120,7 @@ public abstract class CoreLogicCommon internal constructor(
     public val authenticationScopeForConfigId: AuthenticationScopeForConfigIdUseCase
         get() = getGlobalScope().authenticationScopeForConfigId
 
-    internal abstract val networkStateObserver: NetworkStateObserver
+    public abstract val networkStateObserver: NetworkStateObserver
 
     internal val logoutCallbackManager = LogoutCallbackManagerImpl()
 

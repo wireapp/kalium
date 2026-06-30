@@ -84,7 +84,7 @@ public actual class CoreLogic(
         userSessionScopeProvider.value.delete(userId)
     }
 
-    internal actual override val networkStateObserver: NetworkStateObserver =
+    public actual override val networkStateObserver: NetworkStateObserver =
         kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
     actual override val globalCallManager: GlobalCallManager = GlobalCallManager(
         scope = CoroutineScope(KaliumDispatcherImpl.io),
@@ -110,7 +110,7 @@ public actual class CoreLogic(
             useInMemoryStorage
         )
     }
-    internal actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
+    public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
 }
 
 @Suppress("MayBeConst")

@@ -80,7 +80,7 @@ public actual class CoreLogic(
         passphrase = null
     )
 
-    internal actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
+    public actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
     actual override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
         UserSessionScopeProviderImpl(
             authenticationScopeProvider,
@@ -108,7 +108,7 @@ public actual class CoreLogic(
     }
 
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl()
-    internal actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
+    public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl()
     actual override val globalCallManager: GlobalCallManager by lazy {
         GlobalCallManager(getGlobalScope(), networkStateObserver, PlatformContext())
     }
