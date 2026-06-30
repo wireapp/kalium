@@ -187,7 +187,6 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
-                            false,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
                         )
@@ -344,13 +343,14 @@ class CallRepositoryTest {
             arrangement.callDAO.insertCall(any())
         }
 
-        assertNotNull(
-            callRepository.getCallMetadata(Arrangement.conversationId)
+        assertEquals(
+            CallStatus.ESTABLISHED,
+            callRepository.getCallMetadata(Arrangement.conversationId)?.callStatus
         )
     }
 
     @Test
-    fun whenIncomingGroupCall_withNonExistingCallMetadata_ThenUpdateCallInDatabase() = runTest {
+    fun whenIncomingGroupCall_withStaleActiveCallInDatabase_ThenKeepIncomingCallInMemoryAndInsertFreshCall() = runTest {
         // given
         val callEntity = createCallEntity().copy(
             status = CallEntity.Status.INCOMING
@@ -388,13 +388,18 @@ class CallRepositoryTest {
         // then
         verifySuspend {
             arrangement.callDAO.updateLastCallStatusByConversationId(
-                eq(CallEntity.Status.STILL_ONGOING),
+                eq(CallEntity.Status.CLOSED),
                 eq(callEntity.conversationId)
             )
         }
 
-        assertNotNull(
-            callRepository.getCallMetadata(Arrangement.conversationId)
+        verifySuspend {
+            arrangement.callDAO.insertCall(any())
+        }
+
+        assertEquals(
+            CallStatus.INCOMING,
+            callRepository.getCallMetadata(Arrangement.conversationId)?.callStatus
         )
     }
 
@@ -575,8 +580,9 @@ class CallRepositoryTest {
             arrangement.callDAO.insertCall(any())
         }
 
-        assertNotNull(
-            callRepository.getCallMetadata(Arrangement.conversationId)
+        assertEquals(
+            CallStatus.INCOMING,
+            callRepository.getCallMetadata(Arrangement.conversationId)?.callStatus
         )
     }
 

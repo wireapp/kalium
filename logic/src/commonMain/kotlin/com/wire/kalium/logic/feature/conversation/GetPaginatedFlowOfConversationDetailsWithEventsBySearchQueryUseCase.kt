@@ -21,11 +21,9 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationQueryConfig
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -52,7 +50,7 @@ public class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase
         startingOffset: Long,
         strictMlsFilter: Boolean
     ): Flow<PagingData<ConversationDetailsWithEvents>> = callRepository.ongoingCallsFlow()
-        .map { ongoingCalls -> ongoingCalls.map { it.conversationId }.distinct() }
+        .map { ongoingCalls -> ongoingCalls.map { it.conversationId }.toSet() }
         .distinctUntilChanged()
         .flatMapLatest { ongoingCallConversationIds ->
             conversationRepository.extensions
@@ -61,32 +59,13 @@ public class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase
                     pagingConfig = pagingConfig,
                     startingOffset = startingOffset,
                     strictMlsFilter = strictMlsFilter,
-                    ongoingCallConversationIds = ongoingCallConversationIds
+                    ongoingCallConversationIds = ongoingCallConversationIds.toList()
                 )
                 .map { pagingData ->
                     pagingData.map { conversation ->
-                        conversation.withOngoingCall(ongoingCallConversationIds.toSet())
+                        conversation.withOngoingCall(ongoingCallConversationIds)
                     }
                 }
         }
         .flowOn(dispatcher.io)
-
-    private fun ConversationDetailsWithEvents.withOngoingCall(
-        ongoingCallConversationIds: Set<ConversationId>
-    ): ConversationDetailsWithEvents {
-        val hasOngoingCall =
-            conversationDetails.conversation.id in ongoingCallConversationIds &&
-                    conversationDetails is ConversationDetails.Group
-        return when (val details = conversationDetails) {
-            is ConversationDetails.Group.Channel -> copy(
-                conversationDetails = details.copy(hasOngoingCall = hasOngoingCall),
-                hasNewActivitiesToShow = hasNewActivitiesToShow || hasOngoingCall
-            )
-            is ConversationDetails.Group.Regular -> copy(
-                conversationDetails = details.copy(hasOngoingCall = hasOngoingCall),
-                hasNewActivitiesToShow = hasNewActivitiesToShow || hasOngoingCall
-            )
-            else -> this
-        }
-    }
 }

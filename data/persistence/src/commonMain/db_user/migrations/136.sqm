@@ -138,6 +138,7 @@ LEFT JOIN ConversationFolder AS CurrentFolder ON CurrentFolder.id = Conversation
 CREATE VIEW IF NOT EXISTS ConversationDetailsWithEvents AS
 SELECT
     ConversationDetails.*,
+    -- unread events
     UnreadEventCountsGrouped.knocksCount AS unreadKnocksCount,
     UnreadEventCountsGrouped.missedCallsCount AS unreadMissedCallsCount,
     UnreadEventCountsGrouped.mentionsCount AS unreadMentionsCount,
@@ -146,22 +147,24 @@ SELECT
     CASE
         WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
            CASE
-                WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1
-                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1
+                WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
                 ELSE 0
             END
         WHEN ConversationDetails.mutedStatus = 'ONLY_MENTIONS_AND_REPLIES_ALLOWED' THEN
             CASE
-                WHEN (UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount) > 0 THEN 1
-                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1
+                WHEN (UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount) > 0 THEN 1 -- only if unread mentions or replies, move it to the top
+                WHEN ConversationDetails.type = 'CONNECTION_PENDING' AND ConversationDetails.connectionStatus = 'PENDING' THEN 1 -- if received connection request, move it to the top
                 ELSE 0
             END
         ELSE 0
     END AS hasNewActivitiesToShow,
+    -- draft message
     MessageDraft.text AS messageDraftText,
     MessageDraft.edit_message_id AS messageDraftEditMessageId,
     MessageDraft.quoted_message_id AS messageDraftQuotedMessageId,
     MessageDraft.mention_list AS messageDraftMentionList,
+    -- last message
     Message.id AS lastMessageId,
     Message.content_type AS lastMessageContentType,
     Message.creation_date AS lastMessageDate,
@@ -183,9 +186,9 @@ FROM ConversationDetails
 LEFT JOIN UnreadEventCountsGrouped
     ON UnreadEventCountsGrouped.conversationId = ConversationDetails.qualifiedId
 LEFT JOIN MessageDraft
-    ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0
+    ON ConversationDetails.qualifiedId = MessageDraft.conversation_id AND ConversationDetails.archived = 0 -- only return message draft for non-archived conversations
 LEFT JOIN LastMessage
-    ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0
+    ON LastMessage.conversation_id = ConversationDetails.qualifiedId AND ConversationDetails.archived = 0 -- only return last message for non-archived conversations
 LEFT JOIN Message
     ON LastMessage.message_id = Message.id AND LastMessage.conversation_id = Message.conversation_id
 LEFT JOIN User
@@ -202,9 +205,9 @@ WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
         ConversationDetails.type IS 'GROUP'
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL))
-        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1)
-        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL)
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+        OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+        OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
     )
     AND ConversationDetails.isActive
     AND ConversationDetails.deletedLocally = 0

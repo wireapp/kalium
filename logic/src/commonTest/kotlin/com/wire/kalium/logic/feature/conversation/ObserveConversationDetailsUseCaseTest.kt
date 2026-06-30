@@ -20,11 +20,11 @@ package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -33,7 +33,8 @@ import dev.mokkery.matcher.eq
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
-import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -43,7 +44,7 @@ import kotlin.test.assertIs
 
 class ObserveConversationDetailsUseCaseTest {
 
-        private val conversationRepository: ConversationRepository = mock()
+    private val conversationRepository: ConversationRepository = mock()
 
     private lateinit var observeConversationsUseCase: ObserveConversationDetailsUseCase
 
@@ -91,20 +92,24 @@ class ObserveConversationDetailsUseCaseTest {
                     )
                 )
             )
+            val conversationDetailsUpdates = Channel<Either<StorageFailure, ConversationDetails>>(Channel.UNLIMITED)
 
             everySuspend {
                 conversationRepository.observeConversationDetailsById(any())
-            } returns conversationDetailsValues.asFlow()
+            } returns conversationDetailsUpdates.consumeAsFlow()
 
             observeConversationsUseCase(TestConversation.ID).test {
+                conversationDetailsUpdates.send(conversationDetailsValues[0])
                 awaitItem().let { item ->
                     assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
                     assertEquals(conversationDetailsValues[0].value, item.conversationDetails)
                 }
+                conversationDetailsUpdates.send(conversationDetailsValues[1])
                 awaitItem().let { item ->
                     assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
                     assertEquals(conversationDetailsValues[1].value, item.conversationDetails)
                 }
+                conversationDetailsUpdates.close()
                 awaitComplete()
             }
         }

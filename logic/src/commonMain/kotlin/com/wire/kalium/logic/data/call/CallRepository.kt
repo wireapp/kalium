@@ -289,30 +289,31 @@ internal class CallDataSource(
             CallEntity.Status.ANSWERED,
             CallEntity.Status.STILL_ONGOING
         )
+        val hasStalePersistedActiveCall = !isCallInCurrentSession && lastCallStatus in activeCallStatus
+        val currentSessionLastCallStatus = if (hasStalePersistedActiveCall) null else lastCallStatus
 
         callingLogger.i(
             "[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] |" +
                     " ConversationId: [${conversationId.toLogString()}] " +
                     "| status: [$status] | isCallInCurrentSession: [$isCallInCurrentSession]"
         )
+        if (hasStalePersistedActiveCall) {
+            callingLogger.i("[CallRepository][createCall] -> Closing stale persisted active call")
+            updateCallStatusInDatabaseById(
+                conversationId = conversationId,
+                status = CallStatus.CLOSED
+            )
+        }
+
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
             // Save into metadata
             _callMetadataProfile.update { callMetadataProfile ->
                 callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
             }
-            val callNewStatus = if (isGroupCall) CallStatus.STILL_ONGOING else CallStatus.CLOSED
-            if (lastCallStatus in activeCallStatus) { // LAST CALL ACTIVE
-                callingLogger.i("[CallRepository][createCall] -> Update.1 | callNewStatus: [$callNewStatus]")
-                // Update database
-                updateCallStatusById(
-                    conversationId = conversationId,
-                    status = callNewStatus
-                )
-            }
 
-            if ((lastCallStatus !in activeCallStatus && isGroupCall) || isOneOnOneCall) {
+            if ((currentSessionLastCallStatus !in activeCallStatus && isGroupCall) || isOneOnOneCall) {
                 callingLogger.i(
-                    "[CallRepository][createCall] -> Update.2 | lastCallStatus: [$lastCallStatus] " +
+                    "[CallRepository][createCall] -> Update.2 | lastCallStatus: [$currentSessionLastCallStatus] " +
                             "| isGroupCall: [$isGroupCall] | isOneOnOneCall: [$isOneOnOneCall]"
                 )
 
@@ -323,15 +324,16 @@ internal class CallDataSource(
             }
         } else {
             callingLogger.i(
-                "[CallRepository][createCall] -> else | lastCallStatus: [$lastCallStatus] | status: [$status]"
+                "[CallRepository][createCall] -> else | lastCallStatus: [$currentSessionLastCallStatus]" +
+                        " | status: [$status]"
             )
-            if (lastCallStatus == callMapper.toCallEntityStatus(status)) {
+            if (currentSessionLastCallStatus == callMapper.toCallEntityStatus(status)) {
                 callingLogger.i("[CallRepository][createCall] -> Update Call with same status")
                 // Update the metadata
                 _callMetadataProfile.update { callMetadataProfile ->
                     callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
                 }
-            } else if (lastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
+            } else if (currentSessionLastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
                 callingLogger.i("[CallRepository][createCall] -> Insert Call")
                 // Save into metadata
                 _callMetadataProfile.update { callMetadataProfile ->
@@ -347,6 +349,20 @@ internal class CallDataSource(
     }
 
     override suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus) {
+        updateCallStatusInDatabaseById(conversationId, status)
+
+        _callMetadataProfile.update(conversationId) { callMetadata ->
+            callMetadata.copy(
+                callStatus = status,
+                establishedTime = when (status) {
+                    CallStatus.ESTABLISHED -> DateTimeUtil.currentIsoDateTimeString()
+                    else -> callMetadata.establishedTime
+                },
+            )
+        }
+    }
+
+    private suspend fun updateCallStatusInDatabaseById(conversationId: ConversationId, status: CallStatus) {
         // Update Call in Database
         wrapStorageRequest {
             callDAO.updateLastCallStatusByConversationId(
@@ -360,16 +376,6 @@ internal class CallDataSource(
                         " ConversationId: [${conversationId.value.obfuscateId()}" +
                         "@${conversationId.domain.obfuscateDomain()}]" +
                         " " + "| status: [$status]"
-            )
-        }
-
-        _callMetadataProfile.update(conversationId) { callMetadata ->
-            callMetadata.copy(
-                callStatus = status,
-                establishedTime = when (status) {
-                    CallStatus.ESTABLISHED -> DateTimeUtil.currentIsoDateTimeString()
-                    else -> callMetadata.establishedTime
-                },
             )
         }
     }

@@ -19,11 +19,14 @@ package com.wire.kalium.logic.feature.conversation
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationQueryConfig
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepositoryExtensions
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -35,6 +38,7 @@ import dev.mokkery.verifySuspend
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -56,10 +60,90 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
             // Then
             verifySuspend(VerifyMode.exactly(1)) {
                 conversationRepository.extensions
-                    .getPaginatedConversationDetailsWithEventsBySearchQuery(queryConfig, pagingConfig, startingOffset, false, emptyList())
+                    .getPaginatedConversationDetailsWithEventsBySearchQuery(
+                        queryConfig,
+                        pagingConfig,
+                        startingOffset,
+                        false,
+                        emptyList()
+                    )
             }
         }
     }
+
+    @Test
+    fun givenOngoingCalls_whenGettingPaginatedList_thenCallUseCaseWithOngoingConversationIds() =
+        runTest(dispatcher.default) {
+            // Given
+            val ongoingCallConversationId = ConversationId("ongoing", "domain")
+            val (arrangement, useCase) = Arrangement()
+                .withOngoingCallsFlow(flowOf(listOf(TestCall.groupIncomingCall(ongoingCallConversationId))))
+                .withPaginatedConversationResult(flowOf(PagingData.empty()))
+                .arrange()
+
+            with(arrangement) {
+                // When
+                useCase(
+                    queryConfig = queryConfig,
+                    pagingConfig = pagingConfig,
+                    startingOffset = startingOffset,
+                    strictMlsFilter = false
+                ).first()
+
+                // Then
+                verifySuspend(VerifyMode.exactly(1)) {
+                    conversationRepository.extensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
+                        queryConfig,
+                        pagingConfig,
+                        startingOffset,
+                        false,
+                        listOf(ongoingCallConversationId)
+                    )
+                }
+            }
+        }
+
+    @Test
+    fun givenSameOngoingCallIdsInDifferentOrder_whenGettingPaginatedList_thenPagerIsNotRecreated() =
+        runTest(dispatcher.default) {
+            // Given
+            val firstOngoingCallConversationId = ConversationId("ongoing-1", "domain")
+            val secondOngoingCallConversationId = ConversationId("ongoing-2", "domain")
+            val (arrangement, useCase) = Arrangement()
+                .withOngoingCallsFlow(
+                    flowOf(
+                        listOf(
+                            TestCall.groupIncomingCall(firstOngoingCallConversationId),
+                            TestCall.groupIncomingCall(secondOngoingCallConversationId)
+                        ),
+                        listOf(
+                            TestCall.groupIncomingCall(secondOngoingCallConversationId),
+                            TestCall.groupIncomingCall(firstOngoingCallConversationId)
+                        )
+                    )
+                )
+                .withPaginatedConversationResult(flowOf(PagingData.empty()))
+                .arrange()
+
+            // When
+            useCase(
+                queryConfig = arrangement.queryConfig,
+                pagingConfig = arrangement.pagingConfig,
+                startingOffset = arrangement.startingOffset,
+                strictMlsFilter = false
+            ).toList()
+
+            // Then
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.conversationRepository.extensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
+            }
+        }
 
     inner class Arrangement {
         val callRepository = mock<CallRepository>()
@@ -79,9 +163,21 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
             }.returns(flowOf(emptyList()))
         }
 
+        fun withOngoingCallsFlow(result: Flow<List<Call>>) = apply {
+            every {
+                callRepository.ongoingCallsFlow()
+            }.returns(result)
+        }
+
         suspend fun withPaginatedConversationResult(result: Flow<PagingData<ConversationDetailsWithEvents>>) = apply {
             everySuspend {
-                conversationRepositoryExtensions.getPaginatedConversationDetailsWithEventsBySearchQuery(any(), any(), any(), any(), any())
+                conversationRepositoryExtensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
             } returns result
         }
 
