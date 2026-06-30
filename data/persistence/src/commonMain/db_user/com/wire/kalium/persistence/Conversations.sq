@@ -540,6 +540,7 @@ SELECT degraded_conversation_notified FROM Conversation
 WHERE qualified_id = :conversationId;
 
 clearContent {
+-- @NotifyCustomKey message_list_:conversationId
 -- @NotifyCustomKey conversation_list_last_message
 -- @NotifyCustomKey Asset
 -- @NotifyCustomKey Message

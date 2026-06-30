@@ -16,16 +16,24 @@ doesMessageExist:
 SELECT 1 FROM Message WHERE id = :message_id AND conversation_id = :conversation_id;
 
 deleteAllReactionsOnMessageFromUser:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey Reaction
 DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ? AND sender_id = ?;
 
 deleteReaction:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey Reaction
 DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ? AND sender_id = ? AND emoji = ?;
 
 insertReaction:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey Reaction
 INSERT INTO Reaction(message_id, conversation_id, sender_id, emoji, date)
 VALUES(?, ?, ?, ?, ?);
 
 deleteAllReactionsForMessage:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey Reaction
 DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ?;
 
 selectByMessageIdAndConversationIdAndSenderId:
