@@ -36,8 +36,8 @@ public expect class CoreLogic : CoreLogicCommon {
     override suspend fun deleteSessionScope(userId: UserId)
     override val globalCallManager: GlobalCallManager
     override val workSchedulerProvider: WorkSchedulerProvider
-    public override val networkStateObserver: NetworkStateObserver
-    public override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
+    internal override val networkStateObserver: NetworkStateObserver
+    internal override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder
 }
 
 internal expect val clientPlatform: String

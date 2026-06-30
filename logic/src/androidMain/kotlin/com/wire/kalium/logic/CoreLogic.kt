@@ -89,7 +89,7 @@ public actual class CoreLogic(
 
     actual override val workSchedulerProvider: WorkSchedulerProvider = WorkSchedulerProviderImpl(appContext)
 
-    public actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl(
+    internal actual override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl(
         appContext = appContext
     )
 
@@ -111,7 +111,7 @@ public actual class CoreLogic(
         )
     }
 
-    public actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl(
+    internal actual override val audioNormalizedLoudnessBuilder: AudioNormalizedLoudnessBuilder = AudioNormalizedLoudnessBuilderImpl(
         dispatcher = KaliumDispatcherImpl.io,
         audioEffect = AudioEffect(appContext),
     )

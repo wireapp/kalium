@@ -105,6 +105,7 @@ import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
@@ -577,6 +578,7 @@ import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.userstorage.di.UserStorageProvider
 import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.DelicateKaliumApi
+import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
@@ -2426,6 +2428,7 @@ public class UserSessionScope internal constructor(
             currentPersistenceEventHookNotifier,
             memberJoinHandler,
             joinExistingMLSConversationUseCase,
+            KaliumDispatcherImpl,
         )
     }
 
@@ -2520,7 +2523,9 @@ public class UserSessionScope internal constructor(
             currentPersistenceEventHookNotifier,
             this,
             kaliumConfigs,
-            userScopedLogger
+            userScopedLogger,
+            KaliumDispatcherImpl,
+            LegalHoldStatusMapperImpl
         )
     }
 
