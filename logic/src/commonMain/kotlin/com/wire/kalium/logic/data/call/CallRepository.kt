@@ -134,7 +134,6 @@ internal interface CallRepository {
     suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>)
     fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: Map<UserId, List<String>>)
     fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
-    suspend fun updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards: Boolean = true)
     fun setStaleOpenCallsCleanupFinished()
     fun observeStaleOpenCallsCleanupFinished(): Flow<Boolean>
     suspend fun leavePreviouslyJoinedMlsConferences()
@@ -562,16 +561,6 @@ internal class CallDataSource(
                 conversationId = conversationId
             )
         )
-
-    override suspend fun updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards: Boolean) {
-        leavePreviouslyJoinedMlsConferences()
-        val count = callDAO.observeEstablishedCalls().first().size
-        callingLogger.i("Updating open calls to closed status if there are any $count")
-        callDAO.updateOpenCallsToClosedStatus()
-        if (setStaleOpenCallsCleanupFinishedAfterwards) {
-            setStaleOpenCallsCleanupFinished()
-        }
-    }
 
     override fun setStaleOpenCallsCleanupFinished() {
         staleOpenCallsCleanupFinishedFlow.value = true

@@ -1378,31 +1378,6 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenMlsConferenceCall_whenClosingOpenCalls_thenAttemptToLeaveMlsConference() = runTest {
-        // given
-        val callEntity = createCallEntity().copy(
-            status = CallEntity.Status.ESTABLISHED,
-            callerId = "callerId@domain",
-            type = CallEntity.Type.MLS_CONFERENCE
-        )
-        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .givenObserveEstablishedCallsReturns(flowOf(listOf(callEntity)))
-            .givenLeaveSubconversationSuccessful()
-            .arrange()
-
-        // when
-        callRepository.updateOpenCallsToClosedStatus()
-        yield()
-        advanceUntilIdle()
-
-        // then
-        verifySuspend {
-            arrangement.leaveSubconversationUseCase.invoke(any(), Arrangement.conversationId, CALL_SUBCONVERSATION_ID)
-        }
-
-    }
-
-    @Test
     fun givenStaleOpenCallsCleanupIsObserved_whenCleanupIsMarkedDone_thenInitialAndDoneStatesAreEmitted() = runTest {
         // given
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
@@ -1412,45 +1387,6 @@ class CallRepositoryTest {
 
             // when
             callRepository.setStaleOpenCallsCleanupFinished()
-
-            // then
-            assertEquals(true, awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun givenOpenCallsCleanupShouldNotBeMarkedDone_whenClosingOpenCalls_thenCleanupFinishedIsNotEmitted() = runTest {
-        // given
-        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .givenObserveEstablishedCallsReturns(flowOf(emptyList()))
-            .arrange()
-
-        callRepository.observeStaleOpenCallsCleanupFinished().test {
-            // then
-            assertEquals(false, awaitItem())
-
-            // when
-            callRepository.updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards = false)
-
-            // then
-            expectNoEvents()
-        }
-    }
-
-    @Test
-    fun givenOpenCallsCleanupShouldBeMarkedDone_whenClosingOpenCalls_thenCleanupFinishedIsEmitted() = runTest {
-        // given
-        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .givenObserveEstablishedCallsReturns(flowOf(emptyList()))
-            .arrange()
-
-        callRepository.observeStaleOpenCallsCleanupFinished().test {
-            // then
-            assertEquals(false, awaitItem())
-
-            // when
-            callRepository.updateOpenCallsToClosedStatus()
 
             // then
             assertEquals(true, awaitItem())

@@ -99,14 +99,6 @@ WHERE
 ORDER BY created_at DESC
 LIMIT 1;
 
-updateOpenCallsToClosedStatus:
--- @NotifyCustomKey Call
-UPDATE Call
-SET status = 'CLOSED'
-WHERE
-    status != 'CLOSED'
-    AND status != 'MISSED';
-
 selectLastActiveCallByConversationId:
 SELECT *
 FROM Call
