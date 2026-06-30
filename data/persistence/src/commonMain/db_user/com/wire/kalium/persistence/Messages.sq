@@ -236,21 +236,37 @@ AND content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL')
 GROUP BY conversation_id;
 
 deleteAllMessages:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
 DELETE FROM Message;
 
 deleteMessage:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
 DELETE FROM Message WHERE id = ? AND conversation_id = ?;
 
 deleteMessageLinkPreviews:
 DELETE FROM MessageLinkPreview WHERE message_id = ? AND conversation_id = ?;
 
 deleteMessageMentions:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey MessageMention
 DELETE FROM MessageMention WHERE message_id = ? AND conversation_id = ?;
 
 deleteMessageById:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
 DELETE FROM Message WHERE id = ?;
 
 markMessageAsDeleted {
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
+-- @NotifyCustomKey MessageTextContent
+-- @NotifyCustomKey MessageAssetContent
+-- @NotifyCustomKey MessageSystemContent
+-- @NotifyCustomKey MessageUnknownContent
+-- @NotifyCustomKey MessageRestrictedAssetContent
+-- @NotifyCustomKey MessageConversationLocationContent
    UPDATE Message
    SET visibility = 'DELETED'
    WHERE id = :message_id AND conversation_id = :conversation_id;
@@ -276,14 +292,20 @@ selectChanges:
 SELECT changes();
 
 insertOrIgnoreMessage:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, last_edit_date, visibility, expects_read_confirmation, expire_after_millis, self_deletion_end_date)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessage:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
 INSERT INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, last_edit_date, visibility, expects_read_confirmation, expire_after_millis, self_deletion_end_date)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertOrIgnoreBulkSystemMessage:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
 SELECT ?, ?, qualified_id, ?, ?, ?, ?, ?, ? FROM Conversation WHERE type IN ('ONE_ON_ONE', 'GROUP');
 
@@ -292,10 +314,14 @@ INSERT OR IGNORE INTO MessageLinkPreview(message_id, conversation_id, url, url_o
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
 insertMessageMention:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey MessageMention
 INSERT OR IGNORE INTO MessageMention(message_id, conversation_id, start, length, user_id)
 VALUES (?, ?, ?, ?, ?);
 
 insertMessageTextContent:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey MessageTextContent
 INSERT OR IGNORE INTO MessageTextContent(message_id, conversation_id, text_body, quoted_message_id, is_quote_verified, is_quoting_self)
 VALUES(:message_id, :conversation_id, :text_body, :quoted_message_id, :is_quote_verified,
 CASE WHEN
@@ -316,6 +342,8 @@ INSERT OR IGNORE INTO MessageRestrictedAssetContent(message_id, conversation_id,
 VALUES(?, ?, ?,?,?);
 
 insertMessageAssetContent:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey MessageAssetContent
 INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
 VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?,  ?, ?);
 
@@ -332,10 +360,14 @@ INSERT OR IGNORE INTO MessageConversationLocationContent(message_id, conversatio
 VALUES(?, ?, ?, ?, ?, ?);
 
 insertSystemMessageContent:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey MessageSystemContent
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, text_1, integer_1, boolean_1, list_1, enum_1, blob_1)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertSystemMemberChange:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey MessageSystemContent
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, list_1, enum_1)
 VALUES(?, ?, 'MEMBER_CHANGE', :member_change_list, :member_change_type);
 
@@ -344,6 +376,8 @@ INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_
 VALUES(?, ?, 'FAILED_DECRYPT', :unknown_encoded_data, 0, :error_code);
 
 insertSystemConversationRenamed:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey MessageSystemContent
 INSERT OR IGNORE INTO MessageSystemContent(message_id, conversation_id, content_type, text_1)
 VALUES(:message_id, :conversation_id, 'CONVERSATION_RENAMED', :conversation_name);
 
@@ -413,6 +447,9 @@ selectMessageVisibility:
 SELECT visibility FROM Message WHERE id = ? AND conversation_id = ?;
 
 updateAssetContent {
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
+-- @NotifyCustomKey MessageAssetContent
     UPDATE OR ROLLBACK Message
     SET visibility = :visibility
     WHERE id = :messageId AND conversation_id = :conversationId AND visibility IS NOT 'DELETED';
@@ -423,11 +460,15 @@ updateAssetContent {
 }
 
 updateMessageTextContent:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey MessageTextContent
 UPDATE MessageTextContent
 SET text_body = ?
 WHERE message_id = ? AND conversation_id = ?;
 
 updateMessageId:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
 UPDATE Message
 SET id = :newId
 WHERE id = :oldId AND conversation_id = :conversationId;
@@ -515,6 +556,8 @@ ORDER BY
     Message.creation_date DESC;
 
 promoteMessageToSentUpdatingServerTime {
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
 UPDATE Message
 SET
     creation_date = CASE WHEN :server_creation_date IS NULL THEN creation_date ELSE :server_creation_date END,
@@ -550,6 +593,8 @@ INSERT OR IGNORE INTO MessageRecipientFailure(message_id, conversation_id, recip
 VALUES(?, ?, ?, ?);
 
 moveMessages:
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey Message
 UPDATE OR REPLACE Message
 SET conversation_id = :to
 WHERE conversation_id = :from;

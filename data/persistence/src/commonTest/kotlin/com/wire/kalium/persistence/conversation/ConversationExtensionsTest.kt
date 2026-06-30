@@ -25,6 +25,8 @@ import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.call.CallDAO
+import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
@@ -32,12 +34,18 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensionsImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
+import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderDAO
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderEntity
+import com.wire.kalium.persistence.dao.conversation.folder.ConversationFolderTypeEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
+import com.wire.kalium.persistence.utils.stubs.newDraftMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -58,6 +66,8 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     private lateinit var connectionDAO: ConnectionDAO
     private lateinit var memberDAO: MemberDAO
     private lateinit var userDAO: UserDAO
+    private lateinit var callDAO: CallDAO
+    private lateinit var conversationFolderDAO: ConversationFolderDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -71,6 +81,8 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         connectionDAO = db.connectionDAO
         memberDAO = db.memberDAO
         userDAO = db.userDAO
+        callDAO = db.callDAO
+        conversationFolderDAO = db.conversationFolderDAO
         conversationExtensions = ConversationExtensionsImpl(queries, ConversationDetailsWithEventsMapper, ReadDispatcher(dispatcher))
     }
 
@@ -182,6 +194,215 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
             }
         }
     }
+
+    @Test
+    fun givenConversationListPageLoaded_whenMessageIsInserted_thenPagingSourceShouldBeInvalidated() = runTest(dispatcher) {
+        populateData(count = 1, isChannel = false)
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = "message_1",
+                conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain"),
+                senderUserId = UserIDEntity("user", "domain")
+            )
+        )
+
+        assertTrue { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenSearchedConversationListPageLoaded_whenMessageIsInserted_thenPagingSourceShouldBeInvalidated() = runTest(dispatcher) {
+        populateData(count = 1, isChannel = false)
+        val pagingSource = getPager(searchQuery = "conversation 0").pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = "message_1",
+                conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain"),
+                senderUserId = UserIDEntity("user", "domain")
+            )
+        )
+
+        assertTrue { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenConversationListPageLoaded_whenDraftIsUpserted_thenPagingSourceShouldNotBeInvalidated() = runTest(dispatcher) {
+        populateData(count = 1, isChannel = false)
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        messageDraftDAO.upsertMessageDraft(
+            newDraftMessageEntity(conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain"))
+        )
+
+        assertFalse { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenConversationListPageLoaded_whenCallIsInserted_thenPagingSourceShouldBeInvalidated() = runTest(dispatcher) {
+        populateData(count = 1, isChannel = false)
+        val conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain")
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        callDAO.insertCall(
+            CallEntity(
+                conversationId = conversationId,
+                id = "call_1",
+                status = CallEntity.Status.STILL_ONGOING,
+                callerId = "caller",
+                conversationType = ConversationEntity.Type.GROUP,
+                type = CallEntity.Type.CONFERENCE
+            )
+        )
+
+        assertTrue { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenConversationListPageLoaded_whenConversationIsAddedToFolder_thenPagingSourceShouldBeInvalidated() = runTest(dispatcher) {
+        populateData(count = 1, isChannel = false)
+        val conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain")
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        conversationFolderDAO.addFolder(
+            ConversationFolderEntity(
+                id = "folder_1",
+                name = "Folder 1",
+                type = ConversationFolderTypeEntity.USER
+            )
+        )
+        conversationFolderDAO.addConversationToFolder(conversationId, "folder_1")
+
+        assertTrue { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenConversationListPageLoaded_whenNotificationDateIsUpdated_thenPagingSourceShouldNotBeInvalidated() = runTest(dispatcher) {
+        populateData(count = 1, isChannel = false)
+        val conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain")
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        conversationDAO.updateConversationNotificationDate(
+            conversationId,
+            Instant.parse("2024-01-01T00:00:00.000Z")
+        )
+        conversationDAO.updateAllConversationsNotificationDate()
+
+        assertFalse { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenConversationListPageLoaded_whenProposalTimerIsUpdated_thenPagingSourceShouldNotBeInvalidated() = runTest(dispatcher) {
+        val conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain")
+        userDAO.upsertUser(newUserEntity(qualifiedID = UserIDEntity("user", "domain")))
+        conversationDAO.insertConversation(
+            newConversationEntity(conversationId).copy(
+                name = "conversation 0",
+                type = ConversationEntity.Type.GROUP,
+                protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                    groupId = "group_0",
+                    groupState = ConversationEntity.GroupState.ESTABLISHED,
+                    epoch = 0UL,
+                    keyingMaterialLastUpdate = Instant.parse("2024-01-01T00:00:00.000Z"),
+                    cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                )
+            )
+        )
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        conversationDAO.setProposalTimer(
+            ProposalTimerEntity(
+                groupID = "group_0",
+                firingDate = Instant.parse("2024-01-01T00:00:00.000Z")
+            )
+        )
+        conversationDAO.clearProposalTimer("group_0")
+
+        assertFalse { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenMutedInvalidations_whenMessageIsInserted_thenPagingSourceShouldBeInvalidatedAfterFlush() = runTest(dispatcher) {
+        val mutedUserId = UserIDEntity("mutedSelfValue", "selfDomain")
+        deleteDatabase(mutedUserId)
+        val db = createDatabase(mutedUserId, encryptedDBSecret, true, dbInvalidationControlEnabled = true)
+        try {
+            val conversationId = ConversationIDEntity("conversation_0", "domain")
+            db.userDAO.upsertUser(newUserEntity(qualifiedID = UserIDEntity("user", "domain")))
+            db.conversationDAO.insertConversation(
+                newConversationEntity(conversationId).copy(
+                    name = "conversation 0",
+                    type = ConversationEntity.Type.GROUP,
+                )
+            )
+            val pagingSource = ConversationExtensionsImpl(
+                db.database.conversationDetailsWithEventsQueries,
+                ConversationDetailsWithEventsMapper,
+                ReadDispatcher(dispatcher)
+            ).getPagerForConversationDetailsWithEventsSearch(
+                pagingConfig = PagingConfig(PAGE_SIZE),
+                queryConfig = ConversationExtensions.QueryConfig(),
+            ).pagingSource
+
+            pagingSource.refresh().also { result ->
+                assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+            }
+
+            db.dbInvalidationController.runMuted {
+                db.messageDAO.insertOrIgnoreMessage(
+                    newRegularMessageEntity(
+                        id = "message_1",
+                        conversationId = conversationId,
+                        senderUserId = UserIDEntity("user", "domain")
+                    ),
+                    updateConversationModifiedDate = true
+                )
+
+                assertFalse { pagingSource.invalid }
+            }
+
+            assertTrue { pagingSource.invalid }
+        } finally {
+            deleteDatabase(mutedUserId)
+        }
+    }
+
     private fun getPager(searchQuery: String = "", fromArchive: Boolean = false, filter: ConversationFilterEntity = ConversationFilterEntity.ALL): KaliumPager<ConversationDetailsWithEventsEntity> =
         conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
             pagingConfig = PagingConfig(PAGE_SIZE),

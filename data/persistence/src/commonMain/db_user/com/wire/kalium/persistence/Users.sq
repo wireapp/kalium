@@ -35,9 +35,17 @@ CREATE INDEX user_service_id ON User(bot_service);
 CREATE INDEX idx_user_connection_deleted_handle ON User (connection_status, deleted, handle);
 
 deleteUser:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 DELETE FROM User WHERE qualified_id = ?;
 
 insertUser:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 INSERT INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols, active_one_on_one_conversation_id)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
@@ -77,10 +85,18 @@ selectChanges:
 SELECT changes();
 
 insertOrIgnoreUser:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateUser:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 UPDATE OR FAIL User
 SET
 name = coalesce(:name, name),
@@ -93,6 +109,10 @@ supported_protocols = :supported_protocols, supported_protocols = coalesce(:supp
 WHERE qualified_id = ?;
 
 updatePartialUserInformation:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 UPDATE User
 SET
 name = coalesce(:name, name),
@@ -105,6 +125,10 @@ supported_protocols = :supported_protocols, supported_protocols = coalesce(:supp
 WHERE qualified_id = ?;
 
 upsertTeamMemberUserType:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 INSERT INTO User(qualified_id, connection_status, user_type)
 VALUES(?, ?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
@@ -112,6 +136,10 @@ connection_status = excluded.connection_status,
 user_type = excluded.user_type;
 
 markUserAsDeleted:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 INSERT INTO User(qualified_id, user_type, deleted)
 VALUES (:qualified_id, :user_type, 1)
 ON CONFLICT (qualified_id) DO UPDATE SET
@@ -121,6 +149,8 @@ complete_asset_id = NULL,
   deleted = 1;
 
 deleteUserFromGroupConversations:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey Member
 DELETE FROM Member
 WHERE conversation IN (
     SELECT conversation FROM Member
@@ -129,19 +159,35 @@ WHERE conversation IN (
 ) AND Member.user = :qualified_id;
 
 markUserAsDefederated:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 UPDATE User
 SET team = NULL , preview_asset_id = NULL, complete_asset_id = NULL, defederated = 1
 WHERE qualified_id = ?;
 
 insertOrIgnoreUserId:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 INSERT OR IGNORE INTO User(qualified_id, incomplete_metadata)
 VALUES(?, 1);
 
 insertOrIgnoreUserIdWithEmail:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 INSERT OR IGNORE INTO User(qualified_id, email, incomplete_metadata)
 VALUES(?, ?, 1);
 
 upsertUserConnectionStatus:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 INSERT INTO User(qualified_id, connection_status)
 VALUES(?, ?)
 ON CONFLICT(qualified_id) DO UPDATE SET
@@ -219,9 +265,17 @@ updateUserhandle:
 UPDATE User SET handle = ? WHERE qualified_id = ?;
 
 updateUserAsset:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 UPDATE User SET complete_asset_id = ?, preview_asset_id = ? WHERE complete_asset_id = ?;
 
 updateUserAvailabilityStatus:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;
 
 getUsersNotInConversationByNameOrHandleOrEmail:
@@ -247,9 +301,17 @@ SELECT * FROM UserDetails AS user
  AND defederated = 0;
 
 updateUserDisplayName:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 UPDATE User SET name = ? WHERE qualified_id = ?;
 
 updateUserAccentColor:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 UPDATE User SET accent_id = ? WHERE qualified_id = ?;
 
 selectUsersWithoutMetadata:
@@ -270,12 +332,24 @@ userIdsWithoutSelf:
 SELECT qualified_id FROM User WHERE qualified_id != (SELECT id FROM SelfUser);
 
 updateUserSupportedProtocols:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 UPDATE User SET supported_protocols = ? WHERE qualified_id = ?;
 
 updateOneOnOnConversationId:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 UPDATE User SET active_one_on_one_conversation_id = ? WHERE qualified_id = ?;
 
 setOneOnOneConversationIdIfNotSet:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 UPDATE User SET active_one_on_one_conversation_id = ? WHERE qualified_id = ? AND active_one_on_one_conversation_id IS NULL;
 
 isOneUserATeamMember:
@@ -298,6 +372,10 @@ selectNamesAndHandle:
 SELECT name, handle FROM User WHERE qualified_id = :userId;
 
 updateTeamId:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey User
 UPDATE User SET team = ? WHERE qualified_id = ?;
 
 selectNameByMessageId:
