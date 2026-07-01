@@ -479,7 +479,7 @@ abstract interface com.wire.kalium.logic.feature.call.usecase/ObserveInCallReact
 }
 
 abstract interface com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase { // com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase|null[0]
-    abstract fun invoke(): kotlinx.coroutines.flow/Flow<kotlin.collections/List<com.wire.kalium.logic.data.call/Call>> // com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase.invoke|invoke(){}[0]
+    abstract fun invoke(): kotlinx.coroutines.flow/Flow<kotlin.collections/Map<com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.call/Call>> // com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase.invoke|invoke(){}[0]
 }
 
 abstract interface com.wire.kalium.logic.feature.call.usecase/ObserveLastActiveCallWithSortedParticipantsUseCase { // com.wire.kalium.logic.feature.call.usecase/ObserveLastActiveCallWithSortedParticipantsUseCase|null[0]
