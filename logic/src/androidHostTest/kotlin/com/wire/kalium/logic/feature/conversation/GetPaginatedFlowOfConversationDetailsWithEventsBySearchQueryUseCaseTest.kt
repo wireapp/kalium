@@ -106,6 +106,52 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
         }
 
     @Test
+    fun givenJoinableCallIdsChange_whenGettingPaginatedList_thenPagerIsRecreated() =
+        runTest(dispatcher.default) {
+            // Given
+            val joinableCallConversationId = ConversationId("joinable", "domain")
+            val (arrangement, useCase) = Arrangement()
+                .withJoinableCallsFlow(
+                    flowOf(
+                        emptyMap(),
+                        mapOf(joinableCallConversationId to TestCall.groupIncomingCall(joinableCallConversationId))
+                    )
+                )
+                .withPaginatedConversationResult(flowOf(PagingData.empty()))
+                .arrange()
+
+            with(arrangement) {
+                // When
+                useCase(
+                    queryConfig = queryConfig,
+                    pagingConfig = pagingConfig,
+                    startingOffset = startingOffset,
+                    strictMlsFilter = false
+                ).toList()
+
+                // Then
+                verifySuspend(VerifyMode.exactly(1)) {
+                    conversationRepository.extensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
+                        queryConfig,
+                        pagingConfig,
+                        startingOffset,
+                        false,
+                        emptyList()
+                    )
+                }
+                verifySuspend(VerifyMode.exactly(1)) {
+                    conversationRepository.extensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
+                        queryConfig,
+                        pagingConfig,
+                        startingOffset,
+                        false,
+                        listOf(joinableCallConversationId)
+                    )
+                }
+            }
+        }
+
+    @Test
     fun givenSameJoinableCallIdsInDifferentOrder_whenGettingPaginatedList_thenPagerIsNotRecreated() =
         runTest(dispatcher.default) {
             // Given
