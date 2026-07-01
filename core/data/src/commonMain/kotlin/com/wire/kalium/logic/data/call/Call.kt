@@ -49,3 +49,4 @@ data class Call(
     val participants: List<Participant> = emptyList(),
     val maxParticipants: Int = 0 // Was used for tracking
 )
+

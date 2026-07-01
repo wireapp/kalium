@@ -40,39 +40,34 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 class ObserveConversationListDetailsWithEventsUseCaseImplTest {
 
     @Test
-    fun givenOngoingGroupCall_whenObservingAllConversations_thenGroupIsMarkedAndMovedToTop() = runTest {
-        val ongoingGroupId = ConversationId("ongoing-group", "domain")
+    fun givenJoinableGroupCall_whenObservingAllConversations_thenGroupIsMovedToTop() = runTest {
+        val joinableGroupId = ConversationId("joinable-group", "domain")
         val otherGroupId = ConversationId("other-group", "domain")
         val oneOnOneId = ConversationId("one-on-one", "domain")
         val conversations = listOf(
             oneOnOneConversation(oneOnOneId),
             groupConversation(otherGroupId),
-            groupConversation(ongoingGroupId)
+            groupConversation(joinableGroupId)
         )
         val (_, useCase) = Arrangement()
-            .withOngoingCalls(ongoingGroupId)
+            .withJoinableCalls(joinableGroupId)
             .withConversationList(fromArchive = false, conversations = conversations)
             .arrange()
 
         val result = useCase(false, ConversationFilter.All).first()
 
         assertEquals(
-            listOf(ongoingGroupId, oneOnOneId, otherGroupId),
+            listOf(joinableGroupId, oneOnOneId, otherGroupId),
             result.map { it.conversationDetails.conversation.id }
         )
-        assertTrue(result[0].hasOngoingCall)
-        assertTrue(result[0].hasNewActivitiesToShow)
-        assertFalse(result[2].hasOngoingCall)
     }
 
     @Test
-    fun givenOngoingOneOnOneCall_whenObservingAllConversations_thenItIsNotMarkedOrMoved() = runTest {
+    fun givenJoinableOneOnOneCall_whenObservingAllConversations_thenItIsNotMoved() = runTest {
         val oneOnOneId = ConversationId("one-on-one", "domain")
         val groupId = ConversationId("group", "domain")
         val conversations = listOf(
@@ -80,75 +75,70 @@ class ObserveConversationListDetailsWithEventsUseCaseImplTest {
             groupConversation(groupId)
         )
         val (_, useCase) = Arrangement()
-            .withOngoingCalls(oneOnOneId)
+            .withJoinableCalls(oneOnOneId)
             .withConversationList(fromArchive = false, conversations = conversations)
             .arrange()
 
         val result = useCase(false, ConversationFilter.All).first()
 
         assertEquals(conversations, result)
-        assertFalse(result[1].hasOngoingCall)
-        assertFalse(result[0].hasNewActivitiesToShow)
     }
 
     @Test
-    fun givenArchivedOngoingGroupCall_whenObservingArchivedConversations_thenGroupIsMarkedWithoutReordering() =
+    fun givenArchivedJoinableGroupCall_whenObservingArchivedConversations_thenGroupIsNotReordered() =
         runTest {
-            val ongoingGroupId = ConversationId("ongoing-group", "domain")
+            val joinableGroupId = ConversationId("joinable-group", "domain")
             val oneOnOneId = ConversationId("one-on-one", "domain")
             val conversations = listOf(
                 oneOnOneConversation(oneOnOneId),
-                groupConversation(ongoingGroupId)
+                groupConversation(joinableGroupId)
             )
             val (_, useCase) = Arrangement()
-                .withOngoingCalls(ongoingGroupId)
+                .withJoinableCalls(joinableGroupId)
                 .withConversationList(fromArchive = true, conversations = conversations)
                 .arrange()
 
             val result = useCase(true, ConversationFilter.All).first()
 
             assertEquals(
-                listOf(oneOnOneId, ongoingGroupId),
+                listOf(oneOnOneId, joinableGroupId),
                 result.map { it.conversationDetails.conversation.id }
             )
-            assertTrue(result[1].hasOngoingCall)
-            assertTrue(result[1].hasNewActivitiesToShow)
         }
 
     @Test
-    fun givenOngoingGroupCallInFolder_whenObservingFolder_thenGroupIsMarkedAndMovedToTop() = runTest {
+    fun givenJoinableGroupCallInFolder_whenObservingFolder_thenGroupIsMovedToTop() = runTest {
         val folderId = "folder-id"
-        val ongoingGroupId = ConversationId("ongoing-group", "domain")
+        val joinableGroupId = ConversationId("joinable-group", "domain")
         val oneOnOneId = ConversationId("one-on-one", "domain")
         val conversations = listOf(
             oneOnOneConversation(oneOnOneId),
-            groupConversation(ongoingGroupId)
+            groupConversation(joinableGroupId)
         )
         val (_, useCase) = Arrangement()
-            .withOngoingCalls(ongoingGroupId)
+            .withJoinableCalls(joinableGroupId)
             .withConversationsFromFolder(folderId, conversations)
             .arrange()
 
         val result = useCase(false, ConversationFilter.Folder("folder", folderId)).first()
 
         assertEquals(
-            listOf(ongoingGroupId, oneOnOneId),
+            listOf(joinableGroupId, oneOnOneId),
             result.map { it.conversationDetails.conversation.id }
         )
-        assertTrue(result[0].hasOngoingCall)
     }
 
     @Test
-    fun givenOngoingGroupCallInFavorites_whenObservingFavorites_thenGroupIsMarkedAndMovedToTop() = runTest {
+    fun givenJoinableGroupCallInFavorites_whenObservingFavorites_thenGroupIsMovedToTop() = runTest {
         val favoriteFolder = ConversationFolder("favorite-id", "Favorites", FolderType.FAVORITE)
-        val ongoingGroupId = ConversationId("ongoing-group", "domain")
+        val joinableGroupId = ConversationId("joinable-group", "domain")
         val oneOnOneId = ConversationId("one-on-one", "domain")
         val conversations = listOf(
             oneOnOneConversation(oneOnOneId),
-            groupConversation(ongoingGroupId)
+            groupConversation(joinableGroupId)
         )
         val (_, useCase) = Arrangement()
-            .withOngoingCalls(ongoingGroupId)
+            .withJoinableCalls(joinableGroupId)
             .withFavoriteFolder(favoriteFolder)
             .withConversationsFromFolder(favoriteFolder.id, conversations)
             .arrange()
@@ -156,10 +146,9 @@ class ObserveConversationListDetailsWithEventsUseCaseImplTest {
         val result = useCase(false, ConversationFilter.Favorites).first()
 
         assertEquals(
-            listOf(ongoingGroupId, oneOnOneId),
+            listOf(joinableGroupId, oneOnOneId),
             result.map { it.conversationDetails.conversation.id }
         )
-        assertTrue(result[0].hasOngoingCall)
     }
 
     private fun groupConversation(conversationId: ConversationId): ConversationDetailsWithEvents =
@@ -188,7 +177,7 @@ class ObserveConversationListDetailsWithEventsUseCaseImplTest {
             } returns flowOf(emptyList())
         }
 
-        fun withOngoingCalls(vararg conversationIds: ConversationId) = apply {
+        fun withJoinableCalls(vararg conversationIds: ConversationId) = apply {
             every {
                 callRepository.joinableCallsFlow()
             } returns flowOf(conversationIds.map { TestCall.groupIncomingCall(it) })

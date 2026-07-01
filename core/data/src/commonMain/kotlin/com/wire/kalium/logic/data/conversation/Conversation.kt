@@ -310,7 +310,6 @@ data class ConversationDetailsWithEvents(
     val unreadEventCount: UnreadEventCount = emptyMap(),
     val lastMessage: MessagePreview? = null,
     val hasNewActivitiesToShow: Boolean = false,
-    val hasOngoingCall: Boolean = false,
 )
 
 sealed interface ConversationDetails {

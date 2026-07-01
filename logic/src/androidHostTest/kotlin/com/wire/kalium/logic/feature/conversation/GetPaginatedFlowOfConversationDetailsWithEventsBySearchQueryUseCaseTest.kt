@@ -72,12 +72,12 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
     }
 
     @Test
-    fun givenOngoingCalls_whenGettingPaginatedList_thenCallUseCaseWithOngoingConversationIds() =
+    fun givenJoinableCalls_whenGettingPaginatedList_thenCallUseCaseWithJoinableConversationIds() =
         runTest(dispatcher.default) {
             // Given
-            val ongoingCallConversationId = ConversationId("ongoing", "domain")
+            val joinableCallConversationId = ConversationId("joinable", "domain")
             val (arrangement, useCase) = Arrangement()
-                .withOngoingCallsFlow(flowOf(listOf(TestCall.groupIncomingCall(ongoingCallConversationId))))
+                .withJoinableCallsFlow(flowOf(listOf(TestCall.groupIncomingCall(joinableCallConversationId))))
                 .withPaginatedConversationResult(flowOf(PagingData.empty()))
                 .arrange()
 
@@ -97,28 +97,28 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
                         pagingConfig,
                         startingOffset,
                         false,
-                        listOf(ongoingCallConversationId)
+                        listOf(joinableCallConversationId)
                     )
                 }
             }
         }
 
     @Test
-    fun givenSameOngoingCallIdsInDifferentOrder_whenGettingPaginatedList_thenPagerIsNotRecreated() =
+    fun givenSameJoinableCallIdsInDifferentOrder_whenGettingPaginatedList_thenPagerIsNotRecreated() =
         runTest(dispatcher.default) {
             // Given
-            val firstOngoingCallConversationId = ConversationId("ongoing-1", "domain")
-            val secondOngoingCallConversationId = ConversationId("ongoing-2", "domain")
+            val firstJoinableCallConversationId = ConversationId("joinable-1", "domain")
+            val secondJoinableCallConversationId = ConversationId("joinable-2", "domain")
             val (arrangement, useCase) = Arrangement()
-                .withOngoingCallsFlow(
+                .withJoinableCallsFlow(
                     flowOf(
                         listOf(
-                            TestCall.groupIncomingCall(firstOngoingCallConversationId),
-                            TestCall.groupIncomingCall(secondOngoingCallConversationId)
+                            TestCall.groupIncomingCall(firstJoinableCallConversationId),
+                            TestCall.groupIncomingCall(secondJoinableCallConversationId)
                         ),
                         listOf(
-                            TestCall.groupIncomingCall(secondOngoingCallConversationId),
-                            TestCall.groupIncomingCall(firstOngoingCallConversationId)
+                            TestCall.groupIncomingCall(secondJoinableCallConversationId),
+                            TestCall.groupIncomingCall(firstJoinableCallConversationId)
                         )
                     )
                 )
@@ -163,7 +163,7 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
             }.returns(flowOf(emptyList()))
         }
 
-        fun withOngoingCallsFlow(result: Flow<List<Call>>) = apply {
+        fun withJoinableCallsFlow(result: Flow<List<Call>>) = apply {
             every {
                 callRepository.joinableCallsFlow()
             }.returns(result)

@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.conversation
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import androidx.paging.map
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -52,20 +51,15 @@ public class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase
     ): Flow<PagingData<ConversationDetailsWithEvents>> = callRepository.joinableCallsFlow()
         .map { joinableCalls -> joinableCalls.map { it.conversationId }.toSet() }
         .distinctUntilChanged()
-        .flatMapLatest { ongoingCallConversationIds ->
+        .flatMapLatest { joinableCallConversationIds ->
             conversationRepository.extensions
                 .getPaginatedConversationDetailsWithEventsBySearchQuery(
                     queryConfig = queryConfig,
                     pagingConfig = pagingConfig,
                     startingOffset = startingOffset,
                     strictMlsFilter = strictMlsFilter,
-                    ongoingCallConversationIds = ongoingCallConversationIds.toList()
+                    ongoingCallConversationIds = joinableCallConversationIds.toList()
                 )
-                .map { pagingData ->
-                    pagingData.map { conversation ->
-                        conversation.withOngoingCall(ongoingCallConversationIds)
-                    }
-                }
         }
         .flowOn(dispatcher.io)
 }

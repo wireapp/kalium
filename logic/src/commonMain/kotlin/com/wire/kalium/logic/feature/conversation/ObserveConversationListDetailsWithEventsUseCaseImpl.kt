@@ -61,13 +61,13 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
 
                     is GetFavoriteFolderUseCase.Result.Success ->
                         conversationFolderRepository.observeConversationsFromFolder(result.folder.id)
-                            .withOngoingCalls(moveOngoingCallsOnTop = true)
+                            .withJoinableCallsOnTop(moveJoinableCallsOnTop = true)
                 }
             }
 
             is ConversationFilter.Folder -> {
                 conversationFolderRepository.observeConversationsFromFolder(conversationFilter.folderId)
-                    .withOngoingCalls(moveOngoingCallsOnTop = true)
+                    .withJoinableCallsOnTop(moveJoinableCallsOnTop = true)
             }
 
             ConversationFilter.All,
@@ -75,17 +75,17 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
             ConversationFilter.Groups,
             ConversationFilter.OneOnOne ->
                 conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter, strictMlsFilter)
-                    .withOngoingCalls(moveOngoingCallsOnTop = !fromArchive)
+                    .withJoinableCallsOnTop(moveJoinableCallsOnTop = !fromArchive)
         }
     }
 
-    private fun Flow<List<ConversationDetailsWithEvents>>.withOngoingCalls(
-        moveOngoingCallsOnTop: Boolean
+    private fun Flow<List<ConversationDetailsWithEvents>>.withJoinableCallsOnTop(
+        moveJoinableCallsOnTop: Boolean
     ): Flow<List<ConversationDetailsWithEvents>> =
         combine(callRepository.joinableCallsFlow()) { conversations, joinableCalls ->
-            conversations.withOngoingCalls(
-                ongoingCallConversationIds = joinableCalls.map { it.conversationId }.toSet(),
-                moveOngoingCallsOnTop = moveOngoingCallsOnTop
+            conversations.withJoinableCallsOnTop(
+                joinableCallConversationIds = joinableCalls.map { it.conversationId }.toSet(),
+                moveJoinableCallsOnTop = moveJoinableCallsOnTop
             )
         }
 }
