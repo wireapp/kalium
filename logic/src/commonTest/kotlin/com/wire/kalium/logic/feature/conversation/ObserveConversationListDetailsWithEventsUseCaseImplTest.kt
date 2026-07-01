@@ -173,14 +173,14 @@ class ObserveConversationListDetailsWithEventsUseCaseImplTest {
 
         init {
             every {
-                callRepository.joinableCallsFlow()
-            } returns flowOf(emptyList())
+                callRepository.joinableCallsByConversationIdFlow()
+            } returns flowOf(emptyMap())
         }
 
         fun withJoinableCalls(vararg conversationIds: ConversationId) = apply {
             every {
-                callRepository.joinableCallsFlow()
-            } returns flowOf(conversationIds.map { TestCall.groupIncomingCall(it) })
+                callRepository.joinableCallsByConversationIdFlow()
+            } returns flowOf(conversationIds.associateWith { TestCall.groupIncomingCall(it) })
         }
 
         fun withConversationList(

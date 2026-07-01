@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.framework.TestCall
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
-import dev.mokkery.everySuspend
+import dev.mokkery.every
 import dev.mokkery.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -35,9 +35,9 @@ internal class ObserveJoinableCallsUseCaseTest {
     @Test
     fun givenJoinableCalls_whenInvokingObserveJoinableCallsUseCase_thenEmitsJoinableCalls() = runTest {
         val callRepository = mock<CallRepository>(mode = MockMode.autoUnit)
-        val expectedCalls = listOf(TestCall.groupIncomingCall(TestCall.CONVERSATION_ID))
-        everySuspend {
-            callRepository.joinableCallsFlow()
+        val expectedCalls = mapOf(TestCall.CONVERSATION_ID to TestCall.groupIncomingCall(TestCall.CONVERSATION_ID))
+        every {
+            callRepository.joinableCallsByConversationIdFlow()
         } returns flowOf(expectedCalls)
 
         val result = ObserveJoinableCallsUseCaseImpl(callRepository)()

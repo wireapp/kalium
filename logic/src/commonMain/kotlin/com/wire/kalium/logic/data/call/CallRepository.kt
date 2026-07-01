@@ -112,6 +112,7 @@ internal interface CallRepository {
     fun outgoingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
     fun joinableCallsFlow(): Flow<List<Call>>
+    fun joinableCallsByConversationIdFlow(): Flow<Map<ConversationId, Call>>
     fun establishedCallsFlow(): Flow<List<Call>>
     fun activeCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallConversationId(): ConversationId?
@@ -217,7 +218,11 @@ internal class CallDataSource(
 
     override fun ongoingCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.STILL_ONGOING)
 
-    override fun joinableCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.INCOMING, CallStatus.STILL_ONGOING)
+    override fun joinableCallsFlow(): Flow<List<Call>> =
+        joinableCallsByConversationIdFlow().map { it.values.toList() }
+
+    override fun joinableCallsByConversationIdFlow(): Flow<Map<ConversationId, Call>> =
+        callMetadataProfileMapFlow(CallStatus.INCOMING, CallStatus.STILL_ONGOING)
 
     override fun establishedCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.ANSWERED, CallStatus.ESTABLISHED)
 
@@ -571,12 +576,16 @@ internal class CallDataSource(
             ?.conversationId
 
     private fun callMetadataProfileFlow(vararg statuses: CallStatus): Flow<List<Call>> =
+        callMetadataProfileMapFlow(*statuses)
+            .map { it.values.toList() }
+            .distinctUntilChanged()
+
+    private fun callMetadataProfileMapFlow(vararg statuses: CallStatus): Flow<Map<ConversationId, Call>> =
         _callMetadataProfile.map { callMetadataProfile ->
             val statusFilter = statuses.toSet()
-            callMetadataProfile.mapNotNull { (conversationId, metadata) ->
-                metadata.takeIf { statusFilter.isEmpty() || it.callStatus in statusFilter }
-                    ?.toCall(conversationId)
-            }
+            callMetadataProfile
+                .filterValues { metadata -> statusFilter.isEmpty() || metadata.callStatus in statusFilter }
+                .mapValues { (conversationId, metadata) -> metadata.toCall(conversationId) }
         }.distinctUntilChanged()
 
     override suspend fun leavePreviouslyJoinedMlsConferences() {

@@ -1074,6 +1074,35 @@ class CallRepositoryTest {
     }
 
     @Test
+    fun givenIncomingAndOngoingCalls_whenRequestingJoinableCallsByConversationId_thenReturnBothCallsById() = runTest {
+        // given
+        val incomingConversationId = Arrangement.conversationId
+        val ongoingConversationId = Arrangement.randomConversationId
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(
+                    data = mapOf(
+                        incomingConversationId to createOneOnOneCallMetadata(CallStatus.INCOMING),
+                        ongoingConversationId to createOneOnOneCallMetadata(CallStatus.STILL_ONGOING),
+                        ConversationId("established", "domain") to createOneOnOneCallMetadata(CallStatus.ESTABLISHED)
+                    )
+                )
+            )
+            .arrange()
+
+        // when
+        val joinableCalls = callRepository.joinableCallsByConversationIdFlow()
+
+        // then
+        joinableCalls.test {
+            val callsByConversationId = awaitItem()
+            assertEquals(setOf(incomingConversationId, ongoingConversationId), callsByConversationId.keys)
+            assertEquals(CallStatus.INCOMING, callsByConversationId[incomingConversationId]?.status)
+            assertEquals(CallStatus.STILL_ONGOING, callsByConversationId[ongoingConversationId]?.status)
+        }
+    }
+
+    @Test
     fun givenAnEstablishedCall_whenRequestingEstablishedCalls_thenReturnTheEstablishedCall() = runTest {
         // given
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())

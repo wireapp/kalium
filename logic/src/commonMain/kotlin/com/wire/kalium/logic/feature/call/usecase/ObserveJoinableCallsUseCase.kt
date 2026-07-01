@@ -20,18 +20,19 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Observes calls that can be joined from conversation UI.
  */
 public interface ObserveJoinableCallsUseCase {
-    public operator fun invoke(): Flow<List<Call>>
+    public operator fun invoke(): Flow<Map<ConversationId, Call>>
 }
 
 internal class ObserveJoinableCallsUseCaseImpl(
     private val callRepository: CallRepository
 ) : ObserveJoinableCallsUseCase {
 
-    override fun invoke(): Flow<List<Call>> = callRepository.joinableCallsFlow()
+    override fun invoke(): Flow<Map<ConversationId, Call>> = callRepository.joinableCallsByConversationIdFlow()
 }

@@ -77,7 +77,9 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
             // Given
             val joinableCallConversationId = ConversationId("joinable", "domain")
             val (arrangement, useCase) = Arrangement()
-                .withJoinableCallsFlow(flowOf(listOf(TestCall.groupIncomingCall(joinableCallConversationId))))
+                .withJoinableCallsFlow(
+                    flowOf(mapOf(joinableCallConversationId to TestCall.groupIncomingCall(joinableCallConversationId)))
+                )
                 .withPaginatedConversationResult(flowOf(PagingData.empty()))
                 .arrange()
 
@@ -112,13 +114,13 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
             val (arrangement, useCase) = Arrangement()
                 .withJoinableCallsFlow(
                     flowOf(
-                        listOf(
-                            TestCall.groupIncomingCall(firstJoinableCallConversationId),
-                            TestCall.groupIncomingCall(secondJoinableCallConversationId)
+                        linkedMapOf(
+                            firstJoinableCallConversationId to TestCall.groupIncomingCall(firstJoinableCallConversationId),
+                            secondJoinableCallConversationId to TestCall.groupIncomingCall(secondJoinableCallConversationId)
                         ),
-                        listOf(
-                            TestCall.groupIncomingCall(secondJoinableCallConversationId),
-                            TestCall.groupIncomingCall(firstJoinableCallConversationId)
+                        linkedMapOf(
+                            secondJoinableCallConversationId to TestCall.groupIncomingCall(secondJoinableCallConversationId),
+                            firstJoinableCallConversationId to TestCall.groupIncomingCall(firstJoinableCallConversationId)
                         )
                     )
                 )
@@ -159,13 +161,13 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
                 conversationRepository.extensions
             }.returns(conversationRepositoryExtensions)
             every {
-                callRepository.joinableCallsFlow()
-            }.returns(flowOf(emptyList()))
+                callRepository.joinableCallsByConversationIdFlow()
+            }.returns(flowOf(emptyMap()))
         }
 
-        fun withJoinableCallsFlow(result: Flow<List<Call>>) = apply {
+        fun withJoinableCallsFlow(result: Flow<Map<ConversationId, Call>>) = apply {
             every {
-                callRepository.joinableCallsFlow()
+                callRepository.joinableCallsByConversationIdFlow()
             }.returns(result)
         }
 

@@ -82,9 +82,9 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
     private fun Flow<List<ConversationDetailsWithEvents>>.withJoinableCallsOnTop(
         moveJoinableCallsOnTop: Boolean
     ): Flow<List<ConversationDetailsWithEvents>> =
-        combine(callRepository.joinableCallsFlow()) { conversations, joinableCalls ->
+        combine(callRepository.joinableCallsByConversationIdFlow()) { conversations, joinableCallsByConversationId ->
             conversations.withJoinableCallsOnTop(
-                joinableCallConversationIds = joinableCalls.map { it.conversationId }.toSet(),
+                joinableCallConversationIds = joinableCallsByConversationId.keys,
                 moveJoinableCallsOnTop = moveJoinableCallsOnTop
             )
         }
