@@ -63,14 +63,12 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.ktor.okHttp)
-                implementation(awssdk.services.s3)
             }
         }
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.ktor.okHttp)
-                implementation(awssdk.services.s3)
             }
         }
     }

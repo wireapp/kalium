@@ -19,18 +19,20 @@ module already depends on Ktor and Okio, which are sufficient for HTTP streaming
 
 ## Decision
 
-Implement a small internal S3-compatible client in `:domain:cells` for Apple/KMP object transfers
-instead of adding the AWS Swift SDK. Keep S3 details behind `CellsAwsClient` and scope the client to
-the exact operations used by Cells.
+Implement a small internal S3-compatible client in `:domain:cells` for Cells object transfers
+instead of adding the AWS Swift SDK for Apple targets. Keep S3 details behind `CellsAwsClient` and
+scope the client to the exact operations used by Cells.
 
 The client uses path-style S3 requests against the configured Cells backend, AWS Signature Version 4
 with `UNSIGNED-PAYLOAD`, Ktor for HTTP requests, and Okio for streaming and SHA-256/HMAC-SHA256.
-JVM and Android keep the existing AWS SDK Kotlin implementation.
+Apple, JVM, and Android all delegate to this client so the same transfer behavior is exercised
+across the supported native and mobile targets.
 
 ## Consequences
 
 Cells uploads, downloads, multipart uploads, and pre-signed download URLs can work on Apple targets
-without pulling in the AWS Swift SDK dependency graph.
+without pulling in the AWS Swift SDK dependency graph, and JVM/Android can validate the same limited
+S3-compatible behavior without going through a separate AWS SDK code path.
 
 The tradeoff is that Kalium now owns a small SigV4/S3 implementation for this limited use case.
 Focused tests cover canonical signing behavior and request construction, and future S3 features
