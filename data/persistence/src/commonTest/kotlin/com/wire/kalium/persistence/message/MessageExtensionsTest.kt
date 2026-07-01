@@ -337,6 +337,36 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenMessageListPageLoaded_whenMessageIsMarkedAsDeletedInSameConversation_thenPagingSourceShouldBeInvalidated() = runTest {
+        populateMessageData()
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        messageDAO.markMessageAsDeleted("0", CONVERSATION_ID)
+
+        assertTrue { pagingSource.invalid }
+    }
+
+    @Test
+    fun givenMessageListPageLoaded_whenConversationContentIsCleared_thenPagingSourceShouldBeInvalidated() = runTest {
+        populateMessageData()
+        val pagingSource = getPager().pagingSource
+
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        conversationDAO.clearContent(CONVERSATION_ID)
+
+        assertTrue { pagingSource.invalid }
+    }
+
+    @Test
     fun givenMessageListPageLoaded_whenReceiptIsInsertedInSameConversation_thenPagingSourceShouldBeInvalidated() = runTest {
         populateMessageData()
         val pagingSource = getPager().pagingSource
