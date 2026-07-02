@@ -94,6 +94,7 @@ internal interface ClientRepository {
     ): Either<StorageFailure, Unit>
 
     suspend fun storeMapOfUserToClientId(userToClientMap: Map<UserId, List<ClientId>>): Either<StorageFailure, Unit>
+    suspend fun tryMarkClientsAsValid(userToClientMap: Map<UserId, List<ClientId>>): Either<StorageFailure, Unit>
     suspend fun removeClientsAndReturnUsersWithNoClients(
         redundantClientsOfUsers: Map<UserId, List<ClientId>>
     ): Either<StorageFailure, List<UserId>>
@@ -284,6 +285,15 @@ internal class ClientDataSource(
             clientMapper.toInsertClientParam(userId, clients)
         }.let { insertClientParamList ->
             wrapStorageRequest { clientDAO.insertClients(insertClientParamList) }
+        }
+
+    override suspend fun tryMarkClientsAsValid(
+        userToClientMap: Map<UserId, List<ClientId>>
+    ): Either<StorageFailure, Unit> =
+        userToClientMap.map { (userId, clients) ->
+            userId.toDao() to clients.map { it.value }
+        }.let { validClients ->
+            wrapStorageRequest { clientDAO.tryMarkValid(validClients) }
         }
 
     override suspend fun removeClientsAndReturnUsersWithNoClients(
