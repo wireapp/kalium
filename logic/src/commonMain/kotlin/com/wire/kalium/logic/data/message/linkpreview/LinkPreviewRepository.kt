@@ -142,10 +142,7 @@ internal class LinkPreviewRepositoryImpl(
     }
 
     private suspend fun DownloadedImage.toLinkPreviewAsset(imageUrl: String): LinkPreviewAsset? {
-        val metadata = readImageMetadata(bytes, mimeType)
-        if (metadata == null) {
-            return null
-        }
+        val metadata = readImageMetadata(bytes, mimeType) ?: return null
         val tempPath = kaliumFileSystem.tempFilePath("link-preview-${Uuid.random()}")
         val source = Buffer().write(bytes)
         val sink = kaliumFileSystem.sink(tempPath, mustCreate = true)
@@ -169,44 +166,53 @@ internal class LinkPreviewRepositoryImpl(
         initialUrl: String,
         onSuccess: suspend (HttpResponse) -> T?
     ): T? {
-        var currentUrl = validatePreviewTarget(initialUrl) ?: return null
-        val visitedUrls = mutableSetOf(currentUrl.toString())
+        val validatedInitialUrl = validatePreviewTarget(initialUrl) ?: return null
+        return executeGetRequest(
+            currentUrl = validatedInitialUrl,
+            visitedUrls = mutableSetOf(validatedInitialUrl.toString()),
+            onSuccess = onSuccess
+        )
+    }
 
-        repeat(MAX_PREVIEW_REDIRECT_HOPS + 1) { hop ->
-            val outcome = try {
-                httpClient.prepareGet(currentUrl.toString()).execute { response ->
-                    when {
-                        response.status.value in HTTP_REDIRECT_STATUS_RANGE -> {
-                            val location = response.headers[HttpHeaders.Location]
-                                ?: return@execute PreviewRequestOutcome.Failure
-                            val redirectUrl = validateRedirectTarget(currentUrl, location)
-                                ?: return@execute PreviewRequestOutcome.Failure
-                            PreviewRequestOutcome.Redirect(redirectUrl)
-                        }
-
-                        response.status.value >= HTTP_ERROR_STATUS_CODE -> PreviewRequestOutcome.Failure
-                        else -> PreviewRequestOutcome.Success(onSuccess(response))
+    private suspend fun <T> executeGetRequest(
+        currentUrl: Url,
+        visitedUrls: MutableSet<String>,
+        onSuccess: suspend (HttpResponse) -> T?
+    ): T? {
+        val outcome = try {
+            httpClient.prepareGet(currentUrl.toString()).execute { response ->
+                when {
+                    response.status.value in HTTP_REDIRECT_STATUS_RANGE -> {
+                        val location = response.headers[HttpHeaders.Location]
+                            ?: return@execute PreviewRequestOutcome.Failure
+                        val redirectUrl = validateRedirectTarget(currentUrl, location)
+                            ?: return@execute PreviewRequestOutcome.Failure
+                        PreviewRequestOutcome.Redirect(redirectUrl)
                     }
-                }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                return null
-            }
 
-            when (outcome) {
-                is PreviewRequestOutcome.Success -> return outcome.value
-                is PreviewRequestOutcome.Redirect -> {
-                    if (hop == MAX_PREVIEW_REDIRECT_HOPS) return null
-                    if (!visitedUrls.add(outcome.url.toString())) return null
-                    currentUrl = outcome.url
+                    response.status.value >= HTTP_ERROR_STATUS_CODE -> PreviewRequestOutcome.Failure
+                    else -> PreviewRequestOutcome.Success(onSuccess(response))
                 }
-
-                PreviewRequestOutcome.Failure -> return null
             }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            return null
         }
 
-        return null
+        return when (outcome) {
+            is PreviewRequestOutcome.Success -> outcome.value
+            is PreviewRequestOutcome.Redirect -> {
+                val redirectUrl = outcome.url.takeIf { visitedUrls.add(it.toString()) } ?: return null
+                executeGetRequest(
+                    currentUrl = redirectUrl,
+                    visitedUrls = visitedUrls,
+                    onSuccess = onSuccess
+                )
+            }
+
+            PreviewRequestOutcome.Failure -> null
+        }
     }
 
     private suspend fun validateRedirectTarget(currentUrl: Url, location: String): Url? {
@@ -443,7 +449,6 @@ internal class LinkPreviewRepositoryImpl(
         const val HTTPS_PROTOCOL = "https"
         const val LOCALHOST = "localhost"
         const val LOCAL_DOMAIN_SUFFIX = ".local"
-        const val MAX_PREVIEW_REDIRECT_HOPS = 3
         const val MAX_PREVIEW_METADATA_BYTES = 64 * 1024
         const val MAX_PREVIEW_IMAGE_BYTES = 5 * 1024 * 1024
         const val PREVIEW_READ_BUFFER_SIZE = 8 * 1024

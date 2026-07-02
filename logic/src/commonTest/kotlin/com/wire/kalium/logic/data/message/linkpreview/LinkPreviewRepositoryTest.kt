@@ -131,13 +131,20 @@ class LinkPreviewRepositoryTest {
     }
 
     @Test
-    fun givenFourthRedirect_whenFetchingOpenGraph_thenReturnsNull() = runTest {
+    fun givenFourRedirects_whenFetchingOpenGraph_thenReturnsPreviewData() = runTest {
         val repository = newRepository(
             responses = mapOf(
                 "https://example.com/start" to redirectResponse("https://example.com/step-1"),
                 "https://example.com/step-1" to redirectResponse("https://example.com/step-2"),
                 "https://example.com/step-2" to redirectResponse("https://example.com/step-3"),
-                "https://example.com/step-3" to redirectResponse("https://example.com/final")
+                "https://example.com/step-3" to redirectResponse("https://example.com/final"),
+                "https://example.com/final" to htmlResponse(
+                    """
+                    <head>
+                        <meta property="og:title" content="Four hop title" />
+                    </head>
+                    """.trimIndent()
+                )
             )
         )
 
@@ -146,7 +153,8 @@ class LinkPreviewRepositoryTest {
             originalUrl = "https://example.com/start"
         ).getOrNull()
 
-        assertNull(result)
+        assertNotNull(result)
+        assertEquals("Four hop title", result.title)
     }
 
     @Test
