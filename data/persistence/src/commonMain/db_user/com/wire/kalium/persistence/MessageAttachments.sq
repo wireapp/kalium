@@ -14,6 +14,8 @@ CREATE TABLE MessageAttachments (
 CREATE INDEX IF NOT EXISTS message_attachments_asset_id_idx ON MessageAttachments(asset_id);
 
 insertCellAttachment:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey MessageAttachments
 INSERT INTO MessageAttachments (
     asset_id,
     message_id,

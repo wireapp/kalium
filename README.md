@@ -66,6 +66,18 @@ Each GitHub release upload also includes a per-bundle SHA-256 manifest
 (`logic-android-aar-SHA256SUMS.txt` / `logic-kmp-SHA256SUMS.txt`) and a matching
 GitHub build provenance bundle (`*-provenance-bundle.json`).
 
+Release tags publish production Kalium modules to Maven Central from the same
+validated pipeline. Maven Central versions are derived from the tag name by
+stripping the leading `v` (for example, `v1.2.3` publishes `1.2.3`).
+
+The `develop` branch also publishes a nightly `0.0.0-develop-SNAPSHOT` to
+the Central Portal snapshots repository. Consumers can resolve it by adding
+`https://central.sonatype.com/repository/maven-snapshots/` as a snapshots-only
+repository.
+
+Maven Central workflows expect `SONATYPE_USERNAME`, `SONATYPE_PASSWORD`,
+`PGP_KEY_ID`, `PGP_SIGNING_KEY`, and `PGP_PASSPHRASE` repository secrets.
+
 ### Generating an SBOM
 
 For **file-level** license/notice

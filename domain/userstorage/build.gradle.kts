@@ -67,7 +67,7 @@ kotlin {
     explicitApi()
     sourceSets {
         val commonMain by getting {
-            kotlin.srcDir(generatedCommonMainKotlinDir)
+            kotlin.srcDir(generateUserStorageCacheConfig)
             dependencies {
                 implementation(projects.core.data)
                 api(projects.data.persistence)
@@ -92,10 +92,4 @@ kotlin {
             }
         }
     }
-}
-
-tasks.matching { task ->
-    task.name.contains("compile", ignoreCase = true)
-}.configureEach {
-    dependsOn(generateUserStorageCacheConfig)
 }

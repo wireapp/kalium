@@ -24,11 +24,13 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.util.DebugKaliumApi
 
 /**
  * Returns the current conv epoch from core-crypto
  * see [MlsCoreCryptoContext.conversationEpoch]
  */
+@DebugKaliumApi("Debug-only API for inspecting conversation epoch in core crypto.")
 public interface GetConversationEpochFromCCUseCase {
     public suspend operator fun invoke(conversationId: ConversationId): GetConversationEpochFromCCResult
 }
@@ -57,11 +59,17 @@ internal class GetConversationEpochFromCCUseCaseImpl(
         )
 }
 
+@DebugKaliumApi("Debug-only result for core crypto conversation epoch inspection.")
 public sealed class GetConversationEpochFromCCResult {
+    @DebugKaliumApi("Debug-only success result for core crypto conversation epoch inspection.")
     public data class Success(val epoch: ULong) : GetConversationEpochFromCCResult()
 
+    @DebugKaliumApi("Debug-only failure result for core crypto conversation epoch inspection.")
     public sealed class Failure : GetConversationEpochFromCCResult() {
+        @DebugKaliumApi("Debug-only not-MLS failure for core crypto conversation epoch inspection.")
         public data object NotMlsConversation : Failure()
+
+        @DebugKaliumApi("Debug-only generic failure for core crypto conversation epoch inspection.")
         public data class Generic(val coreFailure: CoreFailure) : Failure()
     }
 }

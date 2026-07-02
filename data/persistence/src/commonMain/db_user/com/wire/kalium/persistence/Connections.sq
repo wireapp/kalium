@@ -19,9 +19,14 @@ CREATE INDEX connection_qualified_to_index ON Connection(qualified_to);
 CREATE INDEX connection_qualified_conversation_index ON Connection(qualified_conversation);
 
 deleteConnection:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey Connection
 DELETE FROM Connection WHERE qualified_conversation = ?;
 
 insertConnection:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey Connection
 INSERT INTO Connection(from_id, conversation_id, qualified_conversation, to_id, last_update_date, qualified_to, status)
 VALUES(?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(qualified_conversation) DO UPDATE SET
@@ -33,12 +38,16 @@ qualified_to = excluded.qualified_to,
 status = excluded.status;
 
 updateConnectionLastUpdated:
+-- @NotifyCustomKey conversation_list_order
+-- @NotifyCustomKey Connection
 UPDATE Connection SET last_update_date = ? WHERE to_id = ?;
 
 updateNotificationFlag:
 UPDATE Connection SET should_notify = ? WHERE qualified_to = ?;
 
 updateConnectionConversation:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey Connection
 UPDATE Connection SET conversation_id = ?, qualified_conversation = ? WHERE qualified_to = ?;
 
 setAllConnectionsAsNotified:

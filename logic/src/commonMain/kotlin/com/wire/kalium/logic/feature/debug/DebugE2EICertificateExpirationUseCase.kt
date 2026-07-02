@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.data.client.E2EIClientProvider
+import com.wire.kalium.util.DebugKaliumApi
 import kotlin.time.Duration.Companion.days
 
 /**
@@ -26,6 +27,7 @@ import kotlin.time.Duration.Companion.days
  * If no debug override is configured for the current session, it returns the default
  * production TTL value.
  */
+@DebugKaliumApi("Debug-only API for reading E2EI certificate expiration overrides.")
 public interface GetDebugE2EICertificateExpirationUseCase {
     public suspend operator fun invoke(): Long
 }
@@ -35,6 +37,7 @@ public interface GetDebugE2EICertificateExpirationUseCase {
  *
  * Values lower than the minimum supported expiration are clamped to that minimum.
  */
+@DebugKaliumApi("Debug-only API for setting E2EI certificate expiration overrides.")
 public interface SetDebugE2EICertificateExpirationUseCase {
     public suspend operator fun invoke(seconds: Long)
 }
@@ -58,5 +61,6 @@ internal class SetDebugE2EICertificateExpirationUseCaseImpl(
     }
 }
 
+@DebugKaliumApi("Debug-only minimum certificate expiration override.")
 public const val MIN_DEBUG_E2EI_CERTIFICATE_EXPIRATION_SECONDS: Long = 360L
 internal val DEFAULT_E2EI_CERTIFICATE_EXPIRATION_SECONDS = 90.days.inWholeSeconds

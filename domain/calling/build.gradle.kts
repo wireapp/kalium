@@ -29,6 +29,7 @@ kaliumLibrary {
 }
 
 kotlin {
+    val disableAppleAvs: Boolean = findProperty("kalium.disableAppleAvs")?.toString()?.toBoolean() ?: false
 
     fun org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet.addCommonKotlinJvmSourceDir() {
         kotlin.srcDir("src/commonJvmAndroid/kotlin")
@@ -65,10 +66,36 @@ kotlin {
                 implementation(libs.jna)
             }
         }
-        val appleMain by getting {
-            dependencies {
-                api(libs.avsKmp)
+        val appleMain by getting
+        if (disableAppleAvs) {
+            val appleNoAvsMainSourceDir = "src/appleNoAvsMain/kotlin"
+            listOf(
+                getByName("iosArm64Main"),
+                getByName("iosSimulatorArm64Main"),
+                getByName("macosArm64Main")
+            ).forEach { appleTargetMain ->
+                appleTargetMain.kotlin.srcDir(appleNoAvsMainSourceDir)
             }
+        } else {
+            val appleAvsMainSourceDir = "src/appleAvsMain/kotlin"
+            listOf(
+                getByName("iosArm64Main"),
+                getByName("iosSimulatorArm64Main"),
+                getByName("macosArm64Main")
+            ).forEach { appleTargetMain ->
+                appleTargetMain.kotlin.srcDir(appleAvsMainSourceDir)
+                appleTargetMain.dependencies {
+                    implementation(libs.avsKmp)
+                }
+            }
+            val appleAvsIosMainSourceDir = "src/appleAvsIosMain/kotlin"
+            listOf(
+                getByName("iosArm64Main"),
+                getByName("iosSimulatorArm64Main")
+            ).forEach { iosTargetMain ->
+                iosTargetMain.kotlin.srcDir(appleAvsIosMainSourceDir)
+            }
+            getByName("macosArm64Main").kotlin.srcDir("src/appleAvsMacosMain/kotlin")
         }
 
         val commonTest by getting {

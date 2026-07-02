@@ -44,6 +44,8 @@ deleteClientsOfUser:
 DELETE FROM Client WHERE user_id = ?;
 
 insertClient:
+-- @NotifyCustomKey message_list
+-- @NotifyCustomKey Client
 INSERT INTO Client(user_id, id, device_type, client_type, is_valid, registration_date, label, model, last_active, mls_public_keys, is_mls_capable, is_async_notifications_capable)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(id, user_id) DO UPDATE SET
@@ -94,12 +96,16 @@ isClientMLSCapable:
 SELECT is_mls_capable FROM Client WHERE user_id = :user_id AND id = :client_id;
 
 tryMarkAsInvalid:
+-- @NotifyCustomKey message_list
+-- @NotifyCustomKey Client
 UPDATE OR IGNORE Client SET is_valid = 0 WHERE user_id = :user_id AND  id IN :clientId_List;
 
 conversationRecipets:
 SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversation = :conversation_id) AND is_valid = 1;
 
 updateClientProteusVerificationStatus:
+-- @NotifyCustomKey message_list
+-- @NotifyCustomKey Client
 UPDATE Client SET is_verified = :is_verified WHERE user_id = :user_id AND id = :client_id;
 
 selectRecipientsByConversationAndUserId:

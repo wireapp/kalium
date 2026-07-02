@@ -34,9 +34,20 @@ kaliumLibrary {
 
 val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
     ?: error("USE_UNIFIED_CORE_CRYPTO not set")
+val disableAppleAvs: Boolean = findProperty("kalium.disableAppleAvs")?.toString()?.toBoolean() ?: false
 
 kotlin {
     explicitApi()
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    abiValidation {
+        enabled.set(true)
+        filters {
+            exclude {
+                annotatedWith.add("com.wire.kalium.util.InternalKaliumApi")
+                annotatedWith.add("com.wire.kalium.util.DebugKaliumApi")
+            }
+        }
+    }
 
     val xcf = XCFramework("KaliumLogic")
     val appleTargets = listOf(iosArm64(), iosSimulatorArm64(), macosArm64())
@@ -118,7 +129,22 @@ kotlin {
             kotlin.srcDir("src/commonJvmAndroid/kotlin")
         }
 
-        val appleMain by getting
+        val appleMain by getting {
+            kotlin.exclude("com/wire/kalium/logic/feature/call/**")
+        }
+        val appleCallSourceDir = "src/appleMain/kotlin/com/wire/kalium/logic/feature/call"
+        listOf(
+            getByName("iosArm64Main"),
+            getByName("iosSimulatorArm64Main"),
+            getByName("macosArm64Main")
+        ).forEach { appleTargetMain ->
+            appleTargetMain.kotlin.srcDir(appleCallSourceDir)
+            if (!disableAppleAvs) {
+                appleTargetMain.dependencies {
+                    implementation(libs.avsKmp)
+                }
+            }
+        }
 
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()

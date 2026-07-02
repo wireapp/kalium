@@ -9,7 +9,7 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: validate-release-tag-${{ inputs.tag-name }}
   cancel-in-progress: true
 
 permissions:

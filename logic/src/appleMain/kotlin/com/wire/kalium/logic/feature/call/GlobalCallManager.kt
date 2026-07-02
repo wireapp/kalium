@@ -20,6 +20,7 @@
 
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.calling.AppleAvs
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -43,12 +44,14 @@ import com.wire.kalium.logic.util.PlatformContext
 
 import kotlinx.coroutines.CoroutineScope
 
-internal actual class GlobalCallManager(
+internal actual class GlobalCallManager actual constructor(
     scope: CoroutineScope,
-    networkStateObserver: NetworkStateObserver
+    networkStateObserver: NetworkStateObserver,
+    platformContext: PlatformContext
 ) : CallNetworkChangeManager(scope, networkStateObserver) {
-    private val flowManagerService by lazy { FlowManagerServiceImpl(PlatformContext()) }
-    private val mediaManagerService by lazy { MediaManagerServiceImpl(PlatformContext()) }
+
+    private val flowManagerService by lazy { FlowManagerServiceImpl(platformContext) }
+    private val mediaManagerService by lazy { MediaManagerServiceImpl(platformContext) }
 
     @Suppress("LongParameterList")
     internal actual fun getCallManagerForClient(
@@ -105,7 +108,7 @@ internal actual class GlobalCallManager(
     }
 
     actual override fun networkChanged() {
-        if (!AppleAvsInterop.notifyNetworkChangedIfAvailable()) {
+        if (!AppleAvs.bridge.notifyNetworkChangedIfAvailable()) {
             kaliumLogger.w("AVS iOS smoke: networkChanged ignored because AVS is unavailable")
         }
     }
