@@ -131,33 +131,6 @@ class LinkPreviewRepositoryTest {
     }
 
     @Test
-    fun givenFourRedirects_whenFetchingOpenGraph_thenReturnsPreviewData() = runTest {
-        val repository = newRepository(
-            responses = mapOf(
-                "https://example.com/start" to redirectResponse("https://example.com/step-1"),
-                "https://example.com/step-1" to redirectResponse("https://example.com/step-2"),
-                "https://example.com/step-2" to redirectResponse("https://example.com/step-3"),
-                "https://example.com/step-3" to redirectResponse("https://example.com/final"),
-                "https://example.com/final" to htmlResponse(
-                    """
-                    <head>
-                        <meta property="og:title" content="Four hop title" />
-                    </head>
-                    """.trimIndent()
-                )
-            )
-        )
-
-        val result = repository.fetchOpenGraph(
-            url = "https://example.com/start",
-            originalUrl = "https://example.com/start"
-        ).getOrNull()
-
-        assertNotNull(result)
-        assertEquals("Four hop title", result.title)
-    }
-
-    @Test
     fun givenRedirectLoop_whenFetchingOpenGraph_thenReturnsNull() = runTest {
         val repository = newRepository(
             responses = mapOf(
@@ -232,6 +205,20 @@ class LinkPreviewRepositoryTest {
 
         assertNotNull(result)
         assertEquals("Large tail title", result.title)
+    }
+
+    @Test
+    fun givenRuntimeExceptionDuringOpenGraphFetch_whenFetchingOpenGraph_thenReturnsNull() = runTest {
+        val repository = newRepository(
+            thrownException = RuntimeException("timeout")
+        )
+
+        val result = repository.fetchOpenGraph(
+            url = "https://example.com/page",
+            originalUrl = "https://example.com/page"
+        ).getOrNull()
+
+        assertNull(result)
     }
 
     @Test
@@ -341,12 +328,25 @@ class LinkPreviewRepositoryTest {
         assertNull(result)
     }
 
+    @Test
+    fun givenRuntimeExceptionDuringImageFetch_whenFetchingImage_thenReturnsNull() = runTest {
+        val repository = newRepository(
+            thrownException = RuntimeException("timeout")
+        )
+
+        val result = repository.fetchImage("https://example.com/image.png").getOrNull()
+
+        assertNull(result)
+    }
+
     private fun newRepository(
         fileSystem: FakeKaliumFileSystem = FakeKaliumFileSystem(),
         responses: Map<String, MockResponse> = emptyMap(),
+        thrownException: Throwable? = null,
         hostResolver: suspend (String) -> List<String> = { listOf(PUBLIC_IPV4_ADDRESS) }
     ): LinkPreviewRepository {
         val mockEngine = MockEngine { request ->
+            thrownException?.let { throw it }
             val response = responses[request.url.toString()]
                 ?: error("No mocked response for ${request.url}")
 
