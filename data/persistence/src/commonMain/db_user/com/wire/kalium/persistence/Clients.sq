@@ -96,12 +96,10 @@ isClientMLSCapable:
 SELECT is_mls_capable FROM Client WHERE user_id = :user_id AND id = :client_id;
 
 tryMarkAsInvalid:
--- @NotifyCustomKey message_list
 -- @NotifyCustomKey Client
 UPDATE OR IGNORE Client SET is_valid = 0 WHERE user_id = :user_id AND  id IN :clientId_List;
 
 tryMarkAsValid:
--- @NotifyCustomKey message_list
 -- @NotifyCustomKey Client
 UPDATE OR IGNORE Client SET is_valid = 1 WHERE user_id = :user_id AND id IN :clientId_List;
 
