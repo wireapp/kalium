@@ -65,6 +65,12 @@ interface MemberDAOArrangement {
         conversationId: (QualifiedIDEntity) -> Boolean = { true }
     )
 
+    suspend fun withGetMemberRole(
+        result: MemberEntity.Role?,
+        userId: (UserIDEntity) -> Boolean = { true },
+        conversationId: (QualifiedIDEntity) -> Boolean = { true }
+    )
+
     suspend fun withDeleteMembersByQualifiedID(
         result: Long,
         conversationId: (QualifiedIDEntity) -> Boolean = { true },
@@ -157,6 +163,19 @@ class MemberDAOArrangementImpl : MemberDAOArrangement {
     ) {
         everySuspend {
             memberDAO.observeConversationMembers(matches { conversationId(it) })
+        } returns result
+    }
+
+    override suspend fun withGetMemberRole(
+        result: MemberEntity.Role?,
+        userId: (UserIDEntity) -> Boolean,
+        conversationId: (QualifiedIDEntity) -> Boolean
+    ) {
+        everySuspend {
+            memberDAO.getMemberRole(
+                matches { userId(it) },
+                matches { conversationId(it) }
+            )
         } returns result
     }
 
