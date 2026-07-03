@@ -466,6 +466,23 @@ class ClientRepositoryTest {
         }
     }
 
+    @Test
+    fun givenUserClientMap_whenMarkingClientsAsValid_thenDaoIsCalledWithMappedValues() = runTest {
+        val userId = UserId("user-id", "domain")
+        val clients = listOf(ClientId("client-id-1"), ClientId("client-id-2"))
+        val (arrangement, clientRepository) = Arrangement()
+            .withTryMarkValid()
+            .arrange()
+
+        clientRepository.tryMarkClientsAsValid(mapOf(userId to clients)).shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clientDAO.tryMarkValid(
+                eq(listOf(userId.toDao() to clients.map { it.value }))
+            )
+        }
+    }
+
     private companion object {
         val selfUserId = UserId("self-user-id", "domain")
         const val SECOND_FACTOR_CODE = "123456"
@@ -571,6 +588,12 @@ class ClientRepositoryTest {
         suspend fun withDeleteClientLocally() = apply {
             everySuspend {
                 clientDAO.deleteClient(any(), any())
+            }.returns(Unit)
+        }
+
+        suspend fun withTryMarkValid() = apply {
+            everySuspend {
+                clientDAO.tryMarkValid(any())
             }.returns(Unit)
         }
 

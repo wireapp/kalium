@@ -159,6 +159,16 @@ internal class ClientDAOImpl internal constructor(
         }
     }
 
+    override suspend fun tryMarkValid(
+        validClientsList: List<Pair<QualifiedIDEntity, List<String>>>
+    ) = withContext(writeDispatcher.value) {
+        clientsQueries.transaction {
+            validClientsList.forEach { (userId, clientIdList) ->
+                clientsQueries.tryMarkAsValid(userId, clientIdList)
+            }
+        }
+    }
+
     override suspend fun updateClientProteusVerificationStatus(userId: QualifiedIDEntity, clientId: String, verified: Boolean) {
         withContext(writeDispatcher.value) {
             clientsQueries.updateClientProteusVerificationStatus(verified, userId, clientId)
