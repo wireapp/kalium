@@ -43,6 +43,7 @@ import com.wire.kalium.logic.feature.debug.OptimizeDatabaseResult
 import com.wire.kalium.logic.feature.debug.OptimizeDatabaseUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
+import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
@@ -87,6 +88,7 @@ internal class SlowSyncWorkerImpl(
     private val transactionProvider: CryptoTransactionProvider,
     private val optimizer: OptimizeDatabaseUseCase,
     private val syncNomadMessagesDuringSlowSync: SyncNomadMessagesDuringSlowSyncUseCase = NoOpSyncNomadMessagesDuringSlowSyncUseCase,
+    private val syncMeetings: SyncMeetingsUseCase,
     logger: KaliumLogger = kaliumLogger
 ) : SlowSyncWorker {
 
@@ -132,6 +134,7 @@ internal class SlowSyncWorkerImpl(
                 .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
                 .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().toEither().map { } }
                 .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
+                .continueWithStep(SlowSyncStep.MEETINGS, syncMeetings::invoke)
                 .continueWithStep(SlowSyncStep.CONNECTIONS, syncConnections::invoke)
                 .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
                 .continueWithStep(SlowSyncStep.LEGAL_HOLD) { fetchLegalHoldForSelfUserFromRemoteUseCase().map { } }

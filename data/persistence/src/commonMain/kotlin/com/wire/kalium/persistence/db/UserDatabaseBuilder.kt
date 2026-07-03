@@ -92,6 +92,8 @@ import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAO
 import com.wire.kalium.persistence.dao.pendingaction.PendingActionDAOImpl
 import com.wire.kalium.persistence.dao.cellfile.CellFileDao
 import com.wire.kalium.persistence.dao.cellfile.CellFileDaoImpl
+import com.wire.kalium.persistence.dao.meeting.MeetingDao
+import com.wire.kalium.persistence.dao.meeting.MeetingDaoImpl
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDao
 import com.wire.kalium.persistence.dao.publiclink.PublicLinkDaoImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -205,7 +207,8 @@ class UserDatabaseBuilder internal constructor(
         MessageSystemContentAdapter = TableMapper.messageSystemContentAdapter,
         RemotebackupChangeLogAdapter = TableMapper.remoteBackupChangeLogAdapter,
         AppAdapter = TableMapper.appAdapter,
-        PendingActionsAdapter = TableMapper.pendingActionsAdapter
+        PendingActionsAdapter = TableMapper.pendingActionsAdapter,
+        MeetingAdapter = TableMapper.meetingAdapter,
     )
 
     init {
@@ -435,6 +438,9 @@ class UserDatabaseBuilder internal constructor(
         get() = CellFileDaoImpl(database.cellFilesQueries, readDispatcher, writeDispatcher)
     val remoteBackupChangeLogDAO: RemoteBackupChangeLogDAO
         get() = RemoteBackupChangeLogDAOImpl(database.remotebackupChangeLogQueries, readDispatcher, writeDispatcher)
+
+    val meetingDao: MeetingDao
+        get() = MeetingDaoImpl(database.meetingsQueries, writeDispatcher)
 
     val debugExtension: DebugExtension
         get() = DebugExtension(

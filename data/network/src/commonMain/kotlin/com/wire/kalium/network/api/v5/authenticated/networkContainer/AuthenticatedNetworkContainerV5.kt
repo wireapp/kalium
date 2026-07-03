@@ -34,6 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
+import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
@@ -66,6 +67,7 @@ import com.wire.kalium.network.api.v5.authenticated.PropertiesApiV5
 import com.wire.kalium.network.api.v5.authenticated.SelfApiV5
 import com.wire.kalium.network.api.v5.authenticated.ServerTimeApiV5
 import com.wire.kalium.network.api.v5.authenticated.ConversationHistoryApiV5
+import com.wire.kalium.network.api.v5.authenticated.MeetingApiV5
 import com.wire.kalium.network.api.v5.authenticated.TeamsApiV5
 import com.wire.kalium.network.api.v5.authenticated.UpgradePersonalToTeamApiV5
 import com.wire.kalium.network.api.v5.authenticated.UserDetailsApiV5
@@ -160,4 +162,6 @@ internal class AuthenticatedNetworkContainerV5 internal constructor(
 
     override val serverTimeApi: ServerTimeApi
         get() = ServerTimeApiV5(networkClient)
+
+    override val meetingApi: MeetingApi get() = MeetingApiV5()
 }

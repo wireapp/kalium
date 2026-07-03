@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.ConversationLegalHoldStatusChangeNotified
 import com.wire.kalium.persistence.HistoryClient
 import com.wire.kalium.persistence.LabeledConversation
 import com.wire.kalium.persistence.LastMessage
+import com.wire.kalium.persistence.Meeting
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
@@ -279,5 +280,17 @@ internal object TableMapper {
     val pendingActionsAdapter = PendingActions.Adapter(
         action_typeAdapter = PendingActionTypeAdapter,
         qualified_idAdapter = QualifiedIDAdapter
+    )
+
+    val meetingAdapter = Meeting.Adapter(
+        meeting_idAdapter = QualifiedIDAdapter,
+        conversation_idAdapter = QualifiedIDAdapter,
+        creator_idAdapter = QualifiedIDAdapter,
+        creation_dateAdapter = InstantTypeAdapter,
+        last_edit_dateAdapter = InstantTypeAdapter,
+        start_dateAdapter = InstantTypeAdapter,
+        end_dateAdapter = InstantTypeAdapter,
+        recurrence_frequencyAdapter = EnumColumnAdapter(),
+        recurrence_end_dateAdapter = InstantTypeAdapter
     )
 }

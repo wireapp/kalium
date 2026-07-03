@@ -151,6 +151,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.meeting.MeetingDataSource
+import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.message.CompositeMessageDataSource
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
@@ -343,6 +345,8 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserU
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
+import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCase
+import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -1487,6 +1491,7 @@ public class UserSessionScope internal constructor(
                 userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
                 logger = userScopedLogger
             ),
+            syncMeetings = syncMeetingsUseCase,
             optimizer = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
         )
     }
@@ -2931,6 +2936,18 @@ public class UserSessionScope internal constructor(
         { this },
         { slowSyncRepository.slowSyncStatus.map { it is SlowSyncStatus.Ongoing } }
     )
+
+    private val meetingRepository: MeetingRepository
+        get() = MeetingDataSource(
+            meetingDAO = userStorage.database.meetingDao,
+            meetingApi = authenticatedNetworkContainer.meetingApi,
+        )
+
+    private val syncMeetingsUseCase: SyncMeetingsUseCase
+        get() = SyncMeetingsUseCaseImpl(
+            meetingRepository = meetingRepository,
+            transactionProvider = cryptoTransactionProvider
+        )
 
     private fun registerNomadHooksIfConfigured() {
         val hooks = userScopedNomadHookFactory.createIfConfigured(

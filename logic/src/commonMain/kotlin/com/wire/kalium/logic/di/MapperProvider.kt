@@ -60,6 +60,8 @@ import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.FederatedIdMapperImpl
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.meeting.MeetingMapper
+import com.wire.kalium.logic.data.meeting.MeetingMapperImpl
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageMapperImpl
@@ -183,4 +185,5 @@ internal object MapperProvider {
     fun legalHoldStatusMapper(): LegalHoldStatusMapper = LegalHoldStatusMapperImpl
     fun acmeMapper(): AcmeMapper = AcmeMapperImpl()
     fun domainRegistrationMapper(): DomainRegistrationMapper = DomainRegistrationMapperImpl
+    fun meetingMapper(): MeetingMapper = MeetingMapperImpl(idMapper())
 }

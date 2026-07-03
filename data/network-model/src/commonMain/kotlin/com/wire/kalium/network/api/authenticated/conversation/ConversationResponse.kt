@@ -141,6 +141,9 @@ data class ConversationResponse(
 
         @SerialName("channel")
         CHANNEL,
+
+        @SerialName("meeting")
+        MEETING,
     }
 
     fun hasAppsAccessEnabled(): Boolean {
