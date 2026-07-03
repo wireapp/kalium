@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.linkpreview.PreviewBlacklist
 import com.wire.kalium.logic.data.message.linkpreview.UrlDetector
 import com.wire.kalium.logic.data.message.mention.MessageMention
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 
 /**
  * Use case for generating link previews from message text.
@@ -42,13 +43,14 @@ public interface GenerateLinkPreviewUseCase {
  */
 internal class GenerateLinkPreviewUseCaseImpl(
     private val repository: LinkPreviewRepository,
+    private val userPropertyRepository: UserPropertyRepository,
     private val linkPreviewEnabled: Boolean,
 ) : GenerateLinkPreviewUseCase {
     override suspend fun invoke(
         text: String,
         mentions: List<MessageMention>
     ): MessageLinkPreview? {
-        if (!linkPreviewEnabled) return null
+        if (!linkPreviewEnabled || !userPropertyRepository.getLinkPreviewsStatus()) return null
 
         val excludedRanges = ExclusionRanges.compute(text, mentions)
         val matches = UrlDetector.detect(text, excludedRanges)

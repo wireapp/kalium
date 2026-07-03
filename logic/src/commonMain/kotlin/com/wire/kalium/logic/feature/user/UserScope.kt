@@ -97,6 +97,10 @@ import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnable
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCase
 import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCaseImpl
+import com.wire.kalium.logic.feature.user.linkPreviews.ObserveLinkPreviewsEnabledUseCase
+import com.wire.kalium.logic.feature.user.linkPreviews.ObserveLinkPreviewsEnabledUseCaseImpl
+import com.wire.kalium.logic.feature.user.linkPreviews.PersistLinkPreviewsStatusConfigUseCase
+import com.wire.kalium.logic.feature.user.linkPreviews.PersistLinkPreviewsStatusConfigUseCaseImpl
 import com.wire.kalium.logic.feature.user.typingIndicator.ObserveTypingIndicatorEnabledUseCase
 import com.wire.kalium.logic.feature.user.typingIndicator.ObserveTypingIndicatorEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.typingIndicator.PersistTypingIndicatorStatusConfigUseCase
@@ -236,11 +240,18 @@ public class UserScope internal constructor(
         get() = ObserveTypingIndicatorEnabledUseCaseImpl(
             userPropertyRepository = userPropertyRepository
         )
+    public val observeLinkPreviewsEnabled: ObserveLinkPreviewsEnabledUseCase
+        get() = ObserveLinkPreviewsEnabledUseCaseImpl(
+            userPropertyRepository = userPropertyRepository
+        )
     public val persistReadReceiptsStatusConfig: PersistReadReceiptsStatusConfigUseCase
         get() = PersistReadReceiptsStatusConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
 
     public val persistTypingIndicatorStatusConfig: PersistTypingIndicatorStatusConfigUseCase
         get() = PersistTypingIndicatorStatusConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
+
+    public val persistLinkPreviewsStatusConfig: PersistLinkPreviewsStatusConfigUseCase
+        get() = PersistLinkPreviewsStatusConfigUseCaseImpl(userPropertyRepository = userPropertyRepository)
 
     public val serverLinks: SelfServerConfigUseCase get() = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
 

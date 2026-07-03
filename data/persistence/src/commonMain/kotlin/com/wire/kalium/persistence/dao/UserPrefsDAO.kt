@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.E2EI
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.E2EI_SETTINGS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_CLASSIFIED_DOMAINS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_CONFERENCE_CALLING
+import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_LINK_PREVIEWS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_MLS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_READ_RECEIPTS
 import com.wire.kalium.persistence.config.UserConfigStorage.UserPreferences.ENABLE_SCREENSHOT_CENSORING
@@ -204,6 +205,16 @@ internal class UserPrefsDAO(
 
     override suspend fun persistTypingIndicator(enabled: Boolean) {
         metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_TYPING_INDICATOR.key)
+    }
+
+    override fun isLinkPreviewsEnabled(): Flow<Boolean> {
+        return metadataDAO.valueByKeyFlow(ENABLE_LINK_PREVIEWS.key).map {
+            it?.toBoolean() ?: false
+        }
+    }
+
+    override suspend fun persistLinkPreviews(enabled: Boolean) {
+        metadataDAO.insertValue(value = enabled.toString(), key = ENABLE_LINK_PREVIEWS.key)
     }
 
     override suspend fun persistGuestRoomLinkFeatureFlag(status: Boolean, isStatusChanged: Boolean?) {

@@ -634,5 +634,9 @@ public class MessageScope internal constructor(
     }
 
     public val generateLinkPreview: GenerateLinkPreviewUseCase
-        get() = GenerateLinkPreviewUseCaseImpl(linkPreviewRepository, linkPreviewEnabled)
+        get() = GenerateLinkPreviewUseCaseImpl(
+            repository = linkPreviewRepository,
+            userPropertyRepository = userPropertyRepository,
+            linkPreviewEnabled = linkPreviewEnabled
+        )
 }
