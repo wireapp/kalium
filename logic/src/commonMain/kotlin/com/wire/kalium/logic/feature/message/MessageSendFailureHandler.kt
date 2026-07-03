@@ -121,11 +121,14 @@ internal class MessageSendFailureHandlerImpl internal constructor(
     private suspend fun addMissingClients(missingClients: Map<UserId, List<ClientId>>): Either<CoreFailure, Unit> =
         if (missingClients.isEmpty()) Either.Right(Unit)
         else clientRemoteRepository.fetchOtherUserClients(missingClients.keys.toList())
-            .flatMap {
-                it.map { (userId, clientList) -> clientMapper.toInsertClientParam(clientList, userId) }
-                    .flatten().let { insertClientParamList ->
+            .flatMap { fetchedClients ->
+                fetchedClients.map { (userId, clientList) -> clientMapper.toInsertClientParam(clientList, userId) }
+                    .flatten()
+                    .let { insertClientParamList ->
                         if (insertClientParamList.isEmpty()) Either.Right(Unit)
                         else clientRepository.storeUserClientListAndRemoveRedundantClients(insertClientParamList)
+                    }.flatMap {
+                        clientRepository.tryMarkClientsAsValid(missingClients)
                     }
             }
 
