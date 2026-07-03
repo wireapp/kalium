@@ -470,6 +470,10 @@ com.wire.kalium.network.api.v15.authenticated
 com.wire.kalium.network.api.v15.authenticated.networkContainer
 com.wire.kalium.network.api.v15.unauthenticated
 com.wire.kalium.network.api.v15.unauthenticated.networkContainer
+com.wire.kalium.network.api.v16.authenticated
+com.wire.kalium.network.api.v16.authenticated.networkContainer
+com.wire.kalium.network.api.v16.unauthenticated
+com.wire.kalium.network.api.v16.unauthenticated.networkContainer
 com.wire.kalium.network.api.v2.authenticated
 com.wire.kalium.network.api.v2.authenticated.networkContainer
 com.wire.kalium.network.api.v2.unauthenticated
