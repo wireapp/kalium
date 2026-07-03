@@ -23,6 +23,9 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/**
+ * Use case that allows observing whether link preview generation is enabled for the current user.
+ */
 public interface ObserveLinkPreviewsEnabledUseCase {
     public suspend operator fun invoke(): Flow<Boolean>
 }

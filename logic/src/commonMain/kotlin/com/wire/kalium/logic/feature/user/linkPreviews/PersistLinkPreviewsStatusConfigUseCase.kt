@@ -24,6 +24,9 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.LOCAL_STORAGE
 
+/**
+ * Use case that allows persisting the user's link preview generation preference.
+ */
 public interface PersistLinkPreviewsStatusConfigUseCase {
     public suspend operator fun invoke(enabled: Boolean): LinkPreviewsConfigResult
 }
