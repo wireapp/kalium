@@ -1249,6 +1249,7 @@ public class UserSessionScope internal constructor(
         get() = AssetDataSource(
             assetApi = authenticatedNetworkContainer.assetApi,
             assetDao = userStorage.database.assetDAO,
+            selfUserId = userId,
             assetAuditLog = lazy { users.assetAuditLog },
             kaliumFileSystem = kaliumFileSystem
         )
