@@ -26,18 +26,19 @@ import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
 
 interface MeetingDao {
-    suspend fun upsertMeetings(meetings: List<MeetingEntity>)
+    suspend fun upsertMeetings(meetings: List<MeetingEntity>, now: Instant = Clock.System.now())
+    suspend fun removeOutdatedMeetings(now: Instant = Clock.System.now())
+    suspend fun insertMissingOccurrences(now: Instant = Clock.System.now())
 }
 
 internal class MeetingDaoImpl(
     private val meetingsQueries: MeetingsQueries,
     private val writeDispatcher: WriteDispatcher,
 ) : MeetingDao {
-    override suspend fun upsertMeetings(meetings: List<MeetingEntity>) {
+    override suspend fun upsertMeetings(meetings: List<MeetingEntity>, now: Instant) {
         if (meetings.isEmpty()) return
 
         withContext(writeDispatcher.value) {
-            val now = Clock.System.now()
             meetingsQueries.transaction {
                 val storedMeetingsById = meetingsQueries.selectMeetingByIds(meetings.map { it.meetingId })
                     .executeAsList()
@@ -52,14 +53,37 @@ internal class MeetingDaoImpl(
                     }
                 }
 
-                meetings.forEach { meeting -> meetingsQueries.upsertMeeting(meeting) }
                 meetings.forEach { meeting ->
+                    meetingsQueries.upsertMeeting(meeting = meeting)
                     meetingsQueries.insertGeneratedOccurrences(
                         meeting = meeting,
                         shouldRegenerateOccurrences = meeting.meetingId in meetingIdsRequiringOccurrenceRefresh,
                         now = now
                     )
                 }
+            }
+        }
+    }
+
+    override suspend fun removeOutdatedMeetings(now: Instant) {
+        withContext(writeDispatcher.value) {
+            meetingsQueries.removeOutdatedMeetings(
+                outdatedThreshold = now - OUTDATED_MEETING_RETENTION_DAYS.days
+            )
+        }
+    }
+
+    override suspend fun insertMissingOccurrences(now: Instant) {
+        withContext(writeDispatcher.value) {
+            meetingsQueries.transaction {
+                meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).executeAsList()
+                    .forEach { meeting ->
+                        meetingsQueries.insertGeneratedOccurrences(
+                            meeting = meeting,
+                            shouldRegenerateOccurrences = false,
+                            now = now
+                        )
+                    }
             }
         }
     }
@@ -111,6 +135,7 @@ internal class MeetingDaoImpl(
 
     private companion object {
         private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
+        private const val OUTDATED_MEETING_RETENTION_DAYS = 30
     }
 }
 

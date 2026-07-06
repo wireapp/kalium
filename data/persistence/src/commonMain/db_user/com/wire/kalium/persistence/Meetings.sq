@@ -71,6 +71,23 @@ deleteNotStartedOccurrences:
 DELETE FROM MeetingOccurrence
 WHERE meeting_id = ? AND occurrence_start > ?;
 
+removeOutdatedMeetings:
+DELETE FROM Meeting
+WHERE (
+    recurrence_frequency IS NULL
+    AND end_date IS NOT NULL
+    AND end_date <= :outdatedThreshold
+) OR (
+    recurrence_frequency IS NOT NULL
+    AND recurrence_end_date IS NOT NULL
+    AND recurrence_end_date <= :outdatedThreshold
+);
+
+selectRecurringMeetings:
+SELECT *
+FROM Meeting
+WHERE recurrence_frequency IS NOT NULL AND recurrence_interval IS NOT NULL;
+
 selectMeetingOccurrencesByMeetingId:
 SELECT *
 FROM MeetingOccurrence

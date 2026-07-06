@@ -2295,7 +2295,7 @@ public class UserSessionScope internal constructor(
     }
 
     internal val meetingOccurrencesSyncWorker: MeetingOccurrencesSyncWorker by lazy {
-        MeetingOccurrencesSyncWorkerImpl()
+        MeetingOccurrencesSyncWorkerImpl(meetingRepository)
     }
 
     internal fun buildAudioNormalizedLoudnessWorker(

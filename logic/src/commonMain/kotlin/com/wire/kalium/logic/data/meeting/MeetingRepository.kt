@@ -26,9 +26,12 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 internal interface MeetingRepository {
-    suspend fun fetchAndPersistMeetings(): Either<CoreFailure, Unit>
+    suspend fun fetchAndPersistMeetings(now: Instant = Clock.System.now()): Either<CoreFailure, Unit>
+    suspend fun syncMeetingOccurrences(now: Instant = Clock.System.now()): Either<CoreFailure, Unit>
 }
 
 internal class MeetingDataSource(
@@ -36,11 +39,18 @@ internal class MeetingDataSource(
     private val meetingApi: MeetingApi,
     private val meetingMapper: MeetingMapper = MapperProvider.meetingMapper()
 ) : MeetingRepository {
-    override suspend fun fetchAndPersistMeetings(): Either<CoreFailure, Unit> = wrapApiRequest {
+    override suspend fun fetchAndPersistMeetings(now: Instant): Either<CoreFailure, Unit> = wrapApiRequest {
         meetingApi.fetchMeetings()
     }.flatMap { meetings ->
         wrapStorageRequest {
-            meetingDAO.upsertMeetings(meetings.map { meetingMapper.fromApiToDao(it) })
+            meetingDAO.upsertMeetings(meetings.map { meetingMapper.fromApiToDao(it) }, now)
+        }
+    }
+
+    override suspend fun syncMeetingOccurrences(now: Instant): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            meetingDAO.removeOutdatedMeetings(now)
+            meetingDAO.insertMissingOccurrences(now)
         }
     }
 }

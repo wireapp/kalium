@@ -17,12 +17,14 @@
  */
 package com.wire.kalium.logic.sync.periodic
 
+import com.wire.kalium.common.functional.fold
+import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.sync.DefaultWorker
 import com.wire.kalium.logic.sync.Result
 
 /**
- *  Worker that is responsible for syncing meeting occurrences for recurring meetings. It removes the occurrences that are no longer valid
- *  and generates new meeting occurrences to keep the window of occurrences up to date, so that the user can see them properly in the UI.
+ *  Worker that is responsible for syncing meeting occurrences for recurring meetings.
+ *  It removes outdated meetings and generates new occurrences to keep the UI window up to date.
  *  It's session scoped so the userId is implied from the scope.
  */
 internal interface MeetingOccurrencesSyncWorker : DefaultWorker {
@@ -33,8 +35,11 @@ internal interface MeetingOccurrencesSyncWorker : DefaultWorker {
     }
 }
 
-internal class MeetingOccurrencesSyncWorkerImpl : MeetingOccurrencesSyncWorker {
-    override suspend fun doWork(): Result {
-        TODO("Not yet implemented")
-    }
+internal class MeetingOccurrencesSyncWorkerImpl(
+    private val meetingRepository: MeetingRepository
+) : MeetingOccurrencesSyncWorker {
+    override suspend fun doWork(): Result = meetingRepository.syncMeetingOccurrences().fold(
+        { Result.Failure },
+        { Result.Success }
+    )
 }
