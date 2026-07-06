@@ -36,6 +36,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistResult
+import com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncWorker
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker
@@ -147,6 +148,10 @@ public class WrapperWorkerFactory(
                     createAudioNormalizedLoudnessWorker(userId, workerParameters)
                         ?: fallback(FALLBACK_REASON_SESSION_SCOPE_UNAVAILABLE)
 
+                WORKER_TYPE_MEETING_OCCURRENCES_SYNC ->
+                    withSessionScope(userId) { it.meetingOccurrencesSyncWorker }
+                        ?: fallback(FALLBACK_REASON_SESSION_SCOPE_UNAVAILABLE)
+
                 else ->
                     instantiateWorker(innerWorkerClassName)
                         ?: fallback(FALLBACK_REASON_INSTANTIATION_FAILED)
@@ -185,6 +190,11 @@ public class WrapperWorkerFactory(
                 AudioNormalizedLoudnessWorker::class.java.canonicalName,
                 LEGACY_AUDIO_NORMALIZED_LOUDNESS_WORKER_CLASS_NAME
             ) -> WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS
+
+            innerWorkerClassName.matchesWorkerClass(
+                MeetingOccurrencesSyncWorker::class.java.canonicalName,
+                LEGACY_MEETING_OCCURRENCES_SYNC_WORKER_CLASS_NAME
+            ) -> WORKER_TYPE_USER_CONFIG_SYNC
 
             else -> null
         }
@@ -319,6 +329,7 @@ public class WrapperWorkerFactory(
         private const val WORKER_TYPE_USER_CONFIG_SYNC = "user_config_sync"
         private const val WORKER_TYPE_UPDATE_API_VERSIONS = "update_api_versions"
         private const val WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS = "audio_normalized_loudness"
+        private const val WORKER_TYPE_MEETING_OCCURRENCES_SYNC = "meeting_occurrences_sync"
 
         // Keep compatibility with tasks enqueued before obfuscation/minification changes.
         // See: docs/minification-workmanager-compat.md
@@ -330,6 +341,8 @@ public class WrapperWorkerFactory(
             "com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker"
         private const val LEGACY_AUDIO_NORMALIZED_LOUDNESS_WORKER_CLASS_NAME =
             "com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker"
+        private const val LEGACY_MEETING_OCCURRENCES_SYNC_WORKER_CLASS_NAME =
+            "com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncWorker"
 
         private const val WORK_MANAGER_EVENT_FALLBACK = "wm_wrapper_fallback"
         private const val WORK_MANAGER_EVENT_SESSION_SCOPE = "wm_wrapper_session_scope"
@@ -363,6 +376,7 @@ public class WrapperWorkerFactory(
             UserConfigSyncWorker::class -> WORKER_TYPE_USER_CONFIG_SYNC
             UpdateApiVersionsWorker::class -> WORKER_TYPE_UPDATE_API_VERSIONS
             AudioNormalizedLoudnessWorker::class -> WORKER_TYPE_AUDIO_NORMALIZED_LOUDNESS
+            MeetingOccurrencesSyncWorker::class -> WORKER_TYPE_MEETING_OCCURRENCES_SYNC
             else -> null
         }
     }

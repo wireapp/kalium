@@ -31,6 +31,7 @@ import com.wire.kalium.logic.GlobalKaliumScope
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncWorker
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.logic.sync.receiver.asset.AudioNormalizedLoudnessWorker
@@ -142,6 +143,14 @@ internal actual open class UserSessionWorkSchedulerImpl(
                     .build()
             )
         }
+    }
+
+    actual override fun schedulePeriodicMeetingOccurrencesSync() {
+        WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
+            MeetingOccurrencesSyncWorker.NAME + userId.value + "-periodic",
+            ExistingPeriodicWorkPolicy.KEEP,
+            buildConnectedPeriodicWorkRequest(MeetingOccurrencesSyncWorker::class, userId)
+        )
     }
 }
 
