@@ -24,6 +24,18 @@ CREATE TABLE Meeting (
 CREATE INDEX IF NOT EXISTS meeting_conv_id_index ON Meeting(conversation_id);
 CREATE INDEX IF NOT EXISTS meeting_start_date_index ON Meeting(start_date);
 
+CREATE TABLE MeetingOccurrence (
+    occurrence_id TEXT NOT NULL PRIMARY KEY,
+    meeting_id TEXT AS QualifiedIDEntity NOT NULL,
+    occurrence_start INTEGER AS Instant NOT NULL,
+    occurrence_end INTEGER AS Instant NOT NULL,
+
+    FOREIGN KEY (meeting_id) REFERENCES Meeting(meeting_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_occurrences_meeting ON MeetingOccurrence(meeting_id);
+CREATE INDEX IF NOT EXISTS idx_occurrences_start ON MeetingOccurrence(occurrence_start);
+
 upsertMeeting:
 INSERT INTO Meeting(meeting_id, conversation_id, creator_id, creation_date, last_edit_date, title, start_date, end_date, trial, recurrence_frequency, recurrence_interval, recurrence_end_date)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -39,3 +51,28 @@ ON CONFLICT(meeting_id) DO UPDATE SET
     recurrence_frequency = excluded.recurrence_frequency,
     recurrence_interval = excluded.recurrence_interval,
     recurrence_end_date = excluded.recurrence_end_date;
+
+insertMeetingOccurrence:
+INSERT INTO MeetingOccurrence(occurrence_id, meeting_id, occurrence_start, occurrence_end) VALUES (?, ?, ?, ?);
+
+selectMeetingByIds:
+SELECT *
+FROM Meeting
+WHERE meeting_id IN ?;
+
+selectLastGeneratedOccurrenceStart:
+SELECT occurrence_start
+FROM MeetingOccurrence
+WHERE meeting_id = ?
+ORDER BY occurrence_start DESC
+LIMIT 1;
+
+deleteNotStartedOccurrences:
+DELETE FROM MeetingOccurrence
+WHERE meeting_id = ? AND occurrence_start > ?;
+
+selectMeetingOccurrencesByMeetingId:
+SELECT *
+FROM MeetingOccurrence
+WHERE meeting_id = ?
+ORDER BY occurrence_start ASC;

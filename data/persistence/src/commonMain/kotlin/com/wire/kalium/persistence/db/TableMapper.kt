@@ -32,6 +32,7 @@ import com.wire.kalium.persistence.HistoryClient
 import com.wire.kalium.persistence.LabeledConversation
 import com.wire.kalium.persistence.LastMessage
 import com.wire.kalium.persistence.Meeting
+import com.wire.kalium.persistence.MeetingOccurrence
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
@@ -292,5 +293,11 @@ internal object TableMapper {
         end_dateAdapter = InstantTypeAdapter,
         recurrence_frequencyAdapter = EnumColumnAdapter(),
         recurrence_end_dateAdapter = InstantTypeAdapter
+    )
+
+    val meetingOccurrenceAdapter = MeetingOccurrence.Adapter(
+        meeting_idAdapter = QualifiedIDAdapter,
+        occurrence_startAdapter = InstantTypeAdapter,
+        occurrence_endAdapter = InstantTypeAdapter
     )
 }

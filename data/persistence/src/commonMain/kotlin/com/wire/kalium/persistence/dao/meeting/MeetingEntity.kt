@@ -40,3 +40,10 @@ data class MeetingEntity(
         enum class Frequency { DAILY, WEEKLY, MONTHLY, YEARLY }
     }
 }
+
+data class MeetingOccurrenceEntity(
+    val occurrenceId: String,
+    val meetingId: QualifiedIDEntity,
+    val occurrenceStart: Instant,
+    val occurrenceEnd: Instant?
+)
