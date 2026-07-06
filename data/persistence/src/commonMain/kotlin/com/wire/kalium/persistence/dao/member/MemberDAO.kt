@@ -25,7 +25,6 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
-import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -40,6 +39,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+
+data class ConversationMemberCountsEntity(
+    val conversationSize: Int,
+    val servicesCount: Int,
+    val guestsCount: Int,
+    val guestsProCount: Int
+)
 
 @Suppress("TooManyFunctions")
 interface MemberDAO {
@@ -56,6 +62,8 @@ interface MemberDAO {
      */
     suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Long
     suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>>
+    suspend fun isMemberAdmin(conversationId: QualifiedIDEntity, userId: QualifiedIDEntity): Boolean
+    suspend fun getConversationMemberCounts(conversationId: QualifiedIDEntity): ConversationMemberCountsEntity
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: MemberEntity.Role)
     suspend fun updateOrInsertOneOnOneMember(
         member: MemberEntity,
@@ -79,7 +87,6 @@ interface MemberDAO {
 
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class MemberDAOImpl internal constructor(
-    private val membersCache: FlowCache<ConversationIDEntity, List<MemberEntity>>,
     private val memberQueries: MembersQueries,
     private val userQueries: UsersQueries,
     private val conversationsQueries: ConversationsQueries,
@@ -157,13 +164,29 @@ internal class MemberDAOImpl internal constructor(
 
     override suspend fun observeConversationMembers(
         qualifiedID: QualifiedIDEntity
-    ): Flow<List<MemberEntity>> = membersCache.get(qualifiedID) {
+    ): Flow<List<MemberEntity>> =
         memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
             .mapToList()
             .map { it.map(memberMapper::toModel) }
             .flowOn(readDispatcher.value)
-    }
+
+    override suspend fun isMemberAdmin(conversationId: QualifiedIDEntity, userId: QualifiedIDEntity): Boolean =
+        withContext(readDispatcher.value) {
+            memberQueries.isMemberAdmin(conversationId, userId).awaitAsOne()
+        }
+
+    override suspend fun getConversationMemberCounts(conversationId: QualifiedIDEntity): ConversationMemberCountsEntity =
+        withContext(readDispatcher.value) {
+            memberQueries.selectConversationMemberCounts(conversationId) { conversationSize, servicesCount, guestsCount, guestsProCount ->
+                ConversationMemberCountsEntity(
+                    conversationSize = conversationSize.toInt(),
+                    servicesCount = servicesCount.toInt(),
+                    guestsCount = guestsCount.toInt(),
+                    guestsProCount = guestsProCount.toInt()
+                )
+            }.awaitAsOne()
+        }
 
     override suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: MemberEntity.Role) {
         withContext(writeDispatcher.value) {

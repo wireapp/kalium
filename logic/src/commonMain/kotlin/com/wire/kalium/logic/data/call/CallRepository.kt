@@ -30,7 +30,6 @@ import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.functional.onlyRight
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.common.logger.logStructuredJson
@@ -44,7 +43,6 @@ import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.client.wrapInMLSContext
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
@@ -241,8 +239,10 @@ internal class CallDataSource(
             )
         }
     ) {
-        val conversation: ConversationDetails =
-            conversationRepository.observeConversationDetailsById(conversationId).onlyRight().first()
+        val conversation = conversationRepository.getConversationById(conversationId).getOrNull() ?: run {
+            callingLogger.w("[CallRepository][createCall] -> Conversation not found: ${conversationId.toLogString()}")
+            return@withLock
+        }
 
         val caller = userRepository.getKnownUser(callerId).first()
         val team = caller?.teamId?.let { teamId -> teamRepository.getTeam(teamId).first() }
@@ -252,14 +252,14 @@ internal class CallDataSource(
             id = Uuid.random().toString(),
             type = type,
             status = status,
-            conversationType = conversation.conversation.type,
+            conversationType = conversation.type,
             callerId = callerId
         )
 
         val metadata = CallMetadata(
             callerId = callerId,
-            conversationName = conversation.conversation.name,
-            conversationType = conversation.conversation.type,
+            conversationName = conversation.name,
+            conversationType = conversation.type,
             callerName = caller?.name,
             callerTeamName = team?.name,
             isMuted = isMuted,
@@ -267,7 +267,7 @@ internal class CallDataSource(
             isCbrEnabled = isCbrEnabled,
             establishedTime = null,
             callStatus = status,
-            protocol = conversation.conversation.protocol,
+            protocol = conversation.protocol,
             activeSpeakers = mapOf()
         )
 
