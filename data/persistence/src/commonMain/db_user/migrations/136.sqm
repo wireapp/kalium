@@ -482,7 +482,7 @@ LEFT JOIN MessageTextContent AS TextContent
     ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
 WHERE
     ConversationDetails.type IS NOT 'SELF'
-    AND group_type IS NOT 'MEETING'
+    AND group_type IN ('GROUP', 'CHANNEL')
     AND (
         ConversationDetails.type IS 'GROUP'
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL))
