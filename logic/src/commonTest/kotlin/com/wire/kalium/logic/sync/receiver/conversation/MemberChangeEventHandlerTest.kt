@@ -241,6 +241,7 @@ class MemberChangeEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownSucceeding()
+            .withConversationMemberRole(Member.Role.Admin)
             .withUpdateMemberSucceeding()
             .arrange()
 
