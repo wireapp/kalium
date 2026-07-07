@@ -124,4 +124,4 @@ internal fun nwPathStatusToNetworkState(status: nw_path_status_t?): NetworkState
  * no interfaces.
  */
 internal fun buildCurrentNetworkId(interfaceIds: List<String>, fallback: String): String =
-    interfaceIds.takeUnless { it.isEmpty() }?.joinToString(separator = "+") ?: fallback
+    interfaceIds.takeUnless { it.isEmpty() }?.sorted()?.joinToString(separator = "+") ?: fallback
