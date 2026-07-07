@@ -66,7 +66,7 @@ LEFT JOIN MessageAssetContent AS AssetContent
 LEFT JOIN MessageTextContent AS TextContent
     ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
 WHERE
-    ConversationDetails.type NOT IN ('SELF', 'MEETING')
+    ConversationDetails.type IS NOT 'SELF'
     AND (
         ConversationDetails.type IS 'GROUP'
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
@@ -188,7 +188,7 @@ countConversations:
 SELECT COUNT(*)
 FROM Conversation
 WHERE
-    type NOT IN ('SELF', 'MEETING')
+    type IS NOT 'SELF'
     AND CASE
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
@@ -214,7 +214,7 @@ countConversationDetailsWithEvents:
 -- @CustomKey conversation_list_folders
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
-    ConversationDetails.type NOT IN ('SELF', 'MEETING')
+    ConversationDetails.type IS NOT 'SELF'
     AND (
         ConversationDetails.type IS 'GROUP'
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
@@ -252,7 +252,7 @@ countConversationDetailsWithEventsFromSearch:
 -- @CustomKey conversation_list_folders
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
-    ConversationDetails.type NOT IN ('SELF', 'MEETING')
+    ConversationDetails.type IS NOT 'SELF'
     AND (
         ConversationDetails.type IS 'GROUP'
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
