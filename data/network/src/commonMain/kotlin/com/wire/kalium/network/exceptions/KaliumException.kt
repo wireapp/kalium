@@ -23,6 +23,7 @@ package com.wire.kalium.network.exceptions
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.authenticated.message.SendMessageResponse
+import com.wire.kalium.network.api.model.AdminlessConversationErrorResponse
 import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.api.model.GenericAPIErrorResponse
 import com.wire.kalium.network.api.model.MLSErrorResponse
@@ -103,6 +104,10 @@ data class MLSError(
 ) : KaliumException.FeatureError()
 
 data class FederationError(val errorResponse: FederationErrorResponse) : KaliumException.FeatureError()
+
+data class AdminlessConversationError(
+    val errorResponse: AdminlessConversationErrorResponse
+) : KaliumException.FeatureError()
 
 fun KaliumException.InvalidRequestError.isInvalidCredentials(): Boolean {
     return errorResponse.label == INVALID_CREDENTIALS

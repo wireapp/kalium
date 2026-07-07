@@ -105,6 +105,7 @@ import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
@@ -1252,6 +1253,7 @@ public class UserSessionScope internal constructor(
         get() = AssetDataSource(
             assetApi = authenticatedNetworkContainer.assetApi,
             assetDao = userStorage.database.assetDAO,
+            selfUserId = userId,
             assetAuditLog = lazy { users.assetAuditLog },
             kaliumFileSystem = kaliumFileSystem
         )
@@ -2442,6 +2444,7 @@ public class UserSessionScope internal constructor(
             currentPersistenceEventHookNotifier,
             memberJoinHandler,
             joinExistingMLSConversationUseCase,
+            KaliumDispatcherImpl,
         )
     }
 
@@ -2538,7 +2541,9 @@ public class UserSessionScope internal constructor(
             kaliumConfigs.linkPreviewEnabled,
             this,
             kaliumConfigs,
-            userScopedLogger
+            userScopedLogger,
+            KaliumDispatcherImpl,
+            LegalHoldStatusMapperImpl
         )
     }
 

@@ -35,7 +35,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -122,7 +121,6 @@ import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.InternalKaliumApi
 import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlin.time.Duration.Companion.seconds
 
@@ -172,8 +170,8 @@ public class MessageScope internal constructor(
     private val scope: CoroutineScope,
     private val kaliumConfigs: KaliumConfigs,
     kaliumLogger: KaliumLogger,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
+    internal val dispatcher: KaliumDispatcher,
+    private val legalHoldStatusMapper: LegalHoldStatusMapper
 ) {
 
     internal val messageSendFailureHandler: MessageSendFailureHandler

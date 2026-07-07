@@ -62,6 +62,8 @@ SET assetTransferStatus = ?
 WHERE uuid = ?;
 
 upsertAttachmentFile:
+-- @NotifyCustomKey message_list_:conversationId
+-- @NotifyCustomKey CellFile
 INSERT INTO CellFile(
     uuid,
     conversationId,
@@ -103,4 +105,3 @@ ON CONFLICT(uuid) DO UPDATE SET
     assetTransferStatus = COALESCE(excluded.assetTransferStatus, assetTransferStatus),
     contentUrlExpiresAt = COALESCE(excluded.contentUrlExpiresAt, contentUrlExpiresAt),
     editSupported = excluded.editSupported;
-
