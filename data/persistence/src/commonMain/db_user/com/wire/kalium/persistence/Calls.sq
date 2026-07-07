@@ -19,6 +19,8 @@ CREATE INDEX call_status ON Call(status);
 CREATE INDEX Call_idx_conversation_created_at ON Call(conversation_id, created_at DESC);
 
 insertCall:
+-- @NotifyCustomKey conversation_list_calls
+-- @NotifyCustomKey Call
 INSERT INTO Call(conversation_id, id, status, caller_id, conversation_type, created_at, type)
 VALUES (?, ?, ?, ?, ?, ?, ?);
 
@@ -41,6 +43,8 @@ selectOutgoingCalls:
 SELECT * FROM Call WHERE status = 'STARTED';
 
 updateLastCallStatusByConversationId:
+-- @NotifyCustomKey conversation_list_calls
+-- @NotifyCustomKey Call
 UPDATE Call
 SET status = ?
 WHERE
@@ -98,6 +102,8 @@ ORDER BY created_at DESC
 LIMIT 1;
 
 updateOpenCallsToClosedStatus:
+-- @NotifyCustomKey conversation_list_calls
+-- @NotifyCustomKey Call
 UPDATE Call
 SET status = 'CLOSED'
 WHERE

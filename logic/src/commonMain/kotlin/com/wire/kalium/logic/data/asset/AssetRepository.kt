@@ -34,6 +34,7 @@ import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.calcFileSHA256
 import com.wire.kalium.cryptography.utils.decryptFileWithAES256
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
@@ -154,6 +155,7 @@ internal interface AssetRepository {
 internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
+    private val selfUserId: UserId,
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val assetAuditLog: Lazy<AssetAuditFeatureHandler>,
     private val kaliumFileSystem: KaliumFileSystem
@@ -171,6 +173,7 @@ internal class AssetDataSource(
             path = assetDataPath,
             size = assetDataSize,
             mimeType = mimeType,
+            conversationId = conversationId,
             filename = filename,
             filetype = filetype
         )
@@ -243,7 +246,7 @@ internal class AssetDataSource(
         size: Long,
         mimeType: String,
         // for public assets we set conversationId to "00000000-0000-0000-0000-000000000000" for more info check confluence
-        conversationId: ConversationId? = ConversationId("00000000-0000-0000-0000-000000000000", "no-domain"),
+        conversationId: ConversationId?,
         filename: String?,
         filetype: String?
     ): UploadAssetData = UploadAssetData(path, size, mimeType, true, RetentionType.ETERNAL)
@@ -251,7 +254,7 @@ internal class AssetDataSource(
             if (assetAuditLog.value.isAssetAuditLogEnabled()) {
                 // Initialize asset audit log fields if the feature is enabled
                 copy(
-                    conversationId = conversationId,
+                    conversationId = conversationId ?: publicAssetConversationId(),
                     filename = filename,
                     filetype = filetype,
                 )
@@ -259,6 +262,9 @@ internal class AssetDataSource(
                 this
             }
         }
+
+    private fun publicAssetConversationId(): ConversationId =
+        ConversationId(PUBLIC_ASSET_CONVERSATION_ID, selfUserId.domain)
 
     private suspend fun uploadAndPersistAsset(
         uploadAssetData: UploadAssetData,
@@ -472,5 +478,7 @@ internal class AssetDataSource(
 
 private fun buildFileName(name: String, extension: String?): String =
     extension?.let { "$name.$extension" } ?: name
+
+private const val PUBLIC_ASSET_CONVERSATION_ID = "00000000-0000-0000-0000-000000000000"
 
 internal data class FetchedAssetData(val path: Path, val justDownloaded: Boolean)

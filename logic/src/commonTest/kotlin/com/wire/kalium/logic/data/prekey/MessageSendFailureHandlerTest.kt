@@ -68,6 +68,7 @@ internal class MessageSendFailureHandlerTest {
                 withFetchUsersByIdSuccess()
                 withFetchOtherUserClients(Either.Right(emptyMap()))
                 withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
+                withTryMarkClientsAsValid(Either.Right(Unit))
             }
         val failureData =
             ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
@@ -86,6 +87,7 @@ internal class MessageSendFailureHandlerTest {
                 withFetchUsersByIdSuccess()
                 withFetchOtherUserClients(Either.Right(mapOf(userOneDTO, userTwoDTO)))
                 withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
+                withTryMarkClientsAsValid(Either.Right(Unit))
             }
 
         val failureData =
@@ -99,6 +101,11 @@ internal class MessageSendFailureHandlerTest {
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.clientRepository.storeUserClientListAndRemoveRedundantClients(
                 eq(arrangement.userOneInsertClientParams + arrangement.userTwoInsertClientParams)
+            )
+        }
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.clientRepository.tryMarkClientsAsValid(
+                eq(mapOf(arrangement.userOne.first to arrangement.userOne.second, arrangement.userTwo.first to arrangement.userTwo.second))
             )
         }
     }
@@ -276,6 +283,7 @@ internal class MessageSendFailureHandlerTest {
                 withFetchUsersByIdSuccess()
                 withFetchOtherUserClients(Either.Right(mapOf(userOneDTO)))
                 withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
+                withTryMarkClientsAsValid(Either.Right(Unit))
             }
 
         val failure = ProteusSendMessageFailure(
@@ -312,6 +320,7 @@ internal class MessageSendFailureHandlerTest {
             .arrange {
                 withFetchOtherUserClients(Either.Right(emptyMap()))
                 withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
+                withTryMarkClientsAsValid(Either.Right(Unit))
                 withFetchUsersByIdSuccess()
                 withFetchConversationSucceeding()
             }
@@ -334,6 +343,7 @@ internal class MessageSendFailureHandlerTest {
             .arrange {
                 withFetchOtherUserClients(Either.Right(emptyMap()))
                 withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
+                withTryMarkClientsAsValid(Either.Right(Unit))
                 withFetchUsersByIdSuccess()
             }
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
@@ -433,6 +443,14 @@ internal class MessageSendFailureHandlerTest {
         ) = apply {
             everySuspend {
                 clientRepository.storeUserClientListAndRemoveRedundantClients(any())
+            }.returns(result)
+        }
+
+        suspend fun withTryMarkClientsAsValid(
+            result: Either<StorageFailure, Unit>
+        ) = apply {
+            everySuspend {
+                clientRepository.tryMarkClientsAsValid(any())
             }.returns(result)
         }
 

@@ -2373,6 +2373,8 @@ abstract class com.wire.kalium.logic/CoreLogicCommon { // com.wire.kalium.logic/
         abstract fun <get-globalDatabaseBuilder>(): com.wire.kalium.persistence.db/GlobalDatabaseBuilder // com.wire.kalium.logic/CoreLogicCommon.globalDatabaseBuilder.<get-globalDatabaseBuilder>|<get-globalDatabaseBuilder>(){}[0]
     abstract val globalPreferences // com.wire.kalium.logic/CoreLogicCommon.globalPreferences|{}globalPreferences[0]
         abstract fun <get-globalPreferences>(): com.wire.kalium.persistence.kmmSettings/GlobalPrefProvider // com.wire.kalium.logic/CoreLogicCommon.globalPreferences.<get-globalPreferences>|<get-globalPreferences>(){}[0]
+    abstract val networkStateObserver // com.wire.kalium.logic/CoreLogicCommon.networkStateObserver|{}networkStateObserver[0]
+        abstract fun <get-networkStateObserver>(): com.wire.kalium.network/NetworkStateObserver // com.wire.kalium.logic/CoreLogicCommon.networkStateObserver.<get-networkStateObserver>|<get-networkStateObserver>(){}[0]
     final val authenticationScopeForConfigId // com.wire.kalium.logic/CoreLogicCommon.authenticationScopeForConfigId|{}authenticationScopeForConfigId[0]
         final fun <get-authenticationScopeForConfigId>(): com.wire.kalium.logic.feature.auth.autoVersioningAuth/AuthenticationScopeForConfigIdUseCase // com.wire.kalium.logic/CoreLogicCommon.authenticationScopeForConfigId.<get-authenticationScopeForConfigId>|<get-authenticationScopeForConfigId>(){}[0]
     final val idMapper // com.wire.kalium.logic/CoreLogicCommon.idMapper|{}idMapper[0]
