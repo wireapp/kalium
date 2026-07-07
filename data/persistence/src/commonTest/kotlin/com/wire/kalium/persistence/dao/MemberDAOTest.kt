@@ -65,6 +65,28 @@ class MemberDAOTest : BaseDatabaseTest() {
         assertEquals(listOf(member1), memberDAO.observeConversationMembers(conversationEntity1.id).first())
     }
 
+    @Test
+    fun givenExistingMember_whenGettingMemberRole_thenReturnsRole() = runTest {
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val member1 = TestStubs.member1
+        conversationDAO.insertConversation(conversationEntity1)
+        memberDAO.insertMember(member1, conversationEntity1.id)
+
+        val result = memberDAO.getMemberRole(member1.user, conversationEntity1.id)
+
+        assertEquals(member1.role, result)
+    }
+
+    @Test
+    fun givenMissingMember_whenGettingMemberRole_thenReturnsNull() = runTest {
+        val conversationEntity1 = TestStubs.conversationEntity1
+        val member1 = TestStubs.member1
+        conversationDAO.insertConversation(conversationEntity1)
+
+        val result = memberDAO.getMemberRole(member1.user, conversationEntity1.id)
+
+        assertNull(result)
+    }
 
     @Test
     fun givenExistingConversation_ThenMemberCanBeDeleted() = runTest {

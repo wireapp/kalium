@@ -53,6 +53,7 @@ class MemberChangeEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownSucceeding()
+            .withConversationMemberRole(null)
             .withUpdateMemberSucceeding()
             .withPersistMessageSucceeding()
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
@@ -111,6 +112,7 @@ class MemberChangeEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownSucceeding()
+            .withConversationMemberRole(null)
             .withUpdateMemberSucceeding()
             .withPersistMessageSucceeding()
             .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
@@ -130,6 +132,7 @@ class MemberChangeEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
+            .withConversationMemberRole(null)
             .withUpdateMemberSucceeding()
             .withPersistMessageSucceeding()
             .arrange()
@@ -169,6 +172,7 @@ class MemberChangeEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownSucceeding()
+            .withConversationMemberRole(Member.Role.Member)
             .withUpdateMemberSucceeding()
             .withPersistMessageSucceeding()
             .arrange()
@@ -193,6 +197,7 @@ class MemberChangeEventHandlerTest {
 
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownSucceeding()
+            .withConversationMemberRole(null)
             .withUpdateMemberSucceeding()
             .withPersistMessageSucceeding()
             .arrange()
@@ -211,12 +216,32 @@ class MemberChangeEventHandlerTest {
     }
 
     @Test
+    fun givenUserAlreadyAdmin_whenHandlingMemberChangedRoleToAdmin_thenSystemMessageIsNotPersisted() = runTest {
+        val selfMember = Member(TestUser.USER_ID, Member.Role.Admin)
+        val event = TestEvent.memberChange(member = selfMember)
+
+        val (arrangement, eventHandler) = Arrangement()
+            .withFetchConversationIfUnknownSucceeding()
+            .withConversationMemberRole(Member.Role.Admin)
+            .withUpdateMemberSucceeding()
+            .withPersistMessageSucceeding()
+            .arrange()
+
+        eventHandler.handle(arrangement.transactionContext, event)
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.persistMessage(any())
+        }
+    }
+
+    @Test
     fun givenSelfUserRoleChangedToMember_whenHandlingMemberChangedRole_thenNoSystemMessageIsPersisted() = runTest {
         val selfMember = Member(TestUser.USER_ID, Member.Role.Member)
         val event = TestEvent.memberChange(member = selfMember)
 
         val (arrangement, eventHandler) = Arrangement()
             .withFetchConversationIfUnknownSucceeding()
+            .withConversationMemberRole(Member.Role.Admin)
             .withUpdateMemberSucceeding()
             .arrange()
 
@@ -257,6 +282,12 @@ class MemberChangeEventHandlerTest {
             everySuspend {
                 conversationRepository.updateMemberFromEvent(any(), any())
             } returns Either.Right(Unit)
+        }
+
+        suspend fun withConversationMemberRole(role: Member.Role?) = apply {
+            everySuspend {
+                conversationRepository.getConversationMemberRole(any(), any())
+            } returns Either.Right(role)
         }
 
         suspend fun withUpdateMutedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
