@@ -41,9 +41,8 @@ import platform.darwin.dispatch_queue_create
 
 internal actual class NetworkStateObserverImpl : NetworkStateObserver {
 
-    // Optimistic initial value: there is no synchronous API to query the current path, so we assume connectivity
-    // until the monitor delivers its first update (which happens shortly after start).
-    private val networkStateFlow = MutableStateFlow<NetworkState>(NetworkState.ConnectedWithInternet)
+    // Conservative initial value: until the path monitor delivers its first update, we don't know the current status.
+    private val networkStateFlow = MutableStateFlow<NetworkState>(NetworkState.NotConnected)
     private val currentNetworkFlow = MutableStateFlow<CurrentNetwork?>(null)
     private val monitor = nw_path_monitor_create()
 
