@@ -98,7 +98,7 @@ internal interface ConversationMapper {
     fun legalHoldStatusToEntity(legalHoldStatus: Conversation.LegalHoldStatus): ConversationEntity.LegalHoldStatus
     fun legalHoldStatusFromEntity(legalHoldStatus: ConversationEntity.LegalHoldStatus): Conversation.LegalHoldStatus
 
-    fun fromConversationEntityType(type: ConversationEntity.Type, groupType: ConversationEntity.GroupType?): Conversation.Type
+    fun fromConversationEntityType(type: ConversationEntity.Type, groupType: ConversationEntity.GroupType): Conversation.Type
 
     fun fromModelToDAOAccess(accessList: Set<Conversation.Access>): List<ConversationEntity.Access>
     fun fromModelToDAOAccessRole(accessRoleList: Set<Conversation.AccessRole>): List<ConversationEntity.AccessRole>
@@ -152,7 +152,7 @@ internal class ConversationMapperImpl(
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-            groupType = type.toGroupType(apiModel.conversationGroupType),
+            groupType = apiModel.conversationGroupType.toGroupType(),
             channelAccess = null, // TODO: implement when api is ready
             channelAddPermission = apiModel.channelAddUserPermissionTypeDTO?.toDAO(),
             wireCell = conversationId.toString().takeIf { apiModel.cellEnabled() }, // TODO refactor to boolean in WPB-16946
@@ -291,8 +291,8 @@ internal class ConversationMapperImpl(
                 }
 
                 ConversationEntity.Type.GROUP -> {
-                    if (groupType == ConversationEntity.GroupType.CHANNEL) {
-                        ConversationDetails.Group.Channel(
+                    when (groupType) {
+                        ConversationEntity.GroupType.Channel -> ConversationDetails.Group.Channel(
                             conversation = fromConversationViewToEntity(daoModel),
                             hasOngoingCall = callStatus != null, // todo: we can do better!
                             isSelfUserMember = isMember,
@@ -307,8 +307,8 @@ internal class ConversationMapperImpl(
                             } ?: ConversationHistorySettings.Private,
                             wireCell = wireCell,
                         )
-                    } else if (groupType == ConversationEntity.GroupType.MEETING) {
-                        ConversationDetails.Group.Meeting(
+
+                        ConversationEntity.GroupType.Meeting -> ConversationDetails.Group.Meeting(
                             conversation = fromConversationViewToEntity(daoModel),
                             hasOngoingCall = callStatus != null, // todo: we can do better!
                             isSelfUserMember = isMember,
@@ -317,8 +317,8 @@ internal class ConversationMapperImpl(
                             folder = folderId?.let { ConversationFolder(it, folderName ?: "", type = FolderType.USER) },
                             wireCell = wireCell,
                         )
-                    } else {
-                        ConversationDetails.Group.Regular(
+
+                        ConversationEntity.GroupType.Group -> ConversationDetails.Group.Regular(
                             conversation = fromConversationViewToEntity(daoModel),
                             hasOngoingCall = callStatus != null, // todo: we can do better!
                             isSelfUserMember = isMember,
@@ -327,6 +327,9 @@ internal class ConversationMapperImpl(
                             folder = folderId?.let { ConversationFolder(it, folderName ?: "", type = FolderType.USER) },
                             wireCell = wireCell,
                         )
+
+                        is ConversationEntity.GroupType.Unknown -> throw IllegalArgumentException("Unexpected group type: $groupType")
+                        null -> throw IllegalArgumentException("Missing group type")
                     }
                 }
 
@@ -504,8 +507,8 @@ internal class ConversationMapperImpl(
             mlsVerificationStatus = verificationStatusToEntity(mlsVerificationStatus),
             proteusVerificationStatus = verificationStatusToEntity(proteusVerificationStatus),
             legalHoldStatus = legalHoldStatusToEntity(legalHoldStatus),
-            // There were no channels in old Android clients, so no channel migration is necessary.
-            groupType = ConversationEntity.GroupType.GROUP,
+            // There were no channels or meetings in old Android clients, so no channel or meeting migration is necessary.
+            groupType = ConversationEntity.GroupType.Group,
             channelAccess = null,
             channelAddPermission = null,
             wireCell = null,
@@ -541,7 +544,7 @@ internal class ConversationMapperImpl(
         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-        groupType = ConversationEntity.GroupType.GROUP, // We can assume the conversations aren't channels while they're failed,
+        groupType = ConversationEntity.GroupType.Group, // We can assume the conversations aren't channels or meetings while they're failed
         channelAccess = null,
         channelAddPermission = null,
         wireCell = null,
@@ -590,7 +593,7 @@ internal class ConversationMapperImpl(
             ConversationEntity.LegalHoldStatus.DISABLED -> Conversation.LegalHoldStatus.DISABLED
         }
 
-    override fun fromConversationEntityType(type: ConversationEntity.Type, groupType: ConversationEntity.GroupType?): Conversation.Type {
+    override fun fromConversationEntityType(type: ConversationEntity.Type, groupType: ConversationEntity.GroupType): Conversation.Type {
         return type.fromDaoModelToType(groupType)
     }
 
@@ -628,13 +631,13 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
     }
 }
 
-private fun ConversationEntity.Type.toGroupType(groupType: ConversationResponse.GroupType?): ConversationEntity.GroupType? =
-    when {
-        this != ConversationEntity.Type.GROUP -> null
-        groupType == ConversationResponse.GroupType.CHANNEL -> ConversationEntity.GroupType.CHANNEL
-        groupType == ConversationResponse.GroupType.MEETING -> ConversationEntity.GroupType.MEETING
-        else -> ConversationEntity.GroupType.GROUP
-    }
+internal fun ConversationResponse.GroupType?.toGroupType(): ConversationEntity.GroupType = when (this) {
+    is ConversationResponse.GroupType.Channel -> ConversationEntity.GroupType.Channel
+    is ConversationResponse.GroupType.Meeting -> ConversationEntity.GroupType.Meeting
+    is ConversationResponse.GroupType.RegularGroup -> ConversationEntity.GroupType.Group
+    is ConversationResponse.GroupType.Unknown -> ConversationEntity.GroupType.Unknown(this.value)
+    null -> ConversationEntity.GroupType.Unknown("")
+}
 
 internal fun ChannelAddPermission.toDaoChannelPermission(): ConversationEntity.ChannelAddPermission = when (this) {
     ChannelAddPermission.ADMINS -> ConversationEntity.ChannelAddPermission.ADMINS
@@ -651,15 +654,14 @@ internal fun ConversationEntity.ChannelAccess.toModelChannelAccess(): ChannelAcc
     ConversationEntity.ChannelAccess.PUBLIC -> ChannelAccess.PUBLIC
 }
 
-internal fun ConversationEntity.Type.fromDaoModelToType(groupType: ConversationEntity.GroupType?): Conversation.Type = when (this) {
+internal fun ConversationEntity.Type.fromDaoModelToType(groupType: ConversationEntity.GroupType): Conversation.Type = when (this) {
     ConversationEntity.Type.SELF -> Conversation.Type.Self
     ConversationEntity.Type.ONE_ON_ONE -> Conversation.Type.OneOnOne
-    ConversationEntity.Type.GROUP -> {
-        when (groupType) {
-            ConversationEntity.GroupType.CHANNEL -> Conversation.Type.Group.Channel
-            ConversationEntity.GroupType.MEETING -> Conversation.Type.Group.Meeting
-            else -> Conversation.Type.Group.Regular
-        }
+    ConversationEntity.Type.GROUP -> when (groupType) {
+        is ConversationEntity.GroupType.Channel -> Conversation.Type.Group.Channel
+        is ConversationEntity.GroupType.Meeting -> Conversation.Type.Group.Meeting
+        is ConversationEntity.GroupType.Group -> Conversation.Type.Group.Regular
+        is ConversationEntity.GroupType.Unknown -> throw IllegalArgumentException("Unexpected group type: ${groupType.name}")
     }
 
     ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.ConnectionPending

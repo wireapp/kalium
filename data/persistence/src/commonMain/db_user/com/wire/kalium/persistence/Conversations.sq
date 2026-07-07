@@ -45,7 +45,7 @@ CREATE TABLE Conversation (
     proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
     degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
     legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED',
-    group_type TEXT AS ConversationEntity.GroupType DEFAULT NULL,
+    group_type TEXT AS ConversationEntity.GroupType NOT NULL DEFAULT '',
     channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT NULL,
     channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL,
     wire_cell TEXT,
@@ -270,7 +270,11 @@ SET channel_add_permission = ?
 WHERE qualified_id = :qualified_id;
 
 selectAllConversations:
-SELECT * FROM Conversation WHERE type IS NOT 'CONNECTION_PENDING' AND group_type IS NOT 'MEETING' AND deleted_locally = 0 ORDER BY last_modified_date DESC, name ASC;
+SELECT * FROM Conversation
+WHERE type IS NOT 'CONNECTION_PENDING'
+    AND group_type IN ('GROUP', 'CHANNEL')
+    AND deleted_locally = 0
+ORDER BY last_modified_date DESC, name ASC;
 
 selectAllConversationsWithOtherUserName:
 SELECT
@@ -582,14 +586,14 @@ SELECT wire_cell FROM Conversation WHERE qualified_id = ?;
 selectCellGroupConversations:
 SELECT * FROM Conversation
 WHERE type = 'GROUP'
-AND group_type IS NOT 'MEETING'
+AND group_type IN ('GROUP', 'CHANNEL')
 AND wire_cell IS NOT NULL
 AND deleted_locally = 0;
 
 selectCellGroupConversationsPaged:
 SELECT * FROM Conversation
 WHERE type = 'GROUP'
-AND group_type IS NOT 'MEETING'
+AND group_type IN ('GROUP', 'CHANNEL')
 AND wire_cell IS NOT NULL
 AND deleted_locally = 0
 AND (:query = '' OR (name IS NOT NULL AND LOWER(name) LIKE '%' || LOWER(:query) || '%'))

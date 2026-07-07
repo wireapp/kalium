@@ -138,7 +138,7 @@ selectAllConversationDetails:
 SELECT * FROM ConversationDetails
 WHERE
     type IS NOT 'SELF'
-    AND group_type IS NOT 'MEETING'
+    AND group_type IN ('GROUP', 'CHANNEL')
     AND (
     type IS 'GROUP'
     OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata

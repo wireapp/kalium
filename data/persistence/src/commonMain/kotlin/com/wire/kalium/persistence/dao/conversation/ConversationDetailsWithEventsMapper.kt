@@ -77,7 +77,7 @@ data object ConversationDetailsWithEventsMapper {
         mls_verification_status: ConversationEntity.VerificationStatus,
         proteus_verification_status: ConversationEntity.VerificationStatus,
         legal_hold_status: ConversationEntity.LegalHoldStatus,
-        group_type: ConversationEntity.GroupType?,
+        group_type: ConversationEntity.GroupType,
         channel_access: ConversationEntity.ChannelAccess?,
         channel_add_permission: ConversationEntity.ChannelAddPermission?,
         selfUserId: QualifiedIDEntity?,

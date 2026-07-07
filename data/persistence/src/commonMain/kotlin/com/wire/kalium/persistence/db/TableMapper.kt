@@ -61,6 +61,7 @@ import com.wire.kalium.persistence.adapter.ChangeLogEventTypeAdapter
 import com.wire.kalium.persistence.adapter.ContentTypeAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessListAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
+import com.wire.kalium.persistence.adapter.GroupTypeAdapter
 import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.adapter.MLSPublicKeysAdapter
 import com.wire.kalium.persistence.adapter.MemberRoleAdapter
@@ -111,7 +112,7 @@ internal object TableMapper {
         verification_statusAdapter = EnumColumnAdapter(),
         proteus_verification_statusAdapter = EnumColumnAdapter(),
         legal_hold_statusAdapter = EnumColumnAdapter(),
-        group_typeAdapter = EnumColumnAdapter(),
+        group_typeAdapter = GroupTypeAdapter,
         channel_accessAdapter = EnumColumnAdapter(),
         channel_add_permissionAdapter = EnumColumnAdapter()
     )

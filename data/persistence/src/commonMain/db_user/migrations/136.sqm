@@ -48,7 +48,7 @@ CREATE TABLE Conversation_new (
     proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
     degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
     legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED',
-    group_type TEXT AS ConversationEntity.GroupType DEFAULT NULL,
+    group_type TEXT AS ConversationEntity.GroupType NOT NULL DEFAULT '',
     channel_access TEXT AS ConversationEntity.ChannelAccess DEFAULT NULL,
     channel_add_permission TEXT AS ConversationEntity.ChannelAddPermission DEFAULT NULL,
     wire_cell TEXT,

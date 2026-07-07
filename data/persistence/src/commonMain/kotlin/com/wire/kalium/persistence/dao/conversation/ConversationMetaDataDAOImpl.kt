@@ -66,6 +66,6 @@ class ConversationMetaDataDAOImpl internal constructor(
 
 data class ConversationTypeAndProtocolInfo(
     val type: ConversationEntity.Type,
-    val groupType: ConversationEntity.GroupType?,
+    val groupType: ConversationEntity.GroupType,
     val protocolInfo: ConversationEntity.ProtocolInfo,
 )

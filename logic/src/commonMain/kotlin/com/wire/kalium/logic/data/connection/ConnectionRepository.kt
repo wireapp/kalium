@@ -66,6 +66,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupType
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.ConversationPersistenceApi
@@ -319,7 +320,7 @@ internal class ConnectionDataSource(
                         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-                        groupType = null,
+                        groupType = GroupType.Unknown(),
                         channelAccess = null,
                         channelAddPermission = null,
                         wireCell = null,

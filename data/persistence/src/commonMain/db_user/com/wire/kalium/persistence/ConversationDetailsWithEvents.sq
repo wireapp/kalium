@@ -67,7 +67,7 @@ LEFT JOIN MessageTextContent AS TextContent
     ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
 WHERE
     ConversationDetails.type IS NOT 'SELF'
-    AND group_type IS NOT 'MEETING'
+    AND group_type IN ('GROUP', 'CHANNEL')
     AND (
         ConversationDetails.type IS 'GROUP'
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
@@ -190,7 +190,7 @@ SELECT COUNT(*)
 FROM Conversation
 WHERE
     type IS NOT 'SELF'
-    AND group_type IS NOT 'MEETING'
+    AND group_type IN ('GROUP', 'CHANNEL')
     AND CASE
         WHEN :conversationFilter = 'ALL' THEN 1 = 1
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
@@ -217,7 +217,7 @@ countConversationDetailsWithEvents:
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
     ConversationDetails.type IS NOT 'SELF'
-    AND group_type IS NOT 'MEETING'
+    AND group_type IN ('GROUP', 'CHANNEL')
     AND (
         ConversationDetails.type IS 'GROUP'
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
@@ -256,7 +256,7 @@ countConversationDetailsWithEventsFromSearch:
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
     ConversationDetails.type IS NOT 'SELF'
-    AND group_type IS NOT 'MEETING'
+    AND group_type IN ('GROUP', 'CHANNEL')
     AND (
         ConversationDetails.type IS 'GROUP'
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata

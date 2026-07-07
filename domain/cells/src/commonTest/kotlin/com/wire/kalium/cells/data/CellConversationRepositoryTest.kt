@@ -49,14 +49,14 @@ class CellConversationRepositoryTest {
         val groupConv1 = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
-            ConversationEntity.GroupType.GROUP,
+            ConversationEntity.GroupType.Group,
             null,
             "cell1"
         )
         val groupConv2 = createGroupConversationEntity(
             CONVERSATION_ID_2,
             CONVERSATION_NAME_2,
-            ConversationEntity.GroupType.CHANNEL,
+            ConversationEntity.GroupType.Channel,
             ConversationEntity.ChannelAccess.PUBLIC,
             "conversationId"
         )
@@ -100,7 +100,7 @@ class CellConversationRepositoryTest {
         val privateChannel = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
-            ConversationEntity.GroupType.CHANNEL,
+            ConversationEntity.GroupType.Channel,
             ConversationEntity.ChannelAccess.PRIVATE,
             "conversationId"
         )
@@ -126,14 +126,14 @@ class CellConversationRepositoryTest {
         val groupConv1 = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
-            ConversationEntity.GroupType.GROUP,
+            ConversationEntity.GroupType.Group,
             null,
             "cell1"
         )
         val groupConv2 = createGroupConversationEntity(
             CONVERSATION_ID_2,
             CONVERSATION_NAME_2,
-            ConversationEntity.GroupType.CHANNEL,
+            ConversationEntity.GroupType.Channel,
             ConversationEntity.ChannelAccess.PUBLIC,
             "conversationId"
         )
@@ -173,7 +173,7 @@ class CellConversationRepositoryTest {
         val privateChannel = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
-            groupType = ConversationEntity.GroupType.CHANNEL,
+            groupType = ConversationEntity.GroupType.Channel,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             wireCell = "cell1"
         )
@@ -195,7 +195,7 @@ class CellConversationRepositoryTest {
         val publicChannel = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
-            groupType = ConversationEntity.GroupType.CHANNEL,
+            groupType = ConversationEntity.GroupType.Channel,
             channelAccess = ConversationEntity.ChannelAccess.PUBLIC,
             wireCell = "cell1"
         )
@@ -217,7 +217,7 @@ class CellConversationRepositoryTest {
         val regularGroup = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
-            groupType = ConversationEntity.GroupType.GROUP,
+            groupType = ConversationEntity.GroupType.Group,
             channelAccess = null,
             wireCell = "cell1"
         )
@@ -239,7 +239,7 @@ class CellConversationRepositoryTest {
         val groupConv = createGroupConversationEntity(
             CONVERSATION_ID_2,
             CONVERSATION_NAME_2,
-            ConversationEntity.GroupType.GROUP,
+            ConversationEntity.GroupType.Group,
             null,
             "cell2"
         )
@@ -262,14 +262,14 @@ class CellConversationRepositoryTest {
         val validConv = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
-            ConversationEntity.GroupType.GROUP,
+            ConversationEntity.GroupType.Group,
             null,
             "cell1"
         )
         val nullNameConv = createGroupConversationEntity(
             CONVERSATION_ID_2,
             "",
-            ConversationEntity.GroupType.GROUP,
+            ConversationEntity.GroupType.Group,
             null,
             "cell2"
         )
