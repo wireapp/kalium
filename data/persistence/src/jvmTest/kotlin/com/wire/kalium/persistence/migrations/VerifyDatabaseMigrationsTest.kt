@@ -19,6 +19,7 @@ package com.wire.kalium.persistence.migrations
 
 import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.async.coroutines.awaitMigrate
+import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.UserDatabase
@@ -61,6 +62,106 @@ class VerifyDatabaseMigrationsTest {
             message = "Database schema migration is not up to date." +
                     "Differences found:\n${result.operations.joinToString("\n")}"
         )
+    }
+
+    @Test
+    fun givenChannelBeforeMigration138_whenMigrating_thenBackfillsGroupType() = runTest {
+        // given
+        val dbFile = File("build/user-schema-dumps/migration-138-backfill.db")
+        dbFile.parentFile.mkdirs()
+        File("src/commonMain/db_user/schemas/34.db").copyTo(dbFile, overwrite = true)
+
+        val driver = JdbcSqliteDriver("jdbc:sqlite:${dbFile.absolutePath}")
+
+        try {
+            UserDatabase.Companion.Schema.awaitMigrate(driver, 34L, MIGRATION_138_START_VERSION)
+            driver.execute(
+                null,
+                """
+                    INSERT INTO Conversation (
+                        qualified_id,
+                        name,
+                        type,
+                        is_channel,
+                        mls_group_state,
+                        protocol,
+                        muted_status,
+                        muted_time,
+                        creator_id,
+                        last_modified_date,
+                        access_list,
+                        access_role_list,
+                        last_read_date,
+                        mls_last_keying_material_update_date,
+                        mls_cipher_suite,
+                        receipt_mode,
+                        incomplete_metadata,
+                        archived,
+                        history_sharing_retention_seconds
+                    )
+                    VALUES
+                        (
+                            'regular@wire.com',
+                            'Regular group',
+                            'GROUP',
+                            0,
+                            'ESTABLISHED',
+                            'PROTEUS',
+                            'ALL_ALLOWED',
+                            0,
+                            'creator',
+                            0,
+                            '[]',
+                            '[]',
+                            0,
+                            0,
+                            'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519',
+                            'DISABLED',
+                            0,
+                            0,
+                            0
+                        ),
+                        (
+                            'channel@wire.com',
+                            'Channel',
+                            'GROUP',
+                            1,
+                            'ESTABLISHED',
+                            'PROTEUS',
+                            'ALL_ALLOWED',
+                            0,
+                            'creator',
+                            0,
+                            '[]',
+                            '[]',
+                            0,
+                            0,
+                            'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519',
+                            'DISABLED',
+                            0,
+                            0,
+                            0
+                        )
+                """.trimIndent(),
+                0
+            )
+
+            // when
+            UserDatabase.Companion.Schema.awaitMigrate(driver, MIGRATION_138_START_VERSION, UserDatabase.Companion.Schema.version)
+
+            // then
+            assertEquals(
+                mapOf(
+                    "channel@wire.com" to "CHANNEL",
+                    "regular@wire.com" to "GROUP"
+                ),
+                driver.selectConversationGroupTypes()
+            )
+            assertEquals(false, driver.conversationTableHasColumn("is_channel"))
+        } finally {
+            driver.close()
+            dbFile.delete()
+        }
     }
 
     @Test
@@ -111,6 +212,38 @@ class VerifyDatabaseMigrationsTest {
         assertEquals(true, schemaDump.views.isNotEmpty(), "Invalid schema dump: views are empty")
         assertEquals(true, schemaDump.indexes.isNotEmpty(), "Invalid schema dump: indexes are empty")
         assertEquals(true, schemaDump.triggers.isNotEmpty(), "Invalid schema dump: triggers are empty")
+    }
+
+    private fun JdbcSqliteDriver.selectConversationGroupTypes(): Map<String, String> {
+        val result = mutableMapOf<String, String>()
+        executeQuery(
+            null,
+            "SELECT qualified_id, group_type FROM Conversation ORDER BY qualified_id",
+            mapper = { cursor ->
+                while (cursor.next().value) {
+                    result[cursor.getString(0)!!] = cursor.getString(1)!!
+                }
+                QueryResult.Unit
+            },
+            0
+        )
+        return result
+    }
+
+    private fun JdbcSqliteDriver.conversationTableHasColumn(columnName: String): Boolean {
+        var hasColumn = false
+        executeQuery(
+            null,
+            "PRAGMA table_info(Conversation)",
+            mapper = { cursor ->
+                while (cursor.next().value) {
+                    hasColumn = hasColumn || cursor.getString(1) == columnName
+                }
+                QueryResult.Unit
+            },
+            0
+        )
+        return hasColumn
     }
 
     private class Arrangement(private val databaseSchemaSource: DatabaseSchemaSource) {
@@ -181,5 +314,9 @@ class VerifyDatabaseMigrationsTest {
             ddlFreshDumpJsonPath = "build/global-schema-dumps/database-schema-from-definitions.json",
             ddlDerivedDumpJsonPath = "build/global-schema-dumps/database-schema-from-migrations.json"
         )
+    }
+
+    private companion object {
+        const val MIGRATION_138_START_VERSION = 138L
     }
 }

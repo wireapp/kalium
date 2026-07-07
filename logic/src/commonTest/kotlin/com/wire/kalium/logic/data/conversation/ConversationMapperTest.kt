@@ -54,10 +54,8 @@ import dev.mokkery.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 internal class ConversationMapperTest {
 
@@ -217,7 +215,7 @@ internal class ConversationMapperTest {
         val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
         assertEquals(ConversationEntity.Type.GROUP, result.type)
-        assertTrue(result.isChannel)
+        assertEquals(ConversationEntity.GroupType.CHANNEL, result.groupType)
     }
 
     @Test
@@ -242,7 +240,32 @@ internal class ConversationMapperTest {
         val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
         assertEquals(ConversationEntity.Type.GROUP, result.type)
-        assertFalse(result.isChannel)
+        assertEquals(ConversationEntity.GroupType.GROUP, result.groupType)
+    }
+
+    @Test
+    fun givenAMeetingConversationResponse_whenMappingFromConversationResponseToDaoModel_thenShouldBeAMeeting() {
+        val response = CONVERSATION_RESPONSE.copy(
+            conversationGroupType = ConversationResponse.GroupType.MEETING,
+            type = ConversationResponse.Type.GROUP
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
+
+        val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertEquals(ConversationEntity.Type.GROUP, result.type)
+        assertEquals(ConversationEntity.GroupType.MEETING, result.groupType)
     }
 
     @Test
@@ -273,6 +296,7 @@ internal class ConversationMapperTest {
         val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
         assertEquals(ConversationEntity.Type.ONE_ON_ONE, result.type)
+        assertEquals(null, result.groupType)
     }
 
     @Test

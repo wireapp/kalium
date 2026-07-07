@@ -319,7 +319,7 @@ internal class ConnectionDataSource(
                         mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-                        isChannel = false,
+                        groupType = null,
                         channelAccess = null,
                         channelAddPermission = null,
                         wireCell = null,

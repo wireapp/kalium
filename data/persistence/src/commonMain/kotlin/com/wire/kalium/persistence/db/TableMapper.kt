@@ -111,6 +111,7 @@ internal object TableMapper {
         verification_statusAdapter = EnumColumnAdapter(),
         proteus_verification_statusAdapter = EnumColumnAdapter(),
         legal_hold_statusAdapter = EnumColumnAdapter(),
+        group_typeAdapter = EnumColumnAdapter(),
         channel_accessAdapter = EnumColumnAdapter(),
         channel_add_permissionAdapter = EnumColumnAdapter()
     )

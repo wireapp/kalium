@@ -88,7 +88,7 @@ class SQLiteHistoryClientDAOTest {
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-            isChannel = false,
+            groupType = ConversationEntity.GroupType.GROUP,
             channelAccess = null,
             channelAddPermission = null,
             wireCell = null,

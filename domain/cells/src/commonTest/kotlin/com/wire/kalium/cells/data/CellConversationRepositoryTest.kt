@@ -46,11 +46,17 @@ class CellConversationRepositoryTest {
 
     @Test
     fun given_GroupConversationsWithWireCell_whenInvoked_thenReturnConversationDetails() = runTest {
-        val groupConv1 = createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_NAME_1, false, null, "cell1")
+        val groupConv1 = createGroupConversationEntity(
+            CONVERSATION_ID_1,
+            CONVERSATION_NAME_1,
+            ConversationEntity.GroupType.GROUP,
+            null,
+            "cell1"
+        )
         val groupConv2 = createGroupConversationEntity(
             CONVERSATION_ID_2,
             CONVERSATION_NAME_2,
-            true,
+            ConversationEntity.GroupType.CHANNEL,
             ConversationEntity.ChannelAccess.PUBLIC,
             "conversationId"
         )
@@ -94,7 +100,7 @@ class CellConversationRepositoryTest {
         val privateChannel = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
-            true,
+            ConversationEntity.GroupType.CHANNEL,
             ConversationEntity.ChannelAccess.PRIVATE,
             "conversationId"
         )
@@ -117,11 +123,17 @@ class CellConversationRepositoryTest {
 
     @Test
     fun given_GroupConversationsWithWireCell_whenGetPaginatedCalled_thenReturnsMappedConversations() = runTest {
-        val groupConv1 = createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_NAME_1, false, null, "cell1")
+        val groupConv1 = createGroupConversationEntity(
+            CONVERSATION_ID_1,
+            CONVERSATION_NAME_1,
+            ConversationEntity.GroupType.GROUP,
+            null,
+            "cell1"
+        )
         val groupConv2 = createGroupConversationEntity(
             CONVERSATION_ID_2,
             CONVERSATION_NAME_2,
-            true,
+            ConversationEntity.GroupType.CHANNEL,
             ConversationEntity.ChannelAccess.PUBLIC,
             "conversationId"
         )
@@ -161,7 +173,7 @@ class CellConversationRepositoryTest {
         val privateChannel = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
-            isChannel = true,
+            groupType = ConversationEntity.GroupType.CHANNEL,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             wireCell = "cell1"
         )
@@ -183,7 +195,7 @@ class CellConversationRepositoryTest {
         val publicChannel = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
-            isChannel = true,
+            groupType = ConversationEntity.GroupType.CHANNEL,
             channelAccess = ConversationEntity.ChannelAccess.PUBLIC,
             wireCell = "cell1"
         )
@@ -205,7 +217,7 @@ class CellConversationRepositoryTest {
         val regularGroup = createGroupConversationEntity(
             CONVERSATION_ID_1,
             CONVERSATION_NAME_1,
-            isChannel = false,
+            groupType = ConversationEntity.GroupType.GROUP,
             channelAccess = null,
             wireCell = "cell1"
         )
@@ -224,7 +236,13 @@ class CellConversationRepositoryTest {
 
     @Test
     fun given_PaginationOffset_whenGetPaginatedCalled_thenPassesOffsetToDao() = runTest {
-        val groupConv = createGroupConversationEntity(CONVERSATION_ID_2, CONVERSATION_NAME_2, false, null, "cell2")
+        val groupConv = createGroupConversationEntity(
+            CONVERSATION_ID_2,
+            CONVERSATION_NAME_2,
+            ConversationEntity.GroupType.GROUP,
+            null,
+            "cell2"
+        )
         val (_, repository) = Arrangement()
             .withPagedConversations(offset = 20, conversations = listOf(groupConv))
             .arrange()
@@ -241,8 +259,20 @@ class CellConversationRepositoryTest {
     @Test
     fun given_ConversationsWithNullAndEmptyNames_whenInvoked_thenFilterThemOut() = runTest {
         // Given
-        val validConv = createGroupConversationEntity(CONVERSATION_ID_1, CONVERSATION_NAME_1, false, null, "cell1")
-        val nullNameConv = createGroupConversationEntity(CONVERSATION_ID_2, "", false, null, "cell2")
+        val validConv = createGroupConversationEntity(
+            CONVERSATION_ID_1,
+            CONVERSATION_NAME_1,
+            ConversationEntity.GroupType.GROUP,
+            null,
+            "cell1"
+        )
+        val nullNameConv = createGroupConversationEntity(
+            CONVERSATION_ID_2,
+            "",
+            ConversationEntity.GroupType.GROUP,
+            null,
+            "cell2"
+        )
         val (_, repository) = Arrangement()
             .withConversations(listOf(validConv, nullNameConv))
             .arrange()
@@ -261,7 +291,7 @@ class CellConversationRepositoryTest {
     private fun createGroupConversationEntity(
         conversationId: ConversationId,
         name: String,
-        isChannel: Boolean,
+        groupType: ConversationEntity.GroupType,
         channelAccess: ConversationEntity.ChannelAccess?,
         wireCell: String?
     ): ConversationEntity = ConversationEntity(
@@ -279,7 +309,7 @@ class CellConversationRepositoryTest {
         legalHoldStatus = ConversationEntity.LegalHoldStatus.ENABLED,
         access = emptyList(),
         accessRole = emptyList(),
-        isChannel = isChannel,
+        groupType = groupType,
         channelAccess = channelAccess,
         wireCell = wireCell,
         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
