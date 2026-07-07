@@ -75,6 +75,7 @@ interface MemberDAO {
 
     suspend fun getAllMembers(): List<UserIDEntity>
     suspend fun getConversationMembers(conversationId: QualifiedIDEntity): List<UserIDEntity>
+    suspend fun getMemberRole(userId: UserIDEntity, conversationId: QualifiedIDEntity): MemberEntity.Role?
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -252,5 +253,10 @@ internal class MemberDAOImpl internal constructor(
             memberQueries.selectAllMembersByConversation(conversationId)
                 .awaitAsList()
                 .map { it.user }
+        }
+
+    override suspend fun getMemberRole(userId: UserIDEntity, conversationId: QualifiedIDEntity): MemberEntity.Role? =
+        withContext(readDispatcher.value) {
+            memberQueries.selectMemberRoleByUserAndConversation(userId, conversationId).awaitAsOneOrNull()
         }
 }
