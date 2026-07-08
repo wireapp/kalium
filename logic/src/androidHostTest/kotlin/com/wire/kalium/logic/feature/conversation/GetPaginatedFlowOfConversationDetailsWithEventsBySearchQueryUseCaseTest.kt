@@ -65,14 +65,15 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
                         pagingConfig,
                         startingOffset,
                         false,
-                        emptyList()
+                        emptyList(),
+                        any()
                     )
             }
         }
     }
 
     @Test
-    fun givenJoinableCalls_whenGettingPaginatedList_thenCallUseCaseWithJoinableConversationIds() =
+    fun givenJoinableCalls_whenGettingPaginatedList_thenPassInitialCallIdsToRepository() =
         runTest(dispatcher.default) {
             // Given
             val joinableCallConversationId = ConversationId("joinable", "domain")
@@ -99,14 +100,15 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
                         pagingConfig,
                         startingOffset,
                         false,
-                        listOf(joinableCallConversationId)
+                        listOf(joinableCallConversationId),
+                        any()
                     )
                 }
             }
         }
 
     @Test
-    fun givenJoinableCallIdsChange_whenGettingPaginatedList_thenPagerIsRecreated() =
+    fun givenJoinableCallIdsChange_whenGettingPaginatedList_thenRepositoryPagerIsCreatedOnce() =
         runTest(dispatcher.default) {
             // Given
             val joinableCallConversationId = ConversationId("joinable", "domain")
@@ -132,64 +134,14 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
                 // Then
                 verifySuspend(VerifyMode.exactly(1)) {
                     conversationRepository.extensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
-                        queryConfig,
-                        pagingConfig,
-                        startingOffset,
-                        false,
-                        emptyList()
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any(),
+                        any()
                     )
                 }
-                verifySuspend(VerifyMode.exactly(1)) {
-                    conversationRepository.extensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
-                        queryConfig,
-                        pagingConfig,
-                        startingOffset,
-                        false,
-                        listOf(joinableCallConversationId)
-                    )
-                }
-            }
-        }
-
-    @Test
-    fun givenSameJoinableCallIdsInDifferentOrder_whenGettingPaginatedList_thenPagerIsNotRecreated() =
-        runTest(dispatcher.default) {
-            // Given
-            val firstJoinableCallConversationId = ConversationId("joinable-1", "domain")
-            val secondJoinableCallConversationId = ConversationId("joinable-2", "domain")
-            val (arrangement, useCase) = Arrangement()
-                .withJoinableCallsFlow(
-                    flowOf(
-                        linkedMapOf(
-                            firstJoinableCallConversationId to TestCall.groupIncomingCall(firstJoinableCallConversationId),
-                            secondJoinableCallConversationId to TestCall.groupIncomingCall(secondJoinableCallConversationId)
-                        ),
-                        linkedMapOf(
-                            secondJoinableCallConversationId to TestCall.groupIncomingCall(secondJoinableCallConversationId),
-                            firstJoinableCallConversationId to TestCall.groupIncomingCall(firstJoinableCallConversationId)
-                        )
-                    )
-                )
-                .withPaginatedConversationResult(flowOf(PagingData.empty()))
-                .arrange()
-
-            // When
-            useCase(
-                queryConfig = arrangement.queryConfig,
-                pagingConfig = arrangement.pagingConfig,
-                startingOffset = arrangement.startingOffset,
-                strictMlsFilter = false
-            ).toList()
-
-            // Then
-            verifySuspend(VerifyMode.exactly(1)) {
-                arrangement.conversationRepository.extensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
-                    any(),
-                    any(),
-                    any(),
-                    any(),
-                    any()
-                )
             }
         }
 
@@ -220,6 +172,7 @@ internal class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCa
         suspend fun withPaginatedConversationResult(result: Flow<PagingData<ConversationDetailsWithEvents>>) = apply {
             everySuspend {
                 conversationRepositoryExtensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
+                    any(),
                     any(),
                     any(),
                     any(),
