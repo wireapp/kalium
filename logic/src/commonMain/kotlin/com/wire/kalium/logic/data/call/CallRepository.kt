@@ -59,7 +59,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toCrypto
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -138,7 +137,7 @@ internal interface CallRepository {
     fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     fun setStaleOpenCallsCleanupFinished()
     fun observeStaleOpenCallsCleanupFinished(): Flow<Boolean>
-    suspend fun leavePreviouslyJoinedMlsConferences()
+    suspend fun leaveStaleMlsConferenceIfNeeded(conversationId: ConversationId)
     suspend fun persistMissedCall(conversationId: ConversationId)
     suspend fun joinMlsConference(
         conversationId: ConversationId,
@@ -234,6 +233,11 @@ internal class CallDataSource(
         CallStatus.STILL_ONGOING
     )
 
+    private val activePersistedCallStatuses = listOf(
+        CallEntity.Status.ESTABLISHED,
+        CallEntity.Status.ANSWERED,
+        CallEntity.Status.STILL_ONGOING
+    )
     private val mutexProvider = MutexProvider<ConversationId>()
 
     // TODO This method needs to be simplified and optimized
@@ -291,12 +295,7 @@ internal class CallDataSource(
         val isOneOnOneCall = callEntity.conversationType == ConversationEntity.Type.ONE_ON_ONE
         val isGroupCall = callEntity.conversationType == ConversationEntity.Type.GROUP
 
-        val activeCallStatus = listOf(
-            CallEntity.Status.ESTABLISHED,
-            CallEntity.Status.ANSWERED,
-            CallEntity.Status.STILL_ONGOING
-        )
-        val hasStalePersistedActiveCall = !isCallInCurrentSession && lastCallStatus in activeCallStatus
+        val hasStalePersistedActiveCall = !isCallInCurrentSession && lastCallStatus in activePersistedCallStatuses
         val currentSessionLastCallStatus = if (hasStalePersistedActiveCall) null else lastCallStatus
 
         callingLogger.i(
@@ -306,6 +305,7 @@ internal class CallDataSource(
         )
         if (hasStalePersistedActiveCall) {
             callingLogger.i("[CallRepository][createCall] -> Closing stale persisted active call")
+            leaveStaleMlsConferenceIfNeeded(conversationId, type)
             updateCallStatusInDatabaseById(
                 conversationId = conversationId,
                 status = CallStatus.CLOSED
@@ -313,14 +313,14 @@ internal class CallDataSource(
         }
 
         val currentCallStatus = _callMetadataProfile.value[conversationId]?.callStatus
-        if (shouldUpdateCallMetadataFromCreateCall(currentCallStatus, currentSessionLastCallStatus, activeCallStatus, status)) {
+        if (shouldUpdateCallMetadataFromCreateCall(currentCallStatus, currentSessionLastCallStatus, activePersistedCallStatuses, status)) {
             _callMetadataProfile.update { callMetadataProfile ->
                 callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
             }
         }
 
         if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
-            if ((currentSessionLastCallStatus !in activeCallStatus && isGroupCall) || isOneOnOneCall) {
+            if ((currentSessionLastCallStatus !in activePersistedCallStatuses && isGroupCall) || isOneOnOneCall) {
                 callingLogger.i(
                     "[CallRepository][createCall] -> Update.2 | lastCallStatus: [$currentSessionLastCallStatus] " +
                             "| isGroupCall: [$isGroupCall] | isOneOnOneCall: [$isOneOnOneCall]"
@@ -338,13 +338,19 @@ internal class CallDataSource(
             )
             if (currentSessionLastCallStatus == callMapper.toCallEntityStatus(status)) {
                 callingLogger.i("[CallRepository][createCall] -> Update Call with same status")
-            } else if (currentSessionLastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
+            } else if (currentSessionLastCallStatus !in activePersistedCallStatuses || (status == CallStatus.STARTED)) {
                 callingLogger.i("[CallRepository][createCall] -> Insert Call")
                 // Save into database
                 wrapStorageRequest {
                     callDAO.insertCall(call = callEntity)
                 }
             }
+        }
+    }
+
+    private suspend fun leaveStaleMlsConferenceIfNeeded(conversationId: ConversationId, type: ConversationTypeForCall) {
+        if (type == ConversationTypeForCall.ConferenceMls) {
+            leaveMlsConference(conversationId)
         }
     }
 
@@ -588,14 +594,30 @@ internal class CallDataSource(
                 .mapValues { (conversationId, metadata) -> metadata.toCall(conversationId) }
         }.distinctUntilChanged()
 
-    override suspend fun leavePreviouslyJoinedMlsConferences() {
-        callingLogger.i("Leaving previously joined MLS conferences")
+    override suspend fun leaveStaleMlsConferenceIfNeeded(conversationId: ConversationId) {
+        if (_callMetadataProfile.value.containsKey(conversationId)) {
+            callingLogger.i(
+                "[CallRepository][leaveStaleMlsConferenceIfNeeded] -> Skipping current session call for " +
+                        conversationId.toLogString()
+            )
+            return
+        }
 
-        callDAO.observeEstablishedCalls()
-            .first()
-            .filter { it.type == CallEntity.Type.MLS_CONFERENCE }
-            .forEach {
-                leaveMlsConference(it.conversationId.toModel())
+        conversationRepository.getConversationProtocolInfo(conversationId)
+            .onSuccess { protocolInfo ->
+                if (protocolInfo is Conversation.ProtocolInfo.MLS) {
+                    callingLogger.i(
+                        "[CallRepository][leaveStaleMlsConferenceIfNeeded] -> Leaving stale MLS conference for " +
+                                conversationId.toLogString()
+                    )
+                    leaveMlsConference(conversationId)
+                }
+            }
+            .onFailure {
+                callingLogger.w(
+                    "[CallRepository][leaveStaleMlsConferenceIfNeeded] -> Could not get protocol for " +
+                            conversationId.toLogString()
+                )
             }
     }
 

@@ -404,6 +404,137 @@ class CallRepositoryTest {
     }
 
     @Test
+    fun givenStalePersistedMlsConferenceCall_whenCreatingCall_thenLeaveStaleMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveConversationDetailsByIdReturns(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group.Regular(
+                            Arrangement.groupConversation,
+                            isSelfUserMember = true,
+                            selfRole = Conversation.Member.Role.Member
+                        )
+                    )
+                )
+            )
+            .givenGetKnownUserSucceeds()
+            .givenGetTeamSucceeds()
+            .givenGetCallStatusByConversationIdReturns(CallEntity.Status.ESTABLISHED)
+            .givenLeaveSubconversationSuccessful()
+            .givenInsertCallSucceeds()
+            .arrange()
+
+        // when
+        callRepository.createCall(
+            conversationId = Arrangement.conversationId,
+            status = CallStatus.STILL_ONGOING,
+            callerId = callerId,
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            type = ConversationTypeForCall.ConferenceMls
+        )
+
+        // then
+        verifySuspend {
+            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+        }
+    }
+
+    @Test
+    fun givenStalePersistedNonMlsCall_whenCreatingCall_thenDoNotLeaveStaleMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveConversationDetailsByIdReturns(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group.Regular(
+                            Arrangement.groupConversation,
+                            isSelfUserMember = true,
+                            selfRole = Conversation.Member.Role.Member
+                        )
+                    )
+                )
+            )
+            .givenGetKnownUserSucceeds()
+            .givenGetTeamSucceeds()
+            .givenGetCallStatusByConversationIdReturns(CallEntity.Status.ESTABLISHED)
+            .givenInsertCallSucceeds()
+            .arrange()
+
+        // when
+        callRepository.createCall(
+            conversationId = Arrangement.conversationId,
+            status = CallStatus.STILL_ONGOING,
+            callerId = callerId,
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            type = ConversationTypeForCall.Conference
+        )
+
+        // then
+        verifySuspend(VerifyMode.not) {
+            arrangement.leaveSubconversationUseCase.invoke(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenCurrentSessionCall_whenLeavingStaleMlsConferenceIfNeeded_thenDoNotLeaveMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(data = mapOf(Arrangement.conversationId to createCallMetadata()))
+            )
+            .arrange()
+
+        // when
+        callRepository.leaveStaleMlsConferenceIfNeeded(Arrangement.conversationId)
+
+        // then
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.getConversationProtocolInfo(any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.leaveSubconversationUseCase.invoke(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenNoCurrentSessionMlsConversation_whenLeavingStaleMlsConferenceIfNeeded_thenLeaveMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
+            .givenLeaveSubconversationSuccessful()
+            .arrange()
+
+        // when
+        callRepository.leaveStaleMlsConferenceIfNeeded(Arrangement.conversationId)
+
+        // then
+        verifySuspend {
+            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+        }
+    }
+
+    @Test
+    fun givenNoCurrentSessionProteusConversation_whenLeavingStaleMlsConferenceIfNeeded_thenDoNotLeaveMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenGetConversationProtocolInfoReturns(Conversation.ProtocolInfo.Proteus)
+            .arrange()
+
+        // when
+        callRepository.leaveStaleMlsConferenceIfNeeded(Arrangement.conversationId)
+
+        // then
+        verifySuspend(VerifyMode.not) {
+            arrangement.leaveSubconversationUseCase.invoke(any(), any(), any())
+        }
+    }
+
+    @Test
     fun whenStillOngoingGroupCallWithCurrentSessionClosedMetadataAndActivePersistedCall_thenUpdateMemoryOnly() = runTest {
         // given
         val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
@@ -2099,6 +2230,7 @@ class CallRepositoryTest {
             every {
                 qualifiedIdMapper.fromStringToQualifiedID(eq("callerId"))
             } returns QualifiedID("callerId", "")
+
         }
 
         suspend fun arrange() = this to buildCallRepository().also {

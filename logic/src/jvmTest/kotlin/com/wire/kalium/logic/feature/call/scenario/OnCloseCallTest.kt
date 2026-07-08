@@ -331,6 +331,29 @@ class OnCloseCallTest {
             }
         }
 
+    @Test
+    fun givenNoCurrentSessionCall_whenOnCloseCallInvoked_thenLeaveStaleMlsConferenceIfNeeded() =
+        testScope.runTest {
+            val (arrangement, onCloseCall) = Arrangement(testScope)
+                .withGetCallMetadata(null)
+                .arrange()
+            val reason = CallClosedReason.NORMAL.avsValue
+
+            onCloseCall.onClosedCall(
+                reason,
+                conversationIdString,
+                time,
+                userIdString,
+                clientId,
+                null
+            )
+            yield()
+
+            verifySuspend(VerifyMode.exactly(1)) {
+                arrangement.callRepository.leaveStaleMlsConferenceIfNeeded(eq(conversationId))
+            }
+        }
+
     private class Arrangement(val testScope: TestScope) {
         val callRepository: CallRepository = mock<CallRepository>(mode = MockMode.autoUnit)
         val networkStateObserver = mock<NetworkStateObserver>(mode = MockMode.autoUnit)
@@ -356,7 +379,7 @@ class OnCloseCallTest {
             } returns (MutableStateFlow(networkState))
         }
 
-        fun withGetCallMetadata(metadata: CallMetadata): Arrangement = apply {
+        fun withGetCallMetadata(metadata: CallMetadata?): Arrangement = apply {
             every {
                 callRepository.getCallMetadata(conversationId)
             } returns (metadata)
