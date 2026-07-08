@@ -150,32 +150,6 @@ class CallDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMultipleCallsForConversation_whenGettingLastCallByConversationId_thenReturnLatestCall() = runTest {
-        // given
-        val conversationId = callEntity.conversationId
-        val previousCall = callEntity.copy(id = "id1", status = CallEntity.Status.CLOSED)
-        val lastCall = callEntity.copy(
-            id = "id2",
-            status = CallEntity.Status.ESTABLISHED,
-            type = CallEntity.Type.MLS_CONFERENCE
-        )
-        val otherConversationCall = callEntity.copy(
-            id = "id3",
-            conversationId = conversationId.copy(value = "otherConvId"),
-            status = CallEntity.Status.STILL_ONGOING
-        )
-        callDAO.insertCall(previousCall)
-        callDAO.insertCall(lastCall)
-        callDAO.insertCall(otherConversationCall)
-
-        // when
-        val result = callDAO.getLastCallByConversationId(conversationId)
-
-        // then
-        assertEquals(lastCall, result)
-    }
-
-    @Test
     fun givenNoActiveCalls_whenObservingActiveCalls_thenReturnEmptyList() = runTest {
         // given
         nonActiveCalls.forEach {

@@ -406,10 +406,6 @@ class CallRepositoryTest {
     @Test
     fun givenStalePersistedMlsConferenceCall_whenCreatingCall_thenLeaveStaleMlsConference() = runTest {
         // given
-        val persistedMlsConferenceCall = createCallEntity().copy(
-            status = CallEntity.Status.ESTABLISHED,
-            type = CallEntity.Type.MLS_CONFERENCE
-        )
         val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
@@ -425,7 +421,6 @@ class CallRepositoryTest {
             .givenGetKnownUserSucceeds()
             .givenGetTeamSucceeds()
             .givenGetCallStatusByConversationIdReturns(CallEntity.Status.ESTABLISHED)
-            .givenGetLastCallByConversationIdReturns(persistedMlsConferenceCall)
             .givenLeaveSubconversationSuccessful()
             .givenInsertCallSucceeds()
             .arrange()
@@ -450,10 +445,6 @@ class CallRepositoryTest {
     @Test
     fun givenStalePersistedNonMlsCall_whenCreatingCall_thenDoNotLeaveStaleMlsConference() = runTest {
         // given
-        val persistedConferenceCall = createCallEntity().copy(
-            status = CallEntity.Status.ESTABLISHED,
-            type = CallEntity.Type.CONFERENCE
-        )
         val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .givenObserveConversationDetailsByIdReturns(
                 flowOf(
@@ -469,7 +460,6 @@ class CallRepositoryTest {
             .givenGetKnownUserSucceeds()
             .givenGetTeamSucceeds()
             .givenGetCallStatusByConversationIdReturns(CallEntity.Status.ESTABLISHED)
-            .givenGetLastCallByConversationIdReturns(persistedConferenceCall)
             .givenInsertCallSucceeds()
             .arrange()
 
@@ -504,8 +494,41 @@ class CallRepositoryTest {
 
         // then
         verifySuspend(VerifyMode.not) {
-            arrangement.callDAO.getLastCallByConversationId(any())
+            arrangement.conversationRepository.getConversationProtocolInfo(any())
         }
+        verifySuspend(VerifyMode.not) {
+            arrangement.leaveSubconversationUseCase.invoke(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenNoCurrentSessionMlsConversation_whenLeavingStaleMlsConferenceIfNeeded_thenLeaveMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
+            .givenLeaveSubconversationSuccessful()
+            .arrange()
+
+        // when
+        callRepository.leaveStaleMlsConferenceIfNeeded(Arrangement.conversationId)
+
+        // then
+        verifySuspend {
+            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+        }
+    }
+
+    @Test
+    fun givenNoCurrentSessionProteusConversation_whenLeavingStaleMlsConferenceIfNeeded_thenDoNotLeaveMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenGetConversationProtocolInfoReturns(Conversation.ProtocolInfo.Proteus)
+            .arrange()
+
+        // when
+        callRepository.leaveStaleMlsConferenceIfNeeded(Arrangement.conversationId)
+
+        // then
         verifySuspend(VerifyMode.not) {
             arrangement.leaveSubconversationUseCase.invoke(any(), any(), any())
         }
@@ -2208,9 +2231,6 @@ class CallRepositoryTest {
                 qualifiedIdMapper.fromStringToQualifiedID(eq("callerId"))
             } returns QualifiedID("callerId", "")
 
-            everySuspend {
-                callDAO.getLastCallByConversationId(any())
-            } returns null
         }
 
         suspend fun arrange() = this to buildCallRepository().also {
@@ -2278,12 +2298,6 @@ class CallRepositoryTest {
             everySuspend {
                 callDAO.getCallStatusByConversationId(any())
             } sequentiallyReturns status.asList()
-        }
-
-        suspend fun givenGetLastCallByConversationIdReturns(call: CallEntity?) = apply {
-            everySuspend {
-                callDAO.getLastCallByConversationId(any())
-            } returns call
         }
 
         suspend fun givenPersistMessageSuccessful() = apply {

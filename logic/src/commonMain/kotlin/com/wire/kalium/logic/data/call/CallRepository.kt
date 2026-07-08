@@ -305,7 +305,7 @@ internal class CallDataSource(
         )
         if (hasStalePersistedActiveCall) {
             callingLogger.i("[CallRepository][createCall] -> Closing stale persisted active call")
-            leaveStaleMlsConferenceIfNeeded(conversationId)
+            leaveStaleMlsConferenceIfNeeded(conversationId, type)
             updateCallStatusInDatabaseById(
                 conversationId = conversationId,
                 status = CallStatus.CLOSED
@@ -345,6 +345,12 @@ internal class CallDataSource(
                     callDAO.insertCall(call = callEntity)
                 }
             }
+        }
+    }
+
+    private suspend fun leaveStaleMlsConferenceIfNeeded(conversationId: ConversationId, type: ConversationTypeForCall) {
+        if (type == ConversationTypeForCall.ConferenceMls) {
+            leaveMlsConference(conversationId)
         }
     }
 
@@ -597,16 +603,22 @@ internal class CallDataSource(
             return
         }
 
-        val lastCall = callDAO.getLastCallByConversationId(
-            callMapper.fromConversationIdToQualifiedIDEntity(conversationId = conversationId)
-        )
-        if (lastCall?.status in activePersistedCallStatuses && lastCall?.type == CallEntity.Type.MLS_CONFERENCE) {
-            callingLogger.i(
-                "[CallRepository][leaveStaleMlsConferenceIfNeeded] -> Leaving stale MLS conference for " +
-                        conversationId.toLogString()
-            )
-            leaveMlsConference(conversationId)
-        }
+        conversationRepository.getConversationProtocolInfo(conversationId)
+            .onSuccess { protocolInfo ->
+                if (protocolInfo is Conversation.ProtocolInfo.MLS) {
+                    callingLogger.i(
+                        "[CallRepository][leaveStaleMlsConferenceIfNeeded] -> Leaving stale MLS conference for " +
+                                conversationId.toLogString()
+                    )
+                    leaveMlsConference(conversationId)
+                }
+            }
+            .onFailure {
+                callingLogger.w(
+                    "[CallRepository][leaveStaleMlsConferenceIfNeeded] -> Could not get protocol for " +
+                            conversationId.toLogString()
+                )
+            }
     }
 
     override suspend fun joinMlsConference(
