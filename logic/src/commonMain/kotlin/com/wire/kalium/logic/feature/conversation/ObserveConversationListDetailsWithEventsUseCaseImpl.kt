@@ -67,7 +67,7 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
 
             is ConversationFilter.Folder -> {
                 conversationFolderRepository.observeConversationsFromFolder(conversationFilter.folderId)
-                    .withJoinableCallsOnTop(moveJoinableCallsOnTop = true)
+                    .withJoinableCallsOnTop(moveJoinableCallsOnTop = !fromArchive)
             }
 
             ConversationFilter.All,
