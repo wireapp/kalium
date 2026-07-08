@@ -96,10 +96,11 @@ WHERE archived = :fromArchive
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
 ORDER BY
     CASE
-        WHEN :newActivitiesOnTop AND type = 'GROUP' AND qualifiedId IN :ongoingCallConversationIds THEN 1
+        WHEN :newActivitiesOnTop AND type = 'GROUP' AND qualifiedId IN :ongoingCallConversationIds 
+        THEN 1
+        WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow
         ELSE 0
     END DESC,
-    CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
     lastModifiedDate DESC,
     name IS NULL,
     name COLLATE NOCASE ASC;
