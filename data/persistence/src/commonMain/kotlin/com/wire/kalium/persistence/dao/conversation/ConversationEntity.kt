@@ -63,7 +63,7 @@ data class ConversationEntity(
         data object Group : GroupType
         data object Channel : GroupType
         data object Meeting : GroupType
-        data class Unknown(val name: String = "") : GroupType
+        data class Unknown(val name: String) : GroupType
     }
 
     enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED, PENDING_AFTER_RESET }
