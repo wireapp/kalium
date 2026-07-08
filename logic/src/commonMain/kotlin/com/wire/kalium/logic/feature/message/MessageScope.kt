@@ -106,6 +106,8 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionH
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCase
 import com.wire.kalium.logic.feature.message.linkpreview.GenerateLinkPreviewUseCaseImpl
+import com.wire.kalium.logic.feature.message.linkpreview.DetectLinkPreviewTargetUseCase
+import com.wire.kalium.logic.feature.message.linkpreview.DetectLinkPreviewTargetUseCaseImpl
 import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
@@ -637,4 +639,7 @@ public class MessageScope internal constructor(
             userPropertyRepository = userPropertyRepository,
             linkPreviewEnabled = linkPreviewEnabled
         )
+
+    public val detectLinkPreviewTarget: DetectLinkPreviewTargetUseCase
+        get() = DetectLinkPreviewTargetUseCaseImpl()
 }
