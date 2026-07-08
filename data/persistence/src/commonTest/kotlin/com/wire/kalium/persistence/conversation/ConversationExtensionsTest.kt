@@ -25,8 +25,6 @@ import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.dao.call.CallDAO
-import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
@@ -66,7 +64,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     private lateinit var connectionDAO: ConnectionDAO
     private lateinit var memberDAO: MemberDAO
     private lateinit var userDAO: UserDAO
-    private lateinit var callDAO: CallDAO
     private lateinit var conversationFolderDAO: ConversationFolderDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
@@ -81,7 +78,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         connectionDAO = db.connectionDAO
         memberDAO = db.memberDAO
         userDAO = db.userDAO
-        callDAO = db.callDAO
         conversationFolderDAO = db.conversationFolderDAO
         conversationExtensions = ConversationExtensionsImpl(queries, ConversationDetailsWithEventsMapper, ReadDispatcher(dispatcher))
     }
@@ -252,31 +248,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         )
 
         assertFalse { pagingSource.invalid }
-    }
-
-    @Test
-    fun givenConversationListPageLoaded_whenCallIsInserted_thenPagingSourceShouldBeInvalidated() = runTest(dispatcher) {
-        populateData(count = 1, isChannel = false)
-        val conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain")
-        val pagingSource = getPager().pagingSource
-
-        pagingSource.refresh().also { result ->
-            assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
-        }
-        assertFalse { pagingSource.invalid }
-
-        callDAO.insertCall(
-            CallEntity(
-                conversationId = conversationId,
-                id = "call_1",
-                status = CallEntity.Status.STILL_ONGOING,
-                callerId = "caller",
-                conversationType = ConversationEntity.Type.GROUP,
-                type = CallEntity.Type.CONFERENCE
-            )
-        )
-
-        assertTrue { pagingSource.invalid }
     }
 
     @Test

@@ -24,6 +24,7 @@ import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
@@ -113,6 +114,7 @@ import kotlinx.coroutines.CoroutineScope
 @Suppress("LongParameterList")
 public class ConversationScope internal constructor(
     internal val conversationRepository: ConversationRepository,
+    internal val callRepository: CallRepository,
     private val conversationGroupRepository: ConversationGroupRepository,
     private val connectionRepository: ConnectionRepository,
     private val userRepository: UserRepository,
@@ -165,7 +167,12 @@ public class ConversationScope internal constructor(
         get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository)
 
     public val observeConversationListDetailsWithEvents: ObserveConversationListDetailsWithEventsUseCase
-        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(conversationRepository, conversationFolderRepository, getFavoriteFolder)
+        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(
+            conversationRepository,
+            conversationFolderRepository,
+            getFavoriteFolder,
+            callRepository
+        )
 
     public val observeConversationMembers: ObserveConversationMembersUseCase
         get() = ObserveConversationMembersUseCaseImpl(conversationRepository, userRepository)

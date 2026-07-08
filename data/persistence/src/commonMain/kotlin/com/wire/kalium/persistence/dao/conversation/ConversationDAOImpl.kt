@@ -355,12 +355,14 @@ internal class ConversationDAOImpl internal constructor(
         fromArchive: Boolean,
         onlyInteractionEnabled: Boolean,
         newActivitiesOnTop: Boolean,
+        ongoingCallConversationIds: List<QualifiedIDEntity>,
         strictMLSFilter: Boolean,
     ): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationDetailsWithEventsQueries.selectAllConversationDetailsWithEvents(
             fromArchive = fromArchive,
             onlyInteractionsEnabled = onlyInteractionEnabled,
             newActivitiesOnTop = newActivitiesOnTop,
+            ongoingCallConversationIds = ongoingCallConversationIds,
             strict_mls = if (strictMLSFilter) 1 else 0,
             mapper = conversationDetailsWithEventsMapper::fromViewToModel
         ).asFlow()

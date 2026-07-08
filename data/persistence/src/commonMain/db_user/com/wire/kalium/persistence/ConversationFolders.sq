@@ -38,7 +38,6 @@ getConversationsFromFolder:
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
 -- @CustomKey conversation_list_unread
--- @CustomKey conversation_list_calls
 -- @CustomKey conversation_list_folders
 SELECT ConversationDetailsWithEvents.*
 FROM LabeledConversation
