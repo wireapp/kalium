@@ -90,6 +90,14 @@ WHERE
 ORDER BY created_at DESC
 LIMIT 1;
 
+selectLastCallByConversationId:
+SELECT *
+FROM Call
+WHERE
+    conversation_id = :conversationId
+ORDER BY created_at DESC, id DESC
+LIMIT 1;
+
 selectLastClosedCallByConversationId:
 SELECT *
 FROM Call

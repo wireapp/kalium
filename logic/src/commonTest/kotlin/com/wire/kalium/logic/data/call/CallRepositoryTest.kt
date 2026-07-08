@@ -404,6 +404,114 @@ class CallRepositoryTest {
     }
 
     @Test
+    fun givenStalePersistedMlsConferenceCall_whenCreatingCall_thenLeaveStaleMlsConference() = runTest {
+        // given
+        val persistedMlsConferenceCall = createCallEntity().copy(
+            status = CallEntity.Status.ESTABLISHED,
+            type = CallEntity.Type.MLS_CONFERENCE
+        )
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveConversationDetailsByIdReturns(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group.Regular(
+                            Arrangement.groupConversation,
+                            isSelfUserMember = true,
+                            selfRole = Conversation.Member.Role.Member
+                        )
+                    )
+                )
+            )
+            .givenGetKnownUserSucceeds()
+            .givenGetTeamSucceeds()
+            .givenGetCallStatusByConversationIdReturns(CallEntity.Status.ESTABLISHED)
+            .givenGetLastCallByConversationIdReturns(persistedMlsConferenceCall)
+            .givenLeaveSubconversationSuccessful()
+            .givenInsertCallSucceeds()
+            .arrange()
+
+        // when
+        callRepository.createCall(
+            conversationId = Arrangement.conversationId,
+            status = CallStatus.STILL_ONGOING,
+            callerId = callerId,
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            type = ConversationTypeForCall.ConferenceMls
+        )
+
+        // then
+        verifySuspend {
+            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+        }
+    }
+
+    @Test
+    fun givenStalePersistedNonMlsCall_whenCreatingCall_thenDoNotLeaveStaleMlsConference() = runTest {
+        // given
+        val persistedConferenceCall = createCallEntity().copy(
+            status = CallEntity.Status.ESTABLISHED,
+            type = CallEntity.Type.CONFERENCE
+        )
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveConversationDetailsByIdReturns(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group.Regular(
+                            Arrangement.groupConversation,
+                            isSelfUserMember = true,
+                            selfRole = Conversation.Member.Role.Member
+                        )
+                    )
+                )
+            )
+            .givenGetKnownUserSucceeds()
+            .givenGetTeamSucceeds()
+            .givenGetCallStatusByConversationIdReturns(CallEntity.Status.ESTABLISHED)
+            .givenGetLastCallByConversationIdReturns(persistedConferenceCall)
+            .givenInsertCallSucceeds()
+            .arrange()
+
+        // when
+        callRepository.createCall(
+            conversationId = Arrangement.conversationId,
+            status = CallStatus.STILL_ONGOING,
+            callerId = callerId,
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            type = ConversationTypeForCall.Conference
+        )
+
+        // then
+        verifySuspend(VerifyMode.not) {
+            arrangement.leaveSubconversationUseCase.invoke(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenCurrentSessionCall_whenLeavingStaleMlsConferenceIfNeeded_thenDoNotLeaveMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(data = mapOf(Arrangement.conversationId to createCallMetadata()))
+            )
+            .arrange()
+
+        // when
+        callRepository.leaveStaleMlsConferenceIfNeeded(Arrangement.conversationId)
+
+        // then
+        verifySuspend(VerifyMode.not) {
+            arrangement.callDAO.getLastCallByConversationId(any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.leaveSubconversationUseCase.invoke(any(), any(), any())
+        }
+    }
+
+    @Test
     fun whenStillOngoingGroupCallWithCurrentSessionClosedMetadataAndActivePersistedCall_thenUpdateMemoryOnly() = runTest {
         // given
         val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
@@ -2099,6 +2207,10 @@ class CallRepositoryTest {
             every {
                 qualifiedIdMapper.fromStringToQualifiedID(eq("callerId"))
             } returns QualifiedID("callerId", "")
+
+            everySuspend {
+                callDAO.getLastCallByConversationId(any())
+            } returns null
         }
 
         suspend fun arrange() = this to buildCallRepository().also {
@@ -2166,6 +2278,12 @@ class CallRepositoryTest {
             everySuspend {
                 callDAO.getCallStatusByConversationId(any())
             } sequentiallyReturns status.asList()
+        }
+
+        suspend fun givenGetLastCallByConversationIdReturns(call: CallEntity?) = apply {
+            everySuspend {
+                callDAO.getLastCallByConversationId(any())
+            } returns call
         }
 
         suspend fun givenPersistMessageSuccessful() = apply {

@@ -146,6 +146,12 @@ internal class CallDAOImpl(
             callsQueries.lastCallStatusByConversationId(conversationId).awaitAsOneOrNull()
         }
 
+    override suspend fun getLastCallByConversationId(conversationId: QualifiedIDEntity): CallEntity? =
+        withContext(readDispatcher.value) {
+            callsQueries.selectLastCallByConversationId(conversationId, mapper = mapper::fromCalls)
+                .awaitAsOneOrNull()
+        }
+
     override fun getLastClosedCallByConversationId(conversationId: QualifiedIDEntity): Flow<String?> =
         callsQueries.selectLastClosedCallCreationTimeConversationId(conversationId)
             .asFlow()
