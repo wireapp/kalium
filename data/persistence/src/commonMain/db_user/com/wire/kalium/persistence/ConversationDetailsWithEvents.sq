@@ -67,7 +67,6 @@ LEFT JOIN MessageTextContent AS TextContent
     ON LastMessage.message_id = TextContent.message_id AND LastMessage.conversation_id = TextContent.conversation_id
 WHERE
     ConversationDetails.type IS NOT 'SELF'
-    AND group_type IN ('GROUP', 'CHANNEL')
     AND (
         ConversationDetails.type IS 'GROUP'
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
@@ -123,15 +122,13 @@ WHERE
       )
     )
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
+        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
         -- When filter is GROUPS, filter only group conversations
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND group_type = 'CHANNEL'
-        -- When filter is FAVORITES (future implementation)
-
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
         ELSE 1 = 0
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
@@ -163,15 +160,13 @@ WHERE
       )
     )
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
+        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
         -- When filter is GROUPS, filter only group conversations
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND group_type = 'CHANNEL'
-
-        -- When filter is FAVORITES (future implementation)
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
         ELSE 1 = 0
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
@@ -190,10 +185,12 @@ SELECT COUNT(*)
 FROM Conversation
 WHERE
     type IS NOT 'SELF'
-    AND group_type IN ('GROUP', 'CHANNEL')
     AND CASE
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
+        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
+        -- When filter is GROUPS, filter only group conversations
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
+        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
         WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
         ELSE 1 = 0
@@ -217,7 +214,6 @@ countConversationDetailsWithEvents:
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
     ConversationDetails.type IS NOT 'SELF'
-    AND group_type IN ('GROUP', 'CHANNEL')
     AND (
         ConversationDetails.type IS 'GROUP'
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
@@ -229,15 +225,13 @@ WHERE
     AND ConversationDetails.deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
+        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
         -- When filter is GROUPS, filter only group conversations
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND group_type = 'CHANNEL'
-
-        -- When filter is FAVORITES (future implementation)
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
         ELSE 1 = 0
     END
     AND (
@@ -256,7 +250,6 @@ countConversationDetailsWithEventsFromSearch:
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
     ConversationDetails.type IS NOT 'SELF'
-    AND group_type IN ('GROUP', 'CHANNEL')
     AND (
         ConversationDetails.type IS 'GROUP'
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
@@ -268,15 +261,13 @@ WHERE
     AND ConversationDetails.deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
+        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
         -- When filter is GROUPS, filter only group conversations
         WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND group_type = 'CHANNEL'
-
-        -- When filter is FAVORITES (future implementation)
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
         ELSE 1 = 0
     END
     AND (
