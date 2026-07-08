@@ -26,9 +26,10 @@ internal fun List<ConversationDetailsWithEvents>.withJoinableCallsOnTop(
     moveJoinableCallsOnTop: Boolean = true
 ): List<ConversationDetailsWithEvents> {
     return if (moveJoinableCallsOnTop) {
-        sortedByDescending {
+        val (joinable, others) = partition {
             it.conversationDetails.isJoinableGroupCall(joinableCallConversationIds)
         }
+        joinable + others
     } else {
         this
     }
