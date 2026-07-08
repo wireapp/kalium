@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.meeting
 
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimePeriod
 import kotlinx.datetime.Instant
@@ -29,7 +30,7 @@ object MeetingOccurrencesGenerator {
 
     fun generate(
         meetings: List<MeetingEntity>,
-        lastGeneratedStarts: Map<String, Instant>,
+        lastGeneratedStarts: Map<QualifiedIDEntity, Instant>,
         limit: GenerationLimit,
         now: Instant = Clock.System.now()
     ): List<MeetingOccurrenceEntity> {
@@ -55,9 +56,11 @@ object MeetingOccurrencesGenerator {
         return allOccurrences
     }
 
-    private fun List<MeetingEntity>.initialGeneratorStates(lastGeneratedStarts: Map<String, Instant>): MutableList<MeetingGeneratorState> =
+    private fun List<MeetingEntity>.initialGeneratorStates(
+        lastGeneratedStarts: Map<QualifiedIDEntity, Instant>
+    ): MutableList<MeetingGeneratorState> =
         this.mapNotNull { meeting ->
-            meeting.toGeneratorState(lastGeneratedStarts[meeting.meetingId.toString()])
+            meeting.toGeneratorState(lastGeneratedStarts[meeting.meetingId])
         }.toMutableList()
 
     private fun MeetingEntity.toGeneratorState(lastStart: Instant?): MeetingGeneratorState? {

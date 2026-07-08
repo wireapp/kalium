@@ -18,6 +18,9 @@
 
 package com.wire.kalium.logic.data.meeting
 
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
+import androidx.paging.map
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapStorageRequest
@@ -28,10 +31,17 @@ import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 internal interface MeetingRepository {
     suspend fun fetchAndPersistMeetings(now: Instant = Clock.System.now()): Either<CoreFailure, Unit>
     suspend fun syncMeetingOccurrences(now: Instant = Clock.System.now()): Either<CoreFailure, Unit>
+    suspend fun getPaginatedMeetings(
+        pagingConfig: PagingConfig,
+        startingOffset: Long,
+        fromDate: Instant = Clock.System.now()
+    ): Flow<PagingData<Meeting>>
 }
 
 internal class MeetingDataSource(
@@ -53,4 +63,17 @@ internal class MeetingDataSource(
             meetingDAO.insertMissingOccurrences(now)
         }
     }
+
+    override suspend fun getPaginatedMeetings(
+        pagingConfig: PagingConfig,
+        startingOffset: Long,
+        fromDate: Instant
+    ): Flow<PagingData<Meeting>> =
+        meetingDAO.getPaginatedMeetings(
+            pagingConfig = pagingConfig,
+            startingOffset = startingOffset,
+            fromDate = fromDate
+        ).pagingDataFlow.map { pagingData ->
+            pagingData.map(meetingMapper::fromDaoToModel)
+        }
 }

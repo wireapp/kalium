@@ -17,8 +17,14 @@
  */
 package com.wire.kalium.persistence.dao.meeting
 
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import com.wire.kalium.persistence.Meeting
 import com.wire.kalium.persistence.MeetingsQueries
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.KaliumPager
+import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
@@ -29,10 +35,22 @@ interface MeetingDao {
     suspend fun upsertMeetings(meetings: List<MeetingEntity>, now: Instant = Clock.System.now())
     suspend fun removeOutdatedMeetings(now: Instant = Clock.System.now())
     suspend fun insertMissingOccurrences(now: Instant = Clock.System.now())
+    suspend fun ensureUpcomingOccurrences(minimumCount: Int, now: Instant = Clock.System.now()): EnsureResult
+
+    suspend fun generateMoreOccurrences(count: Int, now: Instant = Clock.System.now()): GenerateResult
+    fun getPaginatedMeetings(
+        pagingConfig: PagingConfig,
+        startingOffset: Long,
+        fromDate: Instant = Clock.System.now()
+    ): KaliumPager<MeetingDetailsEntity>
+
+    data class EnsureResult(val generatedCount: Int, val existingUpcomingCount: Int)
+    value class GenerateResult(val generatedCount: Int)
 }
 
 internal class MeetingDaoImpl(
     private val meetingsQueries: MeetingsQueries,
+    private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
 ) : MeetingDao {
     override suspend fun upsertMeetings(meetings: List<MeetingEntity>, now: Instant) {
@@ -55,12 +73,15 @@ internal class MeetingDaoImpl(
 
                 meetings.forEach { meeting ->
                     meetingsQueries.upsertMeeting(meeting = meeting)
-                    meetingsQueries.insertGeneratedOccurrences(
-                        meeting = meeting,
-                        shouldRegenerateOccurrences = meeting.meetingId in meetingIdsRequiringOccurrenceRefresh,
-                        now = now
-                    )
                 }
+                meetingsQueries.insertGeneratedOccurrences(
+                    meetings = meetings,
+                    limit = MeetingOccurrencesGenerator.GenerationLimit.TimeWindow(OCCURRENCE_GENERATION_WINDOW_DAYS.days),
+                    shouldRegenerateOccurrences = meetings.associate {
+                        it.meetingId to (it.meetingId in meetingIdsRequiringOccurrenceRefresh)
+                    },
+                    now = now
+                )
             }
         }
     }
@@ -76,17 +97,87 @@ internal class MeetingDaoImpl(
     override suspend fun insertMissingOccurrences(now: Instant) {
         withContext(writeDispatcher.value) {
             meetingsQueries.transaction {
-                meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).executeAsList()
-                    .forEach { meeting ->
-                        meetingsQueries.insertGeneratedOccurrences(
-                            meeting = meeting,
-                            shouldRegenerateOccurrences = false,
-                            now = now
-                        )
-                    }
+                meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).executeAsList().let { meetings ->
+                    meetingsQueries.insertGeneratedOccurrences(
+                        meetings = meetings,
+                        limit = MeetingOccurrencesGenerator.GenerationLimit.TimeWindow(OCCURRENCE_GENERATION_WINDOW_DAYS.days),
+                        shouldRegenerateOccurrences = meetings.associate { it.meetingId to false },
+                        now = now
+                    )
+                }
             }
         }
     }
+
+    override suspend fun ensureUpcomingOccurrences(minimumCount: Int, now: Instant): MeetingDao.EnsureResult {
+        if (minimumCount <= 0) {
+            val existingCount = withContext(readDispatcher.value) {
+                meetingsQueries.countUpcomingMeetingOccurrences(now).executeAsOne().toInt()
+            }
+            return MeetingDao.EnsureResult(generatedCount = 0, existingUpcomingCount = existingCount)
+        }
+        return withContext(writeDispatcher.value) {
+            meetingsQueries.transactionWithResult {
+                val existingCount = meetingsQueries.countUpcomingMeetingOccurrences(now).executeAsOne().toInt()
+                val missingCount = (minimumCount - existingCount).coerceAtLeast(0)
+                val recurringMeetings = meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).executeAsList()
+                if (missingCount <= 0) {
+                    return@transactionWithResult MeetingDao.EnsureResult(generatedCount = 0, existingUpcomingCount = existingCount)
+                }
+                val generatedCount = meetingsQueries.insertGeneratedOccurrences(
+                    meetings = recurringMeetings,
+                    limit = MeetingOccurrencesGenerator.GenerationLimit.Count(missingCount),
+                    shouldRegenerateOccurrences = recurringMeetings.associate { it.meetingId to false },
+                    now = now
+                )
+                MeetingDao.EnsureResult(generatedCount = generatedCount, existingUpcomingCount = existingCount)
+            }
+        }
+    }
+
+    override suspend fun generateMoreOccurrences(count: Int, now: Instant): MeetingDao.GenerateResult {
+        if (count <= 0) {
+            return MeetingDao.GenerateResult(generatedCount = 0)
+        }
+        return withContext(writeDispatcher.value) {
+            meetingsQueries.transactionWithResult {
+                val recurringMeetings = meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).executeAsList()
+                val generatedCount = meetingsQueries.insertGeneratedOccurrences(
+                    meetings = recurringMeetings,
+                    limit = MeetingOccurrencesGenerator.GenerationLimit.Count(count),
+                    shouldRegenerateOccurrences = recurringMeetings.associate { it.meetingId to false },
+                    now = now
+                )
+                MeetingDao.GenerateResult(generatedCount = generatedCount)
+            }
+        }
+    }
+
+    @OptIn(ExperimentalPagingApi::class)
+    override fun getPaginatedMeetings(
+        pagingConfig: PagingConfig,
+        startingOffset: Long,
+        fromDate: Instant
+    ): KaliumPager<MeetingDetailsEntity> = KaliumPager(
+        pager = Pager(
+            config = pagingConfig,
+            remoteMediator = MeetingOccurrencesRemoteMediator(
+                meetingDao = this,
+                fromDate = fromDate,
+            ),
+            pagingSourceFactory = { meetingPagingSource(fromDate, startingOffset) }
+        ),
+        pagingSource = meetingPagingSource(fromDate, startingOffset),
+        readDispatcher = readDispatcher,
+    )
+
+    private fun meetingPagingSource(fromDate: Instant, startingOffset: Long): MeetingPagingSource =
+        MeetingPagingSource(
+            meetingsQueries = meetingsQueries,
+            context = readDispatcher.value,
+            fromDate = fromDate,
+            initialOffset = startingOffset,
+        )
 
     private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
         upsertMeeting(
@@ -106,31 +197,32 @@ internal class MeetingDaoImpl(
     }
 
     private suspend fun MeetingsQueries.insertGeneratedOccurrences(
-        meeting: MeetingEntity,
-        shouldRegenerateOccurrences: Boolean,
-        now: Instant
-    ) {
-        val lastGeneratedStarts = if (shouldRegenerateOccurrences) {
-            emptyMap()
-        } else {
-            selectLastGeneratedOccurrenceStart(meeting.meetingId).executeAsOneOrNull()
-                ?.let { mapOf(meeting.meetingId.toString() to it) }
-                ?: emptyMap()
-        }
+        meetings: List<MeetingEntity>,
+        limit: MeetingOccurrencesGenerator.GenerationLimit,
+        now: Instant,
+        shouldRegenerateOccurrences: Map<QualifiedIDEntity, Boolean>,
+    ): Int {
+        val lastGeneratedStarts = meetings.mapNotNull { meeting ->
+            when (shouldRegenerateOccurrences[meeting.meetingId]) {
+                true -> null
+                else -> selectLastGeneratedOccurrenceStart(meeting.meetingId).executeAsOneOrNull()
+                    ?.let { meeting.meetingId to it }
+            }
+        }.toMap()
 
-        MeetingOccurrencesGenerator.generate(
-            meetings = listOf(meeting),
+        return MeetingOccurrencesGenerator.generate(
+            meetings = meetings,
             lastGeneratedStarts = lastGeneratedStarts,
-            limit = MeetingOccurrencesGenerator.GenerationLimit.TimeWindow(OCCURRENCE_GENERATION_WINDOW_DAYS.days),
+            limit = limit,
             now = now
-        ).forEach { occurrence ->
+        ).onEach { occurrence ->
             insertMeetingOccurrence(
                 occurrence_id = occurrence.occurrenceId,
                 meeting_id = occurrence.meetingId,
                 occurrence_start = occurrence.occurrenceStart,
                 occurrence_end = occurrence.occurrenceEnd ?: occurrence.occurrenceStart
             )
-        }
+        }.size
     }
 
     private companion object {

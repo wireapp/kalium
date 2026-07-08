@@ -18,6 +18,7 @@
 package com.wire.kalium.persistence.dao.meeting
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.datetime.Instant
 
 data object MeetingMapper {
@@ -53,5 +54,58 @@ data object MeetingMapper {
             )
             else -> null
         }
+    )
+
+    @Suppress("LongParameterList", "LongMethod")
+    fun fromViewToDetails(
+        occurrenceId: String,
+        occurrenceMeetingId: QualifiedIDEntity,
+        occurrenceStart: Instant,
+        occurrenceEnd: Instant,
+        meetingId: QualifiedIDEntity,
+        conversationId: QualifiedIDEntity,
+        creatorId: QualifiedIDEntity,
+        creationDate: Instant,
+        lastEditDate: Instant?,
+        meetingTitle: String,
+        templateStartDate: Instant,
+        templateEndDate: Instant?,
+        trial: Boolean,
+        recurrenceFrequency: MeetingEntity.RecurrenceEntity.Frequency?,
+        recurrenceInterval: Long?,
+        recurrenceEndDate: Instant?,
+        conversationName: String?,
+        conversationType: ConversationEntity.Type,
+        previewAssetId: QualifiedIDEntity?,
+        isChannel: Boolean,
+        channelAccess: ConversationEntity.ChannelAccess?,
+        selfUserId: QualifiedIDEntity?,
+    ): MeetingDetailsEntity = MeetingDetailsEntity(
+        occurrence = MeetingOccurrenceEntity(
+            occurrenceId = occurrenceId,
+            meetingId = occurrenceMeetingId,
+            occurrenceStart = occurrenceStart,
+            occurrenceEnd = occurrenceEnd
+        ),
+        meeting = fromViewToModel(
+            meetingId = meetingId,
+            conversationId = conversationId,
+            creatorId = creatorId,
+            creationDate = creationDate,
+            lastEditDate = lastEditDate,
+            title = meetingTitle,
+            startDate = templateStartDate,
+            endDate = templateEndDate,
+            trial = trial,
+            recurrenceFrequency = recurrenceFrequency,
+            recurrenceInterval = recurrenceInterval,
+            recurrenceEndDate = recurrenceEndDate,
+        ),
+        conversationName = conversationName,
+        conversationType = conversationType,
+        conversationPreviewAssetId = previewAssetId,
+        isChannel = isChannel,
+        channelAccess = channelAccess,
+        selfUserId = selfUserId,
     )
 }

@@ -93,3 +93,59 @@ SELECT *
 FROM MeetingOccurrence
 WHERE meeting_id = ?
 ORDER BY occurrence_start ASC;
+
+countUpcomingMeetingOccurrences:
+SELECT COUNT(*)
+FROM MeetingOccurrence
+JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
+JOIN ConversationDetails ON ConversationDetails.qualifiedId = Meeting.conversation_id
+WHERE MeetingOccurrence.occurrence_start >= :fromDate;
+
+selectPagedMeetingDetails:
+-- @CustomKey Conversation
+SELECT
+    MeetingOccurrence.occurrence_id AS occurrenceId,
+    MeetingOccurrence.meeting_id AS occurrenceMeetingId,
+    MeetingOccurrence.occurrence_start AS occurrenceStart,
+    MeetingOccurrence.occurrence_end AS occurrenceEnd,
+    Meeting.meeting_id AS meetingId,
+    Meeting.conversation_id AS conversationId,
+    Meeting.creator_id AS creatorId,
+    Meeting.creation_date AS creationDate,
+    Meeting.last_edit_date AS lastEditDate,
+    Meeting.title AS meetingTitle,
+    Meeting.start_date AS templateStartDate,
+    Meeting.end_date AS templateEndDate,
+    Meeting.trial AS trial,
+    Meeting.recurrence_frequency AS recurrenceFrequency,
+    Meeting.recurrence_interval AS recurrenceInterval,
+    Meeting.recurrence_end_date AS recurrenceEndDate,
+    ConversationDetails.name AS conversationName,
+    ConversationDetails.type AS conversationType,
+    ConversationDetails.previewAssetId AS previewAssetId,
+    ConversationDetails.is_channel AS isChannel,
+    ConversationDetails.channel_access AS channelAccess,
+    ConversationDetails.selfUserId AS selfUserId
+FROM MeetingOccurrence
+JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
+JOIN ConversationDetails ON ConversationDetails.qualifiedId = Meeting.conversation_id
+WHERE MeetingOccurrence.occurrence_start >= :fromDate
+ORDER BY MeetingOccurrence.occurrence_start ASC, MeetingOccurrence.occurrence_id ASC
+LIMIT :limit
+OFFSET :offset;
+
+selectMeetingParticipantPreviewAssetIds:
+SELECT
+    Member.conversation AS conversationId,
+    User.preview_asset_id AS previewAssetId
+FROM Member
+JOIN Conversation ON Conversation.qualified_id = Member.conversation
+JOIN User ON User.qualified_id = Member.user
+LEFT JOIN SelfUser
+WHERE Member.conversation IN :conversationIds
+    AND User.preview_asset_id IS NOT NULL
+    AND (
+        (Conversation.type = 'GROUP' AND Conversation.is_channel = 0)
+        OR (Conversation.type = 'ONE_ON_ONE' AND Member.user IS NOT SelfUser.id)
+    )
+ORDER BY Member.conversation ASC, Member.user ASC;
