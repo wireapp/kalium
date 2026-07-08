@@ -18,15 +18,17 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.Conversation.Member.Role.Admin
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.FetchConversationIfUnknownUseCase
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -88,6 +90,9 @@ internal class MemberChangeEventHandlerImpl(
         event: Event.Conversation.MemberChanged.MemberChangedRole
     ) {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
+        val currentRole = event.member?.id?.let {
+            conversationRepository.getConversationMemberRole(event.conversationId, it).getOrNull()
+        }
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
         fetchConversationIfUnknown(transactionContext, event.conversationId)
             .run {
@@ -107,21 +112,30 @@ internal class MemberChangeEventHandlerImpl(
             }
             .onFailure { eventLogger.logFailure(it) }
             .onSuccess {
-                event.member?.takeIf { it.role == Conversation.Member.Role.Admin }?.let { promotedMember ->
-                    persistMessage(
-                        Message.System(
-                            id = event.id,
-                            content = MessageContent.MemberChange.UserPromotedToAdmin(members = listOf(promotedMember.id)),
-                            conversationId = event.conversationId,
-                            date = Instant.parse(event.timestampIso),
-                            senderUserId = selfUserId,
-                            status = Message.Status.Sent,
-                            visibility = Message.Visibility.VISIBLE,
-                            expirationData = null
-                        )
-                    )
+                if (currentRole != Admin && event.member?.role == Admin) {
+                    persistPromoteToAdmin(event)
                 }
                 eventLogger.logSuccess()
             }
+    }
+
+    private suspend fun persistPromoteToAdmin(
+        event: Event.Conversation.MemberChanged.MemberChangedRole,
+    ) {
+        val promotedMember = event.member ?: return
+        persistMessage(
+            Message.System(
+                id = event.id,
+                content = MessageContent.MemberChange.UserPromotedToAdmin(
+                    members = listOf(promotedMember.id)
+                ),
+                conversationId = event.conversationId,
+                date = Instant.parse(event.timestampIso),
+                senderUserId = selfUserId,
+                status = Message.Status.Sent,
+                visibility = Message.Visibility.VISIBLE,
+                expirationData = null
+            )
+        )
     }
 }
