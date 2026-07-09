@@ -19,11 +19,15 @@
 package com.wire.kalium.logic.feature.meeting
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.logic.data.client.CryptoTransactionProvider
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 
 internal interface SyncMeetingsUseCase {
+    fun isEnabled(): Boolean
     suspend operator fun invoke(): Either<CoreFailure, Unit>
 }
 
@@ -32,9 +36,21 @@ internal interface SyncMeetingsUseCase {
  */
 internal class SyncMeetingsUseCaseImpl(
     private val meetingRepository: MeetingRepository,
+    private val featureSupport: FeatureSupport,
     private val transactionProvider: CryptoTransactionProvider
 ) : SyncMeetingsUseCase {
-    override suspend operator fun invoke(): Either<CoreFailure, Unit> = transactionProvider.transaction("SyncMeetings") {
-        meetingRepository.fetchAndPersistMeetings()
+
+    override fun isEnabled(): Boolean = featureSupport.isMeetingsSupported
+
+    override suspend operator fun invoke(): Either<CoreFailure, Unit> = when (isEnabled()) {
+        false -> Either.Right(Unit)
+        true -> transactionProvider.transaction("SyncMeetings") {
+            meetingRepository.fetchAndPersistMeetings()
+        }.flatMapLeft {
+            when (it) {
+                is NetworkFailure.FeatureNotSupported -> Either.Right(Unit)
+                else -> Either.Left(it)
+            }
+        }
     }
 }

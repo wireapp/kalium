@@ -74,10 +74,10 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withSyncContactsSuccess()
+            .withSyncMeetingsSuccess()
             .withJoinMLSConversationsSuccess()
             .withResolveOneOnOneConversationsSuccess()
             .withFetchLegalHoldStatusSuccess()
@@ -114,11 +114,11 @@ class SlowSyncWorkerTest {
             .withSyncFeatureConfigsSuccess()
             .withUpdateSupportedProtocolsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
+            .withSyncMeetingsSuccess()
             .withJoinMLSConversationsSuccess()
             .withResolveOneOnOneConversationsSuccess()
             .arrange()
@@ -135,11 +135,11 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
+            .withSyncMeetingsSuccess()
             .withSyncNomadAllMessagesSuccess()
             .withJoinMLSConversationsSuccess()
             .withResolveOneOnOneConversationsSuccess()
@@ -160,11 +160,11 @@ class SlowSyncWorkerTest {
                 SlowSyncStep.FEATURE_FLAGS,
                 SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
                 SlowSyncStep.CONVERSATIONS,
-                SlowSyncStep.MEETINGS,
                 SlowSyncStep.CONNECTIONS,
                 SlowSyncStep.SELF_TEAM,
                 SlowSyncStep.LEGAL_HOLD,
                 SlowSyncStep.CONTACTS,
+                SlowSyncStep.MEETINGS,
                 SlowSyncStep.NOMAD_MESSAGES,
                 SlowSyncStep.JOINING_MLS_CONVERSATIONS,
                 SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS,
@@ -255,36 +255,6 @@ class SlowSyncWorkerTest {
     }
 
     @Test
-    fun givenSyncMeetingsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
-        val steps = hashSetOf(
-            SlowSyncStep.MIGRATION,
-            SlowSyncStep.SELF_USER,
-            SlowSyncStep.USER_PROPERTIES,
-            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
-            SlowSyncStep.FEATURE_FLAGS,
-            SlowSyncStep.CONVERSATIONS,
-            SlowSyncStep.MEETINGS
-        )
-        val (arrangement, worker) = Arrangement()
-            .withSyncSelfUserSuccess()
-            .withUpdateSupportedProtocolsSuccess()
-            .withSyncFeatureConfigsSuccess()
-            .withSyncConversationsSuccess()
-            .withSyncMeetingsFailure()
-            .arrange()
-
-        assertFailsWith<KaliumSyncException> {
-            worker.slowSyncStepsFlow(successfullyMigration).collect {
-                assertTrue {
-                    it in steps
-                }
-            }
-        }
-
-        assertUseCases(arrangement, steps)
-    }
-
-    @Test
     fun givenSyncConnectionsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
             SlowSyncStep.MIGRATION,
@@ -293,7 +263,6 @@ class SlowSyncWorkerTest {
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
-            SlowSyncStep.MEETINGS,
             SlowSyncStep.CONNECTIONS,
         )
         val (arrangement, worker) = Arrangement()
@@ -301,7 +270,6 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsFailure()
             .arrange()
 
@@ -325,7 +293,6 @@ class SlowSyncWorkerTest {
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
-            SlowSyncStep.MEETINGS,
             SlowSyncStep.CONNECTIONS,
             SlowSyncStep.SELF_TEAM,
         )
@@ -334,7 +301,6 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamFailure()
             .arrange()
@@ -359,7 +325,6 @@ class SlowSyncWorkerTest {
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
-            SlowSyncStep.MEETINGS,
             SlowSyncStep.CONNECTIONS,
             SlowSyncStep.SELF_TEAM,
             SlowSyncStep.LEGAL_HOLD,
@@ -369,7 +334,6 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusFailure()
@@ -395,7 +359,6 @@ class SlowSyncWorkerTest {
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
-            SlowSyncStep.MEETINGS,
             SlowSyncStep.CONNECTIONS,
             SlowSyncStep.SELF_TEAM,
             SlowSyncStep.LEGAL_HOLD,
@@ -406,11 +369,48 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsFailure()
+            .arrange()
+
+        assertFailsWith<KaliumSyncException> {
+            worker.slowSyncStepsFlow(successfullyMigration).collect {
+                assertTrue {
+                    it in steps
+                }
+            }
+        }
+
+        assertUseCases(arrangement, steps)
+    }
+
+    @Test
+    fun givenSyncMeetingsFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
+        val steps = hashSetOf(
+            SlowSyncStep.MIGRATION,
+            SlowSyncStep.SELF_USER,
+            SlowSyncStep.USER_PROPERTIES,
+            SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
+            SlowSyncStep.FEATURE_FLAGS,
+            SlowSyncStep.CONVERSATIONS,
+            SlowSyncStep.CONNECTIONS,
+            SlowSyncStep.SELF_TEAM,
+            SlowSyncStep.LEGAL_HOLD,
+            SlowSyncStep.CONTACTS,
+            SlowSyncStep.MEETINGS
+        )
+        val (arrangement, worker) = Arrangement()
+            .withSyncSelfUserSuccess()
+            .withUpdateSupportedProtocolsSuccess()
+            .withSyncFeatureConfigsSuccess()
+            .withSyncConversationsSuccess()
+            .withSyncConnectionsSuccess()
+            .withSyncSelfTeamSuccess()
+            .withFetchLegalHoldStatusSuccess()
+            .withSyncContactsSuccess()
+            .withSyncMeetingsFailure()
             .arrange()
 
         assertFailsWith<KaliumSyncException> {
@@ -433,11 +433,11 @@ class SlowSyncWorkerTest {
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
-            SlowSyncStep.MEETINGS,
             SlowSyncStep.CONNECTIONS,
             SlowSyncStep.SELF_TEAM,
             SlowSyncStep.LEGAL_HOLD,
             SlowSyncStep.CONTACTS,
+            SlowSyncStep.MEETINGS,
             SlowSyncStep.NOMAD_MESSAGES,
         )
         val (arrangement, worker) = Arrangement()
@@ -445,11 +445,11 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
+            .withSyncMeetingsSuccess()
             .withSyncNomadAllMessagesFailure()
             .withNomadEnabled()
             .arrange()
@@ -474,11 +474,11 @@ class SlowSyncWorkerTest {
             SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS,
             SlowSyncStep.FEATURE_FLAGS,
             SlowSyncStep.CONVERSATIONS,
-            SlowSyncStep.MEETINGS,
             SlowSyncStep.CONNECTIONS,
             SlowSyncStep.SELF_TEAM,
             SlowSyncStep.LEGAL_HOLD,
             SlowSyncStep.CONTACTS,
+            SlowSyncStep.MEETINGS,
             SlowSyncStep.JOINING_MLS_CONVERSATIONS
         )
         val (arrangement, worker) = Arrangement()
@@ -486,11 +486,11 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
+            .withSyncMeetingsSuccess()
             .withJoinMLSConversationsFailure()
             .arrange()
 
@@ -587,11 +587,11 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
+            .withSyncMeetingsSuccess()
             .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = true)
             .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = true)
             .withFetchLegalHoldStatusSuccess()
@@ -611,11 +611,11 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
+            .withSyncMeetingsSuccess()
             .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = false)
             .withResolveOneOnOneConversationsSuccess()
             .arrange()
@@ -639,11 +639,11 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
+            .withSyncMeetingsSuccess()
             .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = true)
             .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = true)
             .arrange()
@@ -662,11 +662,11 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
+            .withSyncMeetingsSuccess()
             .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = false)
             .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = false)
             .arrange()
@@ -690,11 +690,11 @@ class SlowSyncWorkerTest {
             .withUpdateSupportedProtocolsSuccess()
             .withSyncFeatureConfigsSuccess()
             .withSyncConversationsSuccess()
-            .withSyncMeetingsSuccess()
             .withSyncConnectionsSuccess()
             .withSyncSelfTeamSuccess()
             .withFetchLegalHoldStatusSuccess()
             .withSyncContactsSuccess()
+            .withSyncMeetingsSuccess()
             .withJoinMLSConversationsSuccess(allowJoinByExternalCommit = true)
             .withResolveOneOnOneConversationsSuccess(allowJoinByExternalCommit = true)
             .arrange()
@@ -767,6 +767,10 @@ class SlowSyncWorkerTest {
             arrangement.syncContacts.invoke()
         }
 
+        verifySuspend(VerifyMode.exactly(if (steps.contains(SlowSyncStep.MEETINGS)) 1 else 0)) {
+            arrangement.syncMeetings.invoke()
+        }
+
         assertEquals(
             if (steps.contains(SlowSyncStep.NOMAD_MESSAGES)) 1 else 0,
             arrangement.syncNomadMessagesDuringSlowSync.invocations
@@ -810,6 +814,7 @@ class SlowSyncWorkerTest {
                 withTransactionReturning(Either.Right(Unit))
                 withSyncUserPropertiesSuccess()
                 withOptimizeDatabaseSuccess()
+                withSyncMeetingsDisabled()
             }
         }
 
@@ -929,16 +934,18 @@ class SlowSyncWorkerTest {
             } returns success
         }
 
+        fun withSyncMeetingsDisabled() = apply {
+            everySuspend { syncMeetings.isEnabled() } returns false
+        }
+
         fun withSyncMeetingsFailure() = apply {
-            everySuspend {
-                syncMeetings.invoke()
-            } returns failure
+            everySuspend { syncMeetings.isEnabled() } returns true
+            everySuspend { syncMeetings.invoke() } returns failure
         }
 
         fun withSyncMeetingsSuccess() = apply {
-            everySuspend {
-                syncMeetings.invoke()
-            } returns success
+            everySuspend { syncMeetings.isEnabled() } returns true
+            everySuspend { syncMeetings.invoke() } returns success
         }
 
         fun withJoinMLSConversationsFailure(
