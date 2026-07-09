@@ -1,378 +1,87 @@
-
 # Kalium
+
 [![JVM & JS Tests](https://github.com/wireapp/kalium/actions/workflows/gradle-jvm-tests.yml/badge.svg)](https://github.com/wireapp/kalium/actions/workflows/gradle-jvm-tests.yml)
 [![codecov](https://codecov.io/gh/wireapp/kalium/branch/develop/graph/badge.svg?token=UWQ1P7DY7I)](https://codecov.io/gh/wireapp/kalium)
 
-## How to build
+Kalium is Wire's Kotlin Multiplatform SDK for messaging, end-to-end encryption, conversation state, backup, calling integration, and Wire backend access.
 
-### Dependencies
+It is primarily built for Wire clients and currently targets Android, JVM, and Apple platforms. JavaScript support exists only where individual modules enable it.
 
-- JDK 21 (ex: openjdk-21-jdk on Ubuntu)
-- Git (required for build process)
+## Use Kalium
 
-### Supported Platforms
+Release builds are published under the Maven group `com.wire.kalium`. The main SDK entry point is the `:logic` module:
 
-- Android (see the [Android](https://github.com/wireapp/wire-android) module)
-- JVM (see the [cli](https://github.com/wireapp/kalium/tree/develop/cli) module)
-- iOS (see the [iOS Build Guide](docs/IOS_BUILD.md))
-- JavaScript (just a tiny bit)
+```kotlin
+dependencies {
+    implementation("com.wire.kalium:logic:<version>")
+}
+```
 
-### Compile-time flags
+Use the version from GitHub releases or Maven Central metadata.
 
-Kalium currently uses the following compile-time Gradle properties:
+## Supported Platforms
 
-- `USE_UNIFIED_CORE_CRYPTO`
-  - Default: `false` (see `gradle.properties`)
-  - Controls whether Kalium uses the unified `core-crypto-kmp` artifact (`true`) or platform-specific crypto artifacts (`false`).
-  - Override example:
-    ```bash
-    ./gradlew <task> -PUSE_UNIFIED_CORE_CRYPTO=true
-    ```
+| Platform | Status | Notes |
+| --- | --- | --- |
+| Android | Supported | Main production target. |
+| JVM | Supported | Used by tests, tools, and the CLI sample. |
+| iOS/macOS Apple Silicon | Supported | Requires unified CoreCrypto; see [iOS build guide](docs/IOS_BUILD.md). |
+| JavaScript | Limited | Experimental and module-dependent. |
 
-- `kalium.providerCacheScope`
-  - Purpose: shared compile-time policy that defines cache scope for provider-level in-memory caches.
-  - Required: Kalium defines no default; consumer builds must set it explicitly.
-  - Allowed values:
-    - `GLOBAL`: process-global caches shared across provider instances.
-    - `LOCAL`: each provider instance keeps its own cache.
-  - Current consumers:
-    - `UserStorageProvider`
-    - `UserAuthenticatedNetworkProvider`
-  - Extension rule: any new provider cache should follow this same policy instead of introducing a new compile-time flag.
-  - Override example:
-    ```bash
-    ./gradlew <task> -Pkalium.providerCacheScope=GLOBAL
-    ```
+## Build From Source
 
-### Release artifacts
+Requirements:
 
-Kalium release automation now publishes two separate build outputs:
+- JDK 21
+- Git
+- macOS on Apple Silicon for Apple target builds
 
-- Android-only AAR
-  - Artifact: `logic-android-aar`
-  - Build command:
-    ```bash
-    ./gradlew :logic:bundleAndroidMainAar -PUSE_UNIFIED_CORE_CRYPTO=false
-    ```
-- KMP bundle for Android, JVM, and iOS
-  - Artifact: `logic-kmp`
-  - Uses the unified `core-crypto-kmp` dependency, so `USE_UNIFIED_CORE_CRYPTO` must be `true`.
-  - Build command:
-    ```bash
-    ./gradlew :logic:bundleAndroidMainAar :logic:jvmJar :logic:allMetadataJar :logic:sourcesJar :logic:assembleKaliumLogicReleaseXCFramework -PUSE_UNIFIED_CORE_CRYPTO=true
-    ```
-
-Each GitHub release upload also includes a per-bundle SHA-256 manifest
-(`logic-android-aar-SHA256SUMS.txt` / `logic-kmp-SHA256SUMS.txt`) and a matching
-GitHub build provenance bundle (`*-provenance-bundle.json`).
-
-Release tags publish production Kalium modules to Maven Central from the same
-validated pipeline. Maven Central versions are derived from the tag name by
-stripping the leading `v` (for example, `v1.2.3` publishes `1.2.3`).
-
-The `develop` branch also publishes a nightly `0.0.0-develop-SNAPSHOT` to
-the Central Portal snapshots repository. Consumers can resolve it by adding
-`https://central.sonatype.com/repository/maven-snapshots/` as a snapshots-only
-repository.
-
-Maven Central workflows expect `SONATYPE_USERNAME`, `SONATYPE_PASSWORD`,
-`PGP_KEY_ID`, `PGP_SIGNING_KEY`, and `PGP_PASSPHRASE` repository secrets.
-
-### Generating an SBOM
-
-For **file-level** license/notice
-scan of every third-party dependency (not just coordinates):
+Common commands:
 
 ```bash
-./scripts/generate-sbom.sh
-```
-
-The script runs the `:collectSbomArtifacts` Gradle task to materialise every
-runtime artifact (JVM jars, **unpacked** Android AARs, Kotlin/Native klibs,
-resolved npm packages from `kotlin-js-store`, and the prebuilt AVS native
-libs) under `build/sbom/artifacts/`, then drives
-[ScanCode-Toolkit](https://github.com/aboutcode-org/scancode-toolkit)
-(`extractcode` + `scancode`) to produce JSON, SPDX, CycloneDX, and HTML
-reports under `build/sbom/`.
-
-Scope is restricted to the licensable subset of modules: `:sample:*`,
-`:tools:*`, `:test:*`, and `:data:persistence-test` are excluded. Run on an
-**Apple Silicon Mac** to include iOS/macOS native dependencies; on other
-hosts those targets resolve empty and the SBOM will omit them.
-
-### CLI
-
-The `cli` can be executed on the terminal of any machine that 
-satisfies the dependencies mentioned above, and is capable of actions like:
-- Logging in
-- Create a group conversation
-- Add user to group conversation
-- Receive and send text messages in real time
-- Remove another client from your account remotely
-- Refill MSL key packages
-
-#### Building dependencies on macOS 12
-
-Just run `make`, which will download and compile dependencies listed above from source, 
-the output will be `$PROJECT_ROOT$/native/libs`
-
-#### Running on your machine
-
-When running any tasks that require the native libraries (`libsodium`, `cryptobox-c` 
-and `cryptobox4j`), you need to pass their location as VM options like so:
-
-```
--Djava.library.path=./path/to/native/libraries/mentioned/before
-```
-
-For example, if you want to run the task `jvmTest` and the libraries are in `./native/libs`:
-
-```
+./gradlew build
 ./gradlew jvmTest -Djava.library.path=./native/libs
+./gradlew detekt
 ```
 
-#### Running the CLI
+JVM tests and the CLI need native libraries. Build them with:
 
-You can see all commands and options by running `login --help`
-
-```
-Usage: cliapplication login [OPTIONS] COMMAND [ARGS]...
-
-Options:
-  -e, --email TEXT     Account email
-  -p, --password TEXT  Account password
-  --environment TEXT   Choose backend environment: can be production, staging
-                       or an URL to a server configuration
-  -h, --help           Show this message and exit
-
-Commands:
-  create-group
-  listen-group
-  delete-client
-  add-member
-  remove-member
-  console
-  refill-key-packages
-  mark-as-read                Mark a conversation as read
-  update-supported-protocols
+```bash
+make
 ```
 
-##### JVM
+The libraries are written to `native/libs`.
 
-```
-./gradlew :sample:cli:assemble
-java -jar cli/build/libs/cli.jar login --email <email> --password <password> listen-group 
-```
+## Configuration
 
-or if you want the jar file deleted after your run:
+Kalium uses a few Gradle properties that consumers and contributors may need to set explicitly:
 
-```
-./gradlew :sample:cli:run  --console=plain --quiet --args="login --email <email> --password <password> listen-group"
+```bash
+./gradlew <task> -PUSE_UNIFIED_CORE_CRYPTO=true
+./gradlew <task> -Pkalium.providerCacheScope=LOCAL
 ```
 
-##### Native (Mac)
+- `USE_UNIFIED_CORE_CRYPTO` selects the unified `core-crypto-kmp` dependency. Apple builds require it to be `true`.
+- `kalium.providerCacheScope` controls provider-level caches. Consumer builds should set it explicitly to `LOCAL` or `GLOBAL`; this repository uses `LOCAL` for standalone builds.
 
-For running on arm64 mac
-```
-./gradlew :sample:cli:macosArm64Binaries
-./cli/build/bin/macosArm64/debugExecutable/cli.kexe login
-```
+See [contributor setup](docs/CONTRIBUTING.md#build-configuration) for the longer explanation.
 
-#### Detekt rules
+## Project Map
 
-We use and try to maintain our codestyle uniformed, so apart from having our checks in place in our
-CI. You can have live feedback using the IDE, here is how:
+Kalium is split by layer:
 
-1. IntelliJ -> Settings -> Plugins -> Marketplace -> Search and install "Detekt"
-2. Settings -> Tools -> Detekt -> set: (replace $PROJECT_ROOT accordingly to your machine)
+- `core:*` contains shared models, utilities, logging, and cryptography.
+- `data:*` contains networking, persistence, protobuf, and data mappers.
+- `domain:*` contains feature domains such as messaging, backup, calling, cells, work, and user storage.
+- `logic` is the public SDK entry point used by clients.
+- `sample:*`, `tools:*`, and `test:*` contain development support code.
 
-    - Configuration Files: $PROJECT_ROOT/detekt/detekt.yml
-    - Baseline File: $PROJECT_ROOT/detekt/baseline.yml (optional)
-    - Plugin Jars: $PROJECT_ROOT/detekt-rules/build/libs/detekt-rules.jar (this will add our custom
-      rules to provide live feedback)
+For module boundaries and source-set details, see [architecture](docs/ARCHITECTURE.md).
 
-or
+## Documentation
 
-You can run locally in your terminal:
-
-```
-./gradlew clean detekt
-```
-
-#### Dependency Graph
-
-```mermaid
-%%{
-  init: {
-    'theme': 'neutral'
-  }
-}%%
-
-graph LR
-  :logic["logic"]
-  subgraph :core
-    :core:common["common"]
-    :core:data["data"]
-    :core:logger["logger"]
-    :core:util["util"]
-    :core:cryptography["cryptography"]
-    :core:common["common"]
-    :core:cryptography["cryptography"]
-    :core:libsodium["libsodium"]
-    :core:data["data"]
-  end
-  subgraph :data
-    :data:persistence["persistence"]
-    :data:network["network"]
-    :data:network-util["network-util"]
-    :data:persistence["persistence"]
-    :data:persistence-test["persistence-test"]
-    :data:data-mappers["data-mappers"]
-    :data:protobuf["protobuf"]
-    :data:persistence-test["persistence-test"]
-    :data:network-model["network-model"]
-    :data:network-util["network-util"]
-    :data:network["network"]
-    :data:network-model["network-model"]
-    :data:data-mappers["data-mappers"]
-  end
-  subgraph :domain
-    :domain:work["work"]
-    :domain:calling["calling"]
-    :domain:cells["cells"]
-    :domain:backup["backup"]
-    :domain:nomaddevice["nomaddevice"]
-    :domain:userstorage["userstorage"]
-    :domain:usernetwork["usernetwork"]
-    :domain:userstorage["userstorage"]
-    :domain:work["work"]
-    :domain:nomaddevice["nomaddevice"]
-    :domain:usernetwork["usernetwork"]
-    :domain:backup["backup"]
-    :domain:cells["cells"]
-    subgraph :messaging
-      :domain:messaging:hooks["hooks"]
-      :domain:messaging:sending["sending"]
-      :domain:messaging:hooks["hooks"]
-      :domain:messaging:sending["sending"]
-    end
-  end
-  subgraph :test
-    :test:data-mocks["data-mocks"]
-    :test:data-mocks["data-mocks"]
-    :test:mocks["mocks"]
-    :test:mocks["mocks"]
-  end
-
-  :core:common --> :core:data
-  :core:common --> :core:logger
-  :core:common --> :core:util
-  :core:common --> :data:persistence
-  :core:common --> :data:network
-  :core:common --> :data:network-util
-  :core:common --> :core:cryptography
-  :domain:messaging:hooks --> :core:data
-  :domain:messaging:hooks --> :core:common
-  :domain:messaging:hooks --> :core:logger
-  :data:persistence --> :core:logger
-  :data:persistence --> :core:util
-  :data:persistence-test --> :data:persistence
-  :logic --> :core:common
-  :logic --> :domain:work
-  :logic --> :core:data
-  :logic --> :data:network-util
-  :logic --> :core:logger
-  :logic --> :domain:calling
-  :logic --> :data:network
-  :logic --> :data:data-mappers
-  :logic --> :core:cryptography
-  :logic --> :data:persistence
-  :logic --> :data:protobuf
-  :logic --> :core:util
-  :logic --> :domain:cells
-  :logic --> :domain:backup
-  :logic --> :domain:nomaddevice
-  :logic --> :domain:userstorage
-  :logic --> :domain:usernetwork
-  :logic --> :domain:messaging:sending
-  :logic --> :domain:messaging:hooks
-  :logic --> :data:persistence-test
-  :logic --> :test:data-mocks
-  :domain:userstorage --> :data:persistence
-  :domain:userstorage --> :core:util
-  :domain:userstorage --> :core:data
-  :domain:work --> :core:common
-  :domain:work --> :core:data
-  :domain:work --> :core:logger
-  :domain:work --> :core:util
-  :test:data-mocks --> :core:data
-  :test:data-mocks --> :data:persistence
-  :test:data-mocks --> :data:network-model
-  :test:data-mocks --> :core:util
-  :domain:nomaddevice --> :core:common
-  :domain:nomaddevice --> :data:protobuf
-  :domain:nomaddevice --> :domain:messaging:hooks
-  :domain:nomaddevice --> :domain:usernetwork
-  :domain:nomaddevice --> :domain:userstorage
-  :domain:nomaddevice --> :data:persistence
-  :data:network-util --> :core:logger
-  :test:mocks --> :data:network-model
-  :domain:messaging:sending --> :core:common
-  :domain:messaging:sending --> :core:data
-  :domain:messaging:sending --> :core:logger
-  :domain:messaging:sending --> :core:util
-  :domain:usernetwork --> :data:network
-  :core:cryptography --> :core:logger
-  :core:cryptography --> :core:libsodium
-  :domain:backup --> :core:libsodium
-  :domain:backup --> :data:protobuf
-  :data:network --> :data:network-model
-  :data:network --> :core:logger
-  :data:network --> :data:protobuf
-  :data:network --> :core:util
-  :data:network --> :data:network-util
-  :data:network --> :test:mocks
-  :data:network-model --> :core:logger
-  :data:network-model --> :core:util
-  :core:data --> :data:network-model
-  :core:data --> :core:util
-  :domain:cells --> :core:common
-  :domain:cells --> :data:network
-  :domain:cells --> :core:data
-  :domain:cells --> :core:util
-  :domain:cells --> :data:persistence
-  :data:data-mappers --> :core:data
-  :data:data-mappers --> :data:protobuf
-  :data:data-mappers --> :data:persistence
-  :data:data-mappers --> :core:cryptography
-  :data:data-mappers --> :data:network-model
-  :data:data-mappers --> :core:util
-
-classDef kotlin-multiplatform fill:#C792EA,stroke:#fff,stroke-width:2px,color:#fff;
-class :core:common kotlin-multiplatform
-class :core:data kotlin-multiplatform
-class :core:logger kotlin-multiplatform
-class :core:util kotlin-multiplatform
-class :data:persistence kotlin-multiplatform
-class :data:network kotlin-multiplatform
-class :data:network-util kotlin-multiplatform
-class :core:cryptography kotlin-multiplatform
-class :domain:messaging:hooks kotlin-multiplatform
-class :data:persistence-test kotlin-multiplatform
-class :logic kotlin-multiplatform
-class :domain:work kotlin-multiplatform
-class :domain:calling kotlin-multiplatform
-class :data:data-mappers kotlin-multiplatform
-class :data:protobuf kotlin-multiplatform
-class :domain:cells kotlin-multiplatform
-class :domain:backup kotlin-multiplatform
-class :domain:nomaddevice kotlin-multiplatform
-class :domain:userstorage kotlin-multiplatform
-class :domain:usernetwork kotlin-multiplatform
-class :domain:messaging:sending kotlin-multiplatform
-class :test:data-mocks kotlin-multiplatform
-class :data:network-model kotlin-multiplatform
-class :test:mocks kotlin-multiplatform
-class :core:libsodium kotlin-multiplatform
-
-```
+- [Contributor setup](docs/CONTRIBUTING.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [iOS builds](docs/IOS_BUILD.md)
+- [CLI sample](sample/cli/README.md)
+- [Architecture decision records](docs/adr/)
