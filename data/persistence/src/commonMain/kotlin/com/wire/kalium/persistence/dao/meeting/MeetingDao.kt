@@ -128,7 +128,7 @@ internal class MeetingDaoImpl(
                 occurrence_id = occurrence.occurrenceId,
                 meeting_id = occurrence.meetingId,
                 occurrence_start = occurrence.occurrenceStart,
-                occurrence_end = occurrence.occurrenceEnd ?: occurrence.occurrenceStart
+                occurrence_end = occurrence.occurrenceEnd
             )
         }
     }
