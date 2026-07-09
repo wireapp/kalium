@@ -54,10 +54,8 @@ import dev.mokkery.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 internal class ConversationMapperTest {
 
@@ -198,7 +196,7 @@ internal class ConversationMapperTest {
     @Test
     fun givenAChannelConversationResponse_whenMappingFromConversationResponseToDaoModel_thenShouldBeAChannel() {
         val response = CONVERSATION_RESPONSE.copy(
-            conversationGroupType = ConversationResponse.GroupType.CHANNEL,
+            conversationGroupType = ConversationResponse.GroupType.Channel,
             type = ConversationResponse.Type.GROUP
         )
 
@@ -217,13 +215,13 @@ internal class ConversationMapperTest {
         val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
         assertEquals(ConversationEntity.Type.GROUP, result.type)
-        assertTrue(result.isChannel)
+        assertEquals(ConversationEntity.GroupType.Channel, result.groupType)
     }
 
     @Test
     fun givenARegularGroupConversationResponse_whenMappingFromConversationResponseToDaoModel_thenShouldBeARegularGroup() {
         val response = CONVERSATION_RESPONSE.copy(
-            conversationGroupType = ConversationResponse.GroupType.REGULAR_GROUP,
+            conversationGroupType = ConversationResponse.GroupType.RegularGroup,
             type = ConversationResponse.Type.GROUP
         )
 
@@ -242,7 +240,57 @@ internal class ConversationMapperTest {
         val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
         assertEquals(ConversationEntity.Type.GROUP, result.type)
-        assertFalse(result.isChannel)
+        assertEquals(ConversationEntity.GroupType.Group, result.groupType)
+    }
+
+    @Test
+    fun givenAMeetingConversationResponse_whenMappingFromConversationResponseToDaoModel_thenShouldBeAMeeting() {
+        val response = CONVERSATION_RESPONSE.copy(
+            conversationGroupType = ConversationResponse.GroupType.Meeting,
+            type = ConversationResponse.Type.GROUP
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
+
+        val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertEquals(ConversationEntity.Type.GROUP, result.type)
+        assertEquals(ConversationEntity.GroupType.Meeting, result.groupType)
+    }
+
+    @Test
+    fun givenGroupConversationResponse_withNullGroupType_whenMappingFromConversationResponseToDaoModel_thenTypeShouldBeUnknown() {
+        val response = CONVERSATION_RESPONSE.copy(
+            conversationGroupType = null,
+            type = ConversationResponse.Type.GROUP
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
+
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
+
+        val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertEquals(ConversationEntity.Type.GROUP, result.type)
+        assertEquals(ConversationEntity.GroupType.Unknown(""), result.groupType)
     }
 
     @Test

@@ -136,7 +136,7 @@ object ConversationResponseJson {
         ),
         mlsCipherSuiteTag = null,
         receiptMode = ReceiptMode.DISABLED,
-        conversationGroupType = GroupType.REGULAR_GROUP,
+        conversationGroupType = GroupType.RegularGroup,
         channelAddUserPermissionTypeDTO = ChannelAddPermissionTypeDTO.ADMINS,
         publicKeys = MLSPublicKeysDTO(
             removal = mapOf("ecdsa_secp256r1_sha256" to "string", "ed25519" to "string")
