@@ -21,17 +21,23 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.data.toModel
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementImpl
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertIs
 
@@ -50,7 +56,7 @@ class SyncMeetingsUseCaseTest {
     }
 
     @Test
-    fun givenMeetingFeatureReturnsFeatureNotSupported_whenInvoking_thenSkipAndReturnUnit() = runTest {
+    fun givenFeatureNotSupportedFailure_whenInvoking_thenSkipAndReturnUnit() = runTest {
         val (_, useCase) = Arrangement()
             .withMeetingSupportEnabled(true)
             .withFetchMeetingsFailed(NetworkFailure.FeatureNotSupported)
@@ -62,7 +68,7 @@ class SyncMeetingsUseCaseTest {
     }
 
     @Test
-    fun givenMeetingFeatureReturnsOtherFailure_whenInvoking_thenReturnFailure() = runTest {
+    fun givenOtherFailure_whenInvoking_thenReturnFailure() = runTest {
         val (_, useCase) = Arrangement()
             .withMeetingSupportEnabled(true)
             .withFetchMeetingsFailed(NetworkFailure.NoNetworkConnection(null))
@@ -74,19 +80,37 @@ class SyncMeetingsUseCaseTest {
     }
 
     @Test
-    fun givenMeetingFeatureReturnsSuccess_whenInvoking_thenReturnUnit() = runTest {
-        val (_, useCase) = Arrangement()
+    fun givenNoMeetingsFetched_whenInvoking_thenDoNotFetchUsers() = runTest {
+        val (arrangement, useCase) = Arrangement()
             .withMeetingSupportEnabled(true)
-            .withFetchMeetingsSuccessful()
+            .withFetchMeetingsSuccessful(emptyList())
             .arrange()
 
         val result = useCase()
 
         assertIs<Either.Right<Unit>>(result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingRepository.fetchAndPersistMeetings() }
+        verifySuspend(VerifyMode.not) { arrangement.userRepository.fetchUsersIfUnknownByIds(any()) }
+    }
+
+    @Test
+    fun givenSuccess_whenInvoking_thenExecuteRequestsAndReturnUnit() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withMeetingSupportEnabled(true)
+            .withFetchMeetingsSuccessful(listOf(MEETING))
+            .withFetchUsersSuccessful()
+            .arrange()
+
+        val result = useCase()
+
+        assertIs<Either.Right<Unit>>(result)
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.meetingRepository.fetchAndPersistMeetings() }
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.userRepository.fetchUsersIfUnknownByIds(setOf(MEETING.creatorId.toModel())) }
     }
 
     inner class Arrangement : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
         internal val meetingRepository = mock<MeetingRepository>(mode = MockMode.autoUnit)
+        internal val userRepository = mock<UserRepository>(mode = MockMode.autoUnit)
         internal val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
 
         internal fun withMeetingSupportEnabled(enabled: Boolean) = apply {
@@ -97,16 +121,34 @@ class SyncMeetingsUseCaseTest {
             everySuspend { meetingRepository.fetchAndPersistMeetings() } returns Either.Left(failure)
         }
 
-        internal fun withFetchMeetingsSuccessful() = apply {
-            everySuspend { meetingRepository.fetchAndPersistMeetings() } returns Either.Right(Unit)
+        internal fun withFetchMeetingsSuccessful(list: List<MeetingEntity>) = apply {
+            everySuspend { meetingRepository.fetchAndPersistMeetings() } returns Either.Right(list)
+        }
+
+        internal fun withFetchUsersSuccessful() = apply {
+            everySuspend { userRepository.fetchUsersIfUnknownByIds(any()) } returns Either.Right(Unit)
         }
 
         internal suspend fun arrange() = this to SyncMeetingsUseCaseImpl(
             meetingRepository = meetingRepository,
+            userRepository = userRepository,
             featureSupport = featureSupport,
             transactionProvider = cryptoTransactionProvider
         ).also {
             withTransactionReturning(Either.Right(Unit))
         }
     }
+
+    private val MEETING = MeetingEntity(
+        meetingId = QualifiedIDEntity("meetingId", "doman"),
+        conversationId = QualifiedIDEntity("conversationId", "domain"),
+        creatorId = QualifiedIDEntity("creatorId", "domain"),
+        createdAt = Instant.parse("2026-08-01T12:00:00.000Z"),
+        updatedAt = null,
+        title = "Meeting Title",
+        startTime = Instant.parse("2026-08-01T12:00:00.000Z"),
+        endTime = null,
+        trial = false,
+        recurrence = null
+    )
 }

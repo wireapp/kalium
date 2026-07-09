@@ -26,9 +26,10 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
+import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 
 internal interface MeetingRepository {
-    suspend fun fetchAndPersistMeetings(): Either<CoreFailure, Unit>
+    suspend fun fetchAndPersistMeetings(): Either<CoreFailure, List<MeetingEntity>>
 }
 
 internal class MeetingDataSource(
@@ -36,11 +37,13 @@ internal class MeetingDataSource(
     private val meetingApi: MeetingApi,
     private val meetingMapper: MeetingMapper = MapperProvider.meetingMapper()
 ) : MeetingRepository {
-    override suspend fun fetchAndPersistMeetings(): Either<CoreFailure, Unit> = wrapApiRequest {
+    override suspend fun fetchAndPersistMeetings(): Either<CoreFailure, List<MeetingEntity>> = wrapApiRequest {
         meetingApi.fetchMeetings()
     }.flatMap { meetings ->
         wrapStorageRequest {
-            meetingDAO.upsertMeetings(meetings.map { meetingMapper.fromApiToDao(it) })
+            meetings
+                .map { meetingMapper.fromApiToDao(it) }
+                .also { meetingDAO.upsertMeetings(it) }
         }
     }
 }
