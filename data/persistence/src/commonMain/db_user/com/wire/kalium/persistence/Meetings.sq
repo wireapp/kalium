@@ -67,9 +67,9 @@ WHERE meeting_id = ?
 ORDER BY occurrence_start DESC
 LIMIT 1;
 
-deleteNotStartedOccurrences:
+deleteMeetingOccurrences:
 DELETE FROM MeetingOccurrence
-WHERE meeting_id = ? AND occurrence_start > ?;
+WHERE meeting_id = ?;
 
 removeOutdatedMeetings:
 DELETE FROM Meeting

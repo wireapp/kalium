@@ -57,28 +57,29 @@ class MeetingRepositoryTest {
         val (arrangement, repository) = Arrangement()
             .withFetchMeetingsSuccess(listOf(meetingDTO))
             .arrange()
-        val now = Instant.parse("2026-07-01T00:00:00Z")
+        val generateOccurrencesUntil = Instant.parse("2026-07-01T00:00:00Z")
 
-        val result = repository.fetchAndPersistMeetings(now)
+        val result = repository.fetchAndPersistMeetings(generateOccurrencesUntil)
 
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.fetchMeetings()
-            arrangement.meetingDao.upsertMeetings(listOf(arrangement.meetingMapper.fromApiToDao(meetingDTO)), now)
+            arrangement.meetingDao.upsertMeetings(listOf(arrangement.meetingMapper.fromApiToDao(meetingDTO)), generateOccurrencesUntil)
         }
     }
 
     @Test
-    fun whenSyncMeetingOccurrences_thenDaoMethodsAreCalledWithTheSameNowDateTime() = runTest {
+    fun whenSyncMeetingOccurrences_thenDaoMethodsAreCalledWithProperDateTimes() = runTest {
         val (arrangement, repository) = Arrangement().arrange()
-        val now = Instant.parse("2026-07-01T00:00:00Z")
+        val generateOccurrencesUntil = Instant.parse("2026-07-01T00:00:00Z")
+        val removeOlderThan = Instant.parse("2026-05-01T00:00:00Z")
 
-        val result = repository.syncMeetingOccurrences(now)
+        val result = repository.syncMeetingOccurrences(removeOlderThan, generateOccurrencesUntil)
 
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exactly(1)) {
-            arrangement.meetingDao.removeOutdatedMeetings(now)
-            arrangement.meetingDao.insertMissingOccurrences(now)
+            arrangement.meetingDao.removeOutdatedMeetings(removeOlderThan)
+            arrangement.meetingDao.insertMissingOccurrences(generateOccurrencesUntil)
         }
     }
 

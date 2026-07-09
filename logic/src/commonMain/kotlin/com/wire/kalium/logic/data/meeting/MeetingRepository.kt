@@ -28,10 +28,34 @@ import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Duration.Companion.days
 
 internal interface MeetingRepository {
-    suspend fun fetchAndPersistMeetings(now: Instant = Clock.System.now()): Either<CoreFailure, Unit>
-    suspend fun syncMeetingOccurrences(now: Instant = Clock.System.now()): Either<CoreFailure, Unit>
+    suspend fun fetchAndPersistMeetings(
+        generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
+    ): Either<CoreFailure, Unit>
+
+    suspend fun syncMeetingOccurrences(
+        removeOlderThan: Instant = occurrenceOutdatedThreshold(),
+        generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
+    ): Either<CoreFailure, Unit>
+
+    private companion object {
+        private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
+        private const val OUTDATED_MEETING_RETENTION_DAYS = 30
+        private fun occurrenceGenerationUntil(now: Instant = Clock.System.now(), timeZone: TimeZone = TimeZone.currentSystemDefault()) =
+            now.plus(OCCURRENCE_GENERATION_WINDOW_DAYS.days)
+                .toLocalDateTime(timeZone).date
+                .atStartOfDayIn(timeZone)
+                .plus(1.days)
+        private fun occurrenceOutdatedThreshold(now: Instant = Clock.System.now(), timeZone: TimeZone = TimeZone.currentSystemDefault()) =
+            now.minus(OUTDATED_MEETING_RETENTION_DAYS.days)
+                .toLocalDateTime(timeZone).date
+                .atStartOfDayIn(timeZone)
+    }
 }
 
 internal class MeetingDataSource(
@@ -39,18 +63,18 @@ internal class MeetingDataSource(
     private val meetingApi: MeetingApi,
     private val meetingMapper: MeetingMapper = MapperProvider.meetingMapper()
 ) : MeetingRepository {
-    override suspend fun fetchAndPersistMeetings(now: Instant): Either<CoreFailure, Unit> = wrapApiRequest {
+    override suspend fun fetchAndPersistMeetings(generateOccurrencesUntil: Instant): Either<CoreFailure, Unit> = wrapApiRequest {
         meetingApi.fetchMeetings()
     }.flatMap { meetings ->
         wrapStorageRequest {
-            meetingDAO.upsertMeetings(meetings.map { meetingMapper.fromApiToDao(it) }, now)
+            meetingDAO.upsertMeetings(meetings.map { meetingMapper.fromApiToDao(it) }, generateOccurrencesUntil)
         }
     }
 
-    override suspend fun syncMeetingOccurrences(now: Instant): Either<CoreFailure, Unit> {
+    override suspend fun syncMeetingOccurrences(removeOlderThan: Instant, generateOccurrencesUntil: Instant): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
-            meetingDAO.removeOutdatedMeetings(now)
-            meetingDAO.insertMissingOccurrences(now)
+            meetingDAO.removeOutdatedMeetings(removeOlderThan)
+            meetingDAO.insertMissingOccurrences(generateOccurrencesUntil)
         }
     }
 }
