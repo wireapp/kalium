@@ -33,8 +33,10 @@ import kotlin.properties.Delegates
 
 internal class MeetingPagingSource(
     private val meetingsQueries: MeetingsQueries,
-    private val context: CoroutineContext,
+    private val readContext: CoroutineContext,
+    private val writeContext: CoroutineContext,
     private val fromDate: Instant,
+    private val prefetchDistance: Int,
     private val initialOffset: Long = 0,
 ) : PagingSource<Int, MeetingDetailsEntity>(), Query.Listener {
 
@@ -61,19 +63,21 @@ internal class MeetingPagingSource(
 
     @Suppress("CyclomaticComplexMethod", "TooGenericExceptionCaught")
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MeetingDetailsEntity> =
-        withContext(context) {
+        withContext(readContext) {
             try {
                 val key = params.key?.toLong() ?: initialOffset
                 val limit = when (params) {
                     is LoadParams.Prepend<*> -> minOf(key, params.loadSize.toLong())
                     else -> params.loadSize.toLong()
                 }
-                val count = meetingsQueries.countUpcomingMeetingOccurrences(fromDate).awaitAsOne().toInt()
+                val initialCount = meetingsQueries.countUpcomingMeetingOccurrences(fromDate).awaitAsOne().toInt()
                 val offset = when (params) {
                     is LoadParams.Prepend<*> -> maxOf(0, key - params.loadSize).toInt()
                     is LoadParams.Append<*> -> key.toInt()
-                    is LoadParams.Refresh<*> -> if (key >= count - params.loadSize) maxOf(0, count - params.loadSize) else key.toInt()
+                    is LoadParams.Refresh<*> ->
+                        if (key >= initialCount - params.loadSize) maxOf(0, initialCount - params.loadSize) else key.toInt()
                 }
+                val count = ensureOccurrencesForLoad(params, offset, limit, initialCount)
                 val meetingQuery = meetingsQueries.selectPagedMeetingDetails(
                     fromDate = fromDate,
                     limit = limit,
@@ -107,6 +111,33 @@ internal class MeetingPagingSource(
 
     override fun getRefreshKey(state: PagingState<Int, MeetingDetailsEntity>): Int? =
         state.anchorPosition?.let { maxOf(0, it - (state.config.initialLoadSize / 2)) }
+
+    private suspend fun ensureOccurrencesForLoad(params: LoadParams<Int>, offset: Int, limit: Long, count: Int): Int {
+        if (params is LoadParams.Prepend<*>) return count
+
+        val targetCount = (offset.toLong() + limit + prefetchDistance)
+            .coerceAtMost(Int.MAX_VALUE.toLong())
+            .toInt()
+
+        if (targetCount <= count) return count
+
+        currentMeetingQuery = null
+        val generatedCount = withContext(writeContext) {
+            meetingsQueries.transactionWithResult {
+                val existingCount = meetingsQueries.countUpcomingMeetingOccurrences(fromDate).executeAsOne().toInt()
+                val missingCount = (targetCount - existingCount).coerceAtLeast(0)
+                if (missingCount <= 0) return@transactionWithResult 0
+                val recurringMeetings = meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).executeAsList()
+                meetingsQueries.insertGeneratedOccurrences(
+                    meetings = recurringMeetings,
+                    limit = MeetingOccurrencesGenerator.GenerationLimit.Count(missingCount),
+                    shouldRegenerateOccurrences = recurringMeetings.associate { it.meetingId to false },
+                    now = fromDate
+                )
+            }
+        }
+        return count + generatedCount
+    }
 
     private suspend fun loadAndObserveAvatars(meetings: List<MeetingDetailsEntity>): Map<QualifiedIDEntity, List<QualifiedIDEntity>> {
         val conversationIds = meetings.filter { meeting ->
