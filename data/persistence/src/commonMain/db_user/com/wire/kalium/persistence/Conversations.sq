@@ -272,7 +272,6 @@ WHERE qualified_id = :qualified_id;
 selectAllConversations:
 SELECT * FROM Conversation
 WHERE type IS NOT 'CONNECTION_PENDING'
-    AND group_type IN ('GROUP', 'CHANNEL')
     AND deleted_locally = 0
 ORDER BY last_modified_date DESC, name ASC;
 
@@ -586,14 +585,12 @@ SELECT wire_cell FROM Conversation WHERE qualified_id = ?;
 selectCellGroupConversations:
 SELECT * FROM Conversation
 WHERE type = 'GROUP'
-AND group_type IN ('GROUP', 'CHANNEL')
 AND wire_cell IS NOT NULL
 AND deleted_locally = 0;
 
 selectCellGroupConversationsPaged:
 SELECT * FROM Conversation
 WHERE type = 'GROUP'
-AND group_type IN ('GROUP', 'CHANNEL')
 AND wire_cell IS NOT NULL
 AND deleted_locally = 0
 AND (:query = '' OR (name IS NOT NULL AND LOWER(name) LIKE '%' || LOWER(:query) || '%'))
