@@ -67,7 +67,7 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
 
     override fun fromDaoToModel(meeting: MeetingDetailsEntity): Meeting = Meeting(
         occurrenceId = meeting.occurrence.occurrenceId,
-        meetingId = meeting.meeting.meetingId.toString(),
+        meetingId = meeting.meeting.meetingId.toModel(),
         conversationId = meeting.meeting.conversationId.toModel(),
         conversationName = meeting.conversationName.orEmpty(),
         conversationType = when (meeting.conversationType) {

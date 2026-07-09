@@ -18,12 +18,13 @@
 package com.wire.kalium.logic.data.meeting
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.user.UserAssetId
 import kotlinx.datetime.Instant
 
 data class Meeting(
     val occurrenceId: String,
-    val meetingId: String,
+    val meetingId: MeetingId,
     val conversationId: ConversationId,
     val conversationName: String,
     val conversationType: ConversationType,
