@@ -97,12 +97,12 @@ ORDER BY occurrence_start ASC;
 countUpcomingMeetingOccurrences:
 SELECT COUNT(*)
 FROM MeetingOccurrence
-JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
-JOIN ConversationDetails ON ConversationDetails.qualifiedId = Meeting.conversation_id
 WHERE MeetingOccurrence.occurrence_start >= :fromDate;
 
 selectPagedMeetingDetails:
--- @CustomKey Conversation
+-- @CustomKey MeetingOccurrence
+-- @CustomKey Meeting
+-- @CustomKey conversation_list_membership
 SELECT
     MeetingOccurrence.occurrence_id AS occurrenceId,
     MeetingOccurrence.meeting_id AS occurrenceMeetingId,
