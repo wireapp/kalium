@@ -290,6 +290,7 @@ com.wire.kalium.logic.data.featureConfig
 com.wire.kalium.logic.data.id
 com.wire.kalium.logic.data.keypackage
 com.wire.kalium.logic.data.logout
+com.wire.kalium.logic.data.meeting
 com.wire.kalium.logic.data.message
 com.wire.kalium.logic.data.message.attachment
 com.wire.kalium.logic.data.message.draft
@@ -355,6 +356,7 @@ com.wire.kalium.logic.feature.featureConfig.handler
 com.wire.kalium.logic.feature.incallreaction
 com.wire.kalium.logic.feature.keypackage
 com.wire.kalium.logic.feature.legalhold
+com.wire.kalium.logic.feature.meeting
 com.wire.kalium.logic.feature.message
 com.wire.kalium.logic.feature.message.composite
 com.wire.kalium.logic.feature.message.confirmation
@@ -422,6 +424,7 @@ com.wire.kalium.network.api.base.authenticated.e2ei
 com.wire.kalium.network.api.base.authenticated.featureConfigs
 com.wire.kalium.network.api.base.authenticated.keypackage
 com.wire.kalium.network.api.base.authenticated.logout
+com.wire.kalium.network.api.base.authenticated.meeting
 com.wire.kalium.network.api.base.authenticated.message
 com.wire.kalium.network.api.base.authenticated.nomaddevice
 com.wire.kalium.network.api.base.authenticated.notification
@@ -528,6 +531,7 @@ com.wire.kalium.persistence.dao.client
 com.wire.kalium.persistence.dao.conversation
 com.wire.kalium.persistence.dao.conversation.folder
 com.wire.kalium.persistence.dao.event
+com.wire.kalium.persistence.dao.meeting
 com.wire.kalium.persistence.dao.member
 com.wire.kalium.persistence.dao.message
 com.wire.kalium.persistence.dao.message.attachment
