@@ -16,20 +16,17 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.featureFlags
+package com.wire.kalium.network.api.base.authenticated.meeting
 
-import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
+import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
+import com.wire.kalium.network.api.base.authenticated.BaseApi
+import com.wire.kalium.network.utils.NetworkResponse
 
-internal interface FeatureSupport {
-    val isMLSSupported: Boolean
-    val isMeetingsSupported: Boolean
-}
+@Suppress("TooManyFunctions")
+interface MeetingApi : BaseApi {
+    suspend fun fetchMeetings(): NetworkResponse<List<MeetingDTO>>
 
-@Suppress("MagicNumber")
-internal class FeatureSupportImpl(
-    apiVersion: Int
-) : FeatureSupport {
-
-    override val isMLSSupported: Boolean = apiVersion >= 6
-    override val isMeetingsSupported: Boolean = apiVersion >= MeetingApi.MIN_API_VERSION_MEETINGS
+    companion object {
+        const val MIN_API_VERSION_MEETINGS = 16
+    }
 }

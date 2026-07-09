@@ -15,21 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.v10.authenticated
 
-package com.wire.kalium.logic.featureFlags
+import com.wire.kalium.network.api.v9.authenticated.MeetingApiV9
 
-import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
-
-internal interface FeatureSupport {
-    val isMLSSupported: Boolean
-    val isMeetingsSupported: Boolean
-}
-
-@Suppress("MagicNumber")
-internal class FeatureSupportImpl(
-    apiVersion: Int
-) : FeatureSupport {
-
-    override val isMLSSupported: Boolean = apiVersion >= 6
-    override val isMeetingsSupported: Boolean = apiVersion >= MeetingApi.MIN_API_VERSION_MEETINGS
-}
+internal open class MeetingApiV10 internal constructor() : MeetingApiV9()

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,21 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.v3.authenticated
 
-package com.wire.kalium.logic.featureFlags
+import com.wire.kalium.network.api.v2.authenticated.MeetingApiV2
 
-import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
-
-internal interface FeatureSupport {
-    val isMLSSupported: Boolean
-    val isMeetingsSupported: Boolean
-}
-
-@Suppress("MagicNumber")
-internal class FeatureSupportImpl(
-    apiVersion: Int
-) : FeatureSupport {
-
-    override val isMLSSupported: Boolean = apiVersion >= 6
-    override val isMeetingsSupported: Boolean = apiVersion >= MeetingApi.MIN_API_VERSION_MEETINGS
-}
+internal open class MeetingApiV3 internal constructor() : MeetingApiV2()
