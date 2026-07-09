@@ -159,8 +159,8 @@ rootProject.plugins.withType<NodeJsPlugin> {
 tasks.dokkaHtmlMultiModule.configure {}
 
 moduleGraphConfig {
-    readmePath.set("./README.md")
-    heading.set("#### Dependency Graph")
+    readmePath.set("./docs/ARCHITECTURE.md")
+    heading.set("## Dependency Graph")
     nestingEnabled.set(true)
     rootModulesRegex.set(":logic")
     setStyleByModuleType.set(true)
