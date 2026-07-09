@@ -112,6 +112,24 @@ internal class UserPrefsDAOTest {
     }
 
     @Test
+    fun givenLinkPreviewsConfigIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
+        val (_, userConfigStorage) = Arrangement()
+            .withMetadataInserted()
+            .withValueByKeyFlowSucceeding("enable_link_previews", "true")
+            .arrange()
+        userConfigStorage.persistLinkPreviews(true)
+        assertTrue(userConfigStorage.isLinkPreviewsEnabled().first())
+    }
+
+    @Test
+    fun givenLinkPreviewsConfigIsNotSet_whenGettingItsValue_thenItShouldBeFalseByDefault() = runTest {
+        val (_, userConfigStorage) = Arrangement()
+            .withValueByKeyFlowSucceeding("enable_link_previews", null)
+            .arrange()
+        assertFalse(userConfigStorage.isLinkPreviewsEnabled().first())
+    }
+
+    @Test
     fun whenMarkingFileSharingAsNotified_thenIsChangedIsSetToFalse() = runTest {
         val statusWithChanged = IsFileSharingEnabledEntity(true, true)
         val statusWithoutChanged = IsFileSharingEnabledEntity(true, false)

@@ -22,6 +22,7 @@ import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.OpenGraphData
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -40,6 +41,7 @@ class GenerateLinkPreviewUseCaseTest {
     @Test
     fun givenOpenGraphImage_whenGeneratingPreview_thenImageIsAttached() = runTest {
         val repository = mock<LinkPreviewRepository>()
+        val userPropertyRepository = mock<UserPropertyRepository>()
         val expectedImage = LinkPreviewAsset(
             mimeType = "image/png",
             assetDataPath = "/tmp/link-preview.png".toPath(),
@@ -57,8 +59,9 @@ class GenerateLinkPreviewUseCaseTest {
             )
         )
         everySuspend { repository.fetchImage("https://example.com/image.png") } returns Either.Right(expectedImage)
+        everySuspend { userPropertyRepository.getLinkPreviewsStatus() } returns true
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository, linkPreviewEnabled = true)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true)
             .invoke("see https://example.com")
 
         assertNotNull(result)
@@ -68,6 +71,7 @@ class GenerateLinkPreviewUseCaseTest {
     @Test
     fun givenNoOpenGraphImage_whenGeneratingPreview_thenPreviewHasNoImage() = runTest {
         val repository = mock<LinkPreviewRepository>()
+        val userPropertyRepository = mock<UserPropertyRepository>()
         everySuspend { repository.fetchOpenGraph(any(), any()) } returns Either.Right(
             OpenGraphData(
                 title = "Title",
@@ -77,8 +81,9 @@ class GenerateLinkPreviewUseCaseTest {
                 siteName = "Example"
             )
         )
+        everySuspend { userPropertyRepository.getLinkPreviewsStatus() } returns true
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository, linkPreviewEnabled = true)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true)
             .invoke("see https://example.com")
 
         assertNotNull(result)
@@ -88,6 +93,7 @@ class GenerateLinkPreviewUseCaseTest {
     @Test
     fun givenImageFetchFailure_whenGeneratingPreview_thenPreviewHasNoImage() = runTest {
         val repository = mock<LinkPreviewRepository>()
+        val userPropertyRepository = mock<UserPropertyRepository>()
         everySuspend { repository.fetchOpenGraph(any(), any()) } returns Either.Right(
             OpenGraphData(
                 title = "Title",
@@ -100,8 +106,9 @@ class GenerateLinkPreviewUseCaseTest {
         everySuspend { repository.fetchImage("https://example.com/image.png") } returns Either.Left(
             NetworkFailure.NoNetworkConnection(null)
         )
+        everySuspend { userPropertyRepository.getLinkPreviewsStatus() } returns true
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository, linkPreviewEnabled = true)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true)
             .invoke("see https://example.com")
 
         assertNotNull(result)
@@ -111,8 +118,24 @@ class GenerateLinkPreviewUseCaseTest {
     @Test
     fun givenLinkPreviewDisabled_whenInvoked_thenReturnsNullWithoutCallingRepository() = runTest {
         val repository = mock<LinkPreviewRepository>()
+        val userPropertyRepository = mock<UserPropertyRepository>()
 
-        val result = GenerateLinkPreviewUseCaseImpl(repository, linkPreviewEnabled = false)
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = false)
+            .invoke("see https://example.com")
+
+        assertNull(result)
+        verifySuspend(VerifyMode.not) {
+            repository.fetchOpenGraph(any(), any())
+        }
+    }
+
+    @Test
+    fun givenUserLinkPreviewsDisabled_whenInvoked_thenReturnsNullWithoutCallingRepository() = runTest {
+        val repository = mock<LinkPreviewRepository>()
+        val userPropertyRepository = mock<UserPropertyRepository>()
+        everySuspend { userPropertyRepository.getLinkPreviewsStatus() } returns false
+
+        val result = GenerateLinkPreviewUseCaseImpl(repository, userPropertyRepository, linkPreviewEnabled = true)
             .invoke("see https://example.com")
 
         assertNull(result)

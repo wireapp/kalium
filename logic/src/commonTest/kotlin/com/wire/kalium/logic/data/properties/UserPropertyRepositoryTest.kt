@@ -106,12 +106,14 @@ class UserPropertyRepositoryTest {
                     mapOf(
                         PropertyKey.WIRE_RECEIPT_MODE.key to JsonPrimitive(1),
                         PropertyKey.WIRE_TYPING_INDICATOR_MODE.key to JsonPrimitive(0),
+                        PropertyKey.WIRE_LINK_PREVIEWS.key to JsonPrimitive(1),
                         PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE.key to JsonPrimitive(1),
                     )
                 )
             )
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -121,6 +123,7 @@ class UserPropertyRepositoryTest {
         verifySuspend { arrangement.propertiesApi.getPropertiesValues() }
         verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }
     }
 
@@ -132,6 +135,7 @@ class UserPropertyRepositoryTest {
             )
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -140,6 +144,7 @@ class UserPropertyRepositoryTest {
         result.shouldSucceed()
         verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(false)) }
         verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }
     }
 
@@ -150,6 +155,7 @@ class UserPropertyRepositoryTest {
             .withGetPropertiesValuesReturning(JsonObject(emptyMap()))
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -158,6 +164,7 @@ class UserPropertyRepositoryTest {
         result.shouldSucceed()
         verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(false)) }
         verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }
     }
 
@@ -169,6 +176,7 @@ class UserPropertyRepositoryTest {
             )
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -177,6 +185,7 @@ class UserPropertyRepositoryTest {
         result.shouldSucceed()
         verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(false)) }
         verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(false)) }
     }
 
@@ -188,6 +197,7 @@ class UserPropertyRepositoryTest {
             )
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -196,6 +206,7 @@ class UserPropertyRepositoryTest {
         result.shouldSucceed()
         verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(true)) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(false)) }
         verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }
     }
 
@@ -212,6 +223,7 @@ class UserPropertyRepositoryTest {
             )
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -233,6 +245,7 @@ class UserPropertyRepositoryTest {
             )
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -250,12 +263,14 @@ class UserPropertyRepositoryTest {
                     mapOf(
                         PropertyKey.WIRE_RECEIPT_MODE.key to JsonPrimitive("1"),
                         PropertyKey.WIRE_TYPING_INDICATOR_MODE.key to JsonPrimitive("0"),
+                        PropertyKey.WIRE_LINK_PREVIEWS.key to JsonPrimitive("1"),
                         PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE.key to JsonPrimitive("1"),
                     )
                 )
             )
             .withUpdateReadReceiptsLocallySuccess()
             .withUpdateTypingIndicatorLocallySuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
             .withUpdateScreenshotCensoringLocallySuccess()
             .arrange()
 
@@ -265,6 +280,7 @@ class UserPropertyRepositoryTest {
         verifySuspend { arrangement.propertiesApi.getPropertiesValues() }
         verifySuspend { arrangement.userConfigRepository.setReadReceiptsStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setTypingIndicatorStatus(eq(false)) }
+        verifySuspend { arrangement.userConfigRepository.setLinkPreviewsStatus(eq(true)) }
         verifySuspend { arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(true)) }
     }
 
@@ -280,6 +296,7 @@ class UserPropertyRepositoryTest {
         verifySuspend { arrangement.propertiesApi.getPropertiesValues() }
         verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setReadReceiptsStatus(any()) }
         verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setTypingIndicatorStatus(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setLinkPreviewsStatus(any()) }
         verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setScreenshotCensoringConfig(any()) }
     }
 
@@ -295,7 +312,44 @@ class UserPropertyRepositoryTest {
         verifySuspend { arrangement.propertiesApi.getPropertiesValues() }
         verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setReadReceiptsStatus(any()) }
         verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setTypingIndicatorStatus(any()) }
+        verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setLinkPreviewsStatus(any()) }
         verifySuspend(VerifyMode.not) { arrangement.userConfigRepository.setScreenshotCensoringConfig(any()) }
+    }
+
+    @Test
+    fun whenUserEnablingLinkPreviews_thenShouldCallApiAndLocalStorageWithCorrectArgs() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withSetLinkPreviewsEnabledSuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
+            .arrange()
+
+        val result = repository.setLinkPreviewsEnabled()
+
+        result.shouldSucceed()
+        verifySuspend {
+            arrangement.propertiesApi.setProperty(eq(PropertyKey.WIRE_LINK_PREVIEWS), eq(1))
+        }
+        verifySuspend {
+            arrangement.userConfigRepository.setLinkPreviewsStatus(eq(true))
+        }
+    }
+
+    @Test
+    fun whenUserDisablingLinkPreviews_thenShouldCallApiAndLocalStorageWithCorrectArgs() = runTest {
+        val (arrangement, repository) = Arrangement()
+            .withDeleteLinkPreviewsSuccess()
+            .withUpdateLinkPreviewsLocallySuccess()
+            .arrange()
+
+        val result = repository.deleteLinkPreviewsProperty()
+
+        result.shouldSucceed()
+        verifySuspend {
+            arrangement.propertiesApi.deleteProperty(eq(PropertyKey.WIRE_LINK_PREVIEWS))
+        }
+        verifySuspend {
+            arrangement.userConfigRepository.setLinkPreviewsStatus(eq(false))
+        }
     }
 
     @Test
@@ -341,6 +395,7 @@ class UserPropertyRepositoryTest {
         private val userPropertyRepository = UserPropertyDataSource(
             readReceipts = ReadReceiptsPropertyDataSource(propertiesApi, userConfigRepository),
             typingIndicator = TypingIndicatorPropertyDataSource(propertiesApi, userConfigRepository),
+            linkPreviews = LinkPreviewsPropertyDataSource(propertiesApi, userConfigRepository),
             screenshotCensoring = ScreenshotCensoringPropertyDataSource(propertiesApi, userConfigRepository),
             userPropertiesSync = UserPropertiesSyncDataSource(propertiesApi, userConfigRepository),
             conversationFolders = ConversationFoldersPropertyDataSource(propertiesApi, TestUser.SELF.id),
@@ -376,6 +431,18 @@ class UserPropertyRepositoryTest {
             } returns NetworkResponse.Success(Unit, mapOf(), 200)
         }
 
+        suspend fun withSetLinkPreviewsEnabledSuccess() = apply {
+            everySuspend {
+                propertiesApi.setProperty(eq(PropertyKey.WIRE_LINK_PREVIEWS), eq(1))
+            } returns NetworkResponse.Success(Unit, mapOf(), 200)
+        }
+
+        suspend fun withDeleteLinkPreviewsSuccess() = apply {
+            everySuspend {
+                propertiesApi.deleteProperty(eq(PropertyKey.WIRE_LINK_PREVIEWS))
+            } returns NetworkResponse.Success(Unit, mapOf(), 200)
+        }
+
         suspend fun withSetScreenshotCensoringEnabledSuccess() = apply {
             everySuspend {
                 propertiesApi.setProperty(eq(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE), eq(1))
@@ -397,6 +464,12 @@ class UserPropertyRepositoryTest {
         suspend fun withUpdateTypingIndicatorLocallySuccess() = apply {
             everySuspend {
                 userConfigRepository.setTypingIndicatorStatus(any())
+            } returns Either.Right(Unit)
+        }
+
+        suspend fun withUpdateLinkPreviewsLocallySuccess() = apply {
+            everySuspend {
+                userConfigRepository.setLinkPreviewsStatus(any())
             } returns Either.Right(Unit)
         }
 

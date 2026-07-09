@@ -183,6 +183,7 @@ import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.properties.ConversationFoldersPropertyDataSource
+import com.wire.kalium.logic.data.properties.LinkPreviewsPropertyDataSource
 import com.wire.kalium.logic.data.properties.ReadReceiptsPropertyDataSource
 import com.wire.kalium.logic.data.properties.ScreenshotCensoringPropertyDataSource
 import com.wire.kalium.logic.data.properties.TypingIndicatorPropertyDataSource
@@ -828,6 +829,7 @@ public class UserSessionScope internal constructor(
         get() = UserPropertyDataSource(
             readReceipts = ReadReceiptsPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             typingIndicator = TypingIndicatorPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            linkPreviews = LinkPreviewsPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             screenshotCensoring = ScreenshotCensoringPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             userPropertiesSync = UserPropertiesSyncDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             conversationFolders = ConversationFoldersPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userId),

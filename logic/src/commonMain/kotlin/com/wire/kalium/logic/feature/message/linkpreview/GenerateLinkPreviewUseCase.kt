@@ -18,12 +18,10 @@
 package com.wire.kalium.logic.feature.message.linkpreview
 
 import com.wire.kalium.common.functional.getOrNull
-import com.wire.kalium.logic.data.message.linkpreview.ExclusionRanges
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewRepository
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
-import com.wire.kalium.logic.data.message.linkpreview.PreviewBlacklist
-import com.wire.kalium.logic.data.message.linkpreview.UrlDetector
 import com.wire.kalium.logic.data.message.mention.MessageMention
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
 
 /**
  * Use case for generating link previews from message text.
@@ -42,21 +40,19 @@ public interface GenerateLinkPreviewUseCase {
  */
 internal class GenerateLinkPreviewUseCaseImpl(
     private val repository: LinkPreviewRepository,
+    private val userPropertyRepository: UserPropertyRepository,
     private val linkPreviewEnabled: Boolean,
+    private val detectLinkPreviewTarget: DetectLinkPreviewTargetUseCase = DetectLinkPreviewTargetUseCaseImpl(),
 ) : GenerateLinkPreviewUseCase {
     override suspend fun invoke(
         text: String,
         mentions: List<MessageMention>
     ): MessageLinkPreview? {
-        if (!linkPreviewEnabled) return null
+        if (!linkPreviewEnabled || !userPropertyRepository.getLinkPreviewsStatus()) return null
 
-        val excludedRanges = ExclusionRanges.compute(text, mentions)
-        val matches = UrlDetector.detect(text, excludedRanges)
-        val firstMatch = matches
-            .filterNot { PreviewBlacklist.isBlacklisted(it.url) }
-            .firstOrNull()
+        val target = detectLinkPreviewTarget(text, mentions)
 
-        return firstMatch?.let { match ->
+        return target?.let { match ->
             val originalUrl = match.url
             val normalizedUrl = normalizeUrl(originalUrl)
             repository.fetchOpenGraph(normalizedUrl, originalUrl).getOrNull()?.let { ogData ->
@@ -65,7 +61,7 @@ internal class GenerateLinkPreviewUseCaseImpl(
                 }
                 MessageLinkPreview(
                     url = originalUrl,
-                    urlOffset = match.start,
+                    urlOffset = match.position,
                     permanentUrl = ogData.url,
                     title = ogData.title,
                     summary = ogData.description,
