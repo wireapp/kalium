@@ -234,7 +234,6 @@ $dokka.location:com.wire.kalium.logic.util/DummyCallManager/updateEpochInfo/#[Er
 $dokka.location:com.wire.kalium.logic.util/PlatformView/view/#/PointingToDeclaration/logic/com.wire.kalium.logic.util/-platform-view/[macos]view.html
 $dokka.location:com.wire.kalium.network.api.base.unauthenticated.appVersioning/AppVersionBlackListResponse/blacklisted/#/PointingToDeclaration/network/com.wire.kalium.network.api.base.unauthenticated.appVersioning/-app-version-black-list-response/[jvm]blacklisted.html
 $dokka.location:com.wire.kalium.network.api.base.unauthenticated.appVersioning/AppVersionBlackListResponse/oldestAccepted/#/PointingToDeclaration/network/com.wire.kalium.network.api.base.unauthenticated.appVersioning/-app-version-black-list-response/[jvm]oldest-accepted.html
-$dokka.location:com.wire.kalium.network//buildClearTextTrafficOkhttpClient/#/PointingToDeclaration/network/com.wire.kalium.network/[jvm]build-clear-text-traffic-okhttp-client.html
 $dokka.location:com.wire.kalium.network//buildOkhttpClient/#kotlin.Function1[[Error type: Unresolved type for OkHttpClient.Builder],kotlin.Unit]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]build-okhttp-client.html
 $dokka.location:com.wire.kalium.network//supportedConnectionSpecs/#/PointingToDeclaration/network/com.wire.kalium.network/[jvm]supported-connection-specs.html
 $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener///PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-wrapper-listener/index.html
