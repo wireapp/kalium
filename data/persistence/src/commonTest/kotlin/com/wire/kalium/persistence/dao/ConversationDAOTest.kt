@@ -2816,7 +2816,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             id = id,
             name = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.name else name,
             type = type,
-            callStatus = null,
             previewAssetId = null,
             mutedStatus = mutedStatus,
             teamId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.team else teamId,
@@ -3154,7 +3153,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversationHasCallRows_whenFetchingConversationDetails_thenCallStatusIsNotReadFromCallTable() =
+    fun givenConversationHasCallRows_whenFetchingConversationDetails_thenDetailsAreUnaffected() =
         runTest(dispatcher) {
             val conversationEntity1 = conversationEntity1.copy(
                 id = ConversationIDEntity("conversation1", "domain"),
@@ -3168,7 +3167,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             callDAO.insertCall(callEntity1.copy(id = "2", status = CallEntity.Status.CLOSED)) // last call already closed
             conversationDAO.getConversationDetailsById(conversationEntity1.id).let {
                 assertNotNull(it)
-                assertEquals(null, it.callStatus) // call state is supplied by the in-memory store, not this query
+                assertEquals(conversationEntity1.id, it.id)
             }
         }
 

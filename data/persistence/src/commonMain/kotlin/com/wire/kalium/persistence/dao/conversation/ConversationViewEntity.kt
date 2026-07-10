@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ChannelAccess
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ChannelAddPermission
 import com.wire.kalium.persistence.dao.member.MemberEntity
@@ -36,7 +35,6 @@ data class ConversationViewEntity(
     val id: QualifiedIDEntity,
     val name: String?,
     val type: ConversationEntity.Type,
-    val callStatus: CallEntity.Status?,
     val previewAssetId: QualifiedIDEntity?,
     val mutedStatus: ConversationEntity.MutedStatus,
     val teamId: String?,

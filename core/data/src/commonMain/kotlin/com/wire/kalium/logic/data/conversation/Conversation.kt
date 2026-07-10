@@ -348,7 +348,6 @@ sealed interface ConversationDetails {
 
         data class Meeting(
             override val conversation: Conversation,
-            override val hasOngoingCall: Boolean = false,
             override val isSelfUserMember: Boolean,
             override val selfRole: Conversation.Member.Role?,
             override val isFavorite: Boolean = false,

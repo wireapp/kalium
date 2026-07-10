@@ -110,7 +110,6 @@ data object ConversationMapper {
         mlsLastKeyingMaterialUpdateDate = mlsLastKeyingMaterialUpdateDate,
         mlsGroupState = mlsGroupState,
         mlsProposalTimer = mlsProposalTimer,
-        callStatus = null,
         previewAssetId = previewAssetId,
         userAvailabilityStatus = userAvailabilityStatus,
         userType = userType,

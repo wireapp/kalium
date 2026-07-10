@@ -318,7 +318,6 @@ internal class ConversationMapperImpl(
 
                         ConversationEntity.GroupType.Group -> ConversationDetails.Group.Regular(
                             conversation = fromConversationViewToEntity(daoModel),
-                            hasOngoingCall = callStatus != null, // todo: we can do better!
                             isSelfUserMember = isMember,
                             selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
                             isFavorite = isFavorite,
