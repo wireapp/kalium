@@ -75,13 +75,15 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
                 previewPicture = meeting.otherUserPreviewAssetId?.toModel()
             )
 
-            ConversationEntity.Type.GROUP if meeting.groupType is ConversationEntity.GroupType.Meeting -> MeetingOccurrence.ConversationType.Meeting(
-                previewPictures = meeting.participantPreviewAssetIds.map { it.toModel() }
-            )
+            ConversationEntity.Type.GROUP if meeting.groupType is ConversationEntity.GroupType.Meeting ->
+                MeetingOccurrence.ConversationType.Meeting(
+                    previewPictures = meeting.participantPreviewAssetIds.map { it.toModel() }
+                )
 
-            ConversationEntity.Type.GROUP if meeting.groupType is ConversationEntity.GroupType.Channel -> MeetingOccurrence.ConversationType.Channel(
-                isPrivateChannel = meeting.channelAccess != ConversationEntity.ChannelAccess.PUBLIC
-            )
+            ConversationEntity.Type.GROUP if meeting.groupType is ConversationEntity.GroupType.Channel ->
+                MeetingOccurrence.ConversationType.Channel(
+                    isPrivateChannel = meeting.channelAccess != ConversationEntity.ChannelAccess.PUBLIC
+                )
 
             else -> MeetingOccurrence.ConversationType.Group
         },
@@ -89,7 +91,11 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         startTime = meeting.occurrence.occurrenceStart,
         endTime = meeting.occurrence.occurrenceEnd,
         recurrence = meeting.meeting.recurrence?.let { fromDaoToModel(it) },
-        selfRole = if (meeting.meeting.creatorId == meeting.selfUserId) MeetingOccurrence.SelfRole.Creator else MeetingOccurrence.SelfRole.Member
+        selfRole = if (meeting.meeting.creatorId == meeting.selfUserId) {
+            MeetingOccurrence.SelfRole.Creator
+        } else {
+            MeetingOccurrence.SelfRole.Member
+        }
     )
 
     override fun fromDaoToModel(recurrence: RecurrenceEntity): MeetingOccurrence.Recurrence = MeetingOccurrence.Recurrence(

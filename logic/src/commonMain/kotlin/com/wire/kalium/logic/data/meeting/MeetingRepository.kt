@@ -30,14 +30,12 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.atStartOfDayIn
-import kotlinx.datetime.toLocalDateTime
-import kotlin.time.Duration.Companion.days
+import com.wire.kalium.util.DateTimeUtil.asStartOfDay
+import com.wire.kalium.util.DateTimeUtil.currentInstant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.days
 
 internal interface MeetingRepository {
     suspend fun fetchAndPersistMeetings(
@@ -52,7 +50,8 @@ internal interface MeetingRepository {
     suspend fun getPaginatedMeetings(
         pagingConfig: PagingConfig,
         startingOffset: Long,
-        fromDate: Instant = Clock.System.now()
+        from: Instant = currentInstant().asStartOfDay(),
+        until: Instant? = null
     ): Flow<PagingData<MeetingOccurrence>>
 }
 
@@ -61,45 +60,41 @@ internal class MeetingDataSource(
     private val meetingApi: MeetingApi,
     private val meetingMapper: MeetingMapper = MapperProvider.meetingMapper()
 ) : MeetingRepository {
-    override suspend fun fetchAndPersistMeetings(generateOccurrencesUntil: Instant): Either<CoreFailure, List<MeetingEntity>> =
-        wrapApiRequest {
-            meetingApi.fetchMeetings()
-        }.flatMap { meetings ->
-            wrapStorageRequest {
-                meetings.map { meetingMapper.fromApiToDao(it) }
-                    .also { meetingDAO.upsertMeetings(it, generateOccurrencesUntil) }
-            }
-        }
-
-    override suspend fun syncMeetingOccurrences(removeOlderThan: Instant, generateOccurrencesUntil: Instant): Either<CoreFailure, Unit> =
+    override suspend fun fetchAndPersistMeetings(
+        generateOccurrencesUntil: Instant
+    ): Either<CoreFailure, List<MeetingEntity>> = wrapApiRequest {
+        meetingApi.fetchMeetings()
+    }.flatMap { meetings ->
         wrapStorageRequest {
-            meetingDAO.removeOutdatedMeetings(removeOlderThan)
-            meetingDAO.insertMissingOccurrences(generateOccurrencesUntil)
+            meetings.map { meetingMapper.fromApiToDao(it) }
+                .also { meetingDAO.upsertMeetings(it, generateOccurrencesUntil) }
         }
+    }
+
+    override suspend fun syncMeetingOccurrences(
+        removeOlderThan: Instant,
+        generateOccurrencesUntil: Instant
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        meetingDAO.removeOutdatedMeetings(removeOlderThan)
+        meetingDAO.insertMissingOccurrences(generateOccurrencesUntil)
+    }
 
     override suspend fun getPaginatedMeetings(
         pagingConfig: PagingConfig,
         startingOffset: Long,
-        fromDate: Instant
-    ): Flow<PagingData<MeetingOccurrence>> =
-        meetingDAO.getPaginatedMeetings(
-            pagingConfig = pagingConfig,
-            startingOffset = startingOffset,
-            fromDate = fromDate
-        ).pagingDataFlow.map { pagingData ->
-            pagingData.map(meetingMapper::fromDaoToModel)
-        }
+        from: Instant,
+        until: Instant?
+    ) = meetingDAO.getPaginatedMeetings(
+        pagingConfig = pagingConfig,
+        startingOffset = startingOffset,
+        from = from,
+        until = until
+    ).pagingDataFlow.map { pagingData ->
+        pagingData.map(meetingMapper::fromDaoToModel)
+    }
 }
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
 private const val OUTDATED_MEETING_RETENTION_DAYS = 30
-private fun occurrenceGenerationUntil(now: Instant = Clock.System.now(), timeZone: TimeZone = TimeZone.currentSystemDefault()) =
-    now.plus(OCCURRENCE_GENERATION_WINDOW_DAYS.days)
-        .toLocalDateTime(timeZone).date
-        .atStartOfDayIn(timeZone)
-        .plus(1.days)
-
-private fun occurrenceOutdatedThreshold(now: Instant = Clock.System.now(), timeZone: TimeZone = TimeZone.currentSystemDefault()) =
-    now.minus(OUTDATED_MEETING_RETENTION_DAYS.days)
-        .toLocalDateTime(timeZone).date
-        .atStartOfDayIn(timeZone)
+private fun occurrenceGenerationUntil() = currentInstant().asStartOfDay().plus((OCCURRENCE_GENERATION_WINDOW_DAYS + 1).days)
+private fun occurrenceOutdatedThreshold() = currentInstant().asStartOfDay().minus(OUTDATED_MEETING_RETENTION_DAYS.days)

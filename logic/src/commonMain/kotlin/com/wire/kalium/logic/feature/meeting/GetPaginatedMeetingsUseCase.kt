@@ -22,10 +22,11 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.wire.kalium.logic.data.meeting.MeetingOccurrence
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.util.DateTimeUtil.asStartOfDay
+import com.wire.kalium.util.DateTimeUtil.currentInstant
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 /**
@@ -38,10 +39,12 @@ public class GetPaginatedMeetingsUseCase internal constructor(
     public suspend operator fun invoke(
         pagingConfig: PagingConfig,
         startingOffset: Long,
-        fromDate: Instant = Clock.System.now()
+        from: Instant = currentInstant().asStartOfDay(),
+        until: Instant? = null
     ): Flow<PagingData<MeetingOccurrence>> = meetingRepository.getPaginatedMeetings(
         pagingConfig = pagingConfig,
         startingOffset = startingOffset,
-        fromDate = fromDate
+        from = from,
+        until = until
     ).flowOn(dispatcher.io)
 }

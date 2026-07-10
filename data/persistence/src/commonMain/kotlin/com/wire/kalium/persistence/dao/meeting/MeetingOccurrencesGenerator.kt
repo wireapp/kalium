@@ -24,29 +24,26 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlin.uuid.Uuid
 
-object MeetingOccurrencesGenerator {
+internal object MeetingOccurrencesGenerator {
 
     fun generate(
         meetings: List<MeetingEntity>,
         lastGeneratedStarts: Map<QualifiedIDEntity, Instant>,
-        limit: GenerationLimit,
+        bounds: GenerationBounds,
     ): List<MeetingOccurrenceEntity> {
         if (meetings.isEmpty()) return emptyList()
-        val maxDateLimit = (limit as? GenerationLimit.Until)?.until
-        val totalCountToGenerate = (limit as? GenerationLimit.Count)?.totalCount ?: 0
         val statesList = meetings.initialGeneratorStates(lastGeneratedStarts)
-        return generateOccurrences(statesList, maxDateLimit, totalCountToGenerate)
+        return generateOccurrences(statesList, bounds)
     }
 
     private fun generateOccurrences(
         statesList: MutableList<MeetingGeneratorState>,
-        maxDateLimit: Instant?,
-        totalCountToGenerate: Int
+        bounds: GenerationBounds,
     ): List<MeetingOccurrenceEntity> {
         val allOccurrences = mutableListOf<MeetingOccurrenceEntity>()
         while (statesList.isNotEmpty()) {
             val currentState = statesList.minBy { it.nextCandidateStart }
-            if (shouldStopGenerating(currentState, allOccurrences.size, maxDateLimit, totalCountToGenerate)) break
+            if (shouldStopGenerating(currentState, allOccurrences.size, bounds)) break
             allOccurrences.add(currentState.toOccurrence())
             statesList.advanceOrRemove(currentState)
         }
@@ -73,16 +70,11 @@ object MeetingOccurrencesGenerator {
     private fun shouldStopGenerating(
         currentState: MeetingGeneratorState,
         currentCount: Int,
-        maxDateLimit: Instant?,
-        totalCountToGenerate: Int
+        bounds: GenerationBounds,
     ): Boolean {
-        val hasEnoughItems = totalCountToGenerate in 1..currentCount
-        val isBeyondWindow = maxDateLimit != null && currentState.nextCandidateStart > maxDateLimit
-        return if (maxDateLimit != null) {
-            isBeyondWindow && (totalCountToGenerate <= 0 || hasEnoughItems)
-        } else {
-            hasEnoughItems
-        }
+        val hasEnoughItems = bounds.totalCount?.let { currentCount >= it } ?: false
+        val isBeyondWindow = bounds.until?.let { currentState.nextCandidateStart >= it } ?: false
+        return hasEnoughItems || isBeyondWindow
     }
 
     private fun MeetingGeneratorState.toOccurrence(): MeetingOccurrenceEntity {
@@ -146,8 +138,23 @@ object MeetingOccurrencesGenerator {
         val nextCandidateStart: Instant,
     )
 
-    sealed interface GenerationLimit {
-        data class Count(val totalCount: Int) : GenerationLimit
-        data class Until(val until: Instant) : GenerationLimit
+}
+
+internal class GenerationBounds private constructor(val totalCount: Int?, val until: Instant?) {
+    companion object {
+        /**
+         * Generates at most [totalCount] occurrences without applying a date boundary.
+         */
+        fun count(totalCount: Int): GenerationBounds = GenerationBounds(totalCount = totalCount, until = null)
+
+        /**
+         * Generates occurrences with start dates strictly before [until], without applying a count boundary.
+         */
+        fun until(until: Instant): GenerationBounds = GenerationBounds(totalCount = null, until = until)
+
+        /**
+         * Generates at most [totalCount] occurrences and excludes occurrences with start dates at or after [until].
+         */
+        fun countUntil(totalCount: Int, until: Instant): GenerationBounds = GenerationBounds(totalCount = totalCount, until = until)
     }
 }

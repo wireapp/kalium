@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 interface MeetingDao {
@@ -36,7 +35,8 @@ interface MeetingDao {
     fun getPaginatedMeetings(
         pagingConfig: PagingConfig,
         startingOffset: Long,
-        fromDate: Instant = Clock.System.now()
+        from: Instant,
+        until: Instant? = null
     ): KaliumPager<MeetingOccurrenceDetailsEntity>
 }
 
@@ -68,7 +68,7 @@ internal class MeetingDaoImpl(
                 }
                 meetingsQueries.insertGeneratedOccurrences(
                     meetings = meetings,
-                    limit = MeetingOccurrencesGenerator.GenerationLimit.Until(generateOccurrencesUntil),
+                    bounds = GenerationBounds.until(generateOccurrencesUntil),
                     shouldRegenerateOccurrences = meetings.associate {
                         it.meetingId to (it.meetingId in meetingIdsRequiringOccurrenceRefresh)
                     },
@@ -89,7 +89,7 @@ internal class MeetingDaoImpl(
                 meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).executeAsList().let { meetings ->
                     meetingsQueries.insertGeneratedOccurrences(
                         meetings = meetings,
-                        limit = MeetingOccurrencesGenerator.GenerationLimit.Until(until),
+                        bounds = GenerationBounds.until(until),
                         shouldRegenerateOccurrences = meetings.associate { it.meetingId to false },
                     )
                 }
@@ -97,27 +97,34 @@ internal class MeetingDaoImpl(
         }
     }
 
-    override fun getPaginatedMeetings(
-        pagingConfig: PagingConfig,
-        startingOffset: Long,
-        fromDate: Instant
-    ): KaliumPager<MeetingOccurrenceDetailsEntity> = KaliumPager(
-        pager = Pager(
-            config = pagingConfig,
-            pagingSourceFactory = { meetingPagingSource(fromDate, startingOffset, pagingConfig.prefetchDistance) }
-        ),
-        pagingSource = meetingPagingSource(fromDate, startingOffset, pagingConfig.prefetchDistance),
-        readDispatcher = readDispatcher,
-    )
+    override fun getPaginatedMeetings(pagingConfig: PagingConfig, startingOffset: Long, from: Instant, until: Instant?) =
+        KaliumPager(
+            pager = Pager(
+                config = pagingConfig,
+                pagingSourceFactory = {
+                    meetingPagingSource(from, until, startingOffset, pagingConfig.prefetchDistance)
+                }
+            ),
+            pagingSource = meetingPagingSource(
+                from = from,
+                until = until,
+                startingOffset = startingOffset,
+                prefetchDistance = pagingConfig.prefetchDistance
+            ),
+            readDispatcher = readDispatcher,
+        )
 
-    private fun meetingPagingSource(fromDate: Instant, startingOffset: Long, prefetchDistance: Int): MeetingPagingSource =
+    private fun meetingPagingSource(from: Instant, until: Instant?, startingOffset: Long, prefetchDistance: Int): MeetingPagingSource =
         MeetingPagingSource(
             meetingsQueries = meetingsQueries,
             readContext = readDispatcher.value,
             writeContext = writeDispatcher.value,
-            fromDate = fromDate,
-            prefetchDistance = prefetchDistance,
-            initialOffset = startingOffset,
+            parameters = MeetingPagingParameters(
+                from = from,
+                until = until,
+                initialOffset = startingOffset,
+                prefetchDistance = prefetchDistance,
+            ),
         )
 }
 
@@ -140,7 +147,7 @@ private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
 
 internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
     meetings: List<MeetingEntity>,
-    limit: MeetingOccurrencesGenerator.GenerationLimit,
+    bounds: GenerationBounds,
     shouldRegenerateOccurrences: Map<QualifiedIDEntity, Boolean>,
 ): Int {
     val lastGeneratedStarts = meetings.mapNotNull { meeting ->
@@ -153,7 +160,7 @@ internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
     return MeetingOccurrencesGenerator.generate(
         meetings = meetings,
         lastGeneratedStarts = lastGeneratedStarts,
-        limit = limit,
+        bounds = bounds,
     ).onEach { occurrence ->
         insertMeetingOccurrence(
             occurrence_id = occurrence.occurrenceId,
@@ -166,10 +173,10 @@ internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
 
 private fun Meeting.hasSameScheduleAs(meeting: MeetingEntity): Boolean =
     start_date.isSameStoredInstantAs(meeting.startTime) &&
-        end_date.isSameStoredInstantAs(meeting.endTime) &&
-        recurrence_frequency == meeting.recurrence?.frequency &&
-        recurrence_interval == meeting.recurrence?.interval &&
-        recurrence_end_date.isSameStoredInstantAs(meeting.recurrence?.until)
+            end_date.isSameStoredInstantAs(meeting.endTime) &&
+            recurrence_frequency == meeting.recurrence?.frequency &&
+            recurrence_interval == meeting.recurrence?.interval &&
+            recurrence_end_date.isSameStoredInstantAs(meeting.recurrence?.until)
 
 private fun Instant?.isSameStoredInstantAs(other: Instant?): Boolean =
     this?.toEpochMilliseconds() == other?.toEpochMilliseconds()

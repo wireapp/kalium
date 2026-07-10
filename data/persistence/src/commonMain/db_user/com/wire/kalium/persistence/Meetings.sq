@@ -97,7 +97,8 @@ ORDER BY occurrence_start ASC;
 countUpcomingMeetingOccurrences:
 SELECT COUNT(*)
 FROM MeetingOccurrence
-WHERE MeetingOccurrence.occurrence_start >= :fromDate;
+WHERE MeetingOccurrence.occurrence_start >= :fromDate
+    AND (:untilDate IS NULL OR MeetingOccurrence.occurrence_start < :untilDate);
 
 selectPagedMeetingDetails:
 -- @CustomKey MeetingOccurrence
@@ -130,6 +131,7 @@ FROM MeetingOccurrence
 JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
 JOIN ConversationDetails ON ConversationDetails.qualifiedId = Meeting.conversation_id
 WHERE MeetingOccurrence.occurrence_start >= :fromDate
+    AND (:untilDate IS NULL OR MeetingOccurrence.occurrence_start < :untilDate)
 ORDER BY MeetingOccurrence.occurrence_start ASC,
     CASE WHEN MeetingOccurrence.occurrence_end IS NULL THEN 1 ELSE 0 END ASC,
     MeetingOccurrence.occurrence_end ASC,

@@ -21,7 +21,10 @@ package com.wire.kalium.util
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.minus
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.until
 
 expect open class PlatformDateTimeUtil() {
@@ -135,4 +138,13 @@ object DateTimeUtil : PlatformDateTimeUtil() {
      * @return date in ISO-8601 format (YYYY-MM-DDTHH:mm:ss.SSSZ)
      */
     fun Instant.toIsoDateTimeString(): String = fromInstantToIsoDateTimeString(this)
+
+    /**
+     * Return the start of the given day as [kotlinx.datetime.Instant].
+     * @receiver date-time as [kotlinx.datetime.Instant]
+     * @param timeZone time zone to use, default is the current system
+     * @return start of the current day as [kotlinx.datetime.Instant], i.e. 00:00:00.000 in the given time zone
+     */
+    fun Instant.asStartOfDay(timeZone: TimeZone = TimeZone.currentSystemDefault()) =
+        this.toLocalDateTime(timeZone).date.atStartOfDayIn(timeZone)
 }
