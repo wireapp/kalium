@@ -25,6 +25,7 @@ import com.wire.kalium.logic.fakes.sync.FakeIncrementalSyncManager
 import com.wire.kalium.logic.fakes.sync.FakeSlowSyncManager
 import com.wire.kalium.logic.fakes.sync.FakeSyncStateObserver
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -177,14 +178,16 @@ class SyncExecutorTest {
             advanceUntilIdle()
 
             var didContinue = false
+            val waitingStarted = CompletableDeferred<Unit>()
             val waitingJob = backgroundScope.launch {
                 syncExecutor.request {
+                    waitingStarted.complete(Unit)
                     val result = waitUntilNextLiveOrFailure()
                     assertEquals(SyncRequestResult.Success, result)
                     didContinue = true
                 }
             }
-            advanceUntilIdle()
+            waitingStarted.await()
             assertFalse(didContinue)
 
             arrangement.syncStateObserver.mutableSyncState.emit(SyncState.Live)
@@ -243,15 +246,17 @@ class SyncExecutorTest {
 
             var actualFailure: CoreFailure? = null
             var didContinue = false
+            val waitingStarted = CompletableDeferred<Unit>()
             val waitingJob = backgroundScope.launch {
                 syncExecutor.request {
+                    waitingStarted.complete(Unit)
                     val result = waitUntilNextLiveOrFailure()
                     assertIs<SyncRequestResult.Failure>(result)
                     actualFailure = result.error
                     didContinue = true
                 }
             }
-            advanceUntilIdle()
+            waitingStarted.await()
             assertFalse(didContinue)
 
             arrangement.syncStateObserver.mutableSyncState.emit(SyncState.GatheringPendingEvents)
