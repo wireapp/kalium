@@ -78,7 +78,6 @@ internal class MeetingPagingSource(
                 val count = ensureOccurrencesForLoad(params, offset, limit, initialCount)
                 val meetingQuery = meetingsQueries.selectPagedMeetingOccurrenceDetails(
                     fromDate = parameters.from,
-                    untilDate = parameters.until,
                     limit = limit,
                     offset = offset.toLong(),
                     mapper = MeetingMapper::fromViewToDetails
@@ -125,13 +124,10 @@ internal class MeetingPagingSource(
                 val existingCount = countMeetingOccurrences()
                 val missingCount = (targetCount - existingCount).coerceAtLeast(0)
                 if (missingCount <= 0) return@transactionWithResult 0
-                val bounds = parameters.until
-                    ?.let { GenerationBounds.countUntil(totalCount = missingCount, until = it) }
-                    ?: GenerationBounds.count(missingCount)
                 val recurringMeetings = meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).awaitAsList()
                 meetingsQueries.insertGeneratedOccurrences(
                     meetings = recurringMeetings,
-                    bounds = bounds,
+                    bounds = GenerationBounds.count(missingCount),
                     shouldRegenerateOccurrences = recurringMeetings.associate { it.meetingId to false },
                 )
             }
@@ -140,7 +136,7 @@ internal class MeetingPagingSource(
     }
 
     private suspend fun countMeetingOccurrences(): Int =
-        meetingsQueries.countUpcomingMeetingOccurrences(fromDate = parameters.from, untilDate = parameters.until).awaitAsOne().toInt()
+        meetingsQueries.countUpcomingMeetingOccurrences(fromDate = parameters.from).awaitAsOne().toInt()
 
     private suspend fun loadAndObserveAvatars(meetings: List<MeetingOccurrenceDetailsEntity>): Map<QualifiedIDEntity, List<QualifiedIDEntity>> {
         val conversationIds = meetings.filter { meeting ->
@@ -164,4 +160,4 @@ internal class MeetingPagingSource(
     }
 }
 
-internal data class MeetingPagingParameters(val from: Instant, val until: Instant?, val initialOffset: Long, val prefetchDistance: Int)
+internal data class MeetingPagingParameters(val from: Instant, val initialOffset: Long, val prefetchDistance: Int)

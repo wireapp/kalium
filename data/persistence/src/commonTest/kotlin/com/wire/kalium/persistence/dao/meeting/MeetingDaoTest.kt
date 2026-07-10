@@ -17,8 +17,6 @@
  */
 package com.wire.kalium.persistence.dao.meeting
 
-import androidx.paging.PagingConfig
-import androidx.paging.PagingSource
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.MeetingsQueries
@@ -253,78 +251,6 @@ class MeetingDaoTest : BaseDatabaseTest() {
             meetingDao.insertMissingOccurrences(now + GENERATION_DAYS.days + 1.days)
             assertEquals(initialOccurrences.size + 1, occurrencesFor(meeting).size)
         }
-
-    @Test
-    fun givenMeetingsAroundToday_whenLoadingDateBoundedPage_thenReturnOnlyTodayOccurrences() = runTest(dispatcher) {
-        val todayStart = Instant.parse("2026-01-01T00:00:00Z")
-        val tomorrowStart = Instant.parse("2026-01-02T00:00:00Z")
-        val yesterdayMeeting = newMeeting(
-            meetingId = QualifiedIDEntity("yesterday-meeting", "wire.com"),
-            conversationId = QualifiedIDEntity("yesterday-conversation", "wire.com"),
-            startTime = todayStart - 1.days,
-            endTime = todayStart - 1.days + 1.hours
-        )
-        val todayEndedMeeting = newMeeting(
-            meetingId = QualifiedIDEntity("today-ended-meeting", "wire.com"),
-            conversationId = QualifiedIDEntity("today-ended-conversation", "wire.com"),
-            startTime = todayStart + 1.hours,
-            endTime = todayStart + 2.hours
-        )
-        val untilBoundaryMeeting = newMeeting(
-            meetingId = QualifiedIDEntity("until-boundary-meeting", "wire.com"),
-            conversationId = QualifiedIDEntity("until-boundary-conversation", "wire.com"),
-            startTime = tomorrowStart,
-            endTime = tomorrowStart + 1.hours
-        )
-        val meetings = listOf(yesterdayMeeting, todayEndedMeeting, untilBoundaryMeeting)
-        meetings.forEach { insertMeetingDependencies(it) }
-        meetingDao.upsertMeetings(meetings, tomorrowStart + 1.days)
-
-        val result = meetingDao.getPaginatedMeetingOccurrenceDetails(
-            pagingConfig = PagingConfig(pageSize = 10),
-            startingOffset = 0,
-            from = todayStart,
-            until = tomorrowStart
-        ).pagingSource.load(PagingSource.LoadParams.Refresh(key = null, loadSize = 10, placeholdersEnabled = false))
-
-        val page = result as PagingSource.LoadResult.Page
-        assertContentEquals(listOf(todayEndedMeeting.meetingId), page.data.map { it.meeting.meetingId })
-    }
-
-    @Test
-    fun givenRecurringMeetingWithoutOccurrences_whenLoadingOpenEndedPage_thenGeneratePageAndPrefetch() = runTest(dispatcher) {
-        val todayStart = Instant.parse("2026-01-01T00:00:00Z")
-        val pageSize = 2
-        val prefetchDistance = 3
-        val meeting = newMeeting(
-            startTime = todayStart + 1.hours,
-            recurrence = MeetingEntity.RecurrenceEntity(
-                frequency = Frequency.DAILY,
-                interval = 1,
-                until = todayStart + 10.days
-            )
-        )
-        insertMeetingDependencies(meeting)
-        insertMeetingWithoutOccurrences(meeting)
-
-        val result = meetingDao.getPaginatedMeetingOccurrenceDetails(
-            pagingConfig = PagingConfig(pageSize = pageSize, prefetchDistance = prefetchDistance),
-            startingOffset = 0,
-            from = todayStart,
-            until = null
-        ).pagingSource.load(
-            PagingSource.LoadParams.Refresh(key = null, loadSize = pageSize, placeholdersEnabled = false)
-        )
-
-        val page = result as PagingSource.LoadResult.Page
-        assertEquals(pageSize, page.data.size)
-        assertEquals(pageSize, page.nextKey)
-        assertEquals(pageSize + prefetchDistance, occurrencesFor(meeting).size)
-        assertContentEquals(
-            listOf(todayStart + 1.hours, todayStart + 1.days + 1.hours),
-            page.data.map { it.occurrence.occurrenceStart }
-        )
-    }
 
     private suspend fun insertMeetingDependencies(meeting: MeetingEntity) {
         databaseBuilder.userDAO.upsertUser(newUserEntity(meeting.creatorId))

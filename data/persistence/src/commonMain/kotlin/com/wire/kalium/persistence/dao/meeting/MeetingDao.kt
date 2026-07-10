@@ -42,7 +42,6 @@ interface MeetingDao {
         pagingConfig: PagingConfig,
         startingOffset: Long,
         from: Instant,
-        until: Instant? = null
     ): KaliumPager<MeetingOccurrenceDetailsEntity>
 }
 
@@ -108,31 +107,29 @@ internal class MeetingDaoImpl(
             .asFlow()
             .mapToOneOrNull(readDispatcher.value)
 
-    override fun getPaginatedMeetingOccurrenceDetails(pagingConfig: PagingConfig, startingOffset: Long, from: Instant, until: Instant?) =
+    override fun getPaginatedMeetingOccurrenceDetails(pagingConfig: PagingConfig, startingOffset: Long, from: Instant) =
         KaliumPager(
             pager = Pager(
                 config = pagingConfig,
                 pagingSourceFactory = {
-                    meetingPagingSource(from, until, startingOffset, pagingConfig.prefetchDistance)
+                    meetingPagingSource(from, startingOffset, pagingConfig.prefetchDistance)
                 }
             ),
             pagingSource = meetingPagingSource(
                 from = from,
-                until = until,
                 startingOffset = startingOffset,
                 prefetchDistance = pagingConfig.prefetchDistance
             ),
             readDispatcher = readDispatcher,
         )
 
-    private fun meetingPagingSource(from: Instant, until: Instant?, startingOffset: Long, prefetchDistance: Int): MeetingPagingSource =
+    private fun meetingPagingSource(from: Instant, startingOffset: Long, prefetchDistance: Int): MeetingPagingSource =
         MeetingPagingSource(
             meetingsQueries = meetingsQueries,
             readContext = readDispatcher.value,
             writeContext = writeDispatcher.value,
             parameters = MeetingPagingParameters(
                 from = from,
-                until = until,
                 initialOffset = startingOffset,
                 prefetchDistance = prefetchDistance,
             ),

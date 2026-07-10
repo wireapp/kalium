@@ -54,28 +54,6 @@ class MeetingOccurrencesGeneratorTest {
     }
 
     @Test
-    fun givenCountUntilLimit_whenGeneratingOccurrences_thenStopsAfterCount() {
-        val until = MEETING.startTime.plus(10.days)
-        val occurrences = generateOccurrences(GenerationBounds.countUntil(totalCount = 2, until = until))
-
-        assertContentEquals(
-            listOf(MEETING.startTime, MEETING.startTime.plus(1.days)),
-            occurrences.map { it.occurrenceStart }
-        )
-    }
-
-    @Test
-    fun givenCountUntilLimit_whenGeneratingOccurrences_thenStopsBeforeUntil() {
-        val until = MEETING.startTime.plus(2.days)
-        val occurrences = generateOccurrences(GenerationBounds.countUntil(totalCount = 10, until = until))
-
-        assertContentEquals(
-            listOf(MEETING.startTime, MEETING.startTime.plus(1.days)),
-            occurrences.map { it.occurrenceStart }
-        )
-    }
-
-    @Test
     fun givenLastGeneratedStart_whenGeneratingOccurrences_thenStartsAfterLastGeneratedOccurrence() {
         val occurrences = generateOccurrences(
             bounds = GenerationBounds.count(totalCount = 2),

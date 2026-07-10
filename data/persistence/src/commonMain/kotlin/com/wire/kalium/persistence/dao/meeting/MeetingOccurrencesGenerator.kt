@@ -151,10 +151,5 @@ internal class GenerationBounds private constructor(val totalCount: Int?, val un
          * Generates occurrences with start dates strictly before [until], without applying a count boundary.
          */
         fun until(until: Instant): GenerationBounds = GenerationBounds(totalCount = null, until = until)
-
-        /**
-         * Generates at most [totalCount] occurrences and excludes occurrences with start dates at or after [until].
-         */
-        fun countUntil(totalCount: Int, until: Instant): GenerationBounds = GenerationBounds(totalCount = totalCount, until = until)
     }
 }
