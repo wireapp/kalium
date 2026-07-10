@@ -3047,6 +3047,7 @@ public class UserSessionScope internal constructor(
         }
 
         userSessionWorkScheduler.schedulePeriodicUserConfigSync()
+        userSessionWorkScheduler.schedulePeriodicMeetingOccurrencesSync()
 
         launch {
             waitUntilClientIdIsAvailable()
