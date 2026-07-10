@@ -49,20 +49,17 @@ data class MeetingOccurrenceEntity(
     val occurrenceEnd: Instant?
 )
 
-data class MeetingDetailsEntity(
+data class MeetingOccurrenceDetailsEntity(
     val occurrence: MeetingOccurrenceEntity,
     val meeting: MeetingEntity,
     val conversationName: String?,
     val conversationType: ConversationEntity.Type,
-    val conversationPreviewAssetId: QualifiedIDEntity?,
-    val isChannel: Boolean,
+    val otherUserPreviewAssetId: QualifiedIDEntity?,
+    val groupType: ConversationEntity.GroupType?,
     val channelAccess: ConversationEntity.ChannelAccess?,
     val selfUserId: QualifiedIDEntity?,
     val participantPreviewAssetIds: List<QualifiedIDEntity> = emptyList()
-) {
-    fun withParticipantPreviewAssetIds(previewAssetIds: List<QualifiedIDEntity>): MeetingDetailsEntity =
-        copy(participantPreviewAssetIds = previewAssetIds)
-}
+)
 
 data class MeetingParticipantPreviewAssetEntity(
     val conversationId: QualifiedIDEntity,

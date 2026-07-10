@@ -123,7 +123,7 @@ SELECT
     ConversationDetails.name AS conversationName,
     ConversationDetails.type AS conversationType,
     ConversationDetails.previewAssetId AS previewAssetId,
-    ConversationDetails.is_channel AS isChannel,
+    ConversationDetails.group_type AS groupType,
     ConversationDetails.channel_access AS channelAccess,
     ConversationDetails.selfUserId AS selfUserId
 FROM MeetingOccurrence
@@ -133,7 +133,7 @@ WHERE MeetingOccurrence.occurrence_start >= :fromDate
 ORDER BY MeetingOccurrence.occurrence_start ASC,
     CASE WHEN MeetingOccurrence.occurrence_end IS NULL THEN 1 ELSE 0 END ASC,
     MeetingOccurrence.occurrence_end ASC,
-    MeetingOccurrence.name ASC
+    Meeting.title ASC
 LIMIT :limit
 OFFSET :offset;
 
@@ -142,13 +142,8 @@ SELECT
     Member.conversation AS conversationId,
     User.preview_asset_id AS previewAssetId
 FROM Member
-JOIN Conversation ON Conversation.qualified_id = Member.conversation
 JOIN User ON User.qualified_id = Member.user
 LEFT JOIN SelfUser
 WHERE Member.conversation IN :conversationIds
     AND User.preview_asset_id IS NOT NULL
-    AND (
-        (Conversation.type = 'GROUP' AND Conversation.is_channel = 0)
-        OR (Conversation.type = 'ONE_ON_ONE' AND Member.user IS NOT SelfUser.id)
-    )
 ORDER BY Member.conversation ASC, Member.user ASC;

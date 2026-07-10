@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.meeting
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
-import com.wire.kalium.logic.data.meeting.Meeting
+import com.wire.kalium.logic.data.meeting.MeetingOccurrence
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -39,7 +39,7 @@ public class GetPaginatedMeetingsUseCase internal constructor(
         pagingConfig: PagingConfig,
         startingOffset: Long,
         fromDate: Instant = Clock.System.now()
-    ): Flow<PagingData<Meeting>> = meetingRepository.getPaginatedMeetings(
+    ): Flow<PagingData<MeetingOccurrence>> = meetingRepository.getPaginatedMeetings(
         pagingConfig = pagingConfig,
         startingOffset = startingOffset,
         fromDate = fromDate

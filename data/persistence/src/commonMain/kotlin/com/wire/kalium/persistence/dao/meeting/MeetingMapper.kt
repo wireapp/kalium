@@ -61,7 +61,7 @@ data object MeetingMapper {
         occurrenceId: String,
         occurrenceMeetingId: QualifiedIDEntity,
         occurrenceStart: Instant,
-        occurrenceEnd: Instant,
+        occurrenceEnd: Instant?,
         meetingId: QualifiedIDEntity,
         conversationId: QualifiedIDEntity,
         creatorId: QualifiedIDEntity,
@@ -77,10 +77,10 @@ data object MeetingMapper {
         conversationName: String?,
         conversationType: ConversationEntity.Type,
         previewAssetId: QualifiedIDEntity?,
-        isChannel: Boolean,
+        groupType: ConversationEntity.GroupType,
         channelAccess: ConversationEntity.ChannelAccess?,
         selfUserId: QualifiedIDEntity?,
-    ): MeetingDetailsEntity = MeetingDetailsEntity(
+    ): MeetingOccurrenceDetailsEntity = MeetingOccurrenceDetailsEntity(
         occurrence = MeetingOccurrenceEntity(
             occurrenceId = occurrenceId,
             meetingId = occurrenceMeetingId,
@@ -103,8 +103,8 @@ data object MeetingMapper {
         ),
         conversationName = conversationName,
         conversationType = conversationType,
-        conversationPreviewAssetId = previewAssetId,
-        isChannel = isChannel,
+        otherUserPreviewAssetId = previewAssetId,
+        groupType = groupType,
         channelAccess = channelAccess,
         selfUserId = selfUserId,
     )

@@ -37,7 +37,7 @@ interface MeetingDao {
         pagingConfig: PagingConfig,
         startingOffset: Long,
         fromDate: Instant = Clock.System.now()
-    ): KaliumPager<MeetingDetailsEntity>
+    ): KaliumPager<MeetingOccurrenceDetailsEntity>
 }
 
 internal class MeetingDaoImpl(
@@ -101,7 +101,7 @@ internal class MeetingDaoImpl(
         pagingConfig: PagingConfig,
         startingOffset: Long,
         fromDate: Instant
-    ): KaliumPager<MeetingDetailsEntity> = KaliumPager(
+    ): KaliumPager<MeetingOccurrenceDetailsEntity> = KaliumPager(
         pager = Pager(
             config = pagingConfig,
             pagingSourceFactory = { meetingPagingSource(fromDate, startingOffset, pagingConfig.prefetchDistance) }

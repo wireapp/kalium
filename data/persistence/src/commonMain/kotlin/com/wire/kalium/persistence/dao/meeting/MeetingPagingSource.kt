@@ -38,9 +38,9 @@ internal class MeetingPagingSource(
     private val fromDate: Instant,
     private val prefetchDistance: Int,
     private val initialOffset: Long = 0,
-) : PagingSource<Int, MeetingDetailsEntity>(), Query.Listener {
+) : PagingSource<Int, MeetingOccurrenceDetailsEntity>(), Query.Listener {
 
-    private var currentMeetingQuery: Query<MeetingDetailsEntity>? by Delegates.observable(null) { _, old, new ->
+    private var currentMeetingQuery: Query<MeetingOccurrenceDetailsEntity>? by Delegates.observable(null) { _, old, new ->
         old?.removeListener(this)
         new?.addListener(this)
     }
@@ -62,7 +62,7 @@ internal class MeetingPagingSource(
     override fun queryResultsChanged() = invalidate()
 
     @Suppress("CyclomaticComplexMethod", "TooGenericExceptionCaught")
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MeetingDetailsEntity> =
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, MeetingOccurrenceDetailsEntity> =
         withContext(readContext) {
             try {
                 val key = params.key?.toLong() ?: initialOffset
@@ -86,10 +86,8 @@ internal class MeetingPagingSource(
                 ).also { currentMeetingQuery = it }
                 val meetings = meetingQuery.awaitAsList()
                 val participantPreviewAssetIds = loadAndObserveAvatars(meetings)
-                val data = meetings.map { meeting ->
-                    meeting.withParticipantPreviewAssetIds(
-                        participantPreviewAssetIds[meeting.meeting.conversationId].orEmpty()
-                    )
+                val data = meetings.map {
+                    it.copy(participantPreviewAssetIds = participantPreviewAssetIds[it.meeting.conversationId].orEmpty())
                 }
                 val nextPosition = offset + data.size
 
@@ -109,7 +107,7 @@ internal class MeetingPagingSource(
             }
         }
 
-    override fun getRefreshKey(state: PagingState<Int, MeetingDetailsEntity>): Int? =
+    override fun getRefreshKey(state: PagingState<Int, MeetingOccurrenceDetailsEntity>): Int? =
         state.anchorPosition?.let { maxOf(0, it - (state.config.initialLoadSize / 2)) }
 
     private suspend fun ensureOccurrencesForLoad(params: LoadParams<Int>, offset: Int, limit: Long, count: Int): Int {
@@ -124,28 +122,24 @@ internal class MeetingPagingSource(
         currentMeetingQuery = null
         val generatedCount = withContext(writeContext) {
             meetingsQueries.transactionWithResult {
-                val existingCount = meetingsQueries.countUpcomingMeetingOccurrences(fromDate).executeAsOne().toInt()
+                val existingCount = meetingsQueries.countUpcomingMeetingOccurrences(fromDate).awaitAsOne().toInt()
                 val missingCount = (targetCount - existingCount).coerceAtLeast(0)
                 if (missingCount <= 0) return@transactionWithResult 0
-                val recurringMeetings = meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).executeAsList()
+                val recurringMeetings = meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).awaitAsList()
                 meetingsQueries.insertGeneratedOccurrences(
                     meetings = recurringMeetings,
                     limit = MeetingOccurrencesGenerator.GenerationLimit.Count(missingCount),
                     shouldRegenerateOccurrences = recurringMeetings.associate { it.meetingId to false },
-                    now = fromDate
                 )
             }
         }
         return count + generatedCount
     }
 
-    private suspend fun loadAndObserveAvatars(meetings: List<MeetingDetailsEntity>): Map<QualifiedIDEntity, List<QualifiedIDEntity>> {
+    private suspend fun loadAndObserveAvatars(meetings: List<MeetingOccurrenceDetailsEntity>): Map<QualifiedIDEntity, List<QualifiedIDEntity>> {
         val conversationIds = meetings.filter { meeting ->
-            when (meeting.conversationType) {
-                ConversationEntity.Type.GROUP -> !meeting.isChannel
-                ConversationEntity.Type.ONE_ON_ONE -> true
-                else -> false
-            }
+            // Only load avatars for group meeting conversations, as only those have participant avatars to show
+            meeting.conversationType == ConversationEntity.Type.GROUP && meeting.groupType is ConversationEntity.GroupType.Meeting
         }.mapTo(mutableSetOf()) { it.meeting.conversationId }
 
         if (conversationIds.isEmpty()) {

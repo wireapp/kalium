@@ -53,7 +53,7 @@ internal interface MeetingRepository {
         pagingConfig: PagingConfig,
         startingOffset: Long,
         fromDate: Instant = Clock.System.now()
-    ): Flow<PagingData<Meeting>>
+    ): Flow<PagingData<MeetingOccurrence>>
 }
 
 internal class MeetingDataSource(
@@ -81,7 +81,7 @@ internal class MeetingDataSource(
         pagingConfig: PagingConfig,
         startingOffset: Long,
         fromDate: Instant
-    ): Flow<PagingData<Meeting>> =
+    ): Flow<PagingData<MeetingOccurrence>> =
         meetingDAO.getPaginatedMeetings(
             pagingConfig = pagingConfig,
             startingOffset = startingOffset,
@@ -89,7 +89,6 @@ internal class MeetingDataSource(
         ).pagingDataFlow.map { pagingData ->
             pagingData.map(meetingMapper::fromDaoToModel)
         }
-    }
 }
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
@@ -99,6 +98,7 @@ private fun occurrenceGenerationUntil(now: Instant = Clock.System.now(), timeZon
         .toLocalDateTime(timeZone).date
         .atStartOfDayIn(timeZone)
         .plus(1.days)
+
 private fun occurrenceOutdatedThreshold(now: Instant = Clock.System.now(), timeZone: TimeZone = TimeZone.currentSystemDefault()) =
     now.minus(OUTDATED_MEETING_RETENTION_DAYS.days)
         .toLocalDateTime(timeZone).date

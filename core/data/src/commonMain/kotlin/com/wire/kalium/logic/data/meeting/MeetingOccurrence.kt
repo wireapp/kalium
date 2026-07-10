@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.user.UserAssetId
 import kotlinx.datetime.Instant
 
-data class Meeting(
+data class MeetingOccurrence(
     val occurrenceId: String,
     val meetingId: MeetingId,
     val conversationId: ConversationId,
@@ -35,7 +35,8 @@ data class Meeting(
     val selfRole: SelfRole,
 ) {
     sealed interface ConversationType {
-        data class Group(val previewPictures: List<UserAssetId>) : ConversationType
+        data object Group : ConversationType
+        data class Meeting(val previewPictures: List<UserAssetId>) : ConversationType
         data class Channel(val isPrivateChannel: Boolean) : ConversationType
         data class OneOnOne(val previewPicture: UserAssetId?) : ConversationType
     }
