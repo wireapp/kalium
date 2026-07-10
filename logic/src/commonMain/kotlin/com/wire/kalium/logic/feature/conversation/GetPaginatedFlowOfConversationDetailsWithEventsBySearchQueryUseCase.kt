@@ -24,10 +24,9 @@ import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationQueryConfig
 import com.wire.kalium.util.KaliumDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
@@ -42,24 +41,26 @@ public class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase
     private val conversationRepository: ConversationRepository,
     private val callRepository: CallRepository,
 ) {
-    @OptIn(ExperimentalCoroutinesApi::class)
     public suspend operator fun invoke(
         queryConfig: ConversationQueryConfig,
         pagingConfig: PagingConfig,
         startingOffset: Long,
         strictMlsFilter: Boolean
-    ): Flow<PagingData<ConversationDetailsWithEvents>> = callRepository.joinableCallsByConversationIdFlow()
-        .map { joinableCallsByConversationId -> joinableCallsByConversationId.keys }
-        .distinctUntilChanged()
-        .flatMapLatest { joinableCallConversationIds ->
-            conversationRepository.extensions
-                .getPaginatedConversationDetailsWithEventsBySearchQuery(
-                    queryConfig = queryConfig,
-                    pagingConfig = pagingConfig,
-                    startingOffset = startingOffset,
-                    strictMlsFilter = strictMlsFilter,
-                    ongoingCallConversationIds = joinableCallConversationIds.toList()
-                )
-        }
-        .flowOn(dispatcher.io)
+    ): Flow<PagingData<ConversationDetailsWithEvents>> {
+        val joinableCallConversationIdsFlow = callRepository.joinableCallsByConversationIdFlow()
+            .map { joinableCallsByConversationId -> joinableCallsByConversationId.keys.toSet() }
+            .distinctUntilChanged()
+            .map { joinableCallConversationIds -> joinableCallConversationIds.toList() }
+        val initialJoinableCallConversationIds = joinableCallConversationIdsFlow.first()
+
+        return conversationRepository.extensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
+            queryConfig = queryConfig,
+            pagingConfig = pagingConfig,
+            startingOffset = startingOffset,
+            strictMlsFilter = strictMlsFilter,
+            ongoingCallConversationIds = initialJoinableCallConversationIds,
+            ongoingCallConversationIdsFlow = joinableCallConversationIdsFlow
+        )
+            .flowOn(dispatcher.io)
+    }
 }
