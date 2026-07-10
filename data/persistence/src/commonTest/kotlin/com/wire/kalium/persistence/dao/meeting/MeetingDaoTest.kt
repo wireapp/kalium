@@ -68,6 +68,20 @@ class MeetingDaoTest : BaseDatabaseTest() {
         }
 
     @Test
+    fun givenOneTimeMeeting_whenUpserted_thenOccurrenceIsGeneratedAndStored() = runTest(dispatcher) {
+        val now = Clock.System.now()
+        val meeting = newMeeting(startTime = now + 1.days)
+        insertMeetingDependencies(meeting)
+
+        meetingDao.upsertMeetings(listOf(meeting), now + GENERATION_DAYS.days)
+
+        val occurrence = occurrencesFor(meeting).single()
+        assertEquals(meeting.meetingId, occurrence.meeting_id)
+        assertEquals(meeting.startTime.toEpochMilliseconds(), occurrence.occurrence_start.toEpochMilliseconds())
+        assertEquals(meeting.endTime?.toEpochMilliseconds(), occurrence.occurrence_end?.toEpochMilliseconds())
+    }
+
+    @Test
     fun givenGeneratedOccurrences_whenSameMeetingIsUpserted_thenOccurrencesAreNotDuplicated() = runTest(dispatcher) {
         val now = Clock.System.now()
         val meeting = newMeeting(
