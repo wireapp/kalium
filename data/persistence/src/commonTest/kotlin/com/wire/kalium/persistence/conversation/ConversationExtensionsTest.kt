@@ -19,6 +19,8 @@
 package com.wire.kalium.persistence.conversation
 
 import androidx.paging.PagingConfig
+import androidx.paging.PagingDataEvent
+import androidx.paging.PagingDataPresenter
 import androidx.paging.PagingSource
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConnectionDAO
@@ -45,6 +47,10 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newDraftMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
@@ -125,6 +131,40 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
             assertEquals("$CONVERSATION_ID_PREFIX$index", conversation.conversationViewEntity.id.value)
             assertEquals(false, conversation.conversationViewEntity.archived)
         }
+    }
+
+    @Test
+    fun givenOngoingCallConversationIdsChange_whenCollectingPagingData_thenReloadUsesLatestIds() = runTest(dispatcher) {
+        populateData(count = 2, isChannel = false)
+        val ongoingCallConversationIds = MutableStateFlow(emptyList<ConversationIDEntity>())
+        val pager = conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
+            pagingConfig = PagingConfig(PAGE_SIZE),
+            queryConfig = ConversationExtensions.QueryConfig(
+                newActivitiesOnTop = true,
+                ongoingCallConversationIds = ongoingCallConversationIds.value,
+                ongoingCallConversationIdsFlow = ongoingCallConversationIds,
+            ),
+        )
+        var refreshCount = 0
+        val presenter = object : PagingDataPresenter<ConversationDetailsWithEventsEntity>(dispatcher) {
+            override suspend fun presentPagingDataEvent(event: PagingDataEvent<ConversationDetailsWithEventsEntity>) {
+                if (event is PagingDataEvent.Refresh) refreshCount++
+            }
+        }
+        val collectionJob = launch {
+            pager.pagingDataFlow.collectLatest(presenter::collectFrom)
+        }
+
+        advanceUntilIdle()
+        assertEquals(1, refreshCount)
+        assertEquals("${CONVERSATION_ID_PREFIX}0", presenter.snapshot().items.first().conversationViewEntity.id.value)
+
+        ongoingCallConversationIds.value = listOf(ConversationIDEntity("${CONVERSATION_ID_PREFIX}1", "domain"))
+        advanceUntilIdle()
+
+        assertEquals(2, refreshCount)
+        assertEquals("${CONVERSATION_ID_PREFIX}1", presenter.snapshot().items.first().conversationViewEntity.id.value)
+        collectionJob.cancel()
     }
 
     @Test
