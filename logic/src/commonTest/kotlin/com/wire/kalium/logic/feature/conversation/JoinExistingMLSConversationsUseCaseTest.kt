@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.conversation.mls.PendingActionsRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.common.functional.Either
@@ -96,6 +97,46 @@ class JoinExistingMLSConversationsUseCaseTest {
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
         verifySuspend(VerifyMode.exactly(2)) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenPendingAfterResetConversation_whenInvokingUseCase_thenRequestToJoinConversationIsCalled() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful(emptyList())
+            .withPendingAfterResetConversations(listOf(Arrangement.MLS_PENDING_AFTER_RESET_CONVERSATION))
+            .withJoinExistingMLSConversationSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase().shouldSucceed()
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.joinExistingMLSConversationUseCase.invoke(
+                any(),
+                eq(Arrangement.MLS_PENDING_AFTER_RESET_CONVERSATION.id),
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun givenPendingConversationWithoutSelfMembership_whenInvokingUseCase_thenConversationIsSkipped() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful(emptyList())
+            .withPendingAfterResetConversations(listOf(Arrangement.MLS_PENDING_AFTER_RESET_CONVERSATION))
+            .withConversationMembers(Arrangement.MLS_PENDING_AFTER_RESET_CONVERSATION.id, emptyList())
+            .withJoinExistingMLSConversationSuccessful()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase().shouldSucceed()
+
+        verifySuspend(VerifyMode.not) {
             arrangement.joinExistingMLSConversationUseCase.invoke(any(), any(), any(), any())
         }
     }
@@ -257,6 +298,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         private val maxThrottleRetries: Int = 3,
         private val throttleRetryDelayMs: Long = 250L,
     ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
+        private val memberOverrides = mutableMapOf<ConversationId, List<UserId>>()
         val featureSupport = mock<FeatureSupport>(mode = MockMode.autoUnit)
         val clientRepository = mock<ClientRepository>(mode = MockMode.autoUnit)
         val conversationRepository = mock<ConversationRepository>(mode = MockMode.autoUnit)
@@ -271,12 +313,17 @@ class JoinExistingMLSConversationsUseCaseTest {
             joinExistingMLSConversationUseCase = joinExistingMLSConversationUseCase,
             transactionProvider = cryptoTransactionProvider,
             pendingActionsRepository = pendingActionsRepository,
+            selfUserId = SELF_USER_ID,
             maxConcurrentJoins = maxConcurrentJoins,
             maxThrottleRetries = maxThrottleRetries,
             throttleRetryDelayMs = throttleRetryDelayMs,
         ).also {
             withTransactionReturning(Either.Right(Unit))
             everySuspend { pendingActionsRepository.enqueuePendingMLSGroupJoin(any()) } returns Unit
+            everySuspend { conversationRepository.getConversationMembers(any()) } returns Either.Right(listOf(SELF_USER_ID))
+            memberOverrides.forEach { (conversationId, members) ->
+                everySuspend { conversationRepository.getConversationMembers(eq(conversationId)) } returns Either.Right(members)
+            }
         }
 
         @Suppress("MaxLineLength")
@@ -284,8 +331,21 @@ class JoinExistingMLSConversationsUseCaseTest {
             conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)
         ) = apply {
             everySuspend {
-                conversationRepository.getConversationsByGroupState(any())
+                conversationRepository.getConversationsByGroupState(eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN))
             } returns Either.Right(conversations)
+            withPendingAfterResetConversations(emptyList())
+        }
+
+        suspend fun withPendingAfterResetConversations(conversations: List<Conversation>) = apply {
+            everySuspend {
+                conversationRepository.getConversationsByGroupState(
+                    eq(Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET)
+                )
+            } returns Either.Right(conversations)
+        }
+
+        fun withConversationMembers(conversationId: ConversationId, members: List<UserId>) = apply {
+            memberOverrides[conversationId] = members
         }
 
         suspend fun withJoinExistingMLSConversationSuccessful() = apply {
@@ -355,6 +415,7 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
 
         companion object {
+            val SELF_USER_ID = UserId("self", "domain")
             val GROUP_ID1 = GroupID("group1")
             val GROUP_ID2 = GroupID("group2")
 
@@ -377,6 +438,16 @@ class JoinExistingMLSConversationsUseCaseTest {
                     cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id2", "domain"))
+
+            val MLS_PENDING_AFTER_RESET_CONVERSATION = TestConversation.GROUP(
+                Conversation.ProtocolInfo.MLS(
+                    GroupID("group-after-reset"),
+                    Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_AFTER_RESET,
+                    epoch = 1UL,
+                    keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                )
+            ).copy(id = ConversationId("id-after-reset", "domain"))
         }
     }
 }
