@@ -90,19 +90,6 @@ internal class CellsS3Client(
         }
     }
 
-    override suspend fun getPreSignedUrl(objectKey: String): String {
-        val endpoint = endpointProvider()
-        val credentials = credentialsProvider()
-        val date = config.dateProvider()
-        val s3Url = S3UrlBuilder.build(endpoint, DEFAULT_BUCKET_NAME, objectKey)
-        return config.signer.presignGetUrl(
-            url = s3Url,
-            credentials = credentials,
-            signingDate = date,
-            expiresSeconds = PRESIGNED_GET_EXPIRATION_SECONDS,
-        )
-    }
-
     private suspend fun uploadRegular(
         path: Path,
         length: Long,
@@ -363,7 +350,6 @@ internal class CellsS3Client(
     private companion object {
         const val DEFAULT_BUCKET_NAME = "io"
         const val MULTIPART_CHUNK_SIZE = 10 * 1024 * 1024
-        const val PRESIGNED_GET_EXPIRATION_SECONDS = 24 * 60 * 60
         const val STREAM_BUFFER_SIZE = 8 * 1024L
         const val UNSIGNED_PAYLOAD = "UNSIGNED-PAYLOAD"
         const val UPLOADS_QUERY_PARAMETER = "uploads"

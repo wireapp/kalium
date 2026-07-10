@@ -32,10 +32,6 @@ class AwsSigV4SignerTest {
             canonicalUri = "/",
             canonicalQueryString = "Action=ListUsers&Version=2010-05-08",
             hostHeader = "iam.amazonaws.com",
-            queryParameters = listOf(
-                S3QueryParameter("Action", "ListUsers"),
-                S3QueryParameter("Version", "2010-05-08"),
-            ),
         )
 
         val result = signer.sign(

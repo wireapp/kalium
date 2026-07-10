@@ -31,15 +31,7 @@ internal data class S3Url(
     val canonicalUri: String,
     val canonicalQueryString: String,
     val hostHeader: String,
-    val queryParameters: List<S3QueryParameter>,
-) {
-    fun withQueryParameters(queryParameters: List<S3QueryParameter>): S3Url =
-        copy(
-            url = buildUrlString(url.substringBefore('?'), queryParameters),
-            canonicalQueryString = queryParameters.toCanonicalQueryString(),
-            queryParameters = queryParameters,
-        )
-}
+)
 
 internal object S3UrlBuilder {
     fun build(
@@ -58,7 +50,6 @@ internal object S3UrlBuilder {
             canonicalUri = canonicalUri,
             canonicalQueryString = queryParameters.toCanonicalQueryString(),
             hostHeader = endpointUrl.hostWithPortIfSpecified,
-            queryParameters = queryParameters,
         )
     }
 }

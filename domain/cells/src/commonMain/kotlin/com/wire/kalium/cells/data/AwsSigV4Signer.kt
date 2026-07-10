@@ -59,36 +59,6 @@ internal class AwsSigV4Signer(
         )
     }
 
-    internal fun presignGetUrl(
-        url: S3Url,
-        credentials: S3Credentials,
-        signingDate: AwsSigningDate,
-        expiresSeconds: Int,
-    ): String {
-        val credentialScope = signingDate.credentialScope(region, service)
-        val signingQueryParameters = listOf(
-            S3QueryParameter("X-Amz-Algorithm", ALGORITHM),
-            S3QueryParameter("X-Amz-Credential", "${credentials.accessKeyId}/$credentialScope"),
-            S3QueryParameter("X-Amz-Date", signingDate.dateTime),
-            S3QueryParameter("X-Amz-Expires", expiresSeconds.toString()),
-            S3QueryParameter("X-Amz-SignedHeaders", HOST_HEADER_NAME),
-        )
-        val presignedUrl = url.withQueryParameters(url.queryParameters + signingQueryParameters)
-        val canonicalRequest = buildCanonicalRequest(
-            method = "GET",
-            canonicalUri = presignedUrl.canonicalUri,
-            canonicalQueryString = presignedUrl.canonicalQueryString,
-            canonicalHeaders = "$HOST_HEADER_NAME:${url.hostHeader}\n",
-            signedHeaders = HOST_HEADER_NAME,
-            payloadHash = UNSIGNED_PAYLOAD,
-        )
-        val stringToSign = stringToSign(signingDate.dateTime, credentialScope, canonicalRequest)
-        val signature = signature(credentials.secretAccessKey, signingDate.date, stringToSign)
-        return presignedUrl.withQueryParameters(
-            presignedUrl.queryParameters + S3QueryParameter("X-Amz-Signature", signature)
-        ).url
-    }
-
     internal fun buildCanonicalRequest(
         method: String,
         canonicalUri: String,
@@ -155,8 +125,6 @@ internal class AwsSigV4Signer(
     private companion object {
         const val ALGORITHM = "AWS4-HMAC-SHA256"
         const val AWS4_REQUEST = "aws4_request"
-        const val HOST_HEADER_NAME = "host"
-        const val UNSIGNED_PAYLOAD = "UNSIGNED-PAYLOAD"
     }
 }
 

@@ -91,26 +91,6 @@ class CellsS3ClientTest {
     }
 
     @Test
-    fun givenObjectKey_whenGettingPreSignedUrl_thenUrlContainsSigV4QueryParameters() = runTest {
-        val client = CellsS3Client(
-            httpClient = HttpClient(MockEngine { respond(content = "", status = HttpStatusCode.OK) }),
-            endpointProvider = { "https://cells.example.test" },
-            credentialsProvider = { S3Credentials("access-token", "gateway-secret") },
-            config = fixedDateConfig(),
-        )
-
-        val result = client.getPreSignedUrl("folder/a file.txt")
-
-        assertContains(result, "https://cells.example.test/io/folder/a%20file.txt?")
-        assertContains(result, "X-Amz-Algorithm=AWS4-HMAC-SHA256")
-        assertContains(result, "X-Amz-Credential=access-token%2F20260701%2Fus-east-1%2Fs3%2Faws4_request")
-        assertContains(result, "X-Amz-Date=20260701T120102Z")
-        assertContains(result, "X-Amz-Expires=86400")
-        assertContains(result, "X-Amz-SignedHeaders=host")
-        assertContains(result, "X-Amz-Signature=")
-    }
-
-    @Test
     fun givenRetryableServerResponses_whenUploading_thenRetriesWithFreshSignatures() = runTest {
         val fileSystem = FakeFileSystem()
         val uploadPath = "/upload.txt".toPath()
