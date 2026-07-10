@@ -22,7 +22,8 @@ import com.wire.kalium.logic.data.id.MeetingId
 import com.wire.kalium.logic.data.user.UserAssetId
 import kotlinx.datetime.Instant
 
-data class Meeting(
+data class MeetingOccurrence(
+    val occurrenceId: String,
     val meetingId: MeetingId,
     val conversationId: ConversationId,
     val conversationName: String,
@@ -30,6 +31,8 @@ data class Meeting(
     val title: String,
     val startTime: Instant,
     val endTime: Instant?,
+    val occurrenceStartTime: Instant,
+    val occurrenceEndTime: Instant?,
     val recurrence: Recurrence?,
     val selfRole: SelfRole,
 ) {
@@ -50,10 +53,3 @@ data class Meeting(
 
     enum class SelfRole { Creator, Member }
 }
-
-data class MeetingOccurrence(
-    val meeting: Meeting,
-    val occurrenceId: String,
-    val occurrenceStartTime: Instant,
-    val occurrenceEndTime: Instant?,
-)
