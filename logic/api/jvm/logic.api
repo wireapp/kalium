@@ -957,6 +957,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getQualifiedIdMapper ()Lcom/wire/kalium/logic/data/id/QualifiedIdMapper;
 	public final fun getResetMlsConversation ()Lcom/wire/kalium/logic/data/conversation/ResetMLSConversationUseCase;
 	public final fun getSearch ()Lcom/wire/kalium/logic/feature/search/SearchScope;
+	public final fun getSendPendingMessages ()Lcom/wire/kalium/logic/sync/SendPendingMessagesUseCase;
 	public final fun getService ()Lcom/wire/kalium/logic/feature/service/ServiceScope;
 	public final fun getSetNewUserTrackingIdentifier ()Lcom/wire/kalium/logic/feature/analytics/SetNewUserTrackingIdentifierUseCase;
 	public final fun getSyncExecutor ()Lcom/wire/kalium/logic/sync/SyncExecutor;
@@ -7403,6 +7404,35 @@ public abstract interface class com/wire/kalium/logic/sync/ObserveSyncStateUseCa
 	public abstract fun invoke ()Lkotlinx/coroutines/flow/Flow;
 }
 
+public final class com/wire/kalium/logic/sync/PendingMessagesForegroundSync {
+	public static final field ACTION_SENDING_OF_PENDING_MESSAGES_CANCELLED Ljava/lang/String;
+	public static final field ACTION_SENDING_OF_PENDING_MESSAGES_SCHEDULED Ljava/lang/String;
+	public static final field EXTRA_USER_ID_DOMAIN Ljava/lang/String;
+	public static final field EXTRA_USER_ID_VALUE Ljava/lang/String;
+	public static final field INSTANCE Lcom/wire/kalium/logic/sync/PendingMessagesForegroundSync;
+}
+
+public abstract interface class com/wire/kalium/logic/sync/SendPendingMessagesUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/sync/SendPendingMessagesUseCase$Result {
+}
+
+public final class com/wire/kalium/logic/sync/SendPendingMessagesUseCase$Result$Failure : com/wire/kalium/logic/sync/SendPendingMessagesUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/sync/SendPendingMessagesUseCase$Result$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/sync/SendPendingMessagesUseCase$Result$Success : com/wire/kalium/logic/sync/SendPendingMessagesUseCase$Result {
+	public static final field INSTANCE Lcom/wire/kalium/logic/sync/SendPendingMessagesUseCase$Result$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract class com/wire/kalium/logic/sync/SyncExecutor {
 	public fun <init> ()V
 	public abstract fun request (Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -7412,6 +7442,7 @@ public abstract class com/wire/kalium/logic/sync/SyncExecutor {
 public abstract interface class com/wire/kalium/logic/sync/SyncRequest {
 	public abstract fun keepSyncAlwaysOn ()V
 	public abstract fun waitUntilLiveOrFailure (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun waitUntilNextLiveOrFailure (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun waitUntilOrFailure (Lcom/wire/kalium/logic/data/sync/SyncState;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
