@@ -25,17 +25,27 @@ import com.wire.kalium.persistence.client.TokenStorage
 import com.wire.kalium.persistence.client.TokenStorageImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorageImpl
+import com.russhwolf.settings.SharedPreferencesSettings
 
 actual class GlobalPrefProvider(context: Context, shouldEncryptData: Boolean = true) {
 
+    private val settingsOptions = SettingOptions.AppSettings(shouldEncryptData)
+    private val platformParam = EncryptedSettingsPlatformParam(context)
+    private val encryptedSharedPreferences = buildSharedPreferences(settingsOptions, platformParam)
+
     private val encryptedSettingsHolder: KaliumPreferences = KaliumPreferencesSettings(
-        buildSettings(SettingOptions.AppSettings(shouldEncryptData), EncryptedSettingsPlatformParam(context))
+        SharedPreferencesSettings(encryptedSharedPreferences, commit = false)
+    )
+
+    // Database creation/rekey must not commit before its key alias has reached durable storage.
+    private val durablePassphraseSettingsHolder: KaliumPreferences = KaliumPreferencesSettings(
+        SharedPreferencesSettings(encryptedSharedPreferences, commit = true)
     )
 
     actual val authTokenStorage: AuthTokenStorage
         get() = AuthTokenStorageImpl(encryptedSettingsHolder)
     actual val passphraseStorage: PassphraseStorage
-        get() = PassphraseStorageImpl(encryptedSettingsHolder)
+        get() = PassphraseStorageImpl(durablePassphraseSettingsHolder)
     actual val tokenStorage: TokenStorage
         get() = TokenStorageImpl(encryptedSettingsHolder)
 }
