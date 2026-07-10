@@ -33,7 +33,6 @@ internal interface CellsAwsClient {
     )
 
     suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit)
-    suspend fun getPreSignedUrl(objectKey: String): String
 }
 
 internal expect fun cellsAwsClient(

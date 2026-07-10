@@ -1,0 +1,51 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "enabledManagers": [
+    "github-actions",
+    "gradle",
+    "gradle-wrapper",
+    "pip_requirements"
+  ],
+  "schedule": [
+    "before 5am on monday"
+  ],
+  "prConcurrentLimit": 5,
+  "commitMessagePrefix": "chore(deps): [WPB-9777]",
+  "packageRules": [
+    {
+      "description": "Match Dependabot's 14 day cooldown for Gradle and pip updates.",
+      "matchManagers": [
+        "gradle",
+        "gradle-wrapper",
+        "pip_requirements"
+      ],
+      "minimumReleaseAge": "14 days"
+    },
+    {
+      "description": "Group SBOM Python toolchain updates into a single PR.",
+      "matchManagers": [
+        "pip_requirements"
+      ],
+      "groupName": "SBOM Python toolchain",
+      "groupSlug": "sbom-python-toolchain"
+    },
+    {
+      "description": "Leave Wire crypto and AVS updates to Dependabot so they do not consume Renovate PR slots.",
+      "matchManagers": [
+        "gradle"
+      ],
+      "matchPackageNames": [
+        "com.wire:avs",
+        "com.wire:avs-kmp",
+        "com.wire:core-crypto-android",
+        "com.wire:core-crypto-jvm",
+        "io.github.mohamadjaara:core-crypto-kmp"
+      ],
+      "enabled": false
+    }
+  ]
+}

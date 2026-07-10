@@ -33,6 +33,4 @@ class SupportedApiVersionTest {
     fun apiV3ShouldNotBeSupported() {
         if (SupportedApiVersions.contains(3)) fail()
     }
-
-
 }

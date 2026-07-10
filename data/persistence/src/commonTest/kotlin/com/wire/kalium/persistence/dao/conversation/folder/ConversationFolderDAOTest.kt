@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.conversation.folder
 
+import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -24,6 +25,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
+import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
@@ -88,6 +90,38 @@ class ConversationFolderDAOTest : BaseDatabaseTest() {
         val result = db.conversationFolderDAO.getFavoriteConversationFolder()
 
         assertEquals(folderId, result?.id)
+    }
+
+    @Test
+    fun givenObservedFolderConversation_whenMessageIsInserted_thenFolderConversationShouldBeEmittedAgain() = runTest {
+        db.conversationDAO.insertConversation(conversationEntity1)
+        db.userDAO.upsertUser(userEntity1)
+        db.memberDAO.insertMember(member1, conversationEntity1.id)
+
+        val folderId = "folderId1"
+        val conversationFolderEntity = folderWithConversationsEntity(
+            id = folderId,
+            name = "folderName",
+            type = ConversationFolderTypeEntity.USER,
+            conversationIdList = listOf(conversationEntity1.id)
+        )
+        db.conversationFolderDAO.updateConversationFolders(listOf(conversationFolderEntity))
+
+        db.conversationFolderDAO.observeConversationListFromFolder(folderId).test {
+            assertEquals(null, awaitItem().single().lastMessage)
+
+            db.messageDAO.insertOrIgnoreMessage(
+                newRegularMessageEntity(
+                    id = "message_1",
+                    conversationId = conversationEntity1.id,
+                    senderUserId = userEntity1.id,
+                ),
+                updateConversationModifiedDate = true
+            )
+
+            assertEquals("message_1", awaitItem().single().lastMessage?.id)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test

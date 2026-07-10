@@ -1,0 +1,179 @@
+name: Publish Maven Central
+
+on:
+  workflow_call:
+    inputs:
+      tag-name:
+        description: "Tag name to publish, for example v1.0.0 or v1.0.0-rc1"
+        required: true
+        type: string
+      publishing-type:
+        description: "Central Portal publishing type: AUTOMATIC or USER_MANAGED"
+        required: false
+        type: string
+        default: AUTOMATIC
+    secrets:
+      SONATYPE_USERNAME:
+        required: true
+      SONATYPE_PASSWORD:
+        required: true
+      PGP_KEY_ID:
+        required: true
+      PGP_SIGNING_KEY:
+        required: true
+      PGP_PASSPHRASE:
+        required: true
+
+concurrency:
+  group: publish-maven-central-${{ inputs.tag-name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Publish to Maven Central
+    if: github.repository == 'wireapp/kalium'
+    runs-on: macos-15
+    steps:
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1
+        with:
+          xcode-version: "16.1.0"
+
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
+      - name: Resolve Maven version
+        env:
+          INPUT_TAG_NAME: ${{ inputs.tag-name }}
+          INPUT_PUBLISHING_TYPE: ${{ inputs.publishing-type }}
+        run: |
+          case "$INPUT_TAG_NAME" in
+            v*) version="${INPUT_TAG_NAME#v}" ;;
+            *)
+              echo "::error::Maven Central publish tags must start with v: $INPUT_TAG_NAME"
+              exit 1
+              ;;
+          esac
+
+          case "$INPUT_PUBLISHING_TYPE" in
+            AUTOMATIC|USER_MANAGED) ;;
+            *)
+              echo "::error::Unsupported publishing type: $INPUT_PUBLISHING_TYPE"
+              exit 1
+              ;;
+          esac
+
+          echo "KALIUM_PUBLISH_VERSION=$version" >> "$GITHUB_ENV"
+          echo "CENTRAL_DEPLOYMENT_NAME=kalium-$version" >> "$GITHUB_ENV"
+
+      - name: Publish Gradle publications to local staging repository
+        env:
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.PGP_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.PGP_SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.PGP_PASSPHRASE }}
+        run: |
+          ./gradlew publishAllPublicationsToMavenCentralStagingRepository \
+            -PUSE_UNIFIED_CORE_CRYPTO=true \
+            -Pkalium.publish.version="$KALIUM_PUBLISH_VERSION" \
+            -Pkalium.mavenCentral.signingRequired=true
+
+      - name: Create Maven Central bundle
+        env:
+          CENTRAL_BUNDLE_PATH: ${{ runner.temp }}/kalium-maven-central.zip
+          CENTRAL_STAGING_REPOSITORY: build/maven-central-staging
+        run: |
+          test -d "$CENTRAL_STAGING_REPOSITORY"
+          find "$CENTRAL_STAGING_REPOSITORY" -type f -name 'maven-metadata.xml*' -exec rm -f {} +
+
+          while IFS= read -r -d '' file; do
+            case "$file" in
+              *.md5|*.sha1|*.sha256|*.sha512) continue ;;
+            esac
+            openssl dgst -md5 -r "$file" | awk '{print $1}' > "$file.md5"
+            shasum -a 1 "$file" | awk '{print $1}' > "$file.sha1"
+          done < <(find "$CENTRAL_STAGING_REPOSITORY" -type f -print0)
+
+          (
+            cd "$CENTRAL_STAGING_REPOSITORY"
+            zip -rXq "$CENTRAL_BUNDLE_PATH" .
+          )
+
+          test -s "$CENTRAL_BUNDLE_PATH"
+          echo "CENTRAL_BUNDLE_PATH=$CENTRAL_BUNDLE_PATH" >> "$GITHUB_ENV"
+
+      - name: Upload bundle to Maven Central
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          INPUT_PUBLISHING_TYPE: ${{ inputs.publishing-type }}
+        run: |
+          auth_token="$(printf '%s:%s' "$SONATYPE_USERNAME" "$SONATYPE_PASSWORD" | base64 | tr -d '\n')"
+          deployment_id="$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "Authorization: Bearer $auth_token" \
+              --form "bundle=@${CENTRAL_BUNDLE_PATH};type=application/octet-stream" \
+              "https://central.sonatype.com/api/v1/publisher/upload?publishingType=${INPUT_PUBLISHING_TYPE}&name=${CENTRAL_DEPLOYMENT_NAME}"
+          )"
+
+          echo "CENTRAL_DEPLOYMENT_ID=$deployment_id" >> "$GITHUB_ENV"
+          echo "Uploaded Maven Central deployment: $deployment_id"
+
+      - name: Wait for Maven Central deployment
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          INPUT_PUBLISHING_TYPE: ${{ inputs.publishing-type }}
+        run: |
+          auth_token="$(printf '%s:%s' "$SONATYPE_USERNAME" "$SONATYPE_PASSWORD" | base64 | tr -d '\n')"
+
+          for attempt in {1..60}; do
+            status_json="$(
+              curl --fail-with-body --silent --show-error \
+                --request POST \
+                --header "Authorization: Bearer $auth_token" \
+                "https://central.sonatype.com/api/v1/publisher/status?id=${CENTRAL_DEPLOYMENT_ID}"
+            )"
+            deployment_state="$(jq -r '.deploymentState' <<< "$status_json")"
+            echo "Maven Central deployment state: $deployment_state"
+
+            case "$deployment_state" in
+              PUBLISHED)
+                echo "$status_json" > "$RUNNER_TEMP/maven-central-status.json"
+                exit 0
+                ;;
+              VALIDATED)
+                if [ "$INPUT_PUBLISHING_TYPE" = "USER_MANAGED" ]; then
+                  echo "$status_json" > "$RUNNER_TEMP/maven-central-status.json"
+                  exit 0
+                fi
+                ;;
+              FAILED)
+                jq '.' <<< "$status_json"
+                exit 1
+                ;;
+            esac
+
+            sleep 10
+          done
+
+          echo "::error::Timed out waiting for Maven Central deployment ${CENTRAL_DEPLOYMENT_ID}"
+          exit 1
+
+      - name: Maven Central summary
+        if: always()
+        run: |
+          echo "## Maven Central Publish" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Version**: ${KALIUM_PUBLISH_VERSION}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Deployment**: ${CENTRAL_DEPLOYMENT_ID:-not-created}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "$RUNNER_TEMP/maven-central-status.json" ]; then
+            echo "**Status**: \`$(jq -r '.deploymentState' "$RUNNER_TEMP/maven-central-status.json")\`" >> "$GITHUB_STEP_SUMMARY"
+          fi

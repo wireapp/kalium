@@ -13,10 +13,14 @@ CREATE TABLE Member (
 CREATE INDEX Member_idx_conversation_user ON Member(conversation, user);
 
 insertMember:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey Member
 INSERT OR IGNORE INTO Member(user, conversation, role)
 VALUES (?, ?, ?);
 
 insertOrUpdateMember:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey Member
 INSERT INTO Member(user, conversation, role)
 VALUES (?, ?, ?)
 ON CONFLICT(user, conversation) DO UPDATE SET
@@ -32,12 +36,18 @@ JOIN User AS usr ON usr.qualified_id = mem.user
 WHERE mem.conversation = :conversationId;
 
 deleteMember:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey Member
 DELETE FROM Member WHERE conversation = :conversationId AND user = :userId;
 
 deleteMembers:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey Member
 DELETE FROM Member WHERE conversation = :conversationId AND user IN :userIds;
 
 deleteMembersFromConversation:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey Member
 DELETE FROM Member WHERE conversation = ?;
 
 selectAllMembers:
@@ -45,6 +55,9 @@ SELECT * FROM Member;
 
 selectAllMembersByConversation:
 SELECT * FROM Member WHERE conversation = :conversation;
+
+selectMemberRoleByUserAndConversation:
+SELECT role FROM Member WHERE user = :userId AND conversation = :conversationId;
 
 selectConversationsByMember:
 SELECT
@@ -54,6 +67,8 @@ JOIN Conversation ON Conversation.qualified_id = Member.conversation
 WHERE Member.user = ?;
 
 updateMemberRole:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey Member
 UPDATE Member
 SET role = ?
 WHERE user = ? AND conversation = ?;

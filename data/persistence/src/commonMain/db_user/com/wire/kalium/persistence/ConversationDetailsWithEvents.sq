@@ -78,6 +78,12 @@ WHERE
 GROUP BY ConversationDetails.qualifiedId;
 
 selectAllConversationDetailsWithEvents:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_order
+-- @CustomKey conversation_list_last_message
+-- @CustomKey conversation_list_unread
+-- @CustomKey conversation_list_calls
+-- @CustomKey conversation_list_folders
 SELECT * FROM ConversationDetailsWithEvents
 WHERE archived = :fromArchive
     -- :strict_mls is 0 or 1
@@ -97,6 +103,12 @@ ORDER BY
     name COLLATE NOCASE ASC;
 
 selectConversationDetailsWithEvents:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_order
+-- @CustomKey conversation_list_last_message
+-- @CustomKey conversation_list_unread
+-- @CustomKey conversation_list_calls
+-- @CustomKey conversation_list_folders
 SELECT * FROM ConversationDetailsWithEvents
 WHERE
     archived = :fromArchive
@@ -110,15 +122,13 @@ WHERE
       )
     )
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
+        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
-        -- When filter is FAVORITES (future implementation)
-
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
         ELSE 1 = 0
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
@@ -131,6 +141,12 @@ WHERE
     OFFSET :offset;
 
 selectConversationDetailsWithEventsFromSearch:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_order
+-- @CustomKey conversation_list_last_message
+-- @CustomKey conversation_list_unread
+-- @CustomKey conversation_list_calls
+-- @CustomKey conversation_list_folders
 SELECT * FROM ConversationDetailsWithEvents
 WHERE
     archived = :fromArchive
@@ -144,15 +160,13 @@ WHERE
       )
     )
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
+        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
-
-        -- When filter is FAVORITES (future implementation)
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
         ELSE 1 = 0
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
@@ -166,15 +180,19 @@ LIMIT :limit
 OFFSET :offset;
 
 countConversations:
+-- @CustomKey conversation_list_membership
 SELECT COUNT(*)
 FROM Conversation
 WHERE
     type IS NOT 'SELF'
     AND CASE
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
+        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
+        -- When filter is GROUPS, filter only group conversations
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
+        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND is_channel = 1)
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
         ELSE 1 = 0
     END
     AND archived = :fromArchive
@@ -191,6 +209,8 @@ WHERE
     );
 
 countConversationDetailsWithEvents:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_folders
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
     ConversationDetails.type IS NOT 'SELF'
@@ -205,15 +225,13 @@ WHERE
     AND ConversationDetails.deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
+        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
-
-        -- When filter is FAVORITES (future implementation)
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
         ELSE 1 = 0
     END
     AND (
@@ -227,6 +245,8 @@ WHERE
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END;
 
 countConversationDetailsWithEventsFromSearch:
+-- @CustomKey conversation_list_membership
+-- @CustomKey conversation_list_folders
 SELECT COUNT(*) FROM ConversationDetails
 WHERE
     ConversationDetails.type IS NOT 'SELF'
@@ -241,15 +261,13 @@ WHERE
     AND ConversationDetails.deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
+        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
-
-        -- When filter is FAVORITES (future implementation)
+        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
         ELSE 1 = 0
     END
     AND (

@@ -37,9 +37,15 @@ import com.wire.kalium.logic.feature.call.usecase.CreateAndPersistRecentlyEndedC
 import com.wire.kalium.logic.feature.call.usecase.EpochInfoUpdater
 import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.network.NetworkStateObserver
+import kotlinx.coroutines.CoroutineScope
 
-internal expect class GlobalCallManager : CallNetworkChangeManager {
+internal expect class GlobalCallManager(
+    scope: CoroutineScope,
+    networkStateObserver: NetworkStateObserver,
+    platformContext: PlatformContext
+) : CallNetworkChangeManager {
 
     @Suppress("LongParameterList")
     internal fun getCallManagerForClient(

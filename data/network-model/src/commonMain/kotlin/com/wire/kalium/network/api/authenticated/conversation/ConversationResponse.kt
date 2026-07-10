@@ -98,6 +98,7 @@ data class ConversationResponse(
      * @since API V8
      * @see GroupType
      */
+    @Serializable(with = GroupTypeSerializer::class)
     @SerialName("group_conv_type")
     val conversationGroupType: GroupType? = null,
 
@@ -135,12 +136,12 @@ data class ConversationResponse(
         }
     }
 
-    enum class GroupType {
-        @SerialName("group_conversation")
-        REGULAR_GROUP,
-
-        @SerialName("channel")
-        CHANNEL,
+    @Serializable(with = GroupTypeSerializer::class)
+    sealed class GroupType(open val value: String) {
+        object RegularGroup : GroupType("group_conversation")
+        object Channel : GroupType("channel")
+        object Meeting : GroupType("meeting")
+        data class Unknown(override val value: String) : GroupType(value)
     }
 
     fun hasAppsAccessEnabled(): Boolean {
@@ -249,6 +250,7 @@ data class ConversationResponseV8(
     @SerialName("public_keys")
     val publicKeys: MLSPublicKeysDTO? = null,
 
+    @Serializable(with = GroupTypeSerializer::class)
     @SerialName("group_conv_type")
     val conversationGroupType: GroupType? = null,
 
@@ -309,6 +311,7 @@ data class ConversationResponseV10(
     @SerialName("public_keys")
     val publicKeys: MLSPublicKeysDTO? = null,
 
+    @Serializable(with = GroupTypeSerializer::class)
     @SerialName("group_conv_type")
     val conversationGroupType: GroupType? = null,
 
@@ -432,6 +435,19 @@ class ConversationTypeSerializer : KSerializer<ConversationResponse.Type> {
     override fun deserialize(decoder: Decoder): ConversationResponse.Type {
         val rawValue = decoder.decodeInt()
         return ConversationResponse.Type.fromId(rawValue)
+    }
+}
+
+object GroupTypeSerializer : KSerializer<GroupType> {
+    override val descriptor = PrimitiveSerialDescriptor("GroupType", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: GroupType) = encoder.encodeString(value.value)
+
+    override fun deserialize(decoder: Decoder): GroupType = when (val stringValue = decoder.decodeString()) {
+        GroupType.RegularGroup.value -> GroupType.RegularGroup
+        GroupType.Channel.value -> GroupType.Channel
+        GroupType.Meeting.value -> GroupType.Meeting
+        else -> GroupType.Unknown(stringValue)
     }
 }
 

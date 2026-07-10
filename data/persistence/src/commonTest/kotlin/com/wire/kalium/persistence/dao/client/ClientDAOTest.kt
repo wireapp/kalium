@@ -261,6 +261,23 @@ class ClientDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenInvalidUserClient_whenMarkingAsValid_thenConversationRecipientsIncludeItAgain() = runTest {
+        val user = user
+        val expected: Map<QualifiedIDEntity, List<Client>> = mapOf(user.id to listOf(client, client1))
+        userDAO.upsertUser(user)
+        clientDAO.insertClient(insertedClient)
+        clientDAO.insertClient(insertedClient1)
+        clientDAO.tryMarkInvalid(listOf(insertedClient.userId to listOf(insertedClient.id)))
+        conversationDAO.insertConversations(listOf(conversationEntity1))
+        memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Admin), conversationEntity1.id)
+
+        clientDAO.tryMarkValid(listOf(insertedClient.userId to listOf(insertedClient.id)))
+
+        val actual = clientDAO.conversationRecipient(conversationEntity1.id)
+        assertEquals(expected, actual)
+    }
+
+    @Test
     fun givenNewClientAdded_thenItIsMarkedAsNotVerified() = runTest {
         val user = user
         userDAO.upsertUser(user)
@@ -531,7 +548,7 @@ class ClientDAOTest : BaseDatabaseTest() {
             mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-            isChannel = false,
+            groupType = ConversationEntity.GroupType.Group,
             channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
             channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
             wireCell = null,

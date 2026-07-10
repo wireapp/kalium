@@ -173,6 +173,7 @@ data class Conversation(
         sealed class Group : Type {
             data object Regular : Group()
             data object Channel : Group()
+            data object Meeting : Group()
         }
     }
 
@@ -337,6 +338,17 @@ sealed interface ConversationDetails {
 //         val isTeamAdmin: Boolean, TODO kubaz
 
         data class Regular(
+            override val conversation: Conversation,
+            override val hasOngoingCall: Boolean = false,
+            override val isSelfUserMember: Boolean,
+            override val selfRole: Conversation.Member.Role?,
+            override val isFavorite: Boolean = false,
+            override val folder: ConversationFolder? = null,
+            override val wireCell: String? = null,
+//         val isTeamAdmin: Boolean, TODO kubaz
+        ) : Group
+
+        data class Meeting(
             override val conversation: Conversation,
             override val hasOngoingCall: Boolean = false,
             override val isSelfUserMember: Boolean,

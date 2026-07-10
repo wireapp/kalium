@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.debug
 
+import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.userstorage.di.UserStorage
 import kotlinx.coroutines.flow.Flow
 
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.Flow
  * Use case to observe the state of the database logger.
  */
 // todo(interface). extract interface for use case
+@DebugKaliumApi("Debug-only API for observing database logger state.")
 public class ObserveDatabaseLoggerStateUseCase internal constructor(
     private val userStorage: UserStorage,
 ) {

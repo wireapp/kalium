@@ -149,7 +149,7 @@ public class ConversationScope internal constructor(
     private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    internal val dispatcher: KaliumDispatcher,
 ) {
 
     public val getConversations: GetConversationsUseCase

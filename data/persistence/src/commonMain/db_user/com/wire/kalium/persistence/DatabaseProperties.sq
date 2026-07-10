@@ -5,6 +5,8 @@ CREATE TABLE SelfUser (
 );
 
 insertSelfUserId:
+-- @NotifyCustomKey conversation_list_membership
+-- @NotifyCustomKey SelfUser
 INSERT OR IGNORE INTO SelfUser(id) VALUES(?);
 
 enableForeignKeyContraints:

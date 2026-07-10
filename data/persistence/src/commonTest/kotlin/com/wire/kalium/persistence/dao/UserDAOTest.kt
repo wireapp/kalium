@@ -986,14 +986,13 @@ class UserDAOTest : BaseDatabaseTest() {
         val user = newUserEntity()
         val userDetails = newUserDetailsEntity()
         db.userDAO.upsertUser(user)
-        val updatedUser = user.copy(name = "new_name")
 
         db.userDAO.observeUserDetailsByQualifiedID(user.id).test {
             val initialValue = awaitItem()
             assertEquals(userDetails, initialValue)
 
             // When
-            db.userDAO.upsertUser(updatedUser) // the same exact user is being saved again
+            db.userDAO.upsertUser(user) // the same exact user is being saved again
 
             // Then
             expectNoEvents() // other query should not be notified

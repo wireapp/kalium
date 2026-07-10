@@ -104,8 +104,12 @@ val kaliumGitHash: Provider<String> = providers.environmentVariable("GITHUB_SHA"
         }.standardOutput.asText.map { it.trim() }
     )
 
+val kaliumProjectVersion: Provider<String> = providers.gradleProperty("kalium.publish.version")
+    .orElse(providers.environmentVariable("KALIUM_PUBLISH_VERSION"))
+    .orElse(kaliumGitHash)
+
 allprojects {
-    version = kaliumGitHash.get()
+    version = kaliumProjectVersion.get()
     repositories {
         google()
         mavenCentral()
@@ -155,8 +159,8 @@ rootProject.plugins.withType<NodeJsPlugin> {
 tasks.dokkaHtmlMultiModule.configure {}
 
 moduleGraphConfig {
-    readmePath.set("./README.md")
-    heading.set("#### Dependency Graph")
+    readmePath.set("./docs/ARCHITECTURE.md")
+    heading.set("## Dependency Graph")
     nestingEnabled.set(true)
     rootModulesRegex.set(":logic")
     setStyleByModuleType.set(true)

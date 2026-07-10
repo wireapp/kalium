@@ -28,7 +28,6 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentMapper
 import com.wire.kalium.persistence.db.ReadDispatcher
-import com.wire.kalium.persistence.kaliumLogger
 
 interface MessageExtensions {
     fun getPagerForConversation(
@@ -133,7 +132,6 @@ internal class MessageExtensionsImpl internal constructor(
         context = readDispatcher.value,
         initialOffset = initialOffset,
         pendingQueryProvider = { limit, offset ->
-            kaliumLogger.d("[QueryPagingSource] Loading [MessageEntity] data: offset = $offset limit = $limit")
             messagesQueries.selectPendingByConversationIdAndVisibility(
                 conversationId,
                 visibilities,
@@ -143,7 +141,6 @@ internal class MessageExtensionsImpl internal constructor(
             )
         },
         nonPendingQueryProvider = { limit, offset ->
-            kaliumLogger.d("[QueryPagingSource] Loading [MessageEntity] data: offset = $offset limit = $limit")
             messagesQueries.selectNonPendingByConversationIdAndVisibility(
                 conversationId,
                 visibilities,

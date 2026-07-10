@@ -18,11 +18,13 @@
 package com.wire.kalium.logic.feature.debug
 
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.util.DebugKaliumApi
 import kotlinx.coroutines.flow.Flow
 
 /**
  * Observes whether debug CRL expiration override is enabled.
  */
+@DebugKaliumApi("Debug-only API for observing forced CRL expiration overrides.")
 public interface ObserveDebugCRLExpirationAfterOneMinuteUseCase {
     public operator fun invoke(): Flow<Boolean>
 }
@@ -32,6 +34,7 @@ public interface ObserveDebugCRLExpirationAfterOneMinuteUseCase {
  *
  * When enabled, stored CRL expiration dates are cleared so CRLs can be refetched using the debug expiration interval.
  */
+@DebugKaliumApi("Debug-only API for forcing CRL expiration overrides.")
 public interface SetDebugCRLExpirationAfterOneMinuteUseCase {
     public suspend operator fun invoke(enabled: Boolean)
 }

@@ -86,6 +86,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
@@ -112,6 +113,7 @@ import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -388,6 +390,43 @@ class ConversationRepositoryTest {
                 }
             }
         }
+
+    @Test
+    fun givenConversationMemberRoleExists_whenGettingConversationMemberRole_thenReturnsMappedRole() = runTest {
+        val conversationId = ConversationId("conv_id", "conv_domain")
+        val userId = UserId("user_id", "user_domain")
+        val role = Conversation.Member.Role.Admin
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withDaoGetMemberRoleReturns(MapperProvider.conversationRoleMapper().toDAO(role))
+            .arrange()
+
+        conversationRepository.getConversationMemberRole(conversationId, userId) shouldSucceed {
+            assertEquals(role, it)
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrange.memberDAO.getMemberRole(userId.toDao(), conversationId.toDao())
+        }
+    }
+
+    @Test
+    fun givenConversationMemberRoleIsMissing_whenGettingConversationMemberRole_thenReturnsNull() = runTest {
+        val conversationId = ConversationId("conv_id", "conv_domain")
+        val userId = UserId("user_id", "user_domain")
+
+        val (arrange, conversationRepository) = Arrangement()
+            .withDaoGetMemberRoleReturns(null)
+            .arrange()
+
+        conversationRepository.getConversationMemberRole(conversationId, userId) shouldSucceed {
+            assertNull(it)
+        }
+
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrange.memberDAO.getMemberRole(userId.toDao(), conversationId.toDao())
+        }
+    }
 
     @Test
     fun givenProteusConversation_WhenDeletingTheConversationLocally_ThenShouldCallProperUseCaseAndSucceed() = runTest {
@@ -1306,6 +1345,10 @@ class ConversationRepositoryTest {
 
         suspend fun withDaoUpdateConversationMemberRoleSuccess() = apply {
             withUpdateMemberRoleSuccess()
+        }
+
+        suspend fun withDaoGetMemberRoleReturns(result: MemberEntity.Role?) = apply {
+            withGetMemberRole(result)
         }
 
         suspend fun withSuccessfulConversationDeletion() = apply {

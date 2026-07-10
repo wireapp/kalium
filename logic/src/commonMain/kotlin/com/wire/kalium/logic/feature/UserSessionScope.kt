@@ -105,6 +105,7 @@ import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCaseImpl
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationDataSource
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewConversationMembersRepository
@@ -150,6 +151,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.logout.LogoutDataSource
 import com.wire.kalium.logic.data.logout.LogoutRepository
+import com.wire.kalium.logic.data.meeting.MeetingDataSource
+import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.logic.data.message.CompositeMessageDataSource
 import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
@@ -342,6 +345,8 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserU
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
+import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCase
+import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageScope
@@ -576,7 +581,9 @@ import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkApis
 import com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider
 import com.wire.kalium.userstorage.di.PlatformUserStorageProperties
 import com.wire.kalium.userstorage.di.UserStorageProvider
+import com.wire.kalium.util.DebugKaliumApi
 import com.wire.kalium.util.DelicateKaliumApi
+import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.work.LongWorkScope
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.CoroutineScope
@@ -1247,6 +1254,7 @@ public class UserSessionScope internal constructor(
         get() = AssetDataSource(
             assetApi = authenticatedNetworkContainer.assetApi,
             assetDao = userStorage.database.assetDAO,
+            selfUserId = userId,
             assetAuditLog = lazy { users.assetAuditLog },
             kaliumFileSystem = kaliumFileSystem
         )
@@ -1484,6 +1492,7 @@ public class UserSessionScope internal constructor(
                 userAuthenticatedNetworkProvider = userAuthenticatedNetworkProvider,
                 logger = userScopedLogger
             ),
+            syncMeetings = syncMeetingsUseCase,
             optimizer = OptimizeDatabaseUseCaseImpl(userStorage.database.databaseOptimizer)
         )
     }
@@ -2426,6 +2435,7 @@ public class UserSessionScope internal constructor(
             currentPersistenceEventHookNotifier,
             memberJoinHandler,
             joinExistingMLSConversationUseCase,
+            KaliumDispatcherImpl,
         )
     }
 
@@ -2438,6 +2448,7 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    @DebugKaliumApi("Debug-only scope for developer tooling, QA, and profiling APIs.")
     public val debug: DebugScope by lazy {
         DebugScope(
             messageRepository,
@@ -2519,7 +2530,9 @@ public class UserSessionScope internal constructor(
             currentPersistenceEventHookNotifier,
             this,
             kaliumConfigs,
-            userScopedLogger
+            userScopedLogger,
+            KaliumDispatcherImpl,
+            LegalHoldStatusMapperImpl
         )
     }
 
@@ -2924,6 +2937,20 @@ public class UserSessionScope internal constructor(
         { this },
         { slowSyncRepository.slowSyncStatus.map { it is SlowSyncStatus.Ongoing } }
     )
+
+    private val meetingRepository: MeetingRepository
+        get() = MeetingDataSource(
+            meetingDAO = userStorage.database.meetingDao,
+            meetingApi = authenticatedNetworkContainer.meetingApi,
+        )
+
+    private val syncMeetingsUseCase: SyncMeetingsUseCase
+        get() = SyncMeetingsUseCaseImpl(
+            meetingRepository = meetingRepository,
+            userRepository = userRepository,
+            featureSupport = featureSupport,
+            transactionProvider = cryptoTransactionProvider
+        )
 
     private fun registerNomadHooksIfConfigured() {
         val hooks = userScopedNomadHookFactory.createIfConfigured(

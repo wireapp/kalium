@@ -18,8 +18,7 @@
 
 package com.wire.kalium.logic.feature.call
 
-import avs.AVSFlowManager
-import avs.AVSMediaManager
+import com.wire.kalium.calling.AppleAvsFlowManager
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
@@ -30,14 +29,8 @@ import com.wire.kalium.logic.util.PlatformView
 internal actual open class FlowManagerServiceImpl(
     appContext: PlatformContext
 ) : FlowManagerService {
-    private val mediaManager by lazy {
-        AVSMediaManager.defaultMediaManager() ?: AVSMediaManager()
-    }
-
     private val flowManager by lazy {
-        AVSFlowManager(delegate = null, mediaManager = mediaManager).also {
-            it.setEnableLogging(true)
-        }
+        AppleAvsFlowManager()
     }
 
     actual override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
@@ -63,13 +56,10 @@ internal actual open class FlowManagerServiceImpl(
     }
 
     actual override suspend fun startFlowManager() {
-        if (!AppleAvsInterop.startIfAvailable()) {
+        if (!flowManager.startIfAvailable()) {
             kaliumLogger.w("AVS iOS smoke: startFlowManager could not start AVS")
             return
         }
-        mediaManager.startAudio()
-        flowManager
+        flowManager.startAudio()
     }
 }
-
-internal expect fun AVSFlowManager.attachPlatformVideoView(view: PlatformView): Boolean

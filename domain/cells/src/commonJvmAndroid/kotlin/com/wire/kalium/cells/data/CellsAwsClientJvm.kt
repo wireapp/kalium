@@ -23,7 +23,6 @@ import aws.sdk.kotlin.services.s3.createMultipartUpload
 import aws.sdk.kotlin.services.s3.model.CompletedMultipartUpload
 import aws.sdk.kotlin.services.s3.model.CompletedPart
 import aws.sdk.kotlin.services.s3.model.GetObjectRequest
-import aws.sdk.kotlin.services.s3.presigners.presignGetObject
 import aws.sdk.kotlin.services.s3.putObject
 import aws.sdk.kotlin.services.s3.uploadPart
 import aws.sdk.kotlin.services.s3.withConfig
@@ -44,7 +43,6 @@ import okio.buffer
 import okio.source
 import java.io.RandomAccessFile
 import java.nio.ByteBuffer
-import kotlin.time.Duration.Companion.hours
 
 internal actual fun cellsAwsClient(
     credentials: Deferred<CellsCredentials?>,
@@ -172,15 +170,6 @@ private class CellsAwsClientJvm(
             }
         }
     }
-
-    override suspend fun getPreSignedUrl(objectKey: String): String =
-        withS3Client {
-            val request = GetObjectRequest {
-                key = objectKey
-            }
-            val preSignedRequest = presignGetObject(request, 24.hours)
-            preSignedRequest.url.toString()
-        }
 
     private suspend fun <T> withS3Client(
         uploadProgressListener: ((Long) -> Unit)? = null,
