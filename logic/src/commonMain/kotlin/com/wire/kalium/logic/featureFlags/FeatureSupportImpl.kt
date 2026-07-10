@@ -18,8 +18,11 @@
 
 package com.wire.kalium.logic.featureFlags
 
+import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
+
 internal interface FeatureSupport {
     val isMLSSupported: Boolean
+    val isMeetingsSupported: Boolean
 }
 
 @Suppress("MagicNumber")
@@ -28,4 +31,5 @@ internal class FeatureSupportImpl(
 ) : FeatureSupport {
 
     override val isMLSSupported: Boolean = apiVersion >= 6
+    override val isMeetingsSupported: Boolean = apiVersion >= MeetingApi.MIN_API_VERSION_MEETINGS
 }

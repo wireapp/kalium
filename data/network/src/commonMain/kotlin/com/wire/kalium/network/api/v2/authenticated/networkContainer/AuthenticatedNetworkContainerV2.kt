@@ -34,6 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
+import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
@@ -46,26 +47,27 @@ import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.api.v0.authenticated.NomadDeviceSyncApiV0
 import com.wire.kalium.network.api.v2.authenticated.AccessTokenApiV2
 import com.wire.kalium.network.api.v2.authenticated.AssetApiV2
 import com.wire.kalium.network.api.v2.authenticated.CallApiV2
 import com.wire.kalium.network.api.v2.authenticated.ClientApiV2
 import com.wire.kalium.network.api.v2.authenticated.ConnectionApiV2
 import com.wire.kalium.network.api.v2.authenticated.ConversationApiV2
+import com.wire.kalium.network.api.v2.authenticated.ConversationHistoryApiV2
 import com.wire.kalium.network.api.v2.authenticated.E2EIApiV2
 import com.wire.kalium.network.api.v2.authenticated.FeatureConfigApiV2
 import com.wire.kalium.network.api.v2.authenticated.KeyPackageApiV2
 import com.wire.kalium.network.api.v2.authenticated.LogoutApiV2
 import com.wire.kalium.network.api.v2.authenticated.MLSMessageApiV2
 import com.wire.kalium.network.api.v2.authenticated.MLSPublicKeyApiV2
+import com.wire.kalium.network.api.v2.authenticated.MeetingApiV2
 import com.wire.kalium.network.api.v2.authenticated.MessageApiV2
-import com.wire.kalium.network.api.v0.authenticated.NomadDeviceSyncApiV0
 import com.wire.kalium.network.api.v2.authenticated.NotificationApiV2
 import com.wire.kalium.network.api.v2.authenticated.PreKeyApiV2
 import com.wire.kalium.network.api.v2.authenticated.PropertiesApiV2
 import com.wire.kalium.network.api.v2.authenticated.SelfApiV2
 import com.wire.kalium.network.api.v2.authenticated.ServerTimeApiV2
-import com.wire.kalium.network.api.v2.authenticated.ConversationHistoryApiV2
 import com.wire.kalium.network.api.v2.authenticated.TeamsApiV2
 import com.wire.kalium.network.api.v2.authenticated.UpgradePersonalToTeamApiV2
 import com.wire.kalium.network.api.v2.authenticated.UserDetailsApiV2
@@ -159,4 +161,6 @@ internal class AuthenticatedNetworkContainerV2 internal constructor(
         )
     override val serverTimeApi: ServerTimeApi
         get() = ServerTimeApiV2(networkClient)
+
+    override val meetingApi: MeetingApi get() = MeetingApiV2()
 }
