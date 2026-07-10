@@ -23,3 +23,5 @@ CREATE TABLE Meeting (
 
 CREATE INDEX IF NOT EXISTS meeting_conv_id_index ON Meeting(conversation_id);
 CREATE INDEX IF NOT EXISTS meeting_start_date_index ON Meeting(start_date);
+
+PRAGMA optimize;

@@ -26,6 +26,7 @@ import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
+import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -36,7 +37,7 @@ import kotlin.time.Duration.Companion.days
 internal interface MeetingRepository {
     suspend fun fetchAndPersistMeetings(
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
-    ): Either<CoreFailure, Unit>
+    ): Either<CoreFailure, List<MeetingEntity>>
 
     suspend fun syncMeetingOccurrences(
         removeOlderThan: Instant = occurrenceOutdatedThreshold(),
@@ -63,11 +64,13 @@ internal class MeetingDataSource(
     private val meetingApi: MeetingApi,
     private val meetingMapper: MeetingMapper = MapperProvider.meetingMapper()
 ) : MeetingRepository {
-    override suspend fun fetchAndPersistMeetings(generateOccurrencesUntil: Instant): Either<CoreFailure, Unit> = wrapApiRequest {
+    override suspend fun fetchAndPersistMeetings(generateOccurrencesUntil: Instant): Either<CoreFailure, List<MeetingEntity>> = wrapApiRequest {
         meetingApi.fetchMeetings()
     }.flatMap { meetings ->
         wrapStorageRequest {
-            meetingDAO.upsertMeetings(meetings.map { meetingMapper.fromApiToDao(it) }, generateOccurrencesUntil)
+            meetings
+                .map { meetingMapper.fromApiToDao(it) }
+                .also { meetingDAO.upsertMeetings(it, generateOccurrencesUntil) }
         }
     }
 

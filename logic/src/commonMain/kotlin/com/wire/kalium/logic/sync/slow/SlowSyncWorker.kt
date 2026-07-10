@@ -139,6 +139,7 @@ internal class SlowSyncWorkerImpl(
                 .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
                 .continueWithStep(SlowSyncStep.LEGAL_HOLD) { fetchLegalHoldForSelfUserFromRemoteUseCase().map { } }
                 .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
+                .continueWithOptionalStep(syncMeetings.isEnabled(), SlowSyncStep.MEETINGS, syncMeetings::invoke)
                 .continueWithOptionalStep(
                     syncNomadMessagesDuringSlowSync.isEnabled(),
                     SlowSyncStep.NOMAD_MESSAGES,
