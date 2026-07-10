@@ -54,5 +54,3 @@ actual fun defaultHttpEngine(
 
     }
 }
-
-actual fun clearTextTrafficEngine(): HttpClientEngine = Darwin.create()
