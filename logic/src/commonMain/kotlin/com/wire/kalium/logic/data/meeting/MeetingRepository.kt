@@ -54,7 +54,6 @@ internal interface MeetingRepository {
         pagingConfig: PagingConfig,
         startingOffset: Long,
         from: Instant = currentInstant().asStartOfDay(),
-        until: Instant? = null
     ): Flow<PagingData<MeetingOccurrence>>
 }
 
@@ -91,12 +90,10 @@ internal class MeetingDataSource(
         pagingConfig: PagingConfig,
         startingOffset: Long,
         from: Instant,
-        until: Instant?
     ) = meetingDAO.getPaginatedMeetingOccurrenceDetails(
         pagingConfig = pagingConfig,
         startingOffset = startingOffset,
         from = from,
-        until = until
     ).pagingDataFlow.map { pagingData -> pagingData.map(meetingMapper::fromDaoToModel) }
 }
 

@@ -37,14 +37,12 @@ public interface GetPaginatedMeetingOccurrencesUseCase {
      * @param pagingConfig The configuration for pagination, including page size and prefetch distance.
      * @param startingOffset The initial offset for pagination, indicating where to start fetching data.
      * @param from The starting date for fetching meeting occurrences, defaulting to the start of the current day.
-     * @param until The optional end date for fetching meeting occurrences. If null, it fetches occurrences indefinitely into the future.
      * @return A flow of paginated meeting occurrences, represented as PagingData<MeetingOccurrence>.
      */
     public suspend operator fun invoke(
         pagingConfig: PagingConfig,
         startingOffset: Long,
         from: Instant = currentInstant().asStartOfDay(),
-        until: Instant? = null
     ): Flow<PagingData<MeetingOccurrence>>
 }
 
@@ -56,11 +54,9 @@ internal class GetPaginatedMeetingOccurrencesUseCaseImpl(
         pagingConfig: PagingConfig,
         startingOffset: Long,
         from: Instant,
-        until: Instant?
     ): Flow<PagingData<MeetingOccurrence>> = meetingRepository.getPaginatedMeetingOccurrences(
         pagingConfig = pagingConfig,
         startingOffset = startingOffset,
         from = from,
-        until = until
     ).flowOn(dispatcher.io)
 }
