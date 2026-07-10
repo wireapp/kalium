@@ -33,6 +33,7 @@ import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import com.wire.kalium.util.DateTimeUtil.asStartOfDay
 import com.wire.kalium.util.DateTimeUtil.currentInstant
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
@@ -47,7 +48,9 @@ internal interface MeetingRepository {
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
     ): Either<CoreFailure, Unit>
 
-    suspend fun getPaginatedMeetings(
+    suspend fun observeMeetingOccurrence(occurrenceId: String): Flow<MeetingOccurrence?>
+
+    suspend fun getPaginatedMeetingOccurrences(
         pagingConfig: PagingConfig,
         startingOffset: Long,
         from: Instant = currentInstant().asStartOfDay(),
@@ -79,19 +82,22 @@ internal class MeetingDataSource(
         meetingDAO.insertMissingOccurrences(generateOccurrencesUntil)
     }
 
-    override suspend fun getPaginatedMeetings(
+    override suspend fun observeMeetingOccurrence(occurrenceId: String): Flow<MeetingOccurrence?> =
+        meetingDAO.getMeetingOccurrenceDetailsFlow(occurrenceId)
+            .map { it?.let(meetingMapper::fromDaoToModel) }
+            .distinctUntilChanged()
+
+    override suspend fun getPaginatedMeetingOccurrences(
         pagingConfig: PagingConfig,
         startingOffset: Long,
         from: Instant,
         until: Instant?
-    ) = meetingDAO.getPaginatedMeetings(
+    ) = meetingDAO.getPaginatedMeetingOccurrenceDetails(
         pagingConfig = pagingConfig,
         startingOffset = startingOffset,
         from = from,
         until = until
-    ).pagingDataFlow.map { pagingData ->
-        pagingData.map(meetingMapper::fromDaoToModel)
-    }
+    ).pagingDataFlow.map { pagingData -> pagingData.map(meetingMapper::fromDaoToModel) }
 }
 
 private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90

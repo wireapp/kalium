@@ -76,7 +76,7 @@ internal class MeetingPagingSource(
                         if (key >= initialCount - params.loadSize) maxOf(0, initialCount - params.loadSize) else key.toInt()
                 }
                 val count = ensureOccurrencesForLoad(params, offset, limit, initialCount)
-                val meetingQuery = meetingsQueries.selectPagedMeetingDetails(
+                val meetingQuery = meetingsQueries.selectPagedMeetingOccurrenceDetails(
                     fromDate = parameters.from,
                     untilDate = parameters.until,
                     limit = limit,

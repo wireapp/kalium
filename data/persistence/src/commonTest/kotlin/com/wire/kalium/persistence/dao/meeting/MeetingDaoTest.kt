@@ -280,7 +280,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
         meetings.forEach { insertMeetingDependencies(it) }
         meetingDao.upsertMeetings(meetings, tomorrowStart + 1.days)
 
-        val result = meetingDao.getPaginatedMeetings(
+        val result = meetingDao.getPaginatedMeetingOccurrenceDetails(
             pagingConfig = PagingConfig(pageSize = 10),
             startingOffset = 0,
             from = todayStart,
@@ -307,7 +307,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
         insertMeetingDependencies(meeting)
         insertMeetingWithoutOccurrences(meeting)
 
-        val result = meetingDao.getPaginatedMeetings(
+        val result = meetingDao.getPaginatedMeetingOccurrenceDetails(
             pagingConfig = PagingConfig(pageSize = pageSize, prefetchDistance = prefetchDistance),
             startingOffset = 0,
             from = todayStart,

@@ -15,25 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.feature.meeting
 
+import com.wire.kalium.logic.data.meeting.MeetingOccurrence
 import com.wire.kalium.logic.data.meeting.MeetingRepository
 import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 
-public class MeetingScope internal constructor(
+/**
+ * Use case for observing a meeting occurrence by its ID.
+ */
+public interface ObserveMeetingOccurrenceUseCase {
+    public suspend fun invoke(occurrenceId: String): Flow<MeetingOccurrence?>
+}
+
+internal class ObserveMeetingOccurrenceUseCaseImpl(
     private val dispatcher: KaliumDispatcher,
     private val meetingRepository: MeetingRepository,
-) {
-    public val getPaginatedMeetingOccurrenceDetails: GetPaginatedMeetingOccurrencesUseCase
-        get() = GetPaginatedMeetingOccurrencesUseCaseImpl(
-            dispatcher = dispatcher,
-            meetingRepository = meetingRepository,
-        )
-
-    public val observeMeetingOccurrence: ObserveMeetingOccurrenceUseCase
-        get() = ObserveMeetingOccurrenceUseCaseImpl(
-            dispatcher = dispatcher,
-            meetingRepository = meetingRepository,
-        )
+) : ObserveMeetingOccurrenceUseCase {
+    override suspend fun invoke(occurrenceId: String): Flow<MeetingOccurrence?> =
+        meetingRepository.observeMeetingOccurrence(occurrenceId).flowOn(dispatcher.io)
 }

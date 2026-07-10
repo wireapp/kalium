@@ -21,12 +21,15 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.Meeting
 import com.wire.kalium.persistence.MeetingsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.db.WriteDispatcher
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
@@ -34,7 +37,8 @@ interface MeetingDao {
     suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesUntil: Instant)
     suspend fun removeOutdatedMeetings(olderThan: Instant)
     suspend fun insertMissingOccurrences(until: Instant)
-    fun getPaginatedMeetings(
+    fun getMeetingOccurrenceDetailsFlow(occurrenceId: String): Flow<MeetingOccurrenceDetailsEntity?>
+    fun getPaginatedMeetingOccurrenceDetails(
         pagingConfig: PagingConfig,
         startingOffset: Long,
         from: Instant,
@@ -99,7 +103,12 @@ internal class MeetingDaoImpl(
         }
     }
 
-    override fun getPaginatedMeetings(pagingConfig: PagingConfig, startingOffset: Long, from: Instant, until: Instant?) =
+    override fun getMeetingOccurrenceDetailsFlow(occurrenceId: String): Flow<MeetingOccurrenceDetailsEntity?> =
+        meetingsQueries.selectMeetingOccurrenceDetailsById(occurrenceId = occurrenceId, mapper = MeetingMapper::fromViewToDetails)
+            .asFlow()
+            .mapToOneOrNull(readDispatcher.value)
+
+    override fun getPaginatedMeetingOccurrenceDetails(pagingConfig: PagingConfig, startingOffset: Long, from: Instant, until: Instant?) =
         KaliumPager(
             pager = Pager(
                 config = pagingConfig,
