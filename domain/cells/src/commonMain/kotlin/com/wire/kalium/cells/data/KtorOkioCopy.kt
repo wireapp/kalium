@@ -28,26 +28,32 @@ internal suspend fun ByteReadChannel.copyToSink(
     sink: Sink,
     contentLength: Long? = null,
     onProgressUpdate: (Long, Long) -> Unit = { _, _ -> },
+): Long = copyToSinkInternal(sink) { total ->
+    contentLength?.let { onProgressUpdate(total, it) }
+}
+
+internal suspend fun ByteReadChannel.copyToSink(
+    sink: Sink,
+    onProgressUpdate: (Long) -> Unit,
+): Long = copyToSinkInternal(sink, onProgressUpdate)
+
+private suspend fun ByteReadChannel.copyToSinkInternal(
+    sink: Sink,
+    onProgressUpdate: (Long) -> Unit,
 ): Long {
     val buffer = ByteArray(COPY_BUFFER_SIZE)
     val total = sink.buffer().use { bufferedSink ->
-        val copied = copyAvailableTo(bufferedSink, buffer, contentLength, onProgressUpdate)
+        val copied = copyAvailableTo(bufferedSink, buffer, onProgressUpdate)
         bufferedSink.flush()
         copied
     }
     return total
 }
 
-internal suspend fun ByteReadChannel.copyToSink(
-    sink: Sink,
-    onProgressUpdate: (Long) -> Unit,
-): Long = copyToSink(sink, null) { total, _ -> onProgressUpdate(total) }
-
 private suspend fun ByteReadChannel.copyAvailableTo(
     sink: BufferedSink,
     buffer: ByteArray,
-    contentLength: Long?,
-    onProgressUpdate: (Long, Long) -> Unit,
+    onProgressUpdate: (Long) -> Unit,
 ): Long {
     var total = 0L
     var read = readAvailable(buffer)
@@ -55,7 +61,7 @@ private suspend fun ByteReadChannel.copyAvailableTo(
         if (read > 0) {
             sink.write(buffer, 0, read)
             total += read
-            contentLength?.let { onProgressUpdate(total, it) }
+            onProgressUpdate(total)
         }
         read = readAvailable(buffer)
     }

@@ -19,6 +19,9 @@ package com.wire.kalium.cells.data
 
 import com.wire.kalium.cells.data.model.CellNodeDTO
 import io.ktor.client.HttpClient
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
@@ -28,12 +31,14 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.ByteArrayContent
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.content.TextContent
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.ByteWriteChannel
-import io.ktor.utils.io.writeFully
+import kotlinx.coroutines.delay
+import kotlinx.io.IOException as KtorIOException
 import okio.Buffer
 import okio.BufferedSource
 import okio.FileSystem
@@ -42,14 +47,14 @@ import okio.Path
 import okio.SYSTEM
 import okio.buffer
 import okio.use
+import kotlin.random.Random
 
 internal class CellsS3Client(
     private val httpClient: HttpClient,
     private val endpointProvider: suspend () -> String,
     private val credentialsProvider: suspend () -> S3Credentials,
     private val fileSystem: FileSystem = FileSystem.SYSTEM,
-    private val signer: AwsSigV4Signer = AwsSigV4Signer(DEFAULT_REGION, S3_SERVICE_NAME),
-    private val dateProvider: () -> AwsSigningDate = { AwsSigningDate.now() },
+    private val config: CellsS3ClientConfig = CellsS3ClientConfig(),
 ) : CellsAwsClient {
 
     override suspend fun download(
@@ -57,15 +62,20 @@ internal class CellsS3Client(
         outFileSink: okio.Sink,
         onProgressUpdate: (Long) -> Unit,
     ) {
-        val signedRequest = signedRequest(
-            method = HttpMethod.Get,
-            objectKey = objectKey,
+        val response = requestWithRetry(
+            operation = "Download object",
+            request = {
+                val signedRequest = signedRequest(
+                    method = HttpMethod.Get,
+                    objectKey = objectKey,
+                )
+                httpClient.request(signedRequest.url) {
+                    method = HttpMethod.Get
+                    signedRequest.headers.forEach { (name, value) -> header(name, value) }
+                }
+            },
+            transform = { it },
         )
-        val response = httpClient.request(signedRequest.url) {
-            method = HttpMethod.Get
-            signedRequest.headers.forEach { (name, value) -> header(name, value) }
-        }
-        response.ensureSuccess("Download object")
         response.bodyAsChannel().copyToSink(outFileSink, onProgressUpdate = onProgressUpdate)
     }
 
@@ -73,7 +83,7 @@ internal class CellsS3Client(
         val length = fileSystem.metadata(path).size
             ?: throw IOException("Upload source size is not available")
 
-        if (length > MAX_REGULAR_UPLOAD_SIZE) {
+        if (length > config.maxRegularUploadSize) {
             uploadMultipart(path, length, node, onProgressUpdate)
         } else {
             uploadRegular(path, length, node, onProgressUpdate)
@@ -83,9 +93,9 @@ internal class CellsS3Client(
     override suspend fun getPreSignedUrl(objectKey: String): String {
         val endpoint = endpointProvider()
         val credentials = credentialsProvider()
-        val date = dateProvider()
+        val date = config.dateProvider()
         val s3Url = S3UrlBuilder.build(endpoint, DEFAULT_BUCKET_NAME, objectKey)
-        return signer.presignGetUrl(
+        return config.signer.presignGetUrl(
             url = s3Url,
             credentials = credentials,
             signingDate = date,
@@ -99,17 +109,26 @@ internal class CellsS3Client(
         node: CellNodeDTO,
         onProgressUpdate: (Long) -> Unit,
     ) {
-        val signedRequest = signedRequest(
-            method = HttpMethod.Put,
-            objectKey = node.path,
-            signedHeaders = node.createDraftNodeHeaders(),
+        val progressReporter = MonotonicProgressReporter(onProgressUpdate)
+        requestWithRetry(
+            operation = "Upload object",
+            request = {
+                val signedRequest = signedRequest(
+                    method = HttpMethod.Put,
+                    objectKey = node.path,
+                    signedHeaders = node.createDraftNodeHeaders(),
+                )
+                httpClient.request(signedRequest.url) {
+                    method = HttpMethod.Put
+                    signedRequest.headers.forEach { (name, value) -> header(name, value) }
+                    setBody(S3FileContent(fileSystem, path, length, progressReporter::report))
+                }
+            },
+            transform = { response ->
+                response.discardBody()
+                Unit
+            },
         )
-        val response = httpClient.request(signedRequest.url) {
-            method = HttpMethod.Put
-            signedRequest.headers.forEach { (name, value) -> header(name, value) }
-            setBody(S3FileContent(fileSystem, path, length, onProgressUpdate))
-        }
-        response.ensureSuccess("Upload object")
     }
 
     private suspend fun uploadMultipart(
@@ -139,18 +158,23 @@ internal class CellsS3Client(
     }
 
     private suspend fun createMultipartUpload(node: CellNodeDTO): String {
-        val signedRequest = signedRequest(
-            method = HttpMethod.Post,
-            objectKey = node.path,
-            queryParameters = listOf(S3QueryParameter(UPLOADS_QUERY_PARAMETER, "")),
-            signedHeaders = node.createDraftNodeHeaders(),
+        val responseBody = requestWithRetry(
+            operation = "Create multipart upload",
+            request = {
+                val signedRequest = signedRequest(
+                    method = HttpMethod.Post,
+                    objectKey = node.path,
+                    queryParameters = listOf(S3QueryParameter(UPLOADS_QUERY_PARAMETER, "")),
+                    signedHeaders = node.createDraftNodeHeaders(),
+                )
+                httpClient.request(signedRequest.url) {
+                    method = HttpMethod.Post
+                    signedRequest.headers.forEach { (name, value) -> header(name, value) }
+                }
+            },
+            transform = { it.bodyAsText() },
         )
-        val response = httpClient.request(signedRequest.url) {
-            method = HttpMethod.Post
-            signedRequest.headers.forEach { (name, value) -> header(name, value) }
-        }
-        response.ensureSuccess("Create multipart upload")
-        return response.bodyAsText().xmlTagValue("UploadId")
+        return responseBody.xmlTagValue("UploadId")
             ?: throw IOException("Create multipart upload response did not include an UploadId")
     }
 
@@ -160,21 +184,30 @@ internal class CellsS3Client(
         partNumber: Int,
         partData: ByteArray,
     ): String {
-        val signedRequest = signedRequest(
-            method = HttpMethod.Put,
-            objectKey = objectKey,
-            queryParameters = listOf(
-                S3QueryParameter("partNumber", partNumber.toString()),
-                S3QueryParameter("uploadId", uploadId),
-            ),
+        val eTag = requestWithRetry(
+            operation = "Upload multipart part",
+            request = {
+                val signedRequest = signedRequest(
+                    method = HttpMethod.Put,
+                    objectKey = objectKey,
+                    queryParameters = listOf(
+                        S3QueryParameter("partNumber", partNumber.toString()),
+                        S3QueryParameter("uploadId", uploadId),
+                    ),
+                )
+                httpClient.request(signedRequest.url) {
+                    method = HttpMethod.Put
+                    signedRequest.headers.forEach { (name, value) -> header(name, value) }
+                    setBody(ByteArrayContent(partData, ContentType.Application.OctetStream))
+                }
+            },
+            transform = { response ->
+                val responseETag = response.headers[HttpHeaders.ETag]
+                response.discardBody()
+                responseETag
+            },
         )
-        val response = httpClient.request(signedRequest.url) {
-            method = HttpMethod.Put
-            signedRequest.headers.forEach { (name, value) -> header(name, value) }
-            setBody(ByteArrayContent(partData, ContentType.Application.OctetStream))
-        }
-        response.ensureSuccess("Upload multipart part")
-        return response.headers[HttpHeaders.ETag]
+        return eTag
             ?: throw IOException("Upload multipart part response did not include an ETag")
     }
 
@@ -184,17 +217,70 @@ internal class CellsS3Client(
         completedParts: List<CompletedS3Part>,
     ) {
         val body = completedParts.toCompleteMultipartUploadXml()
-        val signedRequest = signedRequest(
-            method = HttpMethod.Post,
-            objectKey = objectKey,
-            queryParameters = listOf(S3QueryParameter("uploadId", uploadId)),
+        requestWithRetry(
+            operation = "Complete multipart upload",
+            request = {
+                val signedRequest = signedRequest(
+                    method = HttpMethod.Post,
+                    objectKey = objectKey,
+                    queryParameters = listOf(S3QueryParameter("uploadId", uploadId)),
+                )
+                httpClient.request(signedRequest.url) {
+                    method = HttpMethod.Post
+                    signedRequest.headers.forEach { (name, value) -> header(name, value) }
+                    setBody(TextContent(body, ContentType.Application.Xml))
+                }
+            },
+            transform = { response -> validateCompleteMultipartUploadResponse(response.bodyAsText()) },
         )
-        val response = httpClient.request(signedRequest.url) {
-            method = HttpMethod.Post
-            signedRequest.headers.forEach { (name, value) -> header(name, value) }
-            setBody(TextContent(body, ContentType.Application.Xml))
+    }
+
+    private suspend fun <T> requestWithRetry(
+        operation: String,
+        request: suspend () -> HttpResponse,
+        transform: suspend (HttpResponse) -> T,
+    ): T {
+        var lastRetryableFailure: Exception? = null
+        repeat(S3_MAX_ATTEMPTS) { attemptIndex ->
+            when (val attempt = performRequestAttempt(operation, request, transform)) {
+                is S3Attempt.Success -> return attempt.value
+                is S3Attempt.TerminalFailure -> throw attempt.cause
+                is S3Attempt.RetryableFailure -> {
+                    lastRetryableFailure = attempt.cause
+                    if (attemptIndex < S3_MAX_ATTEMPTS - 1) {
+                        delay(s3RetryDelayMillis(attemptIndex + 1))
+                    }
+                }
+            }
         }
-        response.ensureSuccess("Complete multipart upload")
+        throw requireNotNull(lastRetryableFailure)
+    }
+
+    private suspend fun <T> performRequestAttempt(
+        operation: String,
+        request: suspend () -> HttpResponse,
+        transform: suspend (HttpResponse) -> T,
+    ): S3Attempt<T> = try {
+        val response = request()
+        if (!response.status.isSuccess()) {
+            response.toS3Failure(operation)
+        } else {
+            S3Attempt.Success(transform(response))
+        }
+    } catch (cause: RetryableS3Exception) {
+        S3Attempt.RetryableFailure(cause)
+    } catch (cause: S3RequestException) {
+        S3Attempt.TerminalFailure(cause)
+    } catch (cause: RetryableTransportException) {
+        S3Attempt.RetryableFailure(cause)
+    } catch (cause: HttpRequestTimeoutException) {
+        S3Attempt.RetryableFailure(cause)
+    } catch (cause: ConnectTimeoutException) {
+        S3Attempt.RetryableFailure(cause)
+    } catch (cause: SocketTimeoutException) {
+        S3Attempt.RetryableFailure(cause)
+    } catch (cause: KtorIOException) {
+        S3Attempt.RetryableFailure(cause)
     }
 
     private suspend fun signedRequest(
@@ -205,7 +291,7 @@ internal class CellsS3Client(
     ): SignedS3Request {
         val endpoint = endpointProvider()
         val credentials = credentialsProvider()
-        val date = dateProvider()
+        val date = config.dateProvider()
         val s3Url = S3UrlBuilder.build(endpoint, DEFAULT_BUCKET_NAME, objectKey, queryParameters)
         val headers = linkedMapOf(
             HttpHeaders.Host to s3Url.hostHeader,
@@ -214,7 +300,7 @@ internal class CellsS3Client(
         )
         signedHeaders.forEach { (name, value) -> headers[name] = value }
 
-        return signer.sign(
+        return config.signer.sign(
             method = method.value,
             url = s3Url,
             headers = headers,
@@ -233,34 +319,64 @@ internal class CellsS3Client(
         override val contentType: ContentType = ContentType.Application.OctetStream
 
         override suspend fun writeTo(channel: ByteWriteChannel) {
+            try {
+                transferFile(channel)
+            } catch (cause: RetryableTransportException) {
+                throw cause
+            } catch (cause: UploadSourceException) {
+                throw cause
+            } catch (cause: IOException) {
+                throw UploadSourceException("Failed to read upload source")
+            }
+            channel.flushUpload()
+        }
+
+        private suspend fun transferFile(channel: ByteWriteChannel) {
             var uploaded = 0L
             fileSystem.source(path).buffer().use { source ->
                 val buffer = Buffer()
-                while (source.read(buffer, STREAM_BUFFER_SIZE) != -1L) {
+                var read = source.read(buffer, STREAM_BUFFER_SIZE)
+                while (read != -1L) {
                     val bytes = buffer.readByteArray()
-                    channel.writeFully(bytes)
+                    channel.writeUploadBytes(bytes)
                     uploaded += bytes.size
                     onProgressUpdate(uploaded)
+                    read = source.read(buffer, STREAM_BUFFER_SIZE)
                 }
             }
-            channel.flush()
+        }
+    }
+
+    private class MonotonicProgressReporter(
+        private val onProgressUpdate: (Long) -> Unit,
+    ) {
+        private var lastReported = 0L
+
+        fun report(uploaded: Long) {
+            if (uploaded > lastReported) {
+                lastReported = uploaded
+                onProgressUpdate(uploaded)
+            }
         }
     }
 
     private companion object {
-        const val DEFAULT_REGION = "us-east-1"
         const val DEFAULT_BUCKET_NAME = "io"
-        const val MAX_REGULAR_UPLOAD_SIZE = 100 * 1024 * 1024L
         const val MULTIPART_CHUNK_SIZE = 10 * 1024 * 1024
         const val PRESIGNED_GET_EXPIRATION_SECONDS = 24 * 60 * 60
         const val STREAM_BUFFER_SIZE = 8 * 1024L
-        const val S3_SERVICE_NAME = "s3"
         const val UNSIGNED_PAYLOAD = "UNSIGNED-PAYLOAD"
         const val UPLOADS_QUERY_PARAMETER = "uploads"
         const val X_AMZ_CONTENT_SHA256 = "x-amz-content-sha256"
         const val X_AMZ_DATE = "x-amz-date"
     }
 }
+
+internal data class CellsS3ClientConfig(
+    val signer: AwsSigV4Signer = AwsSigV4Signer(DEFAULT_S3_REGION, S3_SERVICE_NAME),
+    val dateProvider: () -> AwsSigningDate = { AwsSigningDate.now() },
+    val maxRegularUploadSize: Long = DEFAULT_MAX_REGULAR_UPLOAD_SIZE,
+)
 
 internal data class S3Credentials(
     val accessKeyId: String,
@@ -321,8 +437,95 @@ private fun String.xmlTagValue(tagName: String): String? {
     return if (start != null && end != null) substring(start, end) else null
 }
 
-private fun HttpResponse.ensureSuccess(operation: String) {
-    if (!status.isSuccess()) {
-        throw IOException("$operation failed: ${status.value} ${status.description}")
+private fun String.embeddedS3Error(): S3Error? {
+    if (!S3_ERROR_ELEMENT.containsMatchIn(this)) return null
+    return S3Error(
+        code = xmlTagValue("Code"),
+    )
+}
+
+private fun String.containsCompleteMultipartUploadResult(): Boolean =
+    S3_COMPLETE_MULTIPART_RESULT_ELEMENT.containsMatchIn(this)
+
+private fun validateCompleteMultipartUploadResponse(responseBody: String) {
+    val embeddedError = responseBody.embeddedS3Error()
+    if (embeddedError == null && responseBody.containsCompleteMultipartUploadResult()) return
+    if (embeddedError == null) {
+        throw RetryableS3Exception("Complete multipart upload returned an invalid response")
+    }
+    val message = "Complete multipart upload failed: ${embeddedError.code ?: "unknown S3 error"}"
+    throw if (embeddedError.isRetryable()) RetryableS3Exception(message) else S3RequestException(message)
+}
+
+private fun S3Error.isRetryable(): Boolean = code in RETRYABLE_S3_ERROR_CODES
+
+private fun s3RetryDelayMillis(retryCount: Int): Long {
+    val maximumDelay = S3_RETRY_MAX_DELAYS[retryCount - 1]
+    return Random.nextLong(maximumDelay + 1)
+}
+
+private data class S3Error(
+    val code: String?,
+)
+
+private fun HttpStatusCode.isRetryableS3Status(): Boolean = value in RETRYABLE_S3_STATUS_CODES
+
+private suspend fun HttpResponse.discardBody() = bodyAsChannel().cancel(null)
+
+private suspend fun HttpResponse.toS3Failure(operation: String): S3Attempt<Nothing> {
+    val embeddedError = bodyAsText().embeddedS3Error()
+    val errorCode = embeddedError?.code?.let { ": $it" }.orEmpty()
+    val exception = S3RequestException("$operation failed: ${status.value} ${status.description}$errorCode")
+    return if (status.isRetryableS3Status() || embeddedError?.isRetryable() == true) {
+        S3Attempt.RetryableFailure(exception)
+    } else {
+        S3Attempt.TerminalFailure(exception)
     }
 }
+
+private open class S3RequestException(message: String) : IOException(message)
+
+private class RetryableS3Exception(message: String) : S3RequestException(message)
+
+private class UploadSourceException(message: String) : S3RequestException(message)
+
+private sealed interface S3Attempt<out T> {
+    data class Success<T>(val value: T) : S3Attempt<T>
+    data class RetryableFailure(val cause: Exception) : S3Attempt<Nothing>
+    data class TerminalFailure(val cause: Exception) : S3Attempt<Nothing>
+}
+
+private const val S3_MAX_ATTEMPTS = 3
+private const val S3_FIRST_RETRY_MAX_DELAY_MILLIS = 10L
+private const val S3_SECOND_RETRY_MAX_DELAY_MILLIS = 15L
+private const val DEFAULT_S3_REGION = "us-east-1"
+private const val S3_SERVICE_NAME = "s3"
+private const val DEFAULT_MAX_REGULAR_UPLOAD_SIZE = 100 * 1024 * 1024L
+private val RETRYABLE_S3_STATUS_CODES = setOf(
+    HttpStatusCode.RequestTimeout.value,
+    HttpStatusCode.TooManyRequests.value,
+    HttpStatusCode.InternalServerError.value,
+    HttpStatusCode.BadGateway.value,
+    HttpStatusCode.ServiceUnavailable.value,
+    HttpStatusCode.GatewayTimeout.value,
+)
+private val S3_ERROR_ELEMENT = Regex("""<(?:(?:[A-Za-z_][\w.-]*):)?Error(?:\s[^>]*)?>""")
+private val S3_COMPLETE_MULTIPART_RESULT_ELEMENT =
+    Regex("""<(?:(?:[A-Za-z_][\w.-]*):)?CompleteMultipartUploadResult(?:\s[^>]*)?/?>""")
+private val S3_RETRY_MAX_DELAYS = longArrayOf(
+    S3_FIRST_RETRY_MAX_DELAY_MILLIS,
+    S3_SECOND_RETRY_MAX_DELAY_MILLIS,
+)
+private val RETRYABLE_S3_ERROR_CODES = setOf(
+    "BandwidthLimitExceeded",
+    "InternalError",
+    "PriorRequestNotComplete",
+    "RequestThrottled",
+    "RequestThrottledException",
+    "RequestTimeout",
+    "RequestTimeoutException",
+    "ServiceUnavailable",
+    "SlowDown",
+    "Throttling",
+    "ThrottlingException",
+)
