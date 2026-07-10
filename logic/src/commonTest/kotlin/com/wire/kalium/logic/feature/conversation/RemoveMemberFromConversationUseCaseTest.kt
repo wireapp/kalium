@@ -80,8 +80,11 @@ class RemoveMemberFromConversationUseCaseTest {
 
         val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
 
-        assertIs<RemoveMemberFromConversationUseCase.Result.AdminlessConversation>(result)
-        assertEquals(listOf(TestUser.OTHER_USER_ID), result.eligibleMembers)
+        assertIs<RemoveMemberFromConversationUseCase.Result.Failure>(result)
+
+        val eligibleMembers = (result.cause as AdminlessConversationFailure).eligibleMembers
+
+        assertEquals(listOf(TestUser.OTHER_USER_ID), eligibleMembers)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.conversationGroupRepository.deleteMember(eq(TestConversation.USER_1), eq(TestConversation.ID))
         }
