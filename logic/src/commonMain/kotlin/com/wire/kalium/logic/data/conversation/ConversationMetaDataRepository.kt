@@ -42,7 +42,7 @@ internal class ConversationMetaDataDataSource internal constructor(
         wrapStorageRequest {
             conversationMetaDataDAO.typeAndProtocolInfo(conversationId.toDao())?.let {
                 Pair(
-                    it.type.fromDaoModelToType(it.isChannel),
+                    it.type.fromDaoModelToType(it.groupType),
                     protocolInfoMapper.fromEntity(it.protocolInfo)
                 )
             }

@@ -43,6 +43,7 @@ import com.wire.kalium.logic.feature.debug.OptimizeDatabaseResult
 import com.wire.kalium.logic.feature.debug.OptimizeDatabaseUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemoteUseCase
+import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
@@ -87,6 +88,7 @@ internal class SlowSyncWorkerImpl(
     private val transactionProvider: CryptoTransactionProvider,
     private val optimizer: OptimizeDatabaseUseCase,
     private val syncNomadMessagesDuringSlowSync: SyncNomadMessagesDuringSlowSyncUseCase = NoOpSyncNomadMessagesDuringSlowSyncUseCase,
+    private val syncMeetings: SyncMeetingsUseCase,
     logger: KaliumLogger = kaliumLogger
 ) : SlowSyncWorker {
 
@@ -136,6 +138,7 @@ internal class SlowSyncWorkerImpl(
                 .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
                 .continueWithStep(SlowSyncStep.LEGAL_HOLD) { fetchLegalHoldForSelfUserFromRemoteUseCase().map { } }
                 .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
+                .continueWithOptionalStep(syncMeetings.isEnabled(), SlowSyncStep.MEETINGS, syncMeetings::invoke)
                 .continueWithOptionalStep(
                     syncNomadMessagesDuringSlowSync.isEnabled(),
                     SlowSyncStep.NOMAD_MESSAGES,

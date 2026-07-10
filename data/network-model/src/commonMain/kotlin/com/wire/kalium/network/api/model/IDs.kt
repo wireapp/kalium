@@ -30,6 +30,7 @@ typealias TeamId = String
 typealias AssetId = QualifiedID
 typealias AssetKey = String
 typealias MLSPublicKey = String
+typealias MeetingId = QualifiedID
 
 @Serializable
 data class QualifiedID(

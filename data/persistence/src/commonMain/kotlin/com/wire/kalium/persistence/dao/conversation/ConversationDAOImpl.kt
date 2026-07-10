@@ -183,7 +183,7 @@ internal class ConversationDAOImpl internal constructor(
                         incomplete_metadata = hasIncompleteMetadata,
                         archived = archived,
                         archived_date_time = archivedInstant,
-                        is_channel = isChannel,
+                        group_type = groupType,
                         channel_access = channelAccess,
                         channel_add_permission = channelAddPermission,
                         wire_cell = wireCell,
@@ -230,7 +230,7 @@ internal class ConversationDAOImpl internal constructor(
                 incomplete_metadata = hasIncompleteMetadata,
                 archived = archived,
                 archived_date_time = archivedInstant,
-                is_channel = isChannel,
+                group_type = groupType,
                 channel_access = channelAccess,
                 channel_add_permission = channelAddPermission,
                 wire_cell = wireCell,
@@ -730,10 +730,6 @@ internal class ConversationDAOImpl internal constructor(
                     }
             }
         }
-
-    override suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean = withContext(readDispatcher.value) {
-        conversationQueries.selectIsChannel(conversationId).awaitAsOneOrNull() ?: false
-    }
 
     override suspend fun updateChannelAddPermission(
         conversationId: QualifiedIDEntity,

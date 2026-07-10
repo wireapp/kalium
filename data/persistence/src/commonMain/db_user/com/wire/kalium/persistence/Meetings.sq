@@ -1,0 +1,41 @@
+import com.wire.kalium.persistence.dao.meeting.MeetingEntity;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Boolean;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE Meeting (
+    meeting_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    creator_id TEXT AS QualifiedIDEntity NOT NULL,
+    creation_date INTEGER AS Instant NOT NULL,
+    last_edit_date INTEGER AS Instant,
+    title TEXT NOT NULL,
+    start_date INTEGER AS Instant NOT NULL,
+    end_date INTEGER AS Instant,
+    trial INTEGER  AS Boolean NOT NULL,
+    recurrence_frequency TEXT AS MeetingEntity.RecurrenceEntity.Frequency,
+    recurrence_interval INTEGER,
+    recurrence_end_date INTEGER AS Instant,
+
+    FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
+    FOREIGN KEY (creator_id) REFERENCES User(qualified_id)
+);
+
+CREATE INDEX IF NOT EXISTS meeting_conv_id_index ON Meeting(conversation_id);
+CREATE INDEX IF NOT EXISTS meeting_start_date_index ON Meeting(start_date);
+
+upsertMeeting:
+INSERT INTO Meeting(meeting_id, conversation_id, creator_id, creation_date, last_edit_date, title, start_date, end_date, trial, recurrence_frequency, recurrence_interval, recurrence_end_date)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(meeting_id) DO UPDATE SET
+    conversation_id = excluded.conversation_id,
+    creator_id = excluded.creator_id,
+    creation_date = excluded.creation_date,
+    last_edit_date = excluded.last_edit_date,
+    title = excluded.title,
+    start_date = excluded.start_date,
+    end_date = excluded.end_date,
+    trial = excluded.trial,
+    recurrence_frequency = excluded.recurrence_frequency,
+    recurrence_interval = excluded.recurrence_interval,
+    recurrence_end_date = excluded.recurrence_end_date;

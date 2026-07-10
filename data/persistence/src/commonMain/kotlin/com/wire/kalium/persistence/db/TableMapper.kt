@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.ConversationLegalHoldStatusChangeNotified
 import com.wire.kalium.persistence.HistoryClient
 import com.wire.kalium.persistence.LabeledConversation
 import com.wire.kalium.persistence.LastMessage
+import com.wire.kalium.persistence.Meeting
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
@@ -61,6 +62,7 @@ import com.wire.kalium.persistence.adapter.ChangeLogEventTypeAdapter
 import com.wire.kalium.persistence.adapter.ContentTypeAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessListAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
+import com.wire.kalium.persistence.adapter.GroupTypeAdapter
 import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.adapter.MLSPublicKeysAdapter
 import com.wire.kalium.persistence.adapter.MemberRoleAdapter
@@ -111,6 +113,7 @@ internal object TableMapper {
         verification_statusAdapter = EnumColumnAdapter(),
         proteus_verification_statusAdapter = EnumColumnAdapter(),
         legal_hold_statusAdapter = EnumColumnAdapter(),
+        group_typeAdapter = GroupTypeAdapter,
         channel_accessAdapter = EnumColumnAdapter(),
         channel_add_permissionAdapter = EnumColumnAdapter()
     )
@@ -279,5 +282,17 @@ internal object TableMapper {
     val pendingActionsAdapter = PendingActions.Adapter(
         action_typeAdapter = PendingActionTypeAdapter,
         qualified_idAdapter = QualifiedIDAdapter
+    )
+
+    val meetingAdapter = Meeting.Adapter(
+        meeting_idAdapter = QualifiedIDAdapter,
+        conversation_idAdapter = QualifiedIDAdapter,
+        creator_idAdapter = QualifiedIDAdapter,
+        creation_dateAdapter = InstantTypeAdapter,
+        last_edit_dateAdapter = InstantTypeAdapter,
+        start_dateAdapter = InstantTypeAdapter,
+        end_dateAdapter = InstantTypeAdapter,
+        recurrence_frequencyAdapter = EnumColumnAdapter(),
+        recurrence_end_dateAdapter = InstantTypeAdapter
     )
 }

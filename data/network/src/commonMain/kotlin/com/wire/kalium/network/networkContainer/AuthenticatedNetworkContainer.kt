@@ -36,6 +36,7 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
+import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
@@ -130,6 +131,8 @@ interface AuthenticatedNetworkContainer {
     val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
 
     val serverTimeApi: ServerTimeApi
+
+    val meetingApi: MeetingApi
 
     val cellsHttpClient: HttpClient
         get() = HttpClient()
