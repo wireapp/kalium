@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.persistence.dao.conversation
 
+import androidx.paging.InvalidatingPagingSourceFactory
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
-import androidx.paging.PagingSource
 import com.wire.kalium.persistence.ConversationDetailsWithEventsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
@@ -153,25 +153,5 @@ internal class ConversationExtensionsImpl internal constructor(
                 }
             }
         )
-    }
-
-    private class InvalidatingPagingSourceFactory<Value : Any>(
-        private val pagingSourceFactory: () -> PagingSource<Int, Value>
-    ) {
-        private var currentPagingSource: PagingSource<Int, Value>? = null
-
-        operator fun invoke(): PagingSource<Int, Value> =
-            pagingSourceFactory().also { pagingSource ->
-                currentPagingSource = pagingSource
-                pagingSource.registerInvalidatedCallback {
-                    if (currentPagingSource === pagingSource) {
-                        currentPagingSource = null
-                    }
-                }
-            }
-
-        fun invalidate() {
-            currentPagingSource?.invalidate()
-        }
     }
 }
