@@ -51,15 +51,12 @@ class MeetingOccurrencesSyncWorkerTest {
 
     inner class Arrangement {
         internal val meetingRepository = mock<MeetingRepository>()
-
         fun withSyncMeetingOccurrencesSuccess() = apply {
             everySuspend { meetingRepository.syncMeetingOccurrences() } returns Unit.right()
         }
         fun withSyncMeetingOccurrencesFailure() = apply {
             everySuspend { meetingRepository.syncMeetingOccurrences() } returns CoreFailure.Unknown(RuntimeException("sync failed")).left()
         }
-
         internal fun arrange() = this to MeetingOccurrencesSyncWorkerImpl(meetingRepository)
-
     }
 }

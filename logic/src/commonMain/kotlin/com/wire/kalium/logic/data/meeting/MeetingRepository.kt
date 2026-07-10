@@ -64,20 +64,19 @@ internal class MeetingDataSource(
     private val meetingApi: MeetingApi,
     private val meetingMapper: MeetingMapper = MapperProvider.meetingMapper()
 ) : MeetingRepository {
-    override suspend fun fetchAndPersistMeetings(generateOccurrencesUntil: Instant): Either<CoreFailure, List<MeetingEntity>> = wrapApiRequest {
-        meetingApi.fetchMeetings()
-    }.flatMap { meetings ->
-        wrapStorageRequest {
-            meetings
-                .map { meetingMapper.fromApiToDao(it) }
-                .also { meetingDAO.upsertMeetings(it, generateOccurrencesUntil) }
+    override suspend fun fetchAndPersistMeetings(generateOccurrencesUntil: Instant): Either<CoreFailure, List<MeetingEntity>> =
+        wrapApiRequest {
+            meetingApi.fetchMeetings()
+        }.flatMap { meetings ->
+            wrapStorageRequest {
+                meetings.map { meetingMapper.fromApiToDao(it) }
+                    .also { meetingDAO.upsertMeetings(it, generateOccurrencesUntil) }
+            }
         }
-    }
 
-    override suspend fun syncMeetingOccurrences(removeOlderThan: Instant, generateOccurrencesUntil: Instant): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
+    override suspend fun syncMeetingOccurrences(removeOlderThan: Instant, generateOccurrencesUntil: Instant): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
             meetingDAO.removeOutdatedMeetings(removeOlderThan)
             meetingDAO.insertMissingOccurrences(generateOccurrencesUntil)
         }
-    }
 }

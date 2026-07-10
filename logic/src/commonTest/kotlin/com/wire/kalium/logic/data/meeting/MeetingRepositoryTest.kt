@@ -91,7 +91,6 @@ class MeetingRepositoryTest {
         internal fun withFetchMeetingsSuccess(result: List<MeetingDTO>) = apply {
             everySuspend { meetingApi.fetchMeetings() } returns NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value)
         }
-
         internal fun arrange() = this to MeetingDataSource(meetingDAO = meetingDao, meetingApi = meetingApi)
     }
 }
