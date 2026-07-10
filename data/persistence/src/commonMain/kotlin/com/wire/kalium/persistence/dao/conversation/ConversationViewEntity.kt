@@ -78,7 +78,6 @@ data class ConversationViewEntity(
     val isFavorite: Boolean,
     val folderId: String?,
     val folderName: String?,
-    val groupType: ConversationEntity.GroupType,
     val channelAccess: ChannelAccess?,
     val channelAddPermission: ChannelAddPermission?,
     val wireCell: String?,

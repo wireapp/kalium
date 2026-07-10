@@ -8,7 +8,7 @@ SELECT
     UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
     UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
     CASE
-        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
+        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING') THEN 1 -- if ongoing call in a group, move it to the top
         WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
            CASE
                 WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top
@@ -68,7 +68,7 @@ LEFT JOIN MessageTextContent AS TextContent
 WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
-        ConversationDetails.type IS 'GROUP'
+        ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING')
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
         OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
@@ -122,13 +122,13 @@ WHERE
       )
     )
     AND CASE
-        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
-        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IS NOT 'MEETING'
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
         ELSE 1 = 0
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
@@ -160,13 +160,13 @@ WHERE
       )
     )
     AND CASE
-        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
-        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IS NOT 'MEETING'
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
         ELSE 1 = 0
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
@@ -186,13 +186,13 @@ FROM Conversation
 WHERE
     type IS NOT 'SELF'
     AND CASE
-        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
-        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IS NOT 'MEETING'
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
         ELSE 1 = 0
     END
     AND archived = :fromArchive
@@ -215,7 +215,7 @@ SELECT COUNT(*) FROM ConversationDetails
 WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
-        ConversationDetails.type IS 'GROUP'
+        ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING')
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
         OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
@@ -225,13 +225,13 @@ WHERE
     AND ConversationDetails.deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
-        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
-        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IS NOT 'MEETING'
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
         ELSE 1 = 0
     END
     AND (
@@ -251,7 +251,7 @@ SELECT COUNT(*) FROM ConversationDetails
 WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
-        ConversationDetails.type IS 'GROUP'
+        ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING')
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
         OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
@@ -261,13 +261,13 @@ WHERE
     AND ConversationDetails.deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
-        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
-        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IS NOT 'MEETING'
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
         ELSE 1 = 0
     END
     AND (

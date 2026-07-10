@@ -275,7 +275,7 @@ internal class CallDataSource(
         val lastCallStatus = callDAO.getCallStatusByConversationId(conversationId = callEntity.conversationId)
 
         val isOneOnOneCall = callEntity.conversationType == ConversationEntity.Type.ONE_ON_ONE
-        val isGroupCall = callEntity.conversationType == ConversationEntity.Type.GROUP
+        val isGroupCall = callEntity.conversationType.isGroup
 
         val activeCallStatus = listOf(
             CallEntity.Status.ESTABLISHED,
