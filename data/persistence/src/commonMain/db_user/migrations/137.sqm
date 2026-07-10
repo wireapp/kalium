@@ -1,13 +1,27 @@
-CREATE TABLE MeetingOccurrence (
-    occurrence_id TEXT NOT NULL PRIMARY KEY,
-    meeting_id TEXT AS QualifiedIDEntity NOT NULL,
-    occurrence_start INTEGER AS Instant NOT NULL,
-    occurrence_end INTEGER AS Instant NOT NULL,
+import com.wire.kalium.persistence.dao.meeting.MeetingEntity;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Boolean;
+import kotlinx.datetime.Instant;
 
-    FOREIGN KEY (meeting_id) REFERENCES Meeting(meeting_id) ON DELETE CASCADE
+CREATE TABLE Meeting (
+    meeting_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    creator_id TEXT AS QualifiedIDEntity NOT NULL,
+    creation_date INTEGER AS Instant NOT NULL,
+    last_edit_date INTEGER AS Instant,
+    title TEXT NOT NULL,
+    start_date INTEGER AS Instant NOT NULL,
+    end_date INTEGER AS Instant,
+    trial INTEGER  AS Boolean NOT NULL,
+    recurrence_frequency TEXT AS MeetingEntity.RecurrenceEntity.Frequency,
+    recurrence_interval INTEGER,
+    recurrence_end_date INTEGER AS Instant,
+
+    FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
+    FOREIGN KEY (creator_id) REFERENCES User(qualified_id)
 );
 
-CREATE INDEX idx_occurrences_meeting ON MeetingOccurrence(meeting_id);
-CREATE INDEX idx_occurrences_start ON MeetingOccurrence(occurrence_start);
+CREATE INDEX IF NOT EXISTS meeting_conv_id_index ON Meeting(conversation_id);
+CREATE INDEX IF NOT EXISTS meeting_start_date_index ON Meeting(start_date);
 
 PRAGMA optimize;

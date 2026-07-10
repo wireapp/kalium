@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -145,6 +146,10 @@ internal interface ConversationRepository {
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
+    suspend fun getConversationMemberRole(
+        conversationId: ConversationId,
+        userId: UserId
+    ): Either<StorageFailure, Conversation.Member.Role?>
 
     /**
      * Fetches a list of all members' IDs or a given conversation including self user
@@ -593,6 +598,14 @@ internal class ConversationDataSource internal constructor(
         memberDAO.observeConversationMembers(conversationID.toDao()).map { members ->
             members.map(memberMapper::fromDaoModel)
         }
+
+    override suspend fun getConversationMemberRole(
+        conversationId: ConversationId,
+        userId: UserId
+    ): Either<StorageFailure, Conversation.Member.Role?> = wrapStorageNullableRequest {
+        memberDAO.getMemberRole(userId.toDao(), conversationId.toDao())
+            ?.let(conversationRoleMapper::fromDAO)
+    }
 
     override suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>> = wrapStorageRequest {
         memberDAO.observeConversationMembers(conversationId.toDao()).first().map { it.user.toModel() }

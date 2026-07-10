@@ -28,7 +28,7 @@ CREATE TABLE MeetingOccurrence (
     occurrence_id TEXT NOT NULL PRIMARY KEY,
     meeting_id TEXT AS QualifiedIDEntity NOT NULL,
     occurrence_start INTEGER AS Instant NOT NULL,
-    occurrence_end INTEGER AS Instant NOT NULL,
+    occurrence_end INTEGER AS Instant,
 
     FOREIGN KEY (meeting_id) REFERENCES Meeting(meeting_id) ON DELETE CASCADE
 );
@@ -67,9 +67,9 @@ WHERE meeting_id = ?
 ORDER BY occurrence_start DESC
 LIMIT 1;
 
-deleteNotStartedOccurrences:
+deleteMeetingOccurrences:
 DELETE FROM MeetingOccurrence
-WHERE meeting_id = ? AND occurrence_start > ?;
+WHERE meeting_id = ?;
 
 removeOutdatedMeetings:
 DELETE FROM Meeting

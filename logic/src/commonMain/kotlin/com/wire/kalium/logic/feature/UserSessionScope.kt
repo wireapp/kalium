@@ -2960,6 +2960,8 @@ public class UserSessionScope internal constructor(
     private val syncMeetingsUseCase: SyncMeetingsUseCase
         get() = SyncMeetingsUseCaseImpl(
             meetingRepository = meetingRepository,
+            userRepository = userRepository,
+            featureSupport = featureSupport,
             transactionProvider = cryptoTransactionProvider
         )
 

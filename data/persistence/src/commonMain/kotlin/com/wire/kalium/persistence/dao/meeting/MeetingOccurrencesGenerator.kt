@@ -18,12 +18,10 @@
 package com.wire.kalium.persistence.dao.meeting
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimePeriod
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
-import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 object MeetingOccurrencesGenerator {
@@ -32,10 +30,9 @@ object MeetingOccurrencesGenerator {
         meetings: List<MeetingEntity>,
         lastGeneratedStarts: Map<QualifiedIDEntity, Instant>,
         limit: GenerationLimit,
-        now: Instant = Clock.System.now()
     ): List<MeetingOccurrenceEntity> {
-        if (meetings.isEmpty() || !limit.isValid()) return emptyList()
-        val maxDateLimit = (limit as? GenerationLimit.TimeWindow)?.let { now.plus(it.duration) }
+        if (meetings.isEmpty()) return emptyList()
+        val maxDateLimit = (limit as? GenerationLimit.Until)?.until
         val totalCountToGenerate = (limit as? GenerationLimit.Count)?.totalCount ?: 0
         val statesList = meetings.initialGeneratorStates(lastGeneratedStarts)
         return generateOccurrences(statesList, maxDateLimit, totalCountToGenerate)
@@ -151,11 +148,6 @@ object MeetingOccurrencesGenerator {
 
     sealed interface GenerationLimit {
         data class Count(val totalCount: Int) : GenerationLimit
-        data class TimeWindow(val duration: Duration) : GenerationLimit
-    }
-
-    private fun GenerationLimit.isValid(): Boolean = when (this) {
-        is GenerationLimit.Count -> totalCount >= 0
-        is GenerationLimit.TimeWindow -> duration.isPositive()
+        data class Until(val until: Instant) : GenerationLimit
     }
 }

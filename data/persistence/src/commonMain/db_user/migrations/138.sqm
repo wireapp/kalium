@@ -1,0 +1,13 @@
+CREATE TABLE MeetingOccurrence (
+    occurrence_id TEXT NOT NULL PRIMARY KEY,
+    meeting_id TEXT AS QualifiedIDEntity NOT NULL,
+    occurrence_start INTEGER AS Instant NOT NULL,
+    occurrence_end INTEGER AS Instant,
+
+    FOREIGN KEY (meeting_id) REFERENCES Meeting(meeting_id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_occurrences_meeting ON MeetingOccurrence(meeting_id);
+CREATE INDEX idx_occurrences_start ON MeetingOccurrence(occurrence_start);
+
+PRAGMA optimize;

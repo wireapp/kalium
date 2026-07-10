@@ -28,12 +28,11 @@ import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
-import kotlin.time.Duration.Companion.days
 
 interface MeetingDao {
-    suspend fun upsertMeetings(meetings: List<MeetingEntity>, now: Instant = Clock.System.now())
-    suspend fun removeOutdatedMeetings(now: Instant = Clock.System.now())
-    suspend fun insertMissingOccurrences(now: Instant = Clock.System.now())
+    suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesUntil: Instant)
+    suspend fun removeOutdatedMeetings(olderThan: Instant)
+    suspend fun insertMissingOccurrences(until: Instant)
     fun getPaginatedMeetings(
         pagingConfig: PagingConfig,
         startingOffset: Long,
@@ -46,7 +45,7 @@ internal class MeetingDaoImpl(
     private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
 ) : MeetingDao {
-    override suspend fun upsertMeetings(meetings: List<MeetingEntity>, now: Instant) {
+    override suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesUntil: Instant) {
         if (meetings.isEmpty()) return
 
         withContext(writeDispatcher.value) {
@@ -60,7 +59,7 @@ internal class MeetingDaoImpl(
 
                 meetingIdsRequiringOccurrenceRefresh.forEach { meetingId ->
                     if (storedMeetingsById.containsKey(meetingId)) {
-                        meetingsQueries.deleteNotStartedOccurrences(meetingId, now)
+                        meetingsQueries.deleteMeetingOccurrences(meetingId)
                     }
                 }
 
@@ -69,33 +68,29 @@ internal class MeetingDaoImpl(
                 }
                 meetingsQueries.insertGeneratedOccurrences(
                     meetings = meetings,
-                    limit = MeetingOccurrencesGenerator.GenerationLimit.TimeWindow(OCCURRENCE_GENERATION_WINDOW_DAYS.days),
+                    limit = MeetingOccurrencesGenerator.GenerationLimit.Until(generateOccurrencesUntil),
                     shouldRegenerateOccurrences = meetings.associate {
                         it.meetingId to (it.meetingId in meetingIdsRequiringOccurrenceRefresh)
                     },
-                    now = now
                 )
             }
         }
     }
 
-    override suspend fun removeOutdatedMeetings(now: Instant) {
+    override suspend fun removeOutdatedMeetings(olderThan: Instant) {
         withContext(writeDispatcher.value) {
-            meetingsQueries.removeOutdatedMeetings(
-                outdatedThreshold = now - OUTDATED_MEETING_RETENTION_DAYS.days
-            )
+            meetingsQueries.removeOutdatedMeetings(outdatedThreshold = olderThan)
         }
     }
 
-    override suspend fun insertMissingOccurrences(now: Instant) {
+    override suspend fun insertMissingOccurrences(until: Instant) {
         withContext(writeDispatcher.value) {
             meetingsQueries.transaction {
                 meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).executeAsList().let { meetings ->
                     meetingsQueries.insertGeneratedOccurrences(
                         meetings = meetings,
-                        limit = MeetingOccurrencesGenerator.GenerationLimit.TimeWindow(OCCURRENCE_GENERATION_WINDOW_DAYS.days),
+                        limit = MeetingOccurrencesGenerator.GenerationLimit.Until(until),
                         shouldRegenerateOccurrences = meetings.associate { it.meetingId to false },
-                        now = now
                     )
                 }
             }
@@ -124,24 +119,9 @@ internal class MeetingDaoImpl(
             prefetchDistance = prefetchDistance,
             initialOffset = startingOffset,
         )
-
-    private companion object {
-        private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
-        private const val OUTDATED_MEETING_RETENTION_DAYS = 30
-    }
 }
 
-private fun Meeting.hasSameScheduleAs(meeting: MeetingEntity): Boolean =
-    start_date.isSameStoredInstantAs(meeting.startTime) &&
-        end_date.isSameStoredInstantAs(meeting.endTime) &&
-        recurrence_frequency == meeting.recurrence?.frequency &&
-        recurrence_interval == meeting.recurrence?.interval &&
-        recurrence_end_date.isSameStoredInstantAs(meeting.recurrence?.until)
-
-private fun Instant?.isSameStoredInstantAs(other: Instant?): Boolean =
-    this?.toEpochMilliseconds() == other?.toEpochMilliseconds()
-
-internal suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
+private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
     upsertMeeting(
         meeting_id = meeting.meetingId,
         conversation_id = meeting.conversationId,
@@ -161,7 +141,6 @@ internal suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
 internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
     meetings: List<MeetingEntity>,
     limit: MeetingOccurrencesGenerator.GenerationLimit,
-    now: Instant,
     shouldRegenerateOccurrences: Map<QualifiedIDEntity, Boolean>,
 ): Int {
     val lastGeneratedStarts = meetings.mapNotNull { meeting ->
@@ -175,13 +154,22 @@ internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
         meetings = meetings,
         lastGeneratedStarts = lastGeneratedStarts,
         limit = limit,
-        now = now
     ).onEach { occurrence ->
         insertMeetingOccurrence(
             occurrence_id = occurrence.occurrenceId,
             meeting_id = occurrence.meetingId,
             occurrence_start = occurrence.occurrenceStart,
-            occurrence_end = occurrence.occurrenceEnd ?: occurrence.occurrenceStart
+            occurrence_end = occurrence.occurrenceEnd
         )
     }.size
 }
+
+private fun Meeting.hasSameScheduleAs(meeting: MeetingEntity): Boolean =
+    start_date.isSameStoredInstantAs(meeting.startTime) &&
+        end_date.isSameStoredInstantAs(meeting.endTime) &&
+        recurrence_frequency == meeting.recurrence?.frequency &&
+        recurrence_interval == meeting.recurrence?.interval &&
+        recurrence_end_date.isSameStoredInstantAs(meeting.recurrence?.until)
+
+private fun Instant?.isSameStoredInstantAs(other: Instant?): Boolean =
+    this?.toEpochMilliseconds() == other?.toEpochMilliseconds()

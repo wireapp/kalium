@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.persistence.migrations
 
-import app.cash.sqldelight.async.coroutines.await
 import app.cash.sqldelight.async.coroutines.awaitMigrate
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
@@ -25,8 +24,8 @@ import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.migrations.dump.SchemaDump
 import com.wire.kalium.persistence.migrations.dump.SqliteSchemaDumper
 import dev.andrewbailey.diff.differenceOf
-import java.io.File
 import kotlinx.coroutines.test.runTest
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

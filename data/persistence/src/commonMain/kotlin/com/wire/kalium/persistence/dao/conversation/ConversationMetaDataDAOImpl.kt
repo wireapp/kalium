@@ -50,7 +50,7 @@ class ConversationMetaDataDAOImpl internal constructor(
         conversationMetadataQueries.typeAndProtocolInfo(conversationId).awaitAsOneOrNull()?.let {
             ConversationTypeAndProtocolInfo(
                 type = it.type,
-                isChannel = it.is_channel,
+                groupType = it.group_type,
                 protocolInfo = conversationMapper.mapProtocolInfo(
                     protocol = it.protocol,
                     mlsGroupId = it.mls_group_id,
@@ -66,6 +66,6 @@ class ConversationMetaDataDAOImpl internal constructor(
 
 data class ConversationTypeAndProtocolInfo(
     val type: ConversationEntity.Type,
-    val isChannel: Boolean,
+    val groupType: ConversationEntity.GroupType,
     val protocolInfo: ConversationEntity.ProtocolInfo,
 )

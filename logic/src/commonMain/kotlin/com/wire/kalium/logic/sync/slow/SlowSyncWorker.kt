@@ -134,11 +134,11 @@ internal class SlowSyncWorkerImpl(
                 .continueWithStep(SlowSyncStep.FEATURE_FLAGS, syncFeatureConfigs::invoke)
                 .continueWithStep(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS) { updateSupportedProtocols.invoke().toEither().map { } }
                 .continueWithStep(SlowSyncStep.CONVERSATIONS, syncConversations::invoke)
-                .continueWithStep(SlowSyncStep.MEETINGS, syncMeetings::invoke)
                 .continueWithStep(SlowSyncStep.CONNECTIONS, syncConnections::invoke)
                 .continueWithStep(SlowSyncStep.SELF_TEAM, syncSelfTeam::invoke)
                 .continueWithStep(SlowSyncStep.LEGAL_HOLD) { fetchLegalHoldForSelfUserFromRemoteUseCase().map { } }
                 .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
+                .continueWithOptionalStep(syncMeetings.isEnabled(), SlowSyncStep.MEETINGS, syncMeetings::invoke)
                 .continueWithOptionalStep(
                     syncNomadMessagesDuringSlowSync.isEnabled(),
                     SlowSyncStep.NOMAD_MESSAGES,
