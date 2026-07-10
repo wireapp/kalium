@@ -34,7 +34,9 @@ interface MessageExtensions {
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
         pagingConfig: PagingConfig,
-        startingOffset: Long
+        startingMessageId: String? = null,
+        startFromFirstUnreadMessage: Boolean = false,
+        initialItemsBeforeStart: Int = 0,
     ): KaliumPager<MessageEntity>
 
     fun getPagerForMessagesSearch(
@@ -71,12 +73,28 @@ internal class MessageExtensionsImpl internal constructor(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
         pagingConfig: PagingConfig,
-        startingOffset: Long
+        startingMessageId: String?,
+        startFromFirstUnreadMessage: Boolean,
+        initialItemsBeforeStart: Int,
     ): KaliumPager<MessageEntity> {
         // We could return a Flow directly, but having the PagingSource is the only way to test this
         return KaliumPager(
-            Pager(pagingConfig) { getPagingSource(conversationId, visibilities, startingOffset) },
-            getPagingSource(conversationId, visibilities, startingOffset),
+            Pager(pagingConfig) {
+                getKeysetPagingSource(
+                    conversationId,
+                    visibilities,
+                    startingMessageId,
+                    startFromFirstUnreadMessage,
+                    initialItemsBeforeStart,
+                )
+            },
+            getKeysetPagingSource(
+                conversationId,
+                visibilities,
+                startingMessageId,
+                startFromFirstUnreadMessage,
+                initialItemsBeforeStart,
+            ),
             readDispatcher,
         )
     }
@@ -122,33 +140,39 @@ internal class MessageExtensionsImpl internal constructor(
         )
     }
 
-    private fun getPagingSource(
+    private fun getKeysetPagingSource(
         conversationId: ConversationIDEntity,
         visibilities: Collection<MessageEntity.Visibility>,
-        initialOffset: Long
-    ) = PendingMessagesPagingSource(
-        totalCountQuery = messagesQueries.countByConversationIdAndVisibility(conversationId, visibilities),
-        pendingCountQuery = messagesQueries.countPendingByConversationIdAndVisibility(conversationId, visibilities),
+        startingMessageId: String?,
+        startFromFirstUnreadMessage: Boolean,
+        initialItemsBeforeStart: Int,
+    ) = KeysetPendingMessagesPagingSource(
         context = readDispatcher.value,
-        initialOffset = initialOffset,
-        pendingQueryProvider = { limit, offset ->
-            messagesQueries.selectPendingByConversationIdAndVisibility(
-                conversationId,
-                visibilities,
-                limit,
-                offset,
-                messageMapper::toEntityMessageFromView
-            )
-        },
-        nonPendingQueryProvider = { limit, offset ->
-            messagesQueries.selectNonPendingByConversationIdAndVisibility(
-                conversationId,
-                visibilities,
-                limit,
-                offset,
-                messageMapper::toEntityMessageFromView
-            )
-        },
+        queries = MessageKeysetQueries(
+            pending = pendingKeysetQueries(messagesQueries, messageMapper, conversationId, visibilities),
+            lastPending = { limit ->
+                messagesQueries.selectLastPendingByConversationIdAndVisibility(
+                    conversationId,
+                    visibilities,
+                    limit,
+                    messageMapper::toEntityMessageFromView
+                )
+            },
+            nonPending = nonPendingKeysetQueries(messagesQueries, messageMapper, conversationId, visibilities),
+        ),
+        initialCursor = InitialMessageCursor(
+            query = when {
+                startingMessageId != null -> {
+                    { messagesQueries.selectMessagePagingAnchor(startingMessageId, conversationId, ::messageCursor) }
+                }
+                startFromFirstUnreadMessage -> {
+                    { messagesQueries.selectOldestUnreadMessagePagingAnchor(conversationId, ::messageCursor) }
+                }
+                else -> null
+            },
+            itemsBefore = initialItemsBeforeStart,
+        ),
+        cursorProvider = MessageEntity::toCursor,
         postProcessor = ::withMultipartAttachmentsList
     )
 

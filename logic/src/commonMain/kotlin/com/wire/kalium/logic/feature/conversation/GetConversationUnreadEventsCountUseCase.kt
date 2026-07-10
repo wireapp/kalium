@@ -30,7 +30,10 @@ import kotlinx.coroutines.withContext
  */
 public interface GetConversationUnreadEventsCountUseCase {
 
-    public suspend operator fun invoke(conversationId: ConversationId): Result
+    public suspend operator fun invoke(
+        conversationId: ConversationId,
+        maximumCount: Long = Long.MAX_VALUE,
+    ): Result
 
     public sealed class Result {
         public data class Success(val amount: Long) : Result()
@@ -43,9 +46,12 @@ internal class GetConversationUnreadEventsCountUseCaseImpl(
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetConversationUnreadEventsCountUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId): GetConversationUnreadEventsCountUseCase.Result =
+    override suspend fun invoke(
+        conversationId: ConversationId,
+        maximumCount: Long,
+    ): GetConversationUnreadEventsCountUseCase.Result =
         withContext(dispatcher.io) {
-            conversationRepository.getConversationUnreadEventsCount(conversationId).fold(
+            conversationRepository.getConversationUnreadEventsCount(conversationId, maximumCount).fold(
                 { GetConversationUnreadEventsCountUseCase.Result.Failure(it) },
                 { GetConversationUnreadEventsCountUseCase.Result.Success(it) }
             )

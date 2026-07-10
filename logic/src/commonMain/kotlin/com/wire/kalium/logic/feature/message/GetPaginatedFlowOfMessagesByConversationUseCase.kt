@@ -22,6 +22,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessagePagingStart
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -29,6 +30,9 @@ import kotlinx.coroutines.flow.flowOn
 
 /**
  * This use case will observe and return a flow of paginated messages for a given conversation.
+ *
+ * @param pagingStart controls whether the initial page starts from the newest message, around a
+ * specific message, or around the first unread message.
  * @see PagingData
  * @see Message
  */
@@ -41,12 +45,12 @@ public class GetPaginatedFlowOfMessagesByConversationUseCase internal constructo
     public suspend operator fun invoke(
         conversationId: ConversationId,
         visibility: List<Message.Visibility> = Message.Visibility.values().toList(),
-        startingOffset: Long,
+        pagingStart: MessagePagingStart = MessagePagingStart.Newest,
         pagingConfig: PagingConfig
     ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedMessagesByConversationIdAndVisibility(
         conversationId,
         visibility,
         pagingConfig,
-        startingOffset
+        pagingStart
     ).flowOn(dispatcher.io)
 }

@@ -221,7 +221,8 @@ internal open class FakeMessageRepository : MessageRepository {
 
     override suspend fun getSearchedConversationMessagePosition(
         conversationId: ConversationId,
-        messageId: String
+        messageId: String,
+        maximumPosition: Long,
     ): Either<StorageFailure, Int> = 0.right()
 
     override suspend fun getImageAssetMessagesByConversationId(

@@ -253,7 +253,8 @@ internal interface MessageRepository {
 
     suspend fun getSearchedConversationMessagePosition(
         conversationId: ConversationId,
-        messageId: String
+        messageId: String,
+        maximumPosition: Long = Long.MAX_VALUE,
     ): Either<StorageFailure, Int>
 
     /**
@@ -806,11 +807,13 @@ internal class MessageDataSource internal constructor(
 
     override suspend fun getSearchedConversationMessagePosition(
         conversationId: ConversationId,
-        messageId: String
+        messageId: String,
+        maximumPosition: Long,
     ): Either<StorageFailure, Int> = wrapStorageRequest {
         messageDAO.getSearchedConversationMessagePosition(
             conversationId = conversationId.toDao(),
-            messageId = messageId
+            messageId = messageId,
+            maximumPosition = maximumPosition,
         )
     }
 

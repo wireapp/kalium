@@ -183,14 +183,18 @@ internal object MessageReadBenchmarkData {
         val hotFirstPage = loadMessagePage(
             db = db,
             conversationId = scenario.hotConversationId,
-            offset = 0
+            startingMessageId = null,
         )
         check(hotFirstPage.data.isNotEmpty()) { "Hot conversation first page should not be empty" }
 
         val hotDeepPage = loadMessagePage(
             db = db,
             conversationId = scenario.hotConversationId,
-            offset = MessageDeepOffset
+            startingMessageId = messageIdAtOffset(
+                conversationId = scenario.hotConversationId,
+                messageCount = HotConversationMessageCount,
+                offset = MessageDeepOffset,
+            ),
         )
         check(hotDeepPage.data.isNotEmpty()) { "Hot conversation deep page should not be empty" }
 
@@ -204,21 +208,23 @@ internal object MessageReadBenchmarkData {
     private suspend fun loadMessagePage(
         db: UserDatabaseBuilder,
         conversationId: ConversationIDEntity,
-        offset: Int,
-    ): PagingSource.LoadResult.Page<Int, MessageEntity> {
+        startingMessageId: String?,
+    ): PagingSource.LoadResult.Page<Any, MessageEntity> {
         val pagingSource = db.messageDAO.platformExtensions.getPagerForConversation(
             conversationId = conversationId,
             visibilities = listOf(MessageEntity.Visibility.VISIBLE),
             pagingConfig = PagingConfig(PageSize),
-            startingOffset = offset.toLong()
+            startingMessageId = startingMessageId,
         )
 
-        val result = pagingSource.loadRefreshPage(PageSize)
-        check(result is PagingSource.LoadResult.Page<Int, MessageEntity>) {
-            "Expected a page result for message load, got $result"
-        }
-        return result
+        return pagingSource.loadRefreshPage(PageSize)
     }
+
+    private fun messageIdAtOffset(
+        conversationId: ConversationIDEntity,
+        messageCount: Int,
+        offset: Int,
+    ): String = "${conversationId.value}-msg-${messageCount - 1 - offset}"
 
     private suspend fun seedMessages(db: UserDatabaseBuilder, scenario: Scenario) {
         val random = Random(Seed)

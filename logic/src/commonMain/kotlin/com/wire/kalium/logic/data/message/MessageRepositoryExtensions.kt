@@ -40,7 +40,7 @@ internal interface MessageRepositoryExtensions {
         conversationId: ConversationId,
         visibility: List<Message.Visibility>,
         pagingConfig: PagingConfig,
-        startingOffset: Long
+        pagingStart: MessagePagingStart,
     ): Flow<PagingData<Message.Standalone>>
 
     suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(
@@ -78,13 +78,22 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         conversationId: ConversationId,
         visibility: List<Message.Visibility>,
         pagingConfig: PagingConfig,
-        startingOffset: Long
+        pagingStart: MessagePagingStart,
     ): Flow<PagingData<Message.Standalone>> {
+        val startingMessageId = (pagingStart as? MessagePagingStart.AroundMessage)?.messageId
+        val startFromFirstUnreadMessage = pagingStart is MessagePagingStart.AroundFirstUnread
+        val initialItemsBeforeStart = when (pagingStart) {
+            is MessagePagingStart.AroundMessage -> pagingStart.itemsBefore
+            is MessagePagingStart.AroundFirstUnread -> pagingStart.itemsBefore
+            MessagePagingStart.Newest -> 0
+        }
         val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForConversation(
             conversationId.toDao(),
             visibility.map { it.toEntityVisibility() },
             pagingConfig,
-            startingOffset,
+            startingMessageId,
+            startFromFirstUnreadMessage,
+            initialItemsBeforeStart,
         )
 
         return pager.pagingDataFlow.map {

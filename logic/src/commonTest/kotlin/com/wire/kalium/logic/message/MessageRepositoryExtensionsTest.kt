@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensionsImpl
+import com.wire.kalium.logic.data.message.MessagePagingStart
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingResult
 import com.wire.kalium.logic.framework.TestConversation
@@ -63,7 +64,7 @@ class MessageRepositoryExtensionsTest {
     fun givenParameters_whenPaginatedMessagesByConversation_thenShouldCallDaoExtensionsWithRightParameters() = runTest {
         val pagingConfig = PagingConfig(20)
         val pager = Pager(pagingConfig) { fakePagingSource }
-        val startingOffset = 0L
+        val pagingStart = MessagePagingStart.AroundMessage("message-5000", itemsBefore = 29)
 
         val kaliumPager = KaliumPager(pager, fakePagingSource, ReadDispatcher(StandardTestDispatcher()))
         val (arrangement, messageRepositoryExtensions) = Arrangement()
@@ -75,7 +76,7 @@ class MessageRepositoryExtensionsTest {
             TestConversation.ID,
             visibilities,
             pagingConfig,
-            startingOffset
+            pagingStart
         )
 
         verify(VerifyMode.exactly(1)) {
@@ -84,7 +85,9 @@ class MessageRepositoryExtensionsTest {
                     val list = it.toList()
                     list.size == 1 && list[0] == MessageEntity.Visibility.VISIBLE
                 }, eq(pagingConfig),
-                eq(startingOffset)
+                eq("message-5000"),
+                eq(false),
+                eq(29),
             )
         }
     }
@@ -166,7 +169,7 @@ class MessageRepositoryExtensionsTest {
         fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<MessageEntity>): Arrangement =
             copy().also {
                 every {
-                    it.messageDaoExtensions.getPagerForConversation(any(), any(), any(), any())
+                    it.messageDaoExtensions.getPagerForConversation(any(), any(), any(), any(), any(), any())
                 }.returns(kaliumPager)
             }
 

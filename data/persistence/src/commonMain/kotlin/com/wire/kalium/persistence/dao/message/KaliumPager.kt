@@ -29,10 +29,14 @@ import kotlinx.coroutines.flow.flowOn
  * Exposes a [pagingDataFlow] that can be used in Android UI components to display paginated data.
  */
 class KaliumPager<EntityType : Any>(
-    private val pager: Pager<Int, EntityType>,
-    internal val pagingSource: PagingSource<Int, EntityType>,
+    private val pager: Pager<*, EntityType>,
+    private val pagingSource: PagingSource<*, EntityType>,
     private val readDispatcher: ReadDispatcher
 ) {
     val pagingDataFlow: Flow<PagingData<EntityType>>
         get() = pager.flow.flowOn(readDispatcher.value)
+
+    @Suppress("UNCHECKED_CAST")
+    internal fun <Key : Any> pagingSourceForTest(): PagingSource<Key, EntityType> =
+        pagingSource as PagingSource<Key, EntityType>
 }

@@ -529,6 +529,24 @@ WHERE id = :oldId AND conversation_id = :conversationId;
 getMessage:
 SELECT * FROM Message WHERE id = ? AND conversation_id = ?;
 
+selectMessagePagingAnchor:
+-- @CustomKey message_list_:conversationId
+-- @CustomKey message_list
+SELECT id, creation_date, status
+FROM Message
+WHERE id = :messageId AND conversation_id = :conversationId;
+
+selectOldestUnreadMessagePagingAnchor:
+-- @CustomKey message_list_:conversationId
+-- @CustomKey message_list
+SELECT UnreadEvent.id, UnreadEvent.creation_date, Message.status
+FROM UnreadEvent
+INNER JOIN Message
+    ON Message.id = UnreadEvent.id AND Message.conversation_id = UnreadEvent.conversation_id
+WHERE UnreadEvent.conversation_id = :conversationId
+ORDER BY UnreadEvent.creation_date ASC, UnreadEvent.id ASC
+LIMIT 1;
+
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
@@ -571,6 +589,111 @@ WHERE conversationId = :conversationId
     AND status != 'PENDING'
 ORDER BY date DESC
 LIMIT :limit OFFSET :offset;
+
+selectFirstPendingByConversationIdAndVisibility:
+-- @CustomKey message_list_:conversationId
+-- @CustomKey message_list
+SELECT *
+FROM MessageDetailsView
+WHERE conversationId = :conversationId
+    AND visibility IN :visibility
+    AND status = 'PENDING'
+ORDER BY date DESC, id DESC
+LIMIT :limit;
+
+selectPendingByConversationIdAndVisibilityFrom:
+-- @CustomKey message_list_:conversationId
+-- @CustomKey message_list
+SELECT *
+FROM MessageDetailsView
+WHERE conversationId = :conversationId
+    AND visibility IN :visibility
+    AND status = 'PENDING'
+    AND (date < :cursorDate OR (date = :cursorDate AND id <= :cursorId))
+ORDER BY date DESC, id DESC
+LIMIT :limit;
+
+selectPendingByConversationIdAndVisibilityAfter:
+-- @CustomKey message_list_:conversationId
+-- @CustomKey message_list
+SELECT *
+FROM MessageDetailsView
+WHERE conversationId = :conversationId
+    AND visibility IN :visibility
+    AND status = 'PENDING'
+    AND (date < :cursorDate OR (date = :cursorDate AND id < :cursorId))
+ORDER BY date DESC, id DESC
+LIMIT :limit;
+
+selectPendingByConversationIdAndVisibilityBefore:
+-- @CustomKey message_list_:conversationId
+-- @CustomKey message_list
+SELECT *
+FROM MessageDetailsView
+WHERE conversationId = :conversationId
+    AND visibility IN :visibility
+    AND status = 'PENDING'
+    AND (date > :cursorDate OR (date = :cursorDate AND id > :cursorId))
+ORDER BY date ASC, id ASC
+LIMIT :limit;
+
+selectLastPendingByConversationIdAndVisibility:
+-- @CustomKey message_list_:conversationId
+-- @CustomKey message_list
+SELECT *
+FROM MessageDetailsView
+WHERE conversationId = :conversationId
+    AND visibility IN :visibility
+    AND status = 'PENDING'
+ORDER BY date ASC, id ASC
+LIMIT :limit;
+
+selectFirstNonPendingByConversationIdAndVisibility:
+-- @CustomKey message_list_:conversationId
+-- @CustomKey message_list
+SELECT *
+FROM MessageDetailsView
+WHERE conversationId = :conversationId
+    AND visibility IN :visibility
+    AND status != 'PENDING'
+ORDER BY date DESC, id DESC
+LIMIT :limit;
+
+selectNonPendingByConversationIdAndVisibilityFrom:
+-- @CustomKey message_list_:conversationId
+-- @CustomKey message_list
+SELECT *
+FROM MessageDetailsView
+WHERE conversationId = :conversationId
+    AND visibility IN :visibility
+    AND status != 'PENDING'
+    AND (date < :cursorDate OR (date = :cursorDate AND id <= :cursorId))
+ORDER BY date DESC, id DESC
+LIMIT :limit;
+
+selectNonPendingByConversationIdAndVisibilityAfter:
+-- @CustomKey message_list_:conversationId
+-- @CustomKey message_list
+SELECT *
+FROM MessageDetailsView
+WHERE conversationId = :conversationId
+    AND visibility IN :visibility
+    AND status != 'PENDING'
+    AND (date < :cursorDate OR (date = :cursorDate AND id < :cursorId))
+ORDER BY date DESC, id DESC
+LIMIT :limit;
+
+selectNonPendingByConversationIdAndVisibilityBefore:
+-- @CustomKey message_list_:conversationId
+-- @CustomKey message_list
+SELECT *
+FROM MessageDetailsView
+WHERE conversationId = :conversationId
+    AND visibility IN :visibility
+    AND status != 'PENDING'
+    AND (date > :cursorDate OR (date = :cursorDate AND id > :cursorId))
+ORDER BY date ASC, id ASC
+LIMIT :limit;
 
 countBackupMessages:
 SELECT count(*) FROM Message WHERE visibility = "VISIBLE" AND self_deletion_end_date IS NULL AND content_type IN :contentType;
@@ -711,11 +834,39 @@ AND (Message.content_type = 'TEXT' OR Message.content_type = 'MULTIPART')
 AND Message.expire_after_millis IS NULL;
 
 selectSearchedConversationMessagePosition:
-SELECT COUNT(*) FROM Message
-WHERE conversation_id = :conversationId
-AND creation_date >= (SELECT creation_date FROM Message WHERE id = :messageId LIMIT 1)
-AND expire_after_millis IS NULL
-ORDER BY creation_date DESC;
+WITH anchor AS (
+    SELECT id, creation_date, status
+    FROM Message
+    WHERE id = :messageId AND conversation_id = :conversationId
+)
+SELECT COUNT(*) FROM (
+    SELECT 1
+    FROM Message CROSS JOIN anchor
+    WHERE anchor.status = 'PENDING'
+        AND Message.conversation_id = :conversationId
+        AND Message.status = 'PENDING'
+        AND (
+            Message.creation_date > anchor.creation_date
+            OR (Message.creation_date = anchor.creation_date AND Message.id >= anchor.id)
+        )
+    UNION ALL
+    SELECT 1
+    FROM Message CROSS JOIN anchor
+    WHERE anchor.status != 'PENDING'
+        AND Message.conversation_id = :conversationId
+        AND Message.status = 'PENDING'
+    UNION ALL
+    SELECT 1
+    FROM Message CROSS JOIN anchor
+    WHERE anchor.status != 'PENDING'
+        AND Message.conversation_id = :conversationId
+        AND Message.status != 'PENDING'
+        AND (
+            Message.creation_date > anchor.creation_date
+            OR (Message.creation_date = anchor.creation_date AND Message.id >= anchor.id)
+        )
+    LIMIT :maximumPosition
+);
 
 selectNextAudioMessage:
 SELECT Message.id

@@ -143,7 +143,10 @@ interface MessageDAO {
 
     suspend fun updateSelfDeletionEndDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionEndDate: Instant)
 
-    suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long
+    suspend fun getConversationUnreadEventsCount(
+        conversationId: QualifiedIDEntity,
+        maximumCount: Long = Long.MAX_VALUE,
+    ): Long
 
     suspend fun insertFailedRecipientDelivery(
         id: String,
@@ -156,7 +159,8 @@ interface MessageDAO {
 
     suspend fun getSearchedConversationMessagePosition(
         conversationId: QualifiedIDEntity,
-        messageId: String
+        messageId: String,
+        maximumPosition: Long = Long.MAX_VALUE,
     ): Int
 
     /**

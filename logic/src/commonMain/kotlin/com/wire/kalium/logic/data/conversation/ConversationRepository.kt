@@ -272,7 +272,10 @@ internal interface ConversationRepository {
         receiptMode: Conversation.ReceiptMode
     ): Either<CoreFailure, Unit>
 
-    suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long>
+    suspend fun getConversationUnreadEventsCount(
+        conversationId: ConversationId,
+        maximumCount: Long = Long.MAX_VALUE,
+    ): Either<StorageFailure, Long>
     suspend fun updateUserSelfDeletionTimer(conversationId: ConversationId, selfDeletionTimer: SelfDeletionTimer): Either<CoreFailure, Unit>
     suspend fun isInformedAboutDegradedMLSVerification(conversationId: ConversationId): Either<StorageFailure, Boolean>
     suspend fun setInformedAboutDegradedMLSVerificationFlag(
@@ -909,8 +912,12 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
-    override suspend fun getConversationUnreadEventsCount(conversationId: ConversationId): Either<StorageFailure, Long> =
-        wrapStorageRequest { messageDAO.getConversationUnreadEventsCount(conversationId.toDao()) }
+    override suspend fun getConversationUnreadEventsCount(
+        conversationId: ConversationId,
+        maximumCount: Long,
+    ): Either<StorageFailure, Long> = wrapStorageRequest {
+        messageDAO.getConversationUnreadEventsCount(conversationId.toDao(), maximumCount)
+    }
 
     override suspend fun updateReadDateAndGetHasUnreadEvents(qualifiedID: QualifiedID, date: Instant): Either<StorageFailure, Boolean> =
         wrapStorageRequest { conversationDAO.updateReadDateAndGetHasUnreadEvents(qualifiedID.toDao(), date) }

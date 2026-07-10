@@ -41,7 +41,11 @@ getUnreadEvents:
 SELECT conversation_id, type FROM UnreadEvent;
 
 getConversationUnreadEventsCount:
-SELECT COUNT(*) FROM UnreadEvent WHERE conversation_id = ?;
+SELECT COUNT(*) FROM (
+    SELECT 1 FROM UnreadEvent
+    WHERE conversation_id = :conversationId
+    LIMIT :maximumCount
+);
 
 getHasUnreadEventsForConversationAtOrBeforeDate:
 SELECT EXISTS(

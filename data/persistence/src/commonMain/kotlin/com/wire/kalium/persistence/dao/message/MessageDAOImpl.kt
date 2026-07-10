@@ -643,8 +643,11 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
-    override suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long = withContext(readDispatcher.value) {
-        unreadEventsQueries.getConversationUnreadEventsCount(conversationId).awaitAsOne()
+    override suspend fun getConversationUnreadEventsCount(
+        conversationId: QualifiedIDEntity,
+        maximumCount: Long,
+    ): Long = withContext(readDispatcher.value) {
+        unreadEventsQueries.getConversationUnreadEventsCount(conversationId, maximumCount).awaitAsOne()
     }
 
     override fun observeMessageVisibility(
@@ -660,10 +663,15 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun getSearchedConversationMessagePosition(
         conversationId: QualifiedIDEntity,
-        messageId: String
+        messageId: String,
+        maximumPosition: Long,
     ): Int = withContext(readDispatcher.value) {
         queries
-            .selectSearchedConversationMessagePosition(conversationId, messageId)
+            .selectSearchedConversationMessagePosition(
+                messageId = messageId,
+                conversationId = conversationId,
+                maximumPosition = maximumPosition,
+            )
             .awaitAsOne()
             .toInt()
     }

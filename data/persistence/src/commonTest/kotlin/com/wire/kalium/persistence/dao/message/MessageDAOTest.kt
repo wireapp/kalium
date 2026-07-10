@@ -1984,9 +1984,15 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationEntity1.id,
             messageId = message3.id
         )
+        val cappedDeepResult = messageDAO.getSearchedConversationMessagePosition(
+            conversationId = conversationEntity1.id,
+            messageId = message1.id,
+            maximumPosition = 2,
+        )
 
         // then
         assertEquals(expectedPosition, result)
+        assertEquals(2, cappedDeepResult)
     }
 
     @Test

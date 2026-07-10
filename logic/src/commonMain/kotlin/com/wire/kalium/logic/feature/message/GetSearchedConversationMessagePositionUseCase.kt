@@ -38,7 +38,8 @@ public interface GetSearchedConversationMessagePositionUseCase {
 
     public suspend operator fun invoke(
         conversationId: ConversationId,
-        messageId: String
+        messageId: String,
+        maximumPosition: Long = Long.MAX_VALUE,
     ): Result
 
     public sealed interface Result {
@@ -54,12 +55,14 @@ internal class GetSearchedConversationMessagePositionUseCaseImpl internal constr
 
     override suspend fun invoke(
         conversationId: ConversationId,
-        messageId: String
+        messageId: String,
+        maximumPosition: Long,
     ): Result = withContext(dispatcher.io) {
         messageRepository
             .getSearchedConversationMessagePosition(
                 conversationId = conversationId,
-                messageId = messageId
+                messageId = messageId,
+                maximumPosition = maximumPosition,
             ).fold(
                 { Result.Failure(it) },
                 { Result.Success(it) }

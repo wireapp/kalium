@@ -32,6 +32,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessageExtensions
 import com.wire.kalium.persistence.dao.message.MessageExtensionsImpl
 import com.wire.kalium.persistence.dao.message.MessageMapper
+import com.wire.kalium.persistence.dao.message.MessageCursor
 import com.wire.kalium.persistence.dao.message.attachment.MessageAttachmentEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
@@ -51,6 +52,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.fail
 import kotlin.test.assertTrue
 
@@ -92,25 +94,23 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenInsertedMessages_whenGettingFirstPage_thenItShouldContainTheCorrectCountBeforeAndAfter() = runTest {
+    fun givenInsertedMessages_whenGettingFirstPage_thenItemCountsShouldBeUndefined() = runTest {
         populateMessageData()
 
-        val result = getPager().pagingSource.refresh()
+        val result = getPager().pagingSourceForTest<MessageCursor>().refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
-        // Assuming the first page was fetched, itemsAfter should be the remaining ones
-        assertEquals(MESSAGE_COUNT - PAGE_SIZE, result.itemsAfter)
-        // No items before the first page
-        assertEquals(0, result.itemsBefore)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
+        assertEquals(PagingSource.LoadResult.Page.COUNT_UNDEFINED, result.itemsAfter)
+        assertEquals(PagingSource.LoadResult.Page.COUNT_UNDEFINED, result.itemsBefore)
     }
 
     @Test
     fun givenInsertedMessages_whenGettingFirstPage_thenItShouldContainTheCorrectValues() = runTest {
         populateMessageData(prefix = "message")
 
-        val result = getSearchMessagesPager(searchQuery = "message 1").pagingSource.refresh()
+        val result = getSearchMessagesPager(searchQuery = "message 1").pagingSourceForTest<Int>().refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         // Assuming the first page was fetched containing only 3 results [message1, message10 and message100],
         // itemsAfter should be the remaining ones : 0
         assertEquals(0, result.itemsAfter)
@@ -122,9 +122,9 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     fun givenInsertedMessages_whenGettingFirstPage_thenItShouldContainTheFirstPageOfItems() = runTest {
         populateMessageData()
 
-        val result = getPager().pagingSource.refresh()
+        val result = getPager().pagingSourceForTest<MessageCursor>().refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
 
         result.data.forEachIndexed { index, message ->
             assertEquals(index.toString(), message.id)
@@ -135,9 +135,9 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     fun givenInsertedMessages_whenGettingSearchedMessagesFirstPage_thenItShouldContainTheFirstPageOfItems() = runTest {
         populateMessageData(prefix = "message")
 
-        val result = getSearchMessagesPager(searchQuery = "message").pagingSource.refresh()
+        val result = getSearchMessagesPager(searchQuery = "message").pagingSourceForTest<Int>().refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
 
         result.data.forEachIndexed { index, message ->
             assertEquals(index.toString(), message.id)
@@ -148,20 +148,26 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     fun givenInsertedMessages_whenGettingFirstPage_thenTheNextKeyShouldBeTheFirstItemOfTheNextPage() = runTest {
         populateMessageData()
 
-        val result = getPager().pagingSource.refresh()
+        val result = getPager().pagingSourceForTest<MessageCursor>().refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
-        // First page fetched, second page starts at the end of the first one
-        assertEquals(PAGE_SIZE, result.nextKey)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
+        assertEquals(
+            MessageCursor(
+                segment = MessageCursor.Segment.PENDING,
+                date = Instant.fromEpochSeconds(MESSAGE_COUNT - (PAGE_SIZE - 1).toLong()),
+                id = (PAGE_SIZE - 1).toString(),
+            ),
+            result.nextKey,
+        )
     }
 
     @Test
     fun givenInsertedMessages_whenGettingSearchedMessagesFirstPage_thenTheNextKeyShouldBeTheFirstItemOfTheNextPage() = runTest {
         populateMessageData(prefix = "message")
 
-        val result = getSearchMessagesPager(searchQuery = "message").pagingSource.refresh()
+        val result = getSearchMessagesPager(searchQuery = "message").pagingSourceForTest<Int>().refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         // First page fetched, second page starts at the end of the first one
         assertEquals(PAGE_SIZE, result.nextKey)
     }
@@ -170,10 +176,12 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     fun givenInsertedMessages_whenGettingSecondPage_thenShouldContainTheCorrectItems() = runTest {
         populateMessageData()
 
-        val pagingSource = getPager().pagingSource
-        val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE)
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
+        val firstPageResult = pagingSource.refresh()
+        assertIs<PagingSource.LoadResult.Page<MessageCursor, MessageEntity>>(firstPageResult)
+        val secondPageResult = pagingSource.nextPage(assertNotNull(firstPageResult.nextKey))
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(secondPageResult)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(secondPageResult)
         assertFalse { secondPageResult.data.isEmpty() }
         assertTrue { secondPageResult.data.size <= PAGE_SIZE }
         secondPageResult.data.forEachIndexed { index, message ->
@@ -182,59 +190,161 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenStartingMessageId_whenRefreshing_thenPageShouldStartFromThatMessage() = runTest {
+        populateMessageData()
+
+        val result = getPager(startingMessageId = "60")
+            .pagingSourceForTest<MessageCursor>()
+            .refresh()
+
+        assertIs<PagingSource.LoadResult.Page<MessageCursor, MessageEntity>>(result)
+        assertContentEquals(
+            (60 until 60 + PAGE_SIZE).map(Int::toString),
+            result.data.map { it.id },
+        )
+    }
+
+    @Test
+    fun givenStartingMessageIdWithItemsBefore_whenRefreshing_thenPageShouldStartBeforeThatMessage() = runTest {
+        populateMessageData()
+
+        val result = getPager(startingMessageId = "60", initialItemsBeforeStart = 10)
+            .pagingSourceForTest<MessageCursor>()
+            .refresh()
+
+        assertIs<PagingSource.LoadResult.Page<MessageCursor, MessageEntity>>(result)
+        assertContentEquals(
+            (50 until 50 + PAGE_SIZE).map(Int::toString),
+            result.data.map { it.id },
+        )
+    }
+
+    @Test
+    fun givenUnreadMessages_whenStartingFromFirstUnread_thenPageShouldStartBeforeOldestUnreadMessage() = runTest {
+        populateMessageData()
+
+        assertEquals(30L, messageDAO.getConversationUnreadEventsCount(CONVERSATION_ID, maximumCount = 30))
+        val result = getPager(startFromFirstUnreadMessage = true, initialItemsBeforeStart = 5)
+            .pagingSourceForTest<MessageCursor>()
+            .refresh()
+
+        assertIs<PagingSource.LoadResult.Page<MessageCursor, MessageEntity>>(result)
+        assertContentEquals(
+            (94 until MESSAGE_COUNT).map(Int::toString),
+            result.data.map { it.id },
+        )
+    }
+
+    @Test
+    fun givenMessagesWithTheSameDate_whenLoadingEveryPage_thenEachMessageShouldBeReturnedExactlyOnce() = runTest {
+        userDAO.upsertUser(newUserEntity(qualifiedID = USER_ID))
+        conversationDAO.insertConversation(newConversationEntity(id = CONVERSATION_ID))
+        val messages = (0 until SAME_DATE_MESSAGE_COUNT).map { index ->
+            newRegularMessageEntity(
+                id = index.toString().padStart(2, '0'),
+                conversationId = CONVERSATION_ID,
+                senderUserId = USER_ID,
+                date = Instant.fromEpochSeconds(1),
+            )
+        }
+        messageDAO.insertOrIgnoreMessages(messages)
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
+
+        val loadedIds = buildList {
+            var page = pagingSource.refresh()
+            while (page is PagingSource.LoadResult.Page<MessageCursor, MessageEntity>) {
+                addAll(page.data.map { it.id })
+                val nextKey = page.nextKey ?: break
+                page = pagingSource.nextPage(nextKey)
+            }
+        }
+
+        assertContentEquals(
+            (SAME_DATE_MESSAGE_COUNT - 1 downTo 0).map { it.toString().padStart(2, '0') },
+            loadedIds,
+        )
+        assertEquals(SAME_DATE_MESSAGE_COUNT, loadedIds.distinct().size)
+    }
+
+    @Test
     fun givenMixedStatusMessages_whenLoadingPageInsidePendingSegment_thenOnlyPendingMessagesAreReturned() = runTest {
         populatePendingAndNonPendingMessageData()
 
-        val result = getPager().pagingSource.refresh()
+        val result = getPager().pagingSourceForTest<MessageCursor>().refresh()
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         assertContentEquals(
             (0 until PAGE_SIZE).map { "pending-$it" },
             result.data.map { it.id }
         )
-        assertEquals(0, result.itemsBefore)
-        assertEquals(MIXED_MESSAGE_COUNT - PAGE_SIZE, result.itemsAfter)
+        assertEquals(PagingSource.LoadResult.Page.COUNT_UNDEFINED, result.itemsBefore)
+        assertEquals(PagingSource.LoadResult.Page.COUNT_UNDEFINED, result.itemsAfter)
     }
 
     @Test
     fun givenMixedStatusMessages_whenLoadingPageAcrossPendingBoundary_thenPendingAndNonPendingMessagesAreReturned() = runTest {
         populatePendingAndNonPendingMessageData()
 
-        val result = getPager().pagingSource.nextPageForOffset(PAGE_SIZE)
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
+        val firstPage = pagingSource.refresh()
+        assertIs<PagingSource.LoadResult.Page<MessageCursor, MessageEntity>>(firstPage)
+        val result = pagingSource.nextPage(assertNotNull(firstPage.nextKey))
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         assertContentEquals(
             listOf("pending-20", "pending-21", "pending-22", "pending-23", "pending-24") +
                 (0 until 15).map { "non-pending-$it" },
             result.data.map { it.id }
         )
-        assertEquals(PAGE_SIZE, result.itemsBefore)
-        assertEquals(MIXED_MESSAGE_COUNT - PAGE_SIZE * 2, result.itemsAfter)
+        assertEquals(PagingSource.LoadResult.Page.COUNT_UNDEFINED, result.itemsBefore)
+        assertEquals(PagingSource.LoadResult.Page.COUNT_UNDEFINED, result.itemsAfter)
     }
 
     @Test
     fun givenMixedStatusMessages_whenLoadingPageInsideNonPendingSegment_thenOnlyNonPendingMessagesAreReturned() = runTest {
         populatePendingAndNonPendingMessageData()
 
-        val result = getPager().pagingSource.nextPageForOffset(PAGE_SIZE * 2)
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
+        val firstPage = pagingSource.refresh()
+        assertIs<PagingSource.LoadResult.Page<MessageCursor, MessageEntity>>(firstPage)
+        val secondPage = pagingSource.nextPage(assertNotNull(firstPage.nextKey))
+        assertIs<PagingSource.LoadResult.Page<MessageCursor, MessageEntity>>(secondPage)
+        val result = pagingSource.nextPage(assertNotNull(secondPage.nextKey))
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         assertContentEquals(
             (15 until 35).map { "non-pending-$it" },
             result.data.map { it.id }
         )
-        assertEquals(PAGE_SIZE * 2, result.itemsBefore)
-        assertEquals(MIXED_MESSAGE_COUNT - PAGE_SIZE * 3, result.itemsAfter)
+        assertEquals(PagingSource.LoadResult.Page.COUNT_UNDEFINED, result.itemsBefore)
+        assertEquals(PagingSource.LoadResult.Page.COUNT_UNDEFINED, result.itemsAfter)
+    }
+
+    @Test
+    fun givenMixedStatusMessages_whenPrependingFromThirdPage_thenPreviousPageShouldBeRestored() = runTest {
+        populatePendingAndNonPendingMessageData()
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
+        val firstPage = pagingSource.refresh()
+        assertIs<PagingSource.LoadResult.Page<MessageCursor, MessageEntity>>(firstPage)
+        val secondPage = pagingSource.nextPage(assertNotNull(firstPage.nextKey))
+        assertIs<PagingSource.LoadResult.Page<MessageCursor, MessageEntity>>(secondPage)
+        val thirdPage = pagingSource.nextPage(assertNotNull(secondPage.nextKey))
+        assertIs<PagingSource.LoadResult.Page<MessageCursor, MessageEntity>>(thirdPage)
+
+        val restoredSecondPage = pagingSource.previousPage(assertNotNull(thirdPage.prevKey))
+
+        assertIs<PagingSource.LoadResult.Page<MessageCursor, MessageEntity>>(restoredSecondPage)
+        assertContentEquals(secondPage.data.map { it.id }, restoredSecondPage.data.map { it.id })
     }
 
     @Test
     fun givenInsertedMessages_whenGettingSearchedMessagesSecondPage_thenShouldContainTheCorrectItems() = runTest {
         populateMessageData(prefix = "message")
 
-        val pagingSource = getSearchMessagesPager(searchQuery = "message").pagingSource
+        val pagingSource = getSearchMessagesPager(searchQuery = "message").pagingSourceForTest<Int>()
         val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE)
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(secondPageResult)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(secondPageResult)
         assertFalse { secondPageResult.data.isEmpty() }
         assertTrue { secondPageResult.data.size <= PAGE_SIZE }
         secondPageResult.data.forEachIndexed { index, message ->
@@ -279,7 +389,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         )
         messageDAO.insertOrIgnoreMessage(message)
 
-        val result = getPager().pagingSource.refresh()
+        val result = getPager().pagingSourceForTest<MessageCursor>().refresh()
         if (result is PagingSource.LoadResult.Error) {
             val stackTrace = result.throwable.stackTraceToString()
             // JS/browser driver may surface expression-column long values as null in generated mappers.
@@ -287,7 +397,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
             fail("Expected pager page but got error: ${result.throwable}")
         }
 
-        assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+        assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         val multipartContent = (result.data.single().content as MessageEntityContent.Multipart)
         assertEquals(1, multipartContent.attachments.size)
         assertEquals(attachmentId, multipartContent.attachments.single().assetId)
@@ -296,10 +406,10 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     @Test
     fun givenMessageListPageLoaded_whenMessageIsInsertedInSameConversation_thenPagingSourceShouldBeInvalidated() = runTest {
         populateMessageData()
-        val pagingSource = getPager().pagingSource
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
 
         pagingSource.refresh().also { result ->
-            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+            assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         }
         assertFalse { pagingSource.invalid }
 
@@ -318,10 +428,10 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     fun givenMessageListPageLoaded_whenMessageIsInsertedInDifferentConversation_thenPagingSourceShouldNotBeInvalidated() = runTest {
         populateMessageData()
         conversationDAO.insertConversation(newConversationEntity(id = OTHER_CONVERSATION_ID))
-        val pagingSource = getPager().pagingSource
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
 
         pagingSource.refresh().also { result ->
-            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+            assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         }
         assertFalse { pagingSource.invalid }
 
@@ -339,10 +449,10 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     @Test
     fun givenMessageListPageLoaded_whenMessageIsMarkedAsDeletedInSameConversation_thenPagingSourceShouldBeInvalidated() = runTest {
         populateMessageData()
-        val pagingSource = getPager().pagingSource
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
 
         pagingSource.refresh().also { result ->
-            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+            assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         }
         assertFalse { pagingSource.invalid }
 
@@ -352,12 +462,26 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenPendingMessagePageLoaded_whenMessageBecomesSent_thenPagingSourceShouldBeInvalidated() = runTest {
+        populatePendingAndNonPendingMessageData()
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
+        pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
+        }
+        assertFalse { pagingSource.invalid }
+
+        messageDAO.updateMessageStatus(MessageEntity.Status.SENT, "pending-0", CONVERSATION_ID)
+
+        assertTrue { pagingSource.invalid }
+    }
+
+    @Test
     fun givenMessageListPageLoaded_whenConversationContentIsCleared_thenPagingSourceShouldBeInvalidated() = runTest {
         populateMessageData()
-        val pagingSource = getPager().pagingSource
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
 
         pagingSource.refresh().also { result ->
-            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+            assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         }
         assertFalse { pagingSource.invalid }
 
@@ -369,10 +493,10 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     @Test
     fun givenMessageListPageLoaded_whenReceiptIsInsertedInSameConversation_thenPagingSourceShouldBeInvalidated() = runTest {
         populateMessageData()
-        val pagingSource = getPager().pagingSource
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
 
         pagingSource.refresh().also { result ->
-            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+            assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         }
         assertFalse { pagingSource.invalid }
 
@@ -398,10 +522,10 @@ class MessageExtensionsTest : BaseDatabaseTest() {
                 senderUserId = USER_ID
             )
         )
-        val pagingSource = getPager().pagingSource
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
 
         pagingSource.refresh().also { result ->
-            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+            assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         }
         assertFalse { pagingSource.invalid }
 
@@ -419,10 +543,10 @@ class MessageExtensionsTest : BaseDatabaseTest() {
     @Test
     fun givenMessageListPageLoaded_whenSenderNameIsUpdated_thenPagingSourceShouldNotBeInvalidated() = runTest {
         populateMessageData()
-        val pagingSource = getPager().pagingSource
+        val pagingSource = getPager().pagingSourceForTest<MessageCursor>()
 
         pagingSource.refresh().also { result ->
-            assertIs<PagingSource.LoadResult.Page<Int, MessageEntity>>(result)
+            assertIs<PagingSource.LoadResult.Page<*, MessageEntity>>(result)
         }
         assertFalse { pagingSource.invalid }
 
@@ -431,11 +555,17 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         assertFalse { pagingSource.invalid }
     }
 
-    private fun getPager(): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(
+    private fun getPager(
+        startingMessageId: String? = null,
+        startFromFirstUnreadMessage: Boolean = false,
+        initialItemsBeforeStart: Int = 0,
+    ): KaliumPager<MessageEntity> = messageExtensions.getPagerForConversation(
         conversationId = CONVERSATION_ID,
         visibilities = MessageEntity.Visibility.entries.toList(),
         pagingConfig = PagingConfig(PAGE_SIZE),
-        startingOffset = 0
+        startingMessageId = startingMessageId,
+        startFromFirstUnreadMessage = startFromFirstUnreadMessage,
+        initialItemsBeforeStart = initialItemsBeforeStart,
     )
 
     private fun getSearchMessagesPager(searchQuery: String): KaliumPager<MessageEntity> = messageExtensions.getPagerForMessagesSearch(
@@ -445,8 +575,16 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         startingOffset = 0
     )
 
-    private suspend fun PagingSource<Int, MessageEntity>.refresh() = load(
-        PagingSource.LoadParams.Refresh<Int>(null, PAGE_SIZE, false)
+    private suspend fun <Key : Any> PagingSource<Key, MessageEntity>.refresh() = load(
+        PagingSource.LoadParams.Refresh<Key>(null, PAGE_SIZE, false)
+    )
+
+    private suspend fun PagingSource<MessageCursor, MessageEntity>.nextPage(key: MessageCursor) = load(
+        PagingSource.LoadParams.Append(key, PAGE_SIZE, false)
+    )
+
+    private suspend fun PagingSource<MessageCursor, MessageEntity>.previousPage(key: MessageCursor) = load(
+        PagingSource.LoadParams.Prepend(key, PAGE_SIZE, false)
     )
 
     private suspend fun PagingSource<Int, MessageEntity>.nextPageForOffset(key: Int) = load(
@@ -511,6 +649,7 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         const val PENDING_MESSAGE_COUNT = 25
         const val NON_PENDING_MESSAGE_COUNT = 40
         const val MIXED_MESSAGE_COUNT = PENDING_MESSAGE_COUNT + NON_PENDING_MESSAGE_COUNT
+        const val SAME_DATE_MESSAGE_COUNT = 45
         val USER_ID = UserIDEntity("user", "domain")
         val CONVERSATION_ID = ConversationIDEntity("conversation", "domain")
         val OTHER_CONVERSATION_ID = ConversationIDEntity("otherConversation", "domain")

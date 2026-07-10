@@ -22,6 +22,7 @@ import androidx.paging.PagingData
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessagePagingStart
 import com.wire.kalium.logic.data.message.MessageRepositoryExtensions
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingResult
 import kotlinx.coroutines.flow.Flow
@@ -32,7 +33,7 @@ internal open class FakeMessageRepositoryExtensions : MessageRepositoryExtension
         conversationId: ConversationId,
         visibility: List<Message.Visibility>,
         pagingConfig: PagingConfig,
-        startingOffset: Long
+        pagingStart: MessagePagingStart,
     ): Flow<PagingData<Message.Standalone>> = emptyFlow()
 
     override suspend fun getPaginatedMessagesSearchBySearchQueryAndConversationId(

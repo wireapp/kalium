@@ -59,7 +59,7 @@ class MessageReadBenchmark {
     fun messagePagingFirstPageBenchmark(dbState: DBState, blackHole: Blackhole) = runBlocking {
         blackHole.consume(
             dbState.loadHotConversationPage(
-                startingOffset = 0
+                startingMessageId = null
             ).data.size
         )
     }
@@ -68,7 +68,9 @@ class MessageReadBenchmark {
     fun messagePagingDeepPageBenchmark(dbState: DBState, blackHole: Blackhole) = runBlocking {
         blackHole.consume(
             dbState.loadHotConversationPage(
-                startingOffset = MessageReadBenchmarkData.MessageDeepOffset.toLong()
+                startingMessageId = dbState.hotConversationMessageIdAtOffset(
+                    MessageReadBenchmarkData.MessageDeepOffset
+                )
             ).data.size
         )
     }
@@ -125,7 +127,9 @@ class MessageReadBenchmark {
             }
         }
 
-        suspend fun loadInboxPage(startingOffset: Long): PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity> {
+        suspend fun loadInboxPage(
+            startingOffset: Long
+        ): PagingSource.LoadResult.Page<Any, ConversationDetailsWithEventsEntity> {
             val pagingSource = db.conversationDAO.platformExtensions.getPagerForConversationDetailsWithEventsSearch(
                 queryConfig = ConversationExtensions.QueryConfig(
                     fromArchive = false,
@@ -141,15 +145,22 @@ class MessageReadBenchmark {
             return pagingSource.loadRefreshPage()
         }
 
-        suspend fun loadHotConversationPage(startingOffset: Long): PagingSource.LoadResult.Page<Int, MessageEntity> {
+        suspend fun loadHotConversationPage(
+            startingMessageId: String?
+        ): PagingSource.LoadResult.Page<Any, MessageEntity> {
             val pagingSource = db.messageDAO.platformExtensions.getPagerForConversation(
                 conversationId = hotConversationId,
                 visibilities = listOf(MessageEntity.Visibility.VISIBLE),
                 pagingConfig = PagingConfig(MessageReadBenchmarkData.PageSize),
-                startingOffset = startingOffset
+                startingMessageId = startingMessageId,
             )
 
             return pagingSource.loadRefreshPage()
+        }
+
+        fun hotConversationMessageIdAtOffset(offset: Int): String {
+            val messageIndex = MessageReadBenchmarkData.HotConversationMessageCount - 1 - offset
+            return "${hotConversationId.value}-msg-$messageIndex"
         }
 
         suspend fun prepareMarkReadInvocation(): MarkReadProbe {
