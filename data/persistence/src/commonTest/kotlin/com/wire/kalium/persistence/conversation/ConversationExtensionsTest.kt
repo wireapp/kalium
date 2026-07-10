@@ -47,10 +47,11 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newDraftMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
@@ -145,24 +146,21 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
                 ongoingCallConversationIdsFlow = ongoingCallConversationIds,
             ),
         )
-        var refreshCount = 0
         val presenter = object : PagingDataPresenter<ConversationDetailsWithEventsEntity>(dispatcher) {
-            override suspend fun presentPagingDataEvent(event: PagingDataEvent<ConversationDetailsWithEventsEntity>) {
-                if (event is PagingDataEvent.Refresh) refreshCount++
-            }
+            override suspend fun presentPagingDataEvent(event: PagingDataEvent<ConversationDetailsWithEventsEntity>) = Unit
         }
+        val initialPageUpdate = async { presenter.onPagesUpdatedFlow.first() }
         val collectionJob = launch {
             pager.pagingDataFlow.collectLatest(presenter::collectFrom)
         }
 
-        advanceUntilIdle()
-        assertEquals(1, refreshCount)
+        initialPageUpdate.await()
         assertEquals("${CONVERSATION_ID_PREFIX}0", presenter.snapshot().items.first().conversationViewEntity.id.value)
 
+        val invalidatedPageUpdate = async { presenter.onPagesUpdatedFlow.first() }
         ongoingCallConversationIds.value = listOf(ConversationIDEntity("${CONVERSATION_ID_PREFIX}1", "domain"))
-        advanceUntilIdle()
 
-        assertEquals(2, refreshCount)
+        invalidatedPageUpdate.await()
         assertEquals("${CONVERSATION_ID_PREFIX}1", presenter.snapshot().items.first().conversationViewEntity.id.value)
         collectionJob.cancel()
     }
