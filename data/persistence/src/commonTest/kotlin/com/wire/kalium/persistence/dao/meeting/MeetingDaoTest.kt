@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.persistence.dao.meeting
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.MeetingsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -273,11 +274,11 @@ class MeetingDaoTest : BaseDatabaseTest() {
         )
     }
 
-    private fun isMeetingStored(meeting: MeetingEntity): Boolean =
-        meetingsQueries.selectMeetingByIds(listOf(meeting.meetingId)).executeAsList().isNotEmpty()
+    private suspend fun isMeetingStored(meeting: MeetingEntity): Boolean =
+        meetingsQueries.selectMeetingByIds(listOf(meeting.meetingId)).awaitAsList().isNotEmpty()
 
-    private fun occurrencesFor(meeting: MeetingEntity) =
-        meetingsQueries.selectMeetingOccurrencesByMeetingId(meeting.meetingId).executeAsList()
+    private suspend fun occurrencesFor(meeting: MeetingEntity) =
+        meetingsQueries.selectMeetingOccurrencesByMeetingId(meeting.meetingId).awaitAsList()
 }
 
 fun newMeeting(

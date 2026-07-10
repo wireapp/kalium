@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.persistence.dao.meeting
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import com.wire.kalium.persistence.Meeting
 import com.wire.kalium.persistence.MeetingsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -40,7 +42,7 @@ internal class MeetingDaoImpl(
         withContext(writeDispatcher.value) {
             meetingsQueries.transaction {
                 val storedMeetingsById = meetingsQueries.selectMeetingByIds(meetings.map { it.meetingId })
-                    .executeAsList()
+                    .awaitAsList()
                     .associateBy { it.meeting_id }
                 val meetingIdsRequiringOccurrenceRefresh = meetings
                     .filter { meeting -> storedMeetingsById[meeting.meetingId]?.hasSameScheduleAs(meeting) != true }
@@ -75,7 +77,7 @@ internal class MeetingDaoImpl(
     override suspend fun insertMissingOccurrences(until: Instant) {
         withContext(writeDispatcher.value) {
             meetingsQueries.transaction {
-                meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).executeAsList().let { meetings ->
+                meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).awaitAsList().let { meetings ->
                     meetingsQueries.insertGeneratedOccurrences(
                         meetings = meetings,
                         limit = MeetingOccurrencesGenerator.GenerationLimit.Until(until),
@@ -112,7 +114,7 @@ internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
     val lastGeneratedStarts = meetings.mapNotNull { meeting ->
         when (shouldRegenerateOccurrences[meeting.meetingId]) {
             true -> null
-            else -> selectLastGeneratedOccurrenceStart(meeting.meetingId).executeAsOneOrNull()?.let { meeting.meetingId to it }
+            else -> selectLastGeneratedOccurrenceStart(meeting.meetingId).awaitAsOneOrNull()?.let { meeting.meetingId to it }
         }
     }.toMap()
 
