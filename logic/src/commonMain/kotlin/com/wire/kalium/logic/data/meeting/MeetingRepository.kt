@@ -43,20 +43,6 @@ internal interface MeetingRepository {
         removeOlderThan: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
     ): Either<CoreFailure, Unit>
-
-    private companion object {
-        private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
-        private const val OUTDATED_MEETING_RETENTION_DAYS = 30
-        private fun occurrenceGenerationUntil(now: Instant = Clock.System.now(), timeZone: TimeZone = TimeZone.currentSystemDefault()) =
-            now.plus(OCCURRENCE_GENERATION_WINDOW_DAYS.days)
-                .toLocalDateTime(timeZone).date
-                .atStartOfDayIn(timeZone)
-                .plus(1.days)
-        private fun occurrenceOutdatedThreshold(now: Instant = Clock.System.now(), timeZone: TimeZone = TimeZone.currentSystemDefault()) =
-            now.minus(OUTDATED_MEETING_RETENTION_DAYS.days)
-                .toLocalDateTime(timeZone).date
-                .atStartOfDayIn(timeZone)
-    }
 }
 
 internal class MeetingDataSource(
@@ -80,3 +66,15 @@ internal class MeetingDataSource(
             meetingDAO.insertMissingOccurrences(generateOccurrencesUntil)
         }
 }
+
+private const val OCCURRENCE_GENERATION_WINDOW_DAYS = 90
+private const val OUTDATED_MEETING_RETENTION_DAYS = 30
+private fun occurrenceGenerationUntil(now: Instant = Clock.System.now(), timeZone: TimeZone = TimeZone.currentSystemDefault()) =
+    now.plus(OCCURRENCE_GENERATION_WINDOW_DAYS.days)
+        .toLocalDateTime(timeZone).date
+        .atStartOfDayIn(timeZone)
+        .plus(1.days)
+private fun occurrenceOutdatedThreshold(now: Instant = Clock.System.now(), timeZone: TimeZone = TimeZone.currentSystemDefault()) =
+    now.minus(OUTDATED_MEETING_RETENTION_DAYS.days)
+        .toLocalDateTime(timeZone).date
+        .atStartOfDayIn(timeZone)
