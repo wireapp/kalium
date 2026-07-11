@@ -30,7 +30,7 @@ import kotlin.test.assertTrue
 class Migration138Test {
 
     @Test
-    fun givenOldMessageIndex_whenMigrating_thenReplacesItWithKeysetIndex() = runTest {
+    fun givenOldMessageIndexes_whenMigrating_thenReplacesThemWithKeysetIndexes() = runTest {
         val dbFile = File("build/user-schema-dumps/migration-138-test.db")
         dbFile.parentFile.mkdirs()
         File("src/commonTest/kotlin/com/wire/kalium/persistence/schemas/124.db").copyTo(dbFile, overwrite = true)
@@ -46,31 +46,17 @@ class Migration138Test {
             val indexes = driver.messageIndexNames()
             assertFalse("idx_msg_conv_vis_date_desc" in indexes)
             assertTrue("idx_msg_conv_vis_date_id_desc" in indexes)
+            assertTrue("idx_msg_pending" in indexes)
 
-            val indexedColumns = driver.executeQuery(
-                identifier = null,
-                sql = "PRAGMA index_xinfo('idx_msg_conv_vis_date_id_desc')",
-                mapper = { cursor ->
-                    val columns = buildList {
-                        while (cursor.next().value) {
-                            if (cursor.getLong(5) == 1L) {
-                                add(cursor.getString(2).orEmpty() to cursor.getLong(3))
-                            }
-                        }
-                    }
-                    app.cash.sqldelight.db.QueryResult.Value(columns)
-                },
-                parameters = 0,
-            ).value
-            assertEquals(
-                listOf(
-                    "conversation_id" to 0L,
-                    "visibility" to 0L,
-                    "creation_date" to 1L,
-                    "id" to 1L,
-                ),
-                indexedColumns,
+            val expectedKeysetColumns = listOf(
+                "conversation_id" to 0L,
+                "visibility" to 0L,
+                "creation_date" to 1L,
+                "id" to 1L,
             )
+            assertEquals(expectedKeysetColumns, driver.messageIndexColumns("idx_msg_conv_vis_date_id_desc"))
+            assertEquals(expectedKeysetColumns, driver.messageIndexColumns("idx_msg_pending"))
+            assertTrue(driver.messageIndexSql("idx_msg_pending").contains("WHERE status = 'PENDING'"))
         } finally {
             driver.close()
             dbFile.delete()
@@ -88,4 +74,30 @@ class Migration138Test {
         },
         parameters = 0,
     ).value
+
+    private fun JdbcSqliteDriver.messageIndexColumns(indexName: String): List<Pair<String, Long?>> = executeQuery(
+        identifier = null,
+        sql = "PRAGMA index_xinfo('$indexName')",
+        mapper = { cursor ->
+            val columns = buildList {
+                while (cursor.next().value) {
+                    if (cursor.getLong(5) == 1L) add(cursor.getString(2).orEmpty() to cursor.getLong(3))
+                }
+            }
+            app.cash.sqldelight.db.QueryResult.Value(columns)
+        },
+        parameters = 0,
+    ).value
+
+    private fun JdbcSqliteDriver.messageIndexSql(indexName: String): String = executeQuery(
+        identifier = null,
+        sql = "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = ?",
+        mapper = { cursor ->
+            val sql = if (cursor.next().value) cursor.getString(0).orEmpty() else ""
+            app.cash.sqldelight.db.QueryResult.Value(sql)
+        },
+        parameters = 1,
+    ) {
+        bindString(0, indexName)
+    }.value
 }

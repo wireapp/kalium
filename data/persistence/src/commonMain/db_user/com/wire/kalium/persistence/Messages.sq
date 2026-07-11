@@ -44,7 +44,9 @@ CREATE INDEX message_self_deletion_end_date ON Message(self_deletion_end_date);
 
 CREATE INDEX idx_msg_conv_date_desc ON Message(conversation_id, creation_date DESC);
 CREATE INDEX idx_msg_conv_vis_date_id_desc ON Message(conversation_id, visibility, creation_date DESC, id DESC);
-CREATE INDEX idx_msg_pending ON Message(conversation_id, creation_date DESC) WHERE status = 'PENDING';
+CREATE INDEX idx_msg_pending
+ON Message(conversation_id, visibility, creation_date DESC, id DESC)
+WHERE status = 'PENDING';
 
 CREATE TABLE MessageLinkPreview (
       message_id TEXT NOT NULL,
