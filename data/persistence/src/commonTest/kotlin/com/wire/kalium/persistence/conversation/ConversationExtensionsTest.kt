@@ -19,14 +19,14 @@
 package com.wire.kalium.persistence.conversation
 
 import androidx.paging.PagingConfig
+import androidx.paging.PagingDataEvent
+import androidx.paging.PagingDataPresenter
 import androidx.paging.PagingSource
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.dao.call.CallDAO
-import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
@@ -47,6 +47,10 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newDraftMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
@@ -66,7 +70,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     private lateinit var connectionDAO: ConnectionDAO
     private lateinit var memberDAO: MemberDAO
     private lateinit var userDAO: UserDAO
-    private lateinit var callDAO: CallDAO
     private lateinit var conversationFolderDAO: ConversationFolderDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
@@ -81,7 +84,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         connectionDAO = db.connectionDAO
         memberDAO = db.memberDAO
         userDAO = db.userDAO
-        callDAO = db.callDAO
         conversationFolderDAO = db.conversationFolderDAO
         conversationExtensions = ConversationExtensionsImpl(queries, ConversationDetailsWithEventsMapper, ReadDispatcher(dispatcher))
     }
@@ -129,6 +131,38 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
             assertEquals("$CONVERSATION_ID_PREFIX$index", conversation.conversationViewEntity.id.value)
             assertEquals(false, conversation.conversationViewEntity.archived)
         }
+    }
+
+    @Test
+    fun givenOngoingCallConversationIdsChange_whenCollectingPagingData_thenReloadUsesLatestIds() = runTest(dispatcher) {
+        populateData(count = 2, groupType = ConversationEntity.GroupType.Group)
+        val ongoingCallConversationIds = MutableStateFlow(emptyList<ConversationIDEntity>())
+        val pager = conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
+            pagingConfig = PagingConfig(PAGE_SIZE),
+            queryConfig = ConversationExtensions.QueryConfig(
+                newActivitiesOnTop = true,
+                ongoingCallConversationIds = ongoingCallConversationIds.value,
+                ongoingCallConversationIdsFlow = ongoingCallConversationIds,
+            ),
+        )
+        val refreshEvents = Channel<Unit>(Channel.UNLIMITED)
+        val presenter = object : PagingDataPresenter<ConversationDetailsWithEventsEntity>(dispatcher) {
+            override suspend fun presentPagingDataEvent(event: PagingDataEvent<ConversationDetailsWithEventsEntity>) {
+                if (event is PagingDataEvent.Refresh) refreshEvents.send(Unit)
+            }
+        }
+        val collectionJob = launch {
+            pager.pagingDataFlow.collectLatest(presenter::collectFrom)
+        }
+
+        refreshEvents.receive()
+        assertEquals("${CONVERSATION_ID_PREFIX}0", presenter.snapshot().items.first().conversationViewEntity.id.value)
+
+        ongoingCallConversationIds.value = listOf(ConversationIDEntity("${CONVERSATION_ID_PREFIX}1", "domain"))
+
+        refreshEvents.receive()
+        assertEquals("${CONVERSATION_ID_PREFIX}1", presenter.snapshot().items.first().conversationViewEntity.id.value)
+        collectionJob.cancel()
     }
 
     @Test
@@ -291,31 +325,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         )
 
         assertFalse { pagingSource.invalid }
-    }
-
-    @Test
-    fun givenConversationListPageLoaded_whenCallIsInserted_thenPagingSourceShouldBeInvalidated() = runTest(dispatcher) {
-        populateData(count = 1)
-        val conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain")
-        val pagingSource = getPager().pagingSource
-
-        pagingSource.refresh().also { result ->
-            assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
-        }
-        assertFalse { pagingSource.invalid }
-
-        callDAO.insertCall(
-            CallEntity(
-                conversationId = conversationId,
-                id = "call_1",
-                status = CallEntity.Status.STILL_ONGOING,
-                callerId = "caller",
-                conversationType = ConversationEntity.Type.GROUP,
-                type = CallEntity.Type.CONFERENCE
-            )
-        )
-
-        assertTrue { pagingSource.invalid }
     }
 
     @Test
