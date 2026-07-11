@@ -47,10 +47,9 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newDraftMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -146,21 +145,22 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
                 ongoingCallConversationIdsFlow = ongoingCallConversationIds,
             ),
         )
+        val refreshEvents = Channel<Unit>(Channel.UNLIMITED)
         val presenter = object : PagingDataPresenter<ConversationDetailsWithEventsEntity>(dispatcher) {
-            override suspend fun presentPagingDataEvent(event: PagingDataEvent<ConversationDetailsWithEventsEntity>) = Unit
+            override suspend fun presentPagingDataEvent(event: PagingDataEvent<ConversationDetailsWithEventsEntity>) {
+                if (event is PagingDataEvent.Refresh) refreshEvents.send(Unit)
+            }
         }
-        val initialPageUpdate = async { presenter.onPagesUpdatedFlow.first() }
         val collectionJob = launch {
             pager.pagingDataFlow.collectLatest(presenter::collectFrom)
         }
 
-        initialPageUpdate.await()
+        refreshEvents.receive()
         assertEquals("${CONVERSATION_ID_PREFIX}0", presenter.snapshot().items.first().conversationViewEntity.id.value)
 
-        val invalidatedPageUpdate = async { presenter.onPagesUpdatedFlow.first() }
         ongoingCallConversationIds.value = listOf(ConversationIDEntity("${CONVERSATION_ID_PREFIX}1", "domain"))
 
-        invalidatedPageUpdate.await()
+        refreshEvents.receive()
         assertEquals("${CONVERSATION_ID_PREFIX}1", presenter.snapshot().items.first().conversationViewEntity.id.value)
         collectionJob.cancel()
     }
