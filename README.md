@@ -52,6 +52,25 @@ make
 
 The libraries are written to `native/libs`.
 
+## Generate the SBOM
+
+The normal release SBOM is generated from Gradle's resolved JVM, Android, Apple, and JavaScript
+dependency graphs. It selectively reads package metadata and legal notice files without unpacking
+compiled dependency contents:
+
+```bash
+scripts/generate-sbom-fast.sh
+```
+
+Outputs are written to `build/sbom-fast/`. Both the fast and deep-audit modes produce the same
+customer `SBOM-and-license.zip` contract containing `scan.cdx.json`, `scan.spdx`, and
+`THIRD-PARTY-NOTICE.md`. The tracked notice is regenerated and the command fails when a component
+has an unresolved or unapproved license.
+
+Use `scripts/generate-sbom.sh` only for an explicit deep audit that requires ScanCode's file-level
+copyright, package, URL, and email evidence. That path recursively extracts dependency archives and
+is intentionally much slower.
+
 ## Configuration
 
 Kalium uses a few Gradle properties that consumers and contributors may need to set explicitly:

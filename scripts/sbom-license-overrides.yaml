@@ -112,6 +112,12 @@
   license_names: The Apache Software License, Version 2.0
   license_urls: https://www.apache.org/licenses/LICENSE-2.0.txt
 
+- groupId: org.apache.tika
+  artifactId: tika-core
+  license_names: Apache-2.0
+  license_urls: https://www.apache.org/licenses/LICENSE-2.0.txt
+  notes: "The module POM inherits licensing from Apache Tika's parent POM; the artifact itself carries Apache-2.0 headers."
+
 - groupId: net.zetetic
   artifactId: sqlcipher-android
   license_names: BSD 3-Clause License

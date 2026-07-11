@@ -18,15 +18,30 @@
 
 package com.wire.kalium.plugins
 
+import com.github.packageurl.PackageURL
+import org.cyclonedx.Version
+import org.cyclonedx.generators.BomGeneratorFactory
+import org.cyclonedx.model.Bom
+import org.cyclonedx.model.Component
+import org.cyclonedx.model.Dependency
+import org.cyclonedx.model.Hash
+import org.cyclonedx.model.Metadata
+import org.cyclonedx.model.Property
+import org.cyclonedx.parsers.BomParserFactory
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.gradle.api.artifacts.result.ResolvedComponentResult
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
 import org.gradle.api.file.DuplicatesStrategy
 import org.gradle.api.tasks.Copy
 import org.gradle.kotlin.dsl.register
 import org.gradle.maven.MavenModule
 import org.gradle.maven.MavenPomArtifact
+import java.io.File
+import java.security.MessageDigest
 
 // Paths/names that are NOT part of the licensed Kalium deliverable.
 // This is intentionally separate from `excludedFromCoverage` in the root build script —
@@ -74,6 +89,130 @@ private fun bucketFor(configName: String): String = when {
     else -> "other"
 }
 
+private data class CycloneDxComponent(
+    val group: String,
+    val name: String,
+    val version: String,
+    val configurations: MutableSet<String> = sortedSetOf(),
+    val artifacts: MutableSet<File> = sortedSetOf(compareBy(File::getAbsolutePath)),
+)
+
+private fun ModuleComponentIdentifier.packageUrl(): String = PackageURL(
+    "maven",
+    group,
+    module,
+    version,
+    null,
+    null,
+).toString()
+
+private fun File.sha256(): String {
+    val digest = MessageDigest.getInstance("SHA-256")
+    inputStream().buffered().use { input ->
+        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            digest.update(buffer, 0, count)
+        }
+    }
+    return digest.digest().joinToString("") { byte -> "%02x".format(byte) }
+}
+
+private fun Project.writeFastSbomFragment(configurations: List<Configuration>, output: File) {
+    val components = sortedMapOf<String, CycloneDxComponent>()
+    val edges = sortedMapOf<String, MutableSet<String>>()
+
+    configurations.forEach { configuration ->
+        val bucket = bucketFor(configuration.name)
+        val seen = mutableSetOf<Pair<String, String>>()
+        fun visit(component: ResolvedComponentResult, parentRef: String) {
+            component.dependencies
+                .filterIsInstance<ResolvedDependencyResult>()
+                .forEach { dependency ->
+                    val selected = dependency.selected
+                    val moduleId = selected.id as? ModuleComponentIdentifier
+                    val nextParent = if (moduleId == null) {
+                        parentRef
+                    } else {
+                        val ref = moduleId.packageUrl()
+                        components.getOrPut(ref) {
+                            CycloneDxComponent(moduleId.group, moduleId.module, moduleId.version)
+                        }.configurations += bucket
+                        edges.getOrPut(parentRef) { sortedSetOf() } += ref
+                        ref
+                    }
+                    val visitKey = selected.id.displayName to nextParent
+                    if (seen.add(visitKey)) visit(selected, nextParent)
+                }
+        }
+        visit(configuration.incoming.resolutionResult.root, "ROOT")
+
+        configuration.incoming.artifactView {
+            lenient(true)
+            componentFilter { id -> id !is ProjectComponentIdentifier }
+        }.artifacts.artifacts.forEach { artifact ->
+            val moduleId = artifact.id.componentIdentifier as? ModuleComponentIdentifier
+                ?: return@forEach
+            val ref = moduleId.packageUrl()
+            components.getOrPut(ref) {
+                CycloneDxComponent(moduleId.group, moduleId.module, moduleId.version)
+            }.apply {
+                this.configurations += bucket
+                artifacts += artifact.file
+            }
+        }
+    }
+
+    output.parentFile.mkdirs()
+    output.bufferedWriter().use { writer ->
+        components.forEach { (ref, component) ->
+            component.configurations.forEach { bucket ->
+                writer.appendLine(
+                    listOf("C", ref, component.group, component.name, component.version, bucket)
+                        .joinToString("\t"),
+                )
+            }
+            component.artifacts.forEach { artifact ->
+                writer.appendLine(listOf("A", ref, artifact.absolutePath).joinToString("\t"))
+            }
+        }
+        edges.forEach { (parent, children) ->
+            children.forEach { child ->
+                writer.appendLine(listOf("E", parent, child).joinToString("\t"))
+            }
+        }
+    }
+}
+
+private fun Project.writeFastSbomPoms(configurations: List<Configuration>, outputDir: File) {
+    val moduleIds = configurations.flatMap { configuration ->
+        configuration.incoming.resolutionResult.allComponents
+            .map { it.id }
+            .filterIsInstance<ModuleComponentIdentifier>()
+    }.toSet()
+    if (moduleIds.isEmpty()) return
+
+    dependencies.createArtifactResolutionQuery()
+        .forComponents(moduleIds)
+        .withArtifacts(MavenModule::class.java, MavenPomArtifact::class.java)
+        .execute()
+        .resolvedComponents
+        .forEach { component ->
+            val id = component.id as? ModuleComponentIdentifier ?: return@forEach
+            component.getArtifacts(MavenPomArtifact::class.java)
+                .filterIsInstance<ResolvedArtifactResult>()
+                .forEach { artifact ->
+                    val groupDir = File(outputDir, id.group.replace('.', '/'))
+                    groupDir.mkdirs()
+                    artifact.file.copyTo(
+                        File(groupDir, "${id.module}-${id.version}.pom"),
+                        overwrite = true,
+                    )
+                }
+        }
+}
+
 /**
  * Registers a `collectSbomArtifacts` task on the root project that materialises every
  * third-party dependency file (jars, AARs, klibs, plus resolved npm packages and the
@@ -109,6 +248,41 @@ fun Project.registerSbomCollectionTasks() {
         // returns null. Two levels of afterEvaluate let our work land last.
         sub.afterEvaluate {
             sub.afterEvaluate {
+                val safeModuleId = sub.path.removePrefix(":").replace(':', '_')
+                val fastConfigurations = SBOM_TARGET_CONFIG_NAMES
+                    .mapNotNull(sub.configurations::findByName)
+                    .filter(Configuration::isCanBeResolved)
+
+                if (fastConfigurations.isNotEmpty()) {
+                    val fragmentFile = rootProject.layout.buildDirectory.file(
+                        "sbom-fast/fragments/$safeModuleId.tsv",
+                    )
+                    val pomsDir = rootProject.layout.buildDirectory.dir(
+                        "sbom-fast/poms/$safeModuleId",
+                    )
+                    tasks.register("collectFastSbom_$safeModuleId") {
+                        group = "sbom"
+                        description = "Collect resolved dependency graph metadata of ${sub.path}."
+                        inputs.files(
+                            fastConfigurations.map { configuration ->
+                                configuration.incoming.artifactView {
+                                    lenient(true)
+                                    componentFilter { id -> id !is ProjectComponentIdentifier }
+                                }.files
+                            },
+                        ).withPropertyName("runtimeArtifacts")
+                        outputs.file(fragmentFile)
+                        outputs.dir(pomsDir)
+                        doFirst {
+                            pomsDir.get().asFile.deleteRecursively()
+                        }
+                        doLast {
+                            sub.writeFastSbomFragment(fastConfigurations, fragmentFile.get().asFile)
+                            sub.writeFastSbomPoms(fastConfigurations, pomsDir.get().asFile)
+                        }
+                    }
+                }
+
                 SBOM_TARGET_CONFIG_NAMES.forEach { configName ->
                     // findByName forces realization of lazy KMP target configurations.
                     // null means this module simply doesn't declare that target.
@@ -116,7 +290,6 @@ fun Project.registerSbomCollectionTasks() {
                     if (!cfg.isCanBeResolved) return@forEach
 
                     val bucket = bucketFor(configName)
-                    val safeModuleId = sub.path.removePrefix(":").replace(':', '_')
                     val taskName = "collectSbom_${safeModuleId}_$configName"
 
                     tasks.register<Copy>(taskName) {
@@ -266,6 +439,141 @@ fun Project.registerSbomCollectionTasks() {
                     }
                 }
             }
+        }
+    }
+
+    registerFastCycloneDxTask()
+}
+
+/**
+ * Generates the normal release SBOM directly from Gradle's resolved component graphs.
+ *
+ * Unlike [collectSbomArtifacts], this task never copies or extracts dependency archives. It uses
+ * the official CycloneDX model/serializer and retains the legacy collector only for the optional
+ * file-level ScanCode audit.
+ */
+private fun Project.registerFastCycloneDxTask() {
+    val outputFile = layout.buildDirectory.file("sbom-fast/kalium.raw.cdx.json")
+    val fragmentsDir = layout.buildDirectory.dir("sbom-fast/fragments")
+    val expectedModuleIds = subprojects
+        .filter(Project::isInSbomScope)
+        .map { it.path.removePrefix(":").replace(':', '_') }
+        .toSet()
+    val expectedFragments = expectedModuleIds.map { moduleId ->
+        layout.buildDirectory.file("sbom-fast/fragments/$moduleId.tsv")
+    }
+
+    tasks.register("generateFastSbom") {
+        group = "sbom"
+        description = "Generate a CycloneDX SBOM from resolved production dependency graphs."
+        dependsOn(
+            subprojects.map { subproject ->
+                subproject.tasks.matching { it.name.startsWith("collectFastSbom_") }
+            },
+            tasks.matching { it.name == "kotlinNpmInstall" },
+        )
+        inputs.files(expectedFragments).withPropertyName("dependencyGraphFragments")
+        outputs.file(outputFile)
+
+        doLast {
+            val rootRef = PackageURL(
+                "maven",
+                "com.wire",
+                "kalium",
+                project.version.toString(),
+                null,
+                null,
+            ).toString()
+            val components = sortedMapOf<String, CycloneDxComponent>()
+            val edges = sortedMapOf<String, MutableSet<String>>()
+            edges.getOrPut(rootRef) { sortedSetOf() }
+
+            val stalePomDirs = layout.buildDirectory.dir("sbom-fast/poms").get().asFile
+                .listFiles()
+                .orEmpty()
+                .filter { it.isDirectory && it.name !in expectedModuleIds }
+            stalePomDirs.forEach(File::deleteRecursively)
+
+            expectedFragments.map { it.get().asFile }.filter(File::isFile).sorted()
+                .forEach { fragment ->
+                fragment.forEachLine { line ->
+                    val fields = line.split('\t')
+                    when (fields.firstOrNull()) {
+                        "C" -> {
+                            require(fields.size == 6) { "Malformed component row in $fragment" }
+                            components.getOrPut(fields[1]) {
+                                CycloneDxComponent(fields[2], fields[3], fields[4])
+                            }.configurations += fields[5]
+                        }
+                        "A" -> {
+                            require(fields.size == 3) { "Malformed artifact row in $fragment" }
+                            components[fields[1]]?.artifacts?.add(File(fields[2]))
+                        }
+                        "E" -> {
+                            require(fields.size == 3) { "Malformed dependency row in $fragment" }
+                            val parent = if (fields[1] == "ROOT") rootRef else fields[1]
+                            edges.getOrPut(parent) { sortedSetOf() } += fields[2]
+                        }
+                    }
+                }
+            }
+
+            val rootComponent = Component().apply {
+                type = Component.Type.LIBRARY
+                group = "com.wire"
+                name = "kalium"
+                version = project.version.toString()
+                purl = rootRef
+                bomRef = rootRef
+            }
+            val bom = Bom().apply {
+                metadata = Metadata().apply { component = rootComponent }
+                this.components = components.map { (ref, resolved) ->
+                    Component().apply {
+                        type = Component.Type.LIBRARY
+                        group = resolved.group
+                        name = resolved.name
+                        version = resolved.version
+                        purl = ref
+                        bomRef = ref
+                        scope = Component.Scope.REQUIRED
+                        properties = listOf(
+                            Property(
+                                "wire:kalium:targets",
+                                resolved.configurations.joinToString(","),
+                            ),
+                        )
+                        hashes = resolved.artifacts
+                            .filter(File::isFile)
+                            .distinctBy(File::getAbsolutePath)
+                            .map { artifact -> Hash(Hash.Algorithm.SHA_256, artifact.sha256()) }
+                            .distinct()
+                    }
+                }
+                dependencies = (listOf(rootRef) + components.keys).distinct().sorted().map { ref ->
+                    Dependency(ref).apply {
+                        edges[ref].orEmpty().forEach { child -> addDependency(Dependency(child)) }
+                    }
+                }
+            }
+
+            val output = outputFile.get().asFile
+            output.parentFile.mkdirs()
+            output.writeText(
+                BomGeneratorFactory.createJson(Version.VERSION_16, bom)
+                    .toJsonString(true),
+            )
+            val validationErrors = BomParserFactory.createParser(output)
+                .validate(output, Version.VERSION_16)
+            check(validationErrors.isEmpty()) {
+                "Generated CycloneDX document failed schema validation: " +
+                    validationErrors.joinToString { it.message.orEmpty() }
+            }
+            logger.lifecycle(
+                "Wrote {} with {} external components",
+                output.relativeTo(rootDir),
+                components.size,
+            )
         }
     }
 }

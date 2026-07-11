@@ -69,6 +69,7 @@ xerialDriver = "3.51.0.0"
 kotlinx-io = "0.9.0"
 cells-sdk = "0.1.1-alpha17.02"
 difference = "1.1.1"
+cyclonedx-core = "11.0.1"
 
 [plugins]
 # Home-made convention plugins
@@ -101,6 +102,7 @@ detekt-core = ["detekt-api"]
 [libraries]
 # Kotlin Gradle Plugin
 kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+cyclonedx-core = { module = "org.cyclonedx:cyclonedx-core-java", version.ref = "cyclonedx-core" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
 kotlinx-benchmark-runtime = { group = "org.jetbrains.kotlinx", name = "kotlinx-benchmark-runtime", version.ref = "benchmark" }
 androidx-benchmark-junit4 = { module = "androidx.benchmark:benchmark-junit4", version.ref = "androidx-benchmark" }

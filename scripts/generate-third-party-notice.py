@@ -30,8 +30,9 @@ no code change here.
 Usage:
     python3 scripts/generate-third-party-notice.py BUILD_DIR
 
-where BUILD_DIR is typically build/sbom/. Must be run with the venv's
-python3 so that `licensedcode` and `yaml` are importable.
+where BUILD_DIR is typically build/sbom/. PyYAML is required. ScanCode's
+license database is used when installed; otherwise the canonical SPDX appendix
+from the tracked output document is used as a deterministic lightweight seed.
 """
 
 import csv
@@ -41,6 +42,7 @@ import os
 import re
 import sys
 from collections import Counter, defaultdict
+from types import SimpleNamespace
 
 # yaml is required transitively via sbom_overrides — see module docstring.
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -53,6 +55,11 @@ from sbom_overrides import load_overrides, report_unused_overrides  # noqa: E402
 def fail(msg):
     print(f"ERROR: {msg}", file=sys.stderr)
     sys.exit(1)
+
+
+def normalize_license_text(value):
+    """Keep legal text content while removing Markdown-hostile line suffixes."""
+    return "\n".join(line.rstrip() for line in (value or "").splitlines())
 
 
 # Compliance policy: SPDX identifiers approved for inclusion in this SDK.
@@ -131,12 +138,43 @@ def candidate_basenames(aid, ver):
         yield f"{aid}-{ver}.{ext}-extract"
 
 
-def load_scancode_license_db():
+def load_tracked_license_texts(path):
+    """Load the canonical SPDX appendix from the tracked notice as a small,
+    deterministic fallback when the optional ScanCode toolchain is absent."""
+    try:
+        with open(path, encoding="utf-8") as source:
+            content = source.read()
+    except OSError:
+        return {}
+    marker = "\n## License Texts\n"
+    if marker not in content:
+        return {}
+    appendix = content.split(marker, 1)[1].split("\n## Bundled License Texts\n", 1)[0]
+    result = {}
+    pattern = re.compile(
+        r"^### ([^\n]+)\n(?:(?!^### ).)*?^```\n(.*?)\n```$",
+        re.MULTILINE | re.DOTALL,
+    )
+    for match in pattern.finditer(appendix):
+        spdx, text = match.groups()
+        result[spdx] = SimpleNamespace(
+            key=spdx.lower(),
+            short_name=spdx,
+            name=spdx,
+            spdx_license_key=spdx,
+            text=normalize_license_text(text),
+        )
+    return result
+
+
+def load_scancode_license_db(fallback_path=None):
     try:
         from licensedcode.cache import get_licenses_db
         return get_licenses_db()
     except ImportError:
-        return None
+        if fallback_path:
+            return load_tracked_license_texts(fallback_path)
+        return {}
 
 
 # POM-dialect synonym table. ScanCode's licensedcode/data/licenses/*.yml only
@@ -218,6 +256,8 @@ POM_NAME_SYNONYMS = {
     "wtfpl": "WTFPL",
     "zlib": "Zlib",
     "zlib/libpng license": "Zlib",
+    "unicode-dfs-2016": "Unicode-DFS-2016",
+    "unicode license agreement - data files and software (2016)": "Unicode-DFS-2016",
 }
 
 
@@ -499,7 +539,7 @@ def discover_npm_packages(artifacts_dir):
 def read_file_text(path):
     try:
         with open(path, encoding="utf-8", errors="replace") as f:
-            return f.read()
+            return normalize_license_text(f.read())
     except OSError as e:
         return f"(unable to read: {e})"
 
@@ -539,7 +579,9 @@ def build_section(*, kind, header, sort_tag, names, urls, source, override,
         "unresolved": list(unresolved),
         "verbatim": collect_verbatim_files(found_map, artifacts_dir, candidate_keys),
         "notes": (override or {}).get("notes", ""),
-        "license_text": (override or {}).get("license_text", ""),
+        "license_text": normalize_license_text(
+            (override or {}).get("license_text", "")
+        ),
     }
 
 
@@ -557,6 +599,7 @@ def emit_license_body(out, text, summary, dedup_index, anchors_emitted):
     filenames in the same package. Otherwise inline a collapsible
     <details> block titled with `summary`.
     """
+    text = normalize_license_text(text)
     key = text.strip()
     if key in dedup_index:
         anchor = dedup_index[key]["anchor"]
@@ -587,11 +630,11 @@ def main():
     if not os.path.isdir(artifacts_dir):
         fail(f"missing artifacts directory: {artifacts_dir}")
 
-    db = load_scancode_license_db()
-    if db is None:
+    db = load_scancode_license_db(output_md)
+    if not db:
         fail(
-            "ScanCode's licensedcode module is not importable from this "
-            "Python. Run with .venv/bin/python3 (or reinstall scancode-toolkit)."
+            "no canonical license database is available: install ScanCode or "
+            "keep a tracked THIRD-PARTY-NOTICE.md with a License Texts appendix"
         )
     name_to_spdx = build_name_to_spdx_index(db)
     found_map = parse_license_files_found(found_txt)
@@ -863,7 +906,7 @@ def main():
             lic = by_spdx.get(spdx)
             if not lic:
                 continue
-            text = (getattr(lic, "text", "") or "").strip()
+            text = normalize_license_text(getattr(lic, "text", "")).strip()
             anchor = spdx_anchor(spdx)
             name = getattr(lic, "name", "") or ""
             out.write(f"### {spdx}\n")

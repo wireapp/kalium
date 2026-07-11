@@ -80,6 +80,7 @@ def main():
     # points to a stale entry in the YAML — either a typo or a dependency that
     # was removed upstream. Surfaced as an ERROR so the operator notices.
     used_override_keys = set()
+    seen_coordinates = set()
     with open(out_tsv, 'w') as tsv, open(out_nolic, 'w') as nolic:
         tsv.write('groupId\tartifactId\tversion\tlicense_names\tlicense_urls\tsource\n')
         for pom in sorted(glob.iglob(os.path.join(poms_dir, '**/*.pom'), recursive=True)):
@@ -87,8 +88,12 @@ def main():
                 root = ET.parse(pom).getroot()
             except ET.ParseError:
                 continue
-            pom_count += 1
             gid, aid, ver = coord(root)
+            coordinate = (gid, aid, ver)
+            if coordinate in seen_coordinates:
+                continue
+            seen_coordinates.add(coordinate)
+            pom_count += 1
             # Override table wins over POM-declared metadata: it's curated and
             # canonical, the POM is upstream-declared (sometimes inconsistent or
             # ambiguous). Fall through to <licenses> only when no override matches.
@@ -109,6 +114,10 @@ def main():
                 tsv.write(f'{gid}\t{aid}\t{ver}\t{names}\t{urls}\tpom\n')
             else:
                 unresolved += 1
+                # Keep unresolved components in the structured feed so the
+                # downstream compliance gate fails visibly instead of silently
+                # omitting the dependency from THIRD-PARTY-NOTICE.md.
+                tsv.write(f'{gid}\t{aid}\t{ver}\t\t\tmissing\n')
                 nolic.write(f'{gid}:{aid}:{ver}\n')
 
     print(f'  Parsed {pom_count} POMs:')

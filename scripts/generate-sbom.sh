@@ -272,12 +272,12 @@ SCANCODE_ARGS=(
     --license-text --license-references
     --processes "$SCANCODE_PROCESSES"
     --json-pp "$OUTPUT_DIR/scan.json"
-    --spdx-tv "$OUTPUT_DIR/scan.spdx"
+    --spdx-tv "$OUTPUT_DIR/scan-deep.spdx"
 )
 # --cyclonedx is available in ScanCode-Toolkit >= 32; if not present, emit a
 # warning and continue rather than fail the whole run.
 if scancode --help 2>&1 | grep -q -- '--cyclonedx'; then
-    SCANCODE_ARGS+=(--cyclonedx "$OUTPUT_DIR/scan.cdx.json")
+    SCANCODE_ARGS+=(--cyclonedx "$OUTPUT_DIR/scan-deep.cdx.json")
 else
     echo "WARN: installed scancode lacks --cyclonedx; converting JSON afterwards (or skip)." >&2
 fi
@@ -413,35 +413,17 @@ else
     "$NOTICE_PY" scripts/generate-third-party-notice.py "$OUTPUT_DIR" THIRD-PARTY-NOTICE.md
 fi
 
-# Customer SBOM bundle: pack the four canonical deliverable files into a
-# single archive next to the scan outputs. `zip -j` flattens the structure
-# so the recipient sees a flat list of files instead of build/sbom/... paths.
+# Customer delivery contract: the deep scan retains scan.json and its other
+# forensic outputs beside the archive, while the customer ZIP uses the exact
+# same component-level files as the fast path.
 echo
+echo "==> Generating canonical customer SBOM files"
+SBOM_GRADLE_EXTRA_ARGS="$SBOM_GRADLE_EXTRA_ARGS" scripts/generate-sbom-fast.sh
+cp build/sbom-fast/scan.cdx.json "$OUTPUT_DIR/scan.cdx.json"
+cp build/sbom-fast/scan.spdx "$OUTPUT_DIR/scan.spdx"
+
 echo "==> Bundling customer SBOM archive"
-SBOM_BUNDLE="$OUTPUT_DIR/SBOM-and-license.zip"
-BUNDLE_INPUTS=(
-    "$OUTPUT_DIR/scan.json"
-    "$OUTPUT_DIR/scan.cdx.json"
-    "$OUTPUT_DIR/scan.spdx"
-    "THIRD-PARTY-NOTICE.md"
-)
-EXISTING_INPUTS=()
-for f in "${BUNDLE_INPUTS[@]}"; do
-    if [[ -f "$f" ]]; then
-        EXISTING_INPUTS+=("$f")
-    else
-        echo "  WARN: missing input $f — skipping" >&2
-    fi
-done
-if [[ ${#EXISTING_INPUTS[@]} -eq 0 ]]; then
-    echo "  ERROR: no input files found, skipping bundle." >&2
-elif ! command -v zip >/dev/null 2>&1; then
-    echo "  WARN: 'zip' not on PATH — skipping bundle. Install zip to enable." >&2
-else
-    rm -f "$SBOM_BUNDLE"
-    zip -j "$SBOM_BUNDLE" "${EXISTING_INPUTS[@]}" >/dev/null
-    echo "  Wrote $SBOM_BUNDLE (${#EXISTING_INPUTS[@]} files)"
-fi
+python3 scripts/bundle-sbom.py "$OUTPUT_DIR" THIRD-PARTY-NOTICE.md
 
 echo
 echo "SBOM outputs:"
