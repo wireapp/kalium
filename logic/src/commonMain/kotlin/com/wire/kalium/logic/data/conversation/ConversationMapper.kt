@@ -57,7 +57,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ProtocolInfo
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Type.*
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Type.Unknown
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
@@ -292,7 +292,6 @@ internal class ConversationMapperImpl(
 
                 ConversationEntity.Type.CHANNEL -> ConversationDetails.Group.Channel(
                     conversation = fromConversationViewToEntity(daoModel),
-                    hasOngoingCall = callStatus != null, // todo: we can do better!
                     isSelfUserMember = isMember,
                     selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
                     isFavorite = isFavorite,
@@ -308,7 +307,6 @@ internal class ConversationMapperImpl(
 
                 ConversationEntity.Type.MEETING -> ConversationDetails.Group.Meeting(
                     conversation = fromConversationViewToEntity(daoModel),
-                    hasOngoingCall = callStatus != null, // todo: we can do better!
                     isSelfUserMember = isMember,
                     selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
                     isFavorite = isFavorite,
@@ -318,7 +316,6 @@ internal class ConversationMapperImpl(
 
                 ConversationEntity.Type.GROUP -> ConversationDetails.Group.Regular(
                     conversation = fromConversationViewToEntity(daoModel),
-                    hasOngoingCall = callStatus != null, // todo: we can do better!
                     isSelfUserMember = isMember,
                     selfRole = selfRole?.let { conversationRoleMapper.fromDAO(it) },
                     isFavorite = isFavorite,

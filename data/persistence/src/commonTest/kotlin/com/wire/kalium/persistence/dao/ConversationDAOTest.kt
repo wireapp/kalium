@@ -1576,7 +1576,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversationWithStillOngoingCall_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() = runTest {
+    fun givenConversationWithOngoingCallInMemory_whenGettingAllConversationsWithEventsAndNewActivitiesOnTop_thenReturnRightOrder() = runTest {
         val conversationEntity1 = conversationEntity1.copy(
             id = ConversationIDEntity("conversation1", "domain"),
             type = ConversationEntity.Type.GROUP,
@@ -1592,16 +1592,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         conversationDAO.insertConversation(conversationEntity2)
         userDAO.upsertUser(user1)
-        val callEntity = CallEntity(
-            conversationId = conversationEntity1.id,
-            id = "call_id",
-            status = CallEntity.Status.STILL_ONGOING,
-            callerId = "callerId",
-            conversationType = ConversationEntity.Type.GROUP,
-            type = CallEntity.Type.CONFERENCE
-        )
-        callDAO.insertCall(callEntity.copy(conversationId = conversationEntity2.id)) // but conversation 2 has ongoing call
-        conversationDAO.getAllConversationDetailsWithEvents(newActivitiesOnTop = true).first().let {
+
+        conversationDAO.getAllConversationDetailsWithEvents(
+            newActivitiesOnTop = true,
+            ongoingCallConversationIds = listOf(conversationEntity2.id)
+        ).first().let {
             assertEquals(conversationEntity2.id, it[0].conversationViewEntity.id) // first is the one with ongoing call
             assertEquals(conversationEntity1.id, it[1].conversationViewEntity.id) // second is the other one even if it is more recent
         }
@@ -2825,7 +2820,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
             id = id,
             name = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.name else name,
             type = type,
-            callStatus = null,
             previewAssetId = null,
             mutedStatus = mutedStatus,
             teamId = if (type == ConversationEntity.Type.ONE_ON_ONE) userEntity?.team else teamId,
@@ -3162,7 +3156,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenSomePreviousCallIsWronglyStillOngoingButLastOneIsAlreadyClosed_whenFetchingConversationDetails_thenReturnStateOfLastCall() =
+    fun givenConversationHasCallRows_whenFetchingConversationDetails_thenDetailsAreUnaffected() =
         runTest(dispatcher) {
             val conversationEntity1 = conversationEntity1.copy(
                 id = ConversationIDEntity("conversation1", "domain"),
@@ -3176,7 +3170,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             callDAO.insertCall(callEntity1.copy(id = "2", status = CallEntity.Status.CLOSED)) // last call already closed
             conversationDAO.getConversationDetailsById(conversationEntity1.id).let {
                 assertNotNull(it)
-                assertEquals(null, it.callStatus) // no call status because the last call is already closed
+                assertEquals(conversationEntity1.id, it.id)
             }
         }
 

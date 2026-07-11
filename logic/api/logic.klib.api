@@ -478,6 +478,10 @@ abstract interface com.wire.kalium.logic.feature.call.usecase/ObserveInCallReact
     abstract fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.call/InCallReactionMessage> // com.wire.kalium.logic.feature.call.usecase/ObserveInCallReactionsUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase { // com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase|null[0]
+    abstract fun invoke(): kotlinx.coroutines.flow/Flow<kotlin.collections/Map<com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.call/Call>> // com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase.invoke|invoke(){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.call.usecase/ObserveLastActiveCallWithSortedParticipantsUseCase { // com.wire.kalium.logic.feature.call.usecase/ObserveLastActiveCallWithSortedParticipantsUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.call/CallingParticipantsOrderType = ...): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.call/Call?> // com.wire.kalium.logic.feature.call.usecase/ObserveLastActiveCallWithSortedParticipantsUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.call.CallingParticipantsOrderType){}[0]
 }
@@ -3446,6 +3450,8 @@ final class com.wire.kalium.logic.feature.call/CallsScope { // com.wire.kalium.l
         final fun <get-observeEstablishedCallWithSortedParticipants>(): com.wire.kalium.logic.feature.call.usecase/ObserveEstablishedCallWithSortedParticipantsUseCase // com.wire.kalium.logic.feature.call/CallsScope.observeEstablishedCallWithSortedParticipants.<get-observeEstablishedCallWithSortedParticipants>|<get-observeEstablishedCallWithSortedParticipants>(){}[0]
     final val observeInCallReactions // com.wire.kalium.logic.feature.call/CallsScope.observeInCallReactions|{}observeInCallReactions[0]
         final fun <get-observeInCallReactions>(): com.wire.kalium.logic.feature.call.usecase/ObserveInCallReactionsUseCase // com.wire.kalium.logic.feature.call/CallsScope.observeInCallReactions.<get-observeInCallReactions>|<get-observeInCallReactions>(){}[0]
+    final val observeJoinableCalls // com.wire.kalium.logic.feature.call/CallsScope.observeJoinableCalls|{}observeJoinableCalls[0]
+        final fun <get-observeJoinableCalls>(): com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase // com.wire.kalium.logic.feature.call/CallsScope.observeJoinableCalls.<get-observeJoinableCalls>|<get-observeJoinableCalls>(){}[0]
     final val observeLastActiveCallWithSortedParticipants // com.wire.kalium.logic.feature.call/CallsScope.observeLastActiveCallWithSortedParticipants|{}observeLastActiveCallWithSortedParticipants[0]
         final fun <get-observeLastActiveCallWithSortedParticipants>(): com.wire.kalium.logic.feature.call.usecase/ObserveLastActiveCallWithSortedParticipantsUseCase // com.wire.kalium.logic.feature.call/CallsScope.observeLastActiveCallWithSortedParticipants.<get-observeLastActiveCallWithSortedParticipants>|<get-observeLastActiveCallWithSortedParticipants>(){}[0]
     final val observeOngoingCalls // com.wire.kalium.logic.feature.call/CallsScope.observeOngoingCalls|{}observeOngoingCalls[0]

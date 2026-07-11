@@ -8,7 +8,6 @@ SELECT
     UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
     UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
     CASE
-        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING') THEN 1 -- if ongoing call in a group, move it to the top
         WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
            CASE
                 WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top
@@ -82,7 +81,6 @@ selectAllConversationDetailsWithEvents:
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
 -- @CustomKey conversation_list_unread
--- @CustomKey conversation_list_calls
 -- @CustomKey conversation_list_folders
 SELECT * FROM ConversationDetailsWithEvents
 WHERE archived = :fromArchive
@@ -97,7 +95,12 @@ WHERE archived = :fromArchive
     )
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
 ORDER BY
-    CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
+    CASE
+        WHEN :newActivitiesOnTop AND type IN ('GROUP', 'CHANNEL', 'MEETING') AND qualifiedId IN :ongoingCallConversationIds
+        THEN 1
+        WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow
+        ELSE 0
+    END DESC,
     lastModifiedDate DESC,
     name IS NULL,
     name COLLATE NOCASE ASC;
@@ -107,7 +110,6 @@ selectConversationDetailsWithEvents:
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
 -- @CustomKey conversation_list_unread
--- @CustomKey conversation_list_calls
 -- @CustomKey conversation_list_folders
 SELECT * FROM ConversationDetailsWithEvents
 WHERE
@@ -133,6 +135,10 @@ WHERE
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     ORDER BY
+        CASE
+            WHEN :newActivitiesOnTop AND type IN ('GROUP', 'CHANNEL', 'MEETING') AND qualifiedId IN :ongoingCallConversationIds THEN 1
+            ELSE 0
+        END DESC,
         CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
         lastModifiedDate DESC,
         name IS NULL,
@@ -145,7 +151,6 @@ selectConversationDetailsWithEventsFromSearch:
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
 -- @CustomKey conversation_list_unread
--- @CustomKey conversation_list_calls
 -- @CustomKey conversation_list_folders
 SELECT * FROM ConversationDetailsWithEvents
 WHERE
@@ -172,6 +177,10 @@ WHERE
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     AND name LIKE ('%' || :searchQuery || '%')
 ORDER BY
+    CASE
+        WHEN :newActivitiesOnTop AND type IN ('GROUP', 'CHANNEL', 'MEETING') AND qualifiedId IN :ongoingCallConversationIds THEN 1
+        ELSE 0
+    END DESC,
     CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
     lastModifiedDate DESC,
     name IS NULL,
