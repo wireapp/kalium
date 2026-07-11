@@ -1,0 +1,6 @@
+DROP INDEX IF EXISTS idx_msg_conv_vis_date_desc;
+
+CREATE INDEX idx_msg_conv_vis_date_id_desc
+ON Message(conversation_id, visibility, creation_date DESC, id DESC);
+
+PRAGMA optimize;
