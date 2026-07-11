@@ -155,7 +155,7 @@ WHERE
     AND deletedLocally = 0
     AND CASE
         -- Meetings are synchronized but not shown in the conversation list.
-        WHEN :conversationFilter = 'ALL' THEN type IS NOT 'MEETING'
+        WHEN :conversationFilter = 'ALL' THEN type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
         -- When filter is GROUPS, filter only group conversations
         WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations

@@ -57,6 +57,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ProtocolInfo
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Type.*
 import com.wire.kalium.persistence.dao.conversation.ConversationFilterEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
@@ -256,7 +257,7 @@ internal class ConversationMapperImpl(
     @Suppress("ComplexMethod", "LongMethod")
     override fun fromDaoModelToDetails(daoModel: ConversationViewEntity): ConversationDetails =
         with(daoModel) {
-            when (type) {
+            when (val conversationType = type) {
                 ConversationEntity.Type.SELF -> {
                     ConversationDetails.Self(fromConversationViewToEntity(daoModel))
                 }
@@ -364,6 +365,10 @@ internal class ConversationMapperImpl(
                         accessRole = accessRoleList.map { it.toDAO() },
                     )
                 }
+
+                is ConversationEntity.Type.Unknown -> throw IllegalArgumentException(
+                    "Unexpected conversation type: ${conversationType.name}"
+                )
             }
         }
 
@@ -611,10 +616,13 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
             if (isTeamOneOne) {
                 ConversationEntity.Type.ONE_ON_ONE
             } else {
-                when (conversationGroupType) {
+                when (val groupType = conversationGroupType) {
                     is ConversationResponse.GroupType.Channel -> ConversationEntity.Type.CHANNEL
                     is ConversationResponse.GroupType.Meeting -> ConversationEntity.Type.MEETING
-                    else -> ConversationEntity.Type.GROUP
+                    is ConversationResponse.GroupType.Unknown -> Unknown(groupType.value)
+                    ConversationResponse.GroupType.RegularGroup -> ConversationEntity.Type.GROUP
+                    // is not one in one and have no group type, we can assume it is a regular group
+                    null -> ConversationEntity.Type.GROUP
                 }
             }
         }
@@ -647,6 +655,7 @@ internal fun ConversationEntity.Type.fromDaoModelToType(): Conversation.Type = w
     ConversationEntity.Type.MEETING -> Conversation.Type.Group.Meeting
 
     ConversationEntity.Type.CONNECTION_PENDING -> Conversation.Type.ConnectionPending
+    is ConversationEntity.Type.Unknown -> throw IllegalArgumentException("Unexpected conversation type: $name")
 }
 
 private fun ConversationAccessRoleDTO.toDAO(): ConversationEntity.AccessRole = when (this) {

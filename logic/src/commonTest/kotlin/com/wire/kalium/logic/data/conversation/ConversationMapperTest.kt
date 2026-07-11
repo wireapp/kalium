@@ -290,6 +290,21 @@ internal class ConversationMapperTest {
     }
 
     @Test
+    fun givenGroupConversationResponse_withUnknownGroupType_whenMappingToDaoModel_thenPreservesUnknownValue() {
+        val response = CONVERSATION_RESPONSE.copy(
+            conversationGroupType = ConversationResponse.GroupType.Unknown("future_group_type"),
+            type = ConversationResponse.Type.GROUP
+        )
+
+        every { conversationStatusMapper.fromMutedStatusApiToDaoModel(any()) }
+            .returns(ConversationEntity.MutedStatus.ALL_ALLOWED)
+
+        val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
+
+        assertEquals(ConversationEntity.Type.Unknown("future_group_type"), result.type)
+    }
+
+    @Test
     fun givenAFakeTeamOneOnOneConversationResponse_whenMappingFromConversationResponseToDaoModel_thenShouldMapToOneOnOneConversation() {
         val response = CONVERSATION_RESPONSE.copy(
             // Looks like a Group

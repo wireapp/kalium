@@ -174,6 +174,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
         populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
         populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
         getPager(searchQuery = "", filter = ConversationFilterEntity.GROUPS).pagingSource.refresh().also { result ->
             assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
             assertEquals(10, result.data.size)
@@ -188,6 +189,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
         populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
         populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
         getPager(searchQuery = "", filter = ConversationFilterEntity.CHANNELS).pagingSource.refresh().also { result ->
             assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
             assertEquals(9, result.data.size)
@@ -198,10 +200,11 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenFilterAll_whenReturningResults_thenIncludeOnlyGroupsAndChannels_excludeMeetings() = runTest(dispatcher) {
+    fun givenFilterAll_whenReturningResults_thenIncludeOnlyGroupsAndChannels_excludeMeetingsAndUnknown() = runTest(dispatcher) {
         populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
         populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
         populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
         getPager(searchQuery = "", filter = ConversationFilterEntity.ALL).pagingSource.refresh().also { result ->
             assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
             assertEquals(19, result.data.size)
@@ -214,10 +217,11 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenSearchQuery_whenReturningResults_thenIncludeOnlyGroupsAndChannels_excludeMeetings() = runTest(dispatcher) {
+    fun givenSearchQuery_whenReturningResults_thenIncludeOnlyGroupsAndChannels_excludeMeetingsAndUnknown() = runTest(dispatcher) {
         populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
         populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
         populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
 
         getPager(searchQuery = "_0").pagingSource.refresh().also { result ->
             assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)

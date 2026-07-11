@@ -28,6 +28,7 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.utils.knownConversationTypes
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
@@ -68,11 +69,11 @@ class UserDatabaseDataGenerator(
             val senderUser = generateUser()
             userDatabaseBuilder.userDAO.upsertUser(senderUser)
 
-            val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
+            val visibility = MessageEntity.Visibility.entries[index % MessageEntity.Visibility.values().size]
 
             val sanitizedVisibility =
                 if (visibility == MessageEntity.Visibility.DELETED)
-                    MessageEntity.Visibility.values()[(index + 1) % MessageEntity.Visibility.values().size]
+                    MessageEntity.Visibility.entries[(index + 1) % MessageEntity.Visibility.entries.size]
                 else visibility
 
             messages.add(
@@ -83,7 +84,7 @@ class UserDatabaseDataGenerator(
                     date = DEFAULT_DATE,
                     senderUserId = senderUser.id,
                     senderClientId = "${messagePrefix}senderClientId",
-                    status = MessageEntity.Status.values()[index % MessageEntity.Status.values().size],
+                    status = MessageEntity.Status.entries[index % MessageEntity.Status.entries.size],
                     editStatus = if (index % 2 == 0)
                         MessageEntity.EditStatus.NotEdited else
                         MessageEntity.EditStatus.Edited(DEFAULT_DATE),
@@ -111,11 +112,11 @@ class UserDatabaseDataGenerator(
             val senderUser = generateUser()
             userDatabaseBuilder.userDAO.upsertUser(senderUser)
 
-            val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
+            val visibility = MessageEntity.Visibility.entries[index % MessageEntity.Visibility.entries.size]
 
             val sanitizedVisibility =
                 if (visibility == MessageEntity.Visibility.DELETED)
-                    MessageEntity.Visibility.values()[(index + 1) % MessageEntity.Visibility.values().size]
+                    MessageEntity.Visibility.entries[(index + 1) % MessageEntity.Visibility.entries.size]
                 else visibility
 
             messages.add(
@@ -126,7 +127,7 @@ class UserDatabaseDataGenerator(
                     date = DEFAULT_DATE,
                     senderUserId = senderUser.id,
                     senderClientId = "${messagePrefix}senderClientId",
-                    status = MessageEntity.Status.values()[index % MessageEntity.Status.values().size],
+                    status = MessageEntity.Status.entries[index % MessageEntity.Status.entries.size],
                     editStatus = if (index % 2 == 0)
                         MessageEntity.EditStatus.NotEdited else
                         MessageEntity.EditStatus.Edited(DEFAULT_DATE),
@@ -171,8 +172,8 @@ class UserDatabaseDataGenerator(
 
         return UserEntity(
             id = UserIDEntity("${userPrefix}Value", "${userPrefix}Domain"),
-            availabilityStatus = UserAvailabilityStatusEntity.values()[generatedUsersCount % UserAvailabilityStatusEntity.values().size],
-            userType = UserTypeEntity.values()[generatedUsersCount % UserTypeEntity.values().size],
+            availabilityStatus = UserAvailabilityStatusEntity.entries[generatedUsersCount % UserAvailabilityStatusEntity.entries.size],
+            userType = UserTypeEntity.entries[generatedUsersCount % UserTypeEntity.entries.size],
             deleted = generatedUsersCount % 2 == 0,
             name = "${userPrefix}Name",
             handle = "${userPrefix}Handle",
@@ -180,7 +181,7 @@ class UserDatabaseDataGenerator(
             phone = "${userPrefix}Phone",
             accentId = 0,
             team = null,
-            connectionStatus = ConnectionEntity.State.values()[generatedUsersCount % ConnectionEntity.State.values().size],
+            connectionStatus = ConnectionEntity.State.entries[generatedUsersCount % ConnectionEntity.State.entries.size],
             previewAssetId = null,
             completeAssetId = null,
             botService = null,
@@ -204,11 +205,11 @@ class UserDatabaseDataGenerator(
             val senderUser = generateUser()
             userDatabaseBuilder.userDAO.upsertUser(senderUser)
 
-            val visibility = MessageEntity.Visibility.values()[index % MessageEntity.Visibility.values().size]
+            val visibility = MessageEntity.Visibility.entries[index % MessageEntity.Visibility.entries.size]
 
             val sanitizedVisibility =
                 if (visibility == MessageEntity.Visibility.DELETED)
-                    MessageEntity.Visibility.values()[(index + 1) % MessageEntity.Visibility.values().size]
+                    MessageEntity.Visibility.entries[(index + 1) % MessageEntity.Visibility.entries.size]
                 else visibility
 
             messages.add(
@@ -218,7 +219,7 @@ class UserDatabaseDataGenerator(
                     conversationId = conversationIDEntity,
                     date = DEFAULT_DATE,
                     senderUserId = senderUser.id,
-                    status = MessageEntity.Status.values()[index % MessageEntity.Status.values().size],
+                    status = MessageEntity.Status.entries[index % MessageEntity.Status.entries.size],
                     visibility = sanitizedVisibility,
                     senderName = "$messagePrefix SenderName",
                     expireAfterMs = null,
@@ -247,11 +248,11 @@ class UserDatabaseDataGenerator(
                 "${conversationPrefix}Domain$index"
             )
 
-            val conversationType = ConversationEntity.Type.values()[index % ConversationEntity.Type.values().size]
+            val conversationType = knownConversationTypes[index % knownConversationTypes.size]
 
             val sanitizedConversationType =
                 if (conversationType == ConversationEntity.Type.CONNECTION_PENDING)
-                    ConversationEntity.Type.values()[(index + 1) % ConversationEntity.Type.values().size]
+                    knownConversationTypes[(index + 1) % knownConversationTypes.size]
                 else conversationType
 
             userDatabaseBuilder.conversationDAO.insertConversation(
@@ -268,8 +269,8 @@ class UserDatabaseDataGenerator(
                     lastNotificationDate = DEFAULT_DATE,
                     lastModifiedDate = DEFAULT_DATE,
                     lastReadDate = DEFAULT_DATE,
-                    access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+                    access = listOf(ConversationEntity.Access.entries[index % ConversationEntity.Access.entries.size]),
+                    accessRole = listOf(ConversationEntity.AccessRole.entries[index % ConversationEntity.AccessRole.entries.size]),
                     receiptMode = DEFAULT_RECEIPT_MODE,
                     messageTimer = null,
                     userMessageTimer = null,
@@ -319,8 +320,8 @@ class UserDatabaseDataGenerator(
             lastNotificationDate = DEFAULT_DATE,
             lastModifiedDate = DEFAULT_DATE,
             lastReadDate = lastReadDate,
-            access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-            accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+            access = listOf(ConversationEntity.Access.entries[index % ConversationEntity.Access.entries.size]),
+            accessRole = listOf(ConversationEntity.AccessRole.entries[index % ConversationEntity.AccessRole.entries.size]),
             receiptMode = ConversationEntity.ReceiptMode.DISABLED,
             messageTimer = null,
             userMessageTimer = null,
@@ -345,18 +346,18 @@ class UserDatabaseDataGenerator(
         val userEntity = generateUser()
         userDatabaseBuilder.userDAO.upsertUser(userEntity)
 
-        val conversationType = ConversationEntity.Type.values()[generatedCallsCount % ConversationEntity.Type.values().size]
-        val type = CallEntity.Type.values()[generatedCallsCount % CallEntity.Type.values().size]
+        val conversationType = knownConversationTypes[generatedCallsCount % knownConversationTypes.size]
+        val type = CallEntity.Type.entries[generatedCallsCount % CallEntity.Type.entries.size]
 
         val sanitizedConversationType =
             if (conversationType == ConversationEntity.Type.CONNECTION_PENDING)
-                ConversationEntity.Type.values()[(generatedCallsCount + 1) % ConversationEntity.Type.values().size]
+                knownConversationTypes[(generatedCallsCount + 1) % knownConversationTypes.size]
             else conversationType
 
         val callEntity = CallEntity(
             conversationId = conversationId,
             id = "${callPrefix}Id${generatedCallsCount}",
-            status = CallEntity.Status.values()[generatedCallsCount % CallEntity.Status.values().size],
+            status = CallEntity.Status.entries[generatedCallsCount % CallEntity.Status.entries.size],
             callerId = userEntity.id.value,
             conversationType = sanitizedConversationType,
             type = type
@@ -387,15 +388,15 @@ class UserDatabaseDataGenerator(
                 type = ConversationEntity.Type.GROUP,
                 teamId = null,
                 protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
+                mutedStatus = ConversationEntity.MutedStatus.entries[index % ConversationEntity.MutedStatus.entries.size],
                 mutedTime = 0,
                 removedBy = null,
                 creatorId = "${groupConversationPrefix}CreatorId$index",
                 lastNotificationDate = DEFAULT_DATE,
                 lastModifiedDate = DEFAULT_DATE,
                 lastReadDate = DEFAULT_DATE,
-                access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+                access = listOf(ConversationEntity.Access.entries[index % ConversationEntity.Access.entries.size]),
+                accessRole = listOf(ConversationEntity.AccessRole.entries[index % ConversationEntity.AccessRole.entries.size]),
                 receiptMode = DEFAULT_RECEIPT_MODE,
                 messageTimer = null,
                 userMessageTimer = null,
@@ -461,15 +462,15 @@ class UserDatabaseDataGenerator(
                     type = ConversationEntity.Type.GROUP,
                     teamId = null,
                     protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                    mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
+                    mutedStatus = ConversationEntity.MutedStatus.entries[index % ConversationEntity.MutedStatus.entries.size],
                     mutedTime = 0,
                     removedBy = null,
                     creatorId = "${groupConversationPrefix}CreatorId$index",
                     lastNotificationDate = DEFAULT_DATE,
                     lastModifiedDate = DEFAULT_DATE,
                     lastReadDate = DEFAULT_DATE,
-                    access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+                    access = listOf(ConversationEntity.Access.entries[index % ConversationEntity.Access.entries.size]),
+                    accessRole = listOf(ConversationEntity.AccessRole.entries[index % ConversationEntity.AccessRole.entries.size]),
                     receiptMode = DEFAULT_RECEIPT_MODE,
                     messageTimer = null,
                     userMessageTimer = null,
@@ -513,15 +514,15 @@ class UserDatabaseDataGenerator(
                     type = ConversationEntity.Type.GROUP,
                     teamId = null,
                     protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
-                    mutedStatus = ConversationEntity.MutedStatus.values()[index % ConversationEntity.MutedStatus.values().size],
+                    mutedStatus = ConversationEntity.MutedStatus.entries[index % ConversationEntity.MutedStatus.entries.size],
                     mutedTime = 0,
                     removedBy = null,
                     creatorId = "${groupConversationPrefix}CreatorId$index",
                     lastNotificationDate = DEFAULT_DATE,
                     lastModifiedDate = DEFAULT_DATE,
                     lastReadDate = DEFAULT_DATE,
-                    access = listOf(ConversationEntity.Access.values()[index % ConversationEntity.Access.values().size]),
-                    accessRole = listOf(ConversationEntity.AccessRole.values()[index % ConversationEntity.AccessRole.values().size]),
+                    access = listOf(ConversationEntity.Access.entries[index % ConversationEntity.Access.entries.size]),
+                    accessRole = listOf(ConversationEntity.AccessRole.entries[index % ConversationEntity.AccessRole.entries.size]),
                     receiptMode = DEFAULT_RECEIPT_MODE,
                     messageTimer = null,
                     userMessageTimer = null,

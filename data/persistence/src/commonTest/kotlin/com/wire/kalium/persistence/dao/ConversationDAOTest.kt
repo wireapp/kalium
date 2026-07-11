@@ -3196,6 +3196,17 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(ConversationEntity.Type.MEETING, result.type)
     }
 
+    @Test
+    fun givenUnknownTypeInserted_whenGettingConversationById_thenItShouldPreserveOriginalValue() = runTest(dispatcher) {
+        val expectedType = ConversationEntity.Type.Unknown("future_group_type")
+        val conversation = conversationEntity1.copy(type = expectedType)
+
+        conversationDAO.insertConversation(conversation)
+
+        val result = conversationDAO.observeConversationById(conversation.id).first()!!
+        assertEquals(expectedType, result.type)
+    }
+
 //     @Test
 //     fun givenMutedInvalidations_whenInsertingManyConversations_thenFlowDoesNotEmitUntilFlushAndThenEmitsOnce() =
 //         runTest(dispatcher) {
