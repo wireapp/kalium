@@ -30,7 +30,14 @@ import okhttp3.CertificatePinner
 import okhttp3.ConnectionPool
 import okhttp3.ConnectionSpec
 import okhttp3.Dispatcher
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Response
+import okhttp3.ResponseBody.Companion.toResponseBody
+import okio.Buffer
+import okio.GzipSource
+import okio.buffer
+import java.io.IOException
 import java.net.Authenticator
 import java.net.InetSocketAddress
 import java.net.PasswordAuthentication
@@ -45,12 +52,15 @@ import javax.net.ssl.X509TrustManager
 private const val MAX_REQUESTS_PER_HOST = 15
 private const val MAX_IDLE_CONNECTIONS = 15
 private const val IDLE_CONNECTION_KEEP_ALIVE_TIME_MINUTES = 1L
+private const val CONTENT_ENCODING_HEADER = "content-encoding"
+private const val GZIP_ENCODING = "gzip"
 
 actual fun defaultHttpEngine(
     serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
     proxyCredentials: ProxyCredentialsDTO?,
     ignoreSSLCertificates: Boolean,
-    certificatePinning: CertificatePinning
+    certificatePinning: CertificatePinning,
+    httpTrafficObserver: HttpTrafficObserver?,
 ): HttpClientEngine = OkHttp.create {
     buildOkhttpClient {
         connectionSpecs(supportedConnectionSpecs())
@@ -90,10 +100,74 @@ actual fun defaultHttpEngine(
             proxy(proxy)
         }
 
+        if (httpTrafficObserver != null) {
+            addNetworkInterceptor(httpTrafficObserverInterceptor(httpTrafficObserver))
+        }
+
     }.also {
         preconfigured = it
         webSocketFactory = KaliumWebSocketFactory(it)
     }
+}
+
+/**
+ * A network interceptor (added via [OkHttpClient.Builder.addNetworkInterceptor]) that hands the
+ * fully-prepared request and raw response - including bodies - to [observer], then forwards them
+ * unmodified (aside from re-wrapping the response body, which OkHttp requires once its bytes have
+ * been read for inspection).
+ */
+internal fun httpTrafficObserverInterceptor(observer: HttpTrafficObserver): Interceptor = Interceptor { chain ->
+    val request = chain.request()
+
+    val requestBody = request.body?.let { body ->
+        try {
+            val buffer = Buffer()
+            body.writeTo(buffer)
+            buffer.readByteArray()
+        } catch (e: IOException) {
+            null
+        }
+    }
+    observer.onRequest(
+        method = request.method,
+        url = request.url.toString(),
+        headers = request.headers.toMultimap(),
+        body = requestBody,
+    )
+
+    val response = chain.proceed(request)
+    val (responseBytes, observableResponse) = readAndRewrapBody(response, response.body)
+
+    observer.onResponse(
+        method = request.method,
+        url = request.url.toString(),
+        statusCode = observableResponse.code,
+        headers = observableResponse.headers.toMultimap(),
+        body = responseBytes,
+    )
+
+    observableResponse
+}
+
+private fun readAndRewrapBody(response: Response, body: okhttp3.ResponseBody): Pair<ByteArray, Response> {
+    val contentEncoding = response.header(CONTENT_ENCODING_HEADER)
+    val isGzip = GZIP_ENCODING.equals(contentEncoding, ignoreCase = true)
+    val bytes = if (isGzip) {
+        if (body.contentLength() != 0L) GzipSource(body.source()).buffer().readByteArray() else ByteArray(0)
+    } else {
+        if (body.contentLength() != 0L) body.bytes() else ByteArray(0)
+    }
+    val responseBuilder = response.newBuilder().body(bytes.toResponseBody(body.contentType()))
+    if (isGzip) {
+        // The body handed to downstream callers below is already decoded, so the
+        // now-stale Content-Encoding/Content-Length headers must be dropped - otherwise
+        // callers further up the chain (e.g. Ktor's ContentEncoding plugin) try to
+        // gzip-decode the already-decoded bytes a second time and fail/corrupt the body.
+        responseBuilder.removeHeader(CONTENT_ENCODING_HEADER)
+        responseBuilder.removeHeader("Content-Length")
+    }
+    val rewrapped = responseBuilder.build()
+    return bytes to rewrapped
 }
 
 private fun OkHttpClient.Builder.ignoreAllSSLErrors() {

@@ -819,7 +819,8 @@ public class UserSessionScope internal constructor(
                     certificatePinning = kaliumConfigs.certPinningConfig,
                     mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
                     mockWebSocketSession = kaliumConfigs.mockedWebSocket?.session,
-                    kaliumLogger = userScopedLogger
+                    kaliumLogger = userScopedLogger,
+                    httpTrafficObserver = kaliumConfigs.httpTrafficObserver,
                 )
             )
         }.container

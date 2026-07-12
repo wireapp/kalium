@@ -93,7 +93,8 @@ public class AuthenticationScope internal constructor(
             userAgent = userAgent,
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
             certificatePinning = kaliumConfigs.certPinningConfig,
-            mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) }
+            mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
+            httpTrafficObserver = kaliumConfigs.httpTrafficObserver,
         )
     }
 
