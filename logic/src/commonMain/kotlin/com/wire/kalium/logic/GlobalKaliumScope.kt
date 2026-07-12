@@ -116,6 +116,7 @@ public class GlobalKaliumScope internal constructor(
             kaliumConfigs.certPinningConfig,
             kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
             kaliumConfigs.developmentApiEnabled,
+            httpTrafficObserver = kaliumConfigs.httpTrafficObserver,
         )
     }
 
