@@ -74,6 +74,13 @@ NotificationExtensionFrameworkProbe().run(sharedRoot: sharedRoot, callProcessor:
         "storeClosedBeforeRelease=\(result.storeClosedBeforeRelease) exactProto=\(result.exactProto) " +
         "genericFallback=\(result.genericFallback) productionAvailable=\(result.productionAvailable) " +
         "avsBridgeUnderLock=\(result.avsBridgeUnderLock) avsFacadeReturned=\(result.avsFacadeReturned) " +
+        "rolloutFailClosed=\(result.rolloutFailClosed) " +
+        "rolloutDeniedRuntimeCalls=\(result.rolloutDeniedRuntimeCalls) " +
+        "rolloutEligibleRuntimeCalls=\(result.rolloutEligibleRuntimeCalls) " +
+        "rolloutCompletionAtMostOnce=\(result.rolloutCompletionAtMostOnce) " +
+        "stagedDataPreservedOnDisable=\(result.stagedDataPreservedOnDisable) " +
+        "observationPayloadExcluded=\(result.observationPayloadExcluded) " +
+        "observerFailureNonFatal=\(result.observerFailureNonFatal) " +
         "realNetwork=\(result.realNetwork) realCrypto=\(result.realCrypto) realAvs=\(result.realAvs) " +
         "avsDetail=\(callProcessor.detail) detail=\(result.detail)"
     )

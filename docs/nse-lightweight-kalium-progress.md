@@ -37,8 +37,8 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | 6. Shared handoff database | Completed | `00fdd8259877` | Metadata/JVM/Android/Apple compilation, Apple links, macOS and simulator durability/rollback probes, dependency audit, independent security review, detekt, diff check | Encrypted production factory and device gates deferred |
 | 7. Lightweight NSE framework | Completed | `b5a36b47409e` | Apple framework links, application-extension Swift compile, iOS simulator probe, dependency/header/symbol audits, detekt, independent review | Production adapters remain gated by the deferred M1/M4/M5/M6 security and backend work |
 | 8. Foreground importer contract/integration | Completed | `7a098a341c5b` | Kotlin/Swift compile, KMP/native probes, token parity, dependency audit, detekt, independent review | Real native app mapping and production storage/path/device gates remain open |
-| 9. Resilience, security, and performance | Implementation and verification complete; awaiting commit | — | macOS/simulator hardening probes, Swift token/import parity, bounded-sync budget probe, Apple/metadata compilation | External native app, encrypted storage, signing, backend, physical-device, and product budget approvals remain explicit |
-| 10. Rollout and observability | Not started | — | — | — |
+| 9. Resilience, security, and performance | Completed | `f7dff7073677` | macOS/simulator hardening probes, Swift token/import parity, bounded-sync budget probe, Apple/metadata compilation | External native app, encrypted storage, signing, backend, physical-device, and product budget approvals remain explicit |
+| 10. Rollout and observability | Implementation and verification complete; awaiting commit | — | Metadata/Apple compilation, simulator framework/Swift host probe, dependency/header/privacy audits, detekt, independent review | External rollout ownership, privacy approval, signing, backend, and physical-device validation remain explicit |
 
 ## Milestone 0 — Architecture and Contracts
 
@@ -660,7 +660,7 @@ Deferred production work:
 
 ## Milestone 9 — Resilience, Security, and Performance
 
-Status: Implementation and verification complete; awaiting commit
+Status: Completed on 2026-07-13 in `f7dff7073677`
 
 Delivered:
 
@@ -719,7 +719,79 @@ Deferred production work:
 - Contract 1 to contract 2 migration/rollout remains an explicit release decision; this spike does
   not silently migrate or recreate incompatible state.
 
+## Milestone 10 — Rollout and Observability
+
+Status: Implementation and verification complete; awaiting commit
+
+Delivered:
+
+- Added a pure version-1 native-host rollout snapshot with an explicit revision, issue/expiry
+  window, feature state, kill-switch state, evaluated cohort decision, and coarse stop reason. The
+  unavailable default, unsupported/malformed/future/stale state, disabled feature, excluded cohort,
+  and unreadable control all fail closed; a locally readable stop decision wins because it can only
+  reduce behavior.
+- Evaluated rollout before `NotificationExtensionRuntime.execute`, which is the sole gateway to the
+  bounded engine and therefore to the account lock, handoff storage, authentication/transport,
+  CoreCrypto, and synchronous AVS bridge. Denied paths return generic fallback with an empty summary
+  and do not read, clean, delete, recreate, or mutate staged data or cursor state.
+- Added one post-completion versioned observation with stable result enums plus bucketed monotonic
+  duration, deadline margin, and counts. It contains no exact byte counts, payload/protobuf data,
+  message/call text, tokens, paths, native/exception text, or account/user/conversation/message IDs.
+- Restricted optional correlation to a lowercase canonical UUID-v4 and redacted it from string
+  output. Shape validation is not a privacy guarantee: random non-PII generation/provenance remains
+  a native privacy responsibility.
+- Preserved at-most-once completion through the existing atomic gate. Completion is invoked before
+  observation construction; observation construction, a throwing sink, and sink dispatch are
+  isolated from the required completion path. Shape/cardinality are bounded to one record, while a
+  non-blocking wall-clock sink and retention/export remain native responsibilities.
+- Added explicit native ownership bits for approved message/call fallback, feature/kill sources,
+  cohort evaluation, diagnostics retention/export, notification replacement identifiers, cursor
+  cutover, downgrade/rollback, and rollout stop conditions. Production still reports every existing
+  gate plus new rollout/privacy/release gates and returns no instance.
+- Added the detailed evidence and ownership report at
+  `docs/spikes/ios-nse-milestone-10-rollout-observability.md` and extended the disposable Apple/Swift
+  framework probe without adding a telemetry library, database table, dependency, module edge, or
+  CI change.
+
+Verification evidence:
+
+- Notification-extension common metadata, iOS Simulator ARM64, and macOS ARM64 source compilation
+  passed. The core and unchanged split AVS iOS Simulator frameworks linked; known AVS debug-map
+  warnings remain non-fatal.
+- Swift application-extension type checking passed with warnings treated as errors against the
+  regenerated framework headers.
+- The iPhone 16 Pro / iOS 18.4 simulator reported `rolloutFailClosed=true`,
+  `rolloutDeniedRuntimeCalls=0`, `rolloutEligibleRuntimeCalls=1`,
+  `rolloutCompletionAtMostOnce=true`, `stagedDataPreservedOnDisable=true`,
+  `observationPayloadExcluded=true`, and `observerFailureNonFatal=true`. The surrounding M7
+  stage-before-ACK, lock coverage, resource-close order, exact proto, generic fallback, and split-AVS
+  evidence remained green.
+- The resolved common dependency graph is unchanged. Generated-header review found only the intended
+  rollout, readiness, bucket, observer, and UUID-correlation fields; no internal evaluator/validator,
+  exact-byte field, `Either`, SQLDelight entity, CoreCrypto context, bounded-engine port, or AVS
+  domain type is public. Symbol review retained zero notification-AVS entry points in the core image
+  and zero CoreCrypto/SQLCipher symbols in the AVS image.
+- Repository `detekt`, `git diff --check`, no-sensitive-field/source logging, build/dependency-file,
+  untracked whitespace, and no-test-file audits passed. Independent privacy/security/rollout review
+  fixed completion-before-diagnostics ordering and narrowed correlation to UUID-v4, then found no
+  remaining scoped blocker.
+- No automated tests were added, modified, generated, or run.
+
+Deferred production work:
+
+- Native authentication, fetch/cache, rollback protection and cross-run monotonic revision for the
+  rollout snapshot; deterministic cohort derivation; operational owners; refresh cadence; rollout
+  percentages; and stop/re-enable thresholds.
+- Product-approved generic message/call fallback, notification replacement identifiers, diagnostics
+  privacy review, consent/access, retention, sampling/export, and a genuinely non-blocking sink.
+- Native app import mapping, legacy-stop receipt, cursor cutover, contract migration, downgrade and
+  recovery release coordination, account removal, and staged-data draining during rollback.
+- Every previously open encrypted App Group/Keychain/file-protection, signed entitlement,
+  APNs/backend, real receive/CoreCrypto/AVS, locked-device, physical-device, RSS/jetsam, deadline,
+  storage-pressure, and product-budget gate.
+
 ## Next Action
 
-Review and commit Milestone 9, then start Milestone 10 in a fresh task. Continue to avoid adding,
-modifying, or running tests until the spike design has been verified end to end.
+Review and commit Milestone 10, then hand the explicit external ownership and physical-device gates
+to the native iOS/product/security integration plan. Continue to avoid adding, modifying, or running
+tests until the spike design has been verified end to end.

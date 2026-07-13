@@ -76,6 +76,13 @@ public data class NotificationExtensionFrameworkProbeResult(
     public val receivingAndExtractionLinked: Boolean,
     public val avsBridgeUnderLock: Boolean,
     public val avsFacadeReturned: Boolean,
+    public val rolloutFailClosed: Boolean,
+    public val rolloutDeniedRuntimeCalls: Int,
+    public val rolloutEligibleRuntimeCalls: Int,
+    public val rolloutCompletionAtMostOnce: Boolean,
+    public val stagedDataPreservedOnDisable: Boolean,
+    public val observationPayloadExcluded: Boolean,
+    public val observerFailureNonFatal: Boolean,
     public val productionAvailable: Boolean,
     public val realNetwork: Boolean,
     public val realCrypto: Boolean,
@@ -97,7 +104,7 @@ public class NotificationExtensionFrameworkProbe {
         failedProbe(failure)
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "CyclomaticComplexMethod")
     private suspend fun execute(
         sharedRoot: String,
         callProcessor: NotificationExtensionCallProcessor
@@ -156,6 +163,9 @@ public class NotificationExtensionFrameworkProbe {
         timeline += "lock-reacquired"
         val storeClosedBeforeRelease = timeline.indexOf("store-closed") in 0 until timeline.indexOf("lock-reacquired")
         val expirationComplete = verifyImmediateExpirationCompletion()
+        val rolloutProbe = NotificationExtensionRolloutProbe().run()
+        val storedChildAfterDisabledRuns = verifyStoredChild(processLockFactory, handoffDirectory)
+        val stagedDataPreservedOnDisable = storedChildAfterDisabledRuns == storedChild
         val construction = NotificationExtensionFactory.createProduction(
             NotificationExtensionHostConfiguration(sharedRoot)
         )
@@ -164,7 +174,8 @@ public class NotificationExtensionFrameworkProbe {
         val passed = completionCount.load() == 1 && expirationComplete && evidence.stageBeforeAck &&
                 evidence.lockHeldForStorage && storeClosedBeforeRelease && storedChild.exactProto &&
                 genericFallback && evidence.receivingAndExtractionLinked && evidence.avsBridgeUnderLock &&
-                evidence.avsFacadeReturned && !construction.isAvailable
+                evidence.avsFacadeReturned && rolloutProbe.passed && stagedDataPreservedOnDisable &&
+                rolloutProbe.observationPayloadFree && rolloutProbe.observerFailureNonFatal && !construction.isAvailable
         return NotificationExtensionFrameworkProbeResult(
             passed = passed,
             completionCount = completionCount.load(),
@@ -177,6 +188,13 @@ public class NotificationExtensionFrameworkProbe {
             receivingAndExtractionLinked = evidence.receivingAndExtractionLinked,
             avsBridgeUnderLock = evidence.avsBridgeUnderLock,
             avsFacadeReturned = evidence.avsFacadeReturned,
+            rolloutFailClosed = rolloutProbe.passed,
+            rolloutDeniedRuntimeCalls = rolloutProbe.deniedRuntimeCalls,
+            rolloutEligibleRuntimeCalls = rolloutProbe.eligibleRuntimeCalls,
+            rolloutCompletionAtMostOnce = rolloutProbe.completionAtMostOnce,
+            stagedDataPreservedOnDisable = stagedDataPreservedOnDisable,
+            observationPayloadExcluded = rolloutProbe.observationPayloadFree,
+            observerFailureNonFatal = rolloutProbe.observerFailureNonFatal,
             productionAvailable = construction.isAvailable,
             realNetwork = false,
             realCrypto = false,
@@ -431,12 +449,28 @@ private fun probeRequest(deadlineEpochMillis: Long): NotificationExtensionReques
     clientId = PROBE_CLIENT_ID,
     markerId = PROBE_MARKER,
     absoluteDeadlineEpochMillis = deadlineEpochMillis,
+    rolloutControl = frameworkProbeRolloutControl(),
+    opaqueCorrelationId = "00000000-0000-4000-8000-000000000007",
     maxTransportFrames = 2,
     maxEventsToStage = 1,
     maxDrainBatches = 1,
     maxEventsPerDrainBatch = 1,
     deadlineSafetyMarginMillis = 100
 )
+
+private fun frameworkProbeRolloutControl(): NotificationExtensionRolloutControl {
+    val nowEpochMillis = Clock.System.now().toEpochMilliseconds()
+    return NotificationExtensionRolloutControl(
+        contractVersion = NOTIFICATION_EXTENSION_ROLLOUT_CONTRACT_VERSION,
+        revision = 1L,
+        issuedAtEpochMillis = nowEpochMillis - 1L,
+        expiresAtEpochMillis = nowEpochMillis + PROBE_ROLLOUT_VALIDITY_MILLIS,
+        featureState = NotificationExtensionFeatureState.ENABLED,
+        killSwitchState = NotificationExtensionKillSwitchState.ALLOW,
+        cohortDecision = NotificationExtensionCohortDecision.INCLUDED,
+        stopReason = NotificationExtensionRolloutStopReason.NONE
+    )
+}
 
 private fun ensureDirectory(path: String): Boolean = NSFileManager.defaultManager.createDirectoryAtPath(
     path = path,
@@ -445,6 +479,7 @@ private fun ensureDirectory(path: String): Boolean = NSFileManager.defaultManage
     error = null
 )
 
+@Suppress("UnusedParameter")
 private fun failedProbe(failure: Throwable): NotificationExtensionFrameworkProbeResult =
     NotificationExtensionFrameworkProbeResult(
         passed = false,
@@ -458,11 +493,18 @@ private fun failedProbe(failure: Throwable): NotificationExtensionFrameworkProbe
         receivingAndExtractionLinked = false,
         avsBridgeUnderLock = false,
         avsFacadeReturned = false,
+        rolloutFailClosed = false,
+        rolloutDeniedRuntimeCalls = -1,
+        rolloutEligibleRuntimeCalls = -1,
+        rolloutCompletionAtMostOnce = false,
+        stagedDataPreservedOnDisable = false,
+        observationPayloadExcluded = false,
+        observerFailureNonFatal = false,
         productionAvailable = false,
         realNetwork = false,
         realCrypto = false,
         realAvs = false,
-        detail = failure.message ?: failure::class.simpleName.orEmpty()
+        detail = "synthetic=true; phase=failed; code=framework-probe-failure"
     )
 
 private val PROBE_INBOX_SCOPE = InboxScope(
@@ -493,6 +535,7 @@ private const val PROBE_CURSOR = "synthetic-m7-cursor"
 private const val PROBE_MARKER = "synthetic-m7-marker"
 private const val PROBE_TEXT = "synthetic local notification"
 private const val PROBE_DEADLINE_MILLIS = 10_000L
+private const val PROBE_ROLLOUT_VALIDITY_MILLIS = 60_000L
 private const val IMMEDIATE_CANCEL_ITERATIONS = 32
 private const val EVENT_DELIVERY_TAG = 71UL
 private const val MARKER_DELIVERY_TAG = 72UL

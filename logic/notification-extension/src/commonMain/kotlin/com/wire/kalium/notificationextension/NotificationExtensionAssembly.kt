@@ -345,6 +345,7 @@ private fun NotificationExtensionRequest.toDomainRequest(): BoundedNotificationS
 
 private fun NotificationExtensionRequest.isValid(): Boolean {
     val identifiersAreValid = accountId.isNotBlank() && clientId.isNotBlank() && markerId.isNotBlank()
+    val correlationIsValid = opaqueCorrelationId == null || opaqueCorrelationId.validatedOpaqueCorrelationId() != null
     val countsAreValid = listOf(
         maxTransportFrames,
         maxEventsToStage,
@@ -353,7 +354,8 @@ private fun NotificationExtensionRequest.isValid(): Boolean {
     ).all { it > 0 }
     val byteBudgetsAreValid = maxRawEnvelopeBytes > 0 && maxRawEnvelopeBytesPerRun > 0 &&
             maxDrainRawEnvelopeBytesPerRun > 0
-    return identifiersAreValid && countsAreValid && byteBudgetsAreValid && deadlineSafetyMarginMillis >= 0 &&
+    return identifiersAreValid && correlationIsValid && countsAreValid && byteBudgetsAreValid &&
+            deadlineSafetyMarginMillis >= 0 &&
             maxRunDurationMillis > 0
 }
 

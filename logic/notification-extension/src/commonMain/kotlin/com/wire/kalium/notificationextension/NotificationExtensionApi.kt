@@ -27,7 +27,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlin.concurrent.atomics.AtomicInt
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 /**
  * Swift-friendly input for one finite Notification Service Extension invocation.
@@ -41,6 +44,8 @@ public data class NotificationExtensionRequest(
     public val clientId: String,
     public val markerId: String,
     public val absoluteDeadlineEpochMillis: Long,
+    public val rolloutControl: NotificationExtensionRolloutControl = NotificationExtensionRolloutControl.Unavailable,
+    public val opaqueCorrelationId: String? = null,
     public val maxTransportFrames: Int = DEFAULT_MAX_TRANSPORT_FRAMES,
     public val maxEventsToStage: Int = DEFAULT_MAX_EVENTS_TO_STAGE,
     public val maxDrainBatches: Int = DEFAULT_MAX_DRAIN_BATCHES,
@@ -69,6 +74,7 @@ public data class NotificationExtensionRequest(
 public enum class NotificationExtensionStatus {
     COMPLETE,
     PARTIAL,
+    ROLLOUT_DISABLED,
     LOCK_UNAVAILABLE,
     DEADLINE_REACHED,
     FOREGROUND_RECOVERY_REQUIRED,
@@ -104,6 +110,13 @@ public enum class NotificationExtensionReason {
     DEADLINE,
     HOST_CANCELLED,
     RUNTIME_FAILURE,
+    ROLLOUT_CONTROL_VERSION_UNSUPPORTED,
+    ROLLOUT_CONTROL_UNAVAILABLE,
+    ROLLOUT_CONTROL_INVALID,
+    ROLLOUT_CONTROL_STALE,
+    ROLLOUT_KILL_SWITCH,
+    ROLLOUT_FEATURE_DISABLED,
+    ROLLOUT_COHORT_EXCLUDED,
     PRODUCTION_GATES_OPEN
 }
 
@@ -173,12 +186,36 @@ public class NotificationExtension internal constructor(
     public fun begin(
         request: NotificationExtensionRequest,
         completion: NotificationExtensionCompletion
+    ): NotificationExtensionRunHandle = beginInternal(request, observer = null, completion)
+
+    /** Begins one run with one optional, bounded completion observation. */
+    public fun beginObserved(
+        request: NotificationExtensionRequest,
+        observer: NotificationExtensionObserver,
+        completion: NotificationExtensionCompletion
+    ): NotificationExtensionRunHandle = beginInternal(request, observer, completion)
+
+    private fun beginInternal(
+        request: NotificationExtensionRequest,
+        observer: NotificationExtensionObserver?,
+        completion: NotificationExtensionCompletion
     ): NotificationExtensionRunHandle {
         val cancellationKind = AtomicInt(NOT_CANCELLED)
-        val completionGate = CompletionGate(completion)
+        val rolloutEvaluation = request.rolloutControl.evaluate(Clock.System.now().toEpochMilliseconds())
+        val completionGate = CompletionGate(
+            completion = completion,
+            observer = observer,
+            request = request,
+            startedAt = TimeSource.Monotonic.markNow()
+        )
         val job = scope.launch {
             val result = try {
-                runtime.execute(request)
+                when (rolloutEvaluation) {
+                    NotificationExtensionRolloutEvaluation.Enabled -> runtime.execute(request)
+                    is NotificationExtensionRolloutEvaluation.Disabled -> rolloutDisabledResult(rolloutEvaluation.reason)
+                    is NotificationExtensionRolloutEvaluation.Unavailable ->
+                        rolloutUnavailableResult(rolloutEvaluation.reason)
+                }
             } catch (_: CancellationException) {
                 cancellationResult(cancellationKind.load())
             } catch (_: Throwable) {
@@ -206,7 +243,9 @@ public class NotificationExtension internal constructor(
 
 /** Host-supplied App Group root. The production factory never derives it from process home. */
 public data class NotificationExtensionHostConfiguration(
-    public val sharedAppGroupRoot: String
+    public val sharedAppGroupRoot: String,
+    public val hostIntegrationReadiness: NotificationExtensionHostIntegrationReadiness =
+        NotificationExtensionHostIntegrationReadiness.None
 ) {
     override fun toString(): String = "NotificationExtensionHostConfiguration(redacted)"
 }
@@ -228,18 +267,29 @@ public enum class NotificationExtensionProductionGate(public val bitMask: Long) 
     FOREGROUND_CURSOR_CUTOVER(1L shl FOREGROUND_CURSOR_CUTOVER_BIT),
     ACCOUNT_REMOVAL_TOMBSTONE(1L shl ACCOUNT_REMOVAL_TOMBSTONE_BIT),
     GLOBAL_RECOVERY_FOREGROUND_ACK(1L shl GLOBAL_RECOVERY_FOREGROUND_ACK_BIT),
-    PHYSICAL_DEVICE_BUDGET_APPROVAL(1L shl PHYSICAL_DEVICE_BUDGET_APPROVAL_BIT)
+    PHYSICAL_DEVICE_BUDGET_APPROVAL(1L shl PHYSICAL_DEVICE_BUDGET_APPROVAL_BIT),
+    NATIVE_ROLLOUT_CONTROL_OWNERSHIP(1L shl NATIVE_ROLLOUT_CONTROL_OWNERSHIP_BIT),
+    APPROVED_GENERIC_FALLBACK_AND_REPLACEMENT(1L shl APPROVED_GENERIC_FALLBACK_AND_REPLACEMENT_BIT),
+    PRIVACY_DIAGNOSTICS_RETENTION_AND_EXPORT(1L shl PRIVACY_DIAGNOSTICS_RETENTION_AND_EXPORT_BIT),
+    CURSOR_CUTOVER_AND_DOWNGRADE_RELEASE(1L shl CURSOR_CUTOVER_AND_DOWNGRADE_RELEASE_BIT),
+    ROLLOUT_STOP_CONDITIONS_APPROVAL(1L shl ROLLOUT_STOP_CONDITIONS_APPROVAL_BIT)
 }
 
 /** A concrete fail-closed construction result rather than an `Either`. */
 public class NotificationExtensionConstruction internal constructor(
     public val instance: NotificationExtension?,
-    public val blockedGateMask: Long
+    public val blockedGateMask: Long,
+    public val missingHostResponsibilityMask: Long
 ) {
-    public val isAvailable: Boolean get() = instance != null && blockedGateMask == NO_BLOCKED_GATES
+    public val isAvailable: Boolean
+        get() = instance != null && blockedGateMask == NO_BLOCKED_GATES &&
+                missingHostResponsibilityMask == NO_MISSING_HOST_RESPONSIBILITIES
 
     public fun isBlockedBy(gate: NotificationExtensionProductionGate): Boolean =
         blockedGateMask and gate.bitMask != NO_BLOCKED_GATES
+
+    public fun isMissing(responsibility: NotificationExtensionHostResponsibility): Boolean =
+        missingHostResponsibilityMask and responsibility.bitMask != NO_MISSING_HOST_RESPONSIBILITIES
 }
 
 /**
@@ -248,14 +298,15 @@ public class NotificationExtensionConstruction internal constructor(
  * Calling this method performs no lock, storage, authentication, transport, or CoreCrypto access.
  */
 public object NotificationExtensionFactory {
-    @Suppress("UnusedParameter")
     public fun createProduction(
         configuration: NotificationExtensionHostConfiguration
     ): NotificationExtensionConstruction = NotificationExtensionConstruction(
         instance = null,
         blockedGateMask = NotificationExtensionProductionGate.entries.fold(NO_BLOCKED_GATES) { mask, gate ->
             mask or gate.bitMask
-        }
+        },
+        missingHostResponsibilityMask = allHostResponsibilityMask and
+                configuration.hostIntegrationReadiness.fulfilledResponsibilityMask.inv()
     )
 }
 
@@ -264,15 +315,67 @@ internal fun interface NotificationExtensionRuntime {
 }
 
 private class CompletionGate(
-    private val completion: NotificationExtensionCompletion
+    private val completion: NotificationExtensionCompletion,
+    private val observer: NotificationExtensionObserver?,
+    private val request: NotificationExtensionRequest,
+    private val startedAt: TimeMark
 ) {
     private val state = AtomicInt(COMPLETION_PENDING)
 
     fun complete(result: NotificationExtensionResult) {
         if (!state.compareAndSet(COMPLETION_PENDING, COMPLETION_DELIVERED)) return
         runCatching { completion.complete(result) }
+        // Completion is invoked before even constructing diagnostics so no observation-side
+        // failure can suppress or delay entry into the NSE content handler. The sink is
+        // constrained to one fixed-shape call per invocation.
+        val sink = observer ?: return
+        runCatching {
+            sink.observe(result.toObservation(request, startedAt.elapsedNow().inWholeMilliseconds))
+        }
     }
 }
+
+private fun NotificationExtensionResult.toObservation(
+    request: NotificationExtensionRequest,
+    elapsedMillis: Long
+): NotificationExtensionObservation {
+    val nowEpochMillis = Clock.System.now().toEpochMilliseconds()
+    val deadlineMarginMillis = if (request.absoluteDeadlineEpochMillis <= nowEpochMillis) {
+        0L
+    } else {
+        request.absoluteDeadlineEpochMillis - nowEpochMillis
+    }
+    return NotificationExtensionObservation(
+        contractVersion = NOTIFICATION_EXTENSION_OBSERVATION_CONTRACT_VERSION,
+        opaqueCorrelationId = request.opaqueCorrelationId.validatedOpaqueCorrelationId(),
+        status = status,
+        reason = reason,
+        duration = durationBucket(elapsedMillis.coerceAtLeast(0L)),
+        deadlineMargin = deadlineMarginBucket(deadlineMarginMillis),
+        transportFramesReceived = countBucket(summary.transportFramesReceived),
+        eventsInserted = countBucket(summary.eventsInserted),
+        eventsAlreadyStaged = countBucket(summary.eventsAlreadyStaged),
+        transportAcksAcceptedByLocalWriter = countBucket(summary.transportAcksAcceptedByLocalWriter),
+        eventsReceiveMaterialized = countBucket(summary.eventsReceiveMaterialized),
+        drainBatchesRead = countBucket(summary.drainBatchesRead)
+    )
+}
+
+private fun rolloutDisabledResult(reason: NotificationExtensionReason): NotificationExtensionResult =
+    NotificationExtensionResult(
+        status = NotificationExtensionStatus.ROLLOUT_DISABLED,
+        reason = reason,
+        summary = NotificationExtensionSummary.Empty,
+        shouldUsePrivacyPreservingFallback = true
+    )
+
+private fun rolloutUnavailableResult(reason: NotificationExtensionReason): NotificationExtensionResult =
+    NotificationExtensionResult(
+        status = NotificationExtensionStatus.CONFIGURATION_UNAVAILABLE,
+        reason = reason,
+        summary = NotificationExtensionSummary.Empty,
+        shouldUsePrivacyPreservingFallback = true
+    )
 
 private fun cancellationResult(kind: Int): NotificationExtensionResult = NotificationExtensionResult(
     status = if (kind == CANCELLED_FOR_EXPIRATION) {
@@ -295,6 +398,7 @@ private const val CANCELLED_FOR_EXPIRATION = 2
 private const val COMPLETION_PENDING = 0
 private const val COMPLETION_DELIVERED = 1
 private const val NO_BLOCKED_GATES = 0L
+private const val NO_MISSING_HOST_RESPONSIBILITIES = 0L
 private const val VALIDATED_APP_GROUP_ROOT_BIT = 0
 private const val ENCRYPTED_HANDOFF_STORAGE_BIT = 1
 private const val SHARED_KEYCHAIN_AUTHENTICATION_BIT = 2
@@ -311,3 +415,8 @@ private const val FOREGROUND_CURSOR_CUTOVER_BIT = 12
 private const val ACCOUNT_REMOVAL_TOMBSTONE_BIT = 13
 private const val GLOBAL_RECOVERY_FOREGROUND_ACK_BIT = 14
 private const val PHYSICAL_DEVICE_BUDGET_APPROVAL_BIT = 15
+private const val NATIVE_ROLLOUT_CONTROL_OWNERSHIP_BIT = 16
+private const val APPROVED_GENERIC_FALLBACK_AND_REPLACEMENT_BIT = 17
+private const val PRIVACY_DIAGNOSTICS_RETENTION_AND_EXPORT_BIT = 18
+private const val CURSOR_CUTOVER_AND_DOWNGRADE_RELEASE_BIT = 19
+private const val ROLLOUT_STOP_CONDITIONS_APPROVAL_BIT = 20
