@@ -33,6 +33,8 @@ internal interface CellsAwsClient {
     )
 
     suspend fun upload(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit)
+
+    fun close()
 }
 
 internal expect fun cellsAwsClient(

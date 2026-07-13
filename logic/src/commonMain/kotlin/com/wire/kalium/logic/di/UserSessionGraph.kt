@@ -30,7 +30,7 @@ internal object UserSessionLifetime
     scope = UserSessionLifetime::class,
     bindingContainers = [ConversationUseCaseBindings::class]
 )
-internal interface UserSessionGraph : ConversationEntryPoints {
+internal interface UserSessionGraph : ConversationEntryPoints, CellsFeatureGraph.Factory {
 
     @DependencyGraph.Factory
     fun interface Factory {

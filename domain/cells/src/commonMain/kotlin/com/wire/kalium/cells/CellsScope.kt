@@ -158,6 +158,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import okio.FileSystem
@@ -185,13 +186,17 @@ public class CellsScope(
     /**
      * A dedicated minimalist HttpClient for downloads
      */
-    public val downloadHttpClient: HttpClient = HttpClient {
-        followRedirects = true
-        install(HttpRedirect) {
-            checkHttpMethod = false
-            allowHttpsDowngrade = false
+    private val downloadHttpClientDelegate: Lazy<HttpClient> = lazy {
+        HttpClient {
+            followRedirects = true
+            install(HttpRedirect) {
+                checkHttpMethod = false
+                allowHttpsDowngrade = false
+            }
         }
     }
+
+    public val downloadHttpClient: HttpClient get() = downloadHttpClientDelegate.value
 
     override val coroutineContext: CoroutineContext = SupervisorJob()
 
@@ -203,9 +208,11 @@ public class CellsScope(
         async { cellsCredentialsProvider.getCredentials() }
     }
 
-    private val cellAwsClient: CellsAwsClient by lazy {
+    private val cellAwsClientDelegate: Lazy<CellsAwsClient> = lazy {
         cellsAwsClient(cellClientCredentialsDeferred, sessionManager, accessTokenApi)
     }
+
+    private val cellAwsClient: CellsAwsClient get() = cellAwsClientDelegate.value
 
     private val nodeServiceApiMutex = Mutex()
     private var _nodeServiceApi: NodeServiceApi? = null
@@ -456,5 +463,22 @@ public class CellsScope(
 
     public val getUserName: GetUserNameUseCase by lazy {
         GetUserNameUseCaseImpl(usersRepository)
+    }
+
+    /**
+     * Releases resources owned by this Cells feature instance.
+     *
+     * The authenticated [cellsClient] belongs to the user session and is intentionally not closed.
+     * Prefer `UserSessionScope.releaseCells()` when the scope was obtained from a user session so
+     * the owning feature graph is dropped as well.
+     */
+    public fun close() {
+        cancel()
+        if (cellAwsClientDelegate.isInitialized()) {
+            cellAwsClientDelegate.value.close()
+        }
+        if (downloadHttpClientDelegate.isInitialized()) {
+            downloadHttpClientDelegate.value.close()
+        }
     }
 }

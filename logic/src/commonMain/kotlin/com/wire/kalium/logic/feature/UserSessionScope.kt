@@ -211,6 +211,8 @@ import com.wire.kalium.logic.data.user.AccountRepositoryImpl
 import com.wire.kalium.logic.data.user.UserDataSource
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.CellsFeatureGraphOwner
+import com.wire.kalium.logic.di.CellsScopeFactory
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserConfigStorageFactory
@@ -2900,24 +2902,43 @@ public class UserSessionScope internal constructor(
             coroutineScope = this,
         )
 
-    public val cells: CellsScope by lazy {
-        CellsScope(
-            cellsClient = cellsClient,
-            dao = with(userStorage.database) {
-                CellsScope.CellScopeDao(
-                    attachmentDraftDao = messageAttachmentDraftDao,
-                    conversationsDao = conversationDAO,
-                    attachmentsDao = messageAttachments,
-                    cellFileDao = cellFileDao,
-                    userDao = userDAO,
-                    memberDao = memberDAO,
-                    publicLinkDao = publicLinks,
-                    userConfigDAO = userConfigDAO,
+    private val cellsFeatureGraphOwner = lazy {
+        CellsFeatureGraphOwner(
+            graphFactory = userSessionGraph,
+            cellsScopeFactory = CellsScopeFactory {
+                CellsScope(
+                    cellsClient = cellsClient,
+                    dao = with(userStorage.database) {
+                        CellsScope.CellScopeDao(
+                            attachmentDraftDao = messageAttachmentDraftDao,
+                            conversationsDao = conversationDAO,
+                            attachmentsDao = messageAttachments,
+                            cellFileDao = cellFileDao,
+                            userDao = userDAO,
+                            memberDao = memberDAO,
+                            publicLinkDao = publicLinks,
+                            userConfigDAO = userConfigDAO,
+                        )
+                    },
+                    sessionManager = sessionManager,
+                    accessTokenApi = authenticatedNetworkContainer.accessTokenApi,
                 )
-            },
-            sessionManager = sessionManager,
-            accessTokenApi = authenticatedNetworkContainer.accessTokenApi,
+            }
         )
+    }
+
+    public val cells: CellsScope get() = cellsFeatureGraphOwner.value.cellsScope
+
+    /**
+     * Releases the complete Cells feature graph and its owned resources.
+     *
+     * This must only be called when no Cells operation or returned `Flow` is still active. The next
+     * [cells] access creates a new feature graph.
+     */
+    public fun releaseCells() {
+        if (cellsFeatureGraphOwner.isInitialized()) {
+            cellsFeatureGraphOwner.value.release()
+        }
     }
 
     private val deleteConversationUseCase: DeleteConversationUseCase

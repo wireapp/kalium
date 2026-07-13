@@ -5140,6 +5140,7 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
     final val users // com.wire.kalium.logic.feature/UserSessionScope.users|{}users[0]
         final fun <get-users>(): com.wire.kalium.logic.feature.user/UserScope // com.wire.kalium.logic.feature/UserSessionScope.users.<get-users>|<get-users>(){}[0]
 
+    final fun releaseCells() // com.wire.kalium.logic.feature/UserSessionScope.releaseCells|releaseCells(){}[0]
     final fun setIncrementalSyncUnprocessedEventsBatchLimit(kotlin/Int?) // com.wire.kalium.logic.feature/UserSessionScope.setIncrementalSyncUnprocessedEventsBatchLimit|setIncrementalSyncUnprocessedEventsBatchLimit(kotlin.Int?){}[0]
     final suspend fun observeIfE2EIRequiredDuringLogin(): kotlinx.coroutines.flow/Flow<kotlin/Boolean?> // com.wire.kalium.logic.feature/UserSessionScope.observeIfE2EIRequiredDuringLogin|observeIfE2EIRequiredDuringLogin(){}[0]
 }

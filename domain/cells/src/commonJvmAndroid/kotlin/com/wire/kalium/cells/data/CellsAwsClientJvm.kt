@@ -109,6 +109,11 @@ private class CellsAwsClientJvm(
         }
     }
 
+    override fun close() {
+        s3Client?.close()
+        s3Client = null
+    }
+
     private suspend fun uploadRegular(path: Path, node: CellNodeDTO, onProgressUpdate: (Long) -> Unit) {
         withS3Client(uploadProgressListener = onProgressUpdate) {
             putObject {
