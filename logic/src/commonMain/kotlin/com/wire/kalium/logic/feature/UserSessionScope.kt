@@ -2942,13 +2942,7 @@ public class UserSessionScope internal constructor(
 
     public val cells: CellsScope get() = cellsFeatureGraphOwner.value.cellsScope
 
-    /**
-     * Releases the complete Cells feature graph and its owned resources.
-     *
-     * This must only be called when no Cells operation or returned `Flow` is still active. The next
-     * [cells] access creates a new feature graph.
-     */
-    public fun releaseCells() {
+    internal fun releaseCells() {
         if (cellsFeatureGraphOwner.isInitialized()) {
             cellsFeatureGraphOwner.value.release()
         }

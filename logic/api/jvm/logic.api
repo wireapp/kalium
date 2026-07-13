@@ -968,7 +968,6 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun isMLSEnabled ()Lcom/wire/kalium/logic/feature/user/IsMLSEnabledUseCase;
 	public final fun isPreventAdminlessGroupsEnabled ()Lcom/wire/kalium/logic/feature/user/IsPreventAdminlessGroupsEnabledUseCase;
 	public final fun observeIfE2EIRequiredDuringLogin (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public final fun releaseCells ()V
 	public final fun setIncrementalSyncUnprocessedEventsBatchLimit (Ljava/lang/Integer;)V
 }
 
