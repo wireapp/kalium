@@ -60,6 +60,7 @@ internal fun runProbeCommand(args: Array<String>) {
         }
 
         "corecrypto" -> printResult(runBlocking { probe.probeSequentialCoreCryptoOpenClose(sharedRoot) })
+        "content" -> printResult(probe.probeMessageContentExtraction())
         "network" -> printResult(probe.probeNotificationWebSocketLinkage())
         "persistence" -> printResult(probe.inspectCurrentApplePersistenceSurface(sharedRoot, "nse-feasibility"))
         else -> usage()
@@ -77,7 +78,7 @@ private fun printResult(result: FeasibilityProbeResult) {
 private fun usage(): Nothing {
     println(
         "usage: kalium-nse-feasibility " +
-                "<path|lock-try|lock-hold|corecrypto|network|persistence> <absolute-shared-root> [hold-seconds]"
+                "<path|lock-try|lock-hold|corecrypto|content|network|persistence> <absolute-shared-root> [hold-seconds]"
     )
     exitProcess(USAGE_EXIT_CODE)
 }

@@ -18,15 +18,10 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.common.logger.kaliumLogger
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.asset.AssetMapper
-import com.wire.kalium.logic.data.asset.AssetTransferStatus
-import com.wire.kalium.logic.data.asset.toModel
 import com.wire.kalium.logic.data.asset.toProto
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.history.HistoryClient
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.message.composite.CompositeButton
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
@@ -35,7 +30,8 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.protobuf.decodeFromByteArray
+import com.wire.kalium.messagecontent.ProtobufMessageContentDecoder
+import com.wire.kalium.messagecontent.ProtobufMessageContentDecoderImpl
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Attachment
@@ -54,7 +50,6 @@ import com.wire.kalium.protobuf.messages.External
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.GenericMessage.Content.Availability
 import com.wire.kalium.protobuf.messages.GenericMessage.Content.Deleted
-import com.wire.kalium.protobuf.messages.GenericMessage.UnknownStrategy
 import com.wire.kalium.protobuf.messages.HistoryClientAvailable
 import com.wire.kalium.protobuf.messages.HistoryClientRequest
 import com.wire.kalium.protobuf.messages.HistoryClientResponse
@@ -67,13 +62,11 @@ import com.wire.kalium.protobuf.messages.MessageDelete
 import com.wire.kalium.protobuf.messages.MessageEdit
 import com.wire.kalium.protobuf.messages.MessageHide
 import com.wire.kalium.protobuf.messages.Multipart
-import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Reaction
 import com.wire.kalium.protobuf.messages.Text
 import com.wire.kalium.protobuf.messages.TrackingIdentifier
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import kotlinx.datetime.Instant
 import pbandk.ByteArr
 import com.wire.kalium.protobuf.messages.HistoryClient as ProtoHistoryClient
 
@@ -91,6 +84,7 @@ internal class ProtoContentMapperImpl(
     private val selfUserId: UserId,
     private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
+    private val messageContentDecoder: ProtobufMessageContentDecoder = ProtobufMessageContentDecoderImpl(selfUserId),
 ) : ProtoContentMapper {
 
     override fun encodeToProtobuf(protoContent: ProtoContent): PlainMessageBlob {
@@ -393,172 +387,8 @@ internal class ProtoContentMapperImpl(
         )
 
     override fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent {
-        val genericMessage = GenericMessage.decodeFromByteArray(encodedContent.data)
-        val protobufModel = genericMessage.content
-
-        return if (protobufModel is GenericMessage.Content.External) {
-            val external = protobufModel.value
-            val algorithm = encryptionAlgorithmMapper.fromProtobufModel(external.encryption)
-            ProtoContent.ExternalMessageInstructions(genericMessage.messageId, external.otrKey.array, external.sha256?.array, algorithm)
-        } else {
-            val expectsReadConfirmation = when (val content = genericMessage.content) {
-                is GenericMessage.Content.Text -> content.value.expectsReadConfirmation ?: false
-                is GenericMessage.Content.Asset -> content.value.expectsReadConfirmation ?: false
-                else -> false
-            }
-            val legalHoldStatus = getLegalHoldStatusFromProtoContent(genericMessage)
-            val expiresAfterMillis: Long? = when (val content = genericMessage.content) {
-                is GenericMessage.Content.Ephemeral -> content.value.expireAfterMillis
-                else -> null
-            }
-            ProtoContent.Readable(
-                messageUid = genericMessage.messageId,
-                messageContent = getReadableContent(genericMessage, encodedContent),
-                expectsReadConfirmation = expectsReadConfirmation,
-                legalHoldStatus = fromProtoLegalHoldStatus(legalHoldStatus),
-                expiresAfterMillis = expiresAfterMillis
-            )
-        }
+        return messageContentDecoder.decode(encodedContent.data).content
     }
-
-    private fun getLegalHoldStatusFromProtoContent(genericMessage: GenericMessage) =
-        when (val content = genericMessage.content) {
-            is GenericMessage.Content.Text -> content.value.legalHoldStatus
-            is GenericMessage.Content.Asset -> content.value.legalHoldStatus
-            is GenericMessage.Content.Knock -> content.value.legalHoldStatus
-            is GenericMessage.Content.Location -> content.value.legalHoldStatus
-            is GenericMessage.Content.Reaction -> content.value.legalHoldStatus
-            is GenericMessage.Content.Composite -> content.value.legalHoldStatus
-            else -> null
-        }
-
-    private fun fromProtoLegalHoldStatus(legalHoldStatus: LegalHoldStatus?): Conversation.LegalHoldStatus =
-        legalHoldStatus?.let {
-            when (legalHoldStatus) {
-                is LegalHoldStatus.ENABLED -> Conversation.LegalHoldStatus.ENABLED
-                is LegalHoldStatus.DISABLED -> Conversation.LegalHoldStatus.DISABLED
-                else -> Conversation.LegalHoldStatus.UNKNOWN
-            }
-        } ?: run { Conversation.LegalHoldStatus.UNKNOWN }
-
-    @Suppress("ComplexMethod", "LongMethod")
-    private fun getReadableContent(
-        genericMessage: GenericMessage,
-        encodedContent: PlainMessageBlob
-    ): MessageContent.FromProto {
-        val readableContent = when (val protoContent = genericMessage.content) {
-            is GenericMessage.Content.Text -> unpackText(protoContent.value)
-            is GenericMessage.Content.Asset -> unpackAsset(protoContent)
-            is GenericMessage.Content.Availability -> MessageContent.Availability(
-                availabilityMapper.fromProtoAvailabilityToModel(
-                    protoContent.value
-                )
-            )
-
-            is GenericMessage.Content.Composite -> unpackComposite(protoContent)
-
-            is GenericMessage.Content.ButtonAction -> MessageContent.ButtonAction(
-                buttonId = protoContent.value.buttonId,
-                referencedMessageId = protoContent.value.referenceMessageId
-            )
-
-            is GenericMessage.Content.ButtonActionConfirmation -> MessageContent.ButtonActionConfirmation(
-                referencedMessageId = protoContent.value.referenceMessageId,
-                buttonId = protoContent.value.buttonId
-            )
-
-            is GenericMessage.Content.Calling -> unpackCalling(protoContent)
-            is GenericMessage.Content.Cleared -> unpackCleared(protoContent)
-            is GenericMessage.Content.ClientAction -> MessageContent.ClientAction
-            is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
-            is GenericMessage.Content.DataTransfer -> unpackDataTransfer(protoContent)
-            is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
-            is GenericMessage.Content.Edited -> unpackEdited(protoContent, genericMessage)
-            is GenericMessage.Content.Ephemeral -> unpackEphemeral(protoContent)
-            is GenericMessage.Content.Image -> MessageContent.Ignored // Deprecated in favor of GenericMessage.Content.Asset
-            is GenericMessage.Content.Hidden -> unpackHidden(genericMessage, protoContent)
-            is GenericMessage.Content.Knock -> MessageContent.Knock(protoContent.value.hotKnock)
-            is GenericMessage.Content.LastRead -> unpackLastRead(genericMessage, protoContent)
-            is GenericMessage.Content.Location -> unpackLocation(protoContent)
-            is GenericMessage.Content.Reaction -> unpackReaction(protoContent)
-
-            is GenericMessage.Content.External -> {
-                kaliumLogger.w("External content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}")
-                MessageContent.Ignored
-            }
-
-            is GenericMessage.Content.InCallEmoji -> unpackInCallEmoji(protoContent)
-
-            is GenericMessage.Content.HistoryClientAvailable -> unpackHistoryClientAvailable(protoContent)
-            is GenericMessage.Content.HistoryClientRequest -> unpackHistoryClientRequest()
-            is GenericMessage.Content.HistoryClientResponse -> unpackHistoryClientResponse(protoContent)
-
-            null -> {
-                kaliumLogger.w(
-                    "Null content when parsing protobuf. Message UUID = ${genericMessage.messageId.obfuscateId()}" +
-                            " Message Unknown Strategy = ${genericMessage.unknownStrategy}"
-                )
-                when (genericMessage.unknownStrategy) {
-                    UnknownStrategy.DISCARD_AND_WARN -> MessageContent.Unknown()
-                    UnknownStrategy.WARN_USER_ALLOW_RETRY -> MessageContent.Unknown(encodedData = encodedContent.data)
-                    UnknownStrategy.IGNORE,
-                    is UnknownStrategy.UNRECOGNIZED,
-                    null -> MessageContent.Ignored
-                }
-            }
-
-            is GenericMessage.Content.InCallHandRaise -> MessageContent.Ignored
-            is GenericMessage.Content.Multipart -> unpackMultipart(protoContent.value)
-        }
-        return readableContent
-    }
-
-    private fun unpackMultipart(
-        protoContent: Multipart
-    ): MessageContent.FromProto = MessageContent.Multipart(
-        value = protoContent.text?.content,
-        linkPreviews = protoContent.text?.linkPreview?.mapNotNull { linkPreviewMapper.fromProtoToModel(it) } ?: emptyList(),
-        mentions = protoContent.text?.mentions?.mapNotNull { messageMentionMapper.fromProtoToModel(it) } ?: emptyList(),
-        quotedMessageReference = protoContent.text?.quote?.let {
-            MessageContent.QuoteReference(
-                quotedMessageId = it.quotedMessageId,
-                quotedMessageSha256 = it.quotedMessageSha256?.array,
-                isVerified = false
-            )
-        },
-        quotedMessageDetails = null,
-        attachments = unpackMultipartAttachments(protoContent.attachments),
-    )
-
-    private fun unpackMultipartAttachments(attachments: List<Attachment>): List<MessageAttachment> =
-        attachments.mapNotNull { attachment ->
-            when (val content = attachment.content) {
-                is Attachment.Content.Asset -> {
-                    null
-                }
-
-                is Attachment.Content.CellAsset -> CellAssetContent(
-                    id = content.value.uuid,
-                    versionId = "",
-                    mimeType = content.value.contentType,
-                    assetPath = content.value.initialName,
-                    assetSize = content.value.initialSize,
-                    metadata = content.value.initialMetaData?.toModel(),
-                    transferStatus = AssetTransferStatus.NOT_DOWNLOADED,
-                )
-
-                null -> null
-            }
-        }
-
-    private fun unpackLocation(
-        protoContent: GenericMessage.Content.Location
-    ): MessageContent.FromProto = MessageContent.Location(
-        latitude = protoContent.value.latitude,
-        longitude = protoContent.value.longitude,
-        name = protoContent.value.name,
-        zoom = protoContent.value.zoom
-    )
 
     private fun packReceipt(
         receiptContent: MessageContent.Receipt
@@ -577,21 +407,6 @@ internal class ProtoContentMapperImpl(
         )
     }
 
-    private fun unpackReceipt(
-        protoContent: GenericMessage.Content.Confirmation
-    ): MessageContent.FromProto = when (val protoType = protoContent.value.type) {
-        Confirmation.Type.DELIVERED -> ReceiptType.DELIVERED
-        Confirmation.Type.READ -> ReceiptType.READ
-        is Confirmation.Type.UNRECOGNIZED -> {
-            kaliumLogger.w("Unrecognised receipt type received = ${protoType.value}:${protoType.name}")
-            null
-        }
-    }?.let { type ->
-        MessageContent.Receipt(
-            type = type, messageIds = listOf(protoContent.value.firstMessageId) + protoContent.value.moreMessageIds
-        )
-    } ?: MessageContent.Ignored
-
     private fun packReaction(
         readableContent: MessageContent.Reaction,
         legalHoldStatus: Conversation.LegalHoldStatus
@@ -609,31 +424,12 @@ internal class ProtoContentMapperImpl(
 
     private fun packClientAction() = GenericMessage.Content.ClientAction(ClientAction.RESET_SESSION)
 
-    private fun unpackReaction(protoContent: GenericMessage.Content.Reaction): MessageContent.Reaction {
-        val emoji = protoContent.value.emoji
-        val emojiSet = emoji?.split(',')
-            ?.map { it.trim() }
-            ?.filter { it.isNotBlank() }
-            ?.toSet()
-            ?: emptySet()
-        return MessageContent.Reaction(protoContent.value.messageId, emojiSet)
-    }
-
     private fun packLastRead(readableContent: MessageContent.LastRead) = GenericMessage.Content.LastRead(
         LastRead(
             conversationId = readableContent.conversationId.value,
             qualifiedConversationId = idMapper.toProtoModel(readableContent.conversationId),
             lastReadTimestamp = readableContent.time.toEpochMilliseconds()
         )
-    )
-
-    private fun unpackLastRead(
-        genericMessage: GenericMessage,
-        protoContent: GenericMessage.Content.LastRead
-    ) = MessageContent.LastRead(
-        messageId = genericMessage.messageId,
-        conversationId = extractConversationId(protoContent.value.qualifiedConversationId, protoContent.value.conversationId),
-        time = Instant.fromEpochMilliseconds(protoContent.value.lastReadTimestamp)
     )
 
     private fun packHidden(readableContent: MessageContent.DeleteForMe) = GenericMessage.Content.Hidden(
@@ -643,22 +439,6 @@ internal class ProtoContentMapperImpl(
             conversationId = readableContent.conversationId.value
         )
     )
-
-    private fun unpackHidden(
-        genericMessage: GenericMessage,
-        protoContent: GenericMessage.Content.Hidden
-    ): MessageContent.Signaling {
-        val hiddenMessage = genericMessage.hidden
-        return if (hiddenMessage != null) {
-            MessageContent.DeleteForMe(
-                messageId = hiddenMessage.messageId,
-                conversationId = extractConversationId(protoContent.value.qualifiedConversationId, hiddenMessage.conversationId),
-            )
-        } else {
-            kaliumLogger.w("Hidden message is null. Message UUID = $genericMessage.")
-            MessageContent.Ignored
-        }
-    }
 
     private fun packEdited(readableContent: MessageContent.TextEdited): GenericMessage.Content.Edited {
         val mentions = readableContent.newMentions.map { messageMentionMapper.fromModelToProto(it) }
@@ -693,60 +473,11 @@ internal class ProtoContentMapperImpl(
         )
     }
 
-    private fun unpackEdited(protoContent: GenericMessage.Content.Edited, genericMessage: GenericMessage): MessageContent.FromProto {
-        val replacingMessageId = protoContent.value.replacingMessageId
-        return when (val editContent = protoContent.value.content) {
-            is MessageEdit.Content.Text -> {
-                val mentions = editContent.value.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) }
-                MessageContent.TextEdited(
-                    editMessageId = replacingMessageId,
-                    newContent = editContent.value.content,
-                    newMentions = mentions
-                )
-            }
-
-            is MessageEdit.Content.Composite -> {
-                val editedText = editContent.value.items.firstNotNullOfOrNull { item ->
-                    item.text
-                }?.let(::unpackText)
-
-                MessageContent.CompositeEdited(
-                    editMessageId = replacingMessageId,
-                    newTextContent = editedText,
-                    newButtonList = unpackButtonList(editContent.value.items),
-                )
-            }
-
-            is MessageEdit.Content.Multipart -> {
-                val editedText = editContent.value.text?.let(::unpackText)
-                val editedMentions = editedText?.mentions
-                val editedAttachments = editContent.value.attachments.let(::unpackMultipartAttachments)
-
-                MessageContent.MultipartEdited(
-                    editMessageId = replacingMessageId,
-                    newTextContent = editedText?.value,
-                    newAttachments = editedAttachments,
-                    newMentions = editedMentions ?: emptyList(),
-                )
-            }
-
-            null -> {
-                kaliumLogger.w("Edit content is unexpected. Message UUID = ${genericMessage.messageId.obfuscateId()}")
-                MessageContent.Ignored
-            }
-        }
-    }
-
     private fun packCalling(readableContent: MessageContent.Calling) = GenericMessage.Content.Calling(
         Calling(
             content = readableContent.value,
             qualifiedConversationId = readableContent.conversationId?.let { idMapper.toProtoModel(it) }
         )
-    )
-
-    private fun unpackCalling(protoContent: GenericMessage.Content.Calling) = MessageContent.Calling(
-        value = protoContent.value.content,
-        conversationId = protoContent.value.qualifiedConversationId?.let { idMapper.fromProtoModel(it) }
     )
 
     private fun packDataTransfer(readableContent: MessageContent.DataTransfer) = GenericMessage.Content.DataTransfer(
@@ -757,14 +488,6 @@ internal class ProtoContentMapperImpl(
         )
     )
 
-    private fun unpackDataTransfer(protoContent: GenericMessage.Content.DataTransfer) = MessageContent.DataTransfer(
-        trackingIdentifier = protoContent.value.trackingIdentifier?.let { trackingIdentifier ->
-            MessageContent.DataTransfer.TrackingIdentifier(
-                identifier = trackingIdentifier.identifier
-            )
-        }
-    )
-
     private fun packCleared(readableContent: MessageContent.Cleared) = GenericMessage.Content.Cleared(
         Cleared(
             conversationId = readableContent.conversationId.value,
@@ -772,12 +495,6 @@ internal class ProtoContentMapperImpl(
             clearedTimestamp = readableContent.time.toEpochMilliseconds(),
             needToRemoveLocally = readableContent.needToRemoveLocally
         )
-    )
-
-    private fun unpackCleared(protoContent: GenericMessage.Content.Cleared) = MessageContent.Cleared(
-        conversationId = extractConversationId(protoContent.value.qualifiedConversationId, protoContent.value.conversationId),
-        time = Instant.fromEpochMilliseconds(protoContent.value.clearedTimestamp),
-        needToRemoveLocally = protoContent.value.needToRemoveLocally ?: false
     )
 
     private fun toProtoLegalHoldStatus(legalHoldStatus: Conversation.LegalHoldStatus): LegalHoldStatus =
@@ -822,31 +539,6 @@ internal class ProtoContentMapperImpl(
             )
         }
 
-    private fun unpackText(protoContent: Text) = MessageContent.Text(
-        value = protoContent.content,
-        linkPreviews = protoContent.linkPreview.mapNotNull { linkPreviewMapper.fromProtoToModel(it) },
-        mentions = protoContent.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
-        quotedMessageReference = protoContent.quote?.let {
-            MessageContent.QuoteReference(
-                quotedMessageId = it.quotedMessageId,
-                quotedMessageSha256 = it.quotedMessageSha256?.array,
-                isVerified = false
-            )
-        },
-        quotedMessageDetails = null
-    )
-
-    private fun unpackButtonList(compositeItemList: List<Composite.Item>): List<CompositeButton> =
-        compositeItemList.mapNotNull {
-            it.button?.let { button ->
-                CompositeButton(
-                    text = button.text,
-                    id = button.id,
-                    isSelected = false
-                )
-            }
-        }
-
     private fun packKnock(
         readableContent: MessageContent.Knock,
         legalHoldStatus: Conversation.LegalHoldStatus
@@ -875,94 +567,6 @@ internal class ProtoContentMapperImpl(
         )
     }
 
-    private fun unpackEphemeral(
-        protoContent: GenericMessage.Content.Ephemeral
-    ): MessageContent.FromProto {
-        val messageContent = when (val ephemeralContent = protoContent.value.content) {
-            is Ephemeral.Content.Text -> {
-                val genericMessageTextContent = GenericMessage.Content.Text(
-                    Text(
-                        content = ephemeralContent.value.content,
-                        mentions = ephemeralContent.value.mentions,
-                        quote = ephemeralContent.value.quote,
-                        expectsReadConfirmation = ephemeralContent.value.expectsReadConfirmation
-                    )
-                )
-                unpackText(genericMessageTextContent.value)
-            }
-
-            is Ephemeral.Content.Asset -> {
-                val genericAssetContent = GenericMessage.Content.Asset(
-                    Asset(
-                        original = ephemeralContent.value.original,
-                        status = ephemeralContent.value.status,
-                        expectsReadConfirmation = ephemeralContent.value.expectsReadConfirmation
-                    )
-                )
-                unpackAsset(genericAssetContent)
-            }
-
-            is Ephemeral.Content.Knock -> {
-                MessageContent.Knock(
-                    ephemeralContent.value.hotKnock
-                )
-            }
-
-            is Ephemeral.Content.Location -> {
-                val location = GenericMessage.Content.Location(
-                    Location(
-                        latitude = ephemeralContent.value.latitude,
-                        longitude = ephemeralContent.value.longitude,
-                        name = ephemeralContent.value.name,
-                        zoom = ephemeralContent.value.zoom
-                    )
-                )
-                unpackLocation(location)
-            }
-
-            // Handle self-deleting Location messages when they are implemented
-            is Ephemeral.Content.Image,
-            null -> {
-                MessageContent.Ignored
-            }
-        }
-
-        return messageContent
-    }
-
-    private fun unpackAsset(protoContent: GenericMessage.Content.Asset): MessageContent.Asset {
-        // Backend sends some preview asset messages just with img metadata and no
-        // keys or asset id,so we need to overwrite one with the other one
-        return MessageContent.Asset(
-            value = assetMapper.fromProtoAssetMessageToAssetContent(protoContent.value)
-        )
-    }
-
-    private fun unpackComposite(protoContent: GenericMessage.Content.Composite): MessageContent.Composite {
-        val text = protoContent.value.items.firstNotNullOfOrNull { item ->
-            item.text
-        }?.let(::unpackText)
-        val buttonList = unpackButtonList(protoContent.value.items)
-
-        return MessageContent.Composite(
-            textContent = text,
-            buttonList = buttonList
-        )
-    }
-
-    private fun unpackInCallEmoji(protoContent: GenericMessage.Content.InCallEmoji): MessageContent.InCallEmoji {
-        return MessageContent.InCallEmoji(
-            // Map of emoji to senderId
-            emojis = protoContent.value.emojis
-                .mapNotNull {
-                    val key = it.key ?: return@mapNotNull null
-                    val value = it.value ?: return@mapNotNull null
-                    key to value
-                }
-                .associateBy({ it.first }, { it.second })
-        )
-    }
-
     private fun packInCallEmoji(content: MessageContent.InCallEmoji): GenericMessage.Content.InCallEmoji {
         return GenericMessage.Content.InCallEmoji(
             inCallEmoji = InCallEmoji(
@@ -973,26 +577,4 @@ internal class ProtoContentMapperImpl(
         )
     }
 
-    private fun unpackHistoryClientRequest(): MessageContent.History =
-        MessageContent.History.ClientsRequest
-
-    private fun protoHistoryClientToHistoryClient(protoClient: ProtoHistoryClient) = HistoryClient(
-        id = protoClient.clientId,
-        secret = HistoryClient.Secret(protoClient.secret.array),
-        creationTime = Instant.parse(protoClient.createdAt),
-    )
-
-    private fun unpackHistoryClientResponse(protoContent: GenericMessage.Content.HistoryClientResponse): MessageContent.History =
-        MessageContent.History.ClientsResponse(protoContent.value.clients.map(::protoHistoryClientToHistoryClient))
-
-    private fun unpackHistoryClientAvailable(protoContent: GenericMessage.Content.HistoryClientAvailable): MessageContent.History =
-        MessageContent.History.NewClientAvailable(protoHistoryClientToHistoryClient(protoContent.value.client))
-
-    private fun extractConversationId(
-        qualifiedConversationID: QualifiedConversationId?,
-        unqualifiedConversationID: String
-    ): ConversationId {
-        return if (qualifiedConversationID != null) idMapper.fromProtoModel(qualifiedConversationID)
-        else ConversationId(unqualifiedConversationID, selfUserId.domain)
-    }
 }

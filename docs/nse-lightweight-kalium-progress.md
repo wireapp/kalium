@@ -30,8 +30,8 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | --- | --- | --- | --- | --- |
 | 0. Architecture and contracts | Completed | `167effa92142` | Source review and documentation consistency checks | ADR 0010 accepted for spike |
 | 1. iOS feasibility spike | Completed for host/simulator scope | `56ba521dc210` | Host/simulator harness, symbol audit, split-framework probe, and report | Physical-device NSE/security/backend gates deferred |
-| 2. Shared message receiving | Completed | `refactor: extract receive-only messaging primitives` | Metadata/Apple/logic compilation, dependency audit, simulator framework load, boundary review | Real payload tests deferred |
-| 3. Protobuf decoding and notification extraction | Not started | — | — | — |
+| 2. Shared message receiving | Completed | `1e674b5bf901` | Metadata/Apple/logic compilation, dependency audit, simulator framework load, boundary review | Real payload tests deferred |
+| 3. Protobuf decoding and notification extraction | Completed | `refactor: extract shared message content decoding` | Metadata/Apple/logic compilation, dependency audit, simulator protobuf probe, boundary review | Policy and API hardening deferred |
 | 4. Bounded incremental-sync engine | Not started | — | — | — |
 | 5. Cross-process coordination | Not started | — | — | — |
 | 6. Shared handoff database | Not started | — | — | — |
@@ -223,9 +223,92 @@ Deferred production work:
 - Real Proteus/MLS payload, handshake, buffered-message, and rollback verification remains deferred
   by the spike's no-test rule and unavailable safe captured account state.
 
+## Milestone 3 — Protobuf Decoding and Notification Extraction
+
+Status: Completed on 2026-07-13
+
+Planned deliverables:
+
+- Extract inbound protobuf decoding from the large application/sending mapper into a lower-layer,
+  receive-only component that has no direct dependency on `:logic`, persistence, network, sending,
+  MLS recovery, or AVS.
+- Define a stable lightweight received-content representation for notification-relevant message
+  forms while retaining exact original protobuf bytes in the existing receive result.
+- Add a pure notification-content extractor for text, replies/quotes, assets, edits/deletes,
+  notification-relevant reactions and calling payloads, with an explicit safe outcome for
+  unsupported or future content.
+- Adapt full Kalium to use the extracted decoder without changing its existing application-facing
+  message mapping behavior.
+- Link the decoder/extractor into the disposable NSE feasibility framework and expose a bounded
+  manual simulator probe.
+
+Verification constraints:
+
+- Do not add, modify, or run automated tests during the spike.
+- Use narrow metadata and iOS Simulator compilation, dependency inspection, framework linking, and
+  a manual Swift simulator host probe.
+- Preserve full-app decode semantics and ordering; do not move database writes, receipts, sending,
+  recovery, notification presentation, or platform UI concerns into the shared component.
+- Unknown or future protobuf content must produce an explicit unsupported result and must not crash
+  notification extraction.
+- Do not claim real encrypted-message coverage unless safe captured account state and payloads are
+  available; a locally constructed protobuf linkage probe is sufficient for this milestone.
+
+Delivered:
+
+- Added the narrow `:data:message-content` module with only `:core:data` and `:data:protobuf` as
+  direct project dependencies.
+- Extracted the full receive-only `GenericMessage` decoder while retaining the exact serialized
+  protobuf through a defensive copy-owning result.
+- Added explicit application, external-instruction, and unsupported/future classifications without
+  changing the full app's existing `Ignored`/`Unknown` mapping behavior.
+- Added a pure notification extractor with structured candidates for text, quotes, self mentions,
+  assets, multipart content, edits, deletes, reactions, calling payloads, knocks, and locations.
+  Candidate metadata includes legal-hold status and expiry; unresolved external content, known
+  non-notifiable content, and unsupported content have separate outcomes.
+- Adapted the full `ProtoContentMapper` to delegate inbound decoding to the shared decoder while
+  retaining its application/sending encoder.
+- Added a locally constructed text/quote and unsupported-content linkage probe to the disposable
+  Apple feasibility framework.
+
+Verification evidence:
+
+- `:data:message-content:compileKotlinMetadata` passed.
+- `:data:message-content:compileKotlinIosSimulatorArm64` passed.
+- `:logic:compileKotlinIosSimulatorArm64` passed.
+- `:sample:nse-feasibility:linkDebugFrameworkIosSimulatorArm64` passed.
+- The iPhone 16 Pro / iOS 18.4 simulator reported `milestone3ContentLinked=true` with
+  `text=true`, `quote=true`, `exactBytes=true`, `unsupportedSafe=true`, and
+  `policyEvaluation=false`.
+- The direct project dependency audit contains only `:core:data` and `:data:protobuf`. The resolved
+  graph also records the accepted residual that `:core:data` currently brings
+  `:data:network-model` and Ktor transitively.
+- Independent review found no correctness or module-boundary blocker and confirmed semantic parity
+  with every former inbound decoder branch; only diagnostic logging changed.
+- Repository `detekt`, `git diff --check`, forbidden direct-import checks, and the no-test-file audit
+  passed.
+- No tests were added, modified, or run.
+
+Deferred production work:
+
+- A structural notification `Candidate` still requires the later policy snapshot to approve
+  privacy, mute, sender, conversation, and content-specific display. Reactions, deletes, and
+  composite edits must not be rendered merely because extraction succeeded.
+- The existing `:core:data` boundary keeps network-model/Ktor in the resolved graph. A smaller
+  stable model boundary can be considered during final framework-size hardening if dead-code
+  elimination and measured size are insufficient.
+- Public collection data-class constructors are not deeply immutable against caller-owned mutable
+  collections or downcasts, although extractor-created attachment lists and reaction sets are
+  detached from decoded state.
+- Legacy `ProtoContent.ExternalMessageInstructions` exposes mutable key/hash arrays. The exact
+  retained serialized protobuf remains protected, but a published NSE API should use a dedicated
+  copy-owning external-instruction value.
+- Malformed protobuf remains a decode failure by design and needs a stable receive-only failure
+  taxonomy before production publication.
+
 ## Next Action
 
-Commit Milestone 2, then start Milestone 3 in a fresh implementation thread. Split pure protobuf
-decoding and notification-field extraction from the current application/sending mapper, preserve
-exact protobuf bytes, and verify the new decoder through the iOS Simulator without adding or running
-automated tests.
+Commit the verified Milestone 3 change, then start Milestone 4 in a fresh implementation thread.
+Extract a finite, deadline-aware incremental-sync run without reusing the current unbounded worker,
+and preserve the durable-store-before-transport-ACK and shared-cursor invariants without adding or
+running automated tests.

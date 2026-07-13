@@ -21,7 +21,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.messaging.receiving.DecodedMessageContent
 import com.wire.kalium.messaging.receiving.MessageContentDecoder
 
-/** Temporary bridge to the full application mapper until the narrow protobuf codec is extracted. */
+/** Bridges the receive-only cryptographic boundary to the shared protobuf codec. */
 internal class ProtoContentDecoderAdapter(
     private val protoContentMapper: ProtoContentMapper
 ) : MessageContentDecoder<ProtoContent.Readable> {

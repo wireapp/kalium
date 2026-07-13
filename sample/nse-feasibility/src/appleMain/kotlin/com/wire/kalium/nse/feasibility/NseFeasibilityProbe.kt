@@ -32,11 +32,23 @@ import com.wire.kalium.messaging.receiving.MlsEncryptedMessage
 import com.wire.kalium.messaging.receiving.MlsMessageDecryptorImpl
 import com.wire.kalium.messaging.receiving.ProteusEncryptedMessage
 import com.wire.kalium.messaging.receiving.ProteusMessageDecryptorImpl
+import com.wire.kalium.messagecontent.DecodedProtobufContent
+import com.wire.kalium.messagecontent.NotificationContent
+import com.wire.kalium.messagecontent.NotificationContentExtractionResult
+import com.wire.kalium.messagecontent.NotificationContentExtractorImpl
+import com.wire.kalium.messagecontent.ProtobufMessageContentDecoderImpl
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.protobuf.encodeToByteArray
+import com.wire.kalium.protobuf.messages.GenericMessage
+import com.wire.kalium.protobuf.messages.Quote
+import com.wire.kalium.protobuf.messages.Text
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
@@ -73,6 +85,38 @@ import platform.posix.write
  * an iOS host can pass an App Group URL rather than relying on a process sandbox home directory.
  */
 public class NseFeasibilityProbe {
+
+    /** Locally constructs protobufs to prove decode/extraction linkage without account state. */
+    public fun probeMessageContentExtraction(): FeasibilityProbeResult = measure("message-content-extraction") {
+        val textBytes = GenericMessage(
+            messageId = "probe-message",
+            content = GenericMessage.Content.Text(
+                Text(
+                    content = "local probe",
+                    quote = Quote(quotedMessageId = "quoted-message")
+                )
+            )
+        ).encodeToByteArray()
+        val decoder = ProtobufMessageContentDecoderImpl(UserId("probe-user", "example.invalid"))
+        val decoded = decoder.decode(textBytes)
+        val extraction = NotificationContentExtractorImpl().extract(decoded)
+        val textCandidate =
+            (extraction as? NotificationContentExtractionResult.Candidate)?.content as? NotificationContent.Text
+        check(textCandidate?.value == "local probe")
+        check(textCandidate.quotedMessageId == "quoted-message")
+        check(decoded.serializedContent.contentEquals(textBytes))
+
+        val unknownBytes = GenericMessage(
+            messageId = "probe-unknown",
+            unknownStrategy = GenericMessage.UnknownStrategy.IGNORE
+        ).encodeToByteArray()
+        val unknown = decoder.decode(unknownBytes)
+        check(unknown.classification == DecodedProtobufContent.Classification.UNSUPPORTED)
+        check((unknown.content as? ProtoContent.Readable)?.messageContent == MessageContent.Ignored)
+        check(NotificationContentExtractorImpl().extract(unknown) is NotificationContentExtractionResult.Unsupported)
+
+        "text=true; quote=true; exactBytes=true; unsupportedSafe=true; policyEvaluation=false"
+    }
 
     /**
      * Proves that the receive-only contracts are present in this framework without decrypting a

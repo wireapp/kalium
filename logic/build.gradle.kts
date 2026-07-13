@@ -68,6 +68,7 @@ kotlin {
                 implementation(projects.data.network)
                 api(projects.core.data)
                 implementation(projects.data.dataMappers)
+                implementation(projects.data.messageContent)
                 api(projects.data.networkUtil)
                 implementation(projects.core.cryptography)
                 implementation(projects.data.persistence)
