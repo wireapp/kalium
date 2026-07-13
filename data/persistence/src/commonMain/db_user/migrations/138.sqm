@@ -90,12 +90,11 @@ Conversation.archived_date_time,
 Conversation.verification_status AS mls_verification_status,
 Conversation.proteus_verification_status,
 Conversation.legal_hold_status,
-Conversation.group_type,
 Conversation.channel_access,
 Conversation.channel_add_permission,
 SelfUser.id AS selfUserId,
 CASE
-    WHEN Conversation.type = 'GROUP' THEN
+    WHEN Conversation.type IN ('GROUP', 'CHANNEL', 'MEETING') THEN
         CASE
             WHEN memberRole.role IS NOT NULL THEN 1
             ELSE 0
@@ -204,7 +203,7 @@ LEFT JOIN MessageTextContent AS TextContent
 WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
-        ConversationDetails.type IS 'GROUP'
+        ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING')
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
         OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata

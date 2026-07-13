@@ -134,8 +134,8 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenOngoingCallConversationIdsChange_whenCollectingPagingData_thenReloadUsesLatestIds() = runTest(dispatcher) {
-        populateData(count = 2, groupType = ConversationEntity.GroupType.Group)
+    fun givenChannelOngoingCallIdsChange_whenCollectingPagingData_thenReloadUsesLatestIds() = runTest(dispatcher) {
+        populateData(count = 2, type = ConversationEntity.Type.CHANNEL)
         val ongoingCallConversationIds = MutableStateFlow(emptyList<ConversationIDEntity>())
         val pager = conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
             pagingConfig = PagingConfig(PAGE_SIZE),
@@ -205,64 +205,64 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenFilterByGroup_whenReturningResults_thenIncludeOnlyGroups() = runTest(dispatcher) {
-        populateData(archived = false, count = 10, conversationIdPrefix = "group_", groupType = ConversationEntity.GroupType.Group)
-        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", groupType = ConversationEntity.GroupType.Channel)
-        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", groupType = ConversationEntity.GroupType.Meeting)
-        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", groupType = ConversationEntity.GroupType.Unknown(""))
+        populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
+        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
+        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
         getPager(searchQuery = "", filter = ConversationFilterEntity.GROUPS).pagingSource.refresh().also { result ->
             assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
             assertEquals(10, result.data.size)
             result.data.forEach {
-                assertEquals(ConversationEntity.GroupType.Group, it.conversationViewEntity.groupType)
+                assertEquals(ConversationEntity.Type.GROUP, it.conversationViewEntity.type)
             }
         }
     }
 
     @Test
     fun givenFilterByChannels_whenReturningResults_thenIncludeOnlyChannels() = runTest(dispatcher) {
-        populateData(archived = false, count = 10, conversationIdPrefix = "group_", groupType = ConversationEntity.GroupType.Group)
-        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", groupType = ConversationEntity.GroupType.Channel)
-        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", groupType = ConversationEntity.GroupType.Meeting)
-        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", groupType = ConversationEntity.GroupType.Unknown(""))
+        populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
+        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
+        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
         getPager(searchQuery = "", filter = ConversationFilterEntity.CHANNELS).pagingSource.refresh().also { result ->
             assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
             assertEquals(9, result.data.size)
             result.data.forEach {
-                assertEquals(ConversationEntity.GroupType.Channel, it.conversationViewEntity.groupType)
+                assertEquals(ConversationEntity.Type.CHANNEL, it.conversationViewEntity.type)
             }
         }
     }
 
     @Test
     fun givenFilterAll_whenReturningResults_thenIncludeOnlyGroupsAndChannels_excludeMeetingsAndUnknown() = runTest(dispatcher) {
-        populateData(archived = false, count = 10, conversationIdPrefix = "group_", groupType = ConversationEntity.GroupType.Group)
-        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", groupType = ConversationEntity.GroupType.Channel)
-        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", groupType = ConversationEntity.GroupType.Meeting)
-        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", groupType = ConversationEntity.GroupType.Unknown(""))
+        populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
+        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
+        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
         getPager(searchQuery = "", filter = ConversationFilterEntity.ALL).pagingSource.refresh().also { result ->
             assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
             assertEquals(19, result.data.size)
             result.data.forEach {
                 assertTrue {
-                    it.conversationViewEntity.groupType in setOf(ConversationEntity.GroupType.Channel, ConversationEntity.GroupType.Group)
+                    it.conversationViewEntity.type in setOf(ConversationEntity.Type.CHANNEL, ConversationEntity.Type.GROUP)
                 }
             }
         }
     }
 
     @Test
-    fun givenSearchQUery_whenReturningResults_thenIncludeOnlyGroupsAndChannels_excludeMeetingsAndUnknown() = runTest(dispatcher) {
-        populateData(archived = false, count = 10, conversationIdPrefix = "group_", groupType = ConversationEntity.GroupType.Group)
-        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", groupType = ConversationEntity.GroupType.Channel)
-        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", groupType = ConversationEntity.GroupType.Meeting)
-        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", groupType = ConversationEntity.GroupType.Unknown(""))
+    fun givenSearchQuery_whenReturningResults_thenIncludeOnlyGroupsAndChannels_excludeMeetingsAndUnknown() = runTest(dispatcher) {
+        populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
+        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
+        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
 
         getPager(searchQuery = "_0").pagingSource.refresh().also { result ->
             assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
             assertEquals(2, result.data.size) // "group_0" and "channel_0" should match the search query
             result.data.forEach {
                 assertTrue {
-                    it.conversationViewEntity.groupType in setOf(ConversationEntity.GroupType.Channel, ConversationEntity.GroupType.Group)
+                    it.conversationViewEntity.type in setOf(ConversationEntity.Type.CHANNEL, ConversationEntity.Type.GROUP)
                 }
             }
         }
@@ -467,7 +467,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         archived: Boolean = false,
         count: Int = CONVERSATION_COUNT,
         conversationIdPrefix: String = CONVERSATION_ID_PREFIX,
-        groupType: ConversationEntity.GroupType = ConversationEntity.GroupType.Group
+        type: ConversationEntity.Type = ConversationEntity.Type.GROUP
     ) {
         userDAO.upsertUser(newUserEntity(qualifiedID = UserIDEntity("user", "domain")))
         repeat(count) {
@@ -476,11 +476,10 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
             val lastRead = lastModified.minus(1.seconds) // if message needs to be unread, then lastRead should be before lastModified
             val conversation = newConversationEntity(ConversationIDEntity("$conversationIdPrefix$it", "domain")).copy(
                 name = "conversation $it",
-                type = ConversationEntity.Type.GROUP,
+                type = type,
                 lastModifiedDate = lastModified,
                 lastReadDate = lastRead,
                 archived = archived,
-                groupType = groupType,
             )
             conversationDAO.insertConversation(conversation)
         }
