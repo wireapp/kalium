@@ -20,6 +20,7 @@ package com.wire.kalium.logic.di
 
 import com.wire.kalium.cells.CellsScope
 import com.wire.kalium.logic.feature.conversation.ConversationDependencies
+import com.wire.kalium.logic.feature.message.MessageDependencies
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
 import dev.mokkery.mock
@@ -99,7 +100,7 @@ class CellsFeatureGraphTest {
 
         fun createOwner(): CellsFeatureGraphOwner {
             val userGraph = createGraphFactory<UserSessionGraph.Factory>()
-                .create(mock<ConversationDependencies>())
+                .create(mock<ConversationDependencies>(), mock<MessageDependencies>())
             return CellsFeatureGraphOwner(
                 graphFactory = userGraph,
                 cellsScopeFactory = CellsScopeFactory {

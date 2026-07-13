@@ -172,7 +172,9 @@ import com.wire.kalium.logic.data.message.draft.MessageDraftDataSource
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinator
 import com.wire.kalium.logic.data.message.paging.NomadMessagePagingCoordinatorImpl
+import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
+import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mls.ConversationProtocolGetterImpl
 import com.wire.kalium.logic.data.mls.MLSMissingUsersMessageRejectionHandler
@@ -275,7 +277,7 @@ import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationDependencies
-import com.wire.kalium.logic.feature.conversation.ConversationScopedFactory
+import com.wire.kalium.logic.di.UserSessionScopedFactory
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
@@ -355,6 +357,8 @@ import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.feature.message.MessageDependencies
+import com.wire.kalium.logic.feature.message.MessageDependencyFactory
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
@@ -2403,55 +2407,51 @@ public class UserSessionScope internal constructor(
     }
     private val conversationDependencies: ConversationDependencies by lazy {
         object : ConversationDependencies {
-            override val conversationRepositoryFactory = ConversationScopedFactory {
+            override val conversationRepositoryFactory = UserSessionScopedFactory {
                 this@UserSessionScope.conversationRepository
             }
-            override val callRepositoryFactory = ConversationScopedFactory { this@UserSessionScope.callRepository }
-            override val conversationGroupRepositoryFactory = ConversationScopedFactory {
+            override val callRepositoryFactory = UserSessionScopedFactory { this@UserSessionScope.callRepository }
+            override val conversationGroupRepositoryFactory = UserSessionScopedFactory {
                 this@UserSessionScope.conversationGroupRepository
             }
-            override val connectionRepositoryFactory = ConversationScopedFactory {
+            override val connectionRepositoryFactory = UserSessionScopedFactory {
                 this@UserSessionScope.connectionRepository
             }
-            override val userRepositoryFactory = ConversationScopedFactory { this@UserSessionScope.userRepository }
-            override val conversationFolderRepositoryFactory = ConversationScopedFactory {
+            override val userRepositoryFactory = UserSessionScopedFactory { this@UserSessionScope.userRepository }
+            override val conversationFolderRepositoryFactory = UserSessionScopedFactory {
                 this@UserSessionScope.conversationFolderRepository
             }
             override val syncManager get() = this@UserSessionScope.syncManager
-            override val mlsConversationRepositoryFactory = ConversationScopedFactory {
+            override val mlsConversationRepositoryFactory = UserSessionScopedFactory {
                 this@UserSessionScope.mlsConversationRepository
             }
             override val currentClientIdProvider get() = clientIdProvider
-            override val messageSenderFactory = ConversationScopedFactory { messages.messageSender }
-            override val teamRepositoryFactory = ConversationScopedFactory { this@UserSessionScope.teamRepository }
-            override val slowSyncRepositoryFactory = ConversationScopedFactory {
+            override val teamRepositoryFactory = UserSessionScopedFactory { this@UserSessionScope.teamRepository }
+            override val slowSyncRepositoryFactory = UserSessionScopedFactory {
                 this@UserSessionScope.slowSyncRepository
             }
             override val selfUserId get() = userId
             override val selfConversationIdProvider get() = this@UserSessionScope.selfConversationIdProvider
-            override val persistMessage get() = this@UserSessionScope.persistMessage
             override val selfTeamIdProvider get() = selfTeamId
-            override val sendConfirmation get() = messages.sendConfirmation
             override val renamedConversationHandler get() = this@UserSessionScope.renamedConversationHandler
-            override val serverConfigRepositoryFactory = ConversationScopedFactory {
+            override val serverConfigRepositoryFactory = UserSessionScopedFactory {
                 authenticationScope.serverConfigRepository
             }
             override val userStorage get() = this@UserSessionScope.userStorage
-            override val userPropertyRepositoryFactory = ConversationScopedFactory {
+            override val userPropertyRepositoryFactory = UserSessionScopedFactory {
                 this@UserSessionScope.userPropertyRepository
             }
-            override val deleteEphemeralMessageEndDate get() = messages.deleteEphemeralMessageEndDate
-            override val oneOnOneResolverFactory = ConversationScopedFactory {
+            override val oneOnOneResolverFactory = UserSessionScopedFactory {
                 this@UserSessionScope.oneOnOneResolver
             }
             override val userSessionCoroutineScope get() = this@UserSessionScope
             override val kaliumLogger get() = userScopedLogger
             override val refreshUsersWithoutMetadata get() = this@UserSessionScope.refreshUsersWithoutMetadata
             override val serverConfigLinks get() = sessionManager.getServerConfig().links
-            override val messageRepositoryFactory = ConversationScopedFactory {
+            override val messageRepositoryFactory = UserSessionScopedFactory {
                 this@UserSessionScope.messageRepository
             }
-            override val assetRepositoryFactory = ConversationScopedFactory { this@UserSessionScope.assetRepository }
+            override val assetRepositoryFactory = UserSessionScopedFactory { this@UserSessionScope.assetRepository }
             override val newGroupConversationSystemMessagesCreator
                 get() = this@UserSessionScope.newGroupConversationSystemMessagesCreator
             override val deleteConversationUseCase get() = this@UserSessionScope.deleteConversationUseCase
@@ -2466,8 +2466,60 @@ public class UserSessionScope internal constructor(
         }
     }
 
+    private val messageDependencies: MessageDependencies by lazy {
+        object : MessageDependencies {
+            override val messageDraftRepositoryFactory = UserSessionScopedFactory {
+                this@UserSessionScope.messageDraftRepository
+            }
+            override val attachmentsRepositoryFactory = MessageDependencyFactory {
+                cells.messageAttachmentsDraftRepository
+            }
+            override val clientRepositoryFactory = UserSessionScopedFactory {
+                this@UserSessionScope.clientRepository
+            }
+            override val clientRemoteRepositoryFactory = UserSessionScopedFactory {
+                this@UserSessionScope.clientRemoteRepository
+            }
+            override val preKeyRepositoryFactory = UserSessionScopedFactory { this@UserSessionScope.preKeyRepository }
+            override val reactionRepositoryFactory = UserSessionScopedFactory<ReactionRepository> {
+                this@UserSessionScope.reactionRepository
+            }
+            override val receiptRepositoryFactory = UserSessionScopedFactory<ReceiptRepository> {
+                this@UserSessionScope.receiptRepository
+            }
+            override val messageSendingScheduler get() = this@UserSessionScope.messageSendingScheduler
+            override val audioNormalizedLoudnessScheduler get() = this@UserSessionScope.audioNormalizedLoudnessScheduler
+            override val incrementalSyncRepositoryFactory = UserSessionScopedFactory {
+                this@UserSessionScope.incrementalSyncRepository
+            }
+            override val protoContentMapper get() = this@UserSessionScope.protoContentMapper
+            override val observeSelfDeletingMessages get() = this@UserSessionScope.observeSelfDeletingMessages
+            override val messageMetadataRepositoryFactory = UserSessionScopedFactory {
+                this@UserSessionScope.messageMetadataRepository
+            }
+            override val staleEpochVerifier get() = this@UserSessionScope.staleEpochVerifier
+            override val legalHoldHandler get() = this@UserSessionScope.legalHoldHandler
+            override val observeFileSharingStatusUseCase get() = observeFileSharingStatus
+            override val getMessageAttachmentsFactory = MessageDependencyFactory {
+                cells.getMessageAttachmentsUseCase
+            }
+            override val publishAttachmentsFactory = MessageDependencyFactory { cells.publishAttachments }
+            override val removeAttachmentDraftsFactory = MessageDependencyFactory { cells.removeAttachments }
+            override val deleteMessageAttachmentsFactory = MessageDependencyFactory { cells.deleteAttachmentsUseCase }
+            override val fetchConversationUseCase get() = this@UserSessionScope.fetchConversationUseCase
+            override val compositeMessageRepositoryFactory = UserSessionScopedFactory {
+                this@UserSessionScope.compositeMessageRepository
+            }
+            override val audioNormalizedLoudnessBuilder get() = globalScope.audioNormalizedLoudnessBuilder
+            override val mlsMissingUsersMessageRejectionHandler
+                get() = mlsMissingUsersRejectionHandlerProvider()
+            override val kaliumConfigs get() = this@UserSessionScope.kaliumConfigs
+            override val legalHoldStatusMapper get() = LegalHoldStatusMapperImpl
+        }
+    }
+
     private val userSessionGraph: UserSessionGraph by lazy {
-        createGraphFactory<UserSessionGraph.Factory>().create(conversationDependencies)
+        createGraphFactory<UserSessionGraph.Factory>().create(conversationDependencies, messageDependencies)
     }
 
     public val conversations: ConversationScope by lazy {
@@ -2523,52 +2575,7 @@ public class UserSessionScope internal constructor(
     }
 
     public val messages: MessageScope by lazy {
-        MessageScope(
-            connectionRepository,
-            messageDraftRepository,
-            userId,
-            clientIdProvider,
-            selfConversationIdProvider,
-            messageRepository,
-            conversationRepository,
-            lazy { cells.messageAttachmentsDraftRepository },
-            mlsConversationRepository,
-            clientRepository,
-            clientRemoteRepository,
-            preKeyRepository,
-            userRepository,
-            assetRepository,
-            reactionRepository,
-            receiptRepository,
-            syncManager,
-            slowSyncRepository,
-            messageSendingScheduler,
-            audioNormalizedLoudnessScheduler,
-            userPropertyRepository,
-            incrementalSyncRepository,
-            protoContentMapper,
-            observeSelfDeletingMessages,
-            messageMetadataRepository,
-            staleEpochVerifier,
-            legalHoldHandler,
-            observeFileSharingStatus,
-            lazy { cells.getMessageAttachmentsUseCase },
-            lazy { cells.publishAttachments },
-            lazy { cells.removeAttachments },
-            lazy { cells.deleteAttachmentsUseCase },
-            fetchConversationUseCase,
-            cryptoTransactionProvider,
-            compositeMessageRepository,
-            { joinExistingMLSConversationUseCase },
-            globalScope.audioNormalizedLoudnessBuilder,
-            mlsMissingUsersRejectionHandlerProvider,
-            currentPersistenceEventHookNotifier,
-            this,
-            kaliumConfigs,
-            userScopedLogger,
-            KaliumDispatcherImpl,
-            LegalHoldStatusMapperImpl
-        )
+        MessageScope(userSessionGraph)
     }
 
     public val users: UserScope by lazy {

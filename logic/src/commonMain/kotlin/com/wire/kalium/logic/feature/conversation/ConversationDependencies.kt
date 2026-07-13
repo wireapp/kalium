@@ -37,30 +37,23 @@ import com.wire.kalium.logic.data.conversation.folders.ConversationFolderReposit
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.UserSessionScopedFactory
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
-import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
-
-internal fun interface ConversationScopedFactory<T> {
-    operator fun invoke(): T
-}
 
 /**
  * Runtime inputs from the manual user-session assembly root into the Metro graph.
@@ -71,35 +64,31 @@ internal fun interface ConversationScopedFactory<T> {
  * assembly root is migrated.
  */
 internal interface ConversationDependencies {
-    val conversationRepositoryFactory: ConversationScopedFactory<ConversationRepository>
-    val callRepositoryFactory: ConversationScopedFactory<CallRepository>
-    val conversationGroupRepositoryFactory: ConversationScopedFactory<ConversationGroupRepository>
-    val connectionRepositoryFactory: ConversationScopedFactory<ConnectionRepository>
-    val userRepositoryFactory: ConversationScopedFactory<UserRepository>
-    val conversationFolderRepositoryFactory: ConversationScopedFactory<ConversationFolderRepository>
+    val conversationRepositoryFactory: UserSessionScopedFactory<ConversationRepository>
+    val callRepositoryFactory: UserSessionScopedFactory<CallRepository>
+    val conversationGroupRepositoryFactory: UserSessionScopedFactory<ConversationGroupRepository>
+    val connectionRepositoryFactory: UserSessionScopedFactory<ConnectionRepository>
+    val userRepositoryFactory: UserSessionScopedFactory<UserRepository>
+    val conversationFolderRepositoryFactory: UserSessionScopedFactory<ConversationFolderRepository>
     val syncManager: SyncManager
-    val mlsConversationRepositoryFactory: ConversationScopedFactory<MLSConversationRepository>
+    val mlsConversationRepositoryFactory: UserSessionScopedFactory<MLSConversationRepository>
     val currentClientIdProvider: CurrentClientIdProvider
-    val messageSenderFactory: ConversationScopedFactory<MessageSender>
-    val teamRepositoryFactory: ConversationScopedFactory<TeamRepository>
-    val slowSyncRepositoryFactory: ConversationScopedFactory<SlowSyncRepository>
+    val teamRepositoryFactory: UserSessionScopedFactory<TeamRepository>
+    val slowSyncRepositoryFactory: UserSessionScopedFactory<SlowSyncRepository>
     val selfUserId: UserId
     val selfConversationIdProvider: SelfConversationIdProvider
-    val persistMessage: PersistMessageUseCase
     val selfTeamIdProvider: SelfTeamIdProvider
-    val sendConfirmation: SendConfirmationUseCase
     val renamedConversationHandler: RenamedConversationEventHandler
-    val serverConfigRepositoryFactory: ConversationScopedFactory<ServerConfigRepository>
+    val serverConfigRepositoryFactory: UserSessionScopedFactory<ServerConfigRepository>
     val userStorage: UserStorage
-    val userPropertyRepositoryFactory: ConversationScopedFactory<UserPropertyRepository>
-    val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase
-    val oneOnOneResolverFactory: ConversationScopedFactory<OneOnOneResolver>
+    val userPropertyRepositoryFactory: UserSessionScopedFactory<UserPropertyRepository>
+    val oneOnOneResolverFactory: UserSessionScopedFactory<OneOnOneResolver>
     val userSessionCoroutineScope: CoroutineScope
     val kaliumLogger: KaliumLogger
     val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
     val serverConfigLinks: ServerConfig.Links
-    val messageRepositoryFactory: ConversationScopedFactory<MessageRepository>
-    val assetRepositoryFactory: ConversationScopedFactory<AssetRepository>
+    val messageRepositoryFactory: UserSessionScopedFactory<MessageRepository>
+    val assetRepositoryFactory: UserSessionScopedFactory<AssetRepository>
     val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
     val deleteConversationUseCase: DeleteConversationUseCase
     val persistConversationsUseCase: PersistConversationsUseCase

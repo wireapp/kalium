@@ -52,6 +52,7 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.UserSessionLifetime
+import com.wire.kalium.logic.di.UserSessionScopedFactory
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCase
@@ -121,80 +122,76 @@ internal object ConversationUseCaseBindings {
     @Provides
     @SingleIn(UserSessionLifetime::class)
     fun provideConversationRepository(
-        factory: ConversationScopedFactory<ConversationRepository>,
+        factory: UserSessionScopedFactory<ConversationRepository>,
     ): ConversationRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
-    fun provideCallRepository(factory: ConversationScopedFactory<CallRepository>): CallRepository = factory()
+    fun provideCallRepository(factory: UserSessionScopedFactory<CallRepository>): CallRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
     fun provideConversationGroupRepository(
-        factory: ConversationScopedFactory<ConversationGroupRepository>,
+        factory: UserSessionScopedFactory<ConversationGroupRepository>,
     ): ConversationGroupRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
     fun provideConnectionRepository(
-        factory: ConversationScopedFactory<ConnectionRepository>,
+        factory: UserSessionScopedFactory<ConnectionRepository>,
     ): ConnectionRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
-    fun provideUserRepository(factory: ConversationScopedFactory<UserRepository>): UserRepository = factory()
+    fun provideUserRepository(factory: UserSessionScopedFactory<UserRepository>): UserRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
     fun provideConversationFolderRepository(
-        factory: ConversationScopedFactory<ConversationFolderRepository>,
+        factory: UserSessionScopedFactory<ConversationFolderRepository>,
     ): ConversationFolderRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
     fun provideMLSConversationRepository(
-        factory: ConversationScopedFactory<MLSConversationRepository>,
+        factory: UserSessionScopedFactory<MLSConversationRepository>,
     ): MLSConversationRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
-    fun provideMessageSender(factory: ConversationScopedFactory<MessageSender>): MessageSender = factory()
-
-    @Provides
-    @SingleIn(UserSessionLifetime::class)
-    fun provideTeamRepository(factory: ConversationScopedFactory<TeamRepository>): TeamRepository = factory()
+    fun provideTeamRepository(factory: UserSessionScopedFactory<TeamRepository>): TeamRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
     fun provideSlowSyncRepository(
-        factory: ConversationScopedFactory<SlowSyncRepository>,
+        factory: UserSessionScopedFactory<SlowSyncRepository>,
     ): SlowSyncRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
     fun provideServerConfigRepository(
-        factory: ConversationScopedFactory<ServerConfigRepository>,
+        factory: UserSessionScopedFactory<ServerConfigRepository>,
     ): ServerConfigRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
     fun provideUserPropertyRepository(
-        factory: ConversationScopedFactory<UserPropertyRepository>,
+        factory: UserSessionScopedFactory<UserPropertyRepository>,
     ): UserPropertyRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
-    fun provideOneOnOneResolver(factory: ConversationScopedFactory<OneOnOneResolver>): OneOnOneResolver = factory()
+    fun provideOneOnOneResolver(factory: UserSessionScopedFactory<OneOnOneResolver>): OneOnOneResolver = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
     fun provideMessageRepository(
-        factory: ConversationScopedFactory<MessageRepository>,
+        factory: UserSessionScopedFactory<MessageRepository>,
     ): MessageRepository = factory()
 
     @Provides
     @SingleIn(UserSessionLifetime::class)
-    fun provideAssetRepository(factory: ConversationScopedFactory<AssetRepository>): AssetRepository = factory()
+    fun provideAssetRepository(factory: UserSessionScopedFactory<AssetRepository>): AssetRepository = factory()
 
     @Provides
     fun provideGetConversations(repository: ConversationRepository): GetConversationsUseCase =

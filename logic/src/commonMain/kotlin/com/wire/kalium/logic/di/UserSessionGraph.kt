@@ -21,6 +21,9 @@ package com.wire.kalium.logic.di
 import com.wire.kalium.logic.feature.conversation.ConversationDependencies
 import com.wire.kalium.logic.feature.conversation.ConversationEntryPoints
 import com.wire.kalium.logic.feature.conversation.ConversationUseCaseBindings
+import com.wire.kalium.logic.feature.message.MessageDependencies
+import com.wire.kalium.logic.feature.message.MessageEntryPoints
+import com.wire.kalium.logic.feature.message.MessageUseCaseBindings
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Includes
 
@@ -28,12 +31,15 @@ internal object UserSessionLifetime
 
 @DependencyGraph(
     scope = UserSessionLifetime::class,
-    bindingContainers = [ConversationUseCaseBindings::class]
+    bindingContainers = [ConversationUseCaseBindings::class, MessageUseCaseBindings::class]
 )
-internal interface UserSessionGraph : ConversationEntryPoints, CellsFeatureGraph.Factory {
+internal interface UserSessionGraph : ConversationEntryPoints, MessageEntryPoints, CellsFeatureGraph.Factory {
 
     @DependencyGraph.Factory
     fun interface Factory {
-        fun create(@Includes conversationDependencies: ConversationDependencies): UserSessionGraph
+        fun create(
+            @Includes conversationDependencies: ConversationDependencies,
+            @Includes messageDependencies: MessageDependencies,
+        ): UserSessionGraph
     }
 }
