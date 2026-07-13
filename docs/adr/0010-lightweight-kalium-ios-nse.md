@@ -588,6 +588,19 @@ Milestone 1 passes only when all of the following are demonstrated:
 - every failed feasibility gate has a recorded decision to fix, redesign, or stop before production
   extraction begins.
 
+### Spike sequencing amendment — 2026-07-13
+
+The host and simulator spike produced enough evidence to proceed with the receive-only extraction
+in Milestone 2 without claiming production NSE feasibility. This amendment permits Milestone 2 to
+use iOS Simulator compile, link, framework-load, and manual-probe evidence while the signed
+physical-device gates remain open.
+
+This does not waive the physical-device, App Group, Keychain, encrypted handoff storage,
+locked-device, APNs/backend, memory, deadline, real Proteus/MLS receive, or extension-validation
+gates. Those gates must pass before the NSE framework is considered production-ready or any
+authoritative cursor/state cutover occurs. The split CoreCrypto and AVS framework arrangement is
+provisional and must be repeated inside a signed physical-device NSE.
+
 ## Consequences
 
 ### Benefits
