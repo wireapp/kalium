@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,17 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.utils
 
-package com.wire.kalium.network
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 
-import com.wire.kalium.network.api.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
-import com.wire.kalium.network.session.CertificatePinning
-import io.ktor.client.engine.HttpClientEngine
-
-expect fun defaultHttpEngine(
-    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy?,
-    proxyCredentials: ProxyCredentialsDTO?,
-    ignoreSSLCertificates: Boolean = false,
-    certificatePinning: CertificatePinning
-): HttpClientEngine
+internal val knownConversationTypes: List<ConversationEntity.Type> = listOf(
+    ConversationEntity.Type.SELF,
+    ConversationEntity.Type.ONE_ON_ONE,
+    ConversationEntity.Type.GROUP,
+    ConversationEntity.Type.CHANNEL,
+    ConversationEntity.Type.MEETING,
+    ConversationEntity.Type.CONNECTION_PENDING,
+)

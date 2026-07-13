@@ -82,6 +82,7 @@ interface ConversationDAO {
         fromArchive: Boolean = false,
         onlyInteractionEnabled: Boolean = false,
         newActivitiesOnTop: Boolean = false,
+        ongoingCallConversationIds: List<QualifiedIDEntity> = emptyList(),
         strictMLSFilter: Boolean = true
     ): Flow<List<ConversationDetailsWithEventsEntity>>
 

@@ -91,7 +91,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
 ) : NewGroupConversationSystemMessagesCreator {
 
     override suspend fun conversationStarted(conversation: ConversationEntity) = run {
-        if (conversation.type != ConversationEntity.Type.GROUP) {
+        if (!conversation.type.isGroup) {
             return Either.Right(Unit)
         }
         persistConversationStartedSystemMessage(
@@ -272,7 +272,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         conversationId = conversationId,
         hasAppsAccessEnabled = hasAppsAccessEnabled,
         creatorId = creatorId,
-        isGroup = type == ConversationEntity.Type.GROUP
+        isGroup = type.isGroup
     )
 
     override suspend fun conversationAppsAccessIfEnabled(
