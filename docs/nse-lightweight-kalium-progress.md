@@ -31,8 +31,8 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | 0. Architecture and contracts | Completed | `167effa92142` | Source review and documentation consistency checks | ADR 0010 accepted for spike |
 | 1. iOS feasibility spike | Completed for host/simulator scope | `56ba521dc210` | Host/simulator harness, symbol audit, split-framework probe, and report | Physical-device NSE/security/backend gates deferred |
 | 2. Shared message receiving | Completed | `1e674b5bf901` | Metadata/Apple/logic compilation, dependency audit, simulator framework load, boundary review | Real payload tests deferred |
-| 3. Protobuf decoding and notification extraction | Completed | `refactor: extract shared message content decoding` | Metadata/Apple/logic compilation, dependency audit, simulator protobuf probe, boundary review | Policy and API hardening deferred |
-| 4. Bounded incremental-sync engine | Not started | — | — | — |
+| 3. Protobuf decoding and notification extraction | Completed | `b96db61ff87e` | Metadata/Apple/logic compilation, dependency audit, simulator protobuf probe, boundary review | Policy and API hardening deferred |
+| 4. Bounded incremental-sync engine | Completed | `feat: add bounded notification sync engine` | Metadata/Apple compilation, dependency audit, simulator state-machine probe, boundary review | Concrete adapters and real backend deferred |
 | 5. Cross-process coordination | Not started | — | — | — |
 | 6. Shared handoff database | Not started | — | — | — |
 | 7. Lightweight NSE framework | Not started | — | — | — |
@@ -306,9 +306,97 @@ Deferred production work:
 - Malformed protobuf remains a decode failure by design and needs a stable receive-only failure
   taxonomy before production publication.
 
+## Milestone 4 — Bounded Incremental-Sync Engine
+
+Status: Completed on 2026-07-13
+
+Planned deliverables:
+
+- Extract a finite incremental-sync run behind narrow transport, durable staging, transport-ACK,
+  and cursor contracts without moving the existing `EventRepository`, `EventMapper`, or unbounded
+  worker wholesale into the lightweight graph.
+- Require an explicit deadline and bounded event/batch budgets, with cancellation and concrete
+  terminal outcomes for caught up, deadline reached, budget exhausted, contention/deferred input,
+  transport closure, and failure.
+- Preserve durable raw-event storage before transport ACK and make cursor advancement explicit so
+  it cannot outrun committed local staging.
+- Keep transport ACK separate from chat delivery/read receipts and exclude message sending, active
+  MLS recovery, application lifecycle, and infinite retry behavior.
+- Adapt full Kalium only where the bounded primitive can be consumed without changing its existing
+  continuous foreground behavior.
+- Link a deterministic in-memory/manual bounded-run probe into the disposable Apple feasibility
+  framework and exercise it through the iOS Simulator where practical.
+
+Verification constraints:
+
+- Do not add, modify, or run automated tests during the spike.
+- Use narrow metadata and iOS Simulator compilation, dependency inspection, simulator/manual probe,
+  source-level invariant review, `detekt`, and diff checks.
+- Do not introduce the cross-process file lock, encrypted handoff database implementation, Swift
+  importer, or production cursor cutover in this milestone; define only the contracts the engine
+  needs for later composition.
+- Do not reuse the current unbounded/`NonCancellable` worker as the NSE execution path.
+
+Delivered:
+
+- Added the standalone `:domain:notification-sync` module with no Kalium network, persistence,
+  `:logic`, sending, recovery, or application-lifecycle dependency.
+- Added one finite consumable-notification catch-up with an absolute deadline, close safety margin,
+  transport-frame/event/drain-batch budgets, cancellable suspend boundaries, and no retry loop or
+  `NonCancellable` region.
+- Added explicit lock/lease, cursor, transport-session, raw-inbox, ACK, receive-processing, and
+  foreground-deferral contracts for later concrete adapters.
+- Required one atomic `stageRawEventAndAdvanceCursor` operation. Non-transient events carry an
+  explicit opaque cursor independent from their event key; transient events stage without cursor
+  advancement. Exact scoped key, raw bytes, transient flag, and cursor metadata determine an
+  idempotent duplicate, while any mismatch is a terminal integrity conflict.
+- Required copy-owned raw envelope bytes and kept delivery tags and marker IDs outside durable raw
+  event values.
+- Required durable staging before a transport ACK can be enqueued. ACK acceptance only transfers
+  responsibility to the active local writer and cannot be discarded by immediate session close; it
+  does not claim backend confirmation or a chat receipt.
+- Validated the current marker before marker ACK/completion, left mismatched markers unacknowledged,
+  and deferred missed-notification and unproven legacy catch-up paths to foreground recovery.
+- Added deterministic, snapshot-consistent bounded drain batches, idempotent receive
+  materialization, per-event foreground deferral, and separate global recovery state while retaining
+  raw rows for later foreground import.
+- Guaranteed nested non-suspending session close and lease release on every return, timeout, or
+  external cancellation. Port contracts own resource cleanup for acquisition/open races.
+- Kept the current full-app `EventDataSource` unchanged because its separate insert, ACK, and cursor
+  calls cannot truthfully implement the new atomic contract.
+
+Verification evidence:
+
+- `:domain:notification-sync:compileKotlinMetadata` passed.
+- `:domain:notification-sync:compileKotlinIosSimulatorArm64` passed.
+- `:sample:nse-feasibility:linkDebugFrameworkIosSimulatorArm64` passed.
+- The iPhone 16 Pro / iOS 18.4 simulator reported `milestone4BoundedSync=true` and proved marker
+  completion after the final allowed event, deadline rejection before lease acquisition, a second
+  event stopped without staging or ACK after budget exhaustion, durable stage before ACK, atomic
+  cursor movement, raw retention, bounded closure, and lease release. No real network was used.
+- The resolved module graph contains Kotlin stdlib, coroutines, and datetime only, with no Kalium
+  network, persistence, `:logic`, sending, or recovery module.
+- Independent state-machine review found no remaining blocker after explicit cursor, duplicate/
+  conflict, cancellation-race ownership, per-event deferral, snapshot `hasMore`, nested cleanup, and
+  terminal-result fixes.
+- Repository `detekt`, `git diff --check`, dependency/import checks, and the no-test-file audit
+  passed.
+- No tests were added, modified, or run.
+
+Deferred production work:
+
+- The existing `NotificationApi` ACK method returns `Unit`; a concrete transport adapter must prove
+  the stronger local-writer acceptance and immediate-close guarantee before it can be used here.
+- The non-blocking cross-process lock and encrypted shared inbox/cursor implementations remain
+  Milestones 5 and 6.
+- Legacy WebSocket/pending-page cutoff remains foreground-only until its race and bounded drain
+  behavior are proven.
+- Stable event-key uniqueness beyond the account scope and backend event ID needs protocol audit.
+- Real backend, decryption, physical-device, locked-device, and native-operation timing remain
+  unverified.
+
 ## Next Action
 
-Commit the verified Milestone 3 change, then start Milestone 4 in a fresh implementation thread.
-Extract a finite, deadline-aware incremental-sync run without reusing the current unbounded worker,
-and preserve the durable-store-before-transport-ACK and shared-cursor invariants without adding or
-running automated tests.
+Commit the verified Milestone 4 change, then start Milestone 5 in a fresh implementation thread.
+Implement the stable per-account non-blocking Apple `flock` lease behind the new coordinator
+contract, prove contention and process-death release behavior, and avoid adding or running tests.
