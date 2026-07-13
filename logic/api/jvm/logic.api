@@ -3362,6 +3362,17 @@ public final class com/wire/kalium/logic/feature/conversation/AddServiceToConver
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/wire/kalium/logic/feature/conversation/AdminlessConversationFailure : com/wire/kalium/common/error/CoreFailure$FeatureFailure {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lcom/wire/kalium/logic/feature/conversation/AdminlessConversationFailure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/AdminlessConversationFailure;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/AdminlessConversationFailure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEligibleMembers ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract class com/wire/kalium/logic/feature/conversation/ArchiveStatusUpdateResult {
 }
 
@@ -4052,8 +4063,14 @@ public abstract interface class com/wire/kalium/logic/feature/conversation/Promo
 }
 
 public final class com/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result$FailedToLeaveConversation : com/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result$FailedToLeaveConversation;
+	public fun <init> ()V
+	public fun <init> (Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lcom/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result$FailedToLeaveConversation;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result$FailedToLeaveConversation;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result$FailedToLeaveConversation;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEligibleMembers ()Ljava/util/List;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
