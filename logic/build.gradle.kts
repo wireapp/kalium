@@ -21,6 +21,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 plugins {
     alias(libs.plugins.kotlin.serialization)
     id(libs.plugins.kalium.library.get().pluginId)
+    alias(libs.plugins.metro)
     alias(libs.plugins.ksp)
     alias(libs.plugins.mokkery)
     alias(libs.plugins.skie)
@@ -30,6 +31,12 @@ kaliumLibrary {
     multiplatform {
         enableJs.set(false)
     }
+}
+
+metro {
+    // Kalium uses raw function types as callback bindings. Keep them distinct from DI providers
+    // until those callbacks have named fun-interface types.
+    enableFunctionProviders = false
 }
 
 val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()

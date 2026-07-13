@@ -1,5 +1,6 @@
 [versions]
 kotlin = "2.3.20"
+metro = "1.1.1"
 ksp = "2.3.6"
 activity-compose = "1.13.0"
 app-compat = "1.6.1"
@@ -79,6 +80,7 @@ moduleGraph = { id = "dev.iurysouza.modulegraph", version.ref = "moduleGraph" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+metro = { id = "dev.zacsweers.metro", version.ref = "metro" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 compose-jetbrains = { id = "org.jetbrains.compose", version.ref = "compose-jetbrains" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
