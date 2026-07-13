@@ -275,7 +275,7 @@ import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ConversationDependencies
-import com.wire.kalium.logic.feature.conversation.ConversationRepositoryFactory
+import com.wire.kalium.logic.feature.conversation.ConversationScopedFactory
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
@@ -2403,37 +2403,55 @@ public class UserSessionScope internal constructor(
     }
     private val conversationDependencies: ConversationDependencies by lazy {
         object : ConversationDependencies {
-            override val conversationRepositoryFactory = ConversationRepositoryFactory {
+            override val conversationRepositoryFactory = ConversationScopedFactory {
                 this@UserSessionScope.conversationRepository
             }
-            override val callRepository get() = this@UserSessionScope.callRepository
-            override val conversationGroupRepository get() = this@UserSessionScope.conversationGroupRepository
-            override val connectionRepository get() = this@UserSessionScope.connectionRepository
-            override val userRepository get() = this@UserSessionScope.userRepository
-            override val conversationFolderRepository get() = this@UserSessionScope.conversationFolderRepository
+            override val callRepositoryFactory = ConversationScopedFactory { this@UserSessionScope.callRepository }
+            override val conversationGroupRepositoryFactory = ConversationScopedFactory {
+                this@UserSessionScope.conversationGroupRepository
+            }
+            override val connectionRepositoryFactory = ConversationScopedFactory {
+                this@UserSessionScope.connectionRepository
+            }
+            override val userRepositoryFactory = ConversationScopedFactory { this@UserSessionScope.userRepository }
+            override val conversationFolderRepositoryFactory = ConversationScopedFactory {
+                this@UserSessionScope.conversationFolderRepository
+            }
             override val syncManager get() = this@UserSessionScope.syncManager
-            override val mlsConversationRepository get() = this@UserSessionScope.mlsConversationRepository
+            override val mlsConversationRepositoryFactory = ConversationScopedFactory {
+                this@UserSessionScope.mlsConversationRepository
+            }
             override val currentClientIdProvider get() = clientIdProvider
-            override val messageSender get() = messages.messageSender
-            override val teamRepository get() = this@UserSessionScope.teamRepository
-            override val slowSyncRepository get() = this@UserSessionScope.slowSyncRepository
+            override val messageSenderFactory = ConversationScopedFactory { messages.messageSender }
+            override val teamRepositoryFactory = ConversationScopedFactory { this@UserSessionScope.teamRepository }
+            override val slowSyncRepositoryFactory = ConversationScopedFactory {
+                this@UserSessionScope.slowSyncRepository
+            }
             override val selfUserId get() = userId
             override val selfConversationIdProvider get() = this@UserSessionScope.selfConversationIdProvider
             override val persistMessage get() = this@UserSessionScope.persistMessage
             override val selfTeamIdProvider get() = selfTeamId
             override val sendConfirmation get() = messages.sendConfirmation
             override val renamedConversationHandler get() = this@UserSessionScope.renamedConversationHandler
-            override val serverConfigRepository get() = authenticationScope.serverConfigRepository
+            override val serverConfigRepositoryFactory = ConversationScopedFactory {
+                authenticationScope.serverConfigRepository
+            }
             override val userStorage get() = this@UserSessionScope.userStorage
-            override val userPropertyRepository get() = this@UserSessionScope.userPropertyRepository
+            override val userPropertyRepositoryFactory = ConversationScopedFactory {
+                this@UserSessionScope.userPropertyRepository
+            }
             override val deleteEphemeralMessageEndDate get() = messages.deleteEphemeralMessageEndDate
-            override val oneOnOneResolver get() = this@UserSessionScope.oneOnOneResolver
+            override val oneOnOneResolverFactory = ConversationScopedFactory {
+                this@UserSessionScope.oneOnOneResolver
+            }
             override val userSessionCoroutineScope get() = this@UserSessionScope
             override val kaliumLogger get() = userScopedLogger
             override val refreshUsersWithoutMetadata get() = this@UserSessionScope.refreshUsersWithoutMetadata
             override val serverConfigLinks get() = sessionManager.getServerConfig().links
-            override val messageRepository get() = this@UserSessionScope.messageRepository
-            override val assetRepository get() = this@UserSessionScope.assetRepository
+            override val messageRepositoryFactory = ConversationScopedFactory {
+                this@UserSessionScope.messageRepository
+            }
+            override val assetRepositoryFactory = ConversationScopedFactory { this@UserSessionScope.assetRepository }
             override val newGroupConversationSystemMessagesCreator
                 get() = this@UserSessionScope.newGroupConversationSystemMessagesCreator
             override val deleteConversationUseCase get() = this@UserSessionScope.deleteConversationUseCase
@@ -2453,7 +2471,7 @@ public class UserSessionScope internal constructor(
     }
 
     public val conversations: ConversationScope by lazy {
-        ConversationScope(userSessionGraph, conversationDependencies)
+        ConversationScope(userSessionGraph)
     }
 
     public val channels: ChannelsScope by lazy {

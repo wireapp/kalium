@@ -19,8 +19,10 @@
 package com.wire.kalium.logic.di
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.properties.UserPropertyRepository
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.ConversationDependencies
-import com.wire.kalium.logic.feature.conversation.ConversationRepositoryFactory
+import com.wire.kalium.logic.feature.conversation.ConversationScopedFactory
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import dev.mokkery.answering.returns
 import dev.mokkery.every
@@ -40,6 +42,8 @@ class UserSessionGraphTest {
         arrangement.createConversationScope()
 
         assertEquals(0, arrangement.repositoryCreations)
+        assertEquals(0, arrangement.userRepositoryResolutions)
+        assertEquals(0, arrangement.userPropertyRepositoryResolutions)
     }
 
     @Test
@@ -72,20 +76,71 @@ class UserSessionGraphTest {
         assertNotSame(firstRepository, secondRepository)
     }
 
+    @Test
+    fun givenUnscopedUseCaseIsRequestedTwice_whenUsingOneGraph_thenUseCasesDifferAndRepositoryIsShared() {
+        val arrangement = Arrangement()
+        val scope = arrangement.createConversationScope()
+
+        val first = scope.getConversations
+        val second = scope.getConversations
+
+        assertNotSame(first, second)
+        assertEquals(1, arrangement.repositoryCreations)
+    }
+
+    @Test
+    fun givenUseCaseNeedsOnlyUserRepository_whenRequested_thenUnrelatedConversationRepositoryIsNotCreated() {
+        val arrangement = Arrangement()
+        val scope = arrangement.createConversationScope()
+
+        val first = scope.observeUserListById
+        val second = scope.observeUserListById
+
+        assertNotSame(first, second)
+        assertEquals(1, arrangement.userRepositoryResolutions)
+        assertEquals(0, arrangement.repositoryCreations)
+    }
+
+    @Test
+    fun givenStatefulTypingRepositoryIsRequestedTwice_whenUsingOneGraph_thenInstanceIsShared() {
+        val arrangement = Arrangement()
+        val scope = arrangement.createConversationScope()
+
+        val first = scope.typingIndicatorIncomingRepository
+        val second = scope.typingIndicatorIncomingRepository
+
+        assertSame(first, second)
+        assertEquals(1, arrangement.userPropertyRepositoryResolutions)
+        assertEquals(0, arrangement.repositoryCreations)
+    }
+
     private class Arrangement {
         val createdRepositories = mutableListOf<ConversationRepository>()
         var repositoryCreations = 0
+        var userRepositoryResolutions = 0
+        var userPropertyRepositoryResolutions = 0
+
+        private val mockUserRepository = mock<UserRepository>()
+        private val mockUserPropertyRepository = mock<UserPropertyRepository>()
 
         private val dependencies = mock<ConversationDependencies> {
-            every { conversationRepositoryFactory } returns ConversationRepositoryFactory {
+            every { conversationRepositoryFactory } returns ConversationScopedFactory {
                 repositoryCreations += 1
                 mock<ConversationRepository>().also(createdRepositories::add)
+            }
+            every { userRepositoryFactory } returns ConversationScopedFactory {
+                userRepositoryResolutions += 1
+                mockUserRepository
+            }
+            every { userPropertyRepositoryFactory } returns ConversationScopedFactory {
+                userPropertyRepositoryResolutions += 1
+                mockUserPropertyRepository
             }
         }
 
         fun createConversationScope(): ConversationScope {
             val graph = createGraphFactory<UserSessionGraph.Factory>().create(dependencies)
-            return ConversationScope(graph, dependencies)
+            return ConversationScope(graph)
         }
     }
 }

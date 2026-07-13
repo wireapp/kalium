@@ -18,471 +18,165 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import co.touchlab.stately.collections.ConcurrentMutableMap
-import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.cache.SelfConversationIdProvider
-import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
-import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepositoryImpl
-import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
-import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandlerImpl
-import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.message.SystemMessageInserter
-import com.wire.kalium.logic.data.properties.UserPropertyRepository
-import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
-import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCase
-import com.wire.kalium.logic.feature.connection.MarkConnectionRequestAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ObserveConnectionListUseCase
 import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCase
-import com.wire.kalium.logic.feature.connection.ObservePendingConnectionRequestsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.apps.ChangeAccessForAppsInConversationUseCase
 import com.wire.kalium.logic.feature.conversation.createconversation.CreateChannelUseCase
 import com.wire.kalium.logic.feature.conversation.createconversation.CreateRegularGroupUseCase
-import com.wire.kalium.logic.feature.conversation.createconversation.CreateRegularGroupUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreator
-import com.wire.kalium.logic.feature.conversation.createconversation.GroupConversationCreatorImpl
 import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationLocallyUseCase
-import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationLocallyUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.delete.DeleteConversationUseCase
 import com.wire.kalium.logic.feature.conversation.delete.MarkConversationAsDeletedLocallyUseCase
-import com.wire.kalium.logic.feature.conversation.delete.MarkConversationAsDeletedLocallyUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCase
-import com.wire.kalium.logic.feature.conversation.folder.AddConversationToFavoritesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCase
-import com.wire.kalium.logic.feature.conversation.folder.CreateConversationFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
-import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCase
-import com.wire.kalium.logic.feature.conversation.folder.MoveConversationToFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCase
-import com.wire.kalium.logic.feature.conversation.folder.ObserveConversationsFromFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCase
-import com.wire.kalium.logic.feature.conversation.folder.ObserveUserFoldersUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCase
-import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFavoritesUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCase
-import com.wire.kalium.logic.feature.conversation.folder.RemoveConversationFromFolderUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.CanCreatePasswordProtectedLinksUseCase
 import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCase
-import com.wire.kalium.logic.feature.conversation.guestroomlink.GenerateGuestRoomLinkUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.ObserveGuestRoomLinkUseCase
-import com.wire.kalium.logic.feature.conversation.guestroomlink.ObserveGuestRoomLinkUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.guestroomlink.RevokeGuestRoomLinkUseCase
-import com.wire.kalium.logic.feature.conversation.guestroomlink.RevokeGuestRoomLinkUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCase
-import com.wire.kalium.logic.feature.conversation.keyingmaterials.UpdateKeyingMaterialsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCase
-import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCaseImpl
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
-import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
-import com.wire.kalium.logic.feature.message.receipt.ParallelConversationWorkQueue
-import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
-import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
-import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
-import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
-import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
-import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
-import com.wire.kalium.messaging.sending.MessageSender
 import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.CoroutineScope
 
+/** Public conversation API facade backed entirely by the user-session dependency graph. */
 public class ConversationScope internal constructor(
     private val entryPoints: ConversationEntryPoints,
-    private val dependencies: ConversationDependencies,
 ) {
-
     internal val conversationRepository: ConversationRepository get() = entryPoints.conversationRepository
-    internal val callRepository: CallRepository get() = dependencies.callRepository
-    private val conversationGroupRepository: ConversationGroupRepository get() = dependencies.conversationGroupRepository
-    private val connectionRepository: ConnectionRepository get() = dependencies.connectionRepository
-    private val userRepository: UserRepository get() = dependencies.userRepository
-    private val conversationFolderRepository: ConversationFolderRepository get() = dependencies.conversationFolderRepository
-    private val syncManager: SyncManager get() = dependencies.syncManager
-    private val mlsConversationRepository: MLSConversationRepository get() = dependencies.mlsConversationRepository
-    private val currentClientIdProvider: CurrentClientIdProvider get() = dependencies.currentClientIdProvider
-    private val messageSender: MessageSender get() = dependencies.messageSender
-    private val teamRepository: TeamRepository get() = dependencies.teamRepository
-    private val slowSyncRepository: SlowSyncRepository get() = dependencies.slowSyncRepository
-    private val selfUserId: UserId get() = dependencies.selfUserId
-    private val selfConversationIdProvider: SelfConversationIdProvider get() = dependencies.selfConversationIdProvider
-    private val persistMessage: PersistMessageUseCase get() = dependencies.persistMessage
-    private val selfTeamIdProvider: SelfTeamIdProvider get() = dependencies.selfTeamIdProvider
-    private val sendConfirmation: SendConfirmationUseCase get() = dependencies.sendConfirmation
-    private val renamedConversationHandler: RenamedConversationEventHandler get() = dependencies.renamedConversationHandler
-    private val serverConfigRepository: ServerConfigRepository get() = dependencies.serverConfigRepository
-    private val userStorage: UserStorage get() = dependencies.userStorage
-    private val userPropertyRepository: UserPropertyRepository get() = dependencies.userPropertyRepository
-    private val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase
-        get() = dependencies.deleteEphemeralMessageEndDate
-    private val oneOnOneResolver: OneOnOneResolver get() = dependencies.oneOnOneResolver
-    private val scope: CoroutineScope get() = dependencies.userSessionCoroutineScope
-    private val kaliumLogger: KaliumLogger get() = dependencies.kaliumLogger
-    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
-        get() = dependencies.refreshUsersWithoutMetadata
-    private val serverConfigLinks: ServerConfig.Links get() = dependencies.serverConfigLinks
-    internal val messageRepository: MessageRepository get() = dependencies.messageRepository
-    internal val assetRepository: AssetRepository get() = dependencies.assetRepository
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
-        get() = dependencies.newGroupConversationSystemMessagesCreator
-    private val deleteConversationUseCase: DeleteConversationUseCase get() = dependencies.deleteConversationUseCase
-    private val persistConversationsUseCase: PersistConversationsUseCase get() = dependencies.persistConversationsUseCase
-    private val transactionProvider: CryptoTransactionProvider get() = dependencies.transactionProvider
-    private val resetMLSConversationUseCase: ResetMLSConversationUseCase get() = dependencies.resetMLSConversationUseCase
-    private val systemMessageInserter: SystemMessageInserter get() = dependencies.systemMessageInserter
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier get() = dependencies.persistenceEventHookNotifier
-    private val memberJoinEventHandler: MemberJoinEventHandler get() = dependencies.memberJoinEventHandler
-    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase get() = dependencies.joinExistingMLSConversation
-    internal val dispatcher: KaliumDispatcher get() = dependencies.dispatcher
+    internal val callRepository: CallRepository get() = entryPoints.callRepository
+    internal val messageRepository: MessageRepository get() = entryPoints.messageRepository
+    internal val assetRepository: AssetRepository get() = entryPoints.assetRepository
+    internal val dispatcher: KaliumDispatcher get() = entryPoints.dispatcher
 
-    public val getConversations: GetConversationsUseCase
-        get() = entryPoints.getConversations
-
-    internal val getConversationDetails: GetConversationUseCase
-        get() = entryPoints.getConversationDetails
-
-    public val getOneToOneConversation: GetOneToOneConversationDetailsUseCase
-        get() = entryPoints.getOneToOneConversation
-
+    public val getConversations: GetConversationsUseCase get() = entryPoints.getConversations
+    internal val getConversationDetails: GetConversationUseCase get() = entryPoints.getConversationDetails
+    public val getOneToOneConversation: GetOneToOneConversationDetailsUseCase get() = entryPoints.getOneToOneConversation
     public val observeConversationListDetails: ObserveConversationListDetailsUseCase
         get() = entryPoints.observeConversationListDetails
-
     public val observeConversationListDetailsWithEvents: ObserveConversationListDetailsWithEventsUseCase
-        get() = ObserveConversationListDetailsWithEventsUseCaseImpl(
-            conversationRepository,
-            conversationFolderRepository,
-            getFavoriteFolder,
-            callRepository
-        )
-
-    public val observeConversationMembers: ObserveConversationMembersUseCase
-        get() = ObserveConversationMembersUseCaseImpl(conversationRepository, userRepository)
-
-    public val getMembersToMention: MembersToMentionUseCase
-        get() = MembersToMentionUseCase(observeConversationMembers = observeConversationMembers, selfUserId = selfUserId)
-
+        get() = entryPoints.observeConversationListDetailsWithEvents
+    public val observeConversationMembers: ObserveConversationMembersUseCase get() = entryPoints.observeConversationMembers
+    public val getMembersToMention: MembersToMentionUseCase get() = entryPoints.getMembersToMention
     public val observeEligibleMembersForConversationAdminRole: ObserveEligibleMembersForConversationAdminRoleUseCase
-        get() = ObserveEligibleMembersForConversationAdminRoleUseCaseImpl(observeConversationMembers, selfUserId)
-
-    public val observeUserListById: ObserveUserListByIdUseCase
-        get() = ObserveUserListByIdUseCase(userRepository)
-
-    public val observeConversationDetails: ObserveConversationDetailsUseCase
-        get() = entryPoints.observeConversationDetails
-
-    public val getConversationProtocolInfo: GetConversationProtocolInfoUseCase
-        get() = entryPoints.getConversationProtocolInfo
-
-    public val notifyConversationIsOpen: NotifyConversationIsOpenUseCase
-        get() = NotifyConversationIsOpenUseCaseImpl(
-            oneOnOneResolver,
-            conversationRepository,
-            deleteEphemeralMessageEndDate,
-            slowSyncRepository,
-            transactionProvider,
-            kaliumLogger
-        )
-
+        get() = entryPoints.observeEligibleMembersForConversationAdminRole
+    public val observeUserListById: ObserveUserListByIdUseCase get() = entryPoints.observeUserListById
+    public val observeConversationDetails: ObserveConversationDetailsUseCase get() = entryPoints.observeConversationDetails
+    public val getConversationProtocolInfo: GetConversationProtocolInfoUseCase get() = entryPoints.getConversationProtocolInfo
+    public val notifyConversationIsOpen: NotifyConversationIsOpenUseCase get() = entryPoints.notifyConversationIsOpen
     public val observeIsSelfUserMemberUseCase: ObserveIsSelfUserMemberUseCase
-        get() = ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, selfUserId)
-
+        get() = entryPoints.observeIsSelfUserMemberUseCase
     public val observeConversationInteractionAvailabilityUseCase: ObserveConversationInteractionAvailabilityUseCase
-        get() = ObserveConversationInteractionAvailabilityUseCase(
-            conversationRepository,
-            selfUserId = selfUserId,
-            selfClientIdProvider = currentClientIdProvider,
-            userRepository = userRepository
-        )
-
-    public val deleteTeamConversation: DeleteTeamConversationUseCase
-        get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, deleteConversationUseCase, transactionProvider)
-
-    internal val createGroupConversation: GroupConversationCreator
-        get() = GroupConversationCreatorImpl(
-            conversationRepository,
-            conversationGroupRepository,
-            syncManager,
-            currentClientIdProvider,
-            newGroupConversationSystemMessagesCreator,
-            refreshUsersWithoutMetadata
-        )
-
-    public val createRegularGroup: CreateRegularGroupUseCase
-        get() = CreateRegularGroupUseCaseImpl(createGroupConversation)
-
-    public val createChannel: CreateChannelUseCase
-        get() = CreateChannelUseCase(createGroupConversation)
-
+        get() = entryPoints.observeConversationInteractionAvailabilityUseCase
+    public val deleteTeamConversation: DeleteTeamConversationUseCase get() = entryPoints.deleteTeamConversation
+    internal val createGroupConversation: GroupConversationCreator get() = entryPoints.createGroupConversation
+    public val createRegularGroup: CreateRegularGroupUseCase get() = entryPoints.createRegularGroup
+    public val createChannel: CreateChannelUseCase get() = entryPoints.createChannel
     public val addMemberToConversationUseCase: AddMemberToConversationUseCase
-        get() = AddMemberToConversationUseCaseImpl(
-            conversationGroupRepository,
-            userRepository,
-            refreshUsersWithoutMetadata,
-            resetMLSConversationUseCase
-        )
-
+        get() = entryPoints.addMemberToConversationUseCase
     public val addServiceToConversationUseCase: AddServiceToConversationUseCase
-        get() = AddServiceToConversationUseCase(groupRepository = conversationGroupRepository)
-
+        get() = entryPoints.addServiceToConversationUseCase
     public val getOrCreateOneToOneConversationUseCase: GetOrCreateOneToOneConversationUseCase
-        get() = GetOrCreateOneToOneConversationUseCaseImpl(
-            conversationRepository,
-            userRepository,
-            oneOnOneResolver,
-            transactionProvider
-        )
-
+        get() = entryPoints.getOrCreateOneToOneConversationUseCase
     public val isOneToOneConversationCreatedUseCase: IsOneToOneConversationCreatedUseCase
-        get() = IsOneToOneConversationCreatedUseCaseImpl(userRepository)
-
+        get() = entryPoints.isOneToOneConversationCreatedUseCase
     public val updateConversationMutedStatus: UpdateConversationMutedStatusUseCase
-        get() = UpdateConversationMutedStatusUseCaseImpl(conversationRepository)
-
+        get() = entryPoints.updateConversationMutedStatus
     public val updateConversationArchivedStatus: UpdateConversationArchivedStatusUseCase
-        get() = UpdateConversationArchivedStatusUseCaseImpl(conversationRepository)
+        get() = entryPoints.updateConversationArchivedStatus
 
     @Deprecated(
         "Name is misleading, and this field will be removed",
         ReplaceWith("observePendingConnectionRequests")
     )
-    internal val observeConnectionList: ObserveConnectionListUseCase
-        get() = observePendingConnectionRequests
+    internal val observeConnectionList: ObserveConnectionListUseCase get() = observePendingConnectionRequests
 
     internal val observePendingConnectionRequests: ObservePendingConnectionRequestsUseCase
-        get() = ObservePendingConnectionRequestsUseCaseImpl(connectionRepository)
-
+        get() = entryPoints.observePendingConnectionRequests
     public val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
-        get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
-
-    private val conversationWorkQueue: ConversationWorkQueue by lazy {
-        ParallelConversationWorkQueue(scope, kaliumLogger, KaliumDispatcherImpl.default)
-    }
-
+        get() = entryPoints.markConnectionRequestAsNotified
     public val updateConversationReadDateUseCase: UpdateConversationReadDateUseCase
-        get() = UpdateConversationReadDateUseCase(
-            conversationRepository,
-            messageSender,
-            currentClientIdProvider,
-            selfUserId,
-            selfConversationIdProvider,
-            sendConfirmation,
-            conversationWorkQueue,
-            persistenceEventHookNotifier,
-            kaliumLogger
-        )
-
+        get() = entryPoints.updateConversationReadDateUseCase
     public val markConversationAsReadLocally: MarkConversationAsReadLocallyUseCase
-        get() = MarkConversationAsReadLocallyUseCaseImpl(
-            conversationRepository,
-            persistenceEventHookNotifier,
-            selfUserId
-        )
-
-    public val updateConversationAccess: UpdateConversationAccessRoleUseCase
-        get() = UpdateConversationAccessRoleUseCaseImpl(conversationRepository, conversationGroupRepository, syncManager)
-
+        get() = entryPoints.markConversationAsReadLocally
+    public val updateConversationAccess: UpdateConversationAccessRoleUseCase get() = entryPoints.updateConversationAccess
     public val changeAccessForAppsInConversation: ChangeAccessForAppsInConversationUseCase
-        get() = ChangeAccessForAppsInConversationUseCase(updateConversationAccess, systemMessageInserter, selfUserId)
-
+        get() = entryPoints.changeAccessForAppsInConversation
     public val updateConversationMemberRole: UpdateConversationMemberRoleUseCase
-        get() = UpdateConversationMemberRoleUseCaseImpl(conversationRepository)
-
+        get() = entryPoints.updateConversationMemberRole
     public val removeMemberFromConversation: RemoveMemberFromConversationUseCase
-        get() = RemoveMemberFromConversationUseCaseImpl(conversationGroupRepository)
-
-    public val leaveConversation: LeaveConversationUseCase
-        get() = LeaveConversationUseCaseImpl(conversationGroupRepository, selfUserId)
-
+        get() = entryPoints.removeMemberFromConversation
+    public val leaveConversation: LeaveConversationUseCase get() = entryPoints.leaveConversation
     public val promoteAdminAndLeaveConversation: PromoteAdminAndLeaveConversationUseCase
-        get() = PromoteAdminAndLeaveConversationUseCaseImpl(updateConversationMemberRole, leaveConversation)
-
+        get() = entryPoints.promoteAdminAndLeaveConversation
     public val checkConversationLeaveConditions: CheckConversationLeaveConditionsUseCase
-        get() = CheckConversationLeaveConditionsUseCaseImpl(
-            conversationRepository,
-            observeEligibleMembersForConversationAdminRole,
-            selfUserId
-        )
-
-    public val renameConversation: RenameConversationUseCase
-        get() = RenameConversationUseCaseImpl(
-            conversationRepository,
-            persistMessage,
-            renamedConversationHandler,
-            selfUserId
-        )
-
+        get() = entryPoints.checkConversationLeaveConditions
+    public val renameConversation: RenameConversationUseCase get() = entryPoints.renameConversation
     internal val updateMLSGroupsKeyingMaterials: UpdateKeyingMaterialsUseCase
-        get() = UpdateKeyingMaterialsUseCaseImpl(mlsConversationRepository, transactionProvider)
-
+        get() = entryPoints.updateMLSGroupsKeyingMaterials
     internal val clearConversationAssetsLocally: ClearConversationAssetsLocallyUseCase
-        get() = ClearConversationAssetsLocallyUseCaseImpl(
-            messageRepository,
-            assetRepository
-        )
-
-    public val clearConversationContent: ClearConversationContentUseCase
-        get() = ClearConversationContentUseCaseImpl(
-            conversationRepository,
-            messageSender,
-            selfUserId,
-            currentClientIdProvider,
-            selfConversationIdProvider,
-            clearConversationAssetsLocally,
-            persistenceEventHookNotifier,
-        )
-
+        get() = entryPoints.clearConversationAssetsLocally
+    public val clearConversationContent: ClearConversationContentUseCase get() = entryPoints.clearConversationContent
     public val markConversationAsDeletedLocallyUseCase: MarkConversationAsDeletedLocallyUseCase
-        get() = MarkConversationAsDeletedLocallyUseCaseImpl(conversationRepository)
-
+        get() = entryPoints.markConversationAsDeletedLocallyUseCase
     public val deleteConversationLocallyUseCase: DeleteConversationLocallyUseCase
-        get() = DeleteConversationLocallyUseCaseImpl(clearConversationContent)
-
-    public val joinConversationViaCode: JoinConversationViaCodeUseCase
-        get() = JoinConversationViaCodeUseCase(
-            conversationGroupRepository,
-            conversationRepository,
-            memberJoinEventHandler,
-            joinExistingMLSConversation,
-            mlsConversationRepository,
-            transactionProvider,
-            selfUserId
-        )
-
+        get() = entryPoints.deleteConversationLocallyUseCase
+    public val joinConversationViaCode: JoinConversationViaCodeUseCase get() = entryPoints.joinConversationViaCode
     public val checkIConversationInviteCode: CheckConversationInviteCodeUseCase
-        get() = CheckConversationInviteCodeUseCase(
-            conversationGroupRepository,
-            conversationRepository,
-            selfUserId
-        )
-
+        get() = entryPoints.checkIConversationInviteCode
     public val updateConversationReceiptMode: UpdateConversationReceiptModeUseCase
-        get() = UpdateConversationReceiptModeUseCaseImpl(
-            conversationRepository = conversationRepository,
-            persistMessage = persistMessage,
-            selfUserId = selfUserId
-        )
-
-    public val generateGuestRoomLink: GenerateGuestRoomLinkUseCase
-        get() = GenerateGuestRoomLinkUseCaseImpl(
-            conversationGroupRepository,
-            CodeUpdateHandlerImpl(userStorage.database.conversationDAO, serverConfigLinks)
-        )
-
-    public val revokeGuestRoomLink: RevokeGuestRoomLinkUseCase
-        get() = RevokeGuestRoomLinkUseCaseImpl(
-            conversationGroupRepository
-        )
-
-    public val observeGuestRoomLink: ObserveGuestRoomLinkUseCase
-        get() = ObserveGuestRoomLinkUseCaseImpl(
-            conversationGroupRepository
-        )
-
-    public val updateMessageTimer: UpdateMessageTimerUseCase
-        get() = UpdateMessageTimerUseCaseImpl(
-            conversationGroupRepository
-        )
-
+        get() = entryPoints.updateConversationReceiptMode
+    public val generateGuestRoomLink: GenerateGuestRoomLinkUseCase get() = entryPoints.generateGuestRoomLink
+    public val revokeGuestRoomLink: RevokeGuestRoomLinkUseCase get() = entryPoints.revokeGuestRoomLink
+    public val observeGuestRoomLink: ObserveGuestRoomLinkUseCase get() = entryPoints.observeGuestRoomLink
+    public val updateMessageTimer: UpdateMessageTimerUseCase get() = entryPoints.updateMessageTimer
     public val getConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
-        get() = GetConversationUnreadEventsCountUseCaseImpl(conversationRepository)
-
+        get() = entryPoints.getConversationUnreadEventsCountUseCase
     public val refreshConversationsWithoutMetadata: RefreshConversationsWithoutMetadataUseCase
-        get() = RefreshConversationsWithoutMetadataUseCaseImpl(
-            conversationRepository = conversationRepository,
-            persistConversations = persistConversationsUseCase,
-            transactionProvider = transactionProvider
-        )
-
+        get() = entryPoints.refreshConversationsWithoutMetadata
     public val canCreatePasswordProtectedLinks: CanCreatePasswordProtectedLinksUseCase
-        get() = CanCreatePasswordProtectedLinksUseCase(
-            serverConfigRepository,
-            selfUserId
-        )
-
+        get() = entryPoints.canCreatePasswordProtectedLinks
     public val observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
-        get() = ObserveArchivedUnreadConversationsCountUseCaseImpl(conversationRepository)
-
-    private val typingIndicatorSenderHandler: TypingIndicatorSenderHandler by lazy {
-        TypingIndicatorSenderHandlerImpl(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)
-    }
-
-    internal val typingIndicatorIncomingRepository by lazy {
-        TypingIndicatorIncomingRepositoryImpl(
-            ConcurrentMutableMap(),
-            userPropertyRepository
-        )
-    }
-
-    internal val typingIndicatorOutgoingRepository by lazy {
-        TypingIndicatorOutgoingRepositoryImpl(
-            typingIndicatorSenderHandler,
-            userPropertyRepository
-        )
-    }
-
-    public val sendTypingEvent: SendTypingEventUseCase
-        get() = SendTypingEventUseCaseImpl(typingIndicatorOutgoingRepository)
-
-    public val observeUsersTyping: ObserveUsersTypingUseCase
-        get() = ObserveUsersTypingUseCaseImpl(typingIndicatorIncomingRepository, userRepository)
-
-    public val clearUsersTypingEvents: ClearUsersTypingEventsUseCase
-        get() = ClearUsersTypingEventsUseCaseImpl(typingIndicatorIncomingRepository)
-
+        get() = entryPoints.observeArchivedUnreadConversationsCount
+    internal val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepositoryImpl
+        get() = entryPoints.typingIndicatorIncomingRepository
+    internal val typingIndicatorOutgoingRepository: TypingIndicatorOutgoingRepositoryImpl
+        get() = entryPoints.typingIndicatorOutgoingRepository
+    public val sendTypingEvent: SendTypingEventUseCase get() = entryPoints.sendTypingEvent
+    public val observeUsersTyping: ObserveUsersTypingUseCase get() = entryPoints.observeUsersTyping
+    public val clearUsersTypingEvents: ClearUsersTypingEventsUseCase get() = entryPoints.clearUsersTypingEvents
     public val setUserInformedAboutVerificationBeforeMessagingUseCase: SetUserInformedAboutVerificationUseCase
-        get() = SetUserInformedAboutVerificationUseCaseImpl(conversationRepository)
+        get() = entryPoints.setUserInformedAboutVerificationBeforeMessagingUseCase
     public val observeInformAboutVerificationBeforeMessagingFlagUseCase: ObserveDegradedConversationNotifiedUseCase
-        get() = ObserveDegradedConversationNotifiedUseCaseImpl(conversationRepository)
+        get() = entryPoints.observeInformAboutVerificationBeforeMessagingFlagUseCase
     public val setNotifiedAboutConversationUnderLegalHold: SetNotifiedAboutConversationUnderLegalHoldUseCase
-        get() = SetNotifiedAboutConversationUnderLegalHoldUseCaseImpl(conversationRepository)
+        get() = entryPoints.setNotifiedAboutConversationUnderLegalHold
     public val observeConversationUnderLegalHoldNotified: ObserveConversationUnderLegalHoldNotifiedUseCase
-        get() = ObserveConversationUnderLegalHoldNotifiedUseCaseImpl(conversationRepository)
-    public val syncConversationCode: SyncConversationCodeUseCase
-        get() = SyncConversationCodeUseCase(conversationGroupRepository, serverConfigLinks)
+        get() = entryPoints.observeConversationUnderLegalHoldNotified
+    public val syncConversationCode: SyncConversationCodeUseCase get() = entryPoints.syncConversationCode
     public val observeConversationsFromFolder: ObserveConversationsFromFolderUseCase
-        get() = ObserveConversationsFromFolderUseCaseImpl(conversationFolderRepository)
-    public val getFavoriteFolder: GetFavoriteFolderUseCase
-        get() = GetFavoriteFolderUseCaseImpl(conversationFolderRepository)
+        get() = entryPoints.observeConversationsFromFolder
+    public val getFavoriteFolder: GetFavoriteFolderUseCase get() = entryPoints.getFavoriteFolder
     public val addConversationToFavorites: AddConversationToFavoritesUseCase
-        get() = AddConversationToFavoritesUseCaseImpl(conversationFolderRepository)
+        get() = entryPoints.addConversationToFavorites
     public val removeConversationFromFavorites: RemoveConversationFromFavoritesUseCase
-        get() = RemoveConversationFromFavoritesUseCaseImpl(conversationFolderRepository)
-    public val observeUserFolders: ObserveUserFoldersUseCase
-        get() = ObserveUserFoldersUseCaseImpl(conversationFolderRepository)
-    public val moveConversationToFolder: MoveConversationToFolderUseCase
-        get() = MoveConversationToFolderUseCaseImpl(conversationFolderRepository)
+        get() = entryPoints.removeConversationFromFavorites
+    public val observeUserFolders: ObserveUserFoldersUseCase get() = entryPoints.observeUserFolders
+    public val moveConversationToFolder: MoveConversationToFolderUseCase get() = entryPoints.moveConversationToFolder
     public val removeConversationFromFolder: RemoveConversationFromFolderUseCase
-        get() = RemoveConversationFromFolderUseCaseImpl(conversationFolderRepository)
-    public val createConversationFolder: CreateConversationFolderUseCase
-        get() = CreateConversationFolderUseCaseImpl(conversationFolderRepository)
-
+        get() = entryPoints.removeConversationFromFolder
+    public val createConversationFolder: CreateConversationFolderUseCase get() = entryPoints.createConversationFolder
     public val isSelfUserViewerOnConversation: IsSelfUserViewerOnConversationUseCase
-        get() = IsSelfUserViewerOnConversationUseCase(
-            conversationRepository = conversationRepository,
-            selfTeamIdProvider = selfTeamIdProvider,
-        )
+        get() = entryPoints.isSelfUserViewerOnConversation
 }

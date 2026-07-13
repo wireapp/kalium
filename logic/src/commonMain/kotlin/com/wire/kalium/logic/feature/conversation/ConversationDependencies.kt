@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.PersistConversationsUseCase
 import com.wire.kalium.logic.data.conversation.ResetMLSConversationUseCase
+import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -57,47 +58,48 @@ import com.wire.kalium.userstorage.di.UserStorage
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 
-internal fun interface ConversationRepositoryFactory {
-    operator fun invoke(): ConversationRepository
+internal fun interface ConversationScopedFactory<T> {
+    operator fun invoke(): T
 }
 
 /**
- * Temporary bridge from manual user-session wiring to Metro bindings.
+ * Runtime inputs from the manual user-session assembly root into the Metro graph.
  *
- * Accessors must stay side-effect free until called. Metro only evaluates the dependencies that are
- * reachable from the requested entry point. Bindings move out of this bridge as the migration
- * progresses.
+ * Factory inputs are scoped lazily to the user-session graph, so Metro evaluates them at most once
+ * and only when they are reachable from a requested entry point. Other inputs are existing session
+ * objects or unscoped collaborators. These inputs move into graph-native bindings as the session
+ * assembly root is migrated.
  */
 internal interface ConversationDependencies {
-    val conversationRepositoryFactory: ConversationRepositoryFactory
-    val callRepository: CallRepository
-    val conversationGroupRepository: ConversationGroupRepository
-    val connectionRepository: ConnectionRepository
-    val userRepository: UserRepository
-    val conversationFolderRepository: com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
+    val conversationRepositoryFactory: ConversationScopedFactory<ConversationRepository>
+    val callRepositoryFactory: ConversationScopedFactory<CallRepository>
+    val conversationGroupRepositoryFactory: ConversationScopedFactory<ConversationGroupRepository>
+    val connectionRepositoryFactory: ConversationScopedFactory<ConnectionRepository>
+    val userRepositoryFactory: ConversationScopedFactory<UserRepository>
+    val conversationFolderRepositoryFactory: ConversationScopedFactory<ConversationFolderRepository>
     val syncManager: SyncManager
-    val mlsConversationRepository: MLSConversationRepository
+    val mlsConversationRepositoryFactory: ConversationScopedFactory<MLSConversationRepository>
     val currentClientIdProvider: CurrentClientIdProvider
-    val messageSender: MessageSender
-    val teamRepository: TeamRepository
-    val slowSyncRepository: SlowSyncRepository
+    val messageSenderFactory: ConversationScopedFactory<MessageSender>
+    val teamRepositoryFactory: ConversationScopedFactory<TeamRepository>
+    val slowSyncRepositoryFactory: ConversationScopedFactory<SlowSyncRepository>
     val selfUserId: UserId
     val selfConversationIdProvider: SelfConversationIdProvider
     val persistMessage: PersistMessageUseCase
     val selfTeamIdProvider: SelfTeamIdProvider
     val sendConfirmation: SendConfirmationUseCase
     val renamedConversationHandler: RenamedConversationEventHandler
-    val serverConfigRepository: ServerConfigRepository
+    val serverConfigRepositoryFactory: ConversationScopedFactory<ServerConfigRepository>
     val userStorage: UserStorage
-    val userPropertyRepository: UserPropertyRepository
+    val userPropertyRepositoryFactory: ConversationScopedFactory<UserPropertyRepository>
     val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase
-    val oneOnOneResolver: OneOnOneResolver
+    val oneOnOneResolverFactory: ConversationScopedFactory<OneOnOneResolver>
     val userSessionCoroutineScope: CoroutineScope
     val kaliumLogger: KaliumLogger
     val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
     val serverConfigLinks: ServerConfig.Links
-    val messageRepository: MessageRepository
-    val assetRepository: AssetRepository
+    val messageRepositoryFactory: ConversationScopedFactory<MessageRepository>
+    val assetRepositoryFactory: ConversationScopedFactory<AssetRepository>
     val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
     val deleteConversationUseCase: DeleteConversationUseCase
     val persistConversationsUseCase: PersistConversationsUseCase
