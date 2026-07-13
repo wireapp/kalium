@@ -85,6 +85,12 @@ import platform.posix.write
  */
 public class NseFeasibilityProbe {
 
+    /** Uses only locally constructed synthetic bytes in the explicitly plaintext M6 store. */
+    public suspend fun probeSyntheticNotificationInbox(sharedRoot: String): FeasibilityProbeResult =
+        measureSuspending("synthetic-notification-inbox") {
+            runSyntheticNotificationInboxProbe(sharedRoot)
+        }
+
     /** Locally constructs protobufs to prove decode/extraction linkage without account state. */
     public fun probeMessageContentExtraction(): FeasibilityProbeResult = measure("message-content-extraction") {
         val textBytes = GenericMessage(

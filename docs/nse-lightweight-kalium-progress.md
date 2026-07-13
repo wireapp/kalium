@@ -33,8 +33,8 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | 2. Shared message receiving | Completed | `1e674b5bf901` | Metadata/Apple/logic compilation, dependency audit, simulator framework load, boundary review | Real payload tests deferred |
 | 3. Protobuf decoding and notification extraction | Completed | `b96db61ff87e` | Metadata/Apple/logic compilation, dependency audit, simulator protobuf probe, boundary review | Policy and API hardening deferred |
 | 4. Bounded incremental-sync engine | Completed | `919510813e62` | Metadata/Apple compilation, dependency audit, simulator state-machine probe, boundary review | Concrete adapters and real backend deferred |
-| 5. Cross-process coordination | Completed | `feat: add Apple process sync lock` | Apple compilation/linking, simulator lifecycle probe, macOS multi-process/owner-death probe, security-path probes, dependency audit, independent review, detekt, diff check | Signed App Group and physical-device gates deferred |
-| 6. Shared handoff database | Not started | — | — | — |
+| 5. Cross-process coordination | Completed | `7cbe26a3f797` | Apple compilation/linking, simulator lifecycle probe, macOS multi-process/owner-death probe, security-path probes, dependency audit, independent review, detekt, diff check | Signed App Group and physical-device gates deferred |
+| 6. Shared handoff database | Completed | `feat: add notification handoff database` | Metadata/JVM/Android/Apple compilation, Apple links, macOS and simulator durability/rollback probes, dependency audit, independent security review, detekt, diff check | Encrypted production factory and device gates deferred |
 | 7. Lightweight NSE framework | Not started | — | — | — |
 | 8. Foreground importer contract/integration | Not started | — | — | — |
 | 9. Resilience, security, and performance | Not started | — | — | — |
@@ -447,8 +447,79 @@ Deferred production work:
 - The shared inbox, foreground importer, authentication refresh adapter, and production App Group
   wiring remain outside this milestone.
 
+## Milestone 6 — Shared Handoff Database
+
+Status: Completed on 2026-07-13
+
+Delivered:
+
+- Added dependency-light `:data:notification-inbox` with no domain, logic, network, main-persistence,
+  sending, or CoreCrypto dependency. Its common contract owns raw/protobuf byte arrays defensively
+  and leaves adaptation to `NotificationSyncInbox` for the lightweight assembly milestone.
+- Added a versioned SQLDelight cross-language schema for contract/storage metadata, one durable
+  account/client cursor, raw event parents, scoped receive children, global recovery signals, and
+  independent receive/notification/foreground-import lifecycle state.
+- Defined raw-envelope format v1 as the complete UTF-8 JSON `data.event` value captured before DTO
+  decoding, retaining unknown fields and excluding transport delivery tags, markers, and wrappers.
+- Scoped raw identity by account/client/server event ID. Exact duplicate certification compares
+  owned bytes, SHA-256, format, transient state, and cursor metadata; any mismatch fails as an
+  integrity conflict.
+- Inserted a non-transient raw event and advanced its explicit opaque cursor in one transaction.
+  Transient events never move the cursor, and replaying an older exact row cannot regress a cursor
+  whose source ingest sequence is newer.
+- Added stable bounded pending reads with `limit + 1` snapshot semantics, per-blob/schema limits,
+  aggregate batch limits, SHA-256 recomputation, enum/relationship validation, and copy-owned
+  return values before data crosses the storage boundary.
+- Added domain-separated, deterministic child fallback IDs and account/client-scoped protocol UID
+  IDs. A complete ordered child set and parent receive completion commit in one transaction;
+  exact replay is idempotent and immutable-content conflicts abort the entire batch.
+- Added raw-parent and child foreground-read surfaces without importing into or marking rows
+  imported in the application's main database. Zero-child/non-message and deferred raw parents
+  remain available for the later native importer.
+- Added an Apple synthetic-only plaintext factory with fixed synthetic account/client IDs, a
+  `PLAINTEXT_SYNTHETIC_SPIKE_V1` metadata marker, DELETE journaling, foreign keys, zero busy wait,
+  one reader, conservative synchronous writes, and payload-safe silent driver logging. There is no
+  production Apple construction boundary while encryption and file protection remain unresolved.
+- Added JVM, Android, and Apple SHA-256 implementations without adding a hashing dependency, plus
+  disposable Apple probes using locally constructed JSON and valid `GenericMessage` protobufs.
+
+Verification evidence:
+
+- `:data:notification-inbox` metadata, JVM, Android, iOS Simulator ARM64, and macOS ARM64 compilation
+  passed. The iOS feasibility framework and macOS feasibility executable linked.
+- The iPhone 16 Pro / iOS 18.4 simulator and macOS probe both reported raw/cursor atomicity,
+  duplicate/conflict detection, transient staging without cursor movement, old-replay cursor
+  non-regression, stable bounded ordering, complete child-batch atomicity, exact raw/protobuf BLOB
+  retention, and close/reopen durability.
+- Synthetic one-shot failures after raw insertion but before cursor update and after all child
+  inserts but before parent completion rolled back the complete transactions. Absence was verified
+  immediately and after close/reopen while the Milestone 5 account lock covered the full lifecycle.
+- Repository `detekt`, `git diff --check`, untracked whitespace checks, dependency/import checks,
+  and the no-test-file audit passed. The resolved common graph contains SQLDelight runtime/async,
+  coroutines, Kotlin stdlib, and atomicfu only.
+- Independent schema and transaction/security reviews found no remaining blocker inside the
+  explicitly synthetic spike scope.
+- No tests were added, modified, or run.
+
+Deferred production work:
+
+- The current Apple native SQLite driver is plaintext and cannot store real decrypted protobufs.
+  Production still requires a reviewed SQLCipher/encrypted driver, shared Keychain access group,
+  compatible file-protection class, and no-follow/path-hardening construction under the App Group.
+- Define and enforce retention plus a total database-and-sidecar size policy. This spike deliberately
+  never deletes rows and treats `SQLITE_FULL` as a storage failure without acknowledging transport.
+- Prove and implement CoreCrypto-to-handoff crash ordering because crypto state and this database
+  cannot share one transaction, especially for buffered MLS outputs and handshakes.
+- Implement the M7 data-to-domain adapter, secure account-digest handoff path, notification-policy
+  snapshot ownership, and real transport capture of raw-envelope format v1.
+- Implement the foreground import/mark-imported protocol, authoritative cursor migration and
+  downgrade/account-removal policy, and cleanup under the same process lock.
+- Signed app-versus-NSE, App Group, locked-device, physical-device, real payload, and production
+  backlog/deadline behavior remain unverified.
+
 ## Next Action
 
-Commit the verified Milestone 5 change, then start Milestone 6 in a fresh implementation thread.
-Implement the separate App Group handoff database and its atomic raw-event/cursor contract without
+Commit the verified Milestone 6 change, then start Milestone 7 in a fresh implementation thread.
+Assemble the lightweight Swift-facing NSE framework from the bounded sync, process lock, handoff
+store, receive-only crypto, protobuf extraction, and notification-only AVS boundaries without
 adding or running tests.

@@ -1,0 +1,419 @@
+CREATE TABLE ContractMetadata (
+    singleton_id INTEGER NOT NULL PRIMARY KEY CHECK (singleton_id = 1),
+    contract_version INTEGER NOT NULL,
+    raw_envelope_format_version INTEGER NOT NULL,
+    child_payload_format_version INTEGER NOT NULL,
+    blob_storage_format TEXT NOT NULL CHECK (
+        blob_storage_format IN (
+            'UNBOUND_REQUIRES_SECURE_FACTORY',
+            'PLAINTEXT_SYNTHETIC_SPIKE_V1',
+            'ENCRYPTED_AT_REST_V1'
+        )
+    )
+);
+
+INSERT INTO ContractMetadata(
+    singleton_id,
+    contract_version,
+    raw_envelope_format_version,
+    child_payload_format_version,
+    blob_storage_format
+) VALUES (1, 1, 1, 1, 'UNBOUND_REQUIRES_SECURE_FACTORY');
+
+CREATE TABLE DurableCursor (
+    account_id TEXT NOT NULL,
+    client_id TEXT NOT NULL,
+    cursor_value TEXT NOT NULL,
+    source_ingest_sequence INTEGER NOT NULL,
+    source_server_event_id TEXT NOT NULL,
+    updated_at_epoch_millis INTEGER NOT NULL,
+    PRIMARY KEY (account_id, client_id),
+    FOREIGN KEY (
+        source_ingest_sequence,
+        account_id,
+        client_id,
+        source_server_event_id
+    ) REFERENCES RawEvent(ingest_sequence, account_id, client_id, server_event_id)
+);
+
+CREATE TABLE RawEvent (
+    ingest_sequence INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    account_id TEXT NOT NULL,
+    client_id TEXT NOT NULL,
+    server_event_id TEXT NOT NULL,
+    raw_envelope BLOB NOT NULL CHECK (length(raw_envelope) <= 1048576),
+    raw_envelope_sha256 TEXT NOT NULL CHECK (
+        length(raw_envelope_sha256) = 64 AND
+        raw_envelope_sha256 NOT GLOB '*[^0-9a-f]*'
+    ),
+    raw_envelope_format_version INTEGER NOT NULL CHECK (raw_envelope_format_version > 0),
+    server_timestamp_epoch_millis INTEGER,
+    is_transient INTEGER NOT NULL CHECK (is_transient IN (0, 1)),
+    associated_cursor TEXT,
+    delivery_source TEXT NOT NULL CHECK (
+        delivery_source IN (
+            'CONSUMABLE_WEBSOCKET',
+            'PENDING_PAGE',
+            'FOREGROUND_SYNC',
+            'SYNTHETIC_FEASIBILITY'
+        )
+    ),
+    received_at_epoch_millis INTEGER NOT NULL,
+    foreground_recovery_required INTEGER NOT NULL DEFAULT 0
+        CHECK (foreground_recovery_required IN (0, 1)),
+    recovery_reason TEXT,
+    ingestion_state TEXT NOT NULL DEFAULT 'RAW_STORED'
+        CHECK (ingestion_state IN ('RAW_STORED', 'CORRUPT')),
+    receive_state TEXT NOT NULL DEFAULT 'PENDING'
+        CHECK (receive_state IN ('PENDING', 'COMPLETED', 'DEFERRED_TO_APP')),
+    receive_claim_token TEXT,
+    receive_claimed_at_epoch_millis INTEGER,
+    receive_retry_count INTEGER NOT NULL DEFAULT 0 CHECK (receive_retry_count >= 0),
+    import_state TEXT NOT NULL DEFAULT 'PENDING' CHECK (import_state IN ('PENDING', 'IMPORTED')),
+    CHECK (is_transient = 1 OR associated_cursor IS NOT NULL),
+    UNIQUE (account_id, client_id, server_event_id),
+    UNIQUE (ingest_sequence, account_id, client_id),
+    UNIQUE (ingest_sequence, account_id, client_id, server_event_id)
+);
+
+CREATE INDEX RawEvent_pending_receive_order
+ON RawEvent(account_id, client_id, receive_state, ingest_sequence, server_event_id);
+
+CREATE TABLE GlobalRecovery (
+    account_id TEXT NOT NULL,
+    client_id TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    recorded_at_epoch_millis INTEGER NOT NULL,
+    PRIMARY KEY (account_id, client_id, reason)
+);
+
+CREATE TABLE ReceiveChild (
+    child_sequence INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    parent_ingest_sequence INTEGER NOT NULL,
+    account_id TEXT NOT NULL,
+    client_id TEXT NOT NULL,
+    item_index INTEGER NOT NULL CHECK (item_index >= 0),
+    idempotency_key TEXT NOT NULL,
+    conversation_id TEXT,
+    sender_id TEXT,
+    sender_client_id TEXT,
+    protocol TEXT NOT NULL CHECK (protocol IN ('PROTEUS', 'MLS', 'NONE')),
+    message_timestamp_epoch_millis INTEGER,
+    decrypted_proto BLOB CHECK (decrypted_proto IS NULL OR length(decrypted_proto) <= 1048576),
+    decrypted_proto_sha256 TEXT CHECK (
+        decrypted_proto_sha256 IS NULL OR (
+            length(decrypted_proto_sha256) = 64 AND
+            decrypted_proto_sha256 NOT GLOB '*[^0-9a-f]*'
+        )
+    ),
+    crypto_state_applied INTEGER NOT NULL CHECK (crypto_state_applied IN (0, 1)),
+    receive_classification TEXT NOT NULL CHECK (
+        receive_classification IN (
+            'APPLICATION_MESSAGE',
+            'HANDSHAKE_ONLY',
+            'WELCOME',
+            'UNSUPPORTED',
+            'NON_MESSAGE_EVENT'
+        )
+    ),
+    failure_classification TEXT,
+    decryption_state TEXT NOT NULL CHECK (
+        decryption_state IN (
+            'NOT_REQUIRED',
+            'PENDING',
+            'DECRYPTED',
+            'HANDSHAKE_APPLIED',
+            'DEFERRED_TO_APP',
+            'FAILED_RETRYABLE',
+            'FAILED_TERMINAL'
+        )
+    ),
+    notification_state TEXT NOT NULL CHECK (
+        notification_state IN ('NOT_ELIGIBLE', 'PENDING', 'PRESENTED', 'SUPPRESSED', 'FAILED')
+    ),
+    import_state TEXT NOT NULL CHECK (import_state IN ('PENDING', 'IMPORTED')),
+    retry_count INTEGER NOT NULL DEFAULT 0 CHECK (retry_count >= 0),
+    claim_token TEXT,
+    claimed_at_epoch_millis INTEGER,
+    FOREIGN KEY (
+        parent_ingest_sequence,
+        account_id,
+        client_id
+    ) REFERENCES RawEvent(ingest_sequence, account_id, client_id),
+    CHECK (
+        (decrypted_proto IS NULL AND decrypted_proto_sha256 IS NULL) OR
+        (decrypted_proto IS NOT NULL AND decrypted_proto_sha256 IS NOT NULL)
+    ),
+    UNIQUE (parent_ingest_sequence, item_index),
+    UNIQUE (account_id, client_id, idempotency_key)
+);
+
+CREATE INDEX ReceiveChild_pending_import_order
+ON ReceiveChild(import_state, parent_ingest_sequence, item_index, idempotency_key);
+
+selectContractMetadata:
+SELECT contract_version, raw_envelope_format_version, child_payload_format_version, blob_storage_format
+FROM ContractMetadata
+WHERE singleton_id = 1;
+
+bindBlobStorageFormat:
+UPDATE ContractMetadata
+SET blob_storage_format = :blob_storage_format
+WHERE singleton_id = 1 AND blob_storage_format = 'UNBOUND_REQUIRES_SECURE_FACTORY';
+
+selectCursor:
+SELECT cursor_value, source_ingest_sequence, source_server_event_id, updated_at_epoch_millis
+FROM DurableCursor
+WHERE account_id = :account_id AND client_id = :client_id;
+
+upsertCursor:
+INSERT INTO DurableCursor(
+    account_id,
+    client_id,
+    cursor_value,
+    source_ingest_sequence,
+    source_server_event_id,
+    updated_at_epoch_millis
+) VALUES (
+    :account_id,
+    :client_id,
+    :cursor_value,
+    :source_ingest_sequence,
+    :source_server_event_id,
+    :updated_at_epoch_millis
+)
+ON CONFLICT(account_id, client_id) DO UPDATE SET
+    cursor_value = excluded.cursor_value,
+    source_ingest_sequence = excluded.source_ingest_sequence,
+    source_server_event_id = excluded.source_server_event_id,
+    updated_at_epoch_millis = excluded.updated_at_epoch_millis;
+
+selectRawEvent:
+SELECT * FROM RawEvent
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND server_event_id = :server_event_id;
+
+selectRawEventByIngestSequence:
+SELECT * FROM RawEvent
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND ingest_sequence = :ingest_sequence;
+
+insertRawEvent:
+INSERT INTO RawEvent(
+    account_id,
+    client_id,
+    server_event_id,
+    raw_envelope,
+    raw_envelope_sha256,
+    raw_envelope_format_version,
+    server_timestamp_epoch_millis,
+    is_transient,
+    associated_cursor,
+    delivery_source,
+    received_at_epoch_millis
+) VALUES (
+    :account_id,
+    :client_id,
+    :server_event_id,
+    :raw_envelope,
+    :raw_envelope_sha256,
+    :raw_envelope_format_version,
+    :server_timestamp_epoch_millis,
+    :is_transient,
+    :associated_cursor,
+    :delivery_source,
+    :received_at_epoch_millis
+);
+
+selectLastInsertedRowId:
+SELECT last_insert_rowid();
+
+selectPendingReceive:
+SELECT * FROM RawEvent
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND receive_state = 'PENDING'
+ORDER BY ingest_sequence ASC, server_event_id ASC
+LIMIT :limit;
+
+selectPendingReceiveBlobLengths:
+SELECT ingest_sequence, length(raw_envelope) AS blob_size
+FROM RawEvent
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND receive_state = 'PENDING'
+ORDER BY ingest_sequence ASC, server_event_id ASC
+LIMIT :limit;
+
+selectPendingRawImport:
+SELECT * FROM RawEvent
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND import_state = 'PENDING'
+    AND (
+        receive_state = 'DEFERRED_TO_APP' OR
+        foreground_recovery_required = 1 OR
+        NOT EXISTS (
+            SELECT 1 FROM ReceiveChild
+            WHERE ReceiveChild.parent_ingest_sequence = RawEvent.ingest_sequence
+        )
+    )
+ORDER BY ingest_sequence ASC, server_event_id ASC
+LIMIT :limit;
+
+selectPendingRawImportBlobLengths:
+SELECT ingest_sequence, length(raw_envelope) AS blob_size
+FROM RawEvent
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND import_state = 'PENDING'
+    AND (
+        receive_state = 'DEFERRED_TO_APP' OR
+        foreground_recovery_required = 1 OR
+        NOT EXISTS (
+            SELECT 1 FROM ReceiveChild
+            WHERE ReceiveChild.parent_ingest_sequence = RawEvent.ingest_sequence
+        )
+    )
+ORDER BY ingest_sequence ASC, server_event_id ASC
+LIMIT :limit;
+
+markReceiveCompleted:
+UPDATE RawEvent
+SET receive_state = 'COMPLETED',
+    receive_claim_token = NULL,
+    receive_claimed_at_epoch_millis = NULL
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND server_event_id = :server_event_id
+    AND receive_state = 'PENDING';
+
+deferRawEvent:
+UPDATE RawEvent
+SET receive_state = 'DEFERRED_TO_APP',
+    foreground_recovery_required = 1,
+    recovery_reason = :recovery_reason,
+    receive_claim_token = NULL,
+    receive_claimed_at_epoch_millis = NULL
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND server_event_id = :server_event_id
+    AND receive_state = 'PENDING';
+
+insertGlobalRecovery:
+INSERT OR IGNORE INTO GlobalRecovery(
+    account_id,
+    client_id,
+    reason,
+    recorded_at_epoch_millis
+) VALUES (
+    :account_id,
+    :client_id,
+    :reason,
+    :recorded_at_epoch_millis
+);
+
+selectReceiveChildByIdempotencyKey:
+SELECT ReceiveChild.*, RawEvent.server_event_id AS parent_server_event_id
+FROM ReceiveChild
+JOIN RawEvent ON RawEvent.ingest_sequence = ReceiveChild.parent_ingest_sequence
+WHERE ReceiveChild.account_id = :account_id
+    AND ReceiveChild.client_id = :client_id
+    AND ReceiveChild.idempotency_key = :idempotency_key;
+
+selectReceiveChildByParentItem:
+SELECT ReceiveChild.*, RawEvent.server_event_id AS parent_server_event_id
+FROM ReceiveChild
+JOIN RawEvent ON RawEvent.ingest_sequence = ReceiveChild.parent_ingest_sequence
+WHERE ReceiveChild.parent_ingest_sequence = :parent_ingest_sequence
+    AND ReceiveChild.item_index = :item_index;
+
+selectReceiveChildrenForParent:
+SELECT ReceiveChild.*, RawEvent.server_event_id AS parent_server_event_id
+FROM ReceiveChild
+JOIN RawEvent ON RawEvent.ingest_sequence = ReceiveChild.parent_ingest_sequence
+WHERE ReceiveChild.parent_ingest_sequence = :parent_ingest_sequence
+ORDER BY ReceiveChild.item_index ASC, ReceiveChild.idempotency_key ASC;
+
+selectReceiveChildBlobLengthsForParent:
+SELECT child_sequence, item_index, idempotency_key, length(decrypted_proto) AS blob_size
+FROM ReceiveChild
+WHERE parent_ingest_sequence = :parent_ingest_sequence
+ORDER BY item_index ASC, idempotency_key ASC
+LIMIT :limit;
+
+insertReceiveChild:
+INSERT INTO ReceiveChild(
+    parent_ingest_sequence,
+    account_id,
+    client_id,
+    item_index,
+    idempotency_key,
+    conversation_id,
+    sender_id,
+    sender_client_id,
+    protocol,
+    message_timestamp_epoch_millis,
+    decrypted_proto,
+    decrypted_proto_sha256,
+    crypto_state_applied,
+    receive_classification,
+    failure_classification,
+    decryption_state,
+    notification_state,
+    import_state,
+    retry_count
+) VALUES (
+    :parent_ingest_sequence,
+    :account_id,
+    :client_id,
+    :item_index,
+    :idempotency_key,
+    :conversation_id,
+    :sender_id,
+    :sender_client_id,
+    :protocol,
+    :message_timestamp_epoch_millis,
+    :decrypted_proto,
+    :decrypted_proto_sha256,
+    :crypto_state_applied,
+    :receive_classification,
+    :failure_classification,
+    :decryption_state,
+    :notification_state,
+    :import_state,
+    :retry_count
+);
+
+selectPendingImportChildren:
+SELECT ReceiveChild.*, RawEvent.server_event_id AS parent_server_event_id
+FROM ReceiveChild
+JOIN RawEvent ON RawEvent.ingest_sequence = ReceiveChild.parent_ingest_sequence
+WHERE RawEvent.account_id = :account_id
+    AND RawEvent.client_id = :client_id
+    AND ReceiveChild.import_state = 'PENDING'
+ORDER BY RawEvent.ingest_sequence ASC, ReceiveChild.item_index ASC, ReceiveChild.idempotency_key ASC
+LIMIT :limit;
+
+selectPendingImportChildBlobLengths:
+SELECT ReceiveChild.child_sequence, length(ReceiveChild.decrypted_proto) AS blob_size
+FROM ReceiveChild
+JOIN RawEvent ON RawEvent.ingest_sequence = ReceiveChild.parent_ingest_sequence
+WHERE RawEvent.account_id = :account_id
+    AND RawEvent.client_id = :client_id
+    AND ReceiveChild.import_state = 'PENDING'
+ORDER BY RawEvent.ingest_sequence ASC, ReceiveChild.item_index ASC, ReceiveChild.idempotency_key ASC
+LIMIT :limit;
+
+selectImportChildBySequence:
+SELECT ReceiveChild.*, RawEvent.server_event_id AS parent_server_event_id
+FROM ReceiveChild
+JOIN RawEvent ON RawEvent.ingest_sequence = ReceiveChild.parent_ingest_sequence
+WHERE RawEvent.account_id = :account_id
+    AND RawEvent.client_id = :client_id
+    AND ReceiveChild.child_sequence = :child_sequence;
+
+selectChanges:
+SELECT changes();

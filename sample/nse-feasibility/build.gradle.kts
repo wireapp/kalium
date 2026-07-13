@@ -67,6 +67,7 @@ kotlin {
                 implementation(projects.data.network)
                 implementation(projects.data.persistence)
                 implementation(projects.data.messageContent)
+                implementation(projects.data.notificationInbox)
                 implementation(projects.data.protobuf)
                 implementation(projects.data.syncCoordination)
                 implementation(projects.domain.messaging.receiving)
