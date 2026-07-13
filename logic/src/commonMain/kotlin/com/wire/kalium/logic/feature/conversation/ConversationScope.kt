@@ -111,60 +111,65 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 
-@Suppress("LongParameterList")
 public class ConversationScope internal constructor(
-    internal val conversationRepository: ConversationRepository,
-    internal val callRepository: CallRepository,
-    private val conversationGroupRepository: ConversationGroupRepository,
-    private val connectionRepository: ConnectionRepository,
-    private val userRepository: UserRepository,
-    private val conversationFolderRepository: ConversationFolderRepository,
-    private val syncManager: SyncManager,
-    private val mlsConversationRepository: MLSConversationRepository,
-    private val currentClientIdProvider: CurrentClientIdProvider,
-    private val messageSender: MessageSender,
-    private val teamRepository: TeamRepository,
-    private val slowSyncRepository: SlowSyncRepository,
-    private val selfUserId: UserId,
-    private val selfConversationIdProvider: SelfConversationIdProvider,
-    private val persistMessage: PersistMessageUseCase,
-    private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val sendConfirmation: SendConfirmationUseCase,
-    private val renamedConversationHandler: RenamedConversationEventHandler,
-    private val serverConfigRepository: ServerConfigRepository,
-    private val userStorage: UserStorage,
-    userPropertyRepository: UserPropertyRepository,
-    private val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase,
-    private val oneOnOneResolver: OneOnOneResolver,
-    private val scope: CoroutineScope,
-    private val kaliumLogger: KaliumLogger,
-    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
-    private val serverConfigLinks: ServerConfig.Links,
-    internal val messageRepository: MessageRepository,
-    internal val assetRepository: AssetRepository,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
-    private val deleteConversationUseCase: DeleteConversationUseCase,
-    private val persistConversationsUseCase: PersistConversationsUseCase,
-    private val transactionProvider: CryptoTransactionProvider,
-    private val resetMLSConversationUseCase: ResetMLSConversationUseCase,
-    private val systemMessageInserter: SystemMessageInserter,
-    private val persistenceEventHookNotifier: PersistenceEventHookNotifier,
-    private val memberJoinEventHandler: MemberJoinEventHandler,
-    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase,
-    internal val dispatcher: KaliumDispatcher,
+    private val entryPoints: ConversationEntryPoints,
+    private val dependencies: ConversationDependencies,
 ) {
 
+    internal val conversationRepository: ConversationRepository get() = entryPoints.conversationRepository
+    internal val callRepository: CallRepository get() = dependencies.callRepository
+    private val conversationGroupRepository: ConversationGroupRepository get() = dependencies.conversationGroupRepository
+    private val connectionRepository: ConnectionRepository get() = dependencies.connectionRepository
+    private val userRepository: UserRepository get() = dependencies.userRepository
+    private val conversationFolderRepository: ConversationFolderRepository get() = dependencies.conversationFolderRepository
+    private val syncManager: SyncManager get() = dependencies.syncManager
+    private val mlsConversationRepository: MLSConversationRepository get() = dependencies.mlsConversationRepository
+    private val currentClientIdProvider: CurrentClientIdProvider get() = dependencies.currentClientIdProvider
+    private val messageSender: MessageSender get() = dependencies.messageSender
+    private val teamRepository: TeamRepository get() = dependencies.teamRepository
+    private val slowSyncRepository: SlowSyncRepository get() = dependencies.slowSyncRepository
+    private val selfUserId: UserId get() = dependencies.selfUserId
+    private val selfConversationIdProvider: SelfConversationIdProvider get() = dependencies.selfConversationIdProvider
+    private val persistMessage: PersistMessageUseCase get() = dependencies.persistMessage
+    private val selfTeamIdProvider: SelfTeamIdProvider get() = dependencies.selfTeamIdProvider
+    private val sendConfirmation: SendConfirmationUseCase get() = dependencies.sendConfirmation
+    private val renamedConversationHandler: RenamedConversationEventHandler get() = dependencies.renamedConversationHandler
+    private val serverConfigRepository: ServerConfigRepository get() = dependencies.serverConfigRepository
+    private val userStorage: UserStorage get() = dependencies.userStorage
+    private val userPropertyRepository: UserPropertyRepository get() = dependencies.userPropertyRepository
+    private val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase
+        get() = dependencies.deleteEphemeralMessageEndDate
+    private val oneOnOneResolver: OneOnOneResolver get() = dependencies.oneOnOneResolver
+    private val scope: CoroutineScope get() = dependencies.userSessionCoroutineScope
+    private val kaliumLogger: KaliumLogger get() = dependencies.kaliumLogger
+    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
+        get() = dependencies.refreshUsersWithoutMetadata
+    private val serverConfigLinks: ServerConfig.Links get() = dependencies.serverConfigLinks
+    internal val messageRepository: MessageRepository get() = dependencies.messageRepository
+    internal val assetRepository: AssetRepository get() = dependencies.assetRepository
+    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
+        get() = dependencies.newGroupConversationSystemMessagesCreator
+    private val deleteConversationUseCase: DeleteConversationUseCase get() = dependencies.deleteConversationUseCase
+    private val persistConversationsUseCase: PersistConversationsUseCase get() = dependencies.persistConversationsUseCase
+    private val transactionProvider: CryptoTransactionProvider get() = dependencies.transactionProvider
+    private val resetMLSConversationUseCase: ResetMLSConversationUseCase get() = dependencies.resetMLSConversationUseCase
+    private val systemMessageInserter: SystemMessageInserter get() = dependencies.systemMessageInserter
+    private val persistenceEventHookNotifier: PersistenceEventHookNotifier get() = dependencies.persistenceEventHookNotifier
+    private val memberJoinEventHandler: MemberJoinEventHandler get() = dependencies.memberJoinEventHandler
+    private val joinExistingMLSConversation: JoinExistingMLSConversationUseCase get() = dependencies.joinExistingMLSConversation
+    internal val dispatcher: KaliumDispatcher get() = dependencies.dispatcher
+
     public val getConversations: GetConversationsUseCase
-        get() = GetConversationsUseCase(conversationRepository)
+        get() = entryPoints.getConversations
 
     internal val getConversationDetails: GetConversationUseCase
-        get() = GetConversationUseCase(conversationRepository)
+        get() = entryPoints.getConversationDetails
 
     public val getOneToOneConversation: GetOneToOneConversationDetailsUseCase
-        get() = GetOneToOneConversationDetailsUseCase(conversationRepository)
+        get() = entryPoints.getOneToOneConversation
 
     public val observeConversationListDetails: ObserveConversationListDetailsUseCase
-        get() = ObserveConversationListDetailsUseCaseImpl(conversationRepository)
+        get() = entryPoints.observeConversationListDetails
 
     public val observeConversationListDetailsWithEvents: ObserveConversationListDetailsWithEventsUseCase
         get() = ObserveConversationListDetailsWithEventsUseCaseImpl(
@@ -187,10 +192,10 @@ public class ConversationScope internal constructor(
         get() = ObserveUserListByIdUseCase(userRepository)
 
     public val observeConversationDetails: ObserveConversationDetailsUseCase
-        get() = ObserveConversationDetailsUseCase(conversationRepository)
+        get() = entryPoints.observeConversationDetails
 
     public val getConversationProtocolInfo: GetConversationProtocolInfoUseCase
-        get() = GetConversationProtocolInfoUseCase(conversationRepository)
+        get() = entryPoints.getConversationProtocolInfo
 
     public val notifyConversationIsOpen: NotifyConversationIsOpenUseCase
         get() = NotifyConversationIsOpenUseCaseImpl(
@@ -421,20 +426,23 @@ public class ConversationScope internal constructor(
     public val observeArchivedUnreadConversationsCount: ObserveArchivedUnreadConversationsCountUseCase
         get() = ObserveArchivedUnreadConversationsCountUseCaseImpl(conversationRepository)
 
-    private val typingIndicatorSenderHandler: TypingIndicatorSenderHandler =
+    private val typingIndicatorSenderHandler: TypingIndicatorSenderHandler by lazy {
         TypingIndicatorSenderHandlerImpl(conversationRepository = conversationRepository, userSessionCoroutineScope = scope)
+    }
 
-    internal val typingIndicatorIncomingRepository =
+    internal val typingIndicatorIncomingRepository by lazy {
         TypingIndicatorIncomingRepositoryImpl(
             ConcurrentMutableMap(),
             userPropertyRepository
         )
+    }
 
-    internal val typingIndicatorOutgoingRepository =
+    internal val typingIndicatorOutgoingRepository by lazy {
         TypingIndicatorOutgoingRepositoryImpl(
             typingIndicatorSenderHandler,
             userPropertyRepository
         )
+    }
 
     public val sendTypingEvent: SendTypingEventUseCase
         get() = SendTypingEventUseCaseImpl(typingIndicatorOutgoingRepository)
