@@ -38,7 +38,7 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | 7. Lightweight NSE framework | Completed | `b5a36b47409e` | Apple framework links, application-extension Swift compile, iOS simulator probe, dependency/header/symbol audits, detekt, independent review | Production adapters remain gated by the deferred M1/M4/M5/M6 security and backend work |
 | 8. Foreground importer contract/integration | Completed | `7a098a341c5b` | Kotlin/Swift compile, KMP/native probes, token parity, dependency audit, detekt, independent review | Real native app mapping and production storage/path/device gates remain open |
 | 9. Resilience, security, and performance | Completed | `f7dff7073677` | macOS/simulator hardening probes, Swift token/import parity, bounded-sync budget probe, Apple/metadata compilation | External native app, encrypted storage, signing, backend, physical-device, and product budget approvals remain explicit |
-| 10. Rollout and observability | Implementation and verification complete; awaiting commit | — | Metadata/Apple compilation, simulator framework/Swift host probe, dependency/header/privacy audits, detekt, independent review | External rollout ownership, privacy approval, signing, backend, and physical-device validation remain explicit |
+| 10. Rollout and observability | Completed | `378b222b265a` | Metadata/Apple compilation, simulator framework/Swift host probe, dependency/header/privacy audits, detekt, independent review | External rollout ownership, privacy approval, signing, backend, and physical-device validation remain explicit |
 
 ## Milestone 0 — Architecture and Contracts
 
@@ -721,7 +721,7 @@ Deferred production work:
 
 ## Milestone 10 — Rollout and Observability
 
-Status: Implementation and verification complete; awaiting commit
+Status: Completed on 2026-07-13 in `378b222b265a`
 
 Delivered:
 
@@ -792,6 +792,6 @@ Deferred production work:
 
 ## Next Action
 
-Review and commit Milestone 10, then hand the explicit external ownership and physical-device gates
-to the native iOS/product/security integration plan. Continue to avoid adding, modifying, or running
-tests until the spike design has been verified end to end.
+Hand the explicit external ownership and physical-device gates to the native iOS/product/security
+integration plan. Automated coverage remains intentionally deferred until the spike design is
+accepted for production integration.
