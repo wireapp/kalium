@@ -68,6 +68,8 @@ import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveInCallReactionsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveInCallReactionsUseCaseImpl
+import com.wire.kalium.logic.feature.call.usecase.ObserveJoinableCallsUseCase
+import com.wire.kalium.logic.feature.call.usecase.ObserveJoinableCallsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveLastActiveCallWithSortedParticipantsUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveLastActiveCallWithSortedParticipantsUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ObserveOngoingAndIncomingCallsUseCase
@@ -157,6 +159,11 @@ public class CallsScope internal constructor(
 
     public val observeOngoingCalls: ObserveOngoingCallsUseCase
         get() = ObserveOngoingCallsUseCaseImpl(
+            callRepository = callRepository,
+        )
+
+    public val observeJoinableCalls: ObserveJoinableCallsUseCase
+        get() = ObserveJoinableCallsUseCaseImpl(
             callRepository = callRepository,
         )
 

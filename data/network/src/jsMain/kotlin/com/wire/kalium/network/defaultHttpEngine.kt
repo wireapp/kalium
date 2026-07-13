@@ -42,5 +42,3 @@ actual fun defaultHttpEngine(
         }
     }
 }
-
-actual fun clearTextTrafficEngine(): HttpClientEngine = Js.create()

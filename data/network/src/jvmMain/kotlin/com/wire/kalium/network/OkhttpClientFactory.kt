@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.network
 
-import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -34,7 +33,3 @@ fun buildOkhttpClient(
             .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
             .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
     }.connectionSpecs(supportedConnectionSpecs()).build()
-
-fun buildClearTextTrafficOkhttpClient(): OkHttpClient = OkHttpClient.Builder().apply {
-    connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
-}.build()

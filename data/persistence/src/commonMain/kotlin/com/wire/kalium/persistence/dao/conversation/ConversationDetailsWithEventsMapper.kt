@@ -23,7 +23,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageMapper
@@ -38,7 +37,6 @@ data object ConversationDetailsWithEventsMapper {
         qualifiedId: QualifiedIDEntity,
         name: String?,
         type: ConversationEntity.Type,
-        callStatus: CallEntity.Status?,
         previewAssetId: QualifiedIDEntity?,
         mutedStatus: ConversationEntity.MutedStatus,
         teamId: String?,
@@ -120,7 +118,6 @@ data object ConversationDetailsWithEventsMapper {
             qualifiedId = qualifiedId,
             name = name,
             type = type,
-            callStatus = callStatus,
             previewAssetId = previewAssetId,
             mutedStatus = mutedStatus,
             teamId = teamId,

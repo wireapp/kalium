@@ -2403,6 +2403,7 @@ public class UserSessionScope internal constructor(
     public val conversations: ConversationScope by lazy {
         ConversationScope(
             conversationRepository,
+            callRepository,
             conversationGroupRepository,
             connectionRepository,
             userRepository,
@@ -2991,7 +2992,6 @@ public class UserSessionScope internal constructor(
             @Suppress("TooGenericExceptionCaught")
             try {
                 apiMigrationManager.performMigrations()
-                callRepository.updateOpenCallsToClosedStatus()
                 messageRepository.resetAssetTransferStatus()
             } catch (exception: CancellationException) {
                 throw exception
