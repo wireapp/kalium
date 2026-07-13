@@ -127,9 +127,12 @@ public class BoundedNotificationSyncProbe {
         check(inbox.retainedRawCount == 1)
         verifyImmediateDeadline()
         verifyEventBudget()
+        verifyByteBudget()
+        verifyHardCeilings()
 
         return "complete=true; markerAfterFinalEvent=true; deadlineBeforeAcquire=true; " +
-                "secondEventBudgeted=true; finite=true; stagedBeforeAck=true; cursorAtomic=true; " +
+                "secondEventBudgeted=true; byteBudgetBeforeStage=true; hardCeilings=true; finite=true; " +
+                "stagedBeforeAck=true; cursorAtomic=true; " +
                 "rawRetained=true; localWriterAcks=2; closed=true; released=true; realNetwork=false"
     }
 
@@ -211,6 +214,70 @@ public class BoundedNotificationSyncProbe {
         check(timeline.contains("ack:$BUDGET_FIRST_TAG"))
         check(!timeline.contains("stage:budget-two"))
         check(!timeline.contains("ack:$BUDGET_SECOND_TAG"))
+    }
+
+    private suspend fun verifyByteBudget() {
+        val timeline = mutableListOf<String>()
+        val inbox = ProbeInbox(timeline)
+        val session = ProbeSession(
+            timeline,
+            listOf(
+                NotificationTransportFrame.Event(
+                    RawNotificationEvent(
+                        NotificationEventKey("byte-budget"),
+                        byteArrayOf(1, 2),
+                        false,
+                        NotificationSyncCursor("byte-budget-cursor")
+                    ),
+                    BUDGET_FIRST_TAG
+                )
+            )
+        )
+        val engine = BoundedNotificationSyncEngine(
+            leaseCoordinator = { LeaseAcquireResult.Acquired(ProbeLease(timeline)) },
+            inbox = inbox,
+            transport = NotificationSyncTransport { OpenSessionResult.Opened(session) },
+            eventProcessor = { StagedEventProcessingResult.DurablyMaterialized }
+        )
+        val result = engine.syncOnce(
+            BoundedNotificationSyncRequest(
+                scope = PROBE_SCOPE,
+                markerId = PROBE_MARKER,
+                absoluteDeadline = Clock.System.now() + PROBE_DEADLINE,
+                budget = NotificationSyncBudget(maxRawEnvelopeBytes = 1)
+            )
+        )
+        check(
+            result is BoundedNotificationSyncResult.Partial &&
+                    result.reason == PartialSyncReason.EVENT_BYTE_BUDGET_EXHAUSTED &&
+                    result.summary.transportRawEnvelopeBytesReceived == 2L
+        )
+        check(inbox.retainedRawCount == 0)
+        check(timeline.none { it.startsWith("stage:") || it.startsWith("ack:") })
+    }
+
+    private suspend fun verifyHardCeilings() {
+        var leaseAttempted = false
+        val timeline = mutableListOf<String>()
+        val engine = BoundedNotificationSyncEngine(
+            leaseCoordinator = {
+                leaseAttempted = true
+                LeaseAcquireResult.Acquired(ProbeLease(timeline))
+            },
+            inbox = ProbeInbox(timeline),
+            transport = NotificationSyncTransport { OpenSessionResult.Opened(ProbeSession(timeline, emptyList())) },
+            eventProcessor = { StagedEventProcessingResult.DurablyMaterialized }
+        )
+        val result = engine.syncOnce(
+            BoundedNotificationSyncRequest(
+                scope = PROBE_SCOPE,
+                markerId = PROBE_MARKER,
+                absoluteDeadline = Clock.System.now() + PROBE_DEADLINE,
+                budget = NotificationSyncBudget(maxTransportFrames = 1_001)
+            )
+        )
+        check(result is BoundedNotificationSyncResult.TerminalFailure)
+        check(!leaseAttempted)
     }
 }
 

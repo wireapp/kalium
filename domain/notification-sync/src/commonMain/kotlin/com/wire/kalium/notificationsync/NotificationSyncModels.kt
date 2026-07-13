@@ -90,14 +90,22 @@ public data class NotificationSyncBudget(
     public val maxEventsToStage: Int = DEFAULT_MAX_EVENTS_TO_STAGE,
     public val maxDrainBatches: Int = DEFAULT_MAX_DRAIN_BATCHES,
     public val maxEventsPerDrainBatch: Int = DEFAULT_MAX_EVENTS_PER_DRAIN_BATCH,
-    public val deadlineSafetyMargin: Duration = DEFAULT_DEADLINE_SAFETY_MARGIN
+    public val maxRawEnvelopeBytes: Int = DEFAULT_MAX_RAW_ENVELOPE_BYTES,
+    public val maxRawEnvelopeBytesPerRun: Long = DEFAULT_MAX_RAW_ENVELOPE_BYTES_PER_RUN,
+    public val maxDrainRawEnvelopeBytesPerRun: Long = DEFAULT_MAX_DRAIN_RAW_ENVELOPE_BYTES_PER_RUN,
+    public val deadlineSafetyMargin: Duration = DEFAULT_DEADLINE_SAFETY_MARGIN,
+    public val maxRunDuration: Duration = DEFAULT_MAX_RUN_DURATION
 ) {
     public companion object {
         public const val DEFAULT_MAX_TRANSPORT_FRAMES: Int = 200
         public const val DEFAULT_MAX_EVENTS_TO_STAGE: Int = 100
         public const val DEFAULT_MAX_DRAIN_BATCHES: Int = 4
         public const val DEFAULT_MAX_EVENTS_PER_DRAIN_BATCH: Int = 25
+        public const val DEFAULT_MAX_RAW_ENVELOPE_BYTES: Int = 256 * 1_024
+        public const val DEFAULT_MAX_RAW_ENVELOPE_BYTES_PER_RUN: Long = 4L * 1_024L * 1_024L
+        public const val DEFAULT_MAX_DRAIN_RAW_ENVELOPE_BYTES_PER_RUN: Long = 4L * 1_024L * 1_024L
         public val DEFAULT_DEADLINE_SAFETY_MARGIN: Duration = 2.seconds
+        public val DEFAULT_MAX_RUN_DURATION: Duration = 20.seconds
     }
 }
 
@@ -107,7 +115,9 @@ public data class NotificationSyncSummary(
     public val eventsAlreadyStaged: Int,
     public val transportAcksAcceptedByLocalWriter: Int,
     public val eventsReceiveMaterialized: Int,
-    public val drainBatchesRead: Int
+    public val drainBatchesRead: Int,
+    public val transportRawEnvelopeBytesReceived: Long,
+    public val drainRawEnvelopeBytesRead: Long
 )
 
 public sealed interface BoundedNotificationSyncResult {
@@ -152,6 +162,8 @@ public enum class PartialSyncReason {
     EVENT_BUDGET_EXHAUSTED,
     TRANSPORT_FRAME_BUDGET_EXHAUSTED,
     BATCH_BUDGET_EXHAUSTED,
+    EVENT_BYTE_BUDGET_EXHAUSTED,
+    DRAIN_BYTE_BUDGET_EXHAUSTED,
     UNEXPECTED_TRANSPORT_PAYLOAD
 }
 

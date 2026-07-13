@@ -55,19 +55,32 @@ public class SyntheticPlaintextNotificationInboxFactory(
     private val limits: NotificationInboxLimits
 ) {
     public suspend fun open(): SyntheticNotificationInboxOpenResult =
-        open(SyntheticNotificationInboxFailurePoint.NONE)
+        open(SyntheticNotificationInboxFailurePoint.NONE, activatePreparedCursor = true)
+
+    /** Leaves both sync paths disabled so a probe can exercise the crash-safe cutover phase. */
+    public suspend fun openWithCursorPreparedOnly(): SyntheticNotificationInboxOpenResult =
+        open(SyntheticNotificationInboxFailurePoint.NONE, activatePreparedCursor = false)
 
     /** One-shot synthetic rollback proof; unavailable to any future secure factory. */
     public suspend fun openWithFailureBeforeCursorUpsert(): SyntheticNotificationInboxOpenResult =
-        open(SyntheticNotificationInboxFailurePoint.BEFORE_CURSOR_UPSERT)
+        open(SyntheticNotificationInboxFailurePoint.BEFORE_CURSOR_UPSERT, activatePreparedCursor = true)
 
     /** One-shot synthetic rollback proof; unavailable to any future secure factory. */
     public suspend fun openWithFailureBeforeParentReceiveComplete(): SyntheticNotificationInboxOpenResult =
-        open(SyntheticNotificationInboxFailurePoint.BEFORE_PARENT_RECEIVE_COMPLETE)
+        open(SyntheticNotificationInboxFailurePoint.BEFORE_PARENT_RECEIVE_COMPLETE, activatePreparedCursor = true)
+
+    /** One-shot synthetic cleanup rollback proof; unavailable to any future secure factory. */
+    public suspend fun openWithFailureBeforeCleanupParentDelete(): SyntheticNotificationInboxOpenResult =
+        open(SyntheticNotificationInboxFailurePoint.BEFORE_CLEANUP_PARENT_DELETE, activatePreparedCursor = true)
+
+    /** One-shot synthetic tombstone rollback proof; unavailable to any future secure factory. */
+    public suspend fun openWithFailureBeforeTombstoneCommit(): SyntheticNotificationInboxOpenResult =
+        open(SyntheticNotificationInboxFailurePoint.BEFORE_TOMBSTONE_COMMIT, activatePreparedCursor = true)
 
     @Suppress("LongMethod", "ReturnCount")
     private suspend fun open(
-        failurePoint: SyntheticNotificationInboxFailurePoint
+        failurePoint: SyntheticNotificationInboxFailurePoint,
+        activatePreparedCursor: Boolean
     ): SyntheticNotificationInboxOpenResult {
         if (!directoryPath.isSafeAbsoluteDirectoryPath()) {
             return SyntheticNotificationInboxOpenResult.Failure(NotificationInboxFailure.INVALID_INPUT)
@@ -128,11 +141,36 @@ public class SyntheticPlaintextNotificationInboxFactory(
             store.close()
             throw cancellation
         }
-        return if (failure == null) {
+        if (failure != null) {
+            store.close()
+            return SyntheticNotificationInboxOpenResult.Failure(failure)
+        }
+        val prepared = store.prepareSharedCursor(
+            SharedCursorPreparation(
+                scope = InboxScope(SYNTHETIC_NOTIFICATION_INBOX_ACCOUNT_ID, SYNTHETIC_NOTIFICATION_INBOX_CLIENT_ID),
+                cutoverId = SYNTHETIC_NOTIFICATION_INBOX_CUTOVER_ID,
+                legacyCursor = null,
+                activatedAtEpochMillis = SYNTHETIC_CUTOVER_EPOCH_MILLIS
+            )
+        )
+        if (prepared !is SharedCursorPreparationResult.Prepared &&
+            prepared !is SharedCursorPreparationResult.ExactReplay
+        ) {
+            store.close()
+            return SyntheticNotificationInboxOpenResult.Failure(prepared.failureOrCorruptState())
+        }
+        if (!activatePreparedCursor) return SyntheticNotificationInboxOpenResult.Opened(store)
+        val activated = store.activatePreparedSharedCursor(
+            InboxScope(SYNTHETIC_NOTIFICATION_INBOX_ACCOUNT_ID, SYNTHETIC_NOTIFICATION_INBOX_CLIENT_ID),
+            SYNTHETIC_NOTIFICATION_INBOX_CUTOVER_ID
+        )
+        return if (activated is SharedCursorActivationResult.Activated ||
+            activated is SharedCursorActivationResult.ExactReplay
+        ) {
             SyntheticNotificationInboxOpenResult.Opened(store)
         } else {
             store.close()
-            SyntheticNotificationInboxOpenResult.Failure(failure)
+            SyntheticNotificationInboxOpenResult.Failure(activated.failureOrCorruptState())
         }
     }
 }
@@ -164,3 +202,10 @@ private const val NULL_CHARACTER = '\u0000'
 private const val MAX_PATH_LENGTH = 4_096
 private const val NO_BUSY_WAIT_MILLIS = 0
 private const val SINGLE_READER_CONNECTION = 1
+private const val SYNTHETIC_CUTOVER_EPOCH_MILLIS = 0L
+
+private fun SharedCursorPreparationResult.failureOrCorruptState(): NotificationInboxFailure =
+    (this as? SharedCursorPreparationResult.StorageFailure)?.reason ?: NotificationInboxFailure.CORRUPT_STATE
+
+private fun SharedCursorActivationResult.failureOrCorruptState(): NotificationInboxFailure =
+    (this as? SharedCursorActivationResult.StorageFailure)?.reason ?: NotificationInboxFailure.CORRUPT_STATE

@@ -36,8 +36,8 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | 5. Cross-process coordination | Completed | `7cbe26a3f797` | Apple compilation/linking, simulator lifecycle probe, macOS multi-process/owner-death probe, security-path probes, dependency audit, independent review, detekt, diff check | Signed App Group and physical-device gates deferred |
 | 6. Shared handoff database | Completed | `00fdd8259877` | Metadata/JVM/Android/Apple compilation, Apple links, macOS and simulator durability/rollback probes, dependency audit, independent security review, detekt, diff check | Encrypted production factory and device gates deferred |
 | 7. Lightweight NSE framework | Completed | `b5a36b47409e` | Apple framework links, application-extension Swift compile, iOS simulator probe, dependency/header/symbol audits, detekt, independent review | Production adapters remain gated by the deferred M1/M4/M5/M6 security and backend work |
-| 8. Foreground importer contract/integration | Implementation and verification complete; awaiting commit | — | Kotlin/Swift compile, KMP/native probes, token parity, dependency audit, detekt, independent review | Real native app mapping and production storage/path/device gates remain open |
-| 9. Resilience, security, and performance | Not started | — | — | — |
+| 8. Foreground importer contract/integration | Completed | `7a098a341c5b` | Kotlin/Swift compile, KMP/native probes, token parity, dependency audit, detekt, independent review | Real native app mapping and production storage/path/device gates remain open |
+| 9. Resilience, security, and performance | Implementation and verification complete; awaiting commit | — | macOS/simulator hardening probes, Swift token/import parity, bounded-sync budget probe, Apple/metadata compilation | External native app, encrypted storage, signing, backend, physical-device, and product budget approvals remain explicit |
 | 10. Rollout and observability | Not started | — | — | — |
 
 ## Milestone 0 — Architecture and Contracts
@@ -593,7 +593,7 @@ Deferred production work:
 
 ## Milestone 8 — Foreground Importer Contract and Integration
 
-Status: Implementation and verification complete on 2026-07-13; awaiting milestone commit
+Status: Completed on 2026-07-13 in `7a098a341c5b`
 
 Delivered:
 
@@ -658,10 +658,68 @@ Deferred production work:
 - Validate signed app-versus-NSE contention, physical and locked-device access, real backend/account
   payloads, crash injection, deadline pressure, storage pressure, and performance/memory limits.
 
+## Milestone 9 — Resilience, Security, and Performance
+
+Status: Implementation and verification complete; awaiting commit
+
+Delivered:
+
+- Evolved the handoff contract to version 2 with an explicit account lifecycle and two-phase cursor
+  cutover. Preparation disables shared sync; exact activation is allowed only after the native app
+  durably stops legacy sync. A crash can leave both paths disabled but never both authoritative.
+- Added legacy-seed versus staged-raw cursor provenance, an atomic recovery-required transition, and
+  bounded tokenized `GlobalRecovery` reads plus exact foreground acknowledgement. Recovery ACK does
+  not reactivate synchronization, and downgrade remains fail-closed/foreground coordinated.
+- Added permanent exact account-removal tombstones with one-transaction logical deletion of scoped
+  child/cursor/raw/recovery rows, legacy-seed clearing, exact replay, mismatch conflict, and
+  post-removal staging refusal. The tombstone database and stable lock entry must be retained;
+  physical SQLite-page erasure or per-account key retirement remains a production decision.
+- Added import-commit timestamps and bounded deterministic cleanup of only complete imported parents.
+  Cleanup preserves the durable-cursor source, deletes children and parent transactionally, reports
+  bounded continuation, never deletes recovery data, and never runs `VACUUM`.
+- Added overflow-safe database/WAL/SHM/rollback-journal accounting and conservative write-admission
+  arithmetic. The Apple implementation is a synthetic path-based measurer; production remains gated
+  on descriptor-relative encrypted App Group construction and approved size/reserve values.
+- Added hard count, identifier, byte, safety-margin, and effective-run-duration ceilings to bounded
+  sync. Oversized events stop before durable stage and transport ACK, and summaries expose ingress/
+  drain byte counts. Added UTF-8 payload and identifier bounds before native notification AVS.
+- Kept production factory construction fail-closed with explicit new gates for storage enforcement,
+  native cursor cutover, tombstones, recovery ACK ownership, and physical-device budget approval.
+- Added disposable macOS/iOS Simulator lifecycle, cleanup, rollback, tombstone, storage, token-parity,
+  and byte-budget probes plus the detailed evidence report at
+  `docs/spikes/ios-nse-milestone-9-hardening.md`.
+
+Verification evidence:
+
+- Notification-inbox macOS, notification-sync metadata, and both core/AVS iOS Simulator source
+  compilations passed; the macOS executable and iOS Simulator framework linked.
+- The macOS hardening probe passed under the real account lock in 112–151 ms; the iPhone 16 Pro /
+  iOS 18.4 simulator passed the same probe in 121.097 ms.
+- Failure injection proved rollback after cleanup child deletion and after tombstone scoped deletion,
+  with successful reopen evidence. The cursor anchor remained retained.
+- The bounded-sync probe passed byte rejection before stage/ACK, hard caller ceilings, finite close,
+  and release behavior in 2.795 ms.
+- Swift compiled with warnings as errors for macOS and type-checked for an iOS Simulator app
+  extension. The native importer consumed a Kotlin-created contract-v2 database, and the lifecycle
+  token probe matched Kotlin recovery/tombstone vectors.
+- Contract-v2 schema compatibility fails older state closed. No dependency, module edge, library, or
+  CI change was introduced.
+- No automated tests were added, modified, generated, or run.
+
+Deferred production work:
+
+- Native-app main-database integration, durable cutover receipt, feature flags, downgrade/recovery
+  release coordination, and account-removal orchestration are outside this repository.
+- Encrypted App Group storage, shared Keychain, file protection, signed entitlements, backend/APNs,
+  real crypto receive/crash ordering, and physical/locked-device evidence remain open.
+- Physical secure-erasure or per-account encryption-key retirement for logically deleted inbox rows
+  remains open.
+- The byte/deadline/storage values are candidate spike ceilings. Physical-device RSS/jetsam, backlog,
+  storage-pressure, AVS, and deadline measurements still need iOS/product approval.
+- Contract 1 to contract 2 migration/rollout remains an explicit release decision; this spike does
+  not silently migrate or recreate incompatible state.
+
 ## Next Action
 
-Review and commit Milestone 8, then start Milestone 9 in a fresh agent task. Milestone 9 should close
-the resilience, security, cleanup, and performance gates that can be addressed in this repository,
-while keeping external native-app, signing, entitlement, backend, and physical-device inputs
-explicit. Continue to avoid adding, modifying, or running tests until the spike design has been
-verified end to end.
+Review and commit Milestone 9, then start Milestone 10 in a fresh task. Continue to avoid adding,
+modifying, or running tests until the spike design has been verified end to end.

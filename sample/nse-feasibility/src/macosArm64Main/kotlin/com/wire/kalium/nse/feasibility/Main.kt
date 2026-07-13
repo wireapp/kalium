@@ -67,6 +67,8 @@ internal fun runProbeCommand(args: Array<String>) {
         "persistence" -> printResult(probe.inspectCurrentApplePersistenceSurface(sharedRoot, "nse-feasibility"))
         "inbox" -> printResult(runBlocking { probe.probeSyntheticNotificationInbox(sharedRoot) })
         "foreground-importer" -> printResult(runBlocking { probe.probeSyntheticForegroundImporter(sharedRoot) })
+        "hardening" -> printResult(runBlocking { probe.probeNotificationInboxHardening(sharedRoot) })
+        "bounded-sync" -> printResult(BoundedNotificationSyncProbe().run())
         "foreground-importer-fixture" -> runBlocking { prepareSyntheticForegroundImporterFixture(sharedRoot) }.let {
             println("handoffPath=${it.handoffPath} firstSnapshotToken=${it.firstSnapshotToken}")
         }
@@ -86,7 +88,7 @@ private fun usage(): Nothing {
     println(
         "usage: kalium-nse-feasibility " +
                 "<path|lock-try|lock-hold|corecrypto|content|network|persistence|inbox|" +
-                "foreground-importer|foreground-importer-fixture> " +
+                "foreground-importer|foreground-importer-fixture|hardening|bounded-sync> " +
                 "<absolute-shared-root> [hold-seconds]"
     )
     exitProcess(USAGE_EXIT_CODE)

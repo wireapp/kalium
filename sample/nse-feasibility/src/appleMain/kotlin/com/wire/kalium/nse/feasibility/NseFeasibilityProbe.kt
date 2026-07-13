@@ -97,6 +97,12 @@ public class NseFeasibilityProbe {
             runSyntheticForegroundImportContractProbe(sharedRoot)
         }
 
+    /** Exercises repository-owned M9 lifecycle, cleanup, recovery, and footprint contracts. */
+    public suspend fun probeNotificationInboxHardening(sharedRoot: String): FeasibilityProbeResult =
+        measureSuspending("notification-inbox-hardening") {
+            runNotificationInboxHardeningProbe(sharedRoot)
+        }
+
     /** Locally constructs protobufs to prove decode/extraction linkage without account state. */
     public fun probeMessageContentExtraction(): FeasibilityProbeResult = measure("message-content-extraction") {
         val textBytes = GenericMessage(

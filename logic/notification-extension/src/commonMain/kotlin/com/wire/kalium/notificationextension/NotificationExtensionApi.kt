@@ -45,7 +45,11 @@ public data class NotificationExtensionRequest(
     public val maxEventsToStage: Int = DEFAULT_MAX_EVENTS_TO_STAGE,
     public val maxDrainBatches: Int = DEFAULT_MAX_DRAIN_BATCHES,
     public val maxEventsPerDrainBatch: Int = DEFAULT_MAX_EVENTS_PER_DRAIN_BATCH,
-    public val deadlineSafetyMarginMillis: Long = DEFAULT_DEADLINE_SAFETY_MARGIN_MILLIS
+    public val maxRawEnvelopeBytes: Int = DEFAULT_MAX_RAW_ENVELOPE_BYTES,
+    public val maxRawEnvelopeBytesPerRun: Long = DEFAULT_MAX_RAW_ENVELOPE_BYTES_PER_RUN,
+    public val maxDrainRawEnvelopeBytesPerRun: Long = DEFAULT_MAX_DRAIN_RAW_ENVELOPE_BYTES_PER_RUN,
+    public val deadlineSafetyMarginMillis: Long = DEFAULT_DEADLINE_SAFETY_MARGIN_MILLIS,
+    public val maxRunDurationMillis: Long = DEFAULT_MAX_RUN_DURATION_MILLIS
 ) {
     override fun toString(): String = "NotificationExtensionRequest(redacted)"
 
@@ -54,7 +58,11 @@ public data class NotificationExtensionRequest(
         public const val DEFAULT_MAX_EVENTS_TO_STAGE: Int = 100
         public const val DEFAULT_MAX_DRAIN_BATCHES: Int = 4
         public const val DEFAULT_MAX_EVENTS_PER_DRAIN_BATCH: Int = 25
+        public const val DEFAULT_MAX_RAW_ENVELOPE_BYTES: Int = 256 * 1_024
+        public const val DEFAULT_MAX_RAW_ENVELOPE_BYTES_PER_RUN: Long = 4L * 1_024L * 1_024L
+        public const val DEFAULT_MAX_DRAIN_RAW_ENVELOPE_BYTES_PER_RUN: Long = 4L * 1_024L * 1_024L
         public const val DEFAULT_DEADLINE_SAFETY_MARGIN_MILLIS: Long = 2_000L
+        public const val DEFAULT_MAX_RUN_DURATION_MILLIS: Long = 20_000L
     }
 }
 
@@ -82,6 +90,8 @@ public enum class NotificationExtensionReason {
     EVENT_BUDGET_EXHAUSTED,
     TRANSPORT_FRAME_BUDGET_EXHAUSTED,
     BATCH_BUDGET_EXHAUSTED,
+    EVENT_BYTE_BUDGET_EXHAUSTED,
+    DRAIN_BYTE_BUDGET_EXHAUSTED,
     UNEXPECTED_TRANSPORT_PAYLOAD,
     MISSED_NOTIFICATION,
     LEGACY_CATCH_UP_NOT_PROVEN,
@@ -103,10 +113,12 @@ public data class NotificationExtensionSummary(
     public val eventsAlreadyStaged: Int,
     public val transportAcksAcceptedByLocalWriter: Int,
     public val eventsReceiveMaterialized: Int,
-    public val drainBatchesRead: Int
+    public val drainBatchesRead: Int,
+    public val transportRawEnvelopeBytesReceived: Long,
+    public val drainRawEnvelopeBytesRead: Long
 ) {
     public companion object {
-        public val Empty: NotificationExtensionSummary = NotificationExtensionSummary(0, 0, 0, 0, 0, 0)
+        public val Empty: NotificationExtensionSummary = NotificationExtensionSummary(0, 0, 0, 0, 0, 0, 0L, 0L)
     }
 }
 
@@ -211,7 +223,12 @@ public enum class NotificationExtensionProductionGate(public val bitMask: Long) 
     NOTIFICATION_POLICY_SNAPSHOT(1L shl NOTIFICATION_POLICY_SNAPSHOT_BIT),
     NOTIFICATION_AVS_SWIFT_BRIDGE(1L shl NOTIFICATION_AVS_SWIFT_BRIDGE_BIT),
     SIGNED_APP_AND_NSE_ENTITLEMENTS(1L shl SIGNED_APP_AND_NSE_ENTITLEMENTS_BIT),
-    PHYSICAL_DEVICE_VALIDATION(1L shl PHYSICAL_DEVICE_VALIDATION_BIT)
+    PHYSICAL_DEVICE_VALIDATION(1L shl PHYSICAL_DEVICE_VALIDATION_BIT),
+    BOUNDED_STORAGE_ENFORCEMENT(1L shl BOUNDED_STORAGE_ENFORCEMENT_BIT),
+    FOREGROUND_CURSOR_CUTOVER(1L shl FOREGROUND_CURSOR_CUTOVER_BIT),
+    ACCOUNT_REMOVAL_TOMBSTONE(1L shl ACCOUNT_REMOVAL_TOMBSTONE_BIT),
+    GLOBAL_RECOVERY_FOREGROUND_ACK(1L shl GLOBAL_RECOVERY_FOREGROUND_ACK_BIT),
+    PHYSICAL_DEVICE_BUDGET_APPROVAL(1L shl PHYSICAL_DEVICE_BUDGET_APPROVAL_BIT)
 }
 
 /** A concrete fail-closed construction result rather than an `Either`. */
@@ -289,3 +306,8 @@ private const val NOTIFICATION_POLICY_SNAPSHOT_BIT = 7
 private const val NOTIFICATION_AVS_SWIFT_BRIDGE_BIT = 8
 private const val SIGNED_APP_AND_NSE_ENTITLEMENTS_BIT = 9
 private const val PHYSICAL_DEVICE_VALIDATION_BIT = 10
+private const val BOUNDED_STORAGE_ENFORCEMENT_BIT = 11
+private const val FOREGROUND_CURSOR_CUTOVER_BIT = 12
+private const val ACCOUNT_REMOVAL_TOMBSTONE_BIT = 13
+private const val GLOBAL_RECOVERY_FOREGROUND_ACK_BIT = 14
+private const val PHYSICAL_DEVICE_BUDGET_APPROVAL_BIT = 15

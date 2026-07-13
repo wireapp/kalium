@@ -72,11 +72,16 @@ func runForegroundImporterProbeV1(
     try requireV1(try reader.cursorValue() == cursorBeforeImport)
     guard case .marked(rawParents: 1, children: 2) = try reader.markImported(
         snapshot: initial,
-        rawDisposition: nil
+        rawDisposition: nil,
+        importedAtMillis: 10_000
     ) else {
         throw HandoffContractError.corruptState
     }
-    guard case .alreadyImported = try reader.markImported(snapshot: initial, rawDisposition: nil) else {
+    guard case .alreadyImported = try reader.markImported(
+        snapshot: initial,
+        rawDisposition: nil,
+        importedAtMillis: 10_000
+    ) else {
         throw HandoffContractError.corruptState
     }
 

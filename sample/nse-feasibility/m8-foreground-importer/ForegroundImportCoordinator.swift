@@ -48,7 +48,11 @@ final class ForegroundImportCoordinatorV1 {
         case .some(.scheduleForegroundRecovery): disposition = .durablyQueuedForForeground
         default: throw HandoffContractError.invalidDisposition
         }
-        _ = try reader.markImported(snapshot: snapshot, rawDisposition: disposition)
+        _ = try reader.markImported(
+            snapshot: snapshot,
+            rawDisposition: disposition,
+            importedAtMillis: syntheticForegroundImportEpochMillisV1
+        )
         return .committedAndMarked(
             snapshotToken: snapshot.snapshotToken,
             exactMainReplay: receipt.exactReplay
@@ -62,3 +66,5 @@ final class ForegroundImportCoordinatorV1 {
         guard lockIsHeld() else { throw HandoffContractError.lockUnavailable }
     }
 }
+
+private let syntheticForegroundImportEpochMillisV1: Int64 = 10_000

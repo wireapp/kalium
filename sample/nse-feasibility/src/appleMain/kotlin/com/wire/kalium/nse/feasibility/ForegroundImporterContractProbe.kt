@@ -57,22 +57,24 @@ internal suspend fun runSyntheticForegroundImportContractProbe(sharedRoot: Strin
             stageM8RawParent(store, M8_RAW_EVENT_B, M8_RAW_B, M8_CURSOR_B, 2L)
             val cursorBeforeMark = store.readCursor(M8_SCOPE).successValue()
             check(!first.hasMore)
-            check(store.markForegroundImportSnapshotImported(first, null) is ForegroundImportMarkResult.Marked)
+            check(store.markForegroundImportSnapshotImported(first, null, 10L) is ForegroundImportMarkResult.Marked)
             check(store.readCursor(M8_SCOPE).successValue() == cursorBeforeMark)
-            check(store.markForegroundImportSnapshotImported(first, null) == ForegroundImportMarkResult.AlreadyImported)
+            check(store.markForegroundImportSnapshotImported(first, null, 10L) == ForegroundImportMarkResult.AlreadyImported)
 
             val second = checkNotNull(store.readNextForegroundImportSnapshot(M8_SCOPE).successValue())
             check(second.unit.parentServerEventId == M8_RAW_EVENT_B)
             check(
                 store.markForegroundImportSnapshotImported(
                     second,
-                    ForegroundRawImportDisposition.DURABLY_QUEUED_FOR_FOREGROUND
+                    ForegroundRawImportDisposition.DURABLY_QUEUED_FOR_FOREGROUND,
+                    11L
                 ) is ForegroundImportMarkResult.Marked
             )
             check(
                 store.markForegroundImportSnapshotImported(
                     second,
-                    ForegroundRawImportDisposition.DURABLY_QUEUED_FOR_FOREGROUND
+                    ForegroundRawImportDisposition.DURABLY_QUEUED_FOR_FOREGROUND,
+                    11L
                 ) == ForegroundImportMarkResult.AlreadyImported
             )
             check(store.readCursor(M8_SCOPE).successValue() == cursorBeforeMark)

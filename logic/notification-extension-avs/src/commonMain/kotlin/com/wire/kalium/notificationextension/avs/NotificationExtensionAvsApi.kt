@@ -122,13 +122,20 @@ public data class NotificationExtensionAvsResult(
  * batch. The full `:domain:calling` module is not a dependency.
  */
 public class NotificationExtensionAvsProcessor {
+    @Suppress("ReturnCount")
     public fun process(
         selfUserId: String,
         selfClientId: String,
         events: List<NotificationExtensionAvsEvent>,
         callbacks: NotificationExtensionAvsCallbacks
     ): NotificationExtensionAvsResult {
-        if (!inputIsValid(selfUserId, selfClientId, events)) return invalidInput()
+        if (
+            !selfUserId.isBoundedIdentifier() || !selfClientId.isBoundedIdentifier() ||
+            events.size !in 1..MAX_EVENTS_PER_BATCH
+        ) {
+            return invalidInput()
+        }
+        val preparedEvents = prepareEvents(events) ?: return invalidInput()
 
         var processor: AvsCallNotificationProcessor? = null
         val processingResult = try {
@@ -137,7 +144,7 @@ public class NotificationExtensionAvsProcessor {
                 selfClientId = selfClientId,
                 callbacks = AvsCallbacksAdapter(callbacks)
             )
-            processor.process(events.map(::toDomainEvent)).toExtensionResult()
+            processor.process(preparedEvents.map(::toDomainEvent)).toExtensionResult()
         } catch (_: Throwable) {
             nativeFailure(NotificationExtensionAvsOperation.CREATE)
         }
@@ -194,25 +201,45 @@ private class AvsCallbacksAdapter(
     }
 }
 
-private fun inputIsValid(
-    selfUserId: String,
-    selfClientId: String,
-    events: List<NotificationExtensionAvsEvent>
-): Boolean = selfUserId.isNotBlank() && selfClientId.isNotBlank() && events.size in 1..MAX_EVENTS_PER_BATCH &&
-        events.all { event ->
-            event.payload.isNotEmpty() && event.conversationId.isNotBlank() && event.senderUserId.isNotBlank() &&
-                    event.senderClientId.isNotBlank() && event.currentTimeSeconds in UINT_RANGE &&
-                    event.messageTimeSeconds in UINT_RANGE
+@Suppress("ComplexCondition", "ReturnCount")
+private fun prepareEvents(events: List<NotificationExtensionAvsEvent>): List<PreparedAvsEvent>? {
+    val prepared = ArrayList<PreparedAvsEvent>(events.size)
+    var totalPayloadBytes = 0L
+    for (event in events) {
+        if (
+            event.payload.isEmpty() || event.payload.length > MAX_AVS_EVENT_PAYLOAD_BYTES ||
+            !event.conversationId.isBoundedIdentifier() || !event.senderUserId.isBoundedIdentifier() ||
+            !event.senderClientId.isBoundedIdentifier() || event.currentTimeSeconds !in UINT_RANGE ||
+            event.messageTimeSeconds !in UINT_RANGE
+        ) {
+            return null
         }
+        val payloadBytes = event.payload.encodeToByteArray()
+        if (payloadBytes.size > MAX_AVS_EVENT_PAYLOAD_BYTES) return null
+        totalPayloadBytes += payloadBytes.size
+        if (totalPayloadBytes > MAX_AVS_BATCH_PAYLOAD_BYTES) return null
+        prepared += PreparedAvsEvent(event, payloadBytes)
+    }
+    return prepared
+}
 
-private fun toDomainEvent(event: NotificationExtensionAvsEvent): AvsCallNotification = AvsCallNotification(
-    payload = event.payload.encodeToByteArray(),
-    currentTimeSeconds = event.currentTimeSeconds.toUInt(),
-    messageTimeSeconds = event.messageTimeSeconds.toUInt(),
-    conversationId = event.conversationId,
-    senderUserId = event.senderUserId,
-    senderClientId = event.senderClientId,
-    conversationType = event.conversationType.toDomainType()
+private fun String.isBoundedIdentifier(): Boolean =
+    isNotEmpty() && length <= MAX_AVS_IDENTIFIER_UTF8_BYTES && indexOf(NULL_CHARACTER) < 0 && isNotBlank() &&
+            encodeToByteArray().size <= MAX_AVS_IDENTIFIER_UTF8_BYTES
+
+private fun toDomainEvent(prepared: PreparedAvsEvent): AvsCallNotification = AvsCallNotification(
+    payload = prepared.payload,
+    currentTimeSeconds = prepared.event.currentTimeSeconds.toUInt(),
+    messageTimeSeconds = prepared.event.messageTimeSeconds.toUInt(),
+    conversationId = prepared.event.conversationId,
+    senderUserId = prepared.event.senderUserId,
+    senderClientId = prepared.event.senderClientId,
+    conversationType = prepared.event.conversationType.toDomainType()
+)
+
+private class PreparedAvsEvent(
+    val event: NotificationExtensionAvsEvent,
+    val payload: ByteArray
 )
 
 private fun NotificationExtensionAvsConversationType.toDomainType(): AvsCallNotificationConversationType = when (this) {
@@ -295,4 +322,8 @@ private fun nativeFailure(operation: NotificationExtensionAvsOperation): Notific
     NotificationExtensionAvsResult(NotificationExtensionAvsStatus.NATIVE_FAILURE, operation, null, null)
 
 private const val MAX_EVENTS_PER_BATCH = 32
+private const val MAX_AVS_EVENT_PAYLOAD_BYTES = 256 * 1_024
+private const val MAX_AVS_BATCH_PAYLOAD_BYTES = 1L * 1_024L * 1_024L
+private const val MAX_AVS_IDENTIFIER_UTF8_BYTES = 4_096
+private const val NULL_CHARACTER = '\u0000'
 private val UINT_RANGE = 0L..UInt.MAX_VALUE.toLong()

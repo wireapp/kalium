@@ -50,20 +50,118 @@ internal class SqlDelightNotificationInboxStore(
     private val syntheticFailureArmed = AtomicInt(ARMED_STATE)
 
     @Suppress("ComplexCondition")
+    override suspend fun prepareSharedCursor(
+        request: SharedCursorPreparation
+    ): SharedCursorPreparationResult = preparationOperation {
+        if (
+            !request.scope.isValid() || !request.scope.isAllowedBy(syntheticOnly) ||
+            !request.cutoverId.isValidIdentifier() ||
+            request.legacyCursor?.isValidCursor() == false || request.activatedAtEpochMillis < 0
+        ) {
+            return@preparationOperation SharedCursorPreparationResult.StorageFailure(invalidInput())
+        }
+        val seedDigest = request.legacyCursor?.encodeToByteArray()?.let(::sha256LowercaseHex)
+        database.transactionWithResult<SharedCursorPreparationResult> {
+            val lifecycle = queries.selectAccountLifecycle(
+                request.scope.accountId,
+                request.scope.clientId
+            ).awaitAsOneOrNull()
+            if (lifecycle == null) {
+                queries.insertActiveAccountLifecycle(request.scope.accountId, request.scope.clientId)
+                queries.insertCursorAuthority(
+                    account_id = request.scope.accountId,
+                    client_id = request.scope.clientId,
+                    cutover_id = request.cutoverId,
+                    legacy_seed_cursor = request.legacyCursor,
+                    legacy_seed_sha256 = seedDigest,
+                    activated_at_epoch_millis = request.activatedAtEpochMillis
+                )
+                return@transactionWithResult SharedCursorPreparationResult.Prepared
+            }
+            if (lifecycle.lifecycle_state != ACCOUNT_LIFECYCLE_ACTIVE) {
+                return@transactionWithResult SharedCursorPreparationResult.IntegrityConflict
+            }
+            val authority = queries.selectCursorAuthority(
+                request.scope.accountId,
+                request.scope.clientId
+            ).awaitAsOneOrNull() ?: return@transactionWithResult SharedCursorPreparationResult.IntegrityConflict
+            if (
+                authority.authority_state in setOf(CURSOR_AUTHORITY_CUTOVER_PREPARED, CURSOR_AUTHORITY_SHARED) &&
+                authority.cutover_id == request.cutoverId &&
+                authority.legacy_seed_cursor == request.legacyCursor &&
+                authority.legacy_seed_sha256 == seedDigest &&
+                authority.activated_at_epoch_millis == request.activatedAtEpochMillis
+            ) {
+                SharedCursorPreparationResult.ExactReplay
+            } else {
+                SharedCursorPreparationResult.IntegrityConflict
+            }
+        }
+    }
+
+    @Suppress("ComplexCondition", "CyclomaticComplexMethod")
+    override suspend fun activatePreparedSharedCursor(
+        scope: InboxScope,
+        cutoverId: String
+    ): SharedCursorActivationResult = activationOperation {
+        if (!scope.isValid() || !scope.isAllowedBy(syntheticOnly) || !cutoverId.isValidIdentifier()) {
+            return@activationOperation SharedCursorActivationResult.StorageFailure(invalidInput())
+        }
+        database.transactionWithResult {
+            activeLifecycleFailure(scope)?.let {
+                return@transactionWithResult SharedCursorActivationResult.StorageFailure(it)
+            }
+            val authority = queries.selectCursorAuthority(scope.accountId, scope.clientId).awaitAsOneOrNull()
+                ?: return@transactionWithResult SharedCursorActivationResult.IntegrityConflict
+            if (
+                !authority.cutover_id.isValidIdentifier() || authority.activated_at_epoch_millis < 0 ||
+                authority.legacy_seed_cursor?.isValidCursor() == false ||
+                (authority.legacy_seed_cursor == null) != (authority.legacy_seed_sha256 == null) ||
+                authority.legacy_seed_sha256?.isSha256() == false ||
+                authority.legacy_seed_cursor?.let {
+                    sha256LowercaseHex(it.encodeToByteArray()) != authority.legacy_seed_sha256
+                } == true
+            ) {
+                return@transactionWithResult SharedCursorActivationResult.StorageFailure(
+                    NotificationInboxFailure.CORRUPT_STATE
+                )
+            }
+            when {
+                authority.cutover_id != cutoverId -> SharedCursorActivationResult.IntegrityConflict
+                authority.authority_state == CURSOR_AUTHORITY_SHARED -> SharedCursorActivationResult.ExactReplay
+                authority.authority_state != CURSOR_AUTHORITY_CUTOVER_PREPARED ->
+                    SharedCursorActivationResult.IntegrityConflict
+                else -> {
+                    queries.activatePreparedCursorAuthority(scope.accountId, scope.clientId, cutoverId)
+                    if (queries.selectChanges().awaitAsOne() == 1L) {
+                        SharedCursorActivationResult.Activated
+                    } else {
+                        SharedCursorActivationResult.IntegrityConflict
+                    }
+                }
+            }
+        }
+    }
+
+    @Suppress("ComplexCondition")
     internal suspend fun validateCompatibility(): NotificationInboxFailure? = withContext(dispatcher) {
         if (!limits.areValid()) return@withContext NotificationInboxFailure.INVALID_INPUT
         try {
             var metadata = queries.selectContractMetadata().awaitAsOneOrNull()
                 ?: return@withContext NotificationInboxFailure.CORRUPT_STATE
+            if (
+                metadata.contract_version != NOTIFICATION_INBOX_CONTRACT_VERSION.toLong() ||
+                metadata.raw_envelope_format_version != NOTIFICATION_RAW_ENVELOPE_FORMAT_VERSION.toLong() ||
+                metadata.child_payload_format_version != NOTIFICATION_CHILD_PAYLOAD_FORMAT_VERSION.toLong()
+            ) {
+                return@withContext NotificationInboxFailure.INCOMPATIBLE_SCHEMA
+            }
             if (metadata.blob_storage_format == UNBOUND_STORAGE_PROFILE) {
                 queries.bindBlobStorageFormat(expectedStorageProfile)
                 metadata = queries.selectContractMetadata().awaitAsOneOrNull()
                     ?: return@withContext NotificationInboxFailure.CORRUPT_STATE
             }
             if (
-                metadata.contract_version != NOTIFICATION_INBOX_CONTRACT_VERSION.toLong() ||
-                metadata.raw_envelope_format_version != NOTIFICATION_RAW_ENVELOPE_FORMAT_VERSION.toLong() ||
-                metadata.child_payload_format_version != NOTIFICATION_CHILD_PAYLOAD_FORMAT_VERSION.toLong() ||
                 metadata.blob_storage_format != expectedStorageProfile
             ) {
                 NotificationInboxFailure.INCOMPATIBLE_SCHEMA
@@ -77,11 +175,13 @@ internal class SqlDelightNotificationInboxStore(
         }
     }
 
-    @Suppress("ComplexCondition")
+    @Suppress("ComplexCondition", "CyclomaticComplexMethod")
     override suspend fun readCursor(scope: InboxScope): InboxReadResult<DurableInboxCursor?> =
         readOperation {
             if (!scope.isValid()) return@readOperation InboxReadResult.StorageFailure(invalidInput())
             if (!scope.isAllowedBy(syntheticOnly)) return@readOperation InboxReadResult.StorageFailure(invalidInput())
+            cursorAuthorityFailure(scope)?.let { return@readOperation InboxReadResult.StorageFailure(it) }
+            val authority = queries.selectCursorAuthority(scope.accountId, scope.clientId).awaitAsOne()
             val row = queries.selectCursor(scope.accountId, scope.clientId).awaitAsOneOrNull()
             if (row != null) {
                 val source = queries.selectRawEvent(
@@ -105,7 +205,19 @@ internal class SqlDelightNotificationInboxStore(
                         value = it.cursor_value,
                         sourceIngestSequence = it.source_ingest_sequence,
                         sourceServerEventId = it.source_server_event_id,
-                        updatedAtEpochMillis = it.updated_at_epoch_millis
+                        updatedAtEpochMillis = it.updated_at_epoch_millis,
+                        provenance = InboxCursorProvenance.STAGED_RAW_EVENT
+                    )
+                } ?: authority.legacy_seed_cursor?.let { seed ->
+                    if (authority.legacy_seed_sha256 != sha256LowercaseHex(seed.encodeToByteArray())) {
+                        return@readOperation InboxReadResult.StorageFailure(NotificationInboxFailure.CORRUPT_STATE)
+                    }
+                    DurableInboxCursor(
+                        value = seed,
+                        sourceIngestSequence = null,
+                        sourceServerEventId = null,
+                        updatedAtEpochMillis = authority.activated_at_epoch_millis,
+                        provenance = InboxCursorProvenance.LEGACY_SEED
                     )
                 }
             )
@@ -124,6 +236,9 @@ internal class SqlDelightNotificationInboxStore(
 
         val digest = sha256LowercaseHex(bytes)
         database.transactionWithResult<RawEventStageResult> {
+            cursorAuthorityFailure(request.scope)?.let {
+                return@transactionWithResult RawEventStageResult.StorageFailure(it)
+            }
             val existing = queries.selectRawEvent(
                 request.scope.accountId,
                 request.scope.clientId,
@@ -198,6 +313,9 @@ internal class SqlDelightNotificationInboxStore(
     ): InboxReadResult<PendingRawEventBatch> = readOperation {
         readValidationFailure(scope, limit)?.let { return@readOperation InboxReadResult.StorageFailure(it) }
         database.transactionWithResult<InboxReadResult<PendingRawEventBatch>> {
+            activeLifecycleFailure(scope)?.let {
+                return@transactionWithResult InboxReadResult.StorageFailure(it)
+            }
             val lengths = queries.selectPendingReceiveBlobLengths(
                 scope.accountId,
                 scope.clientId,
@@ -226,6 +344,9 @@ internal class SqlDelightNotificationInboxStore(
     ): InboxReadResult<PendingRawEventBatch> = readOperation {
         readValidationFailure(scope, limit)?.let { return@readOperation InboxReadResult.StorageFailure(it) }
         database.transactionWithResult<InboxReadResult<PendingRawEventBatch>> {
+            activeLifecycleFailure(scope)?.let {
+                return@transactionWithResult InboxReadResult.StorageFailure(it)
+            }
             val lengths = queries.selectPendingRawImportBlobLengths(
                 scope.accountId,
                 scope.clientId,
@@ -256,6 +377,9 @@ internal class SqlDelightNotificationInboxStore(
             return@mutationOperation InboxMutationResult.StorageFailure(it)
         }
         database.transactionWithResult<InboxMutationResult> {
+            activeLifecycleFailure(scope)?.let {
+                return@transactionWithResult InboxMutationResult.StorageFailure(it)
+            }
             val existing = queries.selectRawEvent(scope.accountId, scope.clientId, serverEventId).awaitAsOneOrNull()
                 ?: return@transactionWithResult InboxMutationResult.Missing
             if (!existing.isStructurallyValid(limits, syntheticOnly)) {
@@ -285,6 +409,9 @@ internal class SqlDelightNotificationInboxStore(
             return@mutationOperation InboxMutationResult.StorageFailure(it)
         }
         database.transactionWithResult {
+            activeLifecycleFailure(scope)?.let {
+                return@transactionWithResult InboxMutationResult.StorageFailure(it)
+            }
             val existing = queries.selectRawEvent(scope.accountId, scope.clientId, serverEventId).awaitAsOneOrNull()
                 ?: return@transactionWithResult InboxMutationResult.Missing
             if (!existing.isStructurallyValid(limits, syntheticOnly)) {
@@ -306,8 +433,14 @@ internal class SqlDelightNotificationInboxStore(
         }
     }
 
-    @Suppress("ComplexCondition")
     override suspend fun recordGlobalRecovery(
+        scope: InboxScope,
+        reason: String,
+        recordedAtEpochMillis: Long
+    ): InboxMutationResult = requireCursorGlobalRecovery(scope, reason, recordedAtEpochMillis)
+
+    @Suppress("ComplexCondition")
+    override suspend fun requireCursorGlobalRecovery(
         scope: InboxScope,
         reason: String,
         recordedAtEpochMillis: Long
@@ -318,8 +451,90 @@ internal class SqlDelightNotificationInboxStore(
         ) {
             return@mutationOperation InboxMutationResult.StorageFailure(invalidInput())
         }
-        queries.insertGlobalRecovery(scope.accountId, scope.clientId, reason, recordedAtEpochMillis)
-        InboxMutationResult.Success
+        database.transactionWithResult {
+            activeLifecycleFailure(scope)?.let {
+                return@transactionWithResult InboxMutationResult.StorageFailure(it)
+            }
+            val authority = queries.selectCursorAuthority(scope.accountId, scope.clientId).awaitAsOneOrNull()
+                ?: return@transactionWithResult InboxMutationResult.StorageFailure(
+                    NotificationInboxFailure.ACCOUNT_NOT_ACTIVE
+                )
+            if (authority.authority_state == CURSOR_AUTHORITY_SHARED) {
+                queries.requireCursorGlobalRecovery(scope.accountId, scope.clientId)
+                if (queries.selectChanges().awaitAsOne() != 1L) {
+                    return@transactionWithResult InboxMutationResult.IntegrityConflict
+                }
+            } else if (authority.authority_state != CURSOR_AUTHORITY_GLOBAL_RECOVERY) {
+                return@transactionWithResult InboxMutationResult.IntegrityConflict
+            }
+            recordGlobalRecoveryExact(scope, reason, recordedAtEpochMillis)
+        }
+    }
+
+    override suspend fun readPendingGlobalRecovery(
+        scope: InboxScope,
+        limit: Int
+    ): InboxReadResult<GlobalRecoveryBatch> = readOperation {
+        readValidationFailure(scope, limit)?.let { return@readOperation InboxReadResult.StorageFailure(it) }
+        activeLifecycleFailure(scope)?.let { return@readOperation InboxReadResult.StorageFailure(it) }
+        val rows = queries.selectPendingGlobalRecovery(
+            scope.accountId,
+            scope.clientId,
+            limit.plusOne()
+        ).awaitAsList()
+        val signals = rows.take(limit).map { row ->
+            if (
+                !row.reason.isValidStoredValue(limits.maxReasonUtf8Bytes) ||
+                row.recorded_at_epoch_millis < 0 ||
+                row.signal_token != globalRecoveryToken(scope, row.reason, row.recorded_at_epoch_millis)
+            ) {
+                return@readOperation InboxReadResult.StorageFailure(NotificationInboxFailure.CORRUPT_STATE)
+            }
+            GlobalRecoverySignal(row.reason, row.recorded_at_epoch_millis, row.signal_token)
+        }
+        InboxReadResult.Success(GlobalRecoveryBatch(signals, rows.size > limit))
+    }
+
+    @Suppress("ComplexCondition")
+    override suspend fun acknowledgeGlobalRecovery(
+        scope: InboxScope,
+        signalToken: String,
+        acknowledgedAtEpochMillis: Long
+    ): InboxMutationResult = mutationOperation {
+        if (
+            !scope.isValid() || !scope.isAllowedBy(syntheticOnly) || !signalToken.isSha256() ||
+            acknowledgedAtEpochMillis < 0
+        ) {
+            return@mutationOperation InboxMutationResult.StorageFailure(invalidInput())
+        }
+        database.transactionWithResult {
+            activeLifecycleFailure(scope)?.let {
+                return@transactionWithResult InboxMutationResult.StorageFailure(it)
+            }
+            val row = queries.selectGlobalRecoveryByToken(
+                scope.accountId,
+                scope.clientId,
+                signalToken
+            ).awaitAsOneOrNull() ?: return@transactionWithResult InboxMutationResult.Missing
+            if (row.signal_token != globalRecoveryToken(scope, row.reason, row.recorded_at_epoch_millis)) {
+                return@transactionWithResult InboxMutationResult.IntegrityConflict
+            }
+            if (acknowledgedAtEpochMillis < row.recorded_at_epoch_millis) {
+                return@transactionWithResult InboxMutationResult.IntegrityConflict
+            }
+            if (row.acknowledged_at_epoch_millis != null) return@transactionWithResult InboxMutationResult.Success
+            queries.acknowledgeGlobalRecoveryExact(
+                acknowledged_at_epoch_millis = acknowledgedAtEpochMillis,
+                account_id = scope.accountId,
+                client_id = scope.clientId,
+                signal_token = signalToken
+            )
+            if (queries.selectChanges().awaitAsOne() == 1L) {
+                InboxMutationResult.Success
+            } else {
+                InboxMutationResult.IntegrityConflict
+            }
+        }
     }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod")
@@ -340,6 +555,9 @@ internal class SqlDelightNotificationInboxStore(
             }
 
             database.transactionWithResult {
+                activeLifecycleFailure(request.scope)?.let {
+                    return@transactionWithResult ReceiveChildrenStageResult.StorageFailure(it)
+                }
                 val parent = queries.selectRawEvent(
                     request.scope.accountId,
                     request.scope.clientId,
@@ -438,6 +656,9 @@ internal class SqlDelightNotificationInboxStore(
     ): InboxReadResult<PendingImportChildBatch> = readOperation {
         readValidationFailure(scope, limit)?.let { return@readOperation InboxReadResult.StorageFailure(it) }
         database.transactionWithResult<InboxReadResult<PendingImportChildBatch>> {
+            activeLifecycleFailure(scope)?.let {
+                return@transactionWithResult InboxReadResult.StorageFailure(it)
+            }
             val lengths = queries.selectPendingImportChildBlobLengths(
                 scope.accountId,
                 scope.clientId,
@@ -468,6 +689,9 @@ internal class SqlDelightNotificationInboxStore(
             return@readOperation InboxReadResult.StorageFailure(invalidInput())
         }
         database.transactionWithResult<InboxReadResult<ForegroundImportSnapshot?>> {
+            activeLifecycleFailure(scope)?.let {
+                return@transactionWithResult InboxReadResult.StorageFailure(it)
+            }
             val snapshotMax = queries.selectForegroundImportSnapshotMaxSequence(
                 scope.accountId,
                 scope.clientId
@@ -548,7 +772,8 @@ internal class SqlDelightNotificationInboxStore(
     @Suppress("ComplexCondition", "CyclomaticComplexMethod", "LongMethod")
     override suspend fun markForegroundImportSnapshotImported(
         snapshot: ForegroundImportSnapshot,
-        rawDisposition: ForegroundRawImportDisposition?
+        rawDisposition: ForegroundRawImportDisposition?,
+        importedAtEpochMillis: Long
     ): ForegroundImportMarkResult = foregroundMarkOperation {
         if (
             snapshot.issuingStore !== this ||
@@ -559,7 +784,7 @@ internal class SqlDelightNotificationInboxStore(
                 snapshot.snapshotMaxIngestSequence,
                 snapshot.unit
             ) ||
-            (snapshot.unit.rawImport == null) != (rawDisposition == null)
+            (snapshot.unit.rawImport == null) != (rawDisposition == null) || importedAtEpochMillis < 0
         ) {
             return@foregroundMarkOperation ForegroundImportMarkResult.IntegrityConflict
         }
@@ -569,12 +794,18 @@ internal class SqlDelightNotificationInboxStore(
 
         database.transactionWithResult<ForegroundImportMarkResult> {
             val unit = snapshot.unit
+            activeLifecycleFailure(unit.scope)?.let {
+                return@transactionWithResult ForegroundImportMarkResult.StorageFailure(it)
+            }
             val parent = queries.selectRawEventByIngestSequence(
                 unit.scope.accountId,
                 unit.scope.clientId,
                 unit.parentIngestSequence
             ).awaitAsOneOrNull() ?: return@transactionWithResult ForegroundImportMarkResult.IntegrityConflict
-            if (!parent.isStructurallyValid(limits, syntheticOnly) || !parent.matchesForegroundUnitIdentity(unit)) {
+            if (
+                !parent.isStructurallyValid(limits, syntheticOnly) ||
+                !parent.matchesForegroundUnitIdentity(unit) || importedAtEpochMillis < parent.received_at_epoch_millis
+            ) {
                 return@transactionWithResult ForegroundImportMarkResult.IntegrityConflict
             }
 
@@ -622,6 +853,7 @@ internal class SqlDelightNotificationInboxStore(
 
             currentChildren.forEach { child ->
                 queries.markForegroundChildImportedExact(
+                    imported_at_epoch_millis = importedAtEpochMillis,
                     account_id = unit.scope.accountId,
                     client_id = unit.scope.clientId,
                     child_sequence = child.childSequence,
@@ -635,6 +867,7 @@ internal class SqlDelightNotificationInboxStore(
 
             if (rawDisposition == null) {
                 queries.markForegroundRawImportedExact(
+                    imported_at_epoch_millis = importedAtEpochMillis,
                     account_id = unit.scope.accountId,
                     client_id = unit.scope.clientId,
                     ingest_sequence = unit.parentIngestSequence,
@@ -647,6 +880,7 @@ internal class SqlDelightNotificationInboxStore(
                     next_receive_state = transition.receiveState.name,
                     next_foreground_recovery_required = transition.foregroundRecoveryRequired.toLong(),
                     next_recovery_reason = transition.recoveryReason,
+                    imported_at_epoch_millis = importedAtEpochMillis,
                     account_id = unit.scope.accountId,
                     client_id = unit.scope.clientId,
                     ingest_sequence = unit.parentIngestSequence,
@@ -659,6 +893,163 @@ internal class SqlDelightNotificationInboxStore(
             }
             if (queries.selectChanges().awaitAsOne() != 1L) throw AbortForegroundImportConflict()
             ForegroundImportMarkResult.Marked(markedRawParentCount = 1, markedChildCount = currentChildren.size)
+        }
+    }
+
+    @Suppress("ComplexCondition", "CyclomaticComplexMethod", "LongMethod")
+    override suspend fun cleanupImported(
+        request: NotificationInboxCleanupRequest
+    ): NotificationInboxCleanupResult = cleanupOperation {
+        if (
+            !request.scope.isValid() || !request.scope.isAllowedBy(syntheticOnly) ||
+            request.importedBeforeEpochMillis < 0 || request.maxParentRows <= 0 ||
+            request.maxParentRows > limits.maxRowsPerRead || request.maxParentRows == Int.MAX_VALUE
+        ) {
+            return@cleanupOperation NotificationInboxCleanupResult.StorageFailure(invalidInput())
+        }
+        database.transactionWithResult<NotificationInboxCleanupResult> {
+            activeLifecycleFailure(request.scope)?.let {
+                return@transactionWithResult NotificationInboxCleanupResult.StorageFailure(it)
+            }
+            val candidates = queries.selectCleanupImportedCandidates(
+                account_id = request.scope.accountId,
+                client_id = request.scope.clientId,
+                imported_before_epoch_millis = request.importedBeforeEpochMillis,
+                limit = request.maxParentRows.plusOne()
+            ).awaitAsList()
+            if (candidates.isEmpty()) return@transactionWithResult NotificationInboxCleanupResult.NothingEligible
+
+            var deletedChildren = 0L
+            var rawBytes = 0L
+            var protoBytes = 0L
+            candidates.take(request.maxParentRows).forEach { candidate ->
+                val parent = queries.selectRawEventByIngestSequence(
+                    request.scope.accountId,
+                    request.scope.clientId,
+                    candidate.ingest_sequence
+                ).awaitAsOneOrNull() ?: throw AbortCleanupConflict()
+                val childMetadata = queries.selectReceiveChildBlobLengthsForParent(
+                    candidate.ingest_sequence,
+                    limits.maxChildrenPerEvent.toLong() + 1L
+                ).awaitAsList()
+                if (
+                    !parent.isStructurallyValid(limits, syntheticOnly) ||
+                    parent.import_state != ForegroundImportState.IMPORTED.name ||
+                    parent.imported_at_epoch_millis?.let { it <= request.importedBeforeEpochMillis } != true ||
+                    childMetadata.size > limits.maxChildrenPerEvent ||
+                    childMetadata.size.toLong() != candidate.child_count ||
+                    candidate.raw_blob_size <= 0L || candidate.proto_blob_size < 0L
+                ) {
+                    throw AbortCleanupConflict()
+                }
+                childMetadata.forEach { metadata ->
+                    val child = queries.selectImportChildBySequence(
+                        request.scope.accountId,
+                        request.scope.clientId,
+                        metadata.child_sequence
+                    ).awaitAsOne().toValidatedPending(limits)
+                    if (child.importState != ForegroundImportState.IMPORTED) throw AbortCleanupConflict()
+                }
+                queries.deleteChildrenForCleanupParent(
+                    candidate.ingest_sequence,
+                    request.scope.accountId,
+                    request.scope.clientId
+                )
+                if (queries.selectChanges().awaitAsOne() != candidate.child_count) throw AbortCleanupConflict()
+                injectSyntheticFailure(SyntheticNotificationInboxFailurePoint.BEFORE_CLEANUP_PARENT_DELETE)
+                queries.deleteImportedCleanupParentExact(
+                    ingest_sequence = candidate.ingest_sequence,
+                    account_id = request.scope.accountId,
+                    client_id = request.scope.clientId,
+                    server_event_id = candidate.server_event_id,
+                    imported_before_epoch_millis = request.importedBeforeEpochMillis
+                )
+                if (queries.selectChanges().awaitAsOne() != 1L) throw AbortCleanupConflict()
+                deletedChildren = checkedAdd(deletedChildren, candidate.child_count)
+                rawBytes = checkedAdd(rawBytes, candidate.raw_blob_size)
+                protoBytes = checkedAdd(protoBytes, candidate.proto_blob_size)
+            }
+            NotificationInboxCleanupResult.Cleaned(
+                deletedParentRows = minOf(candidates.size, request.maxParentRows),
+                deletedChildRows = deletedChildren.toIntExact(),
+                deletedRawEnvelopeBytes = rawBytes,
+                deletedDecryptedProtoBytes = protoBytes,
+                hasMoreEligibleRows = candidates.size > request.maxParentRows
+            )
+        }
+    }
+
+    @Suppress("ComplexCondition", "CyclomaticComplexMethod", "LongMethod")
+    override suspend fun tombstoneAccount(
+        request: NotificationInboxAccountRemoval
+    ): NotificationInboxRemovalResult = removalOperation {
+        if (
+            !request.scope.isValid() || !request.scope.isAllowedBy(syntheticOnly) ||
+            !request.removalId.isValidIdentifier() || !request.reason.isValidReason() ||
+            request.tombstonedAtEpochMillis < 0
+        ) {
+            return@removalOperation NotificationInboxRemovalResult.StorageFailure(invalidInput())
+        }
+        val tombstoneToken = accountTombstoneToken(request)
+        database.transactionWithResult<NotificationInboxRemovalResult> {
+            val lifecycle = queries.selectAccountLifecycle(
+                request.scope.accountId,
+                request.scope.clientId
+            ).awaitAsOneOrNull() ?: return@transactionWithResult NotificationInboxRemovalResult.StorageFailure(
+                NotificationInboxFailure.ACCOUNT_NOT_ACTIVE
+            )
+            if (lifecycle.lifecycle_state == ACCOUNT_LIFECYCLE_TOMBSTONED) {
+                return@transactionWithResult if (
+                    lifecycle.removal_id == request.removalId && lifecycle.removal_reason == request.reason &&
+                    lifecycle.tombstoned_at_epoch_millis == request.tombstonedAtEpochMillis &&
+                    lifecycle.tombstone_token == tombstoneToken &&
+                    tombstonePostconditionMatches(request.scope)
+                ) {
+                    NotificationInboxRemovalResult.AlreadyTombstoned(tombstoneToken)
+                } else {
+                    NotificationInboxRemovalResult.IntegrityConflict
+                }
+            }
+            if (lifecycle.lifecycle_state != ACCOUNT_LIFECYCLE_ACTIVE) {
+                return@transactionWithResult NotificationInboxRemovalResult.IntegrityConflict
+            }
+            val parentCount = queries.selectScopeParentCount(
+                request.scope.accountId,
+                request.scope.clientId
+            ).awaitAsOne()
+            val childCount = queries.selectScopeChildCount(
+                request.scope.accountId,
+                request.scope.clientId
+            ).awaitAsOne()
+            val recoveryCount = queries.selectScopeRecoveryCount(
+                request.scope.accountId,
+                request.scope.clientId
+            ).awaitAsOne()
+            queries.tombstoneActiveAccount(
+                removal_id = request.removalId,
+                removal_reason = request.reason,
+                tombstoned_at_epoch_millis = request.tombstonedAtEpochMillis,
+                tombstone_token = tombstoneToken,
+                account_id = request.scope.accountId,
+                client_id = request.scope.clientId
+            )
+            if (queries.selectChanges().awaitAsOne() != 1L) throw AbortRemovalConflict()
+            queries.deleteScopeChildren(request.scope.accountId, request.scope.clientId)
+            if (queries.selectChanges().awaitAsOne() != childCount) throw AbortRemovalConflict()
+            queries.deleteScopeCursor(request.scope.accountId, request.scope.clientId)
+            queries.deleteScopeRawEvents(request.scope.accountId, request.scope.clientId)
+            if (queries.selectChanges().awaitAsOne() != parentCount) throw AbortRemovalConflict()
+            queries.deleteScopeRecovery(request.scope.accountId, request.scope.clientId)
+            if (queries.selectChanges().awaitAsOne() != recoveryCount) throw AbortRemovalConflict()
+            queries.disableRemovedCursorAuthority(request.scope.accountId, request.scope.clientId)
+            if (queries.selectChanges().awaitAsOne() != 1L) throw AbortRemovalConflict()
+            injectSyntheticFailure(SyntheticNotificationInboxFailurePoint.BEFORE_TOMBSTONE_COMMIT)
+            NotificationInboxRemovalResult.Tombstoned(
+                tombstoneToken = tombstoneToken,
+                deletedParentRows = parentCount,
+                deletedChildRows = childCount,
+                deletedRecoveryRows = recoveryCount
+            )
         }
     }
 
@@ -746,6 +1137,136 @@ internal class SqlDelightNotificationInboxStore(
         }
     }
 
+    private suspend fun preparationOperation(
+        block: suspend () -> SharedCursorPreparationResult
+    ): SharedCursorPreparationResult = withContext(dispatcher) {
+        if (closed.load() == CLOSED_STATE) {
+            return@withContext SharedCursorPreparationResult.StorageFailure(NotificationInboxFailure.CLOSED)
+        }
+        try {
+            block()
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Throwable) {
+            SharedCursorPreparationResult.StorageFailure(NotificationInboxFailure.STORAGE_UNAVAILABLE)
+        }
+    }
+
+    private suspend fun activationOperation(
+        block: suspend () -> SharedCursorActivationResult
+    ): SharedCursorActivationResult = withContext(dispatcher) {
+        if (closed.load() == CLOSED_STATE) {
+            return@withContext SharedCursorActivationResult.StorageFailure(NotificationInboxFailure.CLOSED)
+        }
+        try {
+            block()
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Throwable) {
+            SharedCursorActivationResult.StorageFailure(NotificationInboxFailure.STORAGE_UNAVAILABLE)
+        }
+    }
+
+    private suspend fun cleanupOperation(
+        block: suspend () -> NotificationInboxCleanupResult
+    ): NotificationInboxCleanupResult = withContext(dispatcher) {
+        if (closed.load() == CLOSED_STATE) {
+            return@withContext NotificationInboxCleanupResult.StorageFailure(NotificationInboxFailure.CLOSED)
+        }
+        try {
+            block()
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: AbortCleanupConflict) {
+            NotificationInboxCleanupResult.IntegrityConflict
+        } catch (_: CorruptNotificationInboxState) {
+            NotificationInboxCleanupResult.IntegrityConflict
+        } catch (_: Throwable) {
+            NotificationInboxCleanupResult.StorageFailure(NotificationInboxFailure.STORAGE_UNAVAILABLE)
+        }
+    }
+
+    private suspend fun removalOperation(
+        block: suspend () -> NotificationInboxRemovalResult
+    ): NotificationInboxRemovalResult = withContext(dispatcher) {
+        if (closed.load() == CLOSED_STATE) {
+            return@withContext NotificationInboxRemovalResult.StorageFailure(NotificationInboxFailure.CLOSED)
+        }
+        try {
+            block()
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: AbortRemovalConflict) {
+            NotificationInboxRemovalResult.IntegrityConflict
+        } catch (_: Throwable) {
+            NotificationInboxRemovalResult.StorageFailure(NotificationInboxFailure.STORAGE_UNAVAILABLE)
+        }
+    }
+
+    private suspend fun activeLifecycleFailure(scope: InboxScope): NotificationInboxFailure? {
+        val lifecycle = queries.selectAccountLifecycle(scope.accountId, scope.clientId).awaitAsOneOrNull()
+            ?: return NotificationInboxFailure.ACCOUNT_NOT_ACTIVE
+        return when (lifecycle.lifecycle_state) {
+            ACCOUNT_LIFECYCLE_ACTIVE -> null
+            ACCOUNT_LIFECYCLE_TOMBSTONED -> NotificationInboxFailure.ACCOUNT_TOMBSTONED
+            else -> NotificationInboxFailure.CORRUPT_STATE
+        }
+    }
+
+    private suspend fun tombstonePostconditionMatches(scope: InboxScope): Boolean {
+        val authority = queries.selectCursorAuthority(scope.accountId, scope.clientId).awaitAsOneOrNull()
+            ?: return false
+        return queries.selectScopeParentCount(scope.accountId, scope.clientId).awaitAsOne() == 0L &&
+                queries.selectScopeChildCount(scope.accountId, scope.clientId).awaitAsOne() == 0L &&
+                queries.selectScopeRecoveryCount(scope.accountId, scope.clientId).awaitAsOne() == 0L &&
+                queries.selectCursor(scope.accountId, scope.clientId).awaitAsOneOrNull() == null &&
+                authority.authority_state == CURSOR_AUTHORITY_DISABLED &&
+                authority.legacy_seed_cursor == null && authority.legacy_seed_sha256 == null
+    }
+
+    @Suppress("ComplexCondition", "CyclomaticComplexMethod", "ReturnCount")
+    private suspend fun cursorAuthorityFailure(scope: InboxScope): NotificationInboxFailure? {
+        activeLifecycleFailure(scope)?.let { return it }
+        val authority = queries.selectCursorAuthority(scope.accountId, scope.clientId).awaitAsOneOrNull()
+            ?: return NotificationInboxFailure.ACCOUNT_NOT_ACTIVE
+        if (
+            !authority.cutover_id.isValidIdentifier() || authority.activated_at_epoch_millis < 0 ||
+            authority.legacy_seed_cursor?.isValidCursor() == false ||
+            (authority.legacy_seed_cursor == null) != (authority.legacy_seed_sha256 == null) ||
+            authority.legacy_seed_sha256?.isSha256() == false ||
+            authority.legacy_seed_cursor?.let {
+                sha256LowercaseHex(it.encodeToByteArray()) != authority.legacy_seed_sha256
+            } == true
+        ) {
+            return NotificationInboxFailure.CORRUPT_STATE
+        }
+        return when (authority.authority_state) {
+            CURSOR_AUTHORITY_SHARED -> null
+            CURSOR_AUTHORITY_CUTOVER_PREPARED -> NotificationInboxFailure.CURSOR_CUTOVER_REQUIRED
+            CURSOR_AUTHORITY_GLOBAL_RECOVERY -> NotificationInboxFailure.CURSOR_RECOVERY_REQUIRED
+            CURSOR_AUTHORITY_DISABLED -> NotificationInboxFailure.ACCOUNT_TOMBSTONED
+            else -> NotificationInboxFailure.CORRUPT_STATE
+        }
+    }
+
+    private suspend fun recordGlobalRecoveryExact(
+        scope: InboxScope,
+        reason: String,
+        recordedAtEpochMillis: Long
+    ): InboxMutationResult {
+        val token = globalRecoveryToken(scope, reason, recordedAtEpochMillis)
+        queries.insertGlobalRecovery(scope.accountId, scope.clientId, reason, recordedAtEpochMillis, token)
+        val existing = queries.selectGlobalRecoveryByReason(scope.accountId, scope.clientId, reason).awaitAsOneOrNull()
+            ?: return InboxMutationResult.IntegrityConflict
+        return if (
+            existing.recorded_at_epoch_millis == recordedAtEpochMillis && existing.signal_token == token
+        ) {
+            InboxMutationResult.Success
+        } else {
+            InboxMutationResult.IntegrityConflict
+        }
+    }
+
     private fun readValidationFailure(scope: InboxScope, limit: Int): NotificationInboxFailure? = when {
         !scope.isValid() || !scope.isAllowedBy(syntheticOnly) -> invalidInput()
         limit <= 0 -> invalidInput()
@@ -828,12 +1349,16 @@ internal class SqlDelightNotificationInboxStore(
         isNotEmpty() && indexOf(NULL_CHARACTER) < 0 && encodeToByteArray().size <= limits.maxReasonUtf8Bytes
 
     private fun NotificationInboxLimits.areValid(): Boolean =
-        maxIdentifierUtf8Bytes > 0 && maxCursorUtf8Bytes > 0 && maxReasonUtf8Bytes > 0 &&
+        maxIdentifierUtf8Bytes in 1..MAX_IDENTIFIER_UTF8_BYTES &&
+                maxCursorUtf8Bytes in 1..MAX_CURSOR_UTF8_BYTES &&
+                maxReasonUtf8Bytes in 1..MAX_REASON_UTF8_BYTES &&
                 maxRawEnvelopeBytes in 1..NOTIFICATION_INBOX_SCHEMA_MAX_BLOB_BYTES &&
                 maxDecryptedProtoBytes in 1..NOTIFICATION_INBOX_SCHEMA_MAX_BLOB_BYTES &&
                 maxBatchBlobBytes >= maxOf(maxRawEnvelopeBytes, maxDecryptedProtoBytes).toLong() &&
-                maxRowsPerRead > 0 &&
-                maxRowsPerRead < Int.MAX_VALUE && maxChildrenPerEvent > 0 && maxRetryCount >= 0
+                maxBatchBlobBytes <= MAX_BATCH_BLOB_BYTES &&
+                maxRowsPerRead in 1..MAX_ROWS_PER_READ &&
+                maxChildrenPerEvent in 1..MAX_CHILDREN_PER_EVENT &&
+                maxRetryCount in 0..MAX_RETRY_COUNT
 
     private fun injectSyntheticFailure(point: SyntheticNotificationInboxFailurePoint) {
         if (
@@ -953,6 +1478,8 @@ private fun SelectImportChildBySequence.toValidatedPending(limits: NotificationI
         failure_classification?.isValidStoredValue(limits.maxReasonUtf8Bytes) == false ||
         message_timestamp_epoch_millis?.let { it < 0 } == true ||
         retry_count !in 0..limits.maxRetryCount.toLong()
+        || (import_state == ForegroundImportState.PENDING.name && imported_at_epoch_millis != null)
+        || (import_state == ForegroundImportState.IMPORTED.name && imported_at_epoch_millis?.let { it >= 0 } != true)
     ) {
         throw CorruptNotificationInboxState()
     }
@@ -1274,6 +1801,36 @@ private fun ForegroundImportUnit.foregroundRawTransition(
 
 private fun Boolean.toCanonicalBoolean(): String = if (this) "1" else "0"
 
+private fun globalRecoveryToken(scope: InboxScope, reason: String, recordedAtEpochMillis: Long): String =
+    foregroundFrameDigest(
+        GLOBAL_RECOVERY_TOKEN_PREFIX,
+        listOf(scope.accountId, scope.clientId, reason, recordedAtEpochMillis.toString())
+    )
+
+private fun accountTombstoneToken(request: NotificationInboxAccountRemoval): String = foregroundFrameDigest(
+    ACCOUNT_TOMBSTONE_TOKEN_PREFIX,
+    listOf(
+        request.scope.accountId,
+        request.scope.clientId,
+        request.removalId,
+        request.reason,
+        request.tombstonedAtEpochMillis.toString()
+    )
+)
+
+private fun String.isSha256(): Boolean =
+    length == SHA256_HEX_LENGTH && all { it in '0'..'9' || it in 'a'..'f' }
+
+private fun checkedAdd(left: Long, right: Long): Long {
+    if (left < 0 || right < 0 || left > Long.MAX_VALUE - right) throw CorruptNotificationInboxState()
+    return left + right
+}
+
+private fun Long.toIntExact(): Int {
+    if (this !in 0..Int.MAX_VALUE.toLong()) throw CorruptNotificationInboxState()
+    return toInt()
+}
+
 private data class ForegroundRawTransition(
     val receiveState: RawReceiveState,
     val foregroundRecoveryRequired: Boolean,
@@ -1309,7 +1866,12 @@ private fun RawEvent.isStructurallyValid(
             runCatching { RawReceiveState.valueOf(receive_state) }.isSuccess &&
             (foreground_recovery_required == 0L || foreground_recovery_required == 1L) &&
             recovery_reason?.isValidStoredValue(limits.maxReasonUtf8Bytes) != false &&
-            runCatching { ForegroundImportState.valueOf(import_state) }.isSuccess
+            runCatching { ForegroundImportState.valueOf(import_state) }.isSuccess &&
+            (
+                    import_state == ForegroundImportState.PENDING.name && imported_at_epoch_millis == null ||
+                            import_state == ForegroundImportState.IMPORTED.name &&
+                            imported_at_epoch_millis?.let { it >= 0 } == true
+                    )
 
 private fun String.isValidStoredValue(maxUtf8Bytes: Int): Boolean =
     isNotEmpty() && indexOf(NULL_CHARACTER) < 0 && encodeToByteArray().size <= maxUtf8Bytes
@@ -1346,17 +1908,27 @@ private data class PreparedChild(
 private class CorruptNotificationInboxState : IllegalArgumentException()
 private class AbortChildBatchForIntegrityConflict : Exception()
 private class AbortForegroundImportConflict : Exception()
+private class AbortCleanupConflict : Exception()
+private class AbortRemovalConflict : Exception()
 private class SyntheticNotificationInboxRollbackProbeFailure : Exception()
 
 internal enum class SyntheticNotificationInboxFailurePoint {
     NONE,
     BEFORE_CURSOR_UPSERT,
-    BEFORE_PARENT_RECEIVE_COMPLETE
+    BEFORE_PARENT_RECEIVE_COMPLETE,
+    BEFORE_CLEANUP_PARENT_DELETE,
+    BEFORE_TOMBSTONE_COMMIT
 }
 
 private const val RECEIVE_STATE_PENDING = "PENDING"
 private const val RECEIVE_STATE_COMPLETED = "COMPLETED"
 private const val RECEIVE_STATE_DEFERRED = "DEFERRED_TO_APP"
+private const val ACCOUNT_LIFECYCLE_ACTIVE = "ACTIVE"
+private const val ACCOUNT_LIFECYCLE_TOMBSTONED = "TOMBSTONED"
+private const val CURSOR_AUTHORITY_CUTOVER_PREPARED = "CUTOVER_PREPARED"
+private const val CURSOR_AUTHORITY_SHARED = "SHARED_V1"
+private const val CURSOR_AUTHORITY_GLOBAL_RECOVERY = "GLOBAL_RECOVERY_REQUIRED"
+private const val CURSOR_AUTHORITY_DISABLED = "DISABLED_ACCOUNT_REMOVED"
 private const val INGESTION_STATE_RAW_STORED = "RAW_STORED"
 internal const val UNBOUND_STORAGE_PROFILE = "UNBOUND_REQUIRES_SECURE_FACTORY"
 internal const val SYNTHETIC_PLAINTEXT_STORAGE_PROFILE = "PLAINTEXT_SYNTHETIC_SPIKE_V1"
@@ -1373,6 +1945,16 @@ private const val FOREGROUND_PARENT_RECORD_PREFIX = "com.wire.kalium.notificatio
 private const val FOREGROUND_CHILD_RECORD_PREFIX = "com.wire.kalium.notification-inbox.foreground-child/v1"
 private const val FOREGROUND_SNAPSHOT_PREFIX = "com.wire.kalium.notification-inbox.foreground-snapshot/v1"
 private const val FOREGROUND_DURABLY_QUEUED_REASON = "FOREGROUND_IMPORT_DURABLY_QUEUED_V1"
+private const val GLOBAL_RECOVERY_TOKEN_PREFIX = "com.wire.kalium.notification-inbox.global-recovery/v1"
+private const val ACCOUNT_TOMBSTONE_TOKEN_PREFIX = "com.wire.kalium.notification-inbox.account-tombstone/v1"
+private const val SHA256_HEX_LENGTH = 64
+private const val MAX_IDENTIFIER_UTF8_BYTES = 4_096
+private const val MAX_CURSOR_UTF8_BYTES = 16_384
+private const val MAX_REASON_UTF8_BYTES = 4_096
+private const val MAX_BATCH_BLOB_BYTES = 16L * 1_024L * 1_024L
+private const val MAX_ROWS_PER_READ = 256
+private const val MAX_CHILDREN_PER_EVENT = 128
+private const val MAX_RETRY_COUNT = 16
 
 private val FINAL_NOTIFICATION_STATES: Set<String> = setOf(
     NotificationState.PRESENTED.name,

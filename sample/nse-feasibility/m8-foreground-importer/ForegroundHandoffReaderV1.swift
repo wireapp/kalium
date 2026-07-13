@@ -101,9 +101,12 @@ final class SQLiteStatementV1 {
     }
 
     func text(_ index: Int32) -> String? {
-        guard sqlite3_column_type(handle, index) != SQLITE_NULL,
-              let pointer = sqlite3_column_text(handle, index) else { return nil }
-        return String(cString: pointer)
+        guard sqlite3_column_type(handle, index) != SQLITE_NULL else { return nil }
+        let count = Int(sqlite3_column_bytes(handle, index))
+        guard count >= 0 else { return nil }
+        if count == 0 { return "" }
+        guard let pointer = sqlite3_column_text(handle, index) else { return nil }
+        return String(bytes: UnsafeBufferPointer(start: pointer, count: count), encoding: .utf8)
     }
 
     func int64(_ index: Int32) -> Int64 { sqlite3_column_int64(handle, index) }
@@ -139,12 +142,13 @@ final class ForegroundHandoffReaderV1 {
                 "blob_storage_format FROM ContractMetadata WHERE singleton_id = 1"
         )
         guard try statement.stepRow(),
-              statement.int64(0) == 1,
+              statement.int64(0) == 2,
               statement.int64(1) == 1,
               statement.int64(2) == 1,
               statement.text(3).map(allowedStorageProfiles.contains) == true else {
             throw HandoffContractError.incompatibleSchema
         }
+        try validateAccountControl()
     }
 
     func close() { database.close() }
@@ -152,6 +156,7 @@ final class ForegroundHandoffReaderV1 {
     func readNextSnapshot() throws -> ForegroundImportSnapshotV1? {
         try database.execute("BEGIN DEFERRED")
         do {
+            try validateActiveLifecycle()
             guard let maximum = try snapshotMaximum() else {
                 try database.execute("COMMIT")
                 return nil
@@ -191,7 +196,8 @@ final class ForegroundHandoffReaderV1 {
 
     func markImported(
         snapshot: ForegroundImportSnapshotV1,
-        rawDisposition: RawDispositionV1?
+        rawDisposition: RawDispositionV1?,
+        importedAtMillis: Int64
     ) throws -> HandoffMarkResultV1 {
         guard snapshot.protocolVersion == foregroundImportProtocolVersionV1,
               snapshot.readerIdentity == identity,
@@ -205,7 +211,11 @@ final class ForegroundHandoffReaderV1 {
         try validateDisposition(snapshot.unit.rawImport?.action, rawDisposition)
         try database.execute("BEGIN IMMEDIATE")
         do {
+            try validateActiveLifecycle()
             let currentRaw = try loadRaw(sequence: snapshot.unit.parentIngestSequence)
+            guard importedAtMillis >= currentRaw.receivedAtMillis else {
+                throw HandoffContractError.integrityConflict
+            }
             let currentChildren = try loadChildren(
                 parentSequence: snapshot.unit.parentIngestSequence,
                 additionalBlobBytes: currentRaw.envelope.count
@@ -237,13 +247,17 @@ final class ForegroundHandoffReaderV1 {
             }
 
             for child in currentChildren {
-                try markChild(child)
+                try markChild(child, importedAtMillis: importedAtMillis)
                 guard database.changes == 1 else { throw HandoffContractError.integrityConflict }
             }
             if let rawDisposition {
-                try markRawWithDisposition(currentRaw, disposition: rawDisposition)
+                try markRawWithDisposition(
+                    currentRaw,
+                    disposition: rawDisposition,
+                    importedAtMillis: importedAtMillis
+                )
             } else {
-                try markRawOnly(currentRaw)
+                try markRawOnly(currentRaw, importedAtMillis: importedAtMillis)
             }
             guard database.changes == 1 else { throw HandoffContractError.integrityConflict }
             try database.execute("COMMIT")
@@ -255,13 +269,22 @@ final class ForegroundHandoffReaderV1 {
     }
 
     func cursorValue() throws -> String? {
+        try validateActiveLifecycle()
+        let authority = try cursorAuthority()
+        guard authority.state == "SHARED_V1" else { throw HandoffContractError.corruptState }
         let statement = try database.statement(
             "SELECT cursor_value, source_ingest_sequence, source_server_event_id, updated_at_epoch_millis " +
                 "FROM DurableCursor WHERE account_id = ? AND client_id = ?"
         )
         try statement.bind(1, scope.accountID)
         try statement.bind(2, scope.clientID)
-        guard try statement.stepRow() else { return nil }
+        guard try statement.stepRow() else {
+            guard let seed = authority.legacySeed else { return nil }
+            guard authority.legacySeedSHA256 == sha256HexV1(Data(seed.utf8)) else {
+                throw HandoffContractError.corruptState
+            }
+            return seed
+        }
         guard let cursor = statement.text(0),
               let sourceEventID = statement.text(2),
               isValidStoredValueV1(cursor, maximumUTF8Bytes: 256),
@@ -278,8 +301,41 @@ final class ForegroundHandoffReaderV1 {
         return cursor
     }
 
+    private func validateAccountControl() throws {
+        try validateActiveLifecycle()
+        let authority = try cursorAuthority()
+        guard ["CUTOVER_PREPARED", "SHARED_V1", "GLOBAL_RECOVERY_REQUIRED"].contains(authority.state) else {
+            throw HandoffContractError.corruptState
+        }
+    }
+
+    private func validateActiveLifecycle() throws {
+        let lifecycle = try database.statement(
+            "SELECT lifecycle_state FROM AccountLifecycle WHERE account_id = ? AND client_id = ?"
+        )
+        try lifecycle.bind(1, scope.accountID)
+        try lifecycle.bind(2, scope.clientID)
+        guard try lifecycle.stepRow(), lifecycle.text(0) == "ACTIVE" else {
+            throw HandoffContractError.corruptState
+        }
+    }
+
+    private func cursorAuthority() throws -> (state: String, legacySeed: String?, legacySeedSHA256: String?) {
+        let statement = try database.statement(
+            "SELECT authority_state, legacy_seed_cursor, legacy_seed_sha256 FROM CursorAuthority " +
+                "WHERE account_id = ? AND client_id = ?"
+        )
+        try statement.bind(1, scope.accountID)
+        try statement.bind(2, scope.clientID)
+        guard try statement.stepRow(), let state = statement.text(0) else {
+            throw HandoffContractError.corruptState
+        }
+        return (state, statement.text(1), statement.text(2))
+    }
+
     /** Synthetic fault fixture only: adds a newer transient row without touching DurableCursor. */
     func insertSyntheticLateRaw(eventID: String, bytes: Data, timestamp: Int64) throws {
+        try validateActiveLifecycle()
         let statement = try database.statement(
             "INSERT INTO RawEvent(account_id, client_id, server_event_id, raw_envelope, " +
                 "raw_envelope_sha256, raw_envelope_format_version, server_timestamp_epoch_millis, " +
@@ -340,9 +396,10 @@ final class ForegroundHandoffReaderV1 {
         }
         let statement = try database.statement(
             "SELECT ingest_sequence, account_id, client_id, server_event_id, raw_envelope, " +
-                "raw_envelope_sha256, raw_envelope_format_version, server_timestamp_epoch_millis, " +
-                "is_transient, associated_cursor, delivery_source, received_at_epoch_millis, " +
-                "foreground_recovery_required, recovery_reason, ingestion_state, receive_state, import_state " +
+            "raw_envelope_sha256, raw_envelope_format_version, server_timestamp_epoch_millis, " +
+            "is_transient, associated_cursor, delivery_source, received_at_epoch_millis, " +
+                "foreground_recovery_required, recovery_reason, ingestion_state, receive_state, import_state, " +
+                "imported_at_epoch_millis " +
                 "FROM RawEvent WHERE account_id = ? AND client_id = ? AND ingest_sequence = ?"
         )
         try statement.bind(1, scope.accountID)
@@ -371,7 +428,9 @@ final class ForegroundHandoffReaderV1 {
               statement.text(13).map({ isValidStoredValueV1($0, maximumUTF8Bytes: 256) }) ?? true,
               ingestion == "RAW_STORED",
               ["PENDING", "COMPLETED", "DEFERRED_TO_APP"].contains(receive),
-              ["PENDING", "IMPORTED"].contains(importState) else {
+              ["PENDING", "IMPORTED"].contains(importState),
+              (importState == "PENDING" && statement.optionalInt64(17) == nil) ||
+                (importState == "IMPORTED" && statement.optionalInt64(17).map({ $0 >= 0 }) == true) else {
             throw HandoffContractError.corruptState
         }
         return RawRowV1(
@@ -407,7 +466,8 @@ final class ForegroundHandoffReaderV1 {
                 "ReceiveChild.decrypted_proto_sha256, ReceiveChild.crypto_state_applied, " +
                 "ReceiveChild.receive_classification, ReceiveChild.failure_classification, " +
                 "ReceiveChild.decryption_state, ReceiveChild.notification_state, ReceiveChild.import_state, " +
-                "ReceiveChild.retry_count, ReceiveChild.account_id, ReceiveChild.client_id " +
+                "ReceiveChild.retry_count, ReceiveChild.account_id, ReceiveChild.client_id, " +
+                "ReceiveChild.imported_at_epoch_millis " +
                 "FROM ReceiveChild JOIN RawEvent ON RawEvent.ingest_sequence = " +
                 "ReceiveChild.parent_ingest_sequence WHERE ReceiveChild.parent_ingest_sequence = ? " +
                 "ORDER BY ReceiveChild.item_index ASC, ReceiveChild.idempotency_key ASC"
@@ -443,6 +503,8 @@ final class ForegroundHandoffReaderV1 {
                     .contains(decryption),
                   ["NOT_ELIGIBLE", "PENDING", "PRESENTED", "SUPPRESSED", "FAILED"].contains(notification),
                   ["PENDING", "IMPORTED"].contains(importState),
+                  (importState == "PENDING" && statement.optionalInt64(21) == nil) ||
+                    (importState == "IMPORTED" && statement.optionalInt64(21).map({ $0 >= 0 }) == true),
                   statement.int64(12) == 0 || statement.int64(12) == 1,
                   statement.int64(18) >= 0, statement.int64(18) <= 3 else {
                 throw HandoffContractError.corruptState
@@ -614,33 +676,41 @@ final class ForegroundHandoffReaderV1 {
         )
     }
 
-    private func markChild(_ child: ChildImportV1) throws {
+    private func markChild(_ child: ChildImportV1, importedAtMillis: Int64) throws {
         let statement = try database.statement(
-            "UPDATE ReceiveChild SET import_state = 'IMPORTED' WHERE account_id = ? AND client_id = ? " +
+            "UPDATE ReceiveChild SET import_state = 'IMPORTED', imported_at_epoch_millis = ? " +
+                "WHERE account_id = ? AND client_id = ? " +
                 "AND child_sequence = ? AND parent_ingest_sequence = ? AND item_index = ? " +
                 "AND idempotency_key = ? AND decrypted_proto_sha256 IS ? AND import_state = 'PENDING'"
         )
-        try statement.bind(1, scope.accountID)
-        try statement.bind(2, scope.clientID)
-        try statement.bind(3, child.childSequence)
-        try statement.bind(4, child.parentIngestSequence)
-        try statement.bind(5, child.itemIndex)
-        try statement.bind(6, child.idempotencyKey)
-        try statement.bind(7, child.decryptedProtoSHA256)
+        try statement.bind(1, importedAtMillis)
+        try statement.bind(2, scope.accountID)
+        try statement.bind(3, scope.clientID)
+        try statement.bind(4, child.childSequence)
+        try statement.bind(5, child.parentIngestSequence)
+        try statement.bind(6, child.itemIndex)
+        try statement.bind(7, child.idempotencyKey)
+        try statement.bind(8, child.decryptedProtoSHA256)
         _ = try statement.stepRow()
     }
 
-    private func markRawOnly(_ raw: RawRowV1) throws {
+    private func markRawOnly(_ raw: RawRowV1, importedAtMillis: Int64) throws {
         let statement = try database.statement(
-            "UPDATE RawEvent SET import_state = 'IMPORTED' WHERE account_id = ? AND client_id = ? " +
+            "UPDATE RawEvent SET import_state = 'IMPORTED', imported_at_epoch_millis = ? " +
+                "WHERE account_id = ? AND client_id = ? " +
                 "AND ingest_sequence = ? AND server_event_id = ? AND raw_envelope_sha256 = ? " +
                 "AND import_state = 'PENDING'"
         )
-        try bindRawIdentity(statement, raw)
+        try statement.bind(1, importedAtMillis)
+        try bindRawIdentity(statement, raw, startingAt: 2)
         _ = try statement.stepRow()
     }
 
-    private func markRawWithDisposition(_ raw: RawRowV1, disposition: RawDispositionV1) throws {
+    private func markRawWithDisposition(
+        _ raw: RawRowV1,
+        disposition: RawDispositionV1,
+        importedAtMillis: Int64
+    ) throws {
         let nextState: String
         let nextRecovery: Int64
         let nextReason: String?
@@ -656,7 +726,8 @@ final class ForegroundHandoffReaderV1 {
         }
         let statement = try database.statement(
             "UPDATE RawEvent SET receive_state = ?, foreground_recovery_required = ?, recovery_reason = ?, " +
-                "receive_claim_token = NULL, receive_claimed_at_epoch_millis = NULL, import_state = 'IMPORTED' " +
+                "receive_claim_token = NULL, receive_claimed_at_epoch_millis = NULL, import_state = 'IMPORTED', " +
+                "imported_at_epoch_millis = ? " +
                 "WHERE account_id = ? AND client_id = ? AND ingest_sequence = ? AND server_event_id = ? " +
                 "AND raw_envelope_sha256 = ? AND receive_state = ? AND foreground_recovery_required = ? " +
                 "AND recovery_reason IS ? AND import_state = 'PENDING'"
@@ -664,23 +735,28 @@ final class ForegroundHandoffReaderV1 {
         try statement.bind(1, nextState)
         try statement.bind(2, nextRecovery)
         try statement.bind(3, nextReason)
-        try statement.bind(4, scope.accountID)
-        try statement.bind(5, scope.clientID)
-        try statement.bind(6, raw.ingestSequence)
-        try statement.bind(7, raw.serverEventID)
-        try statement.bind(8, raw.envelopeSHA256)
-        try statement.bind(9, raw.receiveState)
-        try statement.bind(10, raw.recoveryRequired ? 1 : 0)
-        try statement.bind(11, raw.recoveryReason)
+        try statement.bind(4, importedAtMillis)
+        try statement.bind(5, scope.accountID)
+        try statement.bind(6, scope.clientID)
+        try statement.bind(7, raw.ingestSequence)
+        try statement.bind(8, raw.serverEventID)
+        try statement.bind(9, raw.envelopeSHA256)
+        try statement.bind(10, raw.receiveState)
+        try statement.bind(11, raw.recoveryRequired ? 1 : 0)
+        try statement.bind(12, raw.recoveryReason)
         _ = try statement.stepRow()
     }
 
-    private func bindRawIdentity(_ statement: SQLiteStatementV1, _ raw: RawRowV1) throws {
-        try statement.bind(1, scope.accountID)
-        try statement.bind(2, scope.clientID)
-        try statement.bind(3, raw.ingestSequence)
-        try statement.bind(4, raw.serverEventID)
-        try statement.bind(5, raw.envelopeSHA256)
+    private func bindRawIdentity(
+        _ statement: SQLiteStatementV1,
+        _ raw: RawRowV1,
+        startingAt index: Int32 = 1
+    ) throws {
+        try statement.bind(index, scope.accountID)
+        try statement.bind(index + 1, scope.clientID)
+        try statement.bind(index + 2, raw.ingestSequence)
+        try statement.bind(index + 3, raw.serverEventID)
+        try statement.bind(index + 4, raw.envelopeSHA256)
     }
 
     private func validateDisposition(

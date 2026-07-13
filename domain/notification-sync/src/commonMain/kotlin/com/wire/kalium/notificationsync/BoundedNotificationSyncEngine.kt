@@ -47,9 +47,13 @@ public class BoundedNotificationSyncEngine(
     private val clock: NotificationSyncClock = SystemNotificationSyncClock()
 ) {
     @Suppress("CyclomaticComplexMethod", "LongMethod", "ReturnCount")
-    public suspend fun syncOnce(request: BoundedNotificationSyncRequest): BoundedNotificationSyncResult {
+    public suspend fun syncOnce(input: BoundedNotificationSyncRequest): BoundedNotificationSyncResult {
         val stats = MutableSyncStats()
-        validate(request)?.let { return it.withSummary(stats.snapshot()) }
+        validate(input)?.let { return it.withSummary(stats.snapshot()) }
+        val startedAt = clock.now()
+        val request = input.copy(
+            absoluteDeadline = minOf(input.absoluteDeadline, startedAt + input.budget.maxRunDuration)
+        )
 
         var lease: NotificationSyncLease? = null
         var session: NotificationSyncSession? = null
@@ -156,6 +160,16 @@ public class BoundedNotificationSyncEngine(
                     if (!frame.event.isTransient && frame.event.cursor == null) {
                         return terminal(TerminalSyncFailureReason.TRANSPORT_CONFIGURATION, stats)
                     }
+                    val eventBytes = frame.event.rawEnvelope.size.toLong()
+                    val receivedBytes = stats.transportRawEnvelopeBytesReceived + eventBytes
+                    if (
+                        eventBytes > request.budget.maxRawEnvelopeBytes ||
+                        receivedBytes > request.budget.maxRawEnvelopeBytesPerRun
+                    ) {
+                        stats.transportRawEnvelopeBytesReceived = receivedBytes
+                        return partial(PartialSyncReason.EVENT_BYTE_BUDGET_EXHAUSTED, stats)
+                    }
+                    stats.transportRawEnvelopeBytesReceived = receivedBytes
                     eventCount++
                     when (
                         val stageCall = beforeDeadline(request) {
@@ -218,7 +232,7 @@ public class BoundedNotificationSyncEngine(
             }
         }
 
-    @Suppress("CyclomaticComplexMethod", "ReturnCount")
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ReturnCount")
     private suspend fun drainInbox(
         request: BoundedNotificationSyncRequest,
         stats: MutableSyncStats
@@ -243,6 +257,16 @@ public class BoundedNotificationSyncEngine(
             if (batch.events.isEmpty()) return BoundedNotificationSyncResult.Complete(stats.snapshot())
 
             for (event in batch.events) {
+                val eventBytes = event.rawEnvelope.size.toLong()
+                val readBytes = stats.drainRawEnvelopeBytesRead + eventBytes
+                if (
+                    eventBytes > request.budget.maxRawEnvelopeBytes ||
+                    readBytes > request.budget.maxDrainRawEnvelopeBytesPerRun
+                ) {
+                    stats.drainRawEnvelopeBytesRead = readBytes
+                    return partial(PartialSyncReason.DRAIN_BYTE_BUDGET_EXHAUSTED, stats)
+                }
+                stats.drainRawEnvelopeBytesRead = readBytes
                 when (val processCall = beforeDeadline(request) { eventProcessor.process(event) }) {
                     DeadlineCall.Expired -> return deadline(stats)
                     is DeadlineCall.Completed -> when (val result = processCall.value) {
@@ -316,17 +340,27 @@ public class BoundedNotificationSyncEngine(
             }
         }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun validate(request: BoundedNotificationSyncRequest): TerminalSyncFailureReason? {
         val budget = request.budget
         return TerminalSyncFailureReason.INVALID_REQUEST.takeIf {
-            request.scope.accountId.isBlank() ||
-                    request.scope.clientId.isBlank() ||
-                    request.markerId.isBlank() ||
+            !request.scope.accountId.isBoundedSyncValue(MAX_SYNC_IDENTIFIER_UTF8_BYTES) ||
+                    !request.scope.clientId.isBoundedSyncValue(MAX_SYNC_IDENTIFIER_UTF8_BYTES) ||
+                    !request.markerId.isBoundedSyncValue(MAX_SYNC_MARKER_UTF8_BYTES) ||
                     budget.maxTransportFrames <= 0 ||
                     budget.maxEventsToStage <= 0 ||
                     budget.maxDrainBatches <= 0 ||
                     budget.maxEventsPerDrainBatch <= 0 ||
-                    budget.deadlineSafetyMargin < Duration.ZERO
+                    budget.maxTransportFrames > MAX_TRANSPORT_FRAMES ||
+                    budget.maxEventsToStage > MAX_EVENTS_TO_STAGE ||
+                    budget.maxDrainBatches > MAX_DRAIN_BATCHES ||
+                    budget.maxEventsPerDrainBatch > MAX_EVENTS_PER_DRAIN_BATCH ||
+                    budget.maxRawEnvelopeBytes !in 1..MAX_RAW_ENVELOPE_BYTES ||
+                    budget.maxRawEnvelopeBytesPerRun !in 1..MAX_RAW_ENVELOPE_BYTES_PER_RUN ||
+                    budget.maxDrainRawEnvelopeBytesPerRun !in 1..MAX_DRAIN_RAW_ENVELOPE_BYTES_PER_RUN ||
+                    budget.deadlineSafetyMargin < Duration.ZERO ||
+                    budget.deadlineSafetyMargin > MAX_DEADLINE_SAFETY_MARGIN ||
+                    budget.maxRunDuration <= Duration.ZERO || budget.maxRunDuration > MAX_RUN_DURATION
         }
     }
 
@@ -355,6 +389,10 @@ public class BoundedNotificationSyncEngine(
         BoundedNotificationSyncResult.TerminalFailure(reason, stats.snapshot())
 }
 
+private fun String.isBoundedSyncValue(maxUtf8Bytes: Int): Boolean =
+    isNotEmpty() && length <= maxUtf8Bytes && indexOf(NULL_CHARACTER) < 0 && isNotBlank() &&
+            encodeToByteArray().size <= maxUtf8Bytes
+
 private sealed interface DeadlineCall<out T> {
     data class Completed<T>(val value: T) : DeadlineCall<T>
     data object Expired : DeadlineCall<Nothing>
@@ -367,6 +405,8 @@ private class MutableSyncStats {
     var transportAcksAcceptedByLocalWriter: Int = 0
     var eventsReceiveMaterialized: Int = 0
     var drainBatchesRead: Int = 0
+    var transportRawEnvelopeBytesReceived: Long = 0L
+    var drainRawEnvelopeBytesRead: Long = 0L
 
     fun snapshot(): NotificationSyncSummary = NotificationSyncSummary(
         transportFramesReceived = transportFramesReceived,
@@ -374,6 +414,21 @@ private class MutableSyncStats {
         eventsAlreadyStaged = eventsAlreadyStaged,
         transportAcksAcceptedByLocalWriter = transportAcksAcceptedByLocalWriter,
         eventsReceiveMaterialized = eventsReceiveMaterialized,
-        drainBatchesRead = drainBatchesRead
+        drainBatchesRead = drainBatchesRead,
+        transportRawEnvelopeBytesReceived = transportRawEnvelopeBytesReceived,
+        drainRawEnvelopeBytesRead = drainRawEnvelopeBytesRead
     )
 }
+
+private const val MAX_SYNC_IDENTIFIER_UTF8_BYTES = 4_096
+private const val MAX_SYNC_MARKER_UTF8_BYTES = 4_096
+private const val NULL_CHARACTER = '\u0000'
+private const val MAX_TRANSPORT_FRAMES = 1_000
+private const val MAX_EVENTS_TO_STAGE = 500
+private const val MAX_DRAIN_BATCHES = 16
+private const val MAX_EVENTS_PER_DRAIN_BATCH = 128
+private const val MAX_RAW_ENVELOPE_BYTES = 1_048_576
+private const val MAX_RAW_ENVELOPE_BYTES_PER_RUN = 16L * 1_024L * 1_024L
+private const val MAX_DRAIN_RAW_ENVELOPE_BYTES_PER_RUN = 16L * 1_024L * 1_024L
+private val MAX_DEADLINE_SAFETY_MARGIN: Duration = 5_000.milliseconds
+private val MAX_RUN_DURATION: Duration = 30_000.milliseconds

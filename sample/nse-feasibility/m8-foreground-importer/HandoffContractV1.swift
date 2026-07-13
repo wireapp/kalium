@@ -4,6 +4,7 @@ import CryptoKit
 import Foundation
 
 let foregroundImportProtocolVersionV1 = 1
+let notificationInboxContractVersionV2 = 2
 let syntheticInboxAccountV1 = "synthetic-notification-inbox-account"
 let syntheticInboxClientV1 = "synthetic-notification-inbox-client"
 let foregroundQueuedReasonV1 = "FOREGROUND_IMPORT_DURABLY_QUEUED_V1"
@@ -220,6 +221,25 @@ func snapshotTokenV1(maxIngestSequence: Int64, unit: ForegroundImportUnitV1) -> 
     return foregroundFrameDigestV1(
         prefix: "com.wire.kalium.notification-inbox.foreground-snapshot/v1",
         fields: fields
+    )
+}
+
+func globalRecoveryTokenV1(scope: HandoffScopeV1, reason: String, recordedAtMillis: Int64) -> String {
+    foregroundFrameDigestV1(
+        prefix: "com.wire.kalium.notification-inbox.global-recovery/v1",
+        fields: [scope.accountID, scope.clientID, reason, String(recordedAtMillis)]
+    )
+}
+
+func accountTombstoneTokenV1(
+    scope: HandoffScopeV1,
+    removalID: String,
+    reason: String,
+    tombstonedAtMillis: Int64
+) -> String {
+    foregroundFrameDigestV1(
+        prefix: "com.wire.kalium.notification-inbox.account-tombstone/v1",
+        fields: [scope.accountID, scope.clientID, removalID, reason, String(tombstonedAtMillis)]
     )
 }
 

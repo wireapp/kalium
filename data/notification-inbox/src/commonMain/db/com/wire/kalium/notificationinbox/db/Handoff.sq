@@ -18,7 +18,55 @@ INSERT INTO ContractMetadata(
     raw_envelope_format_version,
     child_payload_format_version,
     blob_storage_format
-) VALUES (1, 1, 1, 1, 'UNBOUND_REQUIRES_SECURE_FACTORY');
+) VALUES (1, 2, 1, 1, 'UNBOUND_REQUIRES_SECURE_FACTORY');
+
+CREATE TABLE AccountLifecycle (
+    account_id TEXT NOT NULL,
+    client_id TEXT NOT NULL,
+    lifecycle_state TEXT NOT NULL CHECK (lifecycle_state IN ('ACTIVE', 'TOMBSTONED')),
+    removal_id TEXT,
+    removal_reason TEXT,
+    tombstoned_at_epoch_millis INTEGER,
+    tombstone_token TEXT CHECK (
+        tombstone_token IS NULL OR (
+            length(tombstone_token) = 64 AND tombstone_token NOT GLOB '*[^0-9a-f]*'
+        )
+    ),
+    PRIMARY KEY (account_id, client_id),
+    CHECK (
+        (lifecycle_state = 'ACTIVE' AND removal_id IS NULL AND removal_reason IS NULL AND
+            tombstoned_at_epoch_millis IS NULL AND tombstone_token IS NULL) OR
+        (lifecycle_state = 'TOMBSTONED' AND removal_id IS NOT NULL AND removal_reason IS NOT NULL AND
+            tombstoned_at_epoch_millis IS NOT NULL AND tombstone_token IS NOT NULL)
+    )
+);
+
+CREATE TABLE CursorAuthority (
+    account_id TEXT NOT NULL,
+    client_id TEXT NOT NULL,
+    authority_state TEXT NOT NULL CHECK (
+        authority_state IN (
+            'CUTOVER_PREPARED',
+            'SHARED_V1',
+            'GLOBAL_RECOVERY_REQUIRED',
+            'DISABLED_ACCOUNT_REMOVED'
+        )
+    ),
+    cutover_id TEXT NOT NULL,
+    legacy_seed_cursor TEXT,
+    legacy_seed_sha256 TEXT CHECK (
+        legacy_seed_sha256 IS NULL OR (
+            length(legacy_seed_sha256) = 64 AND legacy_seed_sha256 NOT GLOB '*[^0-9a-f]*'
+        )
+    ),
+    activated_at_epoch_millis INTEGER NOT NULL,
+    CHECK (
+        (legacy_seed_cursor IS NULL AND legacy_seed_sha256 IS NULL) OR
+        (legacy_seed_cursor IS NOT NULL AND legacy_seed_sha256 IS NOT NULL)
+    ),
+    PRIMARY KEY (account_id, client_id),
+    FOREIGN KEY (account_id, client_id) REFERENCES AccountLifecycle(account_id, client_id)
+);
 
 CREATE TABLE DurableCursor (
     account_id TEXT NOT NULL,
@@ -70,10 +118,15 @@ CREATE TABLE RawEvent (
     receive_claimed_at_epoch_millis INTEGER,
     receive_retry_count INTEGER NOT NULL DEFAULT 0 CHECK (receive_retry_count >= 0),
     import_state TEXT NOT NULL DEFAULT 'PENDING' CHECK (import_state IN ('PENDING', 'IMPORTED')),
+    imported_at_epoch_millis INTEGER,
     CHECK (is_transient = 1 OR associated_cursor IS NOT NULL),
     UNIQUE (account_id, client_id, server_event_id),
     UNIQUE (ingest_sequence, account_id, client_id),
-    UNIQUE (ingest_sequence, account_id, client_id, server_event_id)
+    UNIQUE (ingest_sequence, account_id, client_id, server_event_id),
+    CHECK (
+        (import_state = 'PENDING' AND imported_at_epoch_millis IS NULL) OR
+        (import_state = 'IMPORTED' AND imported_at_epoch_millis IS NOT NULL)
+    )
 );
 
 CREATE INDEX RawEvent_pending_receive_order
@@ -84,7 +137,12 @@ CREATE TABLE GlobalRecovery (
     client_id TEXT NOT NULL,
     reason TEXT NOT NULL,
     recorded_at_epoch_millis INTEGER NOT NULL,
-    PRIMARY KEY (account_id, client_id, reason)
+    signal_token TEXT NOT NULL CHECK (
+        length(signal_token) = 64 AND signal_token NOT GLOB '*[^0-9a-f]*'
+    ),
+    acknowledged_at_epoch_millis INTEGER,
+    PRIMARY KEY (account_id, client_id, reason),
+    UNIQUE (account_id, client_id, signal_token)
 );
 
 CREATE TABLE ReceiveChild (
@@ -132,6 +190,7 @@ CREATE TABLE ReceiveChild (
         notification_state IN ('NOT_ELIGIBLE', 'PENDING', 'PRESENTED', 'SUPPRESSED', 'FAILED')
     ),
     import_state TEXT NOT NULL CHECK (import_state IN ('PENDING', 'IMPORTED')),
+    imported_at_epoch_millis INTEGER,
     retry_count INTEGER NOT NULL DEFAULT 0 CHECK (retry_count >= 0),
     claim_token TEXT,
     claimed_at_epoch_millis INTEGER,
@@ -143,6 +202,10 @@ CREATE TABLE ReceiveChild (
     CHECK (
         (decrypted_proto IS NULL AND decrypted_proto_sha256 IS NULL) OR
         (decrypted_proto IS NOT NULL AND decrypted_proto_sha256 IS NOT NULL)
+    ),
+    CHECK (
+        (import_state = 'PENDING' AND imported_at_epoch_millis IS NULL) OR
+        (import_state = 'IMPORTED' AND imported_at_epoch_millis IS NOT NULL)
     ),
     UNIQUE (parent_ingest_sequence, item_index),
     UNIQUE (account_id, client_id, idempotency_key)
@@ -160,6 +223,70 @@ bindBlobStorageFormat:
 UPDATE ContractMetadata
 SET blob_storage_format = :blob_storage_format
 WHERE singleton_id = 1 AND blob_storage_format = 'UNBOUND_REQUIRES_SECURE_FACTORY';
+
+selectAccountLifecycle:
+SELECT * FROM AccountLifecycle
+WHERE account_id = :account_id AND client_id = :client_id;
+
+insertActiveAccountLifecycle:
+INSERT INTO AccountLifecycle(account_id, client_id, lifecycle_state)
+VALUES (:account_id, :client_id, 'ACTIVE');
+
+selectCursorAuthority:
+SELECT * FROM CursorAuthority
+WHERE account_id = :account_id AND client_id = :client_id;
+
+insertCursorAuthority:
+INSERT INTO CursorAuthority(
+    account_id,
+    client_id,
+    authority_state,
+    cutover_id,
+    legacy_seed_cursor,
+    legacy_seed_sha256,
+    activated_at_epoch_millis
+) VALUES (
+    :account_id,
+    :client_id,
+    'CUTOVER_PREPARED',
+    :cutover_id,
+    :legacy_seed_cursor,
+    :legacy_seed_sha256,
+    :activated_at_epoch_millis
+);
+
+activatePreparedCursorAuthority:
+UPDATE CursorAuthority
+SET authority_state = 'SHARED_V1'
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND cutover_id = :cutover_id
+    AND authority_state = 'CUTOVER_PREPARED';
+
+requireCursorGlobalRecovery:
+UPDATE CursorAuthority
+SET authority_state = 'GLOBAL_RECOVERY_REQUIRED'
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND authority_state = 'SHARED_V1';
+
+disableRemovedCursorAuthority:
+UPDATE CursorAuthority
+SET authority_state = 'DISABLED_ACCOUNT_REMOVED',
+    legacy_seed_cursor = NULL,
+    legacy_seed_sha256 = NULL
+WHERE account_id = :account_id AND client_id = :client_id;
+
+tombstoneActiveAccount:
+UPDATE AccountLifecycle
+SET lifecycle_state = 'TOMBSTONED',
+    removal_id = :removal_id,
+    removal_reason = :removal_reason,
+    tombstoned_at_epoch_millis = :tombstoned_at_epoch_millis,
+    tombstone_token = :tombstone_token
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND lifecycle_state = 'ACTIVE';
 
 selectCursor:
 SELECT cursor_value, source_ingest_sequence, source_server_event_id, updated_at_epoch_millis
@@ -307,13 +434,39 @@ INSERT OR IGNORE INTO GlobalRecovery(
     account_id,
     client_id,
     reason,
-    recorded_at_epoch_millis
+    recorded_at_epoch_millis,
+    signal_token
 ) VALUES (
     :account_id,
     :client_id,
     :reason,
-    :recorded_at_epoch_millis
+    :recorded_at_epoch_millis,
+    :signal_token
 );
+
+selectGlobalRecoveryByReason:
+SELECT * FROM GlobalRecovery
+WHERE account_id = :account_id AND client_id = :client_id AND reason = :reason;
+
+selectPendingGlobalRecovery:
+SELECT * FROM GlobalRecovery
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND acknowledged_at_epoch_millis IS NULL
+ORDER BY recorded_at_epoch_millis ASC, reason ASC
+LIMIT :limit;
+
+selectGlobalRecoveryByToken:
+SELECT * FROM GlobalRecovery
+WHERE account_id = :account_id AND client_id = :client_id AND signal_token = :signal_token;
+
+acknowledgeGlobalRecoveryExact:
+UPDATE GlobalRecovery
+SET acknowledged_at_epoch_millis = :acknowledged_at_epoch_millis
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND signal_token = :signal_token
+    AND acknowledged_at_epoch_millis IS NULL;
 
 selectReceiveChildByIdempotencyKey:
 SELECT ReceiveChild.*, RawEvent.server_event_id AS parent_server_event_id
@@ -442,7 +595,8 @@ LIMIT :limit;
 
 markForegroundRawImportedExact:
 UPDATE RawEvent
-SET import_state = 'IMPORTED'
+SET import_state = 'IMPORTED',
+    imported_at_epoch_millis = :imported_at_epoch_millis
 WHERE account_id = :account_id
     AND client_id = :client_id
     AND ingest_sequence = :ingest_sequence
@@ -457,7 +611,8 @@ SET receive_state = :next_receive_state,
     recovery_reason = :next_recovery_reason,
     receive_claim_token = NULL,
     receive_claimed_at_epoch_millis = NULL,
-    import_state = 'IMPORTED'
+    import_state = 'IMPORTED',
+    imported_at_epoch_millis = :imported_at_epoch_millis
 WHERE account_id = :account_id
     AND client_id = :client_id
     AND ingest_sequence = :ingest_sequence
@@ -470,7 +625,8 @@ WHERE account_id = :account_id
 
 markForegroundChildImportedExact:
 UPDATE ReceiveChild
-SET import_state = 'IMPORTED'
+SET import_state = 'IMPORTED',
+    imported_at_epoch_millis = :imported_at_epoch_millis
 WHERE account_id = :account_id
     AND client_id = :client_id
     AND child_sequence = :child_sequence
@@ -479,6 +635,80 @@ WHERE account_id = :account_id
     AND idempotency_key = :idempotency_key
     AND decrypted_proto_sha256 IS :decrypted_proto_sha256
     AND import_state = 'PENDING';
+
+selectCleanupImportedCandidates:
+SELECT RawEvent.ingest_sequence,
+    RawEvent.server_event_id,
+    length(RawEvent.raw_envelope) AS raw_blob_size,
+    CAST(COALESCE(SUM(length(ReceiveChild.decrypted_proto)), 0) AS INTEGER) AS proto_blob_size,
+    COUNT(ReceiveChild.child_sequence) AS child_count
+FROM RawEvent
+LEFT JOIN ReceiveChild ON ReceiveChild.parent_ingest_sequence = RawEvent.ingest_sequence
+WHERE RawEvent.account_id = :account_id
+    AND RawEvent.client_id = :client_id
+    AND RawEvent.import_state = 'IMPORTED'
+    AND RawEvent.imported_at_epoch_millis <= :imported_before_epoch_millis
+    AND NOT EXISTS (
+        SELECT 1 FROM ReceiveChild AS PendingChild
+        WHERE PendingChild.parent_ingest_sequence = RawEvent.ingest_sequence
+            AND PendingChild.import_state != 'IMPORTED'
+    )
+    AND NOT EXISTS (
+        SELECT 1 FROM DurableCursor
+        WHERE DurableCursor.account_id = RawEvent.account_id
+            AND DurableCursor.client_id = RawEvent.client_id
+            AND DurableCursor.source_ingest_sequence = RawEvent.ingest_sequence
+    )
+GROUP BY RawEvent.ingest_sequence, RawEvent.server_event_id
+ORDER BY RawEvent.ingest_sequence ASC
+LIMIT :limit;
+
+deleteChildrenForCleanupParent:
+DELETE FROM ReceiveChild
+WHERE parent_ingest_sequence = :parent_ingest_sequence
+    AND account_id = :account_id
+    AND client_id = :client_id
+    AND import_state = 'IMPORTED';
+
+deleteImportedCleanupParentExact:
+DELETE FROM RawEvent
+WHERE ingest_sequence = :ingest_sequence
+    AND account_id = :account_id
+    AND client_id = :client_id
+    AND server_event_id = :server_event_id
+    AND import_state = 'IMPORTED'
+    AND imported_at_epoch_millis <= :imported_before_epoch_millis
+    AND NOT EXISTS (
+        SELECT 1 FROM ReceiveChild
+        WHERE ReceiveChild.parent_ingest_sequence = RawEvent.ingest_sequence
+    )
+    AND NOT EXISTS (
+        SELECT 1 FROM DurableCursor
+        WHERE DurableCursor.account_id = RawEvent.account_id
+            AND DurableCursor.client_id = RawEvent.client_id
+            AND DurableCursor.source_ingest_sequence = RawEvent.ingest_sequence
+    );
+
+selectScopeParentCount:
+SELECT COUNT(*) FROM RawEvent WHERE account_id = :account_id AND client_id = :client_id;
+
+selectScopeChildCount:
+SELECT COUNT(*) FROM ReceiveChild WHERE account_id = :account_id AND client_id = :client_id;
+
+selectScopeRecoveryCount:
+SELECT COUNT(*) FROM GlobalRecovery WHERE account_id = :account_id AND client_id = :client_id;
+
+deleteScopeChildren:
+DELETE FROM ReceiveChild WHERE account_id = :account_id AND client_id = :client_id;
+
+deleteScopeCursor:
+DELETE FROM DurableCursor WHERE account_id = :account_id AND client_id = :client_id;
+
+deleteScopeRawEvents:
+DELETE FROM RawEvent WHERE account_id = :account_id AND client_id = :client_id;
+
+deleteScopeRecovery:
+DELETE FROM GlobalRecovery WHERE account_id = :account_id AND client_id = :client_id;
 
 selectChanges:
 SELECT changes();

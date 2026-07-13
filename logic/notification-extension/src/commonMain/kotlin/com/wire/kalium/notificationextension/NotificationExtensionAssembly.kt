@@ -215,7 +215,7 @@ internal class NotificationInboxSyncAdapter(
         scope: NotificationSyncScope,
         reason: ForegroundRecoveryReason
     ): InboxWriteResult = withStoreMutation { store ->
-        store.recordGlobalRecovery(scope.toInboxScope(), reason.name, nowEpochMillis())
+        store.requireCursorGlobalRecovery(scope.toInboxScope(), reason.name, nowEpochMillis())
     }
 
     override suspend fun markEventDeferredToForeground(
@@ -334,7 +334,11 @@ private fun NotificationExtensionRequest.toDomainRequest(): BoundedNotificationS
             maxEventsToStage = maxEventsToStage,
             maxDrainBatches = maxDrainBatches,
             maxEventsPerDrainBatch = maxEventsPerDrainBatch,
-            deadlineSafetyMargin = deadlineSafetyMarginMillis.milliseconds
+            maxRawEnvelopeBytes = maxRawEnvelopeBytes,
+            maxRawEnvelopeBytesPerRun = maxRawEnvelopeBytesPerRun,
+            maxDrainRawEnvelopeBytesPerRun = maxDrainRawEnvelopeBytesPerRun,
+            deadlineSafetyMargin = deadlineSafetyMarginMillis.milliseconds,
+            maxRunDuration = maxRunDurationMillis.milliseconds
         )
     )
 }
@@ -347,7 +351,10 @@ private fun NotificationExtensionRequest.isValid(): Boolean {
         maxDrainBatches,
         maxEventsPerDrainBatch
     ).all { it > 0 }
-    return identifiersAreValid && countsAreValid && deadlineSafetyMarginMillis >= 0
+    val byteBudgetsAreValid = maxRawEnvelopeBytes > 0 && maxRawEnvelopeBytesPerRun > 0 &&
+            maxDrainRawEnvelopeBytesPerRun > 0
+    return identifiersAreValid && countsAreValid && byteBudgetsAreValid && deadlineSafetyMarginMillis >= 0 &&
+            maxRunDurationMillis > 0
 }
 
 private fun BoundedNotificationSyncResult.toExtensionResult(): NotificationExtensionResult {
@@ -383,7 +390,9 @@ private fun NotificationSyncSummary.toExtensionSummary(): NotificationExtensionS
     eventsAlreadyStaged = eventsAlreadyStaged,
     transportAcksAcceptedByLocalWriter = transportAcksAcceptedByLocalWriter,
     eventsReceiveMaterialized = eventsReceiveMaterialized,
-    drainBatchesRead = drainBatchesRead
+    drainBatchesRead = drainBatchesRead,
+    transportRawEnvelopeBytesReceived = transportRawEnvelopeBytesReceived,
+    drainRawEnvelopeBytesRead = drainRawEnvelopeBytesRead
 )
 
 private fun PartialSyncReason.toExtensionReason(): NotificationExtensionReason = when (this) {
@@ -398,6 +407,8 @@ private fun PartialSyncReason.toExtensionReason(): NotificationExtensionReason =
     PartialSyncReason.TRANSPORT_FRAME_BUDGET_EXHAUSTED ->
         NotificationExtensionReason.TRANSPORT_FRAME_BUDGET_EXHAUSTED
     PartialSyncReason.BATCH_BUDGET_EXHAUSTED -> NotificationExtensionReason.BATCH_BUDGET_EXHAUSTED
+    PartialSyncReason.EVENT_BYTE_BUDGET_EXHAUSTED -> NotificationExtensionReason.EVENT_BYTE_BUDGET_EXHAUSTED
+    PartialSyncReason.DRAIN_BYTE_BUDGET_EXHAUSTED -> NotificationExtensionReason.DRAIN_BYTE_BUDGET_EXHAUSTED
     PartialSyncReason.UNEXPECTED_TRANSPORT_PAYLOAD -> NotificationExtensionReason.UNEXPECTED_TRANSPORT_PAYLOAD
 }
 

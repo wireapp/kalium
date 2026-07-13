@@ -31,17 +31,39 @@ package com.wire.kalium.notificationinbox
  * key. A protocol message UID uses the `message-uid:v1:` namespace. Otherwise both native and
  * Kotlin producers use [fallbackChildIdempotencyKey].
  *
- * The spike deliberately never deletes rows. There is no automatic retention, eviction, or
- * database recreation. Callers supply per-blob/read/child limits; SQLITE_FULL is a storage failure
- * and the transport event must not be acknowledged. A production hard cap including all SQLite
- * sidecars, retention policy, corruption recovery UX, and downgrade behavior remain release
- * decisions.
+ * The spike has no automatic retention, eviction, or database recreation. Foreground code may run
+ * the explicit bounded cleanup operation while holding the account lock; it deletes only complete
+ * imported parents after a caller-supplied retention cutoff and preserves the durable-cursor
+ * source. Callers supply per-blob/read/child limits and account for the database plus SQLite
+ * sidecars before write admission. SQLITE_FULL is a storage failure and the transport event must
+ * not be acknowledged. Production storage caps and reserves, retention timing, corruption recovery
+ * UX, and downgrade behavior remain release decisions.
  * Corrupt or incompatible state fails closed.
  *
  * This store is not a synchronization primitive. App and NSE operations are valid only while the
  * caller owns the Milestone 5 per-account process lock.
  */
+@Suppress("TooManyFunctions")
 public interface NotificationInboxStore {
+    /**
+     * One-time foreground-owned cutover to the shared cursor authority.
+     *
+     * This must run while the account lock is held and before either process starts shared sync.
+     * Exact replay is idempotent; a different cutover identity or seed fails closed. There is no
+     * API that silently restores the legacy cursor as an authority.
+     */
+    public suspend fun prepareSharedCursor(request: SharedCursorPreparation): SharedCursorPreparationResult
+
+    /**
+     * Activates only the exact prepared cutover after the native app has durably stopped legacy
+     * sync and recorded the same [cutoverId]. A crash can leave both synchronizers disabled, never
+     * both authoritative.
+     */
+    public suspend fun activatePreparedSharedCursor(
+        scope: InboxScope,
+        cutoverId: String
+    ): SharedCursorActivationResult
+
     public suspend fun readCursor(scope: InboxScope): InboxReadResult<DurableInboxCursor?>
 
     /**
@@ -72,10 +94,33 @@ public interface NotificationInboxStore {
         reason: String
     ): InboxMutationResult
 
+    /**
+     * Compatibility alias for [requireCursorGlobalRecovery]. Contract v2 never records a global
+     * recovery signal without atomically disabling shared cursor authority.
+     */
     public suspend fun recordGlobalRecovery(
         scope: InboxScope,
         reason: String,
         recordedAtEpochMillis: Long
+    ): InboxMutationResult
+
+    /** Stops NSE cursor mutation and records a foreground-owned recovery signal atomically. */
+    public suspend fun requireCursorGlobalRecovery(
+        scope: InboxScope,
+        reason: String,
+        recordedAtEpochMillis: Long
+    ): InboxMutationResult
+
+    public suspend fun readPendingGlobalRecovery(
+        scope: InboxScope,
+        limit: Int
+    ): InboxReadResult<GlobalRecoveryBatch>
+
+    /** Called only after the native foreground transaction durably records the same signal token. */
+    public suspend fun acknowledgeGlobalRecovery(
+        scope: InboxScope,
+        signalToken: String,
+        acknowledgedAtEpochMillis: Long
     ): InboxMutationResult
 
     /**
@@ -110,8 +155,26 @@ public interface NotificationInboxStore {
      */
     public suspend fun markForegroundImportSnapshotImported(
         snapshot: ForegroundImportSnapshot,
-        rawDisposition: ForegroundRawImportDisposition?
+        rawDisposition: ForegroundRawImportDisposition?,
+        importedAtEpochMillis: Long
     ): ForegroundImportMarkResult
+
+    /**
+     * Deletes only fully imported parents older than the retention cutoff, in deterministic order.
+     * The current durable-cursor source is never eligible. The caller retains the account lock and
+     * supplies a bounded row count. This foreground maintenance API has no internal deadline; its
+     * host must invoke it only when enough foreground execution time remains.
+     */
+    public suspend fun cleanupImported(request: NotificationInboxCleanupRequest): NotificationInboxCleanupResult
+
+    /**
+     * Atomically persists a permanent removal tombstone and logically deletes scoped inbox rows.
+     *
+     * The tombstone database and stable lock entry are retained so a stale NSE cannot recreate the
+     * removed scope. This does not prove physical erasure from SQLite free pages. Reusing the same
+     * account/client identity requires an explicit later contract, not deletion of this marker.
+     */
+    public suspend fun tombstoneAccount(request: NotificationInboxAccountRemoval): NotificationInboxRemovalResult
 
     /** Must be idempotent and non-throwing. */
     public fun close()
@@ -137,10 +200,16 @@ public data class NotificationInboxLimits(
 
 public data class DurableInboxCursor(
     public val value: String,
-    public val sourceIngestSequence: Long,
-    public val sourceServerEventId: String,
-    public val updatedAtEpochMillis: Long
+    public val sourceIngestSequence: Long?,
+    public val sourceServerEventId: String?,
+    public val updatedAtEpochMillis: Long,
+    public val provenance: InboxCursorProvenance
 )
+
+public enum class InboxCursorProvenance {
+    LEGACY_SEED,
+    STAGED_RAW_EVENT
+}
 
 public enum class RawEnvelopeDeliverySource {
     CONSUMABLE_WEBSOCKET,
@@ -440,11 +509,15 @@ public enum class NotificationInboxFailure {
     INCOMPATIBLE_SCHEMA,
     CORRUPT_STATE,
     STORAGE_UNAVAILABLE,
+    ACCOUNT_NOT_ACTIVE,
+    ACCOUNT_TOMBSTONED,
+    CURSOR_CUTOVER_REQUIRED,
+    CURSOR_RECOVERY_REQUIRED,
     CLOSED,
     UNEXPECTED_PLATFORM_FAILURE
 }
 
-public const val NOTIFICATION_INBOX_CONTRACT_VERSION: Int = 1
+public const val NOTIFICATION_INBOX_CONTRACT_VERSION: Int = 2
 public const val NOTIFICATION_RAW_ENVELOPE_FORMAT_VERSION: Int = 1
 public const val NOTIFICATION_CHILD_PAYLOAD_FORMAT_VERSION: Int = 1
 public const val NOTIFICATION_FOREGROUND_IMPORT_PROTOCOL_VERSION: Int = 1
