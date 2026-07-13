@@ -35,8 +35,8 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | 4. Bounded incremental-sync engine | Completed | `919510813e62` | Metadata/Apple compilation, dependency audit, simulator state-machine probe, boundary review | Concrete adapters and real backend deferred |
 | 5. Cross-process coordination | Completed | `7cbe26a3f797` | Apple compilation/linking, simulator lifecycle probe, macOS multi-process/owner-death probe, security-path probes, dependency audit, independent review, detekt, diff check | Signed App Group and physical-device gates deferred |
 | 6. Shared handoff database | Completed | `00fdd8259877` | Metadata/JVM/Android/Apple compilation, Apple links, macOS and simulator durability/rollback probes, dependency audit, independent security review, detekt, diff check | Encrypted production factory and device gates deferred |
-| 7. Lightweight NSE framework | In progress | — | Fresh implementation and review agents | Production adapters remain gated by the deferred M1/M4/M5/M6 security and backend work |
-| 8. Foreground importer contract/integration | Not started | — | — | — |
+| 7. Lightweight NSE framework | Completed | `b5a36b47409e` | Apple framework links, application-extension Swift compile, iOS simulator probe, dependency/header/symbol audits, detekt, independent review | Production adapters remain gated by the deferred M1/M4/M5/M6 security and backend work |
+| 8. Foreground importer contract/integration | Implementation and verification complete; awaiting commit | — | Kotlin/Swift compile, KMP/native probes, token parity, dependency audit, detekt, independent review | Real native app mapping and production storage/path/device gates remain open |
 | 9. Resilience, security, and performance | Not started | — | — | — |
 | 10. Rollout and observability | Not started | — | — | — |
 
@@ -519,7 +519,7 @@ Deferred production work:
 
 ## Milestone 7 — Lightweight NSE Framework
 
-Status: Implementation and verification complete on 2026-07-13; awaiting milestone commit
+Status: Completed on 2026-07-13 in `b5a36b47409e`
 
 Delivered:
 
@@ -591,9 +591,77 @@ Deferred production work:
 - Foreground import into the main database remains Milestone 8. Sending, read/delivery receipts, and
   active MLS sending recovery remain out of scope.
 
+## Milestone 8 — Foreground Importer Contract and Integration
+
+Status: Implementation and verification complete on 2026-07-13; awaiting milestone commit
+
+Delivered:
+
+- Extended the versioned `:data:notification-inbox` contract with a one-complete-parent foreground
+  snapshot, stable ingest/item ordering, exact child/parent/snapshot tokens, a fixed action mapping,
+  bounded raw/protobuf payload ownership, and an exact post-main-commit mark operation.
+- Captured one maximum ingest-sequence boundary per snapshot and excluded newer rows. Raw and child
+  BLOB lengths are inspected before materialization and the complete parent is jointly bounded.
+- Required all child-bearing parents to be receive-complete, all captured rows to be import-pending,
+  complete child index continuity, exact parent/scope linkage, known idempotency namespaces, valid
+  state combinations, and SHA-256 equality before data crosses the handoff boundary.
+- Defined native actions for application upsert, already-applied crypto state, completion, terminal
+  failure, and foreground recovery. Application rows missing a conversation or protocol timestamp
+  schedule raw recovery rather than inventing identity or ordering.
+- Added exact all-row compare-and-set marking in one handoff transaction. The native main database
+  commits first; only then do children and their parent move to `IMPORTED`. Exact replay returns
+  `AlreadyImported`, while partial state or any token/hash/identity/lifecycle mismatch fails closed.
+- Closed raw replay ownership: processed raw moves to `COMPLETED`; queued raw moves to
+  `DEFERRED_TO_APP` only after the app-owned main transaction durably copies its exact envelope,
+  hash, format, scope, parent identity, and canonical parent token.
+- Kept `DurableCursor` immutable during import. Foreground transition reads and validates cursor
+  provenance from its exact non-transient source row while the same account lock remains held.
+- Added a standalone Swift reference with Foundation, Darwin, SQLite3, and CryptoKit only. It reads
+  the cross-language schema directly, recomputes canonical tokens, imports into a synthetic native
+  database, exact-verifies ledger and effect replay, marks the handoff, and closes both databases
+  before lock release without importing a Kalium framework.
+- Documented that the disposable Swift lock helper proves digest/`flock` parity only. It validates
+  the final entry but does not implement Milestone 5's descriptor-relative no-follow ancestor walk,
+  so production native lock construction remains gated.
+
+Verification evidence:
+
+- `:data:notification-inbox` metadata, JVM, Android, iOS Simulator ARM64, and macOS ARM64 compilation
+  passed. The macOS feasibility executable and iOS Simulator framework linked.
+- macOS Swift compilation and iOS Simulator ARM64 application-extension type checking passed with
+  warnings treated as errors.
+- The KMP probe passed main-failure rollback, exact snapshot replay, late-row exclusion, post-commit
+  mark, already-imported replay, immutable conflict, queued-raw no-replay, cursor immutability,
+  complete-parent atomicity, and lock-coverage checks.
+- The standalone Swift probe consumed an actual KMP-created Milestone 6 database and passed exact
+  Kotlin/Swift snapshot-token parity, main-commit crash replay, stable exact side effects, conflict
+  rejection, parent and protocol-timestamp ordering, durable raw ownership, cursor provenance and
+  immutability, foreground transition under lock, and database-close-before-unlock checks.
+- The resolved `:data:notification-inbox` common graph remains SQLDelight runtime/async, coroutines,
+  Kotlin stdlib, and atomicfu only. No new dependency or module edge was added.
+- Repository `detekt`, Swift no-Kalium-import inspection, `git diff --check`, untracked whitespace,
+  and no-test-file audits passed. Independent mapping and transaction/security reviews found no
+  remaining blocker inside the explicitly synthetic spike scope.
+- No automated tests were added, modified, generated, or run.
+
+Deferred production work:
+
+- Integrate the importer with the real native application's protobuf mapper, message/effect tables,
+  and app-owned exact import ledger. That application and database schema are outside this repo.
+- Replace synthetic plaintext construction with encrypted App Group storage, shared Keychain keys,
+  reviewed file protection, entitlement-derived roots, and the full Milestone 5 native no-follow
+  path walk.
+- Implement real Milestone 7 raw transport capture, receive mapping, and safe CoreCrypto-to-handoff
+  crash ordering, including structured protocol timestamps and buffered MLS outputs.
+- Define native `GlobalRecovery` read/ack ownership, legacy cursor seed/cutover/downgrade behavior,
+  durable account-removal tombstones, and locked retention/cleanup with database-plus-sidecar bounds.
+- Validate signed app-versus-NSE contention, physical and locked-device access, real backend/account
+  payloads, crash injection, deadline pressure, storage pressure, and performance/memory limits.
+
 ## Next Action
 
-Review the Milestone 7 diff, create its dedicated commit, then start Milestone 8 in a fresh agent
-task. Milestone 8 should import handoff rows into the foreground application's main database
-idempotently and mark them imported only after the main database commit succeeds. Continue to avoid
-adding, modifying, or running tests until the spike design has been verified end to end.
+Review and commit Milestone 8, then start Milestone 9 in a fresh agent task. Milestone 9 should close
+the resilience, security, cleanup, and performance gates that can be addressed in this repository,
+while keeping external native-app, signing, entitlement, backend, and physical-device inputs
+explicit. Continue to avoid adding, modifying, or running tests until the spike design has been
+verified end to end.

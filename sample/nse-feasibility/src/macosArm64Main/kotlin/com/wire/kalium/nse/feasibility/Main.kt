@@ -27,6 +27,7 @@ import kotlin.system.exitProcess
 
 public fun main(args: Array<String>): Unit = runProbeCommand(args)
 
+@Suppress("CyclomaticComplexMethod")
 internal fun runProbeCommand(args: Array<String>) {
     if (args.size < REQUIRED_ARGUMENT_COUNT) usage()
 
@@ -65,6 +66,10 @@ internal fun runProbeCommand(args: Array<String>) {
         "network" -> printResult(probe.probeNotificationWebSocketLinkage())
         "persistence" -> printResult(probe.inspectCurrentApplePersistenceSurface(sharedRoot, "nse-feasibility"))
         "inbox" -> printResult(runBlocking { probe.probeSyntheticNotificationInbox(sharedRoot) })
+        "foreground-importer" -> printResult(runBlocking { probe.probeSyntheticForegroundImporter(sharedRoot) })
+        "foreground-importer-fixture" -> runBlocking { prepareSyntheticForegroundImporterFixture(sharedRoot) }.let {
+            println("handoffPath=${it.handoffPath} firstSnapshotToken=${it.firstSnapshotToken}")
+        }
         else -> usage()
     }
 }
@@ -80,7 +85,8 @@ private fun printResult(result: FeasibilityProbeResult) {
 private fun usage(): Nothing {
     println(
         "usage: kalium-nse-feasibility " +
-                "<path|lock-try|lock-hold|corecrypto|content|network|persistence|inbox> " +
+                "<path|lock-try|lock-hold|corecrypto|content|network|persistence|inbox|" +
+                "foreground-importer|foreground-importer-fixture> " +
                 "<absolute-shared-root> [hold-seconds]"
     )
     exitProcess(USAGE_EXIT_CODE)

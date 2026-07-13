@@ -92,6 +92,27 @@ public interface NotificationInboxStore {
         limit: Int
     ): InboxReadResult<PendingImportChildBatch>
 
+    /**
+     * Reads at most one complete parent import unit. Children are never split across snapshots.
+     *
+     * The returned snapshot is valid only while the caller retains the Milestone 5 account lock
+     * and this store instance. Newer ingest sequences cannot enter the captured boundary.
+     */
+    public suspend fun readNextForegroundImportSnapshot(
+        scope: InboxScope
+    ): InboxReadResult<ForegroundImportSnapshot?>
+
+    /**
+     * Post-main-database-commit compare-and-set for exactly [snapshot].
+     *
+     * A raw unit requires [rawDisposition]. Child-only units reject one. The entire parent is
+     * validated before any row changes, and all changes share one handoff transaction.
+     */
+    public suspend fun markForegroundImportSnapshotImported(
+        snapshot: ForegroundImportSnapshot,
+        rawDisposition: ForegroundRawImportDisposition?
+    ): ForegroundImportMarkResult
+
     /** Must be idempotent and non-throwing. */
     public fun close()
 }
@@ -264,6 +285,7 @@ public class ReceiveChildrenWrite(
 /** Exact child row for a later idempotent foreground importer. */
 @Suppress("LongParameterList")
 public class PendingImportChild(
+    public val childSequence: Long,
     public val parentIngestSequence: Long,
     public val scope: InboxScope,
     public val parentServerEventId: String,
@@ -295,6 +317,92 @@ public class PendingImportChildBatch(
     public val hasMore: Boolean
 ) {
     public val children: List<PendingImportChild> = children.toList()
+}
+
+/** Native main-database action; this is a versioned state mapping, not presentation policy. */
+public enum class ForegroundImportAction {
+    UPSERT_APPLICATION_MESSAGE,
+    RECORD_CRYPTO_STATE_ALREADY_APPLIED,
+    RECORD_COMPLETION,
+    RECORD_TERMINAL_FAILURE,
+    SCHEDULE_FOREGROUND_RECOVERY
+}
+
+/**
+ * Explicit ownership transfer for a raw row that the native main database committed.
+ *
+ * `PROCESSED_BY_FOREGROUND` prevents a zero-child `PENDING` row from being received again.
+ * `DURABLY_QUEUED_FOR_FOREGROUND` records that the native database owns later processing.
+ */
+public enum class ForegroundRawImportDisposition {
+    PROCESSED_BY_FOREGROUND,
+    DURABLY_QUEUED_FOR_FOREGROUND
+}
+
+/** Copy-owned raw work exposed only when the native foreground database must assume it. */
+public class ForegroundRawImport internal constructor(
+    rawEnvelope: ByteArray,
+    public val action: ForegroundImportAction
+) {
+    private val ownedRawEnvelope: ByteArray = rawEnvelope.copyOf()
+
+    public val rawEnvelope: ByteArray
+        get() = ownedRawEnvelope.copyOf()
+}
+
+public class ForegroundChildImport internal constructor(
+    public val child: PendingImportChild,
+    public val action: ForegroundImportAction,
+    /** Lowercase SHA-256 over the canonical foreground-record frame v1. */
+    public val recordToken: String
+)
+
+/** One complete parent, ordered by ingest sequence and containing every child in item order. */
+@Suppress("LongParameterList")
+public class ForegroundImportUnit internal constructor(
+    public val scope: InboxScope,
+    public val parentIngestSequence: Long,
+    public val parentServerEventId: String,
+    public val rawEnvelopeSha256: String,
+    public val rawEnvelopeFormatVersion: Int,
+    public val serverTimestampEpochMillis: Long?,
+    public val isTransient: Boolean,
+    public val associatedCursor: String?,
+    public val deliverySource: RawEnvelopeDeliverySource,
+    public val receivedAtEpochMillis: Long,
+    public val receiveState: RawReceiveState,
+    public val foregroundRecoveryRequired: Boolean,
+    public val recoveryReason: String?,
+    public val rawImport: ForegroundRawImport?,
+    children: List<ForegroundChildImport>,
+    /** Lowercase SHA-256 over the canonical foreground-parent frame v1. */
+    public val parentRecordToken: String
+) {
+    public val children: List<ForegroundChildImport> = children.toList()
+}
+
+/**
+ * One bounded crash-replay unit. The opaque token binds the scope, boundary, and every row token.
+ * Generated SQLDelight entities are deliberately absent from this cross-language surface.
+ */
+public class ForegroundImportSnapshot internal constructor(
+    public val protocolVersion: Int,
+    public val snapshotMaxIngestSequence: Long,
+    public val unit: ForegroundImportUnit,
+    public val hasMore: Boolean,
+    public val snapshotToken: String,
+    internal val issuingStore: Any
+)
+
+public sealed interface ForegroundImportMarkResult {
+    public data class Marked(
+        public val markedRawParentCount: Int,
+        public val markedChildCount: Int
+    ) : ForegroundImportMarkResult
+
+    public data object AlreadyImported : ForegroundImportMarkResult
+    public data object IntegrityConflict : ForegroundImportMarkResult
+    public data class StorageFailure(public val reason: NotificationInboxFailure) : ForegroundImportMarkResult
 }
 
 public sealed interface InboxReadResult<out T> {
@@ -339,6 +447,7 @@ public enum class NotificationInboxFailure {
 public const val NOTIFICATION_INBOX_CONTRACT_VERSION: Int = 1
 public const val NOTIFICATION_RAW_ENVELOPE_FORMAT_VERSION: Int = 1
 public const val NOTIFICATION_CHILD_PAYLOAD_FORMAT_VERSION: Int = 1
+public const val NOTIFICATION_FOREGROUND_IMPORT_PROTOCOL_VERSION: Int = 1
 public const val NOTIFICATION_INBOX_SCHEMA_MAX_BLOB_BYTES: Int = 1_048_576
 public const val SYNTHETIC_NOTIFICATION_INBOX_ACCOUNT_ID: String = "synthetic-notification-inbox-account"
 public const val SYNTHETIC_NOTIFICATION_INBOX_CLIENT_ID: String = "synthetic-notification-inbox-client"

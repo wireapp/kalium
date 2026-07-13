@@ -398,7 +398,11 @@ ORDER BY RawEvent.ingest_sequence ASC, ReceiveChild.item_index ASC, ReceiveChild
 LIMIT :limit;
 
 selectPendingImportChildBlobLengths:
-SELECT ReceiveChild.child_sequence, length(ReceiveChild.decrypted_proto) AS blob_size
+SELECT ReceiveChild.child_sequence,
+    ReceiveChild.parent_ingest_sequence,
+    ReceiveChild.item_index,
+    ReceiveChild.idempotency_key,
+    length(ReceiveChild.decrypted_proto) AS blob_size
 FROM ReceiveChild
 JOIN RawEvent ON RawEvent.ingest_sequence = ReceiveChild.parent_ingest_sequence
 WHERE RawEvent.account_id = :account_id
@@ -414,6 +418,67 @@ JOIN RawEvent ON RawEvent.ingest_sequence = ReceiveChild.parent_ingest_sequence
 WHERE RawEvent.account_id = :account_id
     AND RawEvent.client_id = :client_id
     AND ReceiveChild.child_sequence = :child_sequence;
+
+selectForegroundImportSnapshotMaxSequence:
+SELECT MAX(ingest_sequence)
+FROM RawEvent
+WHERE account_id = :account_id AND client_id = :client_id;
+
+selectForegroundImportParentCandidates:
+SELECT ingest_sequence, length(raw_envelope) AS blob_size FROM RawEvent
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND ingest_sequence <= :snapshot_max_ingest_sequence
+    AND (
+        import_state = 'PENDING' OR
+        EXISTS (
+            SELECT 1 FROM ReceiveChild
+            WHERE ReceiveChild.parent_ingest_sequence = RawEvent.ingest_sequence
+                AND ReceiveChild.import_state = 'PENDING'
+        )
+    )
+ORDER BY ingest_sequence ASC
+LIMIT :limit;
+
+markForegroundRawImportedExact:
+UPDATE RawEvent
+SET import_state = 'IMPORTED'
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND ingest_sequence = :ingest_sequence
+    AND server_event_id = :server_event_id
+    AND raw_envelope_sha256 = :raw_envelope_sha256
+    AND import_state = 'PENDING';
+
+markForegroundRawImportedWithDispositionExact:
+UPDATE RawEvent
+SET receive_state = :next_receive_state,
+    foreground_recovery_required = :next_foreground_recovery_required,
+    recovery_reason = :next_recovery_reason,
+    receive_claim_token = NULL,
+    receive_claimed_at_epoch_millis = NULL,
+    import_state = 'IMPORTED'
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND ingest_sequence = :ingest_sequence
+    AND server_event_id = :server_event_id
+    AND raw_envelope_sha256 = :raw_envelope_sha256
+    AND receive_state = :expected_receive_state
+    AND foreground_recovery_required = :expected_foreground_recovery_required
+    AND recovery_reason IS :expected_recovery_reason
+    AND import_state = 'PENDING';
+
+markForegroundChildImportedExact:
+UPDATE ReceiveChild
+SET import_state = 'IMPORTED'
+WHERE account_id = :account_id
+    AND client_id = :client_id
+    AND child_sequence = :child_sequence
+    AND parent_ingest_sequence = :parent_ingest_sequence
+    AND item_index = :item_index
+    AND idempotency_key = :idempotency_key
+    AND decrypted_proto_sha256 IS :decrypted_proto_sha256
+    AND import_state = 'PENDING';
 
 selectChanges:
 SELECT changes();

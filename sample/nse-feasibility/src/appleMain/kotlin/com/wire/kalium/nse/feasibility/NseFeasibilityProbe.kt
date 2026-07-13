@@ -91,6 +91,12 @@ public class NseFeasibilityProbe {
             runSyntheticNotificationInboxProbe(sharedRoot)
         }
 
+    /** Exercises the M8 post-main-commit contract without a product native database. */
+    public suspend fun probeSyntheticForegroundImporter(sharedRoot: String): FeasibilityProbeResult =
+        measureSuspending("synthetic-foreground-importer") {
+            runSyntheticForegroundImportContractProbe(sharedRoot)
+        }
+
     /** Locally constructs protobufs to prove decode/extraction linkage without account state. */
     public fun probeMessageContentExtraction(): FeasibilityProbeResult = measure("message-content-extraction") {
         val textBytes = GenericMessage(

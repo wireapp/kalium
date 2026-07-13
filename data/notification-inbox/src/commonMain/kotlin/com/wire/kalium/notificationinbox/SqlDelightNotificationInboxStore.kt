@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.notificationinbox
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
@@ -33,7 +35,7 @@ import kotlin.concurrent.atomics.AtomicInt
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 @OptIn(ExperimentalAtomicApi::class)
-@Suppress("TooManyFunctions")
+@Suppress("LargeClass", "TooManyFunctions")
 internal class SqlDelightNotificationInboxStore(
     private val driver: SqlDriver,
     private val dispatcher: CoroutineDispatcher,
@@ -458,6 +460,208 @@ internal class SqlDelightNotificationInboxStore(
         }
     }
 
+    @Suppress("ComplexCondition", "CyclomaticComplexMethod", "LongMethod")
+    override suspend fun readNextForegroundImportSnapshot(
+        scope: InboxScope
+    ): InboxReadResult<ForegroundImportSnapshot?> = readOperation {
+        if (!scope.isValid() || !scope.isAllowedBy(syntheticOnly)) {
+            return@readOperation InboxReadResult.StorageFailure(invalidInput())
+        }
+        database.transactionWithResult<InboxReadResult<ForegroundImportSnapshot?>> {
+            val snapshotMax = queries.selectForegroundImportSnapshotMaxSequence(
+                scope.accountId,
+                scope.clientId
+            ).awaitAsOne().MAX ?: return@transactionWithResult InboxReadResult.Success(null)
+            val candidates = queries.selectForegroundImportParentCandidates(
+                account_id = scope.accountId,
+                client_id = scope.clientId,
+                snapshot_max_ingest_sequence = snapshotMax,
+                limit = FOREGROUND_PARENT_LOOKAHEAD
+            ).awaitAsList()
+            val candidate = candidates.firstOrNull() ?: return@transactionWithResult InboxReadResult.Success(null)
+
+            val childMetadata = queries.selectReceiveChildBlobLengthsForParent(
+                candidate.ingest_sequence,
+                limits.maxChildrenPerEvent.toLong() + 1L
+            ).awaitAsList()
+            if (
+                childMetadata.size > limits.maxChildrenPerEvent ||
+                candidate.blob_size <= 0L || candidate.blob_size > limits.maxRawEnvelopeBytes ||
+                !childMetadata.map { it.blob_size }.fitBlobBudget(limits.maxDecryptedProtoBytes, childMetadata.size) ||
+                !listOf(candidate.blob_size).plus(childMetadata.map { it.blob_size })
+                    .fitCombinedForegroundBlobBudget()
+            ) {
+                return@transactionWithResult InboxReadResult.StorageFailure(NotificationInboxFailure.CORRUPT_STATE)
+            }
+            val parent = queries.selectRawEventByIngestSequence(
+                scope.accountId,
+                scope.clientId,
+                candidate.ingest_sequence
+            ).awaitAsOne()
+            if (!parent.isStructurallyValid(limits, syntheticOnly)) {
+                return@transactionWithResult InboxReadResult.StorageFailure(NotificationInboxFailure.CORRUPT_STATE)
+            }
+            val children = childMetadata.map { metadata ->
+                queries.selectImportChildBySequence(
+                    scope.accountId,
+                    scope.clientId,
+                    metadata.child_sequence
+                ).awaitAsOne().toValidatedPending(limits)
+            }
+            if (
+                children.any {
+                    it.scope != scope || it.parentIngestSequence != parent.ingest_sequence ||
+                            it.parentServerEventId != parent.server_event_id
+                } ||
+                children.map { it.itemIndex } != children.indices.toList() ||
+                children.isNotEmpty() && parent.receive_state != RawReceiveState.COMPLETED.name ||
+                parent.import_state != ForegroundImportState.PENDING.name ||
+                children.any { it.importState != ForegroundImportState.PENDING }
+            ) {
+                return@transactionWithResult InboxReadResult.StorageFailure(NotificationInboxFailure.CORRUPT_STATE)
+            }
+
+            val childImports = children.map { child ->
+                ForegroundChildImport(
+                    child = child,
+                    action = child.foregroundImportAction(),
+                    recordToken = child.foregroundRecordToken()
+                )
+            }
+            val rawRequired = parent.requiresForegroundRawImport(children.isEmpty(), childImports)
+            val rawAction = if (rawRequired) parent.foregroundRawAction(childImports) else null
+            val unit = parent.toForegroundImportUnit(rawRequired, rawAction, childImports)
+            val snapshotToken = foregroundSnapshotToken(scope, snapshotMax, unit)
+            InboxReadResult.Success(
+                ForegroundImportSnapshot(
+                    protocolVersion = NOTIFICATION_FOREGROUND_IMPORT_PROTOCOL_VERSION,
+                    snapshotMaxIngestSequence = snapshotMax,
+                    unit = unit,
+                    hasMore = candidates.size > 1,
+                    snapshotToken = snapshotToken,
+                    issuingStore = this@SqlDelightNotificationInboxStore
+                )
+            )
+        }
+    }
+
+    @Suppress("ComplexCondition", "CyclomaticComplexMethod", "LongMethod")
+    override suspend fun markForegroundImportSnapshotImported(
+        snapshot: ForegroundImportSnapshot,
+        rawDisposition: ForegroundRawImportDisposition?
+    ): ForegroundImportMarkResult = foregroundMarkOperation {
+        if (
+            snapshot.issuingStore !== this ||
+            snapshot.protocolVersion != NOTIFICATION_FOREGROUND_IMPORT_PROTOCOL_VERSION ||
+            snapshot.snapshotMaxIngestSequence < snapshot.unit.parentIngestSequence ||
+            snapshot.snapshotToken != foregroundSnapshotToken(
+                snapshot.unit.scope,
+                snapshot.snapshotMaxIngestSequence,
+                snapshot.unit
+            ) ||
+            (snapshot.unit.rawImport == null) != (rawDisposition == null)
+        ) {
+            return@foregroundMarkOperation ForegroundImportMarkResult.IntegrityConflict
+        }
+        if (!rawDisposition.isAllowedFor(snapshot.unit.rawImport?.action)) {
+            return@foregroundMarkOperation ForegroundImportMarkResult.IntegrityConflict
+        }
+
+        database.transactionWithResult<ForegroundImportMarkResult> {
+            val unit = snapshot.unit
+            val parent = queries.selectRawEventByIngestSequence(
+                unit.scope.accountId,
+                unit.scope.clientId,
+                unit.parentIngestSequence
+            ).awaitAsOneOrNull() ?: return@transactionWithResult ForegroundImportMarkResult.IntegrityConflict
+            if (!parent.isStructurallyValid(limits, syntheticOnly) || !parent.matchesForegroundUnitIdentity(unit)) {
+                return@transactionWithResult ForegroundImportMarkResult.IntegrityConflict
+            }
+
+            val childMetadata = queries.selectReceiveChildBlobLengthsForParent(
+                parent.ingest_sequence,
+                limits.maxChildrenPerEvent.toLong() + 1L
+            ).awaitAsList()
+            if (childMetadata.size != unit.children.size) {
+                return@transactionWithResult ForegroundImportMarkResult.IntegrityConflict
+            }
+            val currentChildren = childMetadata.map { metadata ->
+                queries.selectImportChildBySequence(
+                    unit.scope.accountId,
+                    unit.scope.clientId,
+                    metadata.child_sequence
+                ).awaitAsOne().toValidatedPending(limits)
+            }
+            val exactChildren = currentChildren.zip(unit.children).all { (current, captured) ->
+                current.scope == unit.scope && current.parentServerEventId == unit.parentServerEventId &&
+                        current.childSequence == captured.child.childSequence &&
+                        current.foregroundRecordToken() == captured.recordToken
+            }
+            if (!exactChildren) {
+                return@transactionWithResult ForegroundImportMarkResult.IntegrityConflict
+            }
+
+            val allPending = parent.import_state == ForegroundImportState.PENDING.name &&
+                    currentChildren.all { it.importState == ForegroundImportState.PENDING }
+            val allImported = parent.import_state == ForegroundImportState.IMPORTED.name &&
+                    currentChildren.all { it.importState == ForegroundImportState.IMPORTED }
+            if (allImported) {
+                return@transactionWithResult if (parent.matchesImportedLifecycle(unit, rawDisposition)) {
+                    ForegroundImportMarkResult.AlreadyImported
+                } else {
+                    ForegroundImportMarkResult.IntegrityConflict
+                }
+            }
+            if (!allPending) return@transactionWithResult ForegroundImportMarkResult.IntegrityConflict
+            if (
+                parent.foregroundParentRecordToken(unit.rawImport != null, unit.rawImport?.action) !=
+                unit.parentRecordToken
+            ) {
+                return@transactionWithResult ForegroundImportMarkResult.IntegrityConflict
+            }
+
+            currentChildren.forEach { child ->
+                queries.markForegroundChildImportedExact(
+                    account_id = unit.scope.accountId,
+                    client_id = unit.scope.clientId,
+                    child_sequence = child.childSequence,
+                    parent_ingest_sequence = child.parentIngestSequence,
+                    item_index = child.itemIndex.toLong(),
+                    idempotency_key = child.idempotencyKey,
+                    decrypted_proto_sha256 = child.decryptedProtoSha256
+                )
+                if (queries.selectChanges().awaitAsOne() != 1L) throw AbortForegroundImportConflict()
+            }
+
+            if (rawDisposition == null) {
+                queries.markForegroundRawImportedExact(
+                    account_id = unit.scope.accountId,
+                    client_id = unit.scope.clientId,
+                    ingest_sequence = unit.parentIngestSequence,
+                    server_event_id = unit.parentServerEventId,
+                    raw_envelope_sha256 = unit.rawEnvelopeSha256
+                )
+            } else {
+                val transition = parent.foregroundRawTransition(rawDisposition)
+                queries.markForegroundRawImportedWithDispositionExact(
+                    next_receive_state = transition.receiveState.name,
+                    next_foreground_recovery_required = transition.foregroundRecoveryRequired.toLong(),
+                    next_recovery_reason = transition.recoveryReason,
+                    account_id = unit.scope.accountId,
+                    client_id = unit.scope.clientId,
+                    ingest_sequence = unit.parentIngestSequence,
+                    server_event_id = unit.parentServerEventId,
+                    raw_envelope_sha256 = unit.rawEnvelopeSha256,
+                    expected_receive_state = parent.receive_state,
+                    expected_foreground_recovery_required = parent.foreground_recovery_required,
+                    expected_recovery_reason = parent.recovery_reason
+                )
+            }
+            if (queries.selectChanges().awaitAsOne() != 1L) throw AbortForegroundImportConflict()
+            ForegroundImportMarkResult.Marked(markedRawParentCount = 1, markedChildCount = currentChildren.size)
+        }
+    }
+
     override fun close() {
         if (closed.exchange(CLOSED_STATE) == CLOSED_STATE) return
         runCatching { driver.close() }
@@ -523,6 +727,25 @@ internal class SqlDelightNotificationInboxStore(
             }
         }
 
+    private suspend fun foregroundMarkOperation(
+        block: suspend () -> ForegroundImportMarkResult
+    ): ForegroundImportMarkResult = withContext(dispatcher) {
+        if (closed.load() == CLOSED_STATE) {
+            return@withContext ForegroundImportMarkResult.StorageFailure(NotificationInboxFailure.CLOSED)
+        }
+        try {
+            block()
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: AbortForegroundImportConflict) {
+            ForegroundImportMarkResult.IntegrityConflict
+        } catch (_: IllegalArgumentException) {
+            ForegroundImportMarkResult.IntegrityConflict
+        } catch (_: Throwable) {
+            ForegroundImportMarkResult.StorageFailure(NotificationInboxFailure.STORAGE_UNAVAILABLE)
+        }
+    }
+
     private fun readValidationFailure(scope: InboxScope, limit: Int): NotificationInboxFailure? = when {
         !scope.isValid() || !scope.isAllowedBy(syntheticOnly) -> invalidInput()
         limit <= 0 -> invalidInput()
@@ -569,6 +792,8 @@ internal class SqlDelightNotificationInboxStore(
         messageTimestampEpochMillis != null && messageTimestampEpochMillis < 0 -> invalidInput()
         failureClassification != null && !failureClassification.isValidReason() -> invalidInput()
         receiveClassification == ReceiveClassification.APPLICATION_MESSAGE && proto == null -> invalidInput()
+        receiveClassification == ReceiveClassification.APPLICATION_MESSAGE &&
+                (decryptionState != DecryptionState.DECRYPTED || !cryptoStateApplied) -> invalidInput()
         decryptionState == DecryptionState.DECRYPTED && proto == null -> invalidInput()
         decryptionState == DecryptionState.DECRYPTED && !cryptoStateApplied -> invalidInput()
         decryptionState == DecryptionState.HANDSHAKE_APPLIED && !cryptoStateApplied -> invalidInput()
@@ -629,6 +854,16 @@ internal class SqlDelightNotificationInboxStore(
                 if (total > limits.maxBatchBlobBytes - size) return false
                 total += size
             }
+        }
+        return total <= limits.maxBatchBlobBytes
+    }
+
+    private fun List<Long?>.fitCombinedForegroundBlobBudget(): Boolean {
+        var total = 0L
+        for (nullableSize in this) {
+            val size = nullableSize ?: 0L
+            if (size < 0 || total > limits.maxBatchBlobBytes - size) return false
+            total += size
         }
         return total <= limits.maxBatchBlobBytes
     }
@@ -728,6 +963,8 @@ private fun SelectImportChildBySequence.toValidatedPending(limits: NotificationI
     val parsedImport = ForegroundImportState.valueOf(import_state)
     if (
         parsedClassification == ReceiveClassification.APPLICATION_MESSAGE && decrypted_proto == null ||
+        parsedClassification == ReceiveClassification.APPLICATION_MESSAGE &&
+                (parsedDecryption != DecryptionState.DECRYPTED || crypto_state_applied == 0L) ||
         parsedDecryption == DecryptionState.DECRYPTED && (decrypted_proto == null || crypto_state_applied == 0L) ||
         parsedDecryption == DecryptionState.HANDSHAKE_APPLIED && crypto_state_applied == 0L ||
         parsedDecryption == DecryptionState.PENDING || parsedDecryption == DecryptionState.FAILED_RETRYABLE ||
@@ -737,6 +974,7 @@ private fun SelectImportChildBySequence.toValidatedPending(limits: NotificationI
         throw CorruptNotificationInboxState()
     }
     return PendingImportChild(
+        childSequence = child_sequence,
         parentIngestSequence = parent_ingest_sequence,
         scope = InboxScope(account_id, client_id),
         parentServerEventId = parent_server_event_id,
@@ -758,6 +996,289 @@ private fun SelectImportChildBySequence.toValidatedPending(limits: NotificationI
         retryCount = retry_count.toInt()
     )
 }
+
+private fun PendingImportChild.foregroundImportAction(): ForegroundImportAction = when {
+    decryptionState == DecryptionState.FAILED_TERMINAL -> ForegroundImportAction.RECORD_TERMINAL_FAILURE
+    receiveClassification == ReceiveClassification.APPLICATION_MESSAGE &&
+            conversationId != null && messageTimestampEpochMillis != null ->
+        ForegroundImportAction.UPSERT_APPLICATION_MESSAGE
+    receiveClassification == ReceiveClassification.APPLICATION_MESSAGE ->
+        ForegroundImportAction.SCHEDULE_FOREGROUND_RECOVERY
+    receiveClassification == ReceiveClassification.HANDSHAKE_ONLY && cryptoStateApplied ->
+        ForegroundImportAction.RECORD_CRYPTO_STATE_ALREADY_APPLIED
+    receiveClassification == ReceiveClassification.WELCOME ||
+            receiveClassification == ReceiveClassification.UNSUPPORTED ||
+            receiveClassification == ReceiveClassification.HANDSHAKE_ONLY ->
+        ForegroundImportAction.SCHEDULE_FOREGROUND_RECOVERY
+    else -> ForegroundImportAction.RECORD_COMPLETION
+}
+
+private fun PendingImportChild.foregroundRecordToken(): String = foregroundFrameDigest(
+    FOREGROUND_CHILD_RECORD_PREFIX,
+    listOf(
+        scope.accountId,
+        scope.clientId,
+        childSequence.toString(),
+        parentIngestSequence.toString(),
+        parentServerEventId,
+        itemIndex.toString(),
+        idempotencyKey,
+        conversationId,
+        senderId,
+        senderClientId,
+        protocol.name,
+        messageTimestampEpochMillis?.toString(),
+        decryptedProtoSha256,
+        cryptoStateApplied.toCanonicalBoolean(),
+        receiveClassification.name,
+        failureClassification,
+        decryptionState.name,
+        notificationState.name,
+        retryCount.toString(),
+        foregroundImportAction().name
+    )
+)
+
+private fun RawEvent.toForegroundImportUnit(
+    rawRequired: Boolean,
+    rawAction: ForegroundImportAction?,
+    children: List<ForegroundChildImport>
+): ForegroundImportUnit = ForegroundImportUnit(
+    scope = InboxScope(account_id, client_id),
+    parentIngestSequence = ingest_sequence,
+    parentServerEventId = server_event_id,
+    rawEnvelopeSha256 = raw_envelope_sha256,
+    rawEnvelopeFormatVersion = raw_envelope_format_version.toInt(),
+    serverTimestampEpochMillis = server_timestamp_epoch_millis,
+    isTransient = is_transient != 0L,
+    associatedCursor = associated_cursor,
+    deliverySource = RawEnvelopeDeliverySource.valueOf(delivery_source),
+    receivedAtEpochMillis = received_at_epoch_millis,
+    receiveState = RawReceiveState.valueOf(receive_state),
+    foregroundRecoveryRequired = foreground_recovery_required != 0L,
+    recoveryReason = recovery_reason,
+    rawImport = if (rawRequired) ForegroundRawImport(raw_envelope, checkNotNull(rawAction)) else null,
+    children = children,
+    parentRecordToken = foregroundParentRecordToken(rawRequired, rawAction)
+)
+
+private fun RawEvent.requiresForegroundRawImport(
+    hasNoChildren: Boolean,
+    children: List<ForegroundChildImport>
+): Boolean = receive_state == RawReceiveState.DEFERRED_TO_APP.name ||
+        foreground_recovery_required != 0L || hasNoChildren ||
+        children.any { it.action == ForegroundImportAction.SCHEDULE_FOREGROUND_RECOVERY }
+
+@Suppress("ComplexCondition")
+private fun RawEvent.foregroundRawAction(children: List<ForegroundChildImport> = emptyList()): ForegroundImportAction =
+    if (receive_state == RawReceiveState.PENDING.name ||
+        receive_state == RawReceiveState.DEFERRED_TO_APP.name ||
+        foreground_recovery_required != 0L ||
+        children.any { it.action == ForegroundImportAction.SCHEDULE_FOREGROUND_RECOVERY }
+    ) {
+        ForegroundImportAction.SCHEDULE_FOREGROUND_RECOVERY
+    } else {
+        ForegroundImportAction.RECORD_COMPLETION
+    }
+
+private fun RawEvent.foregroundParentRecordToken(
+    rawRequired: Boolean,
+    rawAction: ForegroundImportAction? = null
+): String = foregroundParentRecordToken(
+    scope = InboxScope(account_id, client_id),
+    ingestSequence = ingest_sequence,
+    serverEventId = server_event_id,
+    rawSha256 = raw_envelope_sha256,
+    rawFormatVersion = raw_envelope_format_version.toInt(),
+    serverTimestamp = server_timestamp_epoch_millis,
+    transient = is_transient != 0L,
+    cursor = associated_cursor,
+    source = RawEnvelopeDeliverySource.valueOf(delivery_source),
+    receivedAt = received_at_epoch_millis,
+    receiveState = RawReceiveState.valueOf(receive_state),
+    recoveryRequired = foreground_recovery_required != 0L,
+    recoveryReason = recovery_reason,
+    rawRequired = rawRequired,
+    rawAction = if (rawRequired) rawAction ?: foregroundRawAction() else null
+)
+
+@Suppress("ComplexCondition")
+private fun RawEvent.matchesForegroundUnitIdentity(unit: ForegroundImportUnit): Boolean =
+    account_id == unit.scope.accountId && client_id == unit.scope.clientId &&
+            ingest_sequence == unit.parentIngestSequence && server_event_id == unit.parentServerEventId &&
+            raw_envelope_sha256 == unit.rawEnvelopeSha256 &&
+            raw_envelope_format_version == unit.rawEnvelopeFormatVersion.toLong() &&
+            server_timestamp_epoch_millis == unit.serverTimestampEpochMillis &&
+            is_transient == unit.isTransient.toLong() && associated_cursor == unit.associatedCursor &&
+            delivery_source == unit.deliverySource.name && received_at_epoch_millis == unit.receivedAtEpochMillis
+
+private fun RawEvent.matchesImportedLifecycle(
+    unit: ForegroundImportUnit,
+    disposition: ForegroundRawImportDisposition?
+): Boolean {
+    if (disposition == null) {
+        return receive_state == unit.receiveState.name &&
+                foreground_recovery_required == unit.foregroundRecoveryRequired.toLong() &&
+                recovery_reason == unit.recoveryReason
+    }
+    val expected = unit.foregroundRawTransition(disposition)
+    return receive_state == expected.receiveState.name &&
+            foreground_recovery_required == expected.foregroundRecoveryRequired.toLong() &&
+            recovery_reason == expected.recoveryReason
+}
+
+private fun ForegroundImportUnit.recomputedParentRecordToken(): String = foregroundParentRecordToken(
+    scope = scope,
+    ingestSequence = parentIngestSequence,
+    serverEventId = parentServerEventId,
+    rawSha256 = rawEnvelopeSha256,
+    rawFormatVersion = rawEnvelopeFormatVersion,
+    serverTimestamp = serverTimestampEpochMillis,
+    transient = isTransient,
+    cursor = associatedCursor,
+    source = deliverySource,
+    receivedAt = receivedAtEpochMillis,
+    receiveState = receiveState,
+    recoveryRequired = foregroundRecoveryRequired,
+    recoveryReason = recoveryReason,
+    rawRequired = rawImport != null,
+    rawAction = rawImport?.action
+)
+
+@Suppress("LongParameterList")
+private fun foregroundParentRecordToken(
+    scope: InboxScope,
+    ingestSequence: Long,
+    serverEventId: String,
+    rawSha256: String,
+    rawFormatVersion: Int,
+    serverTimestamp: Long?,
+    transient: Boolean,
+    cursor: String?,
+    source: RawEnvelopeDeliverySource,
+    receivedAt: Long,
+    receiveState: RawReceiveState,
+    recoveryRequired: Boolean,
+    recoveryReason: String?,
+    rawRequired: Boolean,
+    rawAction: ForegroundImportAction?
+): String = foregroundFrameDigest(
+    FOREGROUND_PARENT_RECORD_PREFIX,
+    listOf(
+        scope.accountId,
+        scope.clientId,
+        ingestSequence.toString(),
+        serverEventId,
+        rawSha256,
+        rawFormatVersion.toString(),
+        serverTimestamp?.toString(),
+        transient.toCanonicalBoolean(),
+        cursor,
+        source.name,
+        receivedAt.toString(),
+        receiveState.name,
+        recoveryRequired.toCanonicalBoolean(),
+        recoveryReason,
+        rawRequired.toCanonicalBoolean(),
+        rawAction?.name
+    )
+)
+
+private fun foregroundSnapshotToken(
+    scope: InboxScope,
+    snapshotMaxIngestSequence: Long,
+    unit: ForegroundImportUnit
+): String = foregroundFrameDigest(
+    FOREGROUND_SNAPSHOT_PREFIX,
+    buildList {
+        add(NOTIFICATION_FOREGROUND_IMPORT_PROTOCOL_VERSION.toString())
+        add(scope.accountId)
+        add(scope.clientId)
+        add(snapshotMaxIngestSequence.toString())
+        add(FOREGROUND_INITIAL_AFTER_PARENT_SEQUENCE.toString())
+        add(unit.parentIngestSequence.toString())
+        add(unit.recomputedParentRecordToken())
+        add(unit.children.size.toString())
+        unit.children.forEach { child ->
+            add(child.child.childSequence.toString())
+            add(child.recordToken)
+        }
+    }
+)
+
+private fun foregroundFrameDigest(prefix: String, fields: List<String?>): String {
+    val encoded: List<ByteArray?> = buildList {
+        add(prefix.encodeToByteArray())
+        fields.forEach { add(it?.encodeToByteArray()) }
+    }
+    val size = encoded.sumOf { (it?.size ?: 0) + FOREGROUND_FRAME_LENGTH_BYTES }
+    val frame = ByteArray(size)
+    var offset = 0
+    encoded.forEach { value ->
+        writeForegroundFrameLength(frame, offset, value?.size ?: FOREGROUND_NULL_FIELD_LENGTH)
+        offset += FOREGROUND_FRAME_LENGTH_BYTES
+        if (value != null) {
+            value.copyInto(frame, offset)
+            offset += value.size
+        }
+    }
+    return sha256LowercaseHex(frame)
+}
+
+@Suppress("MagicNumber")
+private fun writeForegroundFrameLength(destination: ByteArray, offset: Int, value: Int) {
+    destination[offset] = (value ushr 24).toByte()
+    destination[offset + 1] = (value ushr 16).toByte()
+    destination[offset + 2] = (value ushr 8).toByte()
+    destination[offset + 3] = value.toByte()
+}
+
+private fun ForegroundRawImportDisposition?.isAllowedFor(action: ForegroundImportAction?): Boolean = when (action) {
+    null -> this == null
+    ForegroundImportAction.SCHEDULE_FOREGROUND_RECOVERY ->
+        this == ForegroundRawImportDisposition.DURABLY_QUEUED_FOR_FOREGROUND
+    ForegroundImportAction.RECORD_COMPLETION ->
+        this == ForegroundRawImportDisposition.PROCESSED_BY_FOREGROUND
+    else -> false
+}
+
+private fun RawEvent.foregroundRawTransition(
+    disposition: ForegroundRawImportDisposition
+): ForegroundRawTransition = when (disposition) {
+    ForegroundRawImportDisposition.PROCESSED_BY_FOREGROUND -> ForegroundRawTransition(
+        receiveState = RawReceiveState.COMPLETED,
+        foregroundRecoveryRequired = foreground_recovery_required != 0L,
+        recoveryReason = recovery_reason
+    )
+    ForegroundRawImportDisposition.DURABLY_QUEUED_FOR_FOREGROUND -> ForegroundRawTransition(
+        receiveState = RawReceiveState.DEFERRED_TO_APP,
+        foregroundRecoveryRequired = true,
+        recoveryReason = recovery_reason ?: FOREGROUND_DURABLY_QUEUED_REASON
+    )
+}
+
+private fun ForegroundImportUnit.foregroundRawTransition(
+    disposition: ForegroundRawImportDisposition
+): ForegroundRawTransition = when (disposition) {
+    ForegroundRawImportDisposition.PROCESSED_BY_FOREGROUND -> ForegroundRawTransition(
+        receiveState = RawReceiveState.COMPLETED,
+        foregroundRecoveryRequired = foregroundRecoveryRequired,
+        recoveryReason = recoveryReason
+    )
+    ForegroundRawImportDisposition.DURABLY_QUEUED_FOR_FOREGROUND -> ForegroundRawTransition(
+        receiveState = RawReceiveState.DEFERRED_TO_APP,
+        foregroundRecoveryRequired = true,
+        recoveryReason = recoveryReason ?: FOREGROUND_DURABLY_QUEUED_REASON
+    )
+}
+
+private fun Boolean.toCanonicalBoolean(): String = if (this) "1" else "0"
+
+private data class ForegroundRawTransition(
+    val receiveState: RawReceiveState,
+    val foregroundRecoveryRequired: Boolean,
+    val recoveryReason: String?
+)
 
 @Suppress("ComplexCondition", "CyclomaticComplexMethod")
 private fun RawEvent.isStructurallyValid(
@@ -824,6 +1345,7 @@ private data class PreparedChild(
 
 private class CorruptNotificationInboxState : IllegalArgumentException()
 private class AbortChildBatchForIntegrityConflict : Exception()
+private class AbortForegroundImportConflict : Exception()
 private class SyntheticNotificationInboxRollbackProbeFailure : Exception()
 
 internal enum class SyntheticNotificationInboxFailurePoint {
@@ -843,6 +1365,14 @@ private const val CLOSED_STATE = 1
 private const val ARMED_STATE = 1
 private const val DISARMED_STATE = 0
 private const val NULL_CHARACTER = '\u0000'
+private const val FOREGROUND_PARENT_LOOKAHEAD = 2L
+private const val FOREGROUND_INITIAL_AFTER_PARENT_SEQUENCE = 0L
+private const val FOREGROUND_FRAME_LENGTH_BYTES = 4
+private const val FOREGROUND_NULL_FIELD_LENGTH = -1
+private const val FOREGROUND_PARENT_RECORD_PREFIX = "com.wire.kalium.notification-inbox.foreground-parent/v1"
+private const val FOREGROUND_CHILD_RECORD_PREFIX = "com.wire.kalium.notification-inbox.foreground-child/v1"
+private const val FOREGROUND_SNAPSHOT_PREFIX = "com.wire.kalium.notification-inbox.foreground-snapshot/v1"
+private const val FOREGROUND_DURABLY_QUEUED_REASON = "FOREGROUND_IMPORT_DURABLY_QUEUED_V1"
 
 private val FINAL_NOTIFICATION_STATES: Set<String> = setOf(
     NotificationState.PRESENTED.name,
