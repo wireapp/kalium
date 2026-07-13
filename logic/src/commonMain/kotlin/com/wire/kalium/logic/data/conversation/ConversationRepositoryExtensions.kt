@@ -24,7 +24,10 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationExtensions.QueryConfig
 import com.wire.kalium.persistence.dao.message.KaliumPager
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 internal interface ConversationRepositoryExtensions {
@@ -33,6 +36,8 @@ internal interface ConversationRepositoryExtensions {
         pagingConfig: PagingConfig,
         startingOffset: Long,
         strictMlsFilter: Boolean,
+        ongoingCallConversationIds: List<ConversationId> = emptyList(),
+        ongoingCallConversationIdsFlow: Flow<List<ConversationId>> = flowOf(ongoingCallConversationIds),
     ): Flow<PagingData<ConversationDetailsWithEvents>>
 }
 
@@ -45,6 +50,8 @@ internal class ConversationRepositoryExtensionsImpl internal constructor(
         pagingConfig: PagingConfig,
         startingOffset: Long,
         strictMlsFilter: Boolean,
+        ongoingCallConversationIds: List<ConversationId>,
+        ongoingCallConversationIdsFlow: Flow<List<ConversationId>>,
     ): Flow<PagingData<ConversationDetailsWithEvents>> {
         val pager: KaliumPager<ConversationDetailsWithEventsEntity> = with(queryConfig) {
             conversationDAO.platformExtensions.getPagerForConversationDetailsWithEventsSearch(
@@ -53,6 +60,8 @@ internal class ConversationRepositoryExtensionsImpl internal constructor(
                     fromArchive = fromArchive,
                     onlyInteractionEnabled = onlyInteractionEnabled,
                     newActivitiesOnTop = newActivitiesOnTop,
+                    ongoingCallConversationIds = ongoingCallConversationIds.map { it.toDao() },
+                    ongoingCallConversationIdsFlow = ongoingCallConversationIdsFlow.map { ids -> ids.map { it.toDao() } },
                     conversationFilter = conversationFilter.toDao(),
                     strictMlsFilter = strictMlsFilter
                 ),

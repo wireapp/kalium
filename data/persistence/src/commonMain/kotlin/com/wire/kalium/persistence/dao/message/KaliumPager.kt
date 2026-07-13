@@ -23,7 +23,9 @@ import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import com.wire.kalium.persistence.db.ReadDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
 
 /**
  * Exposes a [pagingDataFlow] that can be used in Android UI components to display paginated data.
@@ -31,8 +33,26 @@ import kotlinx.coroutines.flow.flowOn
 class KaliumPager<EntityType : Any>(
     private val pager: Pager<Int, EntityType>,
     internal val pagingSource: PagingSource<Int, EntityType>,
-    private val readDispatcher: ReadDispatcher
+    private val readDispatcher: ReadDispatcher,
+    private val invalidateOn: Flow<*>? = null,
+    private val invalidatePagingSource: (() -> Unit)? = null,
 ) {
     val pagingDataFlow: Flow<PagingData<EntityType>>
-        get() = pager.flow.flowOn(readDispatcher.value)
+        get() {
+            val invalidationFlow = invalidateOn
+            val invalidate = invalidatePagingSource
+            return when {
+                invalidationFlow == null || invalidate == null -> pager.flow.flowOn(readDispatcher.value)
+                else -> channelFlow {
+                    val invalidationJob = launch {
+                        invalidationFlow.collect { invalidate() }
+                    }
+                    try {
+                        pager.flow.collect { send(it) }
+                    } finally {
+                        invalidationJob.cancel()
+                    }
+                }.flowOn(readDispatcher.value)
+            }
+        }
 }

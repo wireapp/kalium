@@ -18,13 +18,14 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.conversation.ConversationDetails
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationFilter
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.folders.ConversationFolderRepository
 import com.wire.kalium.logic.feature.conversation.folder.GetFavoriteFolderUseCase
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 
 /**
@@ -42,7 +43,8 @@ public interface ObserveConversationListDetailsWithEventsUseCase {
 internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val conversationFolderRepository: ConversationFolderRepository,
-    private val getFavoriteFolder: GetFavoriteFolderUseCase
+    private val getFavoriteFolder: GetFavoriteFolderUseCase,
+    private val callRepository: CallRepository
 ) : ObserveConversationListDetailsWithEventsUseCase {
 
     override suspend operator fun invoke(
@@ -59,11 +61,13 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
 
                     is GetFavoriteFolderUseCase.Result.Success ->
                         conversationFolderRepository.observeConversationsFromFolder(result.folder.id)
+                            .withJoinableCallsOnTop(moveJoinableCallsOnTop = !fromArchive)
                 }
             }
 
             is ConversationFilter.Folder -> {
                 conversationFolderRepository.observeConversationsFromFolder(conversationFilter.folderId)
+                    .withJoinableCallsOnTop(moveJoinableCallsOnTop = !fromArchive)
             }
 
             ConversationFilter.All,
@@ -71,6 +75,17 @@ internal class ObserveConversationListDetailsWithEventsUseCaseImpl(
             ConversationFilter.Groups,
             ConversationFilter.OneOnOne ->
                 conversationRepository.observeConversationListDetailsWithEvents(fromArchive, conversationFilter, strictMlsFilter)
+                    .withJoinableCallsOnTop(moveJoinableCallsOnTop = !fromArchive)
         }
     }
+
+    private fun Flow<List<ConversationDetailsWithEvents>>.withJoinableCallsOnTop(
+        moveJoinableCallsOnTop: Boolean
+    ): Flow<List<ConversationDetailsWithEvents>> =
+        combine(callRepository.joinableCallsByConversationIdFlow()) { conversations, joinableCallsByConversationId ->
+            conversations.withJoinableCallsOnTop(
+                joinableCallConversationIds = joinableCallsByConversationId.keys,
+                moveJoinableCallsOnTop = moveJoinableCallsOnTop
+            )
+        }
 }

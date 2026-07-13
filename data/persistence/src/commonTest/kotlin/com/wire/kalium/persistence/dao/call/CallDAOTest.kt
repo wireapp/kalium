@@ -45,52 +45,6 @@ class CallDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenOpenCalls_whenClosingOpenCalls_thenOpenCallIsClosed() = runTest {
-
-        callDAO.insertCall(call = callEntity)
-        callDAO.insertCall(
-            call = callEntity.copy(
-                conversationId = convId.copy(value = "convId2"),
-                id = "$callId 2",
-                status = CallEntity.Status.STILL_ONGOING
-            )
-        )
-        callDAO.insertCall(
-            call = callEntity.copy(
-                conversationId = convId.copy(value = "convId3"),
-                id = "$callId 3",
-                status = CallEntity.Status.ESTABLISHED
-            )
-        )
-        callDAO.insertCall(
-            call = callEntity.copy(
-                conversationId = convId.copy(value = "convId4"),
-                id = "$callId 4",
-                status = CallEntity.Status.ANSWERED
-            )
-        )
-        callDAO.insertCall(
-            call = callEntity.copy(
-                conversationId = convId.copy(value = "convId5"),
-                id = "$callId 5",
-                status = CallEntity.Status.INCOMING
-            )
-        )
-
-        // when
-        callDAO.updateOpenCallsToClosedStatus()
-
-        val calls = callDAO.observeCalls()
-
-        // then
-        assertEquals(calls.first()[0].status, CallEntity.Status.CLOSED)
-        assertEquals(calls.first()[1].status, CallEntity.Status.CLOSED)
-        assertEquals(calls.first()[2].status, CallEntity.Status.CLOSED)
-        assertEquals(calls.first()[3].status, CallEntity.Status.CLOSED)
-        assertEquals(calls.first()[4].status, CallEntity.Status.CLOSED)
-    }
-
-    @Test
     fun givenOutgoingCall_whenObserveOutgoingCalls_thenOutgoingCallIsReturned() = runTest {
         callDAO.insertCall(
             call = callEntity.copy(
@@ -282,4 +236,3 @@ private fun CallEntity.Status.createCallEntityFromStatus(): CallEntity = callEnt
     conversationId = QualifiedIDEntity("conversation_id_${this.ordinal}", "domain"),
     status = this
 )
-

@@ -35,7 +35,7 @@ class Migration136Test : SchemaMigrationTest() {
     }
 
     @Test
-    fun givenChannelBeforeMigration_whenMigrating_thenBackfillsGroupType() = runTest {
+    fun givenConversationsBeforeMigration_whenMigrating_thenUsesConversationTypeForGroupKinds() = runTest {
         val dbFile = File("build/user-schema-dumps/migration-$MIGRATION_TO_TEST-test.db")
         dbFile.parentFile.mkdirs()
         File("src/commonTest/kotlin/com/wire/kalium/persistence/schemas/$LAST_KNOWN_SCHEMA.db").copyTo(dbFile, overwrite = true)
@@ -112,6 +112,69 @@ class Migration136Test : SchemaMigrationTest() {
                             0,
                             0,
                             0
+                        ),
+                        (
+                            'one-on-one@wire.com',
+                            'One on one',
+                            'ONE_ON_ONE',
+                            1,
+                            'ESTABLISHED',
+                            'PROTEUS',
+                            'ALL_ALLOWED',
+                            0,
+                            'creator',
+                            0,
+                            '[]',
+                            '[]',
+                            0,
+                            0,
+                            'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519',
+                            'DISABLED',
+                            0,
+                            0,
+                            0
+                        ),
+                        (
+                            'self@wire.com',
+                            'Self',
+                            'SELF',
+                            1,
+                            'ESTABLISHED',
+                            'PROTEUS',
+                            'ALL_ALLOWED',
+                            0,
+                            'creator',
+                            0,
+                            '[]',
+                            '[]',
+                            0,
+                            0,
+                            'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519',
+                            'DISABLED',
+                            0,
+                            0,
+                            0
+                        ),
+                        (
+                            'connection-pending@wire.com',
+                            'Connection pending',
+                            'CONNECTION_PENDING',
+                            1,
+                            'ESTABLISHED',
+                            'PROTEUS',
+                            'ALL_ALLOWED',
+                            0,
+                            'creator',
+                            0,
+                            '[]',
+                            '[]',
+                            0,
+                            0,
+                            'MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519',
+                            'DISABLED',
+                            0,
+                            0,
+                            0
                         )
                 """.trimIndent(),
                 0
@@ -123,22 +186,26 @@ class Migration136Test : SchemaMigrationTest() {
             assertEquals(
                 mapOf(
                     "channel@wire.com" to "CHANNEL",
-                    "regular@wire.com" to "GROUP"
+                    "connection-pending@wire.com" to "CONNECTION_PENDING",
+                    "one-on-one@wire.com" to "ONE_ON_ONE",
+                    "regular@wire.com" to "GROUP",
+                    "self@wire.com" to "SELF"
                 ),
-                driver.selectConversationGroupTypes()
+                driver.selectConversationTypes()
             )
             assertEquals(false, driver.conversationTableHasColumn("is_channel"))
+            assertEquals(false, driver.conversationTableHasColumn("group_type"))
         } finally {
             driver.close()
             dbFile.delete()
         }
     }
 
-    private fun JdbcSqliteDriver.selectConversationGroupTypes(): Map<String, String> {
+    private fun JdbcSqliteDriver.selectConversationTypes(): Map<String, String> {
         val result = mutableMapOf<String, String>()
         executeQuery(
             null,
-            "SELECT qualified_id, group_type FROM Conversation ORDER BY qualified_id",
+            "SELECT qualified_id, type FROM Conversation ORDER BY qualified_id",
             mapper = { cursor ->
                 while (cursor.next().value) {
                     result[cursor.getString(0)!!] = cursor.getString(1)!!

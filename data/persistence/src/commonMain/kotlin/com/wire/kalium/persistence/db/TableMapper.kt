@@ -62,7 +62,7 @@ import com.wire.kalium.persistence.adapter.ChangeLogEventTypeAdapter
 import com.wire.kalium.persistence.adapter.ContentTypeAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessListAdapter
 import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
-import com.wire.kalium.persistence.adapter.GroupTypeAdapter
+import com.wire.kalium.persistence.adapter.ConversationTypeAdapter
 import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.adapter.MLSPublicKeysAdapter
 import com.wire.kalium.persistence.adapter.MemberRoleAdapter
@@ -78,7 +78,7 @@ internal object TableMapper {
     val callAdapter = Call.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         statusAdapter = EnumColumnAdapter(),
-        conversation_typeAdapter = EnumColumnAdapter(),
+        conversation_typeAdapter = ConversationTypeAdapter,
         typeAdapter = EnumColumnAdapter()
     )
     val clientAdapter = Client.Adapter(
@@ -97,7 +97,7 @@ internal object TableMapper {
     )
     val conversationAdapter = Conversation.Adapter(
         qualified_idAdapter = QualifiedIDAdapter,
-        typeAdapter = EnumColumnAdapter(),
+        typeAdapter = ConversationTypeAdapter,
         mls_group_stateAdapter = EnumColumnAdapter(),
         protocolAdapter = EnumColumnAdapter(),
         muted_statusAdapter = EnumColumnAdapter(),
@@ -113,7 +113,6 @@ internal object TableMapper {
         verification_statusAdapter = EnumColumnAdapter(),
         proteus_verification_statusAdapter = EnumColumnAdapter(),
         legal_hold_statusAdapter = EnumColumnAdapter(),
-        group_typeAdapter = GroupTypeAdapter,
         channel_accessAdapter = EnumColumnAdapter(),
         channel_add_permissionAdapter = EnumColumnAdapter()
     )

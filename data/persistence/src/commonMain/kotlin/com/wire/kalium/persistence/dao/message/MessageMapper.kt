@@ -301,7 +301,7 @@ object MessageMapper {
             isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             isEphemeral = isEphemeral,
-            isGroupConversation = conversationType == ConversationEntity.Type.GROUP,
+            isGroupConversation = conversationType?.isGroup == true,
             text = text,
             assetMimeType = assetMimeType,
             selfUserId = selfUserId,

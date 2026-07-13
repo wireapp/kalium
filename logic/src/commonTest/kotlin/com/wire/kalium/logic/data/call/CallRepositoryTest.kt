@@ -43,7 +43,6 @@ import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -89,7 +88,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.joinAll
@@ -144,22 +142,7 @@ class CallRepositoryTest {
 
     @Test
     fun givenEmptyListOfCalls_whenGetAllCallsIsCalled_thenReturnAnEmptyListOfCalls() = runTest {
-        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .withInitialCallMetadataProfile(
-                CallMetadataProfile(
-                    data = mapOf(
-                        Arrangement.conversationId to createCallMetadata().copy(
-                            isMuted = false,
-                            conversationName = "ONE_ON_ONE Name",
-                            conversationType = Conversation.Type.OneOnOne,
-                            callerName = "otherUsername",
-                            callerTeamName = "team_1"
-                        )
-                    )
-                )
-            )
-            .givenObserveCallsReturns(flowOf(listOf()))
-            .arrange()
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
 
         val calls = callRepository.callsFlow()
 
@@ -174,24 +157,7 @@ class CallRepositoryTest {
             .withInitialCallMetadataProfile(
                 CallMetadataProfile(
                     data = mapOf(
-                        Arrangement.conversationId to createCallMetadata().copy(
-                            isMuted = false,
-                            conversationName = "ONE_ON_ONE Name",
-                            conversationType = Conversation.Type.OneOnOne,
-                            callerName = "otherUsername",
-                            callerTeamName = "team_1"
-                        )
-                    )
-                )
-            )
-            .givenObserveCallsReturns(
-                flowOf(
-                    listOf(
-                        createCallEntity().copy(
-                            status = CallEntity.Status.ESTABLISHED,
-                            conversationType = ConversationEntity.Type.ONE_ON_ONE,
-                            callerId = "callerId@domain"
-                        )
+                        Arrangement.conversationId to createOneOnOneCallMetadata()
                     )
                 )
             )
@@ -221,7 +187,6 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group.Regular(
                             Arrangement.groupConversation,
-                            false,
                             isSelfUserMember = true,
                             selfRole = Conversation.Member.Role.Member
                         )
@@ -378,13 +343,14 @@ class CallRepositoryTest {
             arrangement.callDAO.insertCall(any())
         }
 
-        assertNotNull(
-            callRepository.getCallMetadata(Arrangement.conversationId)
+        assertEquals(
+            CallStatus.ESTABLISHED,
+            callRepository.getCallMetadata(Arrangement.conversationId)?.callStatus
         )
     }
 
     @Test
-    fun whenIncomingGroupCall_withNonExistingCallMetadata_ThenUpdateCallInDatabase() = runTest {
+    fun whenIncomingGroupCall_withStaleActiveCallInDatabase_ThenKeepIncomingCallInMemoryAndInsertFreshCall() = runTest {
         // given
         val callEntity = createCallEntity().copy(
             status = CallEntity.Status.INCOMING
@@ -422,13 +388,198 @@ class CallRepositoryTest {
         // then
         verifySuspend {
             arrangement.callDAO.updateLastCallStatusByConversationId(
-                eq(CallEntity.Status.STILL_ONGOING),
+                eq(CallEntity.Status.CLOSED),
                 eq(callEntity.conversationId)
             )
         }
 
-        assertNotNull(
-            callRepository.getCallMetadata(Arrangement.conversationId)
+        verifySuspend {
+            arrangement.callDAO.insertCall(any())
+        }
+
+        assertEquals(
+            CallStatus.INCOMING,
+            callRepository.getCallMetadata(Arrangement.conversationId)?.callStatus
+        )
+    }
+
+    @Test
+    fun givenStalePersistedMlsConferenceCall_whenCreatingCall_thenLeaveStaleMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveConversationDetailsByIdReturns(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group.Regular(
+                            Arrangement.groupConversation,
+                            isSelfUserMember = true,
+                            selfRole = Conversation.Member.Role.Member
+                        )
+                    )
+                )
+            )
+            .givenGetKnownUserSucceeds()
+            .givenGetTeamSucceeds()
+            .givenGetCallStatusByConversationIdReturns(CallEntity.Status.ESTABLISHED)
+            .givenLeaveSubconversationSuccessful()
+            .givenInsertCallSucceeds()
+            .arrange()
+
+        // when
+        callRepository.createCall(
+            conversationId = Arrangement.conversationId,
+            status = CallStatus.STILL_ONGOING,
+            callerId = callerId,
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            type = ConversationTypeForCall.ConferenceMls
+        )
+
+        // then
+        verifySuspend {
+            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+        }
+    }
+
+    @Test
+    fun givenStalePersistedNonMlsCall_whenCreatingCall_thenDoNotLeaveStaleMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenObserveConversationDetailsByIdReturns(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group.Regular(
+                            Arrangement.groupConversation,
+                            isSelfUserMember = true,
+                            selfRole = Conversation.Member.Role.Member
+                        )
+                    )
+                )
+            )
+            .givenGetKnownUserSucceeds()
+            .givenGetTeamSucceeds()
+            .givenGetCallStatusByConversationIdReturns(CallEntity.Status.ESTABLISHED)
+            .givenInsertCallSucceeds()
+            .arrange()
+
+        // when
+        callRepository.createCall(
+            conversationId = Arrangement.conversationId,
+            status = CallStatus.STILL_ONGOING,
+            callerId = callerId,
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            type = ConversationTypeForCall.Conference
+        )
+
+        // then
+        verifySuspend(VerifyMode.not) {
+            arrangement.leaveSubconversationUseCase.invoke(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenCurrentSessionCall_whenLeavingStaleMlsConferenceIfNeeded_thenDoNotLeaveMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(data = mapOf(Arrangement.conversationId to createCallMetadata()))
+            )
+            .arrange()
+
+        // when
+        callRepository.leaveStaleMlsConferenceIfNeeded(Arrangement.conversationId)
+
+        // then
+        verifySuspend(VerifyMode.not) {
+            arrangement.conversationRepository.getConversationProtocolInfo(any())
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.leaveSubconversationUseCase.invoke(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenNoCurrentSessionMlsConversation_whenLeavingStaleMlsConferenceIfNeeded_thenLeaveMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenGetConversationProtocolInfoReturns(Arrangement.mlsProtocolInfo)
+            .givenLeaveSubconversationSuccessful()
+            .arrange()
+
+        // when
+        callRepository.leaveStaleMlsConferenceIfNeeded(Arrangement.conversationId)
+
+        // then
+        verifySuspend {
+            arrangement.leaveSubconversationUseCase.invoke(any(), eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+        }
+    }
+
+    @Test
+    fun givenNoCurrentSessionProteusConversation_whenLeavingStaleMlsConferenceIfNeeded_thenDoNotLeaveMlsConference() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .givenGetConversationProtocolInfoReturns(Conversation.ProtocolInfo.Proteus)
+            .arrange()
+
+        // when
+        callRepository.leaveStaleMlsConferenceIfNeeded(Arrangement.conversationId)
+
+        // then
+        verifySuspend(VerifyMode.not) {
+            arrangement.leaveSubconversationUseCase.invoke(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun whenStillOngoingGroupCallWithCurrentSessionClosedMetadataAndActivePersistedCall_thenUpdateMemoryOnly() = runTest {
+        // given
+        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(
+                    data = mapOf(
+                        Arrangement.conversationId to createCallMetadata().copy(callStatus = CallStatus.CLOSED)
+                    )
+                )
+            )
+            .givenObserveConversationDetailsByIdReturns(
+                flowOf(
+                    Either.Right(
+                        ConversationDetails.Group.Regular(
+                            Arrangement.groupConversation,
+                            isSelfUserMember = true,
+                            selfRole = Conversation.Member.Role.Member
+                        )
+                    )
+                )
+            )
+            .givenGetKnownUserSucceeds()
+            .givenGetTeamSucceeds()
+            .givenGetCallStatusByConversationIdReturns(CallEntity.Status.ESTABLISHED)
+            .arrange()
+
+        // when
+        callRepository.createCall(
+            conversationId = Arrangement.conversationId,
+            status = CallStatus.STILL_ONGOING,
+            callerId = callerId,
+            isMuted = true,
+            isCameraOn = false,
+            isCbrEnabled = false,
+            type = ConversationTypeForCall.Conference
+        )
+
+        // then
+        verifySuspend(VerifyMode.not) {
+            arrangement.callDAO.insertCall(any())
+        }
+
+        assertEquals(
+            CallStatus.STILL_ONGOING,
+            callRepository.getCallMetadata(Arrangement.conversationId)?.callStatus
         )
     }
 
@@ -609,8 +760,9 @@ class CallRepositoryTest {
             arrangement.callDAO.insertCall(any())
         }
 
-        assertNotNull(
-            callRepository.getCallMetadata(Arrangement.conversationId)
+        assertEquals(
+            CallStatus.INCOMING,
+            callRepository.getCallMetadata(Arrangement.conversationId)?.callStatus
         )
     }
 
@@ -961,26 +1113,14 @@ class CallRepositoryTest {
             id = Arrangement.conversationId,
             status = CallStatus.INCOMING
         )
-        val callEntity = createCallEntity().copy(
-            status = CallEntity.Status.INCOMING,
-            callerId = "callerId@domain",
-            conversationType = ConversationEntity.Type.ONE_ON_ONE
-        )
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .withInitialCallMetadataProfile(
                 CallMetadataProfile(
                     data = mapOf(
-                        Arrangement.conversationId to createCallMetadata().copy(
-                            isMuted = false,
-                            conversationName = "ONE_ON_ONE Name",
-                            conversationType = Conversation.Type.OneOnOne,
-                            callerName = "otherUsername",
-                            callerTeamName = "team_1"
-                        )
+                        Arrangement.conversationId to createOneOnOneCallMetadata(CallStatus.INCOMING)
                     )
                 )
             )
-            .givenObserveIncomingCallsReturns(flowOf(listOf(callEntity)))
             .arrange()
 
         // when
@@ -1000,26 +1140,14 @@ class CallRepositoryTest {
     @Test
     fun givenAnOngoingCall_whenRequestingOngoingCalls_thenReturnTheOngoingCall() = runTest {
         // given
-        val callEntity = createCallEntity().copy(
-            status = CallEntity.Status.STILL_ONGOING,
-            callerId = "callerId@domain",
-            conversationType = ConversationEntity.Type.ONE_ON_ONE
-        )
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .withInitialCallMetadataProfile(
                 CallMetadataProfile(
                     data = mapOf(
-                        Arrangement.conversationId to createCallMetadata().copy(
-                            isMuted = false,
-                            conversationName = "ONE_ON_ONE Name",
-                            conversationType = Conversation.Type.OneOnOne,
-                            callerName = "otherUsername",
-                            callerTeamName = "team_1"
-                        )
+                        Arrangement.conversationId to createOneOnOneCallMetadata(CallStatus.STILL_ONGOING)
                     )
                 )
             )
-            .givenObserveOngoingCallsReturns(flowOf(listOf(callEntity)))
             .arrange()
 
         val expectedCall = provideCall(
@@ -1042,28 +1170,80 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenAnEstablishedCall_whenRequestingEstablishedCalls_thenReturnTheEstablishedCall() = runTest {
+    fun givenIncomingAndOngoingCalls_whenRequestingJoinableCalls_thenReturnBothCalls() = runTest {
         // given
-        val callEntity = createCallEntity().copy(
-            status = CallEntity.Status.ESTABLISHED,
-            callerId = "callerId@domain",
-            conversationType = ConversationEntity.Type.ONE_ON_ONE
-        )
+        val incomingConversationId = Arrangement.conversationId
+        val ongoingConversationId = Arrangement.randomConversationId
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .withInitialCallMetadataProfile(
                 CallMetadataProfile(
                     data = mapOf(
-                        Arrangement.conversationId to createCallMetadata().copy(
-                            isMuted = false,
-                            conversationName = "ONE_ON_ONE Name",
-                            conversationType = Conversation.Type.OneOnOne,
-                            callerName = "otherUsername",
-                            callerTeamName = "team_1"
-                        )
+                        incomingConversationId to createOneOnOneCallMetadata(CallStatus.INCOMING),
+                        ongoingConversationId to createOneOnOneCallMetadata(CallStatus.STILL_ONGOING),
+                        ConversationId("established", "domain") to createOneOnOneCallMetadata(CallStatus.ESTABLISHED)
                     )
                 )
             )
-            .givenObserveEstablishedCallsReturns(flowOf(listOf(callEntity)))
+            .arrange()
+
+        // when
+        val joinableCalls = callRepository.joinableCallsFlow()
+
+        // then
+        joinableCalls.test {
+            val list = awaitItem()
+            assertEquals(2, list.size)
+            assertEquals(
+                setOf(incomingConversationId, ongoingConversationId),
+                list.map { it.conversationId }.toSet()
+            )
+            assertEquals(
+                setOf(CallStatus.INCOMING, CallStatus.STILL_ONGOING),
+                list.map { it.status }.toSet()
+            )
+        }
+    }
+
+    @Test
+    fun givenIncomingAndOngoingCalls_whenRequestingJoinableCallsByConversationId_thenReturnBothCallsById() = runTest {
+        // given
+        val incomingConversationId = Arrangement.conversationId
+        val ongoingConversationId = Arrangement.randomConversationId
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(
+                    data = mapOf(
+                        incomingConversationId to createOneOnOneCallMetadata(CallStatus.INCOMING),
+                        ongoingConversationId to createOneOnOneCallMetadata(CallStatus.STILL_ONGOING),
+                        ConversationId("established", "domain") to createOneOnOneCallMetadata(CallStatus.ESTABLISHED)
+                    )
+                )
+            )
+            .arrange()
+
+        // when
+        val joinableCalls = callRepository.joinableCallsByConversationIdFlow()
+
+        // then
+        joinableCalls.test {
+            val callsByConversationId = awaitItem()
+            assertEquals(setOf(incomingConversationId, ongoingConversationId), callsByConversationId.keys)
+            assertEquals(CallStatus.INCOMING, callsByConversationId[incomingConversationId]?.status)
+            assertEquals(CallStatus.STILL_ONGOING, callsByConversationId[ongoingConversationId]?.status)
+        }
+    }
+
+    @Test
+    fun givenAnEstablishedCall_whenRequestingEstablishedCalls_thenReturnTheEstablishedCall() = runTest {
+        // given
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(
+                    data = mapOf(
+                        Arrangement.conversationId to createOneOnOneCallMetadata(CallStatus.ESTABLISHED)
+                    )
+                )
+            )
             .arrange()
 
         val expectedCall = provideCall(
@@ -1089,40 +1269,18 @@ class CallRepositoryTest {
     @Test
     fun givenSomeCalls_whenRequestingCalls_thenReturnTheCalls() = runTest {
         // given
-        val missedCall = createCallEntity().copy(
-            status = CallEntity.Status.MISSED,
-            callerId = "callerId@domain",
-            conversationType = ConversationEntity.Type.ONE_ON_ONE
-        )
-
-        val closedCall = createCallEntity().copy(
-            conversationId = QualifiedIDEntity(
-                value = Arrangement.randomConversationId.value,
-                domain = Arrangement.randomConversationId.domain
-            ),
-            status = CallEntity.Status.CLOSED,
-            callerId = "callerId@domain",
-            conversationType = ConversationEntity.Type.ONE_ON_ONE
-        )
-        val metadata = createCallMetadata().copy(
-            isMuted = false,
-            conversationName = "ONE_ON_ONE Name",
-            conversationType = Conversation.Type.OneOnOne,
-            callerName = "otherUsername",
-            callerTeamName = "team_1"
-        )
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .withInitialCallMetadataProfile(
                 CallMetadataProfile(
                     data = mapOf(
-                        Arrangement.conversationId to metadata,
-                        Arrangement.randomConversationId to metadata.copy(
+                        Arrangement.conversationId to createOneOnOneCallMetadata(CallStatus.MISSED),
+                        Arrangement.randomConversationId to createOneOnOneCallMetadata(
+                            status = CallStatus.CLOSED,
                             conversationName = "CLOSED CALL"
                         )
                     )
                 )
             )
-            .givenObserveCallsReturns(flowOf(listOf(missedCall, closedCall)))
             .arrange()
 
         val expectedMissedCall = provideCall(
@@ -1158,26 +1316,14 @@ class CallRepositoryTest {
     @Test
     fun givenAnEstablishedCall_whenRequestingEstablishedCallConversationId_thenReturnTheEstablishedCallConversationId() = runTest {
         // given
-        val callEntity = createCallEntity().copy(
-            status = CallEntity.Status.ESTABLISHED,
-            callerId = "callerId@domain",
-            conversationType = ConversationEntity.Type.ONE_ON_ONE
-        )
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
             .withInitialCallMetadataProfile(
                 CallMetadataProfile(
                     data = mapOf(
-                        Arrangement.conversationId to createCallMetadata().copy(
-                            isMuted = false,
-                            conversationName = "ONE_ON_ONE Name",
-                            conversationType = Conversation.Type.OneOnOne,
-                            callerName = "otherUsername",
-                            callerTeamName = "team_1"
-                        )
+                        Arrangement.conversationId to createOneOnOneCallMetadata(CallStatus.ESTABLISHED)
                     )
                 )
             )
-            .givenObserveEstablishedCallsReturns(flowOf(listOf(callEntity)))
             .arrange()
 
         // when
@@ -1476,31 +1622,6 @@ class CallRepositoryTest {
     }
 
     @Test
-    fun givenMlsConferenceCall_whenClosingOpenCalls_thenAttemptToLeaveMlsConference() = runTest {
-        // given
-        val callEntity = createCallEntity().copy(
-            status = CallEntity.Status.ESTABLISHED,
-            callerId = "callerId@domain",
-            type = CallEntity.Type.MLS_CONFERENCE
-        )
-        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .givenObserveEstablishedCallsReturns(flowOf(listOf(callEntity)))
-            .givenLeaveSubconversationSuccessful()
-            .arrange()
-
-        // when
-        callRepository.updateOpenCallsToClosedStatus()
-        yield()
-        advanceUntilIdle()
-
-        // then
-        verifySuspend {
-            arrangement.leaveSubconversationUseCase.invoke(any(), Arrangement.conversationId, CALL_SUBCONVERSATION_ID)
-        }
-
-    }
-
-    @Test
     fun givenStaleOpenCallsCleanupIsObserved_whenCleanupIsMarkedDone_thenInitialAndDoneStatesAreEmitted() = runTest {
         // given
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher()).arrange()
@@ -1510,45 +1631,6 @@ class CallRepositoryTest {
 
             // when
             callRepository.setStaleOpenCallsCleanupFinished()
-
-            // then
-            assertEquals(true, awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun givenOpenCallsCleanupShouldNotBeMarkedDone_whenClosingOpenCalls_thenCleanupFinishedIsNotEmitted() = runTest {
-        // given
-        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .givenObserveEstablishedCallsReturns(flowOf(emptyList()))
-            .arrange()
-
-        callRepository.observeStaleOpenCallsCleanupFinished().test {
-            // then
-            assertEquals(false, awaitItem())
-
-            // when
-            callRepository.updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards = false)
-
-            // then
-            expectNoEvents()
-        }
-    }
-
-    @Test
-    fun givenOpenCallsCleanupShouldBeMarkedDone_whenClosingOpenCalls_thenCleanupFinishedIsEmitted() = runTest {
-        // given
-        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .givenObserveEstablishedCallsReturns(flowOf(emptyList()))
-            .arrange()
-
-        callRepository.observeStaleOpenCallsCleanupFinished().test {
-            // then
-            assertEquals(false, awaitItem())
-
-            // when
-            callRepository.updateOpenCallsToClosedStatus()
 
             // then
             assertEquals(true, awaitItem())
@@ -1865,10 +1947,14 @@ class CallRepositoryTest {
     @Test
     fun givenALastCallIsActive_whenObservingLastActiveCall_thenReturnCall() = runTest {
         // given
-        val callEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED)
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .withObserveLastActiveCallReturning(flowOf(callEntity))
-            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(
+                    mapOf(
+                        Arrangement.conversationId to createCallMetadata().copy(callStatus = CallStatus.ESTABLISHED)
+                    )
+                )
+            )
             .arrange()
         // when
         callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
@@ -1884,8 +1970,13 @@ class CallRepositoryTest {
     fun givenALastCallIsNotActive_whenObservingLastActiveCall_thenReturnNull() = runTest {
         // given
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .withObserveLastActiveCallReturning(flowOf(null))
-            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(
+                    mapOf(
+                        Arrangement.conversationId to createCallMetadata().copy(callStatus = CallStatus.CLOSED)
+                    )
+                )
+            )
             .arrange()
         // when
         callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
@@ -1898,12 +1989,14 @@ class CallRepositoryTest {
     @Test
     fun givenALastCallIsUpdated_whenObservingLastActiveCall_thenReturnUpdatedCall() = runTest {
         // given
-        val callEntity = createCallEntity().copy(status = CallEntity.Status.ANSWERED)
-        val updatedCallEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED)
-        val callEntityFlow = MutableStateFlow<CallEntity?>(callEntity)
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .withObserveLastActiveCallReturning(callEntityFlow)
-            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(
+                    mapOf(
+                        Arrangement.conversationId to createCallMetadata().copy(callStatus = CallStatus.ANSWERED)
+                    )
+                )
+            )
             .arrange()
         // when
         callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
@@ -1911,7 +2004,7 @@ class CallRepositoryTest {
             assertNotNull(awaitItem()).also { call ->
                 assertEquals(CallStatus.ANSWERED, call.status)
             }
-            callEntityFlow.emit(updatedCallEntity)
+            callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.ESTABLISHED)
             assertNotNull(awaitItem()).also { call ->
                 assertEquals(CallStatus.ESTABLISHED, call.status)
             }
@@ -1922,11 +2015,14 @@ class CallRepositoryTest {
     @Test
     fun givenALastCallBecomesNotActive_whenObservingLastActiveCall_thenReturnNull() = runTest {
         // given
-        val callEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED)
-        val callEntityFlow = MutableStateFlow<CallEntity?>(callEntity)
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .withObserveLastActiveCallReturning(callEntityFlow)
-            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(Arrangement.conversationId to createCallMetadata())))
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(
+                    mapOf(
+                        Arrangement.conversationId to createCallMetadata().copy(callStatus = CallStatus.ESTABLISHED)
+                    )
+                )
+            )
             .arrange()
         // when
         callRepository.observeLastActiveCallByConversationId(Arrangement.conversationId).test {
@@ -1934,7 +2030,7 @@ class CallRepositoryTest {
             assertNotNull(awaitItem()).also { call ->
                 assertEquals(CallStatus.ESTABLISHED, call.status)
             }
-            callEntityFlow.emit(null)
+            callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.CLOSED)
             assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
@@ -1944,7 +2040,6 @@ class CallRepositoryTest {
     fun givenNoActiveCalls_whenObservingActiveCalls_thenReturnEmptyList() = runTest {
         // given
         val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .withObserveActiveCallsReturning(flowOf(emptyList()))
             .withInitialCallMetadataProfile(CallMetadataProfile(emptyMap()))
             .arrange()
         // when
@@ -1958,16 +2053,16 @@ class CallRepositoryTest {
     @Test
     fun givenActiveCall_whenObservingActiveCalls_thenReturnActiveCall() = runTest {
         // given
-        val activeCallEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED)
-        val activeCallMetadata = createCallMetadata().copy(callStatus = CallStatus.ESTABLISHED)
-        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .withObserveActiveCallsReturning(flowOf(listOf(activeCallEntity)))
-            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(activeCallEntity.conversationId.toModel() to activeCallMetadata)))
+        val activeCallMetadata = createOneOnOneCallMetadata(CallStatus.ESTABLISHED)
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(mapOf(Arrangement.conversationId to activeCallMetadata))
+            )
             .arrange()
         // when
         callRepository.activeCallsFlow().test {
             // then
-            assertEquals(listOf(arrangement.callMapper.toCall(activeCallEntity, activeCallMetadata)), awaitItem())
+            assertEquals(listOf(provideCall(Arrangement.conversationId, CallStatus.ESTABLISHED)), awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -1975,20 +2070,18 @@ class CallRepositoryTest {
     @Test
     fun givenActiveCallIsUpdated_whenObservingActiveCalls_thenReturnUpdatedList() = runTest {
         // given
-        val activeCallEntity = createCallEntity().copy(status = CallEntity.Status.ESTABLISHED) // not it's active
-        val activeCallMetadata = createCallMetadata().copy(callStatus = CallStatus.ESTABLISHED)
-        val activeCallsFlow = MutableStateFlow(listOf(activeCallEntity))
-        val (arrangement, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
-            .withObserveActiveCallsReturning(activeCallsFlow)
-            .withInitialCallMetadataProfile(CallMetadataProfile(mapOf(activeCallEntity.conversationId.toModel() to activeCallMetadata)))
+        val activeCallMetadata = createOneOnOneCallMetadata(CallStatus.ESTABLISHED)
+        val (_, callRepository) = Arrangement(testDispatcher.testKaliumDispatcher())
+            .withInitialCallMetadataProfile(
+                CallMetadataProfile(mapOf(Arrangement.conversationId to activeCallMetadata))
+            )
             .arrange()
         // when
         callRepository.activeCallsFlow().test {
             // then
-            assertEquals(listOf(arrangement.callMapper.toCall(activeCallEntity, activeCallMetadata)), awaitItem())
+            assertEquals(listOf(provideCall(Arrangement.conversationId, CallStatus.ESTABLISHED)), awaitItem())
 
-            activeCallsFlow.emit(emptyList())
-            callRepository.updateCallStatusById(activeCallEntity.conversationId.toModel(), CallStatus.CLOSED) // now it's not active
+            callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.CLOSED) // now it's not active
             advanceUntilIdle()
             assertEquals(emptyList(), awaitItem())
             cancelAndIgnoreRemainingEvents()
@@ -2065,6 +2158,18 @@ class CallRepositoryTest {
         activeSpeakers = mapOf()
     )
 
+    private fun createOneOnOneCallMetadata(
+        status: CallStatus = CallStatus.ESTABLISHED,
+        conversationName: String = "ONE_ON_ONE Name"
+    ) = createCallMetadata().copy(
+        isMuted = false,
+        conversationName = conversationName,
+        conversationType = Conversation.Type.OneOnOne,
+        callerName = "otherUsername",
+        callerTeamName = "team_1",
+        callStatus = status
+    )
+
     private class Arrangement(
         private val kaliumTestDispatcher: KaliumDispatcher
     ) : CryptoTransactionProviderArrangement by CryptoTransactionProviderArrangementImpl() {
@@ -2125,6 +2230,7 @@ class CallRepositoryTest {
             every {
                 qualifiedIdMapper.fromStringToQualifiedID(eq("callerId"))
             } returns QualifiedID("callerId", "")
+
         }
 
         suspend fun arrange() = this to buildCallRepository().also {
@@ -2146,24 +2252,6 @@ class CallRepositoryTest {
             everySuspend {
                 callApi.getCallConfig(null)
             } returns response
-        }
-
-        suspend fun givenObserveCallsReturns(flow: Flow<List<CallEntity>>) = apply {
-            everySuspend {
-                callDAO.observeCalls()
-            } returns flow
-        }
-
-        suspend fun givenObserveIncomingCallsReturns(flow: Flow<List<CallEntity>>) = apply {
-            everySuspend {
-                callDAO.observeIncomingCalls()
-            } returns flow
-        }
-
-        suspend fun givenObserveOngoingCallsReturns(flow: Flow<List<CallEntity>>) = apply {
-            everySuspend {
-                callDAO.observeOngoingCalls()
-            } returns flow
         }
 
         suspend fun givenObserveEstablishedCallsReturns(flow: Flow<List<CallEntity>>) = apply {
@@ -2290,18 +2378,6 @@ class CallRepositoryTest {
             } calls {
                 delay(delayMs)
             }
-        }
-
-        fun withObserveLastActiveCallReturning(result: Flow<CallEntity?>) = apply {
-            every {
-                callDAO.observeLastActiveCallByConversationId(any())
-            } returns result
-        }
-
-        fun withObserveActiveCallsReturning(result: Flow<List<CallEntity>>) = apply {
-            every {
-                callDAO.observeActiveCalls()
-            } returns result
         }
 
         companion object {

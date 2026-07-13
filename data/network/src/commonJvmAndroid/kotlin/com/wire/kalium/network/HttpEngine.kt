@@ -116,7 +116,3 @@ fun supportedConnectionSpecs(): List<ConnectionSpec> {
     val wireSpec = ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS).build()
     return listOf(wireSpec)
 }
-
-actual fun clearTextTrafficEngine(): HttpClientEngine = OkHttp.create {
-    buildClearTextTrafficOkhttpClient()
-}
