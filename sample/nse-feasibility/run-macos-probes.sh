@@ -5,7 +5,13 @@ set -euo pipefail
 script_dir="${0:A:h}"
 repo_root="${script_dir:A:h:h}"
 executable="${repo_root}/sample/nse-feasibility/build/bin/macosArm64/debugExecutable/kalium-nse-feasibility.kexe"
-shared_root="${1:-${TMPDIR%/}/kalium-nse-feasibility}"
+if [[ $# -gt 0 ]]; then
+    shared_root="$1"
+else
+    shared_root="${TMPDIR%/}/kalium-nse-feasibility"
+    mkdir -p "$shared_root"
+    shared_root="${shared_root:A}"
+fi
 
 if [[ ! -x "$executable" ]]; then
     print -u2 "Missing probe executable: $executable"

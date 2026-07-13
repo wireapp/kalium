@@ -32,8 +32,8 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | 1. iOS feasibility spike | Completed for host/simulator scope | `56ba521dc210` | Host/simulator harness, symbol audit, split-framework probe, and report | Physical-device NSE/security/backend gates deferred |
 | 2. Shared message receiving | Completed | `1e674b5bf901` | Metadata/Apple/logic compilation, dependency audit, simulator framework load, boundary review | Real payload tests deferred |
 | 3. Protobuf decoding and notification extraction | Completed | `b96db61ff87e` | Metadata/Apple/logic compilation, dependency audit, simulator protobuf probe, boundary review | Policy and API hardening deferred |
-| 4. Bounded incremental-sync engine | Completed | `feat: add bounded notification sync engine` | Metadata/Apple compilation, dependency audit, simulator state-machine probe, boundary review | Concrete adapters and real backend deferred |
-| 5. Cross-process coordination | Not started | — | — | — |
+| 4. Bounded incremental-sync engine | Completed | `919510813e62` | Metadata/Apple compilation, dependency audit, simulator state-machine probe, boundary review | Concrete adapters and real backend deferred |
+| 5. Cross-process coordination | Completed | `feat: add Apple process sync lock` | Apple compilation/linking, simulator lifecycle probe, macOS multi-process/owner-death probe, security-path probes, dependency audit, independent review, detekt, diff check | Signed App Group and physical-device gates deferred |
 | 6. Shared handoff database | Not started | — | — | — |
 | 7. Lightweight NSE framework | Not started | — | — | — |
 | 8. Foreground importer contract/integration | Not started | — | — | — |
@@ -395,8 +395,60 @@ Deferred production work:
 - Real backend, decryption, physical-device, locked-device, and native-operation timing remain
   unverified.
 
+## Milestone 5 — Cross-Process Coordination
+
+Status: Completed on 2026-07-13
+
+Delivered:
+
+- Added dependency-free `:data:sync-coordination` common acquisition results, typed retryable and
+  terminal failures, and an idempotent non-throwing lease contract. It has no dependency on domain,
+  logic, persistence, networking, or message sending.
+- Added `AppleProcessLockFactory` with the ADR-aligned cross-language layout
+  `<sharedRoot>/kalium-nse/v1/<digest>/sync.lock`. The SHA-256 digest uses versioned, length-prefixed
+  UTF-8 account/client identifiers and never exposes raw identifiers in the path. The published
+  `probe-account`/`probe-client` vector is
+  `9c03173842651044f0848cfb08e7ef905916c4eae2d198cb7ab691d9124ee5ba`.
+- Added an iOS implementation that anchors the root with `O_NOFOLLOW_ANY`, creates and opens fixed
+  descendants relative to retained directory descriptors, rejects symlinks, validates effective-user
+  ownership/type/exact `0700` and `0600` modes plus a single lock-file link, and acquires only with
+  `flock(LOCK_EX | LOCK_NB)`.
+- Ownership is the retained file descriptor, not file existence. Contention returns immediately,
+  failures close all pre-transfer descriptors, release atomically unlocks/closes at most once, and
+  the lock file is deliberately retained after release and process termination.
+- Added a macOS host-parity implementation and changed the feasibility harness to invoke the
+  production primitive. The host implementation uses full-path `O_NOFOLLOW_ANY` because Kotlin/Native
+  excludes `openat` from its macOS bindings; it is evidence for `flock` behavior, not for the iOS
+  descriptor-ancestry implementation.
+
+Verification evidence:
+
+- Module metadata, iOS Simulator ARM64, and macOS ARM64 compilation passed; the iOS feasibility
+  framework and macOS executable linked; root `detekt` and `git diff --check` passed.
+- The iPhone 16 Pro / iOS 18.4 simulator acquired, observed in-process contention, released twice,
+  reacquired, and retained the lock file. On-disk descendants were `0700`; the `0600` lock file had
+  one link.
+- A real macOS holder and contender returned contention in 765,000 ns. After the holder was killed
+  with `SIGKILL`, the same lock was reacquired in 685,000 ns.
+- Precreated symlink, directory-at-lock-path, and hard-linked lock entries returned terminal
+  `UNSAFE_FILE_SYSTEM_ENTRY`; a root containing `..` returned terminal `INVALID_SHARED_ROOT`.
+- Dependency/import and independent security/correctness reviews found no remaining blocker.
+- No tests were added, modified, or run, per the spike instruction.
+
+Deferred production work:
+
+- Verify signed app-versus-NSE contention, App Group entitlement authenticity, protection-class and
+  locked-device behavior on a physical device.
+- The later higher-layer adapter to `NotificationSyncLeaseCoordinator` must check cancellation before
+  and immediately after native acquisition, releasing immediately if cancellation wins.
+- App and NSE must supply identical canonical protocol account/client IDs. Cleanup code must never
+  rename or remove the private lock tree outside the same lock contract, because cooperating
+  same-entitlement code can otherwise create split lock-file inodes.
+- The shared inbox, foreground importer, authentication refresh adapter, and production App Group
+  wiring remain outside this milestone.
+
 ## Next Action
 
-Commit the verified Milestone 4 change, then start Milestone 5 in a fresh implementation thread.
-Implement the stable per-account non-blocking Apple `flock` lease behind the new coordinator
-contract, prove contention and process-death release behavior, and avoid adding or running tests.
+Commit the verified Milestone 5 change, then start Milestone 6 in a fresh implementation thread.
+Implement the separate App Group handoff database and its atomic raw-event/cursor contract without
+adding or running tests.

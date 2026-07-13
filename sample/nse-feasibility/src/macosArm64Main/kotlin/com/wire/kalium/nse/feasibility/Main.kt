@@ -43,6 +43,7 @@ internal fun runProbeCommand(args: Array<String>) {
                         "detail=${attempt.detail}"
             )
             attempt.lock?.release()
+            attempt.lock?.release()
             if (!attempt.acquired) exitProcess(LOCK_UNAVAILABLE_EXIT_CODE)
         }
 
@@ -53,7 +54,7 @@ internal fun runProbeCommand(args: Array<String>) {
                 println("gate=process-lock acquired=false detail=${attempt.detail}")
                 exitProcess(LOCK_UNAVAILABLE_EXIT_CODE)
             }
-            println("gate=process-lock acquired=true pid=${getpid()} path=${attempt.lock?.path}")
+            println("gate=process-lock acquired=true pid=${getpid()} identity=derived-account-client-digest")
             fflush(stdout)
             sleep(seconds)
             attempt.lock?.release()

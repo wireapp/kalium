@@ -49,6 +49,9 @@ import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Quote
 import com.wire.kalium.protobuf.messages.Text
+import com.wire.kalium.synccoordination.AppleProcessLockFactory
+import com.wire.kalium.synccoordination.ProcessLockAcquireResult
+import com.wire.kalium.synccoordination.ProcessLockLease
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
@@ -58,9 +61,6 @@ import kotlinx.cinterop.usePinned
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
 import platform.posix.CLOCK_MONOTONIC
-import platform.posix.LOCK_EX
-import platform.posix.LOCK_NB
-import platform.posix.LOCK_UN
 import platform.posix.O_CREAT
 import platform.posix.O_RDONLY
 import platform.posix.O_RDWR
@@ -69,7 +69,6 @@ import platform.posix.S_IWUSR
 import platform.posix.close
 import platform.posix.clock_gettime
 import platform.posix.errno
-import platform.posix.flock
 import platform.posix.ftruncate
 import platform.posix.lseek
 import platform.posix.open
@@ -159,42 +158,65 @@ public class NseFeasibilityProbe {
 
     public fun tryAcquireProcessLock(
         sharedRoot: String,
-        accountDigest: String = PROBE_ACCOUNT
+        accountId: String = PROBE_ACCOUNT,
+        clientId: String = PROBE_CLIENT
     ): FeasibilityLockAttempt {
         val startedAt = nowNanos()
-        return runCatching {
-            val accountRoot = accountRoot(sharedRoot, accountDigest)
-            requireDirectory(accountRoot)
-            val lockPath = "$accountRoot/sync.lock"
-            val descriptor = open(lockPath, O_RDWR or O_CREAT, S_IRUSR or S_IWUSR)
-            check(descriptor >= 0) { "open($lockPath) failed: ${lastPosixError()}" }
-
-            if (flock(descriptor, LOCK_EX or LOCK_NB) == 0) {
-                FeasibilityLockAttempt(
-                    acquired = true,
-                    elapsedNanos = nowNanos() - startedAt,
-                    detail = "exclusive non-blocking lock acquired",
-                    lock = FeasibilityProcessLock(descriptor, lockPath)
-                )
-            } else {
-                val detail = lastPosixError()
-                close(descriptor)
-                FeasibilityLockAttempt(
-                    acquired = false,
-                    elapsedNanos = nowNanos() - startedAt,
-                    detail = "exclusive non-blocking lock unavailable: $detail",
-                    lock = null
-                )
-            }
-        }.getOrElse {
-            FeasibilityLockAttempt(
+        return when (val result = AppleProcessLockFactory(sharedRoot).tryAcquire(accountId, clientId)) {
+            is ProcessLockAcquireResult.Acquired -> FeasibilityLockAttempt(
+                acquired = true,
+                elapsedNanos = nowNanos() - startedAt,
+                detail = "exclusive non-blocking Apple lock acquired",
+                lock = FeasibilityProcessLock(result.lease)
+            )
+            ProcessLockAcquireResult.Unavailable -> FeasibilityLockAttempt(
                 acquired = false,
                 elapsedNanos = nowNanos() - startedAt,
-                detail = it.message ?: it.toString(),
+                detail = "exclusive non-blocking Apple lock unavailable",
+                lock = null
+            )
+            is ProcessLockAcquireResult.RetryableFailure -> FeasibilityLockAttempt(
+                acquired = false,
+                elapsedNanos = nowNanos() - startedAt,
+                detail = "retryable Apple lock failure=${result.reason}",
+                lock = null
+            )
+            is ProcessLockAcquireResult.TerminalFailure -> FeasibilityLockAttempt(
+                acquired = false,
+                elapsedNanos = nowNanos() - startedAt,
+                detail = "terminal Apple lock failure=${result.reason}",
                 lock = null
             )
         }
     }
+
+    /** Exercises the target platform's Apple primitive in-process, including idempotent release. */
+    public fun probeProductionProcessLockLifecycle(sharedRoot: String): FeasibilityProbeResult =
+        measure("apple-process-lock-lifecycle") {
+            requireDirectory(sharedRoot)
+            val factory = AppleProcessLockFactory(sharedRoot)
+            val first = factory.tryAcquire(PROBE_ACCOUNT, PROBE_CLIENT)
+            check(first is ProcessLockAcquireResult.Acquired) { "first acquisition=$first" }
+            try {
+                check(factory.tryAcquire(PROBE_ACCOUNT, PROBE_CLIENT) == ProcessLockAcquireResult.Unavailable)
+            } finally {
+                first.lease.release()
+                first.lease.release()
+            }
+
+            val reacquired = factory.tryAcquire(PROBE_ACCOUNT, PROBE_CLIENT)
+            check(reacquired is ProcessLockAcquireResult.Acquired) { "reacquisition=$reacquired" }
+            reacquired.lease.release()
+
+            val expectedLockPath =
+                "${standardizedPath(sharedRoot)}/kalium-nse/v1/$PROBE_ACCOUNT_CLIENT_DIGEST/sync.lock"
+            check(NSFileManager.defaultManager.fileExistsAtPath(expectedLockPath)) {
+                "expected versioned lock file was not retained"
+            }
+
+            "acquired=true; contention=unavailable; releaseTwice=true; reacquired=true; " +
+                    "fileRetained=true; platformImplementationExercised=true; realProcesses=false"
+        }
 
     /**
      * Opens and closes the same CoreCrypto database twice in sequence. It does not prove concurrent
@@ -273,16 +295,10 @@ public data class FeasibilityLockAttempt(
 )
 
 public class FeasibilityProcessLock internal constructor(
-    private var descriptor: Int,
-    public val path: String
+    private val lease: ProcessLockLease
 ) {
-    public fun release(): Boolean {
-        val descriptorToClose = descriptor
-        if (descriptorToClose < 0) return true
-        descriptor = CLOSED_DESCRIPTOR
-        val unlocked = flock(descriptorToClose, LOCK_UN) == 0
-        val closed = close(descriptorToClose) == 0
-        return unlocked && closed
+    public fun release() {
+        lease.release()
     }
 }
 
@@ -316,7 +332,7 @@ private suspend inline fun measureSuspending(
 private fun accountRoot(sharedRoot: String, accountDigest: String): String {
     require(sharedRoot.startsWith('/')) { "Shared root must be an absolute caller-supplied path" }
     require(accountDigest.matches(Regex("[A-Za-z0-9_-]+"))) { "Account digest contains unsafe path characters" }
-    return "${standardizedPath(sharedRoot)}/kalium-nse/v1/$accountDigest"
+    return "${standardizedPath(sharedRoot)}/kalium-nse-feasibility/v1/$accountDigest"
 }
 
 private fun standardizedPath(path: String): String =
@@ -373,7 +389,9 @@ private fun nowNanos(): Long = memScoped {
 private fun lastPosixError(): String = strerror(errno)?.toKString() ?: "errno=$errno"
 
 private const val PROBE_ACCOUNT = "probe-account"
+private const val PROBE_CLIENT = "probe-client"
+private const val PROBE_ACCOUNT_CLIENT_DIGEST =
+    "9c03173842651044f0848cfb08e7ef905916c4eae2d198cb7ab691d9124ee5ba"
 private const val RECEIVING_LINKAGE_CONTENT_BYTE: Byte = 3
 private const val CORE_CRYPTO_KEY_SIZE = 32
-private const val CLOSED_DESCRIPTOR = -1
 private const val NANOS_PER_SECOND = 1_000_000_000L
