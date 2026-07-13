@@ -23,7 +23,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.datetime.Instant
 
@@ -34,7 +33,6 @@ data object ConversationMapper {
         qualifiedId: QualifiedIDEntity,
         name: String?,
         type: ConversationEntity.Type,
-        callStatus: CallEntity.Status?,
         previewAssetId: QualifiedIDEntity?,
         mutedStatus: ConversationEntity.MutedStatus,
         teamId: String?,
@@ -112,7 +110,6 @@ data object ConversationMapper {
         mlsLastKeyingMaterialUpdateDate = mlsLastKeyingMaterialUpdateDate,
         mlsGroupState = mlsGroupState,
         mlsProposalTimer = mlsProposalTimer,
-        callStatus = callStatus,
         previewAssetId = previewAssetId,
         userAvailabilityStatus = userAvailabilityStatus,
         userType = userType,

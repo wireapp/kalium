@@ -22,6 +22,8 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.MessageMapper
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestMessage
@@ -60,6 +62,7 @@ class ConversationRepositoryExtensionsTest {
             .withConversationExtensionsReturningPager(kaliumPager)
             .arrange()
         val searchQuery = "search"
+        val ongoingCallConversationId = ConversationId("conversation", "domain")
         conversationRepositoryExtensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
             queryConfig = ConversationQueryConfig(
                 searchQuery = searchQuery,
@@ -69,13 +72,18 @@ class ConversationRepositoryExtensionsTest {
             ),
             pagingConfig = pagingConfig,
             startingOffset = 0L,
-            strictMlsFilter = false
+            strictMlsFilter = false,
+            ongoingCallConversationIds = listOf(ongoingCallConversationId)
         )
         verify(VerifyMode.exactly(1)) {
             arrangement.conversationDaoExtensions
                 .getPagerForConversationDetailsWithEventsSearch(
                     queryConfig = matches {
-                        it.searchQuery == searchQuery && !it.fromArchive && !it.onlyInteractionEnabled && !it.newActivitiesOnTop
+                        it.searchQuery == searchQuery &&
+                                !it.fromArchive &&
+                                !it.onlyInteractionEnabled &&
+                                !it.newActivitiesOnTop &&
+                                it.ongoingCallConversationIds == listOf(ongoingCallConversationId.toDao())
                     },
                     pagingConfig = eq(pagingConfig),
                     startingOffset = any()
