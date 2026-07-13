@@ -18,60 +18,16 @@
 
 package com.wire.kalium.logic.feature.connection
 
-import com.wire.kalium.logic.data.client.CryptoTransactionProvider
-import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.FetchConversationUseCase
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
-
-@Suppress("LongParameterList")
+/** Public connection API facade backed entirely by the user-session dependency graph. */
 public class ConnectionScope internal constructor(
-    private val connectionRepository: ConnectionRepository,
-    private val conversationRepository: ConversationRepository,
-    private val userRepository: UserRepository,
-    private val oneOnOneResolver: OneOnOneResolver,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
-    private val fetchConversationUseCase: FetchConversationUseCase,
-    private val transactionProvider: CryptoTransactionProvider
+    private val entryPoints: ConnectionEntryPoints,
 ) {
-    public val sendConnectionRequest: SendConnectionRequestUseCase
-        get() = SendConnectionRequestUseCaseImpl(
-            connectionRepository,
-            userRepository,
-            transactionProvider
-        )
-
-    public val acceptConnectionRequest: AcceptConnectionRequestUseCase
-        get() = AcceptConnectionRequestUseCaseImpl(
-            connectionRepository,
-            conversationRepository,
-            oneOnOneResolver,
-            newGroupConversationSystemMessagesCreator,
-            fetchConversationUseCase,
-            transactionProvider
-        )
-
-    public val cancelConnectionRequest: CancelConnectionRequestUseCase
-        get() = CancelConnectionRequestUseCaseImpl(
-            connectionRepository,
-            transactionProvider
-        )
-
-    public val ignoreConnectionRequest: IgnoreConnectionRequestUseCase
-        get() = IgnoreConnectionRequestUseCaseImpl(
-            connectionRepository,
-            transactionProvider
-        )
-
+    public val sendConnectionRequest: SendConnectionRequestUseCase get() = entryPoints.sendConnectionRequest
+    public val acceptConnectionRequest: AcceptConnectionRequestUseCase get() = entryPoints.acceptConnectionRequest
+    public val cancelConnectionRequest: CancelConnectionRequestUseCase get() = entryPoints.cancelConnectionRequest
+    public val ignoreConnectionRequest: IgnoreConnectionRequestUseCase get() = entryPoints.ignoreConnectionRequest
     internal val markConnectionRequestAsNotified: MarkConnectionRequestAsNotifiedUseCase
-        get() = MarkConnectionRequestAsNotifiedUseCaseImpl(connectionRepository)
-
-    public val blockUser: BlockUserUseCase
-        get() = BlockUserUseCaseImpl(connectionRepository, transactionProvider)
-
-    public val unblockUser: UnblockUserUseCase
-        get() = UnblockUserUseCaseImpl(connectionRepository, transactionProvider)
-
+        get() = entryPoints.markConnectionRequestAsNotified
+    public val blockUser: BlockUserUseCase get() = entryPoints.blockUser
+    public val unblockUser: UnblockUserUseCase get() = entryPoints.unblockUser
 }

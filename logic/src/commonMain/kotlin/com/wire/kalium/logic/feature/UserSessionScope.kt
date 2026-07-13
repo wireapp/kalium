@@ -2808,15 +2808,7 @@ public class UserSessionScope internal constructor(
         )
 
     public val connection: ConnectionScope
-        get() = ConnectionScope(
-            connectionRepository,
-            conversationRepository,
-            userRepository,
-            oneOnOneResolver,
-            newGroupConversationSystemMessagesCreator,
-            fetchConversationUseCase,
-            cryptoTransactionProvider
-        )
+        get() = ConnectionScope(userSessionGraph)
 
     public val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase
         get() = ObserveSecurityClassificationLabelUseCaseImpl(
