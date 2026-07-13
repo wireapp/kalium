@@ -2767,11 +2767,7 @@ public class UserSessionScope internal constructor(
         )
 
     public val team: TeamScope
-        get() = TeamScope(
-            teamRepository = teamRepository,
-            slowSyncRepository = slowSyncRepository,
-            selfTeamIdProvider = selfTeamId
-        )
+        get() = TeamScope(userSessionGraph)
 
     public val service: ServiceScope
         get() = ServiceScope(

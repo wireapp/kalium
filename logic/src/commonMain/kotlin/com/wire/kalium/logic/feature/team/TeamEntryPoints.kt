@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2026 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,7 @@ package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 
-public class TeamScope internal constructor(
-    private val entryPoints: TeamEntryPoints,
-) {
-    public val syncSelfTeamInfoUseCase: SyncSelfTeamInfoUseCase get() = entryPoints.syncSelfTeamInfoUseCase
-    public val isSelfATeamMember: IsSelfATeamMemberUseCase get() = entryPoints.isSelfATeamMember
+internal interface TeamEntryPoints {
+    val syncSelfTeamInfoUseCase: SyncSelfTeamInfoUseCase
+    val isSelfATeamMember: IsSelfATeamMemberUseCase
 }

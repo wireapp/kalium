@@ -26,6 +26,8 @@ import com.wire.kalium.logic.feature.connection.ConnectionUseCaseBindings
 import com.wire.kalium.logic.feature.message.MessageDependencies
 import com.wire.kalium.logic.feature.message.MessageEntryPoints
 import com.wire.kalium.logic.feature.message.MessageUseCaseBindings
+import com.wire.kalium.logic.feature.team.TeamEntryPoints
+import com.wire.kalium.logic.feature.team.TeamUseCaseBindings
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Includes
 
@@ -33,12 +35,18 @@ internal object UserSessionLifetime
 
 @DependencyGraph(
     scope = UserSessionLifetime::class,
-    bindingContainers = [ConversationUseCaseBindings::class, MessageUseCaseBindings::class, ConnectionUseCaseBindings::class]
+    bindingContainers = [
+        ConversationUseCaseBindings::class,
+        MessageUseCaseBindings::class,
+        ConnectionUseCaseBindings::class,
+        TeamUseCaseBindings::class,
+    ]
 )
 internal interface UserSessionGraph :
     ConversationEntryPoints,
     MessageEntryPoints,
     ConnectionEntryPoints,
+    TeamEntryPoints,
     CellsFeatureGraph.Factory {
 
     @DependencyGraph.Factory

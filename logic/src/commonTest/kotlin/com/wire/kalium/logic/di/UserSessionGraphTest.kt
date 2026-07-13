@@ -22,14 +22,17 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.di.UserSessionScopedFactory
 import com.wire.kalium.logic.feature.conversation.ConversationDependencies
 import com.wire.kalium.logic.feature.conversation.ConversationScope
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.message.MessageDependencies
 import com.wire.kalium.logic.feature.message.MessageScope
+import com.wire.kalium.logic.feature.team.TeamScope
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.mock
@@ -171,6 +174,19 @@ class UserSessionGraphTest {
         assertEquals(0, arrangement.repositoryCreations)
     }
 
+    @Test
+    fun givenTeamUseCaseIsRequestedTwice_whenUsingOneGraph_thenRepositoryIsShared() {
+        val arrangement = Arrangement()
+        val scope = arrangement.createTeamScope()
+
+        val first = scope.syncSelfTeamInfoUseCase
+        val second = scope.syncSelfTeamInfoUseCase
+
+        assertNotSame(first, second)
+        assertEquals(1, arrangement.teamRepositoryResolutions)
+        assertEquals(0, arrangement.repositoryCreations)
+    }
+
     private class Arrangement {
         val createdRepositories = mutableListOf<ConversationRepository>()
         var repositoryCreations = 0
@@ -179,12 +195,15 @@ class UserSessionGraphTest {
         var messageRepositoryResolutions = 0
         var messageDraftRepositoryResolutions = 0
         var connectionRepositoryResolutions = 0
+        var teamRepositoryResolutions = 0
 
         private val mockUserRepository = mock<UserRepository>()
         private val mockUserPropertyRepository = mock<UserPropertyRepository>()
         private val mockMessageRepository = mock<MessageRepository>()
         private val mockMessageDraftRepository = mock<MessageDraftRepository>()
         private val mockConnectionRepository = mock<ConnectionRepository>()
+        private val mockTeamRepository = mock<TeamRepository>()
+        private val mockSelfTeamIdProvider = mock<SelfTeamIdProvider>()
         private val messageDependencies = mock<MessageDependencies> {
             every { messageDraftRepositoryFactory } returns UserSessionScopedFactory {
                 messageDraftRepositoryResolutions += 1
@@ -213,6 +232,11 @@ class UserSessionGraphTest {
                 connectionRepositoryResolutions += 1
                 mockConnectionRepository
             }
+            every { teamRepositoryFactory } returns UserSessionScopedFactory {
+                teamRepositoryResolutions += 1
+                mockTeamRepository
+            }
+            every { selfTeamIdProvider } returns mockSelfTeamIdProvider
         }
 
         fun createConversationScope(): ConversationScope {
@@ -228,6 +252,11 @@ class UserSessionGraphTest {
         fun createConnectionScope(): ConnectionScope {
             val graph = createGraphFactory<UserSessionGraph.Factory>().create(dependencies, messageDependencies)
             return ConnectionScope(graph)
+        }
+
+        fun createTeamScope(): TeamScope {
+            val graph = createGraphFactory<UserSessionGraph.Factory>().create(dependencies, messageDependencies)
+            return TeamScope(graph)
         }
     }
 }
