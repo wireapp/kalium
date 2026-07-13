@@ -23,24 +23,25 @@ import com.wire.kalium.common.error.ProteusFailure
 import com.wire.kalium.common.error.wrapProteusRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
-import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
-import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.EncryptedData
-import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.logic.data.message.PlainMessageBlob
-import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.message.ProtoContentDecoderAdapter
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.messaging.receiving.MessageContentResolver
+import com.wire.kalium.messaging.receiving.MessageContentResolverImpl
+import com.wire.kalium.messaging.receiving.MessageContentResolution
+import com.wire.kalium.messaging.receiving.ProteusEncryptedMessage
+import com.wire.kalium.messaging.receiving.ProteusMessageDecryptor
+import com.wire.kalium.messaging.receiving.ProteusMessageDecryptorImpl
 import kotlin.io.encoding.Base64
 
 internal interface ProteusMessageUnpacker {
@@ -57,6 +58,8 @@ internal class ProteusMessageUnpackerImpl(
     private val selfUserId: UserId,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
+    private val messageDecryptor: ProteusMessageDecryptor = ProteusMessageDecryptorImpl(),
+    private val contentResolver: MessageContentResolver = MessageContentResolverImpl(),
 ) : ProteusMessageUnpacker {
 
     private val logger get() = kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER)
@@ -72,17 +75,30 @@ internal class ProteusMessageUnpackerImpl(
             CryptoClientId(event.senderClientId.value)
         )
         return wrapProteusRequest {
-            proteusContext.decryptMessage(cryptoSessionId, decodedContentBytes) {
-                val plainMessageBlob = PlainMessageBlob(it)
-                getReadableMessageContent(plainMessageBlob, event.encryptedExternalContent).map { readableContent ->
-                    val appMessage = MessageUnpackResult.ApplicationMessage(
-                        conversationId = event.conversationId,
-                        instant = event.messageInstant,
-                        senderUserId = event.senderUserId,
-                        senderClientId = event.senderClientId,
-                        content = readableContent
+            messageDecryptor.decrypt(
+                context = proteusContext,
+                message = ProteusEncryptedMessage(cryptoSessionId, decodedContentBytes)
+            ) { decryptedMessage ->
+                when (
+                    val resolution = contentResolver.resolveProteusContent(
+                        decryptedMessage = decryptedMessage,
+                        encryptedExternalContent = event.encryptedExternalContent?.data,
+                        decoder = protoContentDecoder
                     )
-                    handleMessage(appMessage)
+                ) {
+                    is MessageContentResolution.Success -> {
+                        val appMessage = MessageUnpackResult.ApplicationMessage(
+                            conversationId = event.conversationId,
+                            instant = event.messageInstant,
+                            senderUserId = event.senderUserId,
+                            senderClientId = event.senderClientId,
+                            content = resolution.message.content
+                        )
+                        Either.Right(handleMessage(appMessage))
+                    }
+
+                    is MessageContentResolution.InvalidExternalContent ->
+                        Either.Left(CoreFailure.Unknown(resolution.cause))
                 }
             }
         }
@@ -130,35 +146,5 @@ internal class ProteusMessageUnpackerImpl(
         }
     }
 
-    private fun getReadableMessageContent(
-        plainMessageBlob: PlainMessageBlob,
-        encryptedData: EncryptedData?
-    ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
-        is ProtoContent.Readable -> Either.Right(protoContent)
-        is ProtoContent.ExternalMessageInstructions -> encryptedData?.let {
-            solveExternalContentForProteusMessage(protoContent, encryptedData)
-        } ?: run {
-            val rootCause = IllegalArgumentException(
-                "Null external content when processing external message instructions."
-            )
-            Either.Left(CoreFailure.Unknown(rootCause))
-        }
-    }
-
-    private fun solveExternalContentForProteusMessage(
-        externalInstructions: ProtoContent.ExternalMessageInstructions,
-        externalData: EncryptedData
-    ): Either<CoreFailure, ProtoContent.Readable> = wrapProteusRequest {
-        val decryptedExternalMessage = decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data
-        PlainMessageBlob(decryptedExternalMessage)
-    }.map(protoContentMapper::decodeFromProtobuf).flatMap { decodedProtobuf ->
-        if (decodedProtobuf !is ProtoContent.Readable) {
-            val rootCause = IllegalArgumentException(
-                "матрёшка! External message can't contain another external message inside!"
-            )
-            Either.Left(CoreFailure.Unknown(rootCause))
-        } else {
-            Either.Right(decodedProtobuf)
-        }
-    }
+    private val protoContentDecoder = ProtoContentDecoderAdapter(protoContentMapper)
 }

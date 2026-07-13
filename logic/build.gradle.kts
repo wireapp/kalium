@@ -81,6 +81,7 @@ kotlin {
                 implementation(projects.domain.userstorage)
                 implementation(projects.domain.usernetwork)
                 implementation(projects.domain.messaging.sending)
+                implementation(projects.domain.messaging.receiving)
                 implementation(projects.domain.messaging.hooks)
 
                 // coroutines

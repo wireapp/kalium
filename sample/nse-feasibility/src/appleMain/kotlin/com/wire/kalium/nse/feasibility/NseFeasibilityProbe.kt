@@ -21,6 +21,17 @@
 package com.wire.kalium.nse.feasibility
 
 import com.wire.kalium.cryptography.coreCryptoCentral
+import com.wire.kalium.cryptography.CryptoClientId
+import com.wire.kalium.cryptography.CryptoQualifiedID
+import com.wire.kalium.cryptography.CryptoSessionId
+import com.wire.kalium.messaging.receiving.DecodedMessageContent
+import com.wire.kalium.messaging.receiving.MessageContentDecoder
+import com.wire.kalium.messaging.receiving.MessageContentResolverImpl
+import com.wire.kalium.messaging.receiving.MessageContentResolution
+import com.wire.kalium.messaging.receiving.MlsEncryptedMessage
+import com.wire.kalium.messaging.receiving.MlsMessageDecryptorImpl
+import com.wire.kalium.messaging.receiving.ProteusEncryptedMessage
+import com.wire.kalium.messaging.receiving.ProteusMessageDecryptorImpl
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.persistence.db.PlatformDatabaseData
@@ -62,6 +73,32 @@ import platform.posix.write
  * an iOS host can pass an App Group URL rather than relying on a process sandbox home directory.
  */
 public class NseFeasibilityProbe {
+
+    /**
+     * Proves that the receive-only contracts are present in this framework without decrypting a
+     * real message or mutating CoreCrypto state.
+     */
+    public fun probeReceivingContractLinkage(): FeasibilityProbeResult = measure("receiving-contract-linkage") {
+        val proteusInput = ProteusEncryptedMessage(
+            sessionId = CryptoSessionId(
+                userId = CryptoQualifiedID("probe-user", "example.invalid"),
+                cryptoClientId = CryptoClientId("probe-client")
+            ),
+            encryptedMessage = byteArrayOf(1)
+        )
+        val mlsInput = MlsEncryptedMessage(groupId = "probe-group", encryptedMessage = byteArrayOf(2))
+        val decoder = MessageContentDecoder<String> { DecodedMessageContent.Application("linked") }
+        val resolved = MessageContentResolverImpl().resolveProteusContent(
+            decryptedMessage = byteArrayOf(RECEIVING_LINKAGE_CONTENT_BYTE),
+            encryptedExternalContent = null,
+            decoder = decoder
+        )
+        check(resolved is MessageContentResolution.Success && resolved.message.content == "linked")
+
+        "proteusInput=${proteusInput::class.simpleName}; mlsInput=${mlsInput::class.simpleName}; " +
+                "proteusDecryptor=${ProteusMessageDecryptorImpl::class.simpleName}; " +
+                "mlsDecryptor=${MlsMessageDecryptorImpl::class.simpleName}; realDecryption=false"
+    }
 
     public fun probeSharedRoot(sharedRoot: String): FeasibilityProbeResult = measure("shared-root") {
         val accountRoot = accountRoot(sharedRoot, PROBE_ACCOUNT)
@@ -292,6 +329,7 @@ private fun nowNanos(): Long = memScoped {
 private fun lastPosixError(): String = strerror(errno)?.toKString() ?: "errno=$errno"
 
 private const val PROBE_ACCOUNT = "probe-account"
+private const val RECEIVING_LINKAGE_CONTENT_BYTE: Byte = 3
 private const val CORE_CRYPTO_KEY_SIZE = 32
 private const val CLOSED_DESCRIPTOR = -1
 private const val NANOS_PER_SECOND = 1_000_000_000L

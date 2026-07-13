@@ -19,11 +19,12 @@ package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.messaging.receiving.MlsDecryptedMessage
 
-internal fun com.wire.kalium.cryptography.DecryptedMessageBundle.toModel(groupID: GroupID): DecryptedMessageBundle =
+internal fun MlsDecryptedMessage.toModel(groupID: GroupID): DecryptedMessageBundle =
     DecryptedMessageBundle(
         groupID,
-        message?.let { message ->
+        decryptedMessage?.let { message ->
             // We will always have senderClientId together with an application message
             // but CoreCrypto API doesn't express this
             ApplicationMessage(

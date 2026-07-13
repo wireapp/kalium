@@ -65,6 +65,9 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.getRemovalKey
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.messaging.receiving.MlsEncryptedMessage
+import com.wire.kalium.messaging.receiving.MlsMessageDecryptor
+import com.wire.kalium.messaging.receiving.MlsMessageDecryptorImpl
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -303,7 +306,8 @@ internal class MLSConversationDataSource(
     private val mutex: Mutex,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
+    private val mlsMessageDecryptor: MlsMessageDecryptor = MlsMessageDecryptorImpl()
 ) : MLSConversationRepository {
 
     private val logger = kaliumLogger.withTextTag("MLSConversationDataSource")
@@ -344,18 +348,20 @@ internal class MLSConversationDataSource(
     ): Either<CoreFailure, List<DecryptedMessageBundle>> {
         logger.d("Decrypting message for group ${groupID.toLogString()}")
         return wrapMLSRequest {
-            mlsContext.decryptMessage(
-                idMapper.toCryptoModel(groupID),
-                message
-            )
-                .let { messages ->
-                    messages.map {
-                        it.crlNewDistributionPoints?.let { newDistributionPoints ->
-                            checkRevocationList(mlsContext, newDistributionPoints)
-                        }
-                        it.toModel(groupID)
+            mlsMessageDecryptor.decrypt(
+                context = mlsContext,
+                message = MlsEncryptedMessage(
+                    groupId = idMapper.toCryptoModel(groupID),
+                    encryptedMessage = message
+                )
+            ) { decryptedMessages ->
+                decryptedMessages.map { decryptedMessage ->
+                    decryptedMessage.crlNewDistributionPoints?.let { newDistributionPoints ->
+                        checkRevocationList(mlsContext, newDistributionPoints)
                     }
+                    decryptedMessage.toModel(groupID)
                 }
+            }
         }
     }
 

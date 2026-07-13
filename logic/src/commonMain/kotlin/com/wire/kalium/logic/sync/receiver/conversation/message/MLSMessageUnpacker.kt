@@ -35,13 +35,13 @@ import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.message.PlainMessageBlob
-import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.message.ProtoContentDecoderAdapter
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.sync.KaliumSyncException
+import com.wire.kalium.messaging.receiving.DecodedMessageContent
 import kotlinx.datetime.Instant
 import kotlin.io.encoding.Base64
 import kotlin.time.Duration.Companion.seconds
@@ -96,17 +96,18 @@ internal class MLSMessageUnpackerImpl(
         }
 
         return bundle.applicationMessage?.let {
-            val protoContent = protoContentMapper.decodeFromProtobuf(PlainMessageBlob(it.message))
-            if (protoContent !is ProtoContent.Readable) {
-                throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
+            when (val decodedContent = protoContentDecoder.decode(it.message)) {
+                is DecodedMessageContent.Application -> MessageUnpackResult.ApplicationMessage(
+                    conversationId = conversationId,
+                    instant = messageInstant,
+                    senderUserId = it.senderID,
+                    senderClientId = it.senderClientID,
+                    content = decodedContent.content
+                )
+
+                is DecodedMessageContent.ExternalInstructions ->
+                    throw KaliumSyncException("MLS message with external content", CoreFailure.Unknown(null))
             }
-            MessageUnpackResult.ApplicationMessage(
-                conversationId = conversationId,
-                instant = messageInstant,
-                senderUserId = it.senderID,
-                senderClientId = it.senderClientID,
-                content = protoContent
-            )
         } ?: MessageUnpackResult.HandshakeMessage
     }
 
@@ -156,4 +157,6 @@ internal class MLSMessageUnpackerImpl(
                 Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
+
+    private val protoContentDecoder = ProtoContentDecoderAdapter(protoContentMapper)
 }

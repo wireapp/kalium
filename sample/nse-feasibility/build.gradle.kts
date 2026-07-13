@@ -66,6 +66,7 @@ kotlin {
                 implementation(projects.core.cryptography)
                 implementation(projects.data.network)
                 implementation(projects.data.persistence)
+                implementation(projects.domain.messaging.receiving)
                 implementation(libs.coroutines.core)
             }
         }

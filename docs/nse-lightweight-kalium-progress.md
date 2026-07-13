@@ -29,8 +29,8 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | Milestone | Status | Commit | Verification | Notes |
 | --- | --- | --- | --- | --- |
 | 0. Architecture and contracts | Completed | `167effa92142` | Source review and documentation consistency checks | ADR 0010 accepted for spike |
-| 1. iOS feasibility spike | Completed for host/simulator scope | `spike: verify lightweight Kalium Apple feasibility` | Host/simulator harness, symbol audit, split-framework probe, and report | Physical-device NSE/security/backend gates deferred |
-| 2. Shared message receiving | Not started | — | iOS Simulator will be the Apple verification target | — |
+| 1. iOS feasibility spike | Completed for host/simulator scope | `56ba521dc210` | Host/simulator harness, symbol audit, split-framework probe, and report | Physical-device NSE/security/backend gates deferred |
+| 2. Shared message receiving | Completed | `refactor: extract receive-only messaging primitives` | Metadata/Apple/logic compilation, dependency audit, simulator framework load, boundary review | Real payload tests deferred |
 | 3. Protobuf decoding and notification extraction | Not started | — | — | — |
 | 4. Bounded incremental-sync engine | Not started | — | — | — |
 | 5. Cross-process coordination | Not started | — | — | — |
@@ -43,6 +43,9 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 ## Milestone 0 — Architecture and Contracts
 
 Status: Completed on 2026-07-13
+
+Commit signing policy: signed commits are preferred, but an unsigned commit is authorized whenever
+the configured 1Password signing agent blocks milestone progress.
 
 Planned deliverables:
 
@@ -152,9 +155,77 @@ Current decision:
 - NSE fallback content when lock acquisition, network synchronization, or decryption cannot complete.
 - Supported multi-account behaviour per NSE invocation.
 
+## Milestone 2 — Shared Message Receiving
+
+Status: Completed on 2026-07-13
+
+Planned deliverables:
+
+- Populate `:domain:messaging:receiving` with receive-only Proteus/MLS primitives and stable result
+  contracts that do not depend on `:logic` event models or sending/recovery code.
+- Split inbound cryptographic state advancement from full-app persistence, receipts, active MLS
+  recovery, delayed commits, and notification rendering.
+- Adapt full Kalium to consume the extracted primitives without changing its externally visible
+  behavior.
+- Keep protobuf decoding behind a narrow contract until its implementation is extracted in
+  Milestone 3.
+- Make the disposable NSE feasibility framework link the receiving module so the iOS Simulator
+  verifies the intended dependency path.
+
+Verification constraints:
+
+- Do not add or modify automated tests during the spike.
+- Run narrow common/Apple compilation and simulator framework-link checks only.
+- Use a simulator framework-load/manual linkage probe; do not claim real Proteus/MLS message
+  decryption without safe captured account state and payloads.
+- Do not pull `:logic`, sending modules, the main user database, or active recovery into
+  `:domain:messaging:receiving`.
+
+Delivered:
+
+- Added Event-neutral Proteus and MLS encrypted inputs, transaction-preserving decryptors, MLS
+  receive results, a generic content-decoder boundary, Proteus external-content resolution, and
+  exact decrypted protobuf retention to `:domain:messaging:receiving`.
+- Added defensive copying for every public byte-bearing input/result.
+- Adapted full Kalium Proteus and MLS receiving to consume the shared primitives while leaving
+  conversation/group resolution, CRL processing, delayed proposal scheduling, persistence,
+  receipts, sending, recovery, lifecycle, and notification rendering in `:logic`.
+- Added a temporary `ProtoContentDecoderAdapter` so the large application mapper remains in
+  `:logic` until Milestone 3.
+- Linked `:domain:messaging:receiving` into the disposable NSE feasibility framework and added an
+  explicitly non-decrypting linkage probe.
+
+Verification evidence:
+
+- `:domain:messaging:receiving:compileKotlinMetadata` passed.
+- `:domain:messaging:receiving:compileKotlinIosSimulatorArm64` passed.
+- `:logic:compileKotlinIosSimulatorArm64` passed.
+- `:sample:nse-feasibility:linkDebugFrameworkIosSimulatorArm64` passed.
+- The resolved receiving dependency graph contains `:core:cryptography` and its low-level
+  transitives, with no Kalium network, persistence, database, `:logic`, or sending modules.
+- A temporary Swift host installed and launched on the iPhone 16 Pro / iOS 18.4 simulator and
+  printed `milestone2ReceivingLinked=true`, the four extracted contract/implementation names, and
+  `realDecryption=false`; it then terminated cleanly.
+- Independent boundary review found no correctness or dependency blocker and confirmed the
+  Proteus callback/rollback boundary, MLS wrapper/CRL ordering, and proposal scheduling behavior
+  were preserved.
+- `git diff --check` and forbidden-import checks passed.
+- Repository `detekt` passed after correcting the feasibility harness source names and linkage-probe
+  constant.
+- No tests were added, modified, or run.
+
+Deferred production work:
+
+- The low-level receiving APIs currently propagate crypto, decoder, AES, and callback exceptions.
+  `:logic` retains existing failure classification. A stable receive-only failure taxonomy must be
+  added before publishing the NSE API without pulling the current broad `:core:common` graph into
+  the lightweight framework.
+- Real Proteus/MLS payload, handshake, buffered-message, and rollback verification remains deferred
+  by the spike's no-test rule and unavailable safe captured account state.
+
 ## Next Action
 
-Commit Milestone 1, then start Milestone 2 in a fresh implementation thread. Extract receive-only
-Proteus/MLS and protobuf-receiving seams into `:domain:messaging:receiving` without changing current
-full-Kalium behavior. Verify with narrow compilation, framework linkage, and an iOS Simulator load
-or manual probe. Do not add or run automated tests during the spike.
+Commit Milestone 2, then start Milestone 3 in a fresh implementation thread. Split pure protobuf
+decoding and notification-field extraction from the current application/sending mapper, preserve
+exact protobuf bytes, and verify the new decoder through the iOS Simulator without adding or running
+automated tests.
