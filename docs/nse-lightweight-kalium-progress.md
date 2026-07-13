@@ -34,8 +34,8 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | 3. Protobuf decoding and notification extraction | Completed | `b96db61ff87e` | Metadata/Apple/logic compilation, dependency audit, simulator protobuf probe, boundary review | Policy and API hardening deferred |
 | 4. Bounded incremental-sync engine | Completed | `919510813e62` | Metadata/Apple compilation, dependency audit, simulator state-machine probe, boundary review | Concrete adapters and real backend deferred |
 | 5. Cross-process coordination | Completed | `7cbe26a3f797` | Apple compilation/linking, simulator lifecycle probe, macOS multi-process/owner-death probe, security-path probes, dependency audit, independent review, detekt, diff check | Signed App Group and physical-device gates deferred |
-| 6. Shared handoff database | Completed | `feat: add notification handoff database` | Metadata/JVM/Android/Apple compilation, Apple links, macOS and simulator durability/rollback probes, dependency audit, independent security review, detekt, diff check | Encrypted production factory and device gates deferred |
-| 7. Lightweight NSE framework | Not started | — | — | — |
+| 6. Shared handoff database | Completed | `00fdd8259877` | Metadata/JVM/Android/Apple compilation, Apple links, macOS and simulator durability/rollback probes, dependency audit, independent security review, detekt, diff check | Encrypted production factory and device gates deferred |
+| 7. Lightweight NSE framework | In progress | — | Fresh implementation and review agents | Production adapters remain gated by the deferred M1/M4/M5/M6 security and backend work |
 | 8. Foreground importer contract/integration | Not started | — | — | — |
 | 9. Resilience, security, and performance | Not started | — | — | — |
 | 10. Rollout and observability | Not started | — | — | — |
@@ -517,9 +517,83 @@ Deferred production work:
 - Signed app-versus-NSE, App Group, locked-device, physical-device, real payload, and production
   backlog/deadline behavior remain unverified.
 
+## Milestone 7 — Lightweight NSE Framework
+
+Status: Implementation and verification complete on 2026-07-13; awaiting milestone commit
+
+Delivered:
+
+- Added `:logic:notification-extension` as the narrow dynamic Swift-facing core framework and
+  `:logic:notification-extension-avs` as a separate dynamic notification-AVS framework. The core
+  module has no direct full-calling, sending, receipt, recovery, main-persistence, or network
+  dependency; the AVS module directly depends only on `:domain:calling-notifications`.
+- Added flat Swift request, result, reason, summary, production-gate, cancellation, and completion
+  surfaces. A per-run atomic gate provides at-most-once completion, including cancellation before
+  coroutine body entry, and public DTO descriptions redact account, client, marker, App Group,
+  payload, conversation, and user values.
+- Adapted the Milestone 5 Apple process lock to the Milestone 4 bounded engine with cancellation
+  checks before and immediately after acquisition. A composite idempotent lease closes registered
+  lazy attempt resources before releasing the native process lock.
+- Adapted the Milestone 6 handoff contract to the bounded-sync inbox. Raw events retain exact bytes,
+  cursor and duplicate/conflict semantics are preserved, and complete child batches are durably
+  staged before their parent is marked processed.
+- Reused the Milestone 2 receive-only content boundary and Milestone 3 protobuf decoder/extractor.
+  Decrypted protobuf bytes are copied unchanged into the handoff store; without a policy snapshot,
+  details remain suppressed and every result requests a privacy-preserving fallback.
+- Added a bounded notification-only AVS façade. The disposable Swift host reconstructs fresh AVS
+  DTOs from copied scalar/string core values and invokes the native AVS façade synchronously while
+  the process lock is held. No Kotlin object crosses between the two KMP framework images.
+- Kept production construction fail-closed behind a stable scalar gate mask. Calling the factory
+  performs no lock, storage, authentication, transport, CoreCrypto, or AVS access while any gate is
+  unresolved.
+
+Verification evidence:
+
+- Both dynamic frameworks compiled and linked for iOS Simulator ARM64, iOS device ARM64, and macOS
+  ARM64 with unified CoreCrypto and local provider-cache scope. The known native AVS debug-map and
+  missing-debug-symbol warnings remain non-fatal.
+- A Swift host compiled in application-extension mode against the regenerated framework headers and
+  ran on the iPhone 16 Pro / iOS 18.4 simulator. It reported one completion, 32 immediate-expiration
+  stress iterations, stage-before-ACK, lock-held storage access, store-close-before-unlock, exact
+  protobuf retention, suppressed-content generic fallback, an unavailable production graph, and a
+  synchronous core-to-Swift-to-AVS call while the lock remained held.
+- The real notification-only native AVS façade was invoked with an intentionally malformed local
+  synthetic payload and returned a safely classified native failure. This proves framework loading,
+  scalar reconstruction, synchronous invocation, and return mapping; it is not real call-payload,
+  policy, authentication, network, or CoreCrypto evidence. Exactly-one AVS close follows from the
+  reviewed façade control flow rather than a native close counter.
+- Dependency, generated-header, Mach-O, link, and symbol audits confirmed separate dynamically
+  linked `MH_DYLIB`/two-level images, no AVS symbols in the core image, and no CoreCrypto/SQLCipher
+  symbols in the AVS image. The public headers expose no `Either`, SQLDelight entity, CoreCrypto
+  context, protobuf domain object, bounded-engine port, or AVS domain type.
+- Repository `detekt`, `git diff --check`, untracked whitespace checks, and the no-test-file audit
+  passed. Independent dependency and architecture/security reviews found no scoped blocker.
+- No tests were added, modified, or run, per the spike instruction. Immediate cancellation evidence
+  combines static cancel-before-launch review with a stress probe; it is not a deterministic
+  scheduler proof.
+
+Deferred production work:
+
+- Implement the encrypted App Group handoff factory, shared Keychain authentication, validated
+  entitlement-derived root, file-protection/locked-device behavior, real raw-frame transport
+  capture, local-writer ACK guarantee, and structured server-timestamp mapping.
+- Implement the raw-event-to-Proteus/MLS receive adapter, stable receive failure taxonomy, and safe
+  CoreCrypto-to-handoff crash ordering. The core binary necessarily retains broad CoreCrypto UniFFI
+  symbols and a transitive `:core:data` network-model/Ktor residual; size and symbol hardening remain.
+- Add notification-policy snapshot ownership and real call metadata. Bound AVS payload and identifier
+  UTF-8 sizes before production and retain the known broad native AVS media linkage as an M1 gate.
+- Replace the disposable public synthetic probe before distribution. Wire the real Swift
+  `UNNotificationContent` handler through its own at-most-once gate and absolute safety cutoff.
+- Validate a signed `.appex` on physical devices with real account/message/call payloads, app-versus-
+  NSE contention, locked-device access, deadline pressure, and memory limits. A combined optional
+  common-metadata/host compile also remains blocked by the existing Milestone 3
+  `:data:message-content` datetime/Okio classpath gap; all target Apple framework links pass.
+- Foreground import into the main database remains Milestone 8. Sending, read/delivery receipts, and
+  active MLS sending recovery remain out of scope.
+
 ## Next Action
 
-Commit the verified Milestone 6 change, then start Milestone 7 in a fresh implementation thread.
-Assemble the lightweight Swift-facing NSE framework from the bounded sync, process lock, handoff
-store, receive-only crypto, protobuf extraction, and notification-only AVS boundaries without
-adding or running tests.
+Review the Milestone 7 diff, create its dedicated commit, then start Milestone 8 in a fresh agent
+task. Milestone 8 should import handoff rows into the foreground application's main database
+idempotently and mark them imported only after the main database commit succeeds. Continue to avoid
+adding, modifying, or running tests until the spike design has been verified end to end.
