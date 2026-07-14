@@ -79,7 +79,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
         val occurrence = occurrencesFor(meeting).single()
         assertEquals(meeting.meetingId, occurrence.meeting_id)
         assertEquals(meeting.startTime.toEpochMilliseconds(), occurrence.occurrence_start.toEpochMilliseconds())
-        assertEquals(meeting.endTime?.toEpochMilliseconds(), occurrence.occurrence_end?.toEpochMilliseconds())
+        assertEquals(meeting.endTime.toEpochMilliseconds(), occurrence.occurrence_end.toEpochMilliseconds())
     }
 
     @Test
@@ -184,10 +184,10 @@ class MeetingDaoTest : BaseDatabaseTest() {
         }
 
     @Test
-    fun givenOneTimeMeetingWithoutEndDate_whenRemovingOutdatedMeetings_thenMeetingIsKept() =
+    fun givenOneTimeMeetingWithRecentEndDate_whenRemovingOutdatedMeetings_thenMeetingIsKept() =
         runTest(dispatcher) {
             val now = Clock.System.now()
-            val meeting = newMeeting(startTime = now - OUTDATED_DAYS.days - 1.days, endTime = null, recurrence = null)
+            val meeting = newMeeting(startTime = now - OUTDATED_DAYS.days, endTime = now - OUTDATED_DAYS.days + 1.hours)
             insertMeetingDependencies(meeting)
             meetingDao.upsertMeetings(listOf(meeting), now + GENERATION_DAYS.days)
 
@@ -283,7 +283,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
 
 fun newMeeting(
     startTime: Instant = Instant.parse("2026-01-01T10:00:00Z"),
-    endTime: Instant? = startTime + 1.hours,
+    endTime: Instant = startTime + 1.hours,
     recurrence: MeetingEntity.RecurrenceEntity? = null,
     meetingId: QualifiedIDEntity = MEETING_ID,
     conversationId: QualifiedIDEntity = CONVERSATION_ID,

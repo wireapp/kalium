@@ -30,7 +30,7 @@ data object MeetingMapper {
         lastEditDate: Instant?,
         title: String,
         startDate: Instant,
-        endDate: Instant?,
+        endDate: Instant,
         trial: Boolean,
         recurrenceFrequency: MeetingEntity.RecurrenceEntity.Frequency?,
         recurrenceInterval: Long?,

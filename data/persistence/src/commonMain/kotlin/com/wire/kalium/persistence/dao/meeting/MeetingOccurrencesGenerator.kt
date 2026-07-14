@@ -82,12 +82,12 @@ object MeetingOccurrencesGenerator {
     }
 
     private fun MeetingGeneratorState.toOccurrence(): MeetingOccurrenceEntity {
-        val duration = meeting.endTime?.let { it - meeting.startTime }
+        val duration = meeting.endTime - meeting.startTime
         return MeetingOccurrenceEntity(
             occurrenceId = Uuid.random().toString(),
             meetingId = meeting.meetingId,
             occurrenceStart = nextCandidateStart,
-            occurrenceEnd = duration?.let { nextCandidateStart + it } ?: nextCandidateStart
+            occurrenceEnd = nextCandidateStart + duration
         )
     }
 

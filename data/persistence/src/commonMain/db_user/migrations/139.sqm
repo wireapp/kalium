@@ -2,7 +2,7 @@ CREATE TABLE MeetingOccurrence (
     occurrence_id TEXT NOT NULL PRIMARY KEY,
     meeting_id TEXT AS QualifiedIDEntity NOT NULL,
     occurrence_start INTEGER AS Instant NOT NULL,
-    occurrence_end INTEGER AS Instant,
+    occurrence_end INTEGER AS Instant NOT NULL,
 
     FOREIGN KEY (meeting_id) REFERENCES Meeting(meeting_id) ON DELETE CASCADE
 );

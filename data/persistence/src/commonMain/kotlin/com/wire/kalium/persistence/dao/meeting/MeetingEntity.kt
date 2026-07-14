@@ -28,7 +28,7 @@ data class MeetingEntity(
     val updatedAt: Instant?,
     val title: String,
     val startTime: Instant,
-    val endTime: Instant?,
+    val endTime: Instant,
     val trial: Boolean,
     val recurrence: RecurrenceEntity?
 ) {
@@ -45,5 +45,5 @@ data class MeetingOccurrenceEntity(
     val occurrenceId: String,
     val meetingId: QualifiedIDEntity,
     val occurrenceStart: Instant,
-    val occurrenceEnd: Instant?
+    val occurrenceEnd: Instant
 )
