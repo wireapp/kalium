@@ -28,6 +28,7 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.IgnoreJS
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.IgnoreJvm
+import com.wire.kalium.persistence.utils.knownConversationTypes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestResult
@@ -559,11 +560,11 @@ class DatabaseImporterTest : BaseDatabaseTest() {
             val overLappingId = ConversationIDEntity("overlappingValue$index", "overlappingDomain$index")
             val overLappingName = "overLappingName$index"
 
-            val conversationType = ConversationEntity.Type.values()[index % ConversationEntity.Type.values().size]
+            val conversationType = knownConversationTypes[index % knownConversationTypes.size]
 
             val sanitizedConversationType =
                 if (conversationType == ConversationEntity.Type.CONNECTION_PENDING)
-                    ConversationEntity.Type.values()[(index + 1) % ConversationEntity.Type.values().size]
+                    knownConversationTypes[(index + 1) % knownConversationTypes.size]
                 else conversationType
 
             val overlappingConversation = ConversationEntity(
@@ -589,7 +590,6 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 mlsVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                 proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
                 legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED,
-                isChannel = false,
                 channelAccess = ConversationEntity.ChannelAccess.PRIVATE,
                 channelAddPermission = ConversationEntity.ChannelAddPermission.EVERYONE,
                 wireCell = null,

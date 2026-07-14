@@ -28,6 +28,7 @@ import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.UserAssetId
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -70,6 +71,8 @@ import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class AssetRepositoryTest {
+
+    private val selfUserId = UserId("self-user-id", "self-domain")
 
     private lateinit var testScope: TestDispatcher
     private lateinit var fakeKaliumFileSystem: FakeKaliumFileSystem
@@ -740,11 +743,11 @@ internal class AssetRepositoryTest {
         val dummyData = "some-dummy-data".encodeToByteArray()
         val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
         // this conv id is hardcoded for public assets
-        val testConversationId = ConversationId("00000000-0000-0000-0000-000000000000", "no-domain")
+        val testConversationId = ConversationId("00000000-0000-0000-0000-000000000000", selfUserId.domain)
         val testFilename = "test-filename"
         val testFiletype = "image/jpg"
 
-        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem)
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem, selfUserId)
             .withRawStoredData(dummyData, fullDataPath)
             .withSuccessfulUpload(expectedAssetResponse)
             .withAssetAuditLogEnabled(true)
@@ -770,7 +773,49 @@ internal class AssetRepositoryTest {
                 any(),
                 any()
             )
-        }    }
+        }
+    }
+
+    @Test
+    fun givenAuditLogEnabledAndConversationId_whenUploadingPublicAsset_thenExplicitConversationIdShouldBeIncluded() = runTest {
+        // Given
+        val dataNamePath = "temp-data-path"
+        val fullDataPath = fakeKaliumFileSystem!!.tempFilePath(dataNamePath)
+        val dummyData = "some-dummy-data".encodeToByteArray()
+        val expectedAssetResponse = AssetResponse("some_key", "some_domain", "some_expiration_val", "some_token")
+        val testConversationId = ConversationId("conv-id", "conv-domain")
+        val testFilename = "test-filename"
+        val testFiletype = "image/jpg"
+
+        val (arrangement, assetRepository) = Arrangement(fakeKaliumFileSystem, selfUserId)
+            .withRawStoredData(dummyData, fullDataPath)
+            .withSuccessfulUpload(expectedAssetResponse)
+            .withAssetAuditLogEnabled(true)
+            .arrange()
+
+        // When
+        assetRepository.uploadAndPersistPublicAsset(
+            assetDataPath = fullDataPath,
+            mimeType = testFiletype,
+            assetDataSize = dummyData.size.toLong(),
+            conversationId = testConversationId,
+            filename = testFilename,
+            filetype = testFiletype
+        )
+
+        // Then
+        verifySuspend {
+            arrangement.assetApi.uploadAsset(
+                matching {
+                    it.conversationId == testConversationId &&
+                    it.filename == testFilename &&
+                    it.filetype == testFiletype
+                },
+                any(),
+                any()
+            )
+        }
+    }
 
     @Test
     fun givenAuditLogDisabled_whenUploadingPublicAsset_thenMetadataShouldNotBeIncluded() = runTest {
@@ -897,7 +942,10 @@ internal class AssetRepositoryTest {
         }
     }
 
-    class Arrangement(private val fakeKaliumFileSystem: FakeKaliumFileSystem) {
+    class Arrangement(
+        private val fakeKaliumFileSystem: FakeKaliumFileSystem,
+        private val selfUserId: UserId = UserId("self-user-id", "self-domain")
+    ) {
 
         val assetApi = mock<AssetApi>()
         val assetDAO = mock<AssetDAO>()
@@ -909,6 +957,7 @@ internal class AssetRepositoryTest {
         private val assetRepository = AssetDataSource(
             assetApi = assetApi,
             assetDao = assetDAO,
+            selfUserId = selfUserId,
             assetMapper = assetMapper,
             assetAuditLog = lazy { assetAuditLog },
             kaliumFileSystem = fakeKaliumFileSystem

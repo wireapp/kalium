@@ -36,6 +36,7 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
+import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.nomaddevice.NomadDeviceSyncApi
@@ -55,6 +56,7 @@ import com.wire.kalium.network.api.v12.authenticated.networkContainer.Authentica
 import com.wire.kalium.network.api.v13.authenticated.networkContainer.AuthenticatedNetworkContainerV13
 import com.wire.kalium.network.api.v14.authenticated.networkContainer.AuthenticatedNetworkContainerV14
 import com.wire.kalium.network.api.v15.authenticated.networkContainer.AuthenticatedNetworkContainerV15
+import com.wire.kalium.network.api.v16.authenticated.networkContainer.AuthenticatedNetworkContainerV16
 import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
@@ -129,6 +131,8 @@ interface AuthenticatedNetworkContainer {
     val upgradePersonalToTeamApi: UpgradePersonalToTeamApi
 
     val serverTimeApi: ServerTimeApi
+
+    val meetingApi: MeetingApi
 
     val cellsHttpClient: HttpClient
         get() = HttpClient()
@@ -301,6 +305,16 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 15 -> AuthenticatedNetworkContainerV15(
+                    sessionManager,
+                    nomadServiceUrl,
+                    selfUserId,
+                    certificatePinning,
+                    mockEngine,
+                    mockWebSocketSession,
+                    kaliumLogger
+                )
+
+                16 -> AuthenticatedNetworkContainerV16(
                     sessionManager,
                     nomadServiceUrl,
                     selfUserId,

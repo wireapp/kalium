@@ -34,6 +34,7 @@ kaliumLibrary {
 
 val useUnifiedCoreCrypto: Boolean = findProperty("USE_UNIFIED_CORE_CRYPTO")?.toString()?.toBoolean()
     ?: error("USE_UNIFIED_CORE_CRYPTO not set")
+val disableAppleAvs: Boolean = findProperty("kalium.disableAppleAvs")?.toString()?.toBoolean() ?: false
 
 kotlin {
     explicitApi()
@@ -96,6 +97,9 @@ kotlin {
                 // Okio
                 implementation(libs.okio.core)
 
+                // HTML parsing
+                implementation(libs.ksoup)
+
                 implementation(libs.sqldelight.androidxPaging)
                 api(libs.paging.common)
                 // Concurrent collections
@@ -138,8 +142,10 @@ kotlin {
             getByName("macosArm64Main")
         ).forEach { appleTargetMain ->
             appleTargetMain.kotlin.srcDir(appleCallSourceDir)
-            appleTargetMain.dependencies {
-                implementation(libs.avsKmp)
+            if (!disableAppleAvs) {
+                appleTargetMain.dependencies {
+                    implementation(libs.avsKmp)
+                }
             }
         }
 

@@ -19,14 +19,14 @@
 package com.wire.kalium.persistence.conversation
 
 import androidx.paging.PagingConfig
+import androidx.paging.PagingDataEvent
+import androidx.paging.PagingDataPresenter
 import androidx.paging.PagingSource
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.dao.call.CallDAO
-import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDetailsWithEventsMapper
@@ -47,6 +47,10 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newDraftMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
@@ -66,7 +70,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     private lateinit var connectionDAO: ConnectionDAO
     private lateinit var memberDAO: MemberDAO
     private lateinit var userDAO: UserDAO
-    private lateinit var callDAO: CallDAO
     private lateinit var conversationFolderDAO: ConversationFolderDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
@@ -81,7 +84,6 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         connectionDAO = db.connectionDAO
         memberDAO = db.memberDAO
         userDAO = db.userDAO
-        callDAO = db.callDAO
         conversationFolderDAO = db.conversationFolderDAO
         conversationExtensions = ConversationExtensionsImpl(queries, ConversationDetailsWithEventsMapper, ReadDispatcher(dispatcher))
     }
@@ -93,7 +95,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstPage_thenItShouldContainTheCorrectCountBeforeAndAfter() = runTest(dispatcher) {
-        populateData(isChannel = false)
+        populateData()
         val result = getPager().pagingSource.refresh()
         assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
         // Assuming the first page was fetched, itemsAfter should be the remaining ones
@@ -103,7 +105,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstSearchedPage_thenItShouldContainTheCorrectCountBeforeAndAfter() = runTest(dispatcher) {
-        populateData(isChannel = false)
+        populateData()
         val searchQuery = "conversation 1"
         val result = getPager(searchQuery = searchQuery).pagingSource.refresh()
         assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
@@ -114,7 +116,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstPage_thenTheNextKeyShouldBeTheFirstItemOfTheNextPage() = runTest(dispatcher) {
-        populateData(isChannel = false)
+        populateData()
         val result = getPager().pagingSource.refresh()
         assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
         assertEquals(PAGE_SIZE, result.nextKey) // First page fetched, second page starts at the end of the first one
@@ -122,7 +124,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstPage_thenItShouldContainTheFirstPageOfItems() = runTest(dispatcher) {
-        populateData(isChannel = false)
+        populateData()
         val result = getPager().pagingSource.refresh()
         assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
         result.data.forEachIndexed { index, conversation ->
@@ -132,8 +134,40 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenChannelOngoingCallIdsChange_whenCollectingPagingData_thenReloadUsesLatestIds() = runTest(dispatcher) {
+        populateData(count = 2, type = ConversationEntity.Type.CHANNEL)
+        val ongoingCallConversationIds = MutableStateFlow(emptyList<ConversationIDEntity>())
+        val pager = conversationExtensions.getPagerForConversationDetailsWithEventsSearch(
+            pagingConfig = PagingConfig(PAGE_SIZE),
+            queryConfig = ConversationExtensions.QueryConfig(
+                newActivitiesOnTop = true,
+                ongoingCallConversationIds = ongoingCallConversationIds.value,
+                ongoingCallConversationIdsFlow = ongoingCallConversationIds,
+            ),
+        )
+        val refreshEvents = Channel<Unit>(Channel.UNLIMITED)
+        val presenter = object : PagingDataPresenter<ConversationDetailsWithEventsEntity>(dispatcher) {
+            override suspend fun presentPagingDataEvent(event: PagingDataEvent<ConversationDetailsWithEventsEntity>) {
+                if (event is PagingDataEvent.Refresh) refreshEvents.send(Unit)
+            }
+        }
+        val collectionJob = launch {
+            pager.pagingDataFlow.collectLatest(presenter::collectFrom)
+        }
+
+        refreshEvents.receive()
+        assertEquals("${CONVERSATION_ID_PREFIX}0", presenter.snapshot().items.first().conversationViewEntity.id.value)
+
+        ongoingCallConversationIds.value = listOf(ConversationIDEntity("${CONVERSATION_ID_PREFIX}1", "domain"))
+
+        refreshEvents.receive()
+        assertEquals("${CONVERSATION_ID_PREFIX}1", presenter.snapshot().items.first().conversationViewEntity.id.value)
+        collectionJob.cancel()
+    }
+
+    @Test
     fun givenInsertedConversations_whenGettingSecondPage_thenShouldContainTheCorrectItems() = runTest(dispatcher) {
-        populateData(isChannel = false)
+        populateData()
         val pagingSource = getPager().pagingSource
         val secondPageResult = pagingSource.nextPageForOffset(PAGE_SIZE)
         assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(secondPageResult)
@@ -146,8 +180,8 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstPageOfArchivedConversations_thenItShouldContainArchivedItems() = runTest(dispatcher) {
-        populateData(archived = false, count = CONVERSATION_COUNT, conversationIdPrefix = CONVERSATION_ID_PREFIX, isChannel = false)
-        populateData(archived = true, count = CONVERSATION_COUNT, conversationIdPrefix = ARCHIVED_CONVERSATION_ID_PREFIX, isChannel = false)
+        populateData(archived = false, count = CONVERSATION_COUNT, conversationIdPrefix = CONVERSATION_ID_PREFIX)
+        populateData(archived = true, count = CONVERSATION_COUNT, conversationIdPrefix = ARCHIVED_CONVERSATION_ID_PREFIX)
         val result = getPager(fromArchive = true).pagingSource.refresh()
         assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
         result.data.forEachIndexed { index, conversation ->
@@ -158,7 +192,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenInsertedConversations_whenGettingFirstSearchedPage_thenShouldContainTheCorrectItems() = runTest(dispatcher) {
-        populateData(isChannel = false)
+        populateData()
         val searchQuery = "conversation 1"
         val result = getPager(searchQuery = searchQuery).pagingSource.refresh()
         assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
@@ -170,34 +204,73 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenFilterByGroup_whenReturningResults_thenDONotIncludeChannels() = runTest(dispatcher) {
-        populateData(archived = false, count = 10, conversationIdPrefix = "group_", isChannel = false)
-        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", isChannel = true)
+    fun givenFilterByGroup_whenReturningResults_thenIncludeOnlyGroups() = runTest(dispatcher) {
+        populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
+        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
+        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
         getPager(searchQuery = "", filter = ConversationFilterEntity.GROUPS).pagingSource.refresh().also { result ->
             assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
             assertEquals(10, result.data.size)
             result.data.forEach {
-                assertFalse { it.conversationViewEntity.isChannel }
+                assertEquals(ConversationEntity.Type.GROUP, it.conversationViewEntity.type)
             }
         }
     }
 
     @Test
-    fun givenFilterByChannels_whenReturningResults_thenDONotIncludeGroups() = runTest(dispatcher) {
-        populateData(archived = false, count = 10, conversationIdPrefix = "group_", isChannel = false)
-        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", isChannel = true)
+    fun givenFilterByChannels_whenReturningResults_thenIncludeOnlyChannels() = runTest(dispatcher) {
+        populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
+        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
+        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
         getPager(searchQuery = "", filter = ConversationFilterEntity.CHANNELS).pagingSource.refresh().also { result ->
             assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
             assertEquals(9, result.data.size)
             result.data.forEach {
-                assertTrue { it.conversationViewEntity.isChannel }
+                assertEquals(ConversationEntity.Type.CHANNEL, it.conversationViewEntity.type)
+            }
+        }
+    }
+
+    @Test
+    fun givenFilterAll_whenReturningResults_thenIncludeOnlyGroupsAndChannels_excludeMeetingsAndUnknown() = runTest(dispatcher) {
+        populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
+        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
+        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
+        getPager(searchQuery = "", filter = ConversationFilterEntity.ALL).pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Long, ConversationDetailsWithEventsEntity>>(result)
+            assertEquals(19, result.data.size)
+            result.data.forEach {
+                assertTrue {
+                    it.conversationViewEntity.type in setOf(ConversationEntity.Type.CHANNEL, ConversationEntity.Type.GROUP)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun givenSearchQuery_whenReturningResults_thenIncludeOnlyGroupsAndChannels_excludeMeetingsAndUnknown() = runTest(dispatcher) {
+        populateData(archived = false, count = 10, conversationIdPrefix = "group_", type = ConversationEntity.Type.GROUP)
+        populateData(archived = false, count = 9, conversationIdPrefix = "channel_", type = ConversationEntity.Type.CHANNEL)
+        populateData(archived = false, count = 8, conversationIdPrefix = "meeting_", type = ConversationEntity.Type.MEETING)
+        populateData(archived = false, count = 7, conversationIdPrefix = "unknown_", type = ConversationEntity.Type.Unknown("future"))
+
+        getPager(searchQuery = "_0").pagingSource.refresh().also { result ->
+            assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
+            assertEquals(2, result.data.size) // "group_0" and "channel_0" should match the search query
+            result.data.forEach {
+                assertTrue {
+                    it.conversationViewEntity.type in setOf(ConversationEntity.Type.CHANNEL, ConversationEntity.Type.GROUP)
+                }
             }
         }
     }
 
     @Test
     fun givenConversationListPageLoaded_whenMessageIsInserted_thenPagingSourceShouldBeInvalidated() = runTest(dispatcher) {
-        populateData(count = 1, isChannel = false)
+        populateData(count = 1)
         val pagingSource = getPager().pagingSource
 
         pagingSource.refresh().also { result ->
@@ -218,7 +291,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenSearchedConversationListPageLoaded_whenMessageIsInserted_thenPagingSourceShouldBeInvalidated() = runTest(dispatcher) {
-        populateData(count = 1, isChannel = false)
+        populateData(count = 1)
         val pagingSource = getPager(searchQuery = "conversation 0").pagingSource
 
         pagingSource.refresh().also { result ->
@@ -239,7 +312,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenConversationListPageLoaded_whenDraftIsUpserted_thenPagingSourceShouldNotBeInvalidated() = runTest(dispatcher) {
-        populateData(count = 1, isChannel = false)
+        populateData(count = 1)
         val pagingSource = getPager().pagingSource
 
         pagingSource.refresh().also { result ->
@@ -255,33 +328,8 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConversationListPageLoaded_whenCallIsInserted_thenPagingSourceShouldBeInvalidated() = runTest(dispatcher) {
-        populateData(count = 1, isChannel = false)
-        val conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain")
-        val pagingSource = getPager().pagingSource
-
-        pagingSource.refresh().also { result ->
-            assertIs<PagingSource.LoadResult.Page<Int, ConversationDetailsWithEventsEntity>>(result)
-        }
-        assertFalse { pagingSource.invalid }
-
-        callDAO.insertCall(
-            CallEntity(
-                conversationId = conversationId,
-                id = "call_1",
-                status = CallEntity.Status.STILL_ONGOING,
-                callerId = "caller",
-                conversationType = ConversationEntity.Type.GROUP,
-                type = CallEntity.Type.CONFERENCE
-            )
-        )
-
-        assertTrue { pagingSource.invalid }
-    }
-
-    @Test
     fun givenConversationListPageLoaded_whenConversationIsAddedToFolder_thenPagingSourceShouldBeInvalidated() = runTest(dispatcher) {
-        populateData(count = 1, isChannel = false)
+        populateData(count = 1)
         val conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain")
         val pagingSource = getPager().pagingSource
 
@@ -304,7 +352,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
 
     @Test
     fun givenConversationListPageLoaded_whenNotificationDateIsUpdated_thenPagingSourceShouldNotBeInvalidated() = runTest(dispatcher) {
-        populateData(count = 1, isChannel = false)
+        populateData(count = 1)
         val conversationId = ConversationIDEntity("${CONVERSATION_ID_PREFIX}0", "domain")
         val pagingSource = getPager().pagingSource
 
@@ -419,7 +467,7 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
         archived: Boolean = false,
         count: Int = CONVERSATION_COUNT,
         conversationIdPrefix: String = CONVERSATION_ID_PREFIX,
-        isChannel: Boolean
+        type: ConversationEntity.Type = ConversationEntity.Type.GROUP
     ) {
         userDAO.upsertUser(newUserEntity(qualifiedID = UserIDEntity("user", "domain")))
         repeat(count) {
@@ -428,11 +476,10 @@ class ConversationExtensionsTest : BaseDatabaseTest() {
             val lastRead = lastModified.minus(1.seconds) // if message needs to be unread, then lastRead should be before lastModified
             val conversation = newConversationEntity(ConversationIDEntity("$conversationIdPrefix$it", "domain")).copy(
                 name = "conversation $it",
-                type = ConversationEntity.Type.GROUP,
+                type = type,
                 lastModifiedDate = lastModified,
                 lastReadDate = lastRead,
                 archived = archived,
-                isChannel = isChannel,
             )
             conversationDAO.insertConversation(conversation)
         }

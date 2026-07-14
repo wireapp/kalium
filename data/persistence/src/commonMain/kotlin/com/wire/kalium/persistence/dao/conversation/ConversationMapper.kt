@@ -23,7 +23,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
-import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.datetime.Instant
 
@@ -34,7 +33,6 @@ data object ConversationMapper {
         qualifiedId: QualifiedIDEntity,
         name: String?,
         type: ConversationEntity.Type,
-        callStatus: CallEntity.Status?,
         previewAssetId: QualifiedIDEntity?,
         mutedStatus: ConversationEntity.MutedStatus,
         teamId: String?,
@@ -73,7 +71,6 @@ data object ConversationMapper {
         mlsVerificationStatus: ConversationEntity.VerificationStatus,
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
-        isChannel: Boolean,
         channelAccess: ConversationEntity.ChannelAccess?,
         channelAddPermission: ConversationEntity.ChannelAddPermission?,
         selfUserId: QualifiedIDEntity?,
@@ -112,7 +109,6 @@ data object ConversationMapper {
         mlsLastKeyingMaterialUpdateDate = mlsLastKeyingMaterialUpdateDate,
         mlsGroupState = mlsGroupState,
         mlsProposalTimer = mlsProposalTimer,
-        callStatus = callStatus,
         previewAssetId = previewAssetId,
         userAvailabilityStatus = userAvailabilityStatus,
         userType = userType,
@@ -136,7 +132,6 @@ data object ConversationMapper {
         isFavorite = isFavorite,
         folderId = folderId,
         folderName = folderName,
-        isChannel = isChannel,
         channelAccess = channelAccess,
         channelAddPermission = channelAddPermission,
         wireCell = wireCell,
@@ -177,7 +172,6 @@ data object ConversationMapper {
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
         degradedConversationNotified: Boolean,
         legalHoldStatus: ConversationEntity.LegalHoldStatus,
-        isChannel: Boolean,
         channelAccess: ConversationEntity.ChannelAccess?,
         channelAddPermission: ConversationEntity.ChannelAddPermission?,
         wireCell: String?,
@@ -212,7 +206,6 @@ data object ConversationMapper {
         mlsVerificationStatus = verificationStatus,
         proteusVerificationStatus = proteusVerificationStatus,
         legalHoldStatus = legalHoldStatus,
-        isChannel = isChannel,
         channelAccess = channelAccess,
         channelAddPermission = channelAddPermission,
         wireCell = wireCell,
@@ -253,7 +246,6 @@ data object ConversationMapper {
         proteus_verification_status: ConversationEntity.VerificationStatus,
         degraded_conversation_notified: Boolean,
         legal_hold_status: ConversationEntity.LegalHoldStatus,
-        is_channel: Boolean,
         channel_access: ConversationEntity.ChannelAccess?,
         channel_add_permission: ConversationEntity.ChannelAddPermission?,
         wireCell: String?,
@@ -288,7 +280,6 @@ data object ConversationMapper {
         mlsVerificationStatus = verification_status,
         proteusVerificationStatus = proteus_verification_status,
         legalHoldStatus = legal_hold_status,
-        isChannel = is_channel,
         channelAccess = channel_access,
         channelAddPermission = channel_add_permission,
         wireCell = wireCell,
@@ -329,7 +320,6 @@ data object ConversationMapper {
         proteus_verification_status: ConversationEntity.VerificationStatus,
         degraded_conversation_notified: Boolean,
         legal_hold_status: ConversationEntity.LegalHoldStatus,
-        is_channel: Boolean,
         channel_access: ConversationEntity.ChannelAccess?,
         channel_add_permission: ConversationEntity.ChannelAddPermission?,
         wireCell: String?,
@@ -371,7 +361,6 @@ data object ConversationMapper {
             proteus_verification_status = proteus_verification_status,
             degraded_conversation_notified = degraded_conversation_notified,
             legal_hold_status = legal_hold_status,
-            is_channel = is_channel,
             channel_access = channel_access,
             channel_add_permission = channel_add_permission,
             wireCell = wireCell,

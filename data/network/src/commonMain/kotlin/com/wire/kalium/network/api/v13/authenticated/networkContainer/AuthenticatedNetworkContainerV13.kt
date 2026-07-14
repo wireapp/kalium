@@ -34,6 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
+import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
@@ -46,6 +47,7 @@ import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.api.v0.authenticated.NomadDeviceSyncApiV0
 import com.wire.kalium.network.api.v13.authenticated.AccessTokenApiV13
 import com.wire.kalium.network.api.v13.authenticated.AssetApiV13
 import com.wire.kalium.network.api.v13.authenticated.CallApiV13
@@ -59,8 +61,8 @@ import com.wire.kalium.network.api.v13.authenticated.KeyPackageApiV13
 import com.wire.kalium.network.api.v13.authenticated.LogoutApiV13
 import com.wire.kalium.network.api.v13.authenticated.MLSMessageApiV13
 import com.wire.kalium.network.api.v13.authenticated.MLSPublicKeyApiV13
+import com.wire.kalium.network.api.v13.authenticated.MeetingApiV13
 import com.wire.kalium.network.api.v13.authenticated.MessageApiV13
-import com.wire.kalium.network.api.v0.authenticated.NomadDeviceSyncApiV0
 import com.wire.kalium.network.api.v13.authenticated.NotificationApiV13
 import com.wire.kalium.network.api.v13.authenticated.PreKeyApiV13
 import com.wire.kalium.network.api.v13.authenticated.PropertiesApiV13
@@ -172,6 +174,8 @@ internal class AuthenticatedNetworkContainerV13 internal constructor(
 
     override val serverTimeApi: ServerTimeApi
         get() = ServerTimeApiV13(networkClient)
+
+    override val meetingApi: MeetingApi get() = MeetingApiV13()
 
     override val cellsHttpClient: HttpClient = networkClient.httpClient
 }

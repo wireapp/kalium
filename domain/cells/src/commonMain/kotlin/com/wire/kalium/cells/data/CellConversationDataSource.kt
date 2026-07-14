@@ -88,7 +88,7 @@ internal class CellConversationDataSource(
                         CellConversation(
                             id = ConversationId(conversation.id.value, conversation.id.domain),
                             name = name,
-                            isChannel = conversation.isChannel,
+                            isChannel = conversation.type == ConversationEntity.Type.CHANNEL,
                             channelAccess = conversation.channelAccess?.let { access ->
                                 when (access) {
                                     ConversationEntity.ChannelAccess.PRIVATE ->
@@ -116,7 +116,7 @@ internal class CellConversationDataSource(
                         CellConversation(
                             id = ConversationId(conversation.id.value, conversation.id.domain),
                             name = name,
-                            isChannel = conversation.isChannel,
+                            isChannel = conversation.type == ConversationEntity.Type.CHANNEL,
                             channelAccess = conversation.channelAccess?.let { access ->
                                 when (access) {
                                     ConversationEntity.ChannelAccess.PRIVATE ->

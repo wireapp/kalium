@@ -39,7 +39,6 @@ interface ConversationDAO {
     suspend fun getNonDeletedConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
     suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
-    suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean
     // endregion
 
     suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
@@ -83,6 +82,7 @@ interface ConversationDAO {
         fromArchive: Boolean = false,
         onlyInteractionEnabled: Boolean = false,
         newActivitiesOnTop: Boolean = false,
+        ongoingCallConversationIds: List<QualifiedIDEntity> = emptyList(),
         strictMLSFilter: Boolean = true
     ): Flow<List<ConversationDetailsWithEventsEntity>>
 

@@ -21,8 +21,6 @@ package com.wire.kalium.persistence.dao.message
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
-import app.cash.sqldelight.async.coroutines.await
-
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.CellFilesQueries
 import com.wire.kalium.persistence.ConversationsQueries
@@ -466,6 +464,20 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun updateLinkPreviewImageLocalPath(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        urlOffset: Int,
+        localPath: String
+    ): Unit = withContext(writeDispatcher.value) {
+        queries.updateMessageLinkPreviewImageLocalPath(
+            image_local_path = localPath,
+            message_id = messageId,
+            conversation_id = conversationId,
+            url_offset = urlOffset
+        )
+    }
+
     /**
      * Be careful and run this operation in ONE wrapping transaction.
      */
@@ -492,7 +504,17 @@ internal class MessageDAOImpl internal constructor(
                 url_offset = it.urlOffset,
                 permanent_url = it.permanentUrl,
                 title = it.title,
-                summary = it.summary
+                summary = it.summary,
+                image_local_path = it.imageLocalPath,
+                image_width = it.imageWidth,
+                image_height = it.imageHeight,
+                image_mime_type = it.imageMimeType,
+                image_asset_key = it.imageAssetKey,
+                image_asset_token = it.imageAssetToken,
+                image_asset_domain = it.imageAssetDomain,
+                image_otr_key = it.imageOtrKey,
+                image_sha256 = it.imageSha256,
+                image_encryption_algorithm = it.imageEncryptionAlgorithm
             )
         }
         newTextContent.mentions.forEach {

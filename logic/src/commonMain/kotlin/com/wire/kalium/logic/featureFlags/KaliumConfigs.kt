@@ -57,6 +57,7 @@ public data class KaliumConfigs(
     val collaboraIntegration: Boolean = false,
     val dbInvalidationControlEnabled: Boolean = false,
     val pendingMessages: Boolean = true,
+    val linkPreviewEnabled: Boolean = false,
     val domainWithFaultyKeysMap: Map<String, List<String>> = emptyMap(),
     // Consumer-provided debug mode used by persistence and debug-only flows.
     val isDebug: Boolean = false,

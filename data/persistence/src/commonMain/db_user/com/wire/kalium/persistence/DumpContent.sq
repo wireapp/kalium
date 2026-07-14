@@ -78,7 +78,15 @@ WITH selfdelete_message_id AS (
         FROM local_db.Message
         WHERE local_db.Message.expire_after_millis IS NOT NULL
 )
-INSERT INTO MessageLinkPreview
+INSERT INTO MessageLinkPreview(
+    message_id,
+    conversation_id,
+    url,
+    url_offset,
+    permanent_url,
+    title,
+    summary
+)
  SELECT local_db.MessageLinkPreview.message_id,
         local_db.MessageLinkPreview.conversation_id,
         local_db.MessageLinkPreview.url,

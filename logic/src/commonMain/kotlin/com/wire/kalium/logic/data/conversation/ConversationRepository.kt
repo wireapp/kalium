@@ -22,6 +22,7 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.error.wrapApiRequest
+import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -130,7 +131,7 @@ internal interface ConversationRepository {
 
     /**
      * Gets conversations based on [type] and [protocol].
-     * [Conversation.Type.Group.Channel] and [Conversation.Type.Group.Regular] are treated the same, as both are Groups
+     * All [Conversation.Type.Group] subtypes are treated the same.
      */
     suspend fun getConversationIds(
         type: Conversation.Type,
@@ -145,6 +146,10 @@ internal interface ConversationRepository {
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo>
     suspend fun observeConversationMembers(conversationID: ConversationId): Flow<List<Conversation.Member>>
+    suspend fun getConversationMemberRole(
+        conversationId: ConversationId,
+        userId: UserId
+    ): Either<StorageFailure, Conversation.Member.Role?>
 
     /**
      * Fetches a list of all members' IDs or a given conversation including self user
@@ -470,7 +475,7 @@ internal class ConversationDataSource internal constructor(
         conversations.forEach { conversationsResponse ->
             // do the cleanup of members from conversation in case when self user rejoined conversation
             // and may not received any member remove or leave events
-            if (invalidateMembers && conversationsResponse.toConversationType(selfUserTeamId) == ConversationEntity.Type.GROUP) {
+            if (invalidateMembers && conversationsResponse.toConversationType(selfUserTeamId).isGroup) {
                 memberDAO.updateFullMemberList(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
                     idMapper.fromApiToDao(conversationsResponse.id)
@@ -593,6 +598,14 @@ internal class ConversationDataSource internal constructor(
         memberDAO.observeConversationMembers(conversationID.toDao()).map { members ->
             members.map(memberMapper::fromDaoModel)
         }
+
+    override suspend fun getConversationMemberRole(
+        conversationId: ConversationId,
+        userId: UserId
+    ): Either<StorageFailure, Conversation.Member.Role?> = wrapStorageNullableRequest {
+        memberDAO.getMemberRole(userId.toDao(), conversationId.toDao())
+            ?.let(conversationRoleMapper::fromDAO)
+    }
 
     override suspend fun getConversationMembers(conversationId: ConversationId): Either<StorageFailure, List<UserId>> = wrapStorageRequest {
         memberDAO.observeConversationMembers(conversationId.toDao()).first().map { it.user.toModel() }

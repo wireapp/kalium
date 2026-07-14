@@ -8,7 +8,6 @@ SELECT
     UnreadEventCountsGrouped.repliesCount AS unreadRepliesCount,
     UnreadEventCountsGrouped.messagesCount AS unreadMessagesCount,
     CASE
-        WHEN ConversationDetails.callStatus = 'STILL_ONGOING' AND ConversationDetails.type = 'GROUP' THEN 1 -- if ongoing call in a group, move it to the top
         WHEN ConversationDetails.mutedStatus = 'ALL_ALLOWED' THEN
            CASE
                 WHEN (UnreadEventCountsGrouped.knocksCount + UnreadEventCountsGrouped.missedCallsCount + UnreadEventCountsGrouped.mentionsCount + UnreadEventCountsGrouped.repliesCount + UnreadEventCountsGrouped.messagesCount) > 0 THEN 1 -- if any unread events, move it to the top
@@ -68,7 +67,7 @@ LEFT JOIN MessageTextContent AS TextContent
 WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
-        ConversationDetails.type IS 'GROUP'
+        ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING')
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
         OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
@@ -82,7 +81,6 @@ selectAllConversationDetailsWithEvents:
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
 -- @CustomKey conversation_list_unread
--- @CustomKey conversation_list_calls
 -- @CustomKey conversation_list_folders
 SELECT * FROM ConversationDetailsWithEvents
 WHERE archived = :fromArchive
@@ -97,7 +95,12 @@ WHERE archived = :fromArchive
     )
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
 ORDER BY
-    CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
+    CASE
+        WHEN :newActivitiesOnTop AND type IN ('GROUP', 'CHANNEL', 'MEETING') AND qualifiedId IN :ongoingCallConversationIds
+        THEN 1
+        WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow
+        ELSE 0
+    END DESC,
     lastModifiedDate DESC,
     name IS NULL,
     name COLLATE NOCASE ASC;
@@ -107,7 +110,6 @@ selectConversationDetailsWithEvents:
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
 -- @CustomKey conversation_list_unread
--- @CustomKey conversation_list_calls
 -- @CustomKey conversation_list_folders
 SELECT * FROM ConversationDetailsWithEvents
 WHERE
@@ -122,19 +124,21 @@ WHERE
       )
     )
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
-        -- When filter is FAVORITES (future implementation)
-
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
         ELSE 1 = 0
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     ORDER BY
+        CASE
+            WHEN :newActivitiesOnTop AND type IN ('GROUP', 'CHANNEL', 'MEETING') AND qualifiedId IN :ongoingCallConversationIds THEN 1
+            ELSE 0
+        END DESC,
         CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
         lastModifiedDate DESC,
         name IS NULL,
@@ -147,7 +151,6 @@ selectConversationDetailsWithEventsFromSearch:
 -- @CustomKey conversation_list_order
 -- @CustomKey conversation_list_last_message
 -- @CustomKey conversation_list_unread
--- @CustomKey conversation_list_calls
 -- @CustomKey conversation_list_folders
 SELECT * FROM ConversationDetailsWithEvents
 WHERE
@@ -162,20 +165,22 @@ WHERE
       )
     )
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
-
-        -- When filter is FAVORITES (future implementation)
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
         ELSE 1 = 0
     END
     AND CASE WHEN :onlyInteractionsEnabled THEN interactionEnabled = 1 ELSE 1 END
     AND name LIKE ('%' || :searchQuery || '%')
 ORDER BY
+    CASE
+        WHEN :newActivitiesOnTop AND type IN ('GROUP', 'CHANNEL', 'MEETING') AND qualifiedId IN :ongoingCallConversationIds THEN 1
+        ELSE 0
+    END DESC,
     CASE WHEN :newActivitiesOnTop THEN hasNewActivitiesToShow ELSE 0 END DESC,
     lastModifiedDate DESC,
     name IS NULL,
@@ -190,10 +195,13 @@ FROM Conversation
 WHERE
     type IS NOT 'SELF'
     AND CASE
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
+        -- When filter is GROUPS, filter only group conversations
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND is_channel = 1)
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
         ELSE 1 = 0
     END
     AND archived = :fromArchive
@@ -216,7 +224,7 @@ SELECT COUNT(*) FROM ConversationDetails
 WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
-        ConversationDetails.type IS 'GROUP'
+        ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING')
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
         OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
@@ -226,15 +234,13 @@ WHERE
     AND ConversationDetails.deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
-
-        -- When filter is FAVORITES (future implementation)
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
         ELSE 1 = 0
     END
     AND (
@@ -254,7 +260,7 @@ SELECT COUNT(*) FROM ConversationDetails
 WHERE
     ConversationDetails.type IS NOT 'SELF'
     AND (
-        ConversationDetails.type IS 'GROUP'
+        ConversationDetails.type IN ('GROUP', 'CHANNEL', 'MEETING')
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND (ConversationDetails.name IS NOT NULL AND ConversationDetails.otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
         OR (ConversationDetails.type IS 'ONE_ON_ONE' AND ConversationDetails.userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
         OR (ConversationDetails.type IS 'CONNECTION_PENDING' AND ConversationDetails.otherUserId IS NOT NULL) -- show connection requests even without metadata
@@ -264,15 +270,13 @@ WHERE
     AND ConversationDetails.deletedLocally = 0
     AND archived = :fromArchive
     AND CASE
-        -- When filter is ALL, do not apply additional filters on conversation type
-        WHEN :conversationFilter = 'ALL' THEN 1 = 1
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND is_channel = 0)
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
-
-        -- When filter is FAVORITES (future implementation)
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
         ELSE 1 = 0
     END
     AND (

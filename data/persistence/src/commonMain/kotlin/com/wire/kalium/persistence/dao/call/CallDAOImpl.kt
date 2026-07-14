@@ -159,12 +159,6 @@ internal class CallDAOImpl(
             .awaitAsOneOrNull()
     }
 
-    override suspend fun updateOpenCallsToClosedStatus() {
-        withContext(writeDispatcher.value) {
-            callsQueries.updateOpenCallsToClosedStatus()
-        }
-    }
-
     override fun observeLastActiveCallByConversationId(conversationId: QualifiedIDEntity): Flow<CallEntity?> =
         callsQueries.selectLastActiveCallByConversationId(conversationId, mapper = mapper::fromCalls)
             .asFlow()

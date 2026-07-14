@@ -7,7 +7,6 @@ CASE (Conversation.type)
     ELSE Conversation.name
 END AS name,
 Conversation.type,
-Call.status AS callStatus,
 CASE (Conversation.type)
     WHEN 'ONE_ON_ONE' THEN  User.preview_asset_id
     WHEN 'CONNECTION_PENDING' THEN connection_user.preview_asset_id
@@ -88,12 +87,11 @@ Conversation.archived_date_time,
 Conversation.verification_status AS mls_verification_status,
 Conversation.proteus_verification_status,
 Conversation.legal_hold_status,
-Conversation.is_channel,
 Conversation.channel_access,
 Conversation.channel_add_permission,
 SelfUser.id AS selfUserId,
 CASE
-    WHEN Conversation.type = 'GROUP' THEN
+    WHEN Conversation.type IN ('GROUP', 'CHANNEL', 'MEETING') THEN
         CASE
             WHEN memberRole.role IS NOT NULL THEN 1
             ELSE 0
@@ -128,7 +126,6 @@ LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualifi
          OR Connection.status = 'NOT_CONNECTED'
          AND Conversation.type IS 'CONNECTION_PENDING')
 LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
-LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id ORDER BY created_at DESC LIMIT 1) AND Call.status IS 'STILL_ONGOING'
 LEFT JOIN ConversationFolder AS FavoriteFolder ON FavoriteFolder.folder_type IS 'FAVORITE'
 LEFT JOIN LabeledConversation ON LabeledConversation.conversation_id = Conversation.qualified_id AND LabeledConversation.folder_id = FavoriteFolder.id
 LEFT JOIN LabeledConversation AS ConversationLabel ON ConversationLabel.conversation_id = Conversation.qualified_id AND ConversationLabel.folder_id IS NOT FavoriteFolder.id
@@ -139,7 +136,7 @@ SELECT * FROM ConversationDetails
 WHERE
     type IS NOT 'SELF'
     AND (
-    type IS 'GROUP'
+    type IN ('GROUP', 'CHANNEL', 'MEETING')
     OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
     OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
     OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
@@ -155,17 +152,15 @@ WHERE
     AND isActive
     AND deletedLocally = 0
     AND CASE
-            -- When filter is ALL, do not apply additional filters on conversation type
-            WHEN :conversationFilter = 'ALL' THEN 1 = 1
-            -- When filter is GROUPS, filter only group conversations
-            WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP' AND is_channel = 0
-            -- When filter is ONE_ON_ONE, filter only one-on-one conversations
-            WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-            -- When filter is CHANNELS (future implementation)
-            WHEN :conversationFilter = 'CHANNELS' THEN type = 'GROUP' AND is_channel = 1
-            -- When filter is FAVORITES (future implementation)
-            ELSE 1 = 0
-        END
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
+        -- When filter is GROUPS, filter only group conversations
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
+        -- When filter is ONE_ON_ONE, filter only one-on-one conversations
+        WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
+        ELSE 1 = 0
+    END
 ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
 
 selectConversationDetailsByQualifiedId:

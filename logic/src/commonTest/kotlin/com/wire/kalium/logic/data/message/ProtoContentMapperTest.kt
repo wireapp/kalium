@@ -22,6 +22,8 @@ import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.IdMapperImpl
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
+import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.composite.Button
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
@@ -39,6 +41,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 
 class ProtoContentMapperTest {
 
@@ -86,6 +89,67 @@ class ProtoContentMapperTest {
         val decoded = protoContentMapper.decodeFromProtobuf(encoded)
 
         assertEquals(decoded, protoContent)
+    }
+
+    @Test
+    fun givenTextContentWithLinkPreviewImage_whenMappingToProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
+        val messageContent = MessageContent.Text(
+            value = "Hello https://example.com",
+            linkPreviews = listOf(
+                MessageLinkPreview(
+                    url = "https://example.com",
+                    urlOffset = 6,
+                    permanentUrl = "https://example.com/permalink",
+                    title = "Title",
+                    summary = "Summary",
+                    image = LinkPreviewAsset(
+                        mimeType = "image/png",
+                        assetDataPath = null,
+                        assetDataSize = 128,
+                        assetHeight = 630,
+                        assetWidth = 1200,
+                        assetKey = "asset-key",
+                        assetToken = "asset-token",
+                        assetDomain = "wire.com",
+                        otrKey = byteArrayOf(1, 2, 3),
+                        sha256Key = byteArrayOf(4, 5, 6),
+                        encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
+                    )
+                )
+            )
+        )
+        val protoContent = ProtoContent.Readable(
+            TEST_MESSAGE_UUID,
+            messageContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertIs<ProtoContent.Readable>(decoded)
+        val content = assertIs<MessageContent.Text>(decoded.messageContent)
+        val linkPreview = content.linkPreviews.single()
+        val preview = assertNotNull(linkPreview.image)
+
+        assertEquals(TEST_MESSAGE_UUID, decoded.messageUid)
+        assertEquals(messageContent.value, content.value)
+        assertEquals("https://example.com", linkPreview.url)
+        assertEquals(6, linkPreview.urlOffset)
+        assertEquals("https://example.com/permalink", linkPreview.permanentUrl)
+        assertEquals("Title", linkPreview.title)
+        assertEquals("Summary", linkPreview.summary)
+        assertEquals("image/png", preview.mimeType)
+        assertEquals(128L, preview.assetDataSize)
+        assertEquals(630, preview.assetHeight)
+        assertEquals(1200, preview.assetWidth)
+        assertEquals("asset-key", preview.assetKey)
+        assertEquals("asset-token", preview.assetToken)
+        assertEquals("wire.com", preview.assetDomain)
+        assertEquals(MessageEncryptionAlgorithm.AES_GCM, preview.encryptionAlgorithm)
+        assertContentEquals(byteArrayOf(1, 2, 3), preview.otrKey)
+        assertContentEquals(byteArrayOf(4, 5, 6), preview.sha256Key)
     }
 
     @Test

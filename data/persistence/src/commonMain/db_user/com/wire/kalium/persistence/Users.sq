@@ -155,7 +155,7 @@ DELETE FROM Member
 WHERE conversation IN (
     SELECT conversation FROM Member
     JOIN Conversation ON Conversation.qualified_id = Member.conversation
-    WHERE Member.user = :qualified_id AND Conversation.type = 'GROUP'
+    WHERE Member.user = :qualified_id AND Conversation.type IN ('GROUP', 'CHANNEL', 'MEETING')
 ) AND Member.user = :qualified_id;
 
 markUserAsDefederated:
@@ -363,7 +363,7 @@ SELECT c.qualified_id
 FROM Conversation c
 INNER JOIN Member m ON c.qualified_id = m.conversation
 WHERE m.user = :userId
-  AND c.type = 'GROUP';
+  AND c.type IN ('GROUP', 'CHANNEL', 'MEETING');
 
 selectOneOnOnConversationId:
 SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :userId;

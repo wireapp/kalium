@@ -183,7 +183,6 @@ internal class ConversationDAOImpl internal constructor(
                         incomplete_metadata = hasIncompleteMetadata,
                         archived = archived,
                         archived_date_time = archivedInstant,
-                        is_channel = isChannel,
                         channel_access = channelAccess,
                         channel_add_permission = channelAddPermission,
                         wire_cell = wireCell,
@@ -230,7 +229,6 @@ internal class ConversationDAOImpl internal constructor(
                 incomplete_metadata = hasIncompleteMetadata,
                 archived = archived,
                 archived_date_time = archivedInstant,
-                is_channel = isChannel,
                 channel_access = channelAccess,
                 channel_add_permission = channelAddPermission,
                 wire_cell = wireCell,
@@ -355,12 +353,14 @@ internal class ConversationDAOImpl internal constructor(
         fromArchive: Boolean,
         onlyInteractionEnabled: Boolean,
         newActivitiesOnTop: Boolean,
+        ongoingCallConversationIds: List<QualifiedIDEntity>,
         strictMLSFilter: Boolean,
     ): Flow<List<ConversationDetailsWithEventsEntity>> {
         return conversationDetailsWithEventsQueries.selectAllConversationDetailsWithEvents(
             fromArchive = fromArchive,
             onlyInteractionsEnabled = onlyInteractionEnabled,
             newActivitiesOnTop = newActivitiesOnTop,
+            ongoingCallConversationIds = ongoingCallConversationIds,
             strict_mls = if (strictMLSFilter) 1 else 0,
             mapper = conversationDetailsWithEventsMapper::fromViewToModel
         ).asFlow()
@@ -378,7 +378,7 @@ internal class ConversationDAOImpl internal constructor(
         teamId: String?
     ): List<QualifiedIDEntity> {
         return withContext(readDispatcher.value) {
-            conversationQueries.selectConversationIds(protocol, type, teamId).awaitAsList()
+            conversationQueries.selectConversationIds(protocol, type.isGroup, type, teamId).awaitAsList()
         }
     }
 
@@ -728,10 +728,6 @@ internal class ConversationDAOImpl internal constructor(
                     }
             }
         }
-
-    override suspend fun isAChannel(conversationId: QualifiedIDEntity): Boolean = withContext(readDispatcher.value) {
-        conversationQueries.selectIsChannel(conversationId).awaitAsOneOrNull() ?: false
-    }
 
     override suspend fun updateChannelAddPermission(
         conversationId: QualifiedIDEntity,

@@ -41,7 +41,7 @@ import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerializationException
 
-@Suppress("LongParameterList", "LargeClass")
+@Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 object MessageMapper {
 
     private val serializer = JsonSerializer()
@@ -301,7 +301,7 @@ object MessageMapper {
             isMentioningSelfUser = isMentioningSelfUser,
             isQuotingSelfUser = isQuotingSelfUser,
             isEphemeral = isEphemeral,
-            isGroupConversation = conversationType == ConversationEntity.Type.GROUP,
+            isGroupConversation = conversationType?.isGroup == true,
             text = text,
             assetMimeType = assetMimeType,
             selfUserId = selfUserId,
@@ -520,6 +520,7 @@ object MessageMapper {
         conversationName: String?,
         reactionsJson: String,
         mentions: String,
+        linkPreviews: String?,
         attachments: String?,
         quotedMessageId: String?,
         quotedSenderId: QualifiedIDEntity?,
@@ -613,6 +614,7 @@ object MessageMapper {
         conversationName = conversationName,
         reactionsJson = reactionsJson,
         mentions = mentions,
+        linkPreviews = linkPreviews,
         quotedMessageId = quotedMessageId,
         quotedSenderId = quotedSenderId,
         isQuoteVerified = isQuoteVerified,
@@ -708,6 +710,7 @@ object MessageMapper {
         conversationName: String?,
         reactionsJson: String,
         mentions: String,
+        linkPreviews: String?,
         quotedMessageId: String?,
         quotedSenderId: QualifiedIDEntity?,
         isQuoteVerified: Boolean?,
@@ -744,6 +747,7 @@ object MessageMapper {
         } else when (contentType) {
             MessageEntity.ContentType.TEXT -> MessageEntityContent.Text(
                 messageBody = text ?: "",
+                linkPreview = messageLinkPreviewFromJsonString(linkPreviews),
                 mentions = messageMentionsFromJsonString(mentions),
                 quotedMessageId = quotedMessageId,
                 quotedMessage = quotedMessageContentType?.let {
@@ -1008,6 +1012,16 @@ object MessageMapper {
         } catch (e: SerializationException) {
             if (isDebug) throw e
             kaliumLogger.e("messageMentionsFromJsonString: Invalid JSON received", e)
+            emptyList()
+        }
+    } ?: emptyList()
+
+    private fun messageLinkPreviewFromJsonString(linkPreviews: String?): List<MessageEntity.LinkPreview> = linkPreviews?.let {
+        try {
+            serializer.decodeFromString(it)
+        } catch (e: SerializationException) {
+            if (isDebug) throw e
+            kaliumLogger.e("messageLinkPreviewFromJsonString: Invalid JSON received", e)
             emptyList()
         }
     } ?: emptyList()

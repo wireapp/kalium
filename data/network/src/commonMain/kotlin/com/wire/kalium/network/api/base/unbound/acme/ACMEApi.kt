@@ -69,11 +69,9 @@ interface ACMEApi {
 }
 
 class ACMEApiImpl internal constructor(
-    private val unboundNetworkClient: UnboundNetworkClient,
-    private val unboundClearTextTrafficNetworkClient: UnboundNetworkClient
+    private val unboundNetworkClient: UnboundNetworkClient
 ) : ACMEApi {
     private val httpClient get() = unboundNetworkClient.httpClient
-    private val clearTextTrafficHttpClient get() = unboundClearTextTrafficNetworkClient.httpClient
 
     override suspend fun getTrustAnchors(discoveryUrl: String): NetworkResponse<ByteArray> {
         val protocolWithAuthority = Url(discoveryUrl).protocolWithAuthority
@@ -281,7 +279,7 @@ class ACMEApiImpl internal constructor(
             val httpUrl = proxyUrlBuilder?.apply { this.pathSegments += crlUrlBuilder.host }?.build()
                 ?: crlUrlBuilder.build()
 
-            clearTextTrafficHttpClient.get(httpUrl)
+            httpClient.get(httpUrl)
         }
     }
 
