@@ -92,10 +92,7 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.DeletedConversation -> {
-                deletedConversationHandler.handle(transactionContext, event)
-                Either.Right(Unit)
-            }
+            is Event.Conversation.DeletedConversation -> deletedConversationHandler.handle(transactionContext, event)
 
             is Event.Conversation.MemberJoin -> memberJoinHandler.handle(transactionContext, event)
 

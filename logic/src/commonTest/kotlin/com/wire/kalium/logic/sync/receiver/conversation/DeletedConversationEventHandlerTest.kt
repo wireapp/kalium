@@ -34,6 +34,8 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
@@ -63,12 +65,27 @@ class DeletedConversationEventHandlerTest {
             withDeletingConversationSucceeding()
         }
 
-        eventHandler.handle(arrangement.transactionContext, event)
+        eventHandler.handle(arrangement.transactionContext, event).shouldSucceed()
 
         with(arrangement) {
             verifySuspend(VerifyMode.not) {
                 deleteConversation(any(), eq(TestConversation.ID))
             }
+        }
+    }
+
+    @Test
+    fun givenConversationLookupFails_whenHandlingDeleteEvent_thenFailureIsPropagated() = runTest {
+        val event = TestEvent.deletedConversation()
+        val failure = StorageFailure.Generic(RuntimeException("lookup failed"))
+        val (arrangement, eventHandler) = arrange {
+            withGetConversationByIdFailure(failure)
+        }
+
+        eventHandler.handle(arrangement.transactionContext, event).shouldFail()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.deleteConversation(any(), any())
         }
     }
 
@@ -83,7 +100,7 @@ class DeletedConversationEventHandlerTest {
             withDeletingConversationSucceeding()
         }
 
-        eventHandler.handle(arrangement.transactionContext, event)
+        eventHandler.handle(arrangement.transactionContext, event).shouldSucceed()
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
@@ -115,7 +132,7 @@ class DeletedConversationEventHandlerTest {
             withDeletingConversationFailing()
         }
 
-        eventHandler.handle(arrangement.transactionContext, event)
+        eventHandler.handle(arrangement.transactionContext, event).shouldFail()
 
         with(arrangement) {
             verifySuspend(VerifyMode.not) {
@@ -205,6 +222,10 @@ class DeletedConversationEventHandlerTest {
             } else {
                 Either.Right(conversation)
             }
+        }
+
+        suspend fun withGetConversationByIdFailure(failure: StorageFailure) {
+            everySuspend { conversationRepository.getConversationById(any()) } returns Either.Left(failure)
         }
 
         suspend fun withObserveUser(result: Flow<User?> = flowOf(TestUser.OTHER), userId: UserId = TestUser.OTHER_USER_ID) {

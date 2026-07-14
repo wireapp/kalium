@@ -18,7 +18,10 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
 import com.wire.kalium.common.logger.kaliumLogger
@@ -37,7 +40,10 @@ import com.wire.kalium.messaging.hooks.PersistenceEventHookNotifier
 import kotlinx.coroutines.flow.firstOrNull
 
 internal interface DeletedConversationEventHandler {
-    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.DeletedConversation)
+    suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.DeletedConversation
+    ): Either<CoreFailure, Unit>
 }
 
 internal class DeletedConversationEventHandlerImpl(
@@ -49,31 +55,41 @@ internal class DeletedConversationEventHandlerImpl(
     private val selfUserId: UserId,
 ) : DeletedConversationEventHandler {
 
-    override suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.DeletedConversation) {
+    override suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.DeletedConversation
+    ): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
-        conversationRepository.getConversationById(event.conversationId)
-            .onFailure {
-                logger.logComplete(
-                    EventLoggingStatus.SKIPPED,
-                    arrayOf(
-                        "info" to "Conversation delete event already handled?. Couldn't find the conversation."
-                    )
-                )
-            }
-            .flatMap { conversation ->
-                deleteConversation(transactionContext, event.conversationId)
-                    .onFailure {
-                        logger.logFailure(it)
-                    }.onSuccess {
-                        val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
-                        val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
-                        notificationEventsManager.scheduleDeleteConversationNotification(dataNotification)
-                        logger.logSuccess()
+        val result: Either<CoreFailure, Unit> = conversationRepository.getConversationById(event.conversationId)
+            .fold(
+                { failure ->
+                    if (failure is StorageFailure.DataNotFound) {
+                        logger.logComplete(
+                            EventLoggingStatus.SKIPPED,
+                            arrayOf("info" to "Conversation delete event was already handled")
+                        )
+                        Either.Right(Unit)
+                    } else {
+                        logger.logFailure(failure)
+                        Either.Left(failure)
                     }
-            }
+                },
+                { conversation ->
+                    deleteConversation(transactionContext, event.conversationId)
+                        .onFailure {
+                            logger.logFailure(it)
+                        }.onSuccess {
+                            val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
+                            val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
+                            notificationEventsManager.scheduleDeleteConversationNotification(dataNotification)
+                            logger.logSuccess()
+                        }
+                }
+            )
         persistenceEventHookNotifier.onConversationDeleted(
             ConversationDeleteEventData(event.conversationId),
             selfUserId
         )
+        return result
     }
 }
