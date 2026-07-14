@@ -28,3 +28,12 @@ fun ByteArray.toHexString(): String {
         (0xFF and it.toInt()).toString(16).padStart(2, '0')
     }
 }
+
+@Suppress("MagicNumber")
+fun String.hexToByteArray(): ByteArray {
+    if (isEmpty()) return ByteArray(0)
+    require(length % 2 == 0) { "Hex string must have an even length" }
+    return ByteArray(length / 2) { index ->
+        substring(index * 2, index * 2 + 2).toInt(16).toByte()
+    }
+}

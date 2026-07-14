@@ -167,6 +167,13 @@ internal open class FakeMessageRepository : MessageRepository {
         editInstant: Instant
     ): Either<CoreFailure, Unit> = Unit.right()
 
+    override suspend fun updateLinkPreviewImageLocalPath(
+        conversationId: ConversationId,
+        messageId: String,
+        urlOffset: Int,
+        localPath: String
+    ): Either<CoreFailure, Unit> = Unit.right()
+
     override suspend fun resetAssetTransferStatus() {}
 
     override suspend fun markProteusMessagesAsDecryptionResolved(

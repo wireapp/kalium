@@ -197,6 +197,12 @@ internal interface MessageRepository {
         newMessageId: String,
         editInstant: Instant
     ): Either<CoreFailure, Unit>
+    suspend fun updateLinkPreviewImageLocalPath(
+        conversationId: ConversationId,
+        messageId: String,
+        urlOffset: Int,
+        localPath: String
+    ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetTransferStatus()
     suspend fun markProteusMessagesAsDecryptionResolved(
@@ -685,6 +691,20 @@ internal class MessageDataSource internal constructor(
                 newMessageId = newMessageId
             )
         }
+    }
+
+    override suspend fun updateLinkPreviewImageLocalPath(
+        conversationId: ConversationId,
+        messageId: String,
+        urlOffset: Int,
+        localPath: String
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updateLinkPreviewImageLocalPath(
+            conversationId = conversationId.toDao(),
+            messageId = messageId,
+            urlOffset = urlOffset,
+            localPath = localPath
+        )
     }
 
     override suspend fun resetAssetTransferStatus() {

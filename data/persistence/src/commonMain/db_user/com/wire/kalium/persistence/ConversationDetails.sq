@@ -87,12 +87,11 @@ Conversation.archived_date_time,
 Conversation.verification_status AS mls_verification_status,
 Conversation.proteus_verification_status,
 Conversation.legal_hold_status,
-Conversation.group_type,
 Conversation.channel_access,
 Conversation.channel_add_permission,
 SelfUser.id AS selfUserId,
 CASE
-    WHEN Conversation.type = 'GROUP' THEN
+    WHEN Conversation.type IN ('GROUP', 'CHANNEL', 'MEETING') THEN
         CASE
             WHEN memberRole.role IS NOT NULL THEN 1
             ELSE 0
@@ -137,7 +136,7 @@ SELECT * FROM ConversationDetails
 WHERE
     type IS NOT 'SELF'
     AND (
-    type IS 'GROUP'
+    type IN ('GROUP', 'CHANNEL', 'MEETING')
     OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
     OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
     OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
@@ -153,13 +152,13 @@ WHERE
     AND isActive
     AND deletedLocally = 0
     AND CASE
-        -- When filter is ALL, include all types, but for GROUP, only include GROUP or CHANNEL group_type, filter out MEETINGS and unknown
-        WHEN :conversationFilter = 'ALL' THEN (type IS NOT 'GROUP' OR group_type IN ('GROUP', 'CHANNEL'))
+        -- Meetings are synchronized but not shown in the conversation list.
+        WHEN :conversationFilter = 'ALL' THEN type IN ('GROUP', 'CHANNEL', 'ONE_ON_ONE', 'CONNECTION_PENDING')
         -- When filter is GROUPS, filter only group conversations
-        WHEN :conversationFilter = 'GROUPS' THEN (type = 'GROUP' AND group_type = 'GROUP')
+        WHEN :conversationFilter = 'GROUPS' THEN type = 'GROUP'
         -- When filter is ONE_ON_ONE, filter only one-on-one conversations
         WHEN :conversationFilter = 'ONE_ON_ONE' THEN type = 'ONE_ON_ONE'
-        WHEN :conversationFilter = 'CHANNELS' THEN (type = 'GROUP' AND group_type = 'CHANNEL')
+        WHEN :conversationFilter = 'CHANNELS' THEN type = 'CHANNEL'
         ELSE 1 = 0
     END
 ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;

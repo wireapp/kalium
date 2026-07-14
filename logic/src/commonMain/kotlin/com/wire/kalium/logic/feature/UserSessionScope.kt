@@ -185,6 +185,7 @@ import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.properties.ConversationFoldersPropertyDataSource
+import com.wire.kalium.logic.data.properties.LinkPreviewsPropertyDataSource
 import com.wire.kalium.logic.data.properties.ReadReceiptsPropertyDataSource
 import com.wire.kalium.logic.data.properties.ScreenshotCensoringPropertyDataSource
 import com.wire.kalium.logic.data.properties.TypingIndicatorPropertyDataSource
@@ -355,6 +356,8 @@ import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalSchedulerImpl
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.StaleEpochVerifierImpl
+import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolver
+import com.wire.kalium.logic.feature.message.linkpreview.LinkPreviewImagesResolverImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManager
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationManagerImpl
 import com.wire.kalium.logic.feature.mlsmigration.MLSMigrationWorkerImpl
@@ -832,6 +835,7 @@ public class UserSessionScope internal constructor(
         get() = UserPropertyDataSource(
             readReceipts = ReadReceiptsPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             typingIndicator = TypingIndicatorPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
+            linkPreviews = LinkPreviewsPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             screenshotCensoring = ScreenshotCensoringPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             userPropertiesSync = UserPropertiesSyncDataSource(authenticatedNetworkContainer.propertiesApi, userConfigRepository),
             conversationFolders = ConversationFoldersPropertyDataSource(authenticatedNetworkContainer.propertiesApi, userId),
@@ -1897,8 +1901,19 @@ public class UserSessionScope internal constructor(
             buttonActionHandler,
             MessageCompositeEditHandlerImpl(messageRepository),
             callingMessageHandler,
+            linkPreviewsResolver,
             userId
         )
+
+    private val linkPreviewsResolver: LinkPreviewImagesResolver by lazy {
+        LinkPreviewImagesResolverImpl(
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
+            scope = this@UserSessionScope,
+            dispatcher = KaliumDispatcherImpl,
+            linkPreviewEnabled = kaliumConfigs.linkPreviewEnabled
+        )
+    }
 
     private val staleEpochVerifier: StaleEpochVerifier
         get() = StaleEpochVerifierImpl(
@@ -2515,6 +2530,7 @@ public class UserSessionScope internal constructor(
             audioNormalizedLoudnessScheduler,
             userPropertyRepository,
             incrementalSyncRepository,
+            kaliumFileSystem,
             protoContentMapper,
             observeSelfDeletingMessages,
             messageMetadataRepository,
@@ -2532,6 +2548,7 @@ public class UserSessionScope internal constructor(
             globalScope.audioNormalizedLoudnessBuilder,
             mlsMissingUsersRejectionHandlerProvider,
             currentPersistenceEventHookNotifier,
+            kaliumConfigs.linkPreviewEnabled,
             this,
             kaliumConfigs,
             userScopedLogger,
