@@ -79,13 +79,13 @@ internal class IncrementalSyncWorkerImpl(
                     kaliumLogger.d("$TAG Received ${envelopes.size} events to process")
                     transactionProvider.transaction("processEvents") { context ->
                         databaseBuilder.dbInvalidationController.runMuted {
-                            envelopes.map { envelope -> eventProcessor.processEvent(context, envelope) }
-                                .foldToEitherWhileRight(mutableListOf<String>()) { eventEither, acc ->
-                                    eventEither.map { eventId ->
+                            envelopes.foldToEitherWhileRight(mutableListOf<String>()) { envelope, acc ->
+                                eventProcessor.processEvent(context, envelope)
+                                    .map { eventId ->
                                         eventId?.let(acc::add)
                                         acc
                                     }
-                                }
+                            }
                                 .flatMap { eventIds ->
                                     eventProcessor.flushPendingSideEffects().map { eventIds }
                                 }
