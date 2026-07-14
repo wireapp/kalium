@@ -68,6 +68,7 @@ kotlin {
                 implementation(projects.data.network)
                 api(projects.core.data)
                 implementation(projects.data.dataMappers)
+                implementation(projects.data.conversationLocal)
                 api(projects.data.networkUtil)
                 implementation(projects.core.cryptography)
                 implementation(projects.data.persistence)
@@ -82,6 +83,7 @@ kotlin {
                 implementation(projects.domain.usernetwork)
                 implementation(projects.domain.messaging.sending)
                 implementation(projects.domain.messaging.hooks)
+                implementation(projects.domain.conversationRuntime)
 
                 // coroutines
                 implementation(libs.coroutines.core)

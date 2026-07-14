@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:OptIn(com.wire.kalium.conversation.ExperimentalConversationApi::class)
+
 package com.wire.kalium.logic.data.call
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
@@ -24,7 +26,6 @@ import com.wire.kalium.common.error.wrapApiRequest
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.common.functional.Either
-import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrElse
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.map
@@ -34,6 +35,10 @@ import com.wire.kalium.common.functional.onlyRight
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.common.logger.logStructuredJson
+import com.wire.kalium.conversation.CallConversationProtocol
+import com.wire.kalium.conversation.ConversationContextProvider
+import com.wire.kalium.conversation.ConversationContextResult
+import com.wire.kalium.conversation.ExperimentalConversationApi
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logger.KaliumLogLevel
@@ -165,6 +170,7 @@ internal class CallDataSource(
     private val persistMessage: PersistMessageUseCase,
     private val callDAO: CallDAO,
     private val conversationRepository: ConversationRepository,
+    private val conversationContextProvider: ConversationContextProvider,
     private val mlsConversationRepository: MLSConversationRepository,
     private val epochChangesObserver: EpochChangesObserver,
     private val subconversationRepository: SubconversationRepository,
@@ -594,6 +600,7 @@ internal class CallDataSource(
                 .mapValues { (conversationId, metadata) -> metadata.toCall(conversationId) }
         }.distinctUntilChanged()
 
+    @OptIn(ExperimentalConversationApi::class)
     override suspend fun leaveStaleMlsConferenceIfNeeded(conversationId: ConversationId) {
         if (_callMetadataProfile.value.containsKey(conversationId)) {
             callingLogger.i(
@@ -603,9 +610,9 @@ internal class CallDataSource(
             return
         }
 
-        conversationRepository.getConversationProtocolInfo(conversationId)
-            .onSuccess { protocolInfo ->
-                if (protocolInfo is Conversation.ProtocolInfo.MLS) {
+        when (val result = conversationContextProvider.getForCall(conversationId)) {
+            is ConversationContextResult.Success -> {
+                if (result.context.protocol is CallConversationProtocol.Mls) {
                     callingLogger.i(
                         "[CallRepository][leaveStaleMlsConferenceIfNeeded] -> Leaving stale MLS conference for " +
                                 conversationId.toLogString()
@@ -613,12 +620,13 @@ internal class CallDataSource(
                     leaveMlsConference(conversationId)
                 }
             }
-            .onFailure {
+            is ConversationContextResult.Failure -> {
                 callingLogger.w(
                     "[CallRepository][leaveStaleMlsConferenceIfNeeded] -> Could not get protocol for " +
                             conversationId.toLogString()
                 )
             }
+        }
     }
 
     override suspend fun joinMlsConference(
@@ -714,32 +722,33 @@ internal class CallDataSource(
             epochInfo
         }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+    @OptIn(ExperimentalCoroutinesApi::class, ExperimentalConversationApi::class)
     override suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>> =
-        conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
-            when (protocolInfo) {
-                is Conversation.ProtocolInfo.MLS -> subconversationRepository.getSubconversationInfo(
+        when (val contextResult = conversationContextProvider.getForCall(conversationId)) {
+            is ConversationContextResult.Failure -> Either.Left(CoreFailure.Unknown(null))
+            is ConversationContextResult.Success -> when (val protocol = contextResult.context.protocol) {
+                is CallConversationProtocol.Mls -> subconversationRepository.getSubconversationInfo(
                     conversationId,
                     CALL_SUBCONVERSATION_ID
                 )?.let { subconversationGroupId ->
                     transactionProvider.mlsTransaction("createEpochInfo") { mlsContext ->
-                        createEpochInfo(mlsContext, protocolInfo.groupId, subconversationGroupId)
+                        createEpochInfo(mlsContext, protocol.groupId, subconversationGroupId)
                     }.map { initialEpochInfo ->
                         flowOf(
                             flowOf(initialEpochInfo),
                             epochChangesObserver.observe()
-                                .filter { it.groupId == protocolInfo.groupId || it.groupId == subconversationGroupId }
+                                .filter { it.groupId == protocol.groupId || it.groupId == subconversationGroupId }
                                 .mapNotNull {
                                     transactionProvider.mlsTransaction { transactionContext ->
-                                        createEpochInfo(transactionContext, protocolInfo.groupId, subconversationGroupId)
+                                        createEpochInfo(transactionContext, protocol.groupId, subconversationGroupId)
                                     }.getOrNull()
                                 }
                         ).flattenConcat()
                     }
                 } ?: Either.Left(CoreFailure.NotSupportedByProteus)
 
-                is Conversation.ProtocolInfo.Proteus,
-                is Conversation.ProtocolInfo.Mixed -> Either.Left(CoreFailure.NotSupportedByProteus)
+                CallConversationProtocol.Proteus,
+                is CallConversationProtocol.Mixed -> Either.Left(CoreFailure.NotSupportedByProteus)
             }
         }
 

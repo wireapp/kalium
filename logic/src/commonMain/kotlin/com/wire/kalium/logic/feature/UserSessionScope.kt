@@ -16,10 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 @file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
+@file:OptIn(com.wire.kalium.conversation.ExperimentalConversationApi::class)
 
 package com.wire.kalium.logic.feature
 
 import com.wire.kalium.cells.CellsScope
+import com.wire.kalium.conversation.ConversationContextProvider
+import com.wire.kalium.conversation.ExperimentalConversationApi
+import com.wire.kalium.conversation.local.LocalConversationContextProvider
+import com.wire.kalium.conversation.runtime.ConversationRuntime
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.wrapStorageNullableRequest
 import com.wire.kalium.common.functional.Either
@@ -81,6 +86,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionDataSource
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ClientConversationContextDataSource
 import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
@@ -1210,6 +1216,7 @@ public class UserSessionScope internal constructor(
             qualifiedIdMapper = qualifiedIdMapper,
             callDAO = userStorage.database.callDAO,
             conversationRepository = conversationRepository,
+            conversationContextProvider = callConversationContextProvider,
             mlsConversationRepository = mlsConversationRepository,
             subconversationRepository = subconversationRepository,
             joinSubconversation = joinSubconversationUseCase,
@@ -1221,6 +1228,15 @@ public class UserSessionScope internal constructor(
             callMapper = callMapper,
             federatedIdMapper = federatedIdMapper,
             transactionProvider = cryptoTransactionProvider
+        )
+    }
+
+    @OptIn(ExperimentalConversationApi::class)
+    private val callConversationContextProvider: ConversationContextProvider by lazy {
+        ConversationRuntime(
+            LocalConversationContextProvider(
+                ClientConversationContextDataSource(conversationRepository, userId),
+            ),
         )
     }
 
