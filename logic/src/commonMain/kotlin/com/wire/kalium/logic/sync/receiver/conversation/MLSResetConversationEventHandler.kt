@@ -21,16 +21,16 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoTransactionContext
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 
 internal interface MLSResetConversationEventHandler {
-    suspend fun handle(
-        transaction: CryptoTransactionContext,
-        event: Event.Conversation.MLSReset
-    ): Either<CoreFailure, Unit>
+    suspend fun handle(transaction: CryptoTransactionContext, event: Event.Conversation.MLSReset)
 }
 
 internal class MLSResetConversationEventHandlerImpl(
@@ -39,13 +39,14 @@ internal class MLSResetConversationEventHandlerImpl(
     override suspend fun handle(
         transaction: CryptoTransactionContext,
         event: Event.Conversation.MLSReset
-    ): Either<CoreFailure, Unit> {
-        val mlsContext = transaction.mls ?: return Either.Right(Unit)
+    ) {
+        val mlsContext = transaction.mls ?: return
+        val eventLogger = kaliumLogger.createEventProcessingLogger(event)
 
         // Leaving the old group is best-effort: it may already be absent when a reset is replayed.
         mlsConversationRepository.leaveGroup(mlsContext, event.groupID)
 
-        return mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, event.newGroupID)
+        mlsConversationRepository.hasEstablishedMLSGroup(mlsContext, event.newGroupID)
             .fold(
                 { Either.Left(it) },
                 { hasEstablishedMLSGroup ->
@@ -59,6 +60,7 @@ internal class MLSResetConversationEventHandlerImpl(
                     }
                 }
             )
+            .onFailure { eventLogger.logFailure(it) }
     }
 
     private suspend fun updateGroupState(

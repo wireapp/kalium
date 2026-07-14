@@ -121,7 +121,10 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.MLSReset -> mlsResetConversationEventHandler.handle(transactionContext, event)
+            is Event.Conversation.MLSReset -> {
+                mlsResetConversationEventHandler.handle(transactionContext, event)
+                Either.Right(Unit)
+            }
 
             is Event.Conversation.AccessUpdate -> accessUpdateEventHandler.handle(event)
             is Event.Conversation.ConversationMessageTimer -> conversationMessageTimerEventHandler.handle(event)

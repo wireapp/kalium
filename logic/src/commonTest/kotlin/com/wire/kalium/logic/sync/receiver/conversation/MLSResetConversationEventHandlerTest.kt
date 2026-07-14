@@ -28,15 +28,12 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
-import com.wire.kalium.logic.util.shouldFail
-import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import dev.mokkery.answering.returns
 import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.eq
-import dev.mokkery.matcher.matches
 import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
@@ -51,7 +48,7 @@ class MLSResetConversationEventHandlerTest {
             withMLSContextNull()
         }
 
-        handler.handle(arrangement.transactionContext, MLS_RESET_EVENT).shouldSucceed()
+        handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
         verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.leaveGroup(any(), any())
@@ -75,7 +72,7 @@ class MLSResetConversationEventHandlerTest {
             withUpdateGroupIdAndStateSucceeding()
         }
 
-        handler.handle(arrangement.transactionContext, MLS_RESET_EVENT).shouldSucceed()
+        handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.leaveGroup(any(), eq(GROUP_ID))
@@ -162,7 +159,7 @@ class MLSResetConversationEventHandlerTest {
         }
 
     @Test
-    fun givenHasEstablishedGroupFails_whenHandlingEvent_thenShouldPropagateFailure() =
+    fun givenHasEstablishedGroupFails_whenHandlingEvent_thenShouldNotUpdateGroupState() =
         runTest {
             val failure = MLSFailure.Generic(RuntimeException("Has established failed"))
             val event = MLS_RESET_EVENT
@@ -172,7 +169,7 @@ class MLSResetConversationEventHandlerTest {
                 withUpdateGroupIdAndStateSucceeding()
             }
 
-            handler.handle(arrangement.transactionContext, event).shouldFail()
+            handler.handle(arrangement.transactionContext, event)
 
             verifySuspend(VerifyMode.exactly(1)) {
                 arrangement.mlsConversationRepository.leaveGroup(any(), eq(event.groupID))
@@ -184,7 +181,7 @@ class MLSResetConversationEventHandlerTest {
         }
 
     @Test
-    fun givenUpdateGroupIdAndStateFails_whenHandlingEvent_thenShouldPropagateError() = runTest {
+    fun givenUpdateGroupIdAndStateFails_whenHandlingEvent_thenShouldAttemptUpdate() = runTest {
         val failure = StorageFailure.DataNotFound
         val (arrangement, handler) = arrange {
             withLeaveGroupSucceeding()
@@ -192,7 +189,7 @@ class MLSResetConversationEventHandlerTest {
             withUpdateGroupIdAndStateFailing(failure)
         }
 
-        handler.handle(arrangement.transactionContext, MLS_RESET_EVENT).shouldFail()
+        handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.mlsConversationRepository.updateGroupIdAndState(
@@ -205,7 +202,7 @@ class MLSResetConversationEventHandlerTest {
     }
 
     @Test
-    fun givenNewGroupEpochLookupFails_whenHandlingEvent_thenShouldPropagateFailure() = runTest {
+    fun givenNewGroupEpochLookupFails_whenHandlingEvent_thenShouldNotUpdateGroupState() = runTest {
         val failure = CoreFailure.Unknown(RuntimeException("Epoch lookup failed"))
         val (arrangement, handler) = arrange {
             withLeaveGroupSucceeding()
@@ -213,7 +210,7 @@ class MLSResetConversationEventHandlerTest {
             withNewGroupEpochFailure(failure)
         }
 
-        handler.handle(arrangement.transactionContext, MLS_RESET_EVENT).shouldFail()
+        handler.handle(arrangement.transactionContext, MLS_RESET_EVENT)
 
         verifySuspend(VerifyMode.not) {
             arrangement.mlsConversationRepository.updateGroupIdAndState(any(), any(), any(), any())

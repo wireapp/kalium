@@ -21,9 +21,6 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.sync.receiver.conversation.AccessUpdateEventHandler
@@ -60,28 +57,6 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class ConversationEventReceiverTest {
-
-    @Test
-    fun givenMLSResetEvent_whenHandlerFails_thenFailureIsPropagated() = runTest {
-        val event = Event.Conversation.MLSReset(
-            id = "event-id",
-            conversationId = TestConversation.ID,
-            from = TestUser.USER_ID,
-            groupID = GroupID("old-group"),
-            newGroupID = GroupID("new-group")
-        )
-        val (arrangement, conversationEventReceiver) = Arrangement().arrange {
-            withMLSResetEventResult(Either.Left(failure))
-        }
-
-        val result = conversationEventReceiver.onEvent(
-            arrangement.transactionContext,
-            event,
-            TestEvent.liveDeliveryInfo
-        )
-
-        result.shouldFail()
-    }
     @Test
     fun givenNewMessageEvent_whenOnEventInvoked_thenNewMessageEventHandlerShouldBeCalled() = runTest {
         val newMessageEvent = TestEvent.newMessageEvent("some-dummy-encrypted-content")
@@ -530,19 +505,13 @@ class ConversationEventReceiverTest {
             everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Unit
             everySuspend { protocolUpdateEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { channelAddPermissionUpdateEventHandler.handle(any()) } returns Either.Right(Unit)
-            everySuspend { mlsResetConversationEventHandler.handle(any(), any()) } returns Either.Right(Unit)
+            everySuspend { mlsResetConversationEventHandler.handle(any(), any()) } returns Unit
         }
 
         suspend fun withMemberLeaveSucceeded() = apply {
             everySuspend {
                 memberLeaveEventHandler.handle(any(), any())
             } returns Either.Right(Unit)
-        }
-
-        suspend fun withMLSResetEventResult(result: Either<CoreFailure, Unit>) = apply {
-            everySuspend {
-                mlsResetConversationEventHandler.handle(any(), any())
-            } returns result
         }
 
         suspend fun withMemberJoinSucceeded() = apply {
