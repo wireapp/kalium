@@ -41,11 +41,14 @@
             </a>        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle" type="button">Toggle table of contents
         </button>
         <div class="navigation-controls--break ui-kit_mobile-only"></div>
-        <div class="library-version" id="library-version">d57f18f
+        <div class="library-version" id="library-version">fd06022
         </div>
         <div class="navigation-controls">
         <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":logic:dokkaHtmlPartial/androidMain">android</button>
+                <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/appleMain">apple</button>
                 <button class="platform-tag platform-selector common-like" data-active="" data-filter=":logic:dokkaHtmlPartial/commonMain">common</button>
+                <button class="platform-tag platform-selector jvm-like" data-active="" data-filter=":logic:dokkaHtmlPartial/jvmMain">jvm</button>
             <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
                 <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox" data-role="dropdown-toggle" aria-controls="platform-tags-listbox" aria-haspopup="listbox" aria-expanded="false" aria-label="Toggle source sets"></button>
                 <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
@@ -54,11 +57,32 @@
                             <i class="ui-kit-icon ui-kit-icon_cross"></i>
                         </button>
                     </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/androidMain" data-filter=":logic:dokkaHtmlPartial/androidMain">
+                                <span class="checkbox--icon"></span>
+                                android
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/appleMain" data-filter=":logic:dokkaHtmlPartial/appleMain">
+                                <span class="checkbox--icon"></span>
+                                apple
+                            </label>
+                        </li>
                         <li role="option" class="dropdown--option platform-selector-option common-like" tabindex="0">
                             <label class="checkbox">
                                 <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/commonMain" data-filter=":logic:dokkaHtmlPartial/commonMain">
                                 <span class="checkbox--icon"></span>
                                 common
+                            </label>
+                        </li>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":logic:dokkaHtmlPartial/jvmMain" data-filter=":logic:dokkaHtmlPartial/jvmMain">
+                                <span class="checkbox--icon"></span>
+                                jvm
                             </label>
                         </li>
                 </ul>
@@ -90,17 +114,62 @@
                 </div>
             </div>
             <div id="main">
-<div class="main-content" data-page-type="package" id="content" pageids="logic::com.wire.kalium.logic.data.message.linkpreview////PointingToDeclaration//867774983">
+<div class="main-content" data-page-type="package" id="content" pageids="logic::com.wire.kalium.logic.data.message.linkpreview////PointingToDeclaration//1228878352">
   <div class="breadcrumbs"><a href="../index.html">logic</a><span class="delimiter">/</span><span class="current">com.wire.kalium.logic.data.message.linkpreview</span></div>
   <div class="cover ">
     <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
   </div>
   <div class="tabbedcontent">
-    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button></div>
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button><button class="section-tab" data-togglable="FUNCTION,EXTENSION_FUNCTION">Functions</button><button class="section-tab" data-togglable="PROPERTY,EXTENSION_PROPERTY">Properties</button></div>
     <div class="tabs-section-body">
       <div data-togglable="TYPE">
         <h2 class="">Types</h2>
-        <div class="table"><a data-name="1831786903%2FClasslikes%2F867774983" anchor-label="LinkPreviewMapper" id="1831786903%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+        <div class="table"><a data-name="-1993660846%2FClasslikes%2F867774983" anchor-label="DownloadedImage" id="-1993660846%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-downloaded-image/index.html"><span>Downloaded</span><wbr><span><span>Image</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1993660846%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">data </span><span class="token keyword">class </span><a href="-downloaded-image/index.html">DownloadedImage</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>bytes<span class="token operator">: </span><span data-unresolved-link="kotlin/ByteArray///PointingToDeclaration/">ByteArray</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>mimeType<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="157798530%2FClasslikes%2F867774983" anchor-label="ExclusionRanges" id="157798530%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-exclusion-ranges/index.html"><span>Exclusion</span><wbr><span><span>Ranges</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="157798530%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">object </span><a href="-exclusion-ranges/index.html">ExclusionRanges</a></div><div class="brief "><p class="paragraph">Computes ranges to exclude from link preview detection (mentions and markdown links).</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-562210532%2FClasslikes%2F867774983" anchor-label="ImageMetadata" id="-562210532%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-image-metadata/index.html"><span>Image</span><wbr><span><span>Metadata</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-562210532%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">data </span><span class="token keyword">class </span><a href="-image-metadata/index.html">ImageMetadata</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>width<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>height<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>mimeType<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1831786903%2FClasslikes%2F867774983" anchor-label="LinkPreviewMapper" id="1831786903%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
           <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
             <div class="main-subrow keyValue ">
               <div class=""><span class="inline-flex">
@@ -126,6 +195,245 @@
               <div>
                 <div class="title">
                   <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-link-preview-mapper-impl/index.html">LinkPreviewMapperImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">encryptionAlgorithmMapper<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.message/-encryption-algorithm-mapper/index.html">EncryptionAlgorithmMapper</a><span class="token operator"> = </span>MapperProvider.encryptionAlgorithmMapper()</span></span><span class="token punctuation">)</span> : <a href="-link-preview-mapper/index.html">LinkPreviewMapper</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2091756846%2FClasslikes%2F867774983" anchor-label="LinkPreviewRepository" id="2091756846%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-link-preview-repository/index.html"><span>Link</span><wbr><span>Preview</span><wbr><span><span>Repository</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2091756846%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">interface </span><a href="-link-preview-repository/index.html">LinkPreviewRepository</a></div><div class="brief "><p class="paragraph">Repository for link preview data fetching and parsing.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1492031598%2FClasslikes%2F867774983" anchor-label="LinkPreviewRepositoryImpl" id="1492031598%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-link-preview-repository-impl/index.html"><span>Link</span><wbr><span>Preview</span><wbr><span>Repository</span><wbr><span><span>Impl</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1492031598%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">class </span><a href="-link-preview-repository-impl/index.html">LinkPreviewRepositoryImpl</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">httpClient<span class="token operator">: </span><span data-unresolved-link="/<Error class: unknown class>///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">, </span></span><span class="parameter ">kaliumFileSystem<span class="token operator">: </span><a href="../com.wire.kalium.logic.data.asset/-kalium-file-system/index.html">KaliumFileSystem</a><span class="token punctuation">, </span></span><span class="parameter ">resolveHostAddresses<span class="token operator">: </span><span class="token keyword">suspend </span><span class="token punctuation">(</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token punctuation">)</span><span class="token operator"> -&gt; </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">&gt;</span><span class="token operator"> = </span>::resolvePreviewHostAddresses</span></span><span class="token punctuation">)</span> : <a href="-link-preview-repository/index.html">LinkPreviewRepository</a></div><div class="brief "><p class="paragraph">Default implementation of LinkPreviewRepository.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1864093784%2FClasslikes%2F867774983" anchor-label="OpenGraphData" id="1864093784%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-open-graph-data/index.html"><span>Open</span><wbr><span>Graph</span><wbr><span><span>Data</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1864093784%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">data </span><span class="token keyword">class </span><a href="-open-graph-data/index.html">OpenGraphData</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>title<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>type<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator"> = </span><span class="token string">"website"</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>url<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>description<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>imageUrls<span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">&gt;</span><span class="token operator"> = </span>emptyList()<span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>siteName<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Internal parsed Open Graph data structure.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1830243778%2FClasslikes%2F867774983" anchor-label="OpenGraphScanner" id="1830243778%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-open-graph-scanner/index.html"><span>Open</span><wbr><span>Graph</span><wbr><span><span>Scanner</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1830243778%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">object </span><a href="-open-graph-scanner/index.html">OpenGraphScanner</a></div><div class="brief "><p class="paragraph">Scans HTML head for Open Graph metadata using DOM-based parsing (Ksoup).</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-759858137%2FClasslikes%2F867774983" anchor-label="PreviewBlacklist" id="-759858137%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-preview-blacklist/index.html"><span>Preview</span><wbr><span><span>Blacklist</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-759858137%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">object </span><a href="-preview-blacklist/index.html">PreviewBlacklist</a></div><div class="brief "><p class="paragraph">Blocks link previews for URLs from certain hosts (e.g., video/music streaming services). Uses substring matching for simplicity and to catch variations (e.g., youtu.be, youtube.com).</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2144619537%2FClasslikes%2F867774983" anchor-label="UrlDetector" id="2144619537%2FClasslikes%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-url-detector/index.html"><span>Url</span><wbr><span><span>Detector</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2144619537%2FClasslikes%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">object </span><a href="-url-detector/index.html">UrlDetector</a></div><div class="brief "><p class="paragraph">Detects URLs in text using the AOSP Patterns.WEB_URL regex, ported to commonMain for iOS parity.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="PROPERTY">
+        <h2 class="">Properties</h2>
+        <div class="table"><a data-name="-1267616738%2FProperties%2F867774983" anchor-label="MAX_PREVIEW_ASSET_NAME_LENGTH" id="-1267616738%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-a-x_-p-r-e-v-i-e-w_-a-s-s-e-t_-n-a-m-e_-l-e-n-g-t-h.html"><span>MAX_</span><wbr><span>PREVIEW_</span><wbr><span>ASSET_</span><wbr><span>NAME_</span><wbr><span>LENGTH</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1267616738%2FProperties%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-a-x_-p-r-e-v-i-e-w_-a-s-s-e-t_-n-a-m-e_-l-e-n-g-t-h.html">MAX_PREVIEW_ASSET_NAME_LENGTH</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span><span class="token constant">255</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="88734344%2FProperties%2F867774983" anchor-label="MAX_PREVIEW_DESCRIPTION_LENGTH" id="88734344%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-a-x_-p-r-e-v-i-e-w_-d-e-s-c-r-i-p-t-i-o-n_-l-e-n-g-t-h.html"><span>MAX_</span><wbr><span>PREVIEW_</span><wbr><span>DESCRIPTION_</span><wbr><span>LENGTH</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="88734344%2FProperties%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-a-x_-p-r-e-v-i-e-w_-d-e-s-c-r-i-p-t-i-o-n_-l-e-n-g-t-h.html">MAX_PREVIEW_DESCRIPTION_LENGTH</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="615126063%2FProperties%2F867774983" anchor-label="MAX_PREVIEW_SITE_NAME_LENGTH" id="615126063%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-a-x_-p-r-e-v-i-e-w_-s-i-t-e_-n-a-m-e_-l-e-n-g-t-h.html"><span>MAX_</span><wbr><span>PREVIEW_</span><wbr><span>SITE_</span><wbr><span>NAME_</span><wbr><span>LENGTH</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="615126063%2FProperties%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-a-x_-p-r-e-v-i-e-w_-s-i-t-e_-n-a-m-e_-l-e-n-g-t-h.html">MAX_PREVIEW_SITE_NAME_LENGTH</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span><span class="token constant">120</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-403264540%2FProperties%2F867774983" anchor-label="MAX_PREVIEW_TITLE_LENGTH" id="-403264540%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-a-x_-p-r-e-v-i-e-w_-t-i-t-l-e_-l-e-n-g-t-h.html"><span>MAX_</span><wbr><span>PREVIEW_</span><wbr><span>TITLE_</span><wbr><span>LENGTH</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-403264540%2FProperties%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-a-x_-p-r-e-v-i-e-w_-t-i-t-l-e_-l-e-n-g-t-h.html">MAX_PREVIEW_TITLE_LENGTH</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token operator"> = </span><span class="token constant">300</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="485635067%2FProperties%2F867774983" anchor-label="MAX_PREVIEW_URL_LENGTH" id="485635067%2FProperties%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-a-x_-p-r-e-v-i-e-w_-u-r-l_-l-e-n-g-t-h.html"><span>MAX_</span><wbr><span>PREVIEW_</span><wbr><span>URL_</span><wbr><span>LENGTH</span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="485635067%2FProperties%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">const </span><span class="token keyword">val </span><a href="-m-a-x_-p-r-e-v-i-e-w_-u-r-l_-l-e-n-g-t-h.html">MAX_PREVIEW_URL_LENGTH</a><span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-1222922833%2FFunctions%2F1228878352" anchor-label="normalizePreviewUnicode" id="-1222922833%2FFunctions%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="normalize-preview-unicode.html"><span>normalize</span><wbr><span>Preview</span><wbr><span><span>Unicode</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1222922833%2FFunctions%2F1228878352"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/jvmMain" data-toggle=":logic:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">fun </span><a href="normalize-preview-unicode.html"><span class="token function">normalizePreviewUnicode</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">input<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">fun </span><a href="normalize-preview-unicode.html"><span class="token function">normalizePreviewUnicode</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">input<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">expect </span><span class="token keyword">fun </span><a href="normalize-preview-unicode.html"><span class="token function">normalizePreviewUnicode</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">input<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">fun </span><a href="normalize-preview-unicode.html"><span class="token function">normalizePreviewUnicode</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">input<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1941481636%2FFunctions%2F1228878352" anchor-label="readImageMetadata" id="1941481636%2FFunctions%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="read-image-metadata.html"><span>read</span><wbr><span>Image</span><wbr><span><span>Metadata</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1941481636%2FFunctions%2F1228878352"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/jvmMain" data-toggle=":logic:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">fun </span><a href="read-image-metadata.html"><span class="token function">readImageMetadata</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">bytes<span class="token operator">: </span><span data-unresolved-link="kotlin/ByteArray///PointingToDeclaration/">ByteArray</span><span class="token punctuation">, </span></span><span class="parameter ">fallbackMimeType<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-image-metadata/index.html">ImageMetadata</a><span class="token operator">?</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">fun </span><a href="read-image-metadata.html"><span class="token function">readImageMetadata</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">bytes<span class="token operator">: </span><span data-unresolved-link="kotlin/ByteArray///PointingToDeclaration/">ByteArray</span><span class="token punctuation">, </span></span><span class="parameter ">fallbackMimeType<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="../../logic/com.wire.kalium.logic.data.message.linkpreview/-image-metadata/index.html">ImageMetadata</a><span class="token operator">?</span></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">expect </span><span class="token keyword">fun </span><a href="read-image-metadata.html"><span class="token function">readImageMetadata</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">bytes<span class="token operator">: </span><span data-unresolved-link="kotlin/ByteArray///PointingToDeclaration/">ByteArray</span><span class="token punctuation">, </span></span><span class="parameter ">fallbackMimeType<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-image-metadata/index.html">ImageMetadata</a><span class="token operator">?</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">fun </span><a href="read-image-metadata.html"><span class="token function">readImageMetadata</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">bytes<span class="token operator">: </span><span data-unresolved-link="kotlin/ByteArray///PointingToDeclaration/">ByteArray</span><span class="token punctuation">, </span></span><span class="parameter ">fallbackMimeType<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-image-metadata/index.html">ImageMetadata</a><span class="token operator">?</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="915047243%2FFunctions%2F1228878352" anchor-label="resolvePreviewHostAddresses" id="915047243%2FFunctions%2F1228878352" data-filterable-set=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain,:logic:dokkaHtmlPartial/androidMain,:logic:dokkaHtmlPartial/appleMain,:logic:dokkaHtmlPartial/jvmMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="resolve-preview-host-addresses.html"><span>resolve</span><wbr><span>Preview</span><wbr><span>Host</span><wbr><span><span>Addresses</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="915047243%2FFunctions%2F1228878352"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted  with-platform-tabs" data-platform-hinted="data-platform-hinted">
+                    <div class="platform-bookmarks-row" data-toggle-list="data-toggle-list"><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/androidMain" data-filterable-set=":logic:dokkaHtmlPartial/androidMain" data-active="" data-toggle=":logic:dokkaHtmlPartial/androidMain">android</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/appleMain" data-filterable-set=":logic:dokkaHtmlPartial/appleMain" data-toggle=":logic:dokkaHtmlPartial/appleMain">apple</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain" data-toggle=":logic:dokkaHtmlPartial/commonMain">common</button><button class="platform-bookmark" data-filterable-current=":logic:dokkaHtmlPartial/jvmMain" data-filterable-set=":logic:dokkaHtmlPartial/jvmMain" data-toggle=":logic:dokkaHtmlPartial/jvmMain">jvm</button></div>
+<div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/androidMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="resolve-preview-host-addresses.html"><span class="token function">resolvePreviewHostAddresses</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">host<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">&gt;</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/appleMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="resolve-preview-host-addresses.html"><span class="token function">resolvePreviewHostAddresses</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">host<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">&gt;</span></div></div><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">expect </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="resolve-preview-host-addresses.html"><span class="token function">resolvePreviewHostAddresses</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">host<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">&gt;</span></div></div><div class="content sourceset-dependent-content" data-togglable=":logic:dokkaHtmlPartial/jvmMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">actual </span><span class="token keyword">suspend </span><span class="token keyword">fun </span><a href="resolve-preview-host-addresses.html"><span class="token function">resolvePreviewHostAddresses</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">host<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin.collections/List///PointingToDeclaration/">List</span><span class="token operator">&lt;</span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">&gt;</span></div></div>                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2109578833%2FFunctions%2F867774983" anchor-label="sanitizePreviewText" id="2109578833%2FFunctions%2F867774983" data-filterable-set=":logic:dokkaHtmlPartial/commonMain"></a>
+          <div class="table-row" data-filterable-current=":logic:dokkaHtmlPartial/commonMain" data-filterable-set=":logic:dokkaHtmlPartial/commonMain">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="sanitize-preview-text.html"><span>sanitize</span><wbr><span>Preview</span><wbr><span><span>Text</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2109578833%2FFunctions%2F867774983"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":logic:dokkaHtmlPartial/commonMain"><div class="symbol monospace"><span class="token keyword">internal </span><span class="token keyword">fun </span><a href="sanitize-preview-text.html"><span class="token function">sanitizePreviewText</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">input<span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter ">maxLength<span class="token operator">: </span><span data-unresolved-link="kotlin/Int///PointingToDeclaration/">Int</span><span class="token punctuation">, </span></span><span class="parameter ">collapseWhitespace<span class="token operator">: </span><span data-unresolved-link="kotlin/Boolean///PointingToDeclaration/">Boolean</span><span class="token operator"> = </span><span class="token boolean">true</span></span></span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="kotlin/String///PointingToDeclaration/">String</span><span class="token operator">?</span></div></div></div>
                 </div>
               </div>
             </div>
