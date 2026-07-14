@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandlerImpl
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangement
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
@@ -110,6 +111,36 @@ class ProtocolUpdateEventHandlerTest {
         coVerify {
             arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
         }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenStaleProtocolEventForDeletedConversation_whenBackendReturnsNoConversation_thenEventIsSkipped() = runTest {
+        val event = TestEvent.newConversationProtocolEvent()
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.noConversation)
+
+        val (arrangement, useCase) = arrange {
+            withUpdateProtocolUpdateReturns(Either.Left(failure))
+        }
+
+        useCase.handle(arrangement.transactionContext, event).shouldSucceed()
+
+        coVerify {
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenProtocolEvent_whenBackendReturnsOtherServerError_thenErrorIsPropagated() = runTest {
+        val event = TestEvent.newConversationProtocolEvent()
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+
+        val (arrangement, useCase) = arrange {
+            withUpdateProtocolUpdateReturns(Either.Left(failure))
+        }
+
+        useCase.handle(arrangement.transactionContext, event).shouldFail {
+            assertEquals(failure, it)
+        }
     }
 
     @Test

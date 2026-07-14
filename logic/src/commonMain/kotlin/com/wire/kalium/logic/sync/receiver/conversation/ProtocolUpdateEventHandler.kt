@@ -19,7 +19,9 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMapLeft
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -32,6 +34,8 @@ import com.wire.kalium.logic.data.conversation.UpdateConversationProtocolUseCase
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isConversationNotFound
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 
@@ -57,6 +61,14 @@ internal class ProtocolUpdateEventHandlerImpl(
     ): Either<CoreFailure, Unit> {
         val eventLogger = logger.createEventProcessingLogger(event)
         return updateConversationProtocol(transactionContext, event.conversationId, event.protocol, localOnly = true)
+            .flatMapLeft { failure ->
+                if (failure.isNoConversationFailure()) {
+                    logger.i("Ignoring protocol update event for a deleted conversation")
+                    Either.Right(false)
+                } else {
+                    Either.Left(failure)
+                }
+            }
             .onSuccess { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
@@ -79,3 +91,7 @@ internal class ProtocolUpdateEventHandlerImpl(
             .map { }
     }
 }
+
+private fun CoreFailure.isNoConversationFailure(): Boolean =
+    ((this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError)
+        ?.isConversationNotFound() == true
