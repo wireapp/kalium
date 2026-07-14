@@ -66,10 +66,10 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
 
     private companion object {
         val SUPPORTED_RECURRENCES = listOf(
-            MeetingFrequencyDTO.DAILY to 1L,    // daily
-            MeetingFrequencyDTO.WEEKLY to 1L,   // weekly
-            MeetingFrequencyDTO.WEEKLY to 2L,   // every 2 weeks
-            MeetingFrequencyDTO.WEEKLY to 4L    // every 4 weeks
+            MeetingFrequencyDTO.DAILY to 1L, // daily
+            MeetingFrequencyDTO.WEEKLY to 1L, // weekly
+            MeetingFrequencyDTO.WEEKLY to 2L, // every 2 weeks
+            MeetingFrequencyDTO.WEEKLY to 4L // every 4 weeks
         )
     }
 }
