@@ -286,16 +286,16 @@ class MeetingDaoTest : BaseDatabaseTest() {
             insertMeetingDependencies(meeting)
             insertMeetingWithoutOccurrences(meeting)
 
-            meetingDao.insertMissingOccurrences(from = from, until = now + GENERATION_DAYS.days)
+            meetingDao.insertMissingOccurrences(GenerationLimit.Window(from = from, until = now + GENERATION_DAYS.days))
 
             val initialOccurrences = occurrencesFor(meeting)
             assertEquals(true, initialOccurrences.isNotEmpty())
             assertEquals(true, initialOccurrences.all { it.occurrence_start <= now + GENERATION_DAYS.days })
 
-            meetingDao.insertMissingOccurrences(from = from, until = now + GENERATION_DAYS.days)
+            meetingDao.insertMissingOccurrences(GenerationLimit.Window(from = from, until = now + GENERATION_DAYS.days))
             assertContentEquals(initialOccurrences.map { it.occurrence_id }, occurrencesFor(meeting).map { it.occurrence_id })
 
-            meetingDao.insertMissingOccurrences(from = from, until = now + GENERATION_DAYS.days + 1.days)
+            meetingDao.insertMissingOccurrences(GenerationLimit.Window(from = from, until = now + GENERATION_DAYS.days + 1.days))
             assertEquals(initialOccurrences.size + 1, occurrencesFor(meeting).size)
         }
 
@@ -312,7 +312,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
             insertMeetingDependencies(meeting)
             insertMeetingWithoutOccurrences(meeting)
 
-            meetingDao.insertMissingOccurrences(from = from, until = until)
+            meetingDao.insertMissingOccurrences(GenerationLimit.Window(from = from, until = until))
 
             val occurrences = occurrencesFor(meeting)
             assertEquals(true, occurrences.isNotEmpty())

@@ -78,7 +78,7 @@ internal class MeetingDataSource(
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             meetingDAO.removeOutdatedMeetings(removeOlderThan)
-            meetingDAO.insertMissingOccurrences(from = removeOlderThan, until = generateOccurrencesUntil)
+            meetingDAO.insertMissingOccurrences(GenerationLimit.Window(removeOlderThan, generateOccurrencesUntil))
         }
 }
 

@@ -30,7 +30,7 @@ import kotlinx.datetime.Instant
 interface MeetingDao {
     suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesWindow: GenerationLimit.Window)
     suspend fun removeOutdatedMeetings(olderThan: Instant)
-    suspend fun insertMissingOccurrences(from: Instant, until: Instant)
+    suspend fun insertMissingOccurrences(generateOccurrencesWindow: GenerationLimit.Window)
 }
 
 internal class MeetingDaoImpl(
@@ -78,13 +78,13 @@ internal class MeetingDaoImpl(
         }
     }
 
-    override suspend fun insertMissingOccurrences(from: Instant, until: Instant) {
+    override suspend fun insertMissingOccurrences(generateOccurrencesWindow: GenerationLimit.Window) {
         withContext(writeDispatcher.value) {
             meetingsQueries.transaction {
                 meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).awaitAsList().let { meetings ->
                     meetingsQueries.insertGeneratedOccurrences(
                         meetings = meetings,
-                        limit = GenerationLimit.Window(from = from, until = until),
+                        limit = generateOccurrencesWindow,
                         shouldRegenerateOccurrences = meetings.associate { it.meetingId to false },
                     )
                 }
@@ -112,7 +112,7 @@ private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
 
 internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
     meetings: List<MeetingEntity>,
-    limit: MeetingOccurrencesGenerator.GenerationLimit,
+    limit: GenerationLimit,
     shouldRegenerateOccurrences: Map<QualifiedIDEntity, Boolean>,
 ): Int {
     val lastGeneratedStarts = meetings.mapNotNull { meeting ->
