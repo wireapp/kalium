@@ -37,13 +37,17 @@ private val lock = Object()
 internal actual fun buildSettings(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
-): Settings = synchronized(lock) {
-    val settings = if (options.shouldEncryptData) {
+): Settings = SharedPreferencesSettings(buildSharedPreferences(options, param), false)
+
+internal fun buildSharedPreferences(
+    options: SettingOptions,
+    param: EncryptedSettingsPlatformParam
+): SharedPreferences = synchronized(lock) {
+    if (options.shouldEncryptData) {
         encryptedSharedPref(options, param, false)
     } else {
         param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
     }
-    SharedPreferencesSettings(settings, false)
 }
 
 private fun getOrCreateMasterKey(
