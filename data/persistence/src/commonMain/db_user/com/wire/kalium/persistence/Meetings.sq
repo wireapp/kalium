@@ -90,7 +90,7 @@ WHERE occurrence_end <= :outdatedThreshold;
 selectRecurringMeetings:
 SELECT *
 FROM Meeting
-WHERE recurrence_frequency IS NOT NULL AND recurrence_interval IS NOT NULL;
+WHERE recurrence_interval IS NOT NULL;
 
 selectMeetingOccurrencesByMeetingId:
 SELECT *

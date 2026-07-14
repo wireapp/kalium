@@ -84,7 +84,7 @@ internal class MeetingDaoImpl(
                 meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).awaitAsList().let { meetings ->
                     meetingsQueries.insertGeneratedOccurrences(
                         meetings = meetings,
-                        limit = MeetingOccurrencesGenerator.GenerationLimit.Window(from = from, until = until),
+                        limit = GenerationLimit.Window(from = from, until = until),
                         shouldRegenerateOccurrences = meetings.associate { it.meetingId to false },
                     )
                 }

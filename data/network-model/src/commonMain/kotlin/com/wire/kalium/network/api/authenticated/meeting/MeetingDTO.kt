@@ -42,7 +42,7 @@ data class MeetingDTO(
 @Serializable
 data class MeetingRecurrenceDTO(
     @SerialName("frequency") val frequency: MeetingFrequencyDTO,
-    @SerialName("interval") val interval: Long,
+    @SerialName("interval") val interval: Long?,
     @SerialName("until") val until: Instant?
 )
 

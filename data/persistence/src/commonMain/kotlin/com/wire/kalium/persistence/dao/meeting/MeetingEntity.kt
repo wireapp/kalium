@@ -34,7 +34,7 @@ data class MeetingEntity(
 ) {
     data class RecurrenceEntity(
         val frequency: Frequency,
-        val interval: Long,
+        val interval: Long?,
         val until: Instant?
     ) {
         enum class Frequency { DAILY, WEEKLY, MONTHLY, YEARLY }
