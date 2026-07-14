@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandlerImpl
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -108,6 +109,36 @@ class ProtocolUpdateEventHandlerTest {
 
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.updateConversationProtocol(any(), eq(event.conversationId), eq(event.protocol), eq(true))
+        }
+    }
+
+    @Test
+    fun givenStaleProtocolEventForDeletedConversation_whenBackendReturnsNoConversation_thenEventIsSkipped() = runTest {
+        val event = TestEvent.newConversationProtocolEvent()
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.noConversation)
+
+        val (arrangement, useCase) = arrange {
+            withUpdateProtocolUpdateReturns(Either.Left(failure))
+        }
+
+        useCase.handle(arrangement.transactionContext, event).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun givenProtocolEvent_whenBackendReturnsOtherServerError_thenErrorIsPropagated() = runTest {
+        val event = TestEvent.newConversationProtocolEvent()
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+
+        val (arrangement, useCase) = arrange {
+            withUpdateProtocolUpdateReturns(Either.Left(failure))
+        }
+
+        useCase.handle(arrangement.transactionContext, event).shouldFail {
+            assertEquals(failure, it)
         }
     }
 
