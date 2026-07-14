@@ -159,7 +159,7 @@ private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
 
 internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
     meetings: List<MeetingEntity>,
-    bounds: GenerationBounds,
+    limit: GenerationLimit,
     shouldRegenerateOccurrences: Map<QualifiedIDEntity, Boolean>,
 ): Int {
     val lastGeneratedStarts = meetings.mapNotNull { meeting ->
@@ -172,7 +172,7 @@ internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
     return MeetingOccurrencesGenerator.generate(
         meetings = meetings,
         lastGeneratedStarts = lastGeneratedStarts,
-        bounds = bounds,
+        limit = limit,
     ).onEach { occurrence ->
         insertMeetingOccurrence(
             occurrence_id = occurrence.occurrenceId,

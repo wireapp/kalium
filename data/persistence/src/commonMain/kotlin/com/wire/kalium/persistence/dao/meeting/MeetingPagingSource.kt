@@ -127,7 +127,7 @@ internal class MeetingPagingSource(
                 val recurringMeetings = meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).awaitAsList()
                 meetingsQueries.insertGeneratedOccurrences(
                     meetings = recurringMeetings,
-                    bounds = GenerationBounds.count(missingCount),
+                    limit = MeetingOccurrencesGenerator.GenerationLimit.Count(missingCount),
                     shouldRegenerateOccurrences = recurringMeetings.associate { it.meetingId to false },
                 )
             }
@@ -141,7 +141,7 @@ internal class MeetingPagingSource(
     private suspend fun loadAndObserveAvatars(meetings: List<MeetingOccurrenceDetailsEntity>): Map<QualifiedIDEntity, List<QualifiedIDEntity>> {
         val conversationIds = meetings.filter { meeting ->
             // Only load avatars for group meeting conversations, as only those have participant avatars to show
-            meeting.conversationType == ConversationEntity.Type.GROUP && meeting.groupType is ConversationEntity.GroupType.Meeting
+            meeting.conversationType == ConversationEntity.Type.MEETING
         }.mapTo(mutableSetOf()) { it.meeting.conversationId }
 
         if (conversationIds.isEmpty()) {

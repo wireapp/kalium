@@ -24,7 +24,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlin.uuid.Uuid
 
-internal object MeetingOccurrencesGenerator {
+object MeetingOccurrencesGenerator {
 
     fun generate(
         meetings: List<MeetingEntity>,

@@ -48,8 +48,8 @@ SELECT
     Meeting.creation_date AS creationDate,
     Meeting.last_edit_date AS lastEditDate,
     Meeting.title AS meetingTitle,
-    Meeting.start_date AS templateStartDate,
-    Meeting.end_date AS templateEndDate,
+    Meeting.start_date AS startDate,
+    Meeting.end_date AS endDate,
     Meeting.trial AS trial,
     Meeting.recurrence_frequency AS recurrenceFrequency,
     Meeting.recurrence_interval AS recurrenceInterval,
@@ -57,7 +57,6 @@ SELECT
     ConversationDetails.name AS conversationName,
     ConversationDetails.type AS conversationType,
     ConversationDetails.previewAssetId AS previewAssetId,
-    ConversationDetails.group_type AS groupType,
     ConversationDetails.channel_access AS channelAccess,
     ConversationDetails.selfUserId AS selfUserId
 FROM MeetingOccurrence
