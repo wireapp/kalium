@@ -88,7 +88,7 @@ class MeetingRepositoryTest {
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingDao.removeOutdatedMeetings(removeOlderThan)
-            arrangement.meetingDao.insertMissingOccurrences(from = removeOlderThan, until = generateOccurrencesUntil)
+            arrangement.meetingDao.insertMissingOccurrences(GenerationLimit.Window(removeOlderThan, generateOccurrencesUntil))
         }
     }
 

@@ -37,7 +37,7 @@ import kotlinx.datetime.Instant
 interface MeetingDao {
     suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesWindow: GenerationLimit.Window)
     suspend fun removeOutdatedMeetings(olderThan: Instant)
-    suspend fun insertMissingOccurrences(from: Instant, until: Instant)
+    suspend fun insertMissingOccurrences(generateOccurrencesWindow: GenerationLimit.Window)
     fun getMeetingOccurrenceDetailsFlow(occurrenceId: String): Flow<MeetingOccurrenceDetailsEntity?>
     fun getPaginatedMeetingOccurrenceDetails(
         pagingConfig: PagingConfig,
@@ -92,13 +92,13 @@ internal class MeetingDaoImpl(
         }
     }
 
-    override suspend fun insertMissingOccurrences(from: Instant, until: Instant) {
+    override suspend fun insertMissingOccurrences(generateOccurrencesWindow: GenerationLimit.Window) {
         withContext(writeDispatcher.value) {
             meetingsQueries.transaction {
                 meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).awaitAsList().let { meetings ->
                     meetingsQueries.insertGeneratedOccurrences(
                         meetings = meetings,
-                        limit = GenerationLimit.Window(from = from, until = until),
+                        limit = generateOccurrencesWindow,
                         shouldRegenerateOccurrences = meetings.associate { it.meetingId to false },
                     )
                 }

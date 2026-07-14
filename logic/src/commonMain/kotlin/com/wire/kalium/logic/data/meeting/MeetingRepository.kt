@@ -89,7 +89,7 @@ internal class MeetingDataSource(
         generateOccurrencesUntil: Instant
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         meetingDAO.removeOutdatedMeetings(removeOlderThan)
-        meetingDAO.insertMissingOccurrences(from = removeOlderThan, until = generateOccurrencesUntil)
+        meetingDAO.insertMissingOccurrences(GenerationLimit.Window(removeOlderThan, generateOccurrencesUntil))
     }
 
     override suspend fun observeMeetingOccurrence(occurrenceId: String): Flow<MeetingOccurrence?> =
