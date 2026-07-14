@@ -47,7 +47,6 @@ data class ConversationEntity(
     val mlsVerificationStatus: VerificationStatus,
     val proteusVerificationStatus: VerificationStatus,
     val legalHoldStatus: LegalHoldStatus,
-    val groupType: GroupType,
     val channelAccess: ChannelAccess?,
     val channelAddPermission: ChannelAddPermission?,
     val wireCell: String?,
@@ -57,13 +56,18 @@ data class ConversationEntity(
 
     enum class Access { PRIVATE, INVITE, SELF_INVITE, LINK, CODE; }
 
-    enum class Type { SELF, ONE_ON_ONE, GROUP, CONNECTION_PENDING }
+    sealed interface Type {
+        data object SELF : Type
+        data object ONE_ON_ONE : Type
+        data object GROUP : Type
+        data object CHANNEL : Type
+        data object MEETING : Type
+        data object CONNECTION_PENDING : Type
+        data class Unknown(val name: String) : Type
 
-    sealed interface GroupType {
-        data object Group : GroupType
-        data object Channel : GroupType
-        data object Meeting : GroupType
-        data class Unknown(val name: String) : GroupType
+        val isGroup: Boolean
+            get() = this == GROUP || this == CHANNEL || this == MEETING
+
     }
 
     enum class GroupState { PENDING_CREATION, PENDING_JOIN, PENDING_WELCOME_MESSAGE, ESTABLISHED, PENDING_AFTER_RESET }

@@ -35,11 +35,13 @@ import com.wire.kalium.util.DateTimeUtil.currentInstant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
 
 internal interface MeetingRepository {
     suspend fun fetchAndPersistMeetings(
+        generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
     ): Either<CoreFailure, List<MeetingEntity>>
 
@@ -63,22 +65,31 @@ internal class MeetingDataSource(
     private val meetingMapper: MeetingMapper = MapperProvider.meetingMapper()
 ) : MeetingRepository {
     override suspend fun fetchAndPersistMeetings(
+        generateOccurrencesFrom: Instant,
         generateOccurrencesUntil: Instant
-    ): Either<CoreFailure, List<MeetingEntity>> = wrapApiRequest {
-        meetingApi.fetchMeetings()
-    }.flatMap { meetings ->
-        wrapStorageRequest {
-            meetings.map { meetingMapper.fromApiToDao(it) }
-                .also { meetingDAO.upsertMeetings(it, generateOccurrencesUntil) }
+    ): Either<CoreFailure, List<MeetingEntity>> =
+        wrapApiRequest {
+            meetingApi.fetchMeetings()
+        }.flatMap { meetings ->
+            wrapStorageRequest {
+                meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
+                    .also { meetingsToPersist ->
+                        if (meetingsToPersist.isNotEmpty()) {
+                            meetingDAO.upsertMeetings(
+                                meetings = meetingsToPersist,
+                                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
+                            )
+                        }
+                    }
+            }
         }
-    }
 
     override suspend fun syncMeetingOccurrences(
         removeOlderThan: Instant,
         generateOccurrencesUntil: Instant
     ): Either<CoreFailure, Unit> = wrapStorageRequest {
         meetingDAO.removeOutdatedMeetings(removeOlderThan)
-        meetingDAO.insertMissingOccurrences(generateOccurrencesUntil)
+        meetingDAO.insertMissingOccurrences(from = removeOlderThan, until = generateOccurrencesUntil)
     }
 
     override suspend fun observeMeetingOccurrence(occurrenceId: String): Flow<MeetingOccurrence?> =

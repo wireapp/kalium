@@ -1,29 +1,13 @@
-CREATE VIEW MeetingOccurrenceDetails AS
-SELECT
-    MeetingOccurrence.occurrence_id AS occurrenceId,
-    MeetingOccurrence.meeting_id AS occurrenceMeetingId,
-    MeetingOccurrence.occurrence_start AS occurrenceStart,
-    MeetingOccurrence.occurrence_end AS occurrenceEnd,
-    Meeting.meeting_id AS meetingId,
-    Meeting.conversation_id AS conversationId,
-    Meeting.creator_id AS creatorId,
-    Meeting.creation_date AS creationDate,
-    Meeting.last_edit_date AS lastEditDate,
-    Meeting.title AS meetingTitle,
-    Meeting.start_date AS templateStartDate,
-    Meeting.end_date AS templateEndDate,
-    Meeting.trial AS trial,
-    Meeting.recurrence_frequency AS recurrenceFrequency,
-    Meeting.recurrence_interval AS recurrenceInterval,
-    Meeting.recurrence_end_date AS recurrenceEndDate,
-    ConversationDetails.name AS conversationName,
-    ConversationDetails.type AS conversationType,
-    ConversationDetails.previewAssetId AS previewAssetId,
-    ConversationDetails.group_type AS groupType,
-    ConversationDetails.channel_access AS channelAccess,
-    ConversationDetails.selfUserId AS selfUserId
-FROM MeetingOccurrence
-JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
-JOIN ConversationDetails ON ConversationDetails.qualifiedId = Meeting.conversation_id;
+CREATE TABLE MeetingOccurrence (
+    occurrence_id TEXT NOT NULL PRIMARY KEY,
+    meeting_id TEXT AS QualifiedIDEntity NOT NULL,
+    occurrence_start INTEGER AS Instant NOT NULL,
+    occurrence_end INTEGER AS Instant NOT NULL,
+
+    FOREIGN KEY (meeting_id) REFERENCES Meeting(meeting_id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_occurrences_meeting ON MeetingOccurrence(meeting_id);
+CREATE INDEX idx_occurrences_start ON MeetingOccurrence(occurrence_start);
 
 PRAGMA optimize;

@@ -19,10 +19,12 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.network.exceptions.AdminlessConversationError
 
 public interface RemoveMemberFromConversationUseCase {
 
@@ -46,9 +48,18 @@ internal class RemoveMemberFromConversationUseCaseImpl(
 ) : RemoveMemberFromConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdToRemove: UserId): RemoveMemberFromConversationUseCase.Result {
         return conversationGroupRepository.deleteMember(userIdToRemove, conversationId).fold({
-            RemoveMemberFromConversationUseCase.Result.Failure(it)
+            it.adminlessConversationEligibleMembers()?.takeIf { eligibleMembers -> eligibleMembers.isNotEmpty() }?.let { eligibleMembers ->
+                RemoveMemberFromConversationUseCase.Result.Failure(AdminlessConversationFailure(eligibleMembers))
+            } ?: RemoveMemberFromConversationUseCase.Result.Failure(it)
         }, {
             RemoveMemberFromConversationUseCase.Result.Success
         })
     }
+}
+
+public data class AdminlessConversationFailure(val eligibleMembers: List<UserId>) : CoreFailure.FeatureFailure()
+
+private fun CoreFailure.adminlessConversationEligibleMembers(): List<UserId>? {
+    val adminlessError = (this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? AdminlessConversationError
+    return adminlessError?.errorResponse?.eligibleMembers?.map { UserId(it.value, it.domain) }
 }

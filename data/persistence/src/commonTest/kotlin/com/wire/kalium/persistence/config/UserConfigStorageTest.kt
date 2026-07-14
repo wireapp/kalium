@@ -84,6 +84,17 @@ class UserConfigStorageTest {
     }
 
     @Test
+    fun givenLinkPreviewsConfigIsSetToTrue_whenGettingItsValue_thenItShouldBeTrue() = runTest {
+        userConfigStorage.persistLinkPreviews(true)
+        assertTrue(userConfigStorage.isLinkPreviewsEnabled().first())
+    }
+
+    @Test
+    fun givenLinkPreviewsConfigIsNotSet_whenGettingItsValue_thenItShouldBeFalseByDefault() = runTest {
+        assertFalse(userConfigStorage.isLinkPreviewsEnabled().first())
+    }
+
+    @Test
     fun whenMarkingFileSharingAsNotified_thenIsChangedIsSetToFalse() = runTest {
         userConfigStorage.persistFileSharingStatus(true, true)
         userConfigStorage.setFileSharingAsNotified()

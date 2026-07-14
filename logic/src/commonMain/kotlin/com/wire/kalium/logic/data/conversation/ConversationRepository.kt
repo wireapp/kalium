@@ -131,7 +131,7 @@ internal interface ConversationRepository {
 
     /**
      * Gets conversations based on [type] and [protocol].
-     * [Conversation.Type.Group.Channel] and [Conversation.Type.Group.Regular] are treated the same, as both are Groups
+     * All [Conversation.Type.Group] subtypes are treated the same.
      */
     suspend fun getConversationIds(
         type: Conversation.Type,
@@ -475,7 +475,7 @@ internal class ConversationDataSource internal constructor(
         conversations.forEach { conversationsResponse ->
             // do the cleanup of members from conversation in case when self user rejoined conversation
             // and may not received any member remove or leave events
-            if (invalidateMembers && conversationsResponse.toConversationType(selfUserTeamId) == ConversationEntity.Type.GROUP) {
+            if (invalidateMembers && conversationsResponse.toConversationType(selfUserTeamId).isGroup) {
                 memberDAO.updateFullMemberList(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
                     idMapper.fromApiToDao(conversationsResponse.id)

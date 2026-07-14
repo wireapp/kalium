@@ -23,6 +23,7 @@ import com.wire.kalium.persistence.MeetingsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity.RecurrenceEntity.Frequency
+import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
@@ -59,7 +60,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
             )
             insertMeetingDependencies(meeting)
 
-            meetingDao.upsertMeetings(listOf(meeting), now + GENERATION_DAYS.days)
+            meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days))
 
             val upperBound = Clock.System.now() + GENERATION_DAYS.days
             val occurrences = occurrencesFor(meeting)
@@ -74,13 +75,33 @@ class MeetingDaoTest : BaseDatabaseTest() {
         val meeting = newMeeting(startTime = now + 1.days)
         insertMeetingDependencies(meeting)
 
-        meetingDao.upsertMeetings(listOf(meeting), now + GENERATION_DAYS.days)
+        meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days))
 
         val occurrence = occurrencesFor(meeting).single()
         assertEquals(meeting.meetingId, occurrence.meeting_id)
         assertEquals(meeting.startTime.toEpochMilliseconds(), occurrence.occurrence_start.toEpochMilliseconds())
-        assertEquals(meeting.endTime?.toEpochMilliseconds(), occurrence.occurrence_end?.toEpochMilliseconds())
+        assertEquals(meeting.endTime.toEpochMilliseconds(), occurrence.occurrence_end.toEpochMilliseconds())
     }
+
+    @Test
+    fun givenRecurringMeetingStartedBeforeWindow_whenUpserted_thenOccurrencesAreGeneratedFromWindow() =
+        runTest(dispatcher) {
+            val now = Clock.System.now()
+            val from = now - 1.days
+            val until = now + 2.days
+            val meeting = newMeeting(
+                startTime = now - 5.days,
+                recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = now + 5.days)
+            )
+            insertMeetingDependencies(meeting)
+
+            meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(from, until))
+
+            val occurrences = occurrencesFor(meeting)
+            assertEquals(true, occurrences.isNotEmpty())
+            assertEquals(true, occurrences.all { it.occurrence_end > from })
+            assertEquals(true, occurrences.all { it.occurrence_start <= until })
+        }
 
     @Test
     fun givenGeneratedOccurrences_whenSameMeetingIsUpserted_thenOccurrencesAreNotDuplicated() = runTest(dispatcher) {
@@ -90,10 +111,10 @@ class MeetingDaoTest : BaseDatabaseTest() {
             recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = (now + 10.days))
         )
         insertMeetingDependencies(meeting)
-        meetingDao.upsertMeetings(listOf(meeting), now + GENERATION_DAYS.days)
+        meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days))
         val firstOccurrences = occurrencesFor(meeting)
 
-        meetingDao.upsertMeetings(listOf(meeting), now + GENERATION_DAYS.days)
+        meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days))
 
         val secondOccurrences = occurrencesFor(meeting)
         assertEquals(firstOccurrences.size, secondOccurrences.size)
@@ -112,7 +133,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
                 recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = oldStart.plus(14.days))
             )
             insertMeetingDependencies(oldMeeting)
-            meetingDao.upsertMeetings(listOf(oldMeeting), now + GENERATION_DAYS.days)
+            meetingDao.upsertMeetings(listOf(oldMeeting), GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days))
             val oldOccurrenceIds = occurrencesFor(oldMeeting).toSet()
             assertEquals(true, oldOccurrenceIds.isNotEmpty())
 
@@ -122,7 +143,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
                 endTime = changedStart + 2.hours,
                 recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.WEEKLY, interval = 1, until = changedStart.plus(28.days))
             )
-            meetingDao.upsertMeetings(listOf(changedMeeting), now + GENERATION_DAYS.days)
+            meetingDao.upsertMeetings(listOf(changedMeeting), GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days))
 
             val updatedOccurrences = occurrencesFor(changedMeeting)
             assertEquals(true, updatedOccurrences != oldOccurrenceIds)
@@ -147,7 +168,10 @@ class MeetingDaoTest : BaseDatabaseTest() {
             )
             insertMeetingDependencies(unchangedMeeting)
             insertMeetingDependencies(changedMeeting)
-            meetingDao.upsertMeetings(listOf(unchangedMeeting, changedMeeting), now + GENERATION_DAYS.days)
+            meetingDao.upsertMeetings(
+                listOf(unchangedMeeting, changedMeeting),
+                GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days)
+            )
             val unchangedOccurrenceIds = occurrencesFor(unchangedMeeting).map { it.occurrence_id }
             val changedFutureOccurrenceIds = occurrencesFor(changedMeeting)
                 .filter { it.occurrence_start > now }
@@ -161,7 +185,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
 
             meetingDao.upsertMeetings(
                 listOf(unchangedMeeting, changedMeetingWithWeeklyRecurrence),
-                now + GENERATION_DAYS.days
+                GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days)
             )
 
             assertContentEquals(unchangedOccurrenceIds, occurrencesFor(unchangedMeeting).map { it.occurrence_id })
@@ -174,7 +198,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
             val now = Clock.System.now()
             val meeting = newMeeting(startTime = now - OUTDATED_DAYS.days - 1.hours, endTime = now - OUTDATED_DAYS.days, recurrence = null)
             insertMeetingDependencies(meeting)
-            meetingDao.upsertMeetings(listOf(meeting), now + GENERATION_DAYS.days)
+            meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(Instant.DISTANT_PAST, now + GENERATION_DAYS.days))
             assertEquals(true, occurrencesFor(meeting).isNotEmpty())
 
             meetingDao.removeOutdatedMeetings(now - OUTDATED_DAYS.days)
@@ -184,12 +208,12 @@ class MeetingDaoTest : BaseDatabaseTest() {
         }
 
     @Test
-    fun givenOneTimeMeetingWithoutEndDate_whenRemovingOutdatedMeetings_thenMeetingIsKept() =
+    fun givenOneTimeMeetingWithRecentEndDate_whenRemovingOutdatedMeetings_thenMeetingIsKept() =
         runTest(dispatcher) {
             val now = Clock.System.now()
-            val meeting = newMeeting(startTime = now - OUTDATED_DAYS.days - 1.days, endTime = null, recurrence = null)
+            val meeting = newMeeting(startTime = now - OUTDATED_DAYS.days, endTime = now - OUTDATED_DAYS.days + 1.hours)
             insertMeetingDependencies(meeting)
-            meetingDao.upsertMeetings(listOf(meeting), now + GENERATION_DAYS.days)
+            meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days))
 
             meetingDao.removeOutdatedMeetings(now - OUTDATED_DAYS.days)
 
@@ -205,7 +229,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
                 recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = now - OUTDATED_DAYS.days)
             )
             insertMeetingDependencies(meeting)
-            meetingDao.upsertMeetings(listOf(meeting), now + GENERATION_DAYS.days)
+            meetingDao.upsertMeetings(listOf(meeting),GenerationLimit.Window(Instant.DISTANT_PAST, now + GENERATION_DAYS.days))
             assertEquals(true, occurrencesFor(meeting).isNotEmpty())
 
             meetingDao.removeOutdatedMeetings(now - OUTDATED_DAYS.days)
@@ -222,16 +246,39 @@ class MeetingDaoTest : BaseDatabaseTest() {
                 recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = null)
             )
             insertMeetingDependencies(meeting)
-            meetingDao.upsertMeetings(listOf(meeting), now + GENERATION_DAYS.days)
+            meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(now - OUTDATED_DAYS.days, now + GENERATION_DAYS.days))
 
             meetingDao.removeOutdatedMeetings(now - OUTDATED_DAYS.days)
             assertEquals(true, isMeetingStored(meeting))
         }
 
     @Test
+    fun givenRecurringMeetingWithOldOccurrences_whenRemovingOutdatedMeetings_thenOutdatedOccurrencesAreDeleted() =
+        runTest(dispatcher) {
+            val now = Clock.System.now()
+            val outdatedThreshold = now - 1.days
+            val meeting = newMeeting(
+                startTime = now - 3.days,
+                recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = now + 3.days)
+            )
+            insertMeetingDependencies(meeting)
+            meetingDao.upsertMeetings(listOf(meeting), GenerationLimit.Window(Instant.DISTANT_PAST, now + GENERATION_DAYS.days))
+            val initialOccurrences = occurrencesFor(meeting)
+            assertEquals(true, initialOccurrences.any { it.occurrence_end <= outdatedThreshold })
+
+            meetingDao.removeOutdatedMeetings(outdatedThreshold)
+
+            val remainingOccurrences = occurrencesFor(meeting)
+            assertEquals(true, isMeetingStored(meeting))
+            assertEquals(true, remainingOccurrences.isNotEmpty())
+            assertEquals(true, remainingOccurrences.all { it.occurrence_end > outdatedThreshold })
+        }
+
+    @Test
     fun givenRecurringMeetingWithMissingOccurrences_whenInsertingMissing_thenWindowIsToppedUpWithoutDuplicates() =
         runTest(dispatcher) {
             val now = Clock.System.now()
+            val from = now - OUTDATED_DAYS.days
             val meeting = newMeeting(
                 startTime = now + 1.days,
                 recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = now + 120.days)
@@ -239,17 +286,38 @@ class MeetingDaoTest : BaseDatabaseTest() {
             insertMeetingDependencies(meeting)
             insertMeetingWithoutOccurrences(meeting)
 
-            meetingDao.insertMissingOccurrences(now + GENERATION_DAYS.days)
+            meetingDao.insertMissingOccurrences(from = from, until = now + GENERATION_DAYS.days)
 
             val initialOccurrences = occurrencesFor(meeting)
             assertEquals(true, initialOccurrences.isNotEmpty())
             assertEquals(true, initialOccurrences.all { it.occurrence_start <= now + GENERATION_DAYS.days })
 
-            meetingDao.insertMissingOccurrences(now + GENERATION_DAYS.days)
+            meetingDao.insertMissingOccurrences(from = from, until = now + GENERATION_DAYS.days)
             assertContentEquals(initialOccurrences.map { it.occurrence_id }, occurrencesFor(meeting).map { it.occurrence_id })
 
-            meetingDao.insertMissingOccurrences(now + GENERATION_DAYS.days + 1.days)
+            meetingDao.insertMissingOccurrences(from = from, until = now + GENERATION_DAYS.days + 1.days)
             assertEquals(initialOccurrences.size + 1, occurrencesFor(meeting).size)
+        }
+
+    @Test
+    fun givenRecurringMeetingWithoutOccurrences_whenInsertingMissing_thenStartsFromWindow() =
+        runTest(dispatcher) {
+            val now = Clock.System.now()
+            val from = now - 1.days
+            val until = now + 2.days
+            val meeting = newMeeting(
+                startTime = now - 5.days,
+                recurrence = MeetingEntity.RecurrenceEntity(frequency = Frequency.DAILY, interval = 1, until = now + 5.days)
+            )
+            insertMeetingDependencies(meeting)
+            insertMeetingWithoutOccurrences(meeting)
+
+            meetingDao.insertMissingOccurrences(from = from, until = until)
+
+            val occurrences = occurrencesFor(meeting)
+            assertEquals(true, occurrences.isNotEmpty())
+            assertEquals(true, occurrences.all { it.occurrence_end > from })
+            assertEquals(true, occurrences.all { it.occurrence_start <= until })
         }
 
     private suspend fun insertMeetingDependencies(meeting: MeetingEntity) {
@@ -283,7 +351,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
 
 fun newMeeting(
     startTime: Instant = Instant.parse("2026-01-01T10:00:00Z"),
-    endTime: Instant? = startTime + 1.hours,
+    endTime: Instant = startTime + 1.hours,
     recurrence: MeetingEntity.RecurrenceEntity? = null,
     meetingId: QualifiedIDEntity = MEETING_ID,
     conversationId: QualifiedIDEntity = CONVERSATION_ID,

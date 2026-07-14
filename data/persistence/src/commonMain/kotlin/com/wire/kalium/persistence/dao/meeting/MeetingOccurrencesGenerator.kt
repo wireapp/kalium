@@ -29,21 +29,25 @@ internal object MeetingOccurrencesGenerator {
     fun generate(
         meetings: List<MeetingEntity>,
         lastGeneratedStarts: Map<QualifiedIDEntity, Instant>,
-        bounds: GenerationBounds,
+        limit: GenerationLimit,
     ): List<MeetingOccurrenceEntity> {
         if (meetings.isEmpty()) return emptyList()
-        val statesList = meetings.initialGeneratorStates(lastGeneratedStarts)
-        return generateOccurrences(statesList, bounds)
+        val maxDateLimit = (limit as? GenerationLimit.Window)?.until
+        val minDateLimit = (limit as? GenerationLimit.Window)?.from
+        val totalCountToGenerate = (limit as? GenerationLimit.Count)?.totalCount
+        val statesList = meetings.initialGeneratorStates(lastGeneratedStarts, minDateLimit)
+        return generateOccurrences(statesList, maxDateLimit, totalCountToGenerate)
     }
 
     private fun generateOccurrences(
         statesList: MutableList<MeetingGeneratorState>,
-        bounds: GenerationBounds,
+        maxDateLimit: Instant?,
+        totalCountToGenerate: Int?
     ): List<MeetingOccurrenceEntity> {
         val allOccurrences = mutableListOf<MeetingOccurrenceEntity>()
         while (statesList.isNotEmpty()) {
             val currentState = statesList.minBy { it.nextCandidateStart }
-            if (shouldStopGenerating(currentState, allOccurrences.size, bounds)) break
+            if (shouldStopGenerating(currentState, allOccurrences.size, maxDateLimit, totalCountToGenerate)) break
             allOccurrences.add(currentState.toOccurrence())
             statesList.advanceOrRemove(currentState)
         }
@@ -51,15 +55,18 @@ internal object MeetingOccurrencesGenerator {
     }
 
     private fun List<MeetingEntity>.initialGeneratorStates(
-        lastGeneratedStarts: Map<QualifiedIDEntity, Instant>
+        lastGeneratedStarts: Map<QualifiedIDEntity, Instant>,
+        minDateLimit: Instant?,
     ): MutableList<MeetingGeneratorState> =
         this.mapNotNull { meeting ->
-            meeting.toGeneratorState(lastGeneratedStarts[meeting.meetingId])
+            meeting.toGeneratorState(lastGeneratedStarts[meeting.meetingId], minDateLimit)
         }.toMutableList()
 
-    private fun MeetingEntity.toGeneratorState(lastStart: Instant?): MeetingGeneratorState? {
+    private fun MeetingEntity.toGeneratorState(lastStart: Instant?, minDateLimit: Instant?): MeetingGeneratorState? {
         val interval = recurrence?.interval?.toInt() ?: 1
-        val firstCandidateStart = firstCandidateStart(lastStart, interval)
+        val firstCandidateStart = firstCandidateStart(lastStart, interval)?.let {
+            advanceUntilAfter(candidateStart = it, minDateLimit = minDateLimit, interval = interval)
+        }
         return if (firstCandidateStart == null || isBeyondSeriesEnd(firstCandidateStart)) {
             null
         } else {
@@ -70,20 +77,21 @@ internal object MeetingOccurrencesGenerator {
     private fun shouldStopGenerating(
         currentState: MeetingGeneratorState,
         currentCount: Int,
-        bounds: GenerationBounds,
+        maxDateLimit: Instant?,
+        totalCountToGenerate: Int?
     ): Boolean {
-        val hasEnoughItems = bounds.totalCount?.let { currentCount >= it } ?: false
-        val isBeyondWindow = bounds.until?.let { currentState.nextCandidateStart >= it } ?: false
+        val hasEnoughItems = totalCountToGenerate != null && currentCount >= totalCountToGenerate
+        val isBeyondWindow = maxDateLimit != null && currentState.nextCandidateStart > maxDateLimit
         return hasEnoughItems || isBeyondWindow
     }
 
     private fun MeetingGeneratorState.toOccurrence(): MeetingOccurrenceEntity {
-        val duration = meeting.endTime?.let { it - meeting.startTime }
+        val duration = meeting.endTime - meeting.startTime
         return MeetingOccurrenceEntity(
             occurrenceId = Uuid.random().toString(),
             meetingId = meeting.meetingId,
             occurrenceStart = nextCandidateStart,
-            occurrenceEnd = duration?.let { nextCandidateStart + it } ?: nextCandidateStart
+            occurrenceEnd = nextCandidateStart + duration
         )
     }
 
@@ -98,7 +106,7 @@ internal object MeetingOccurrencesGenerator {
 
     private fun MeetingGeneratorState.nextState(): MeetingGeneratorState? {
         val recurrence = meeting.recurrence ?: return null
-        val interval = recurrence.interval.toInt()
+        val interval = recurrence.interval?.toInt() ?: 1
         val nextStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval)
         return if (nextStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(nextStart)) {
             copy(nextCandidateStart = nextStart)
@@ -119,6 +127,25 @@ internal object MeetingOccurrencesGenerator {
         }
     }
 
+    private fun MeetingEntity.advanceUntilAfter(candidateStart: Instant, minDateLimit: Instant?, interval: Int): Instant? {
+        val duration = endTime - startTime
+        val recurrence = recurrence
+        var nextCandidateStart: Instant? = candidateStart
+        while (minDateLimit != null && nextCandidateStart != null && nextCandidateStart + duration <= minDateLimit) {
+            nextCandidateStart = if (recurrence != null) {
+                val advancedStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval)
+                if (advancedStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(advancedStart)) {
+                    advancedStart
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
+        }
+        return nextCandidateStart
+    }
+
     private fun MeetingEntity.isBeyondSeriesEnd(candidateStart: Instant): Boolean =
         recurrence?.until?.let { candidateStart > it } ?: false
 
@@ -127,8 +154,6 @@ internal object MeetingOccurrencesGenerator {
         val period = when (frequency) {
             MeetingEntity.RecurrenceEntity.Frequency.DAILY -> DateTimePeriod(days = interval)
             MeetingEntity.RecurrenceEntity.Frequency.WEEKLY -> DateTimePeriod(days = interval * 7)
-            MeetingEntity.RecurrenceEntity.Frequency.MONTHLY -> DateTimePeriod(months = interval)
-            MeetingEntity.RecurrenceEntity.Frequency.YEARLY -> DateTimePeriod(years = interval)
         }
         return this.plus(period, timeZone)
     }
@@ -138,18 +163,8 @@ internal object MeetingOccurrencesGenerator {
         val nextCandidateStart: Instant,
     )
 
-}
-
-internal class GenerationBounds private constructor(val totalCount: Int?, val until: Instant?) {
-    companion object {
-        /**
-         * Generates at most [totalCount] occurrences without applying a date boundary.
-         */
-        fun count(totalCount: Int): GenerationBounds = GenerationBounds(totalCount = totalCount, until = null)
-
-        /**
-         * Generates occurrences with start dates strictly before [until], without applying a count boundary.
-         */
-        fun until(until: Instant): GenerationBounds = GenerationBounds(totalCount = null, until = until)
+    sealed interface GenerationLimit {
+        data class Count(val totalCount: Int) : GenerationLimit
+        data class Window(val from: Instant, val until: Instant) : GenerationLimit
     }
 }

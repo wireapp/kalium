@@ -130,11 +130,41 @@ class ObfuscatedCopyExporter internal constructor(
                         "              WHEN summary IS NOT NULL " +
                         "              THEN substr(hex(randomblob(length(summary))), 1, length(summary)) " +
                         "              ELSE NULL " +
-                        "            END " +
+                        "            END, " +
+                        "  image_asset_key = CASE " +
+                        "                      WHEN image_asset_key IS NOT NULL " +
+                        "                      THEN substr(hex(randomblob(length(image_asset_key))), 1, length(image_asset_key)) " +
+                        "                      ELSE NULL " +
+                        "                    END, " +
+                        "  image_asset_token = CASE " +
+                        "                        WHEN image_asset_token IS NOT NULL " +
+                        "                        THEN substr(hex(randomblob(length(image_asset_token))), 1, length(image_asset_token)) " +
+                        "                        ELSE NULL " +
+                        "                      END, " +
+                        "  image_asset_domain = CASE " +
+                        "                        WHEN image_asset_domain IS NOT NULL " +
+                        "                        THEN substr(hex(randomblob(length(image_asset_domain))), 1, length(image_asset_domain)) " +
+                        "                        ELSE NULL " +
+                        "                       END, " +
+                        "  image_otr_key = CASE " +
+                        "                    WHEN image_otr_key IS NOT NULL " +
+                        "                    THEN substr(hex(randomblob(length(image_otr_key) / 2)), 1, length(image_otr_key)) " +
+                        "                    ELSE NULL " +
+                        "                  END, " +
+                        "  image_sha256 = CASE " +
+                        "                   WHEN image_sha256 IS NOT NULL " +
+                        "                   THEN substr(hex(randomblob(length(image_sha256) / 2)), 1, length(image_sha256)) " +
+                        "                   ELSE NULL " +
+                        "                 END " +
                         "WHERE url IS NOT NULL " +
                         "   OR permanent_url IS NOT NULL " +
                         "   OR title IS NOT NULL " +
-                        "   OR summary IS NOT NULL;",
+                        "   OR summary IS NOT NULL" +
+                        "   OR image_asset_key IS NOT NULL" +
+                        "   OR image_asset_token IS NOT NULL" +
+                        "   OR image_asset_domain IS NOT NULL" +
+                        "   OR image_otr_key IS NOT NULL" +
+                        "   OR image_sha256 IS NOT NULL;",
                 0
             )
 

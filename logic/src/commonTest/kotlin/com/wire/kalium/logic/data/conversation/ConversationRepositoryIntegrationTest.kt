@@ -84,8 +84,7 @@ class ConversationRepositoryIntegrationTest {
             val conversationEntity = MockConversation.entity(
                 id = ConversationIDEntity.fake(1)
             ).copy(
-                type = ConversationEntity.Type.GROUP,
-                groupType = ConversationEntity.GroupType.Channel,
+                type = ConversationEntity.Type.CHANNEL,
                 historySharingRetentionSeconds = 0,
             )
             val conversations = listOf(conversationEntity)
@@ -109,8 +108,7 @@ class ConversationRepositoryIntegrationTest {
             val conversationEntity = MockConversation.entity(
                 id = ConversationIDEntity.fake(1)
             ).copy(
-                type = ConversationEntity.Type.GROUP,
-                groupType = ConversationEntity.GroupType.Channel,
+                type = ConversationEntity.Type.CHANNEL,
                 historySharingRetentionSeconds = expectedSeconds,
             )
             val conversations = listOf(conversationEntity)

@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.data.meeting
 
+import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.isRight
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
@@ -26,6 +27,7 @@ import com.wire.kalium.network.api.model.MeetingId
 import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
+import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -36,6 +38,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertTrue
 
 class MeetingRepositoryTest {
@@ -57,14 +60,20 @@ class MeetingRepositoryTest {
         val (arrangement, repository) = Arrangement()
             .withFetchMeetingsSuccess(listOf(meetingDTO))
             .arrange()
+        val generateOccurrencesFrom = Instant.parse("2026-05-01T00:00:00Z")
         val generateOccurrencesUntil = Instant.parse("2026-07-01T00:00:00Z")
+        val expectedMeeting = requireNotNull(arrangement.meetingMapper.fromApiToDao(meetingDTO))
 
-        val result = repository.fetchAndPersistMeetings(generateOccurrencesUntil)
+        val result = repository.fetchAndPersistMeetings(generateOccurrencesFrom, generateOccurrencesUntil)
 
         assertTrue(result.isRight())
+        assertContentEquals(listOf(expectedMeeting), result.getOrNull())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingApi.fetchMeetings()
-            arrangement.meetingDao.upsertMeetings(listOf(arrangement.meetingMapper.fromApiToDao(meetingDTO)), generateOccurrencesUntil)
+            arrangement.meetingDao.upsertMeetings(
+                meetings = listOf(expectedMeeting),
+                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
+            )
         }
     }
 
@@ -79,7 +88,7 @@ class MeetingRepositoryTest {
         assertTrue(result.isRight())
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.meetingDao.removeOutdatedMeetings(removeOlderThan)
-            arrangement.meetingDao.insertMissingOccurrences(generateOccurrencesUntil)
+            arrangement.meetingDao.insertMissingOccurrences(from = removeOlderThan, until = generateOccurrencesUntil)
         }
     }
 

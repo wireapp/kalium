@@ -29,7 +29,7 @@ class MeetingOccurrencesGeneratorTest {
 
     @Test
     fun givenCountLimit_whenGeneratingOccurrences_thenReturnsRequestedNumberOfOccurrences() {
-        val occurrences = generateOccurrences(GenerationBounds.count(totalCount = 2))
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = 2))
 
         assertEquals(2, occurrences.size)
         assertContentEquals(
@@ -39,12 +39,39 @@ class MeetingOccurrencesGeneratorTest {
     }
 
     @Test
-    fun givenUntilLimit_whenGeneratingOccurrences_thenReturnsOccurrencesUntilLimitExclusively() {
-        val until = MEETING.startTime.plus(2.days)
-        val occurrences = generateOccurrences(GenerationBounds.until(until))
+    fun givenRecurringMeetingWithoutInterval_whenGeneratingOccurrences_thenUsesDefaultInterval() {
+        val meeting = newMeeting(recurrence = MeetingEntity.RecurrenceEntity(MeetingEntity.RecurrenceEntity.Frequency.DAILY, null, null))
+
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = 2), meeting = meeting)
 
         assertContentEquals(
-            listOf(MEETING.startTime, MEETING.startTime.plus(1.days)),
+            listOf(meeting.startTime, meeting.startTime.plus(1.days)),
+            occurrences.map { it.occurrenceStart }
+        )
+    }
+
+    @Test
+    fun givenZeroCountLimit_whenGeneratingOccurrences_thenReturnsNoOccurrences() {
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = 0))
+
+        assertEquals(0, occurrences.size)
+    }
+
+    @Test
+    fun givenNegativeCountLimit_whenGeneratingOccurrences_thenReturnsNoOccurrences() {
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = -1))
+
+        assertEquals(0, occurrences.size)
+    }
+
+    @Test
+    fun givenWindowLimit_whenGeneratingOccurrences_thenReturnsOccurrencesUntilLimitInclusively() {
+        val from = MEETING.startTime - 1.days
+        val until = MEETING.startTime.plus(2.days)
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Window(from = from, until = until))
+
+        assertContentEquals(
+            listOf(MEETING.startTime, MEETING.startTime.plus(1.days), until),
             occurrences.map { it.occurrenceStart }
         )
         assertContentEquals(
@@ -54,9 +81,21 @@ class MeetingOccurrencesGeneratorTest {
     }
 
     @Test
+    fun givenWindowLimitWithFrom_whenGeneratingOccurrences_thenReturnsOccurrencesAfterFrom() {
+        val from = MEETING.startTime.plus(1.days) + 1.hours
+        val until = MEETING.startTime.plus(3.days)
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Window(from = from, until = until))
+
+        assertContentEquals(
+            listOf(MEETING.startTime.plus(2.days), MEETING.startTime.plus(3.days)),
+            occurrences.map { it.occurrenceStart }
+        )
+    }
+
+    @Test
     fun givenLastGeneratedStart_whenGeneratingOccurrences_thenStartsAfterLastGeneratedOccurrence() {
         val occurrences = generateOccurrences(
-            bounds = GenerationBounds.count(totalCount = 2),
+            limit = MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = 2),
             lastGeneratedStarts = mapOf(MEETING.meetingId to MEETING.startTime.plus(1.days))
         )
 
@@ -67,13 +106,10 @@ class MeetingOccurrencesGeneratorTest {
     }
 
     private fun generateOccurrences(
-        bounds: GenerationBounds,
+        limit: MeetingOccurrencesGenerator.GenerationLimit,
         lastGeneratedStarts: Map<QualifiedIDEntity, Instant> = emptyMap(),
-    ) = MeetingOccurrencesGenerator.generate(
-        meetings = listOf(MEETING),
-        lastGeneratedStarts = lastGeneratedStarts,
-        bounds = bounds
-    )
+        meeting: MeetingEntity = MEETING,
+    ) = MeetingOccurrencesGenerator.generate(meetings = listOf(meeting), lastGeneratedStarts = lastGeneratedStarts, limit = limit)
 }
 
 private val MEETING = newMeeting(recurrence = MeetingEntity.RecurrenceEntity(MeetingEntity.RecurrenceEntity.Frequency.DAILY, 1, null))

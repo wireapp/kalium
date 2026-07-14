@@ -38,7 +38,7 @@ public interface PromoteAdminAndLeaveConversationUseCase {
     public sealed interface Result {
         public data object Success : Result
         public data object FailedToPromoteUser : Result
-        public data object FailedToLeaveConversation : Result
+        public data class FailedToLeaveConversation(val eligibleMembers: List<UserId> = emptyList()) : Result
     }
 }
 
@@ -57,9 +57,15 @@ internal class PromoteAdminAndLeaveConversationUseCaseImpl(
             return PromoteAdminAndLeaveConversationUseCase.Result.FailedToPromoteUser
         }
 
-        val leaveResult = leaveConversation(conversationId)
-        if (leaveResult is RemoveMemberFromConversationUseCase.Result.Failure) {
-            return PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation
+        when (val leaveResult = leaveConversation(conversationId)) {
+            is RemoveMemberFromConversationUseCase.Result.Success -> Unit
+
+            is RemoveMemberFromConversationUseCase.Result.Failure ->
+                return when (val cause = leaveResult.cause) {
+                    is AdminlessConversationFailure ->
+                        PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation(cause.eligibleMembers)
+                    else -> PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation()
+                }
         }
 
         return PromoteAdminAndLeaveConversationUseCase.Result.Success
