@@ -18,7 +18,13 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import kotlin.uuid.Uuid
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event
@@ -27,16 +33,13 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import kotlinx.datetime.Clock
+import kotlin.uuid.Uuid
 
 internal interface ReceiptModeUpdateEventHandler {
-    suspend fun handle(event: Event.Conversation.ConversationReceiptMode)
+    suspend fun handle(event: Event.Conversation.ConversationReceiptMode): Either<CoreFailure, Unit>
 }
 
 internal class ReceiptModeUpdateEventHandlerImpl(
@@ -45,10 +48,10 @@ internal class ReceiptModeUpdateEventHandlerImpl(
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ReceiptModeUpdateEventHandler {
 
-    override suspend fun handle(event: Event.Conversation.ConversationReceiptMode) {
+    override suspend fun handle(event: Event.Conversation.ConversationReceiptMode): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        updateReceiptMode(event)
-            .onSuccess {
+        return updateReceiptMode(event)
+            .flatMap {
                 val message = Message.System(
                     Uuid.random().toString(),
                     MessageContent.ConversationReceiptModeChanged(
@@ -63,8 +66,8 @@ internal class ReceiptModeUpdateEventHandlerImpl(
                 )
 
                 persistMessage(message)
-                eventLogger.logSuccess()
             }
+            .onSuccess { eventLogger.logSuccess() }
             .onFailure { eventLogger.logFailure(it) }
     }
 

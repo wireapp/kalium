@@ -116,10 +116,7 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.ConversationReceiptMode -> {
-                receiptModeUpdateEventHandler.handle(event)
-                Either.Right(Unit)
-            }
+            is Event.Conversation.ConversationReceiptMode -> receiptModeUpdateEventHandler.handle(event)
 
             is Event.Conversation.MLSReset -> {
                 mlsResetConversationEventHandler.handle(transactionContext, event)

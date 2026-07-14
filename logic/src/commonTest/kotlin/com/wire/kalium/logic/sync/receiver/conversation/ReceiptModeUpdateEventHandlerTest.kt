@@ -18,15 +18,18 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
+import dev.mokkery.answering.throws
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
 import dev.mokkery.matcher.matches
@@ -37,6 +40,27 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class ReceiptModeUpdateEventHandlerTest {
+
+    @Test
+    fun givenReceiptModeUpdateFails_whenHandlingEvent_thenFailureIsPropagated() = runTest {
+        val event = TestEvent.receiptModeUpdate()
+        val (_, eventHandler) = Arrangement()
+            .withUpdateReceiptModeFailure()
+            .arrange()
+
+        eventHandler.handle(event).shouldFail()
+    }
+
+    @Test
+    fun givenSystemMessagePersistenceFails_whenHandlingEvent_thenFailureIsPropagated() = runTest {
+        val event = TestEvent.receiptModeUpdate()
+        val (_, eventHandler) = Arrangement()
+            .withUpdateReceiptModeSuccess()
+            .withPersistingSystemMessage(Either.Left(CoreFailure.Unknown(RuntimeException("message failed"))))
+            .arrange()
+
+        eventHandler.handle(event).shouldFail()
+    }
 
     @Test
     fun givenAConversationEventReceiptMode_whenHandlingIt_thenShouldUpdateTheConversation() = runTest {
@@ -122,10 +146,16 @@ class ReceiptModeUpdateEventHandlerTest {
             } returns Unit
         }
 
-        suspend fun withPersistingSystemMessage() = apply {
+        suspend fun withUpdateReceiptModeFailure() = apply {
+            everySuspend {
+                conversationDAO.updateConversationReceiptMode(any(), any())
+            } throws RuntimeException("update failed")
+        }
+
+        suspend fun withPersistingSystemMessage(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
             everySuspend {
                 persistMessage.invoke(any())
-            } returns Either.Right(Unit)
+            } returns result
         }
 
         fun arrange() = this to receiptModeUpdateEventHandler

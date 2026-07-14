@@ -252,6 +252,22 @@ class ConversationEventReceiverTest {
         }
 
     @Test
+    fun givenConversationReceiptModeEvent_whenHandlerFails_thenFailureIsPropagated() = runTest {
+        val receiptModeUpdateEvent = TestEvent.receiptModeUpdate()
+        val (arrangement, conversationEventReceiver) = Arrangement().arrange {
+            withReceiptModeEventResult(Either.Left(failure))
+        }
+
+        val result = conversationEventReceiver.onEvent(
+            arrangement.transactionContext,
+            receiptModeUpdateEvent,
+            TestEvent.liveDeliveryInfo
+        )
+
+        result.shouldFail()
+    }
+
+    @Test
     fun givenConversationMessageTimerEvent_whenOnEventInvoked_thenPropagateConversationMessageTimerEventHandlerResult() =
         runTest {
             val conversationMessageTimerEvent = TestEvent.timerChanged()
@@ -502,7 +518,7 @@ class ConversationEventReceiverTest {
             everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Unit
             everySuspend { mlsWelcomeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { renamedConversationEventHandler.handle(any()) } returns Unit
-            everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Unit
+            everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Either.Right(Unit)
             everySuspend { protocolUpdateEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { channelAddPermissionUpdateEventHandler.handle(any()) } returns Either.Right(Unit)
             everySuspend { mlsResetConversationEventHandler.handle(any(), any()) } returns Unit
@@ -512,6 +528,12 @@ class ConversationEventReceiverTest {
             everySuspend {
                 memberLeaveEventHandler.handle(any(), any())
             } returns Either.Right(Unit)
+        }
+
+        suspend fun withReceiptModeEventResult(result: Either<CoreFailure, Unit>) = apply {
+            everySuspend {
+                receiptModeUpdateEventHandler.handle(any())
+            } returns result
         }
 
         suspend fun withMemberJoinSucceeded() = apply {
