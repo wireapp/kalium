@@ -106,10 +106,7 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.MLSWelcome -> {
-                mlsWelcomeHandler.handle(transactionContext, event)
-                Either.Right(Unit)
-            }
+            is Event.Conversation.MLSWelcome -> mlsWelcomeHandler.handle(transactionContext, event)
 
             is Event.Conversation.RenamedConversation -> {
                 renamedConversationHandler.handle(event)

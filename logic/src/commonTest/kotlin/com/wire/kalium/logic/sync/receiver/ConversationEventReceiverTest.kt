@@ -215,6 +215,22 @@ class ConversationEventReceiverTest {
     }
 
     @Test
+    fun givenMLSWelcomeEvent_whenHandlerFails_thenFailureIsPropagated() = runTest {
+        val mlsWelcomeEvent = TestEvent.newMLSWelcomeEvent()
+        val (arrangement, conversationEventReceiver) = Arrangement().arrange {
+            withMLSWelcomeEventResult(Either.Left(failure))
+        }
+
+        val result = conversationEventReceiver.onEvent(
+            arrangement.transactionContext,
+            mlsWelcomeEvent,
+            TestEvent.liveDeliveryInfo
+        )
+
+        result.shouldFail()
+    }
+
+    @Test
     fun givenRenamedConversationEvent_whenOnEventInvoked_thenRenamedConversationHandlerShouldBeCalled() = runTest {
         val renamedConversationEvent = TestEvent.renamedConversation()
 
@@ -539,9 +555,13 @@ class ConversationEventReceiverTest {
         }
 
         suspend fun withMLSWelcomeEventSucceeded() = apply {
+            withMLSWelcomeEventResult(Either.Right(Unit))
+        }
+
+        suspend fun withMLSWelcomeEventResult(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
                 mlsWelcomeEventHandler.handle(any(), any())
-            } returns Either.Right(Unit)
+            } returns result
         }
 
         suspend fun withHandleCodeUpdatedEvent(result: Either<StorageFailure, Unit>) = apply {
