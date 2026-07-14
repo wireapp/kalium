@@ -111,10 +111,7 @@ internal class ConversationEventReceiverImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Conversation.RenamedConversation -> {
-                renamedConversationHandler.handle(event)
-                Either.Right(Unit)
-            }
+            is Event.Conversation.RenamedConversation -> renamedConversationHandler.handle(event)
 
             is Event.Conversation.ConversationReceiptMode -> {
                 receiptModeUpdateEventHandler.handle(event)

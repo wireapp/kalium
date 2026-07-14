@@ -233,6 +233,22 @@ class ConversationEventReceiverTest {
     }
 
     @Test
+    fun givenRenamedConversationEvent_whenHandlerFails_thenFailureIsPropagated() = runTest {
+        val renamedConversationEvent = TestEvent.renamedConversation()
+        val (arrangement, conversationEventReceiver) = Arrangement().arrange {
+            withRenamedConversationEventResult(Either.Left(failure))
+        }
+
+        val result = conversationEventReceiver.onEvent(
+            arrangement.transactionContext,
+            renamedConversationEvent,
+            TestEvent.liveDeliveryInfo
+        )
+
+        result.shouldFail()
+    }
+
+    @Test
     fun givenConversationReceiptModeEvent_whenOnEventInvoked_thenReceiptModeUpdateEventHandlerShouldBeCalled() =
         runTest {
             val receiptModeUpdateEvent = TestEvent.receiptModeUpdate()
@@ -501,7 +517,7 @@ class ConversationEventReceiverTest {
             everySuspend { memberLeaveEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Unit
             everySuspend { mlsWelcomeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
-            everySuspend { renamedConversationEventHandler.handle(any()) } returns Unit
+            everySuspend { renamedConversationEventHandler.handle(any()) } returns Either.Right(Unit)
             everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Unit
             everySuspend { protocolUpdateEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { channelAddPermissionUpdateEventHandler.handle(any()) } returns Either.Right(Unit)
@@ -512,6 +528,12 @@ class ConversationEventReceiverTest {
             everySuspend {
                 memberLeaveEventHandler.handle(any(), any())
             } returns Either.Right(Unit)
+        }
+
+        suspend fun withRenamedConversationEventResult(result: Either<CoreFailure, Unit>) = apply {
+            everySuspend {
+                renamedConversationEventHandler.handle(any())
+            } returns result
         }
 
         suspend fun withMemberJoinSucceeded() = apply {

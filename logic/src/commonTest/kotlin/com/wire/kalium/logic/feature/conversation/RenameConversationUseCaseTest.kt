@@ -98,6 +98,9 @@ class RenameConversationUseCaseTest {
             everySuspend {
                 conversationRepository.changeConversationName(any(), any())
             } returns either
+            everySuspend {
+                renamedConversationEventHandler.handle(any())
+            } returns Either.Right(Unit)
         }
 
         fun arrange() = this to renameConversation

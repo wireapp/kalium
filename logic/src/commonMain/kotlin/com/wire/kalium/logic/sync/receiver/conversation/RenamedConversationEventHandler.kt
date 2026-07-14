@@ -18,22 +18,25 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.common.functional.Either
+import com.wire.kalium.common.functional.flatMap
+import com.wire.kalium.common.functional.onFailure
+import com.wire.kalium.common.functional.onSuccess
+import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.common.functional.onFailure
-import com.wire.kalium.common.functional.onSuccess
-import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
-import com.wire.kalium.common.error.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import kotlinx.datetime.Instant
 
 internal interface RenamedConversationEventHandler {
-    suspend fun handle(event: Event.Conversation.RenamedConversation)
+    suspend fun handle(event: Event.Conversation.RenamedConversation): Either<CoreFailure, Unit>
 }
 
 internal class RenamedConversationEventHandlerImpl(
@@ -41,10 +44,10 @@ internal class RenamedConversationEventHandlerImpl(
     private val persistMessage: PersistMessageUseCase,
 ) : RenamedConversationEventHandler {
 
-    override suspend fun handle(event: Event.Conversation.RenamedConversation) {
+    override suspend fun handle(event: Event.Conversation.RenamedConversation): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
-        updateConversationName(event.conversationId, event.conversationName, event.dateTime)
-            .onSuccess {
+        return updateConversationName(event.conversationId, event.conversationName, event.dateTime)
+            .flatMap {
                 val message = Message.System(
                     id = event.id,
                     content = MessageContent.ConversationRenamed(event.conversationName),
@@ -55,8 +58,8 @@ internal class RenamedConversationEventHandlerImpl(
                     expirationData = null
                 )
                 persistMessage(message)
-                logger.logSuccess()
             }
+            .onSuccess { logger.logSuccess() }
             .onFailure(logger::logFailure)
     }
 

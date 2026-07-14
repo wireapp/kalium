@@ -19,9 +19,11 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.framework.TestEvent
-import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import dev.mokkery.MockMode
 import dev.mokkery.answering.returns
@@ -44,7 +46,7 @@ class RenamedConversationEventHandlerTest {
             .withPersistingMessageReturning(Either.Right(Unit))
             .arrange()
 
-        eventHandler.handle(event)
+        eventHandler.handle(event).shouldSucceed()
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
@@ -58,6 +60,17 @@ class RenamedConversationEventHandlerTest {
     }
 
     @Test
+    fun givenSystemMessagePersistenceFails_whenHandlingRenameEvent_thenFailureIsPropagated() = runTest {
+        val event = TestEvent.renamedConversation()
+        val (arrangement, eventHandler) = Arrangement()
+            .withRenamingConversationSuccess()
+            .withPersistingMessageReturning(Either.Left(CoreFailure.Unknown(RuntimeException("message failed"))))
+            .arrange()
+
+        eventHandler.handle(event).shouldFail()
+    }
+
+    @Test
     fun givenAConversationEventRenamed_whenHandlingItFails_thenShouldNotUpdateTheConversation() = runTest {
         val event = TestEvent.renamedConversation()
         val (arrangement, eventHandler) = Arrangement()
@@ -65,7 +78,7 @@ class RenamedConversationEventHandlerTest {
             .withPersistingMessageReturning(Either.Right(Unit))
             .arrange()
 
-        eventHandler.handle(event)
+        eventHandler.handle(event).shouldFail()
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
