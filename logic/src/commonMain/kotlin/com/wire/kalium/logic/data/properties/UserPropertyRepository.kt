@@ -51,6 +51,13 @@ internal interface TypingIndicatorPropertyRepository {
     suspend fun removeTypingIndicatorProperty(): Either<CoreFailure, Unit>
 }
 
+internal interface LinkPreviewsPropertyRepository {
+    suspend fun getLinkPreviewsStatus(): Boolean
+    fun observeLinkPreviewsStatus(): Flow<Either<CoreFailure, Boolean>>
+    suspend fun setLinkPreviewsEnabled(): Either<CoreFailure, Unit>
+    suspend fun deleteLinkPreviewsProperty(): Either<CoreFailure, Unit>
+}
+
 internal interface ScreenshotCensoringPropertyRepository {
     suspend fun setScreenshotCensoringEnabled(): Either<CoreFailure, Unit>
     suspend fun deleteScreenshotCensoringProperty(): Either<CoreFailure, Unit>
@@ -67,6 +74,7 @@ internal interface ConversationFoldersPropertyRepository {
 internal interface UserPropertyRepository :
     ReadReceiptsPropertyRepository,
     TypingIndicatorPropertyRepository,
+    LinkPreviewsPropertyRepository,
     ScreenshotCensoringPropertyRepository,
     UserPropertiesSyncRepository,
     ConversationFoldersPropertyRepository
@@ -74,12 +82,14 @@ internal interface UserPropertyRepository :
 internal class UserPropertyDataSource(
     readReceipts: ReadReceiptsPropertyRepository,
     typingIndicator: TypingIndicatorPropertyRepository,
+    linkPreviews: LinkPreviewsPropertyRepository,
     screenshotCensoring: ScreenshotCensoringPropertyRepository,
     userPropertiesSync: UserPropertiesSyncRepository,
     conversationFolders: ConversationFoldersPropertyRepository,
 ) : UserPropertyRepository,
     ReadReceiptsPropertyRepository by readReceipts,
     TypingIndicatorPropertyRepository by typingIndicator,
+    LinkPreviewsPropertyRepository by linkPreviews,
     ScreenshotCensoringPropertyRepository by screenshotCensoring,
     UserPropertiesSyncRepository by userPropertiesSync,
     ConversationFoldersPropertyRepository by conversationFolders
@@ -135,6 +145,32 @@ internal class TypingIndicatorPropertyDataSource(
     }
 }
 
+internal class LinkPreviewsPropertyDataSource(
+    private val propertiesApi: PropertiesApi,
+    private val userConfigRepository: UserConfigRepository,
+) : LinkPreviewsPropertyRepository {
+
+    override suspend fun getLinkPreviewsStatus(): Boolean =
+        userConfigRepository.observeLinkPreviewsEnabled()
+            .firstOrNull()
+            ?.fold({ false }, { it }) ?: false
+
+    override fun observeLinkPreviewsStatus(): Flow<Either<CoreFailure, Boolean>> =
+        userConfigRepository.observeLinkPreviewsEnabled()
+
+    override suspend fun setLinkPreviewsEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
+        propertiesApi.setProperty(PropertyKey.WIRE_LINK_PREVIEWS, 1)
+    }.flatMap {
+        userConfigRepository.setLinkPreviewsStatus(true)
+    }
+
+    override suspend fun deleteLinkPreviewsProperty(): Either<CoreFailure, Unit> = wrapApiRequest {
+        propertiesApi.deleteProperty(PropertyKey.WIRE_LINK_PREVIEWS)
+    }.flatMap {
+        userConfigRepository.setLinkPreviewsStatus(false)
+    }
+}
+
 internal class ScreenshotCensoringPropertyDataSource(
     private val propertiesApi: PropertiesApi,
     private val userConfigRepository: UserConfigRepository,
@@ -164,10 +200,12 @@ internal class UserPropertiesSyncDataSource(
         }.flatMap { properties ->
             val readReceiptsEnabled = properties.findIntValue(PropertyKey.WIRE_RECEIPT_MODE)?.let { it == 1 } ?: true
             val typingIndicatorEnabled = properties.findIntValue(PropertyKey.WIRE_TYPING_INDICATOR_MODE)?.let { it != 0 } ?: true
+            val linkPreviewsEnabled = properties.findIntValue(PropertyKey.WIRE_LINK_PREVIEWS) == 1
             val screenshotCensoringEnabled = properties.findIntValue(PropertyKey.WIRE_SCREENSHOT_CENSORING_MODE) == 1
 
             userConfigRepository.setReadReceiptsStatus(readReceiptsEnabled)
                 .flatMap { userConfigRepository.setTypingIndicatorStatus(typingIndicatorEnabled) }
+                .flatMap { userConfigRepository.setLinkPreviewsStatus(linkPreviewsEnabled) }
                 .flatMap { userConfigRepository.setScreenshotCensoringConfig(screenshotCensoringEnabled) }
         }
 }

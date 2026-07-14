@@ -98,6 +98,12 @@ interface MessageDAO {
         newTextContent: MessageEntityContent.Text,
         newMessageId: String
     )
+    suspend fun updateLinkPreviewImageLocalPath(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        urlOffset: Int,
+        localPath: String
+    )
 
     suspend fun updateTextMessageContent(
         conversationId: QualifiedIDEntity,

@@ -69,6 +69,7 @@ xerialDriver = "3.51.0.0"
 kotlinx-io = "0.9.0"
 cells-sdk = "0.1.1-alpha17.02"
 difference = "1.1.1"
+ksoup = "0.2.6"
 
 [plugins]
 # Home-made convention plugins
@@ -241,3 +242,6 @@ slf4js = { module = "org.slf4j:slf4j-simple", version.ref = "slf4js" }
 
 # cells
 wire-cells-sdk = { module = "com.wire:cells-sdk-kmp", version.ref = "cells-sdk" }
+
+# html parsing
+ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
