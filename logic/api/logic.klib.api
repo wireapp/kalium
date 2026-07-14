@@ -1333,6 +1333,14 @@ abstract interface com.wire.kalium.logic.feature.legalhold/ObserveLegalHoldState
     abstract fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.feature.legalhold/LegalHoldState> // com.wire.kalium.logic.feature.legalhold/ObserveLegalHoldStateForUserUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase { // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase|null[0]
+    abstract suspend fun invoke(androidx.paging/PagingConfig, kotlin/Long, kotlinx.datetime/Instant = ...): kotlinx.coroutines.flow/Flow<androidx.paging/PagingData<com.wire.kalium.logic.data.meeting/MeetingOccurrence>> // com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase.invoke|invoke(androidx.paging.PagingConfig;kotlin.Long;kotlinx.datetime.Instant){}[0]
+}
+
+abstract interface com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase { // com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase|null[0]
+    abstract suspend fun invoke(kotlin/String): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.meeting/MeetingOccurrence?> // com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase.invoke|invoke(kotlin.String){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.message.draft/GetMessageDraftUseCase { // com.wire.kalium.logic.feature.message.draft/GetMessageDraftUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.data.message.draft/MessageDraft? // com.wire.kalium.logic.feature.message.draft/GetMessageDraftUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
@@ -4170,6 +4178,13 @@ final class com.wire.kalium.logic.feature.incallreaction/SendInCallReactionUseCa
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String): com.wire.kalium.logic.feature.message/MessageOperationResult // com.wire.kalium.logic.feature.incallreaction/SendInCallReactionUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String){}[0]
 }
 
+final class com.wire.kalium.logic.feature.meeting/MeetingScope { // com.wire.kalium.logic.feature.meeting/MeetingScope|null[0]
+    final val getPaginatedMeetingOccurrenceDetails // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails|{}getPaginatedMeetingOccurrenceDetails[0]
+        final fun <get-getPaginatedMeetingOccurrenceDetails>(): com.wire.kalium.logic.feature.meeting/GetPaginatedMeetingOccurrencesUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.getPaginatedMeetingOccurrenceDetails.<get-getPaginatedMeetingOccurrenceDetails>|<get-getPaginatedMeetingOccurrenceDetails>(){}[0]
+    final val observeMeetingOccurrence // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence|{}observeMeetingOccurrence[0]
+        final fun <get-observeMeetingOccurrence>(): com.wire.kalium.logic.feature.meeting/ObserveMeetingOccurrenceUseCase // com.wire.kalium.logic.feature.meeting/MeetingScope.observeMeetingOccurrence.<get-observeMeetingOccurrence>|<get-observeMeetingOccurrence>(){}[0]
+}
+
 final class com.wire.kalium.logic.feature.message.composite/SendButtonActionConfirmationMessageUseCase { // com.wire.kalium.logic.feature.message.composite/SendButtonActionConfirmationMessageUseCase|null[0]
     final suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin/String, kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID>): com.wire.kalium.logic.feature.message.composite/SendButtonActionConfirmationMessageUseCase.Result // com.wire.kalium.logic.feature.message.composite/SendButtonActionConfirmationMessageUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.String;kotlin.collections.List<com.wire.kalium.logic.data.id.QualifiedID>){}[0]
 
@@ -5079,6 +5094,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-markSelfDeletingMessagesAsNotified>(): com.wire.kalium.logic.feature.user/MarkSelfDeletionStatusAsNotifiedUseCase // com.wire.kalium.logic.feature/UserSessionScope.markSelfDeletingMessagesAsNotified.<get-markSelfDeletingMessagesAsNotified>|<get-markSelfDeletingMessagesAsNotified>(){}[0]
     final val markTeamAppLockStatusAsNotified // com.wire.kalium.logic.feature/UserSessionScope.markTeamAppLockStatusAsNotified|{}markTeamAppLockStatusAsNotified[0]
         final fun <get-markTeamAppLockStatusAsNotified>(): com.wire.kalium.logic.feature.applock/MarkTeamAppLockStatusAsNotifiedUseCase // com.wire.kalium.logic.feature/UserSessionScope.markTeamAppLockStatusAsNotified.<get-markTeamAppLockStatusAsNotified>|<get-markTeamAppLockStatusAsNotified>(){}[0]
+    final val meetings // com.wire.kalium.logic.feature/UserSessionScope.meetings|{}meetings[0]
+        final fun <get-meetings>(): com.wire.kalium.logic.feature.meeting/MeetingScope // com.wire.kalium.logic.feature/UserSessionScope.meetings.<get-meetings>|<get-meetings>(){}[0]
     final val messages // com.wire.kalium.logic.feature/UserSessionScope.messages|{}messages[0]
         final fun <get-messages>(): com.wire.kalium.logic.feature.message/MessageScope // com.wire.kalium.logic.feature/UserSessionScope.messages.<get-messages>|<get-messages>(){}[0]
     final val migrateConversationToMLS // com.wire.kalium.logic.feature/UserSessionScope.migrateConversationToMLS|{}migrateConversationToMLS[0]
