@@ -44,6 +44,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -62,6 +63,18 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class NewConversationEventHandlerTest {
+
+    @Test
+    fun givenConversationPersistenceFails_whenHandlingEvent_thenFailureIsPropagated() = runTest {
+        val failure = StorageFailure.Generic(RuntimeException("persistence failed"))
+        val event = testNewConversationEvent()
+        val (arrangement, eventHandler) = Arrangement()
+            .withSelfUserTeamId(Either.Right(TestTeam.TEAM_ID))
+            .withPersistingConversations(Either.Left(failure))
+            .arrange()
+
+        eventHandler.handle(arrangement.transactionContext, event).shouldFail()
+    }
 
     @Test
     fun givenNewConversationOriginatedFromEvent_whenHandlingIt_thenPersistConversationShouldBeCalled() = runTest {

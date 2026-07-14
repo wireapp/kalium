@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.getOrNull
@@ -43,7 +44,10 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 
 internal interface NewConversationEventHandler {
-    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation)
+    suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.NewConversation
+    ): Either<CoreFailure, Unit>
 }
 
 internal class NewConversationEventHandlerImpl(
@@ -55,10 +59,13 @@ internal class NewConversationEventHandlerImpl(
     private val persistConversation: PersistConversationUseCase,
 ) : NewConversationEventHandler {
 
-    override suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.NewConversation) {
+    override suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.NewConversation
+    ): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         val selfUserTeamId = selfTeamIdProvider().getOrNull()
-        persistConversation(transactionContext, event.conversation, reason = ConversationSyncReason.Event)
+        return persistConversation(transactionContext, event.conversation, reason = ConversationSyncReason.Event)
             .flatMap { isNewUnhandledConversation ->
                 resolveConversationIfOneOnOne(transactionContext, selfUserTeamId, event)
                     .flatMap {
@@ -81,6 +88,7 @@ internal class NewConversationEventHandlerImpl(
             }.onFailure {
                 eventLogger.logFailure(it)
             }
+            .map { Unit }
     }
 
     private suspend fun resolveConversationIfOneOnOne(
