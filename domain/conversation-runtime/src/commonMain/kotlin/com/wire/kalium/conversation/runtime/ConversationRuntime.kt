@@ -22,7 +22,10 @@ package com.wire.kalium.conversation.runtime
 
 import com.wire.kalium.conversation.CallConversationContext
 import com.wire.kalium.conversation.ConversationContextProvider
+import com.wire.kalium.conversation.ConversationContextFailure
 import com.wire.kalium.conversation.ConversationContextResult
+import com.wire.kalium.conversation.ConversationProtocolStateResult
+import com.wire.kalium.conversation.ConversationProtocolStateStore
 import com.wire.kalium.conversation.ExperimentalConversationApi
 import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.sync.Mutex
@@ -79,4 +82,24 @@ public class ConversationRuntime(
     }
 
     private data class CachedContext(val context: CallConversationContext, val createdAt: TimeMark)
+}
+
+/** Records the minimal protocol/group mapping whenever remote or local context resolution succeeds. */
+@ExperimentalConversationApi
+public class ProtocolRecordingConversationContextProvider(
+    private val delegate: ConversationContextProvider,
+    private val protocolStateStore: ConversationProtocolStateStore,
+) : ConversationContextProvider {
+    override suspend fun getForCall(conversationId: ConversationId): ConversationContextResult =
+        when (val result = delegate.getForCall(conversationId)) {
+            is ConversationContextResult.Failure -> result
+            is ConversationContextResult.Success -> when (
+                val saved = protocolStateStore.save(conversationId, result.context.protocol)
+            ) {
+                is ConversationProtocolStateResult.Failure -> ConversationContextResult.Failure(
+                    ConversationContextFailure.Local(saved.description, saved.cause),
+                )
+                is ConversationProtocolStateResult.Success -> result
+            }
+        }
 }

@@ -24,6 +24,8 @@
 
 package com.wire.kalium.event.processing
 
+import com.wire.kalium.events.EventAcknowledgementRecovery
+import com.wire.kalium.events.EventCursor
 import com.wire.kalium.events.EventDeliveryState
 import com.wire.kalium.events.EventDeliveryStateResult
 import com.wire.kalium.events.EventDeliveryStateStore
@@ -31,6 +33,7 @@ import com.wire.kalium.events.EventEnvelope
 import com.wire.kalium.events.EventIdempotencyKey
 import com.wire.kalium.events.EventSource
 import com.wire.kalium.events.EventSourceResult
+import com.wire.kalium.events.EventStreamResult
 import com.wire.kalium.events.PendingEventAcknowledgement
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -145,6 +148,9 @@ public sealed interface EventProcessingFailure {
 
 @ExperimentalEventProcessingApi
 public sealed interface EventProcessingOutcome {
+    /** Durable delivery state is loaded and pending acknowledgements have been recovered. */
+    public data class Ready(public val acknowledgedCursor: EventCursor?) : EventProcessingOutcome
+
     public data class Processed(
         public val key: EventIdempotencyKey,
         public val handledCount: Int,
@@ -173,6 +179,7 @@ public class EventProcessor<RawEvent, DecodedEvent, DecryptedEvent>(
     private val decryptor: EventDecryptor<DecodedEvent, DecryptedEvent>,
     private val router: EventRouter<DecryptedEvent>,
 ) {
+    @Suppress("CyclomaticComplexMethod")
     public fun process(): Flow<EventProcessingOutcome> = flow {
         val initialState = when (val result = loadState()) {
             is StateCall.Success -> result.value
@@ -183,6 +190,7 @@ public class EventProcessor<RawEvent, DecodedEvent, DecryptedEvent>(
         }
 
         for (pending in initialState.pendingAcknowledgements) {
+            if (pending.acknowledgement.recovery == EventAcknowledgementRecovery.WAIT_FOR_REDELIVERY) continue
             val failure = recoverAcknowledgement(pending)
             if (failure != null) {
                 emit(failure)
@@ -191,8 +199,25 @@ public class EventProcessor<RawEvent, DecodedEvent, DecryptedEvent>(
             emit(EventProcessingOutcome.AcknowledgementRecovered(pending.key))
         }
 
+        val stream = try {
+            source.open(initialState.acknowledgedCursor)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (failure: Throwable) {
+            EventStreamResult.Failure("Event source open threw an exception", failure)
+        }
+        val events = when (stream) {
+            is EventStreamResult.Open -> stream.events
+            is EventStreamResult.Failure -> {
+                emit(EventProcessingOutcome.Failed(null, EventProcessingFailure.Source(stream.description, stream.cause)))
+                return@flow
+            }
+        }
+
+        emit(EventProcessingOutcome.Ready(initialState.acknowledgedCursor))
+
         try {
-            source.events(initialState.acknowledgedCursor).collect { envelope ->
+            events.collect { envelope ->
                 val outcome = processEnvelope(envelope)
                 emit(outcome)
                 if (outcome is EventProcessingOutcome.Failed) throw StopEventProcessing

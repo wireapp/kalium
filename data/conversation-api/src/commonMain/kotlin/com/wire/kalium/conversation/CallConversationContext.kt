@@ -89,3 +89,27 @@ public sealed interface ConversationContextResult {
 public fun interface ConversationContextProvider {
     public suspend fun getForCall(conversationId: ConversationId): ConversationContextResult
 }
+
+@ExperimentalConversationApi
+public sealed interface ConversationProtocolStateResult<out Value> {
+    public data class Success<Value>(public val value: Value) : ConversationProtocolStateResult<Value>
+
+    public data class Failure(public val description: String, public val cause: Throwable? = null) :
+        ConversationProtocolStateResult<Nothing>
+}
+
+/**
+ * Durable, identity-scoped protocol mapping required for MLS cleanup after access is removed.
+ * It deliberately stores no message history, members, unread state, or UI data.
+ */
+@ExperimentalConversationApi
+public interface ConversationProtocolStateStore {
+    public suspend fun get(conversationId: ConversationId): ConversationProtocolStateResult<CallConversationProtocol?>
+
+    public suspend fun save(
+        conversationId: ConversationId,
+        protocol: CallConversationProtocol,
+    ): ConversationProtocolStateResult<Unit>
+
+    public suspend fun remove(conversationId: ConversationId): ConversationProtocolStateResult<Unit>
+}

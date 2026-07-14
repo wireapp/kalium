@@ -35,9 +35,21 @@ public data class EventIdempotencyKey(public val value: String)
 @ExperimentalEventApi
 public data class EventCursor(public val value: String)
 
+@ExperimentalEventApi
+public enum class EventAcknowledgementRecovery {
+    /** The acknowledgement token is valid after reconnect or process restart. */
+    REPLAY,
+
+    /** The source must wait for redelivery and acknowledge the new session-scoped token. */
+    WAIT_FOR_REDELIVERY,
+}
+
 /** An opaque token understood only by the event source acknowledgement adapter. */
 @ExperimentalEventApi
-public data class EventAcknowledgement(public val value: String)
+public data class EventAcknowledgement(
+    public val value: String,
+    public val recovery: EventAcknowledgementRecovery = EventAcknowledgementRecovery.REPLAY,
+)
 
 /** A raw event together with the state needed for restart-safe delivery. */
 @ExperimentalEventApi
@@ -58,6 +70,15 @@ public sealed interface EventSourceResult {
     public data class Failure(public val description: String, public val cause: Throwable? = null) : EventSourceResult
 }
 
+@ExperimentalEventApi
+public sealed interface EventStreamResult<out RawEvent> {
+    /** A stream opened after authenticated connection and initial synchronization are ready. */
+    public data class Open<RawEvent>(public val events: Flow<EventEnvelope<RawEvent>>) : EventStreamResult<RawEvent>
+
+    public data class Failure(public val description: String, public val cause: Throwable? = null) :
+        EventStreamResult<Nothing>
+}
+
 /**
  * Authenticated, reconnecting event delivery.
  *
@@ -66,7 +87,11 @@ public sealed interface EventSourceResult {
  */
 @ExperimentalEventApi
 public interface EventSource<out RawEvent> {
-    public fun events(from: EventCursor?): Flow<EventEnvelope<RawEvent>>
+    /**
+     * Opens authenticated delivery from [from]. Success is returned only after the WebSocket (or
+     * equivalent source) and its initial synchronization marker are ready.
+     */
+    public suspend fun open(from: EventCursor?): EventStreamResult<RawEvent>
 
     public suspend fun acknowledge(acknowledgement: EventAcknowledgement): EventSourceResult
 

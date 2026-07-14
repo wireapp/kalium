@@ -63,6 +63,7 @@ public data class IncomingCallingPayload(
     public val transportConversationId: ConversationId,
     public val senderUserId: UserId,
     public val senderClientId: String,
+    public val messageTimestampSeconds: Long,
     public val content: String,
     public val isSelfMessage: Boolean,
 )
@@ -72,6 +73,25 @@ public sealed interface CallSignalTarget {
     public data object SelfClients : CallSignalTarget
 
     public data class Conversation(public val recipients: List<CallClient>?) : CallSignalTarget
+}
+
+@ExperimentalCallingRuntimeApi
+public data class SelfConversationTarget(
+    public val conversationId: ConversationId,
+    public val protocol: CallConversationProtocol,
+)
+
+@ExperimentalCallingRuntimeApi
+public sealed interface SelfConversationResult {
+    public data class Success(public val targets: List<SelfConversationTarget>) : SelfConversationResult
+
+    public data class Failure(public val description: String, public val cause: Throwable? = null) : SelfConversationResult
+}
+
+/** Required durable or remotely resolvable self-conversation IDs for AVS my-clients signalling. */
+@ExperimentalCallingRuntimeApi
+public fun interface ServiceSelfConversationProvider {
+    public suspend fun getSelfConversations(): SelfConversationResult
 }
 
 /** Plain calling content. The transport must encode and encrypt it before using Wire APIs. */
@@ -87,6 +107,8 @@ public data class OutgoingCallingSignal(
 
 @ExperimentalCallingRuntimeApi
 public sealed interface CallingFailure {
+    public data object RuntimeNotReady : CallingFailure
+
     public data object RuntimeClosed : CallingFailure
 
     public data object AlreadyActive : CallingFailure
@@ -143,9 +165,21 @@ public interface CallTransport {
 /** Low-level AVS owner. Implementations must keep one engine per runtime identity. */
 @ExperimentalCallingRuntimeApi
 public interface AvsCallingEngine {
+    /** Starts one locally owned native engine. Must not install process-global call ownership. */
+    public suspend fun start(selfConversationProvider: ServiceSelfConversationProvider): CallingResult
+
     public suspend fun join(context: CallConversationContext): CallingResult
 
-    public suspend fun receive(payload: IncomingCallingPayload): CallingResult
+    /**
+     * Delivers signalling at least once. Implementations must deduplicate non-idempotent effects
+     * by [eventIdempotencyKey] because a process can stop after AVS accepts the payload but before
+     * the durable calling-event store is updated.
+     */
+    public suspend fun receive(
+        payload: IncomingCallingPayload,
+        context: CallConversationContext,
+        eventIdempotencyKey: String,
+    ): CallingResult
 
     public suspend fun leave(conversationId: ConversationId): CallingResult
 
@@ -201,7 +235,10 @@ public sealed interface CallLifecycleEvent {
 
     public data class Missed(public val conversationId: ConversationId) : CallLifecycleEvent
 
-    public data class SignallingReceived(public val payload: IncomingCallingPayload) : CallLifecycleEvent
+    public data class SignallingReceived(
+        public val payload: IncomingCallingPayload,
+        public val eventIdempotencyKey: String,
+    ) : CallLifecycleEvent
 
     public data class Leaving(public val conversationId: ConversationId) : CallLifecycleEvent
 
@@ -229,7 +266,8 @@ public sealed interface CallingControlResult {
 /** Preserves calling control messages such as REMOTEMUTE before AVS delivery. */
 @ExperimentalCallingRuntimeApi
 public fun interface CallingControlHandler {
-    public suspend fun handle(payload: IncomingCallingPayload): CallingControlResult
+    /** Uses [eventIdempotencyKey] to make control-message effects safe for at-least-once delivery. */
+    public suspend fun handle(payload: IncomingCallingPayload, eventIdempotencyKey: String): CallingControlResult
 }
 
 @ExperimentalCallingRuntimeApi
@@ -274,14 +312,14 @@ public class CallingRuntime(
     private val transport: CallTransport,
     private val conferenceMembership: ConferenceMembership,
     private val engine: AvsCallingEngine,
+    private val selfConversationProvider: ServiceSelfConversationProvider,
     private val controlHandler: CallingControlHandler,
     private val stateStore: CallStateStore,
     private val eventSink: CallEventSink,
     private val maxConcurrentCalls: Int,
 ) {
     private val operationMutex = Mutex()
-    private var lifecycle = Lifecycle.OPEN
-    private var lastCloseFailure: CallingResult.Failure? = null
+    private var lifecycle = Lifecycle.CREATED
 
     init {
         require(maxConcurrentCalls > 0) { "maxConcurrentCalls must be positive" }
@@ -289,9 +327,24 @@ public class CallingRuntime(
 
     public fun observeActiveCalls(): Flow<List<ActiveCall>> = stateStore.observeActiveCalls()
 
+    public suspend fun start(): CallingResult = operationMutex.withLock {
+        when (lifecycle) {
+            Lifecycle.CREATED -> when (val result = engine.start(selfConversationProvider)) {
+                is CallingResult.Failure -> fail(null, result.failure)
+                CallingResult.Success -> {
+                    lifecycle = Lifecycle.OPEN
+                    CallingResult.Success
+                }
+            }
+            Lifecycle.OPEN -> CallingResult.Success
+            Lifecycle.CLOSING,
+            Lifecycle.CLOSED -> CallingResult.Failure(CallingFailure.RuntimeClosed)
+        }
+    }
+
     @Suppress("CyclomaticComplexMethod")
     public suspend fun join(conversationId: ConversationId): CallingResult = operationMutex.withLock {
-        if (lifecycle != Lifecycle.OPEN) return@withLock CallingResult.Failure(CallingFailure.RuntimeClosed)
+        if (lifecycle != Lifecycle.OPEN) return@withLock CallingResult.Failure(unavailableFailure())
         val activeCalls = stateStore.activeCalls()
         if (activeCalls.any { it.conversationId == conversationId }) {
             return@withLock CallingResult.Failure(CallingFailure.AlreadyActive)
@@ -341,30 +394,37 @@ public class CallingRuntime(
         CallingResult.Success
     }
 
-    public suspend fun receive(payload: IncomingCallingPayload): CallingResult {
-        if (lifecycle != Lifecycle.OPEN) return CallingResult.Failure(CallingFailure.RuntimeClosed)
-        val result = when (val controlResult = controlHandler.handle(payload)) {
-            CallingControlResult.ForwardToAvs -> engine.receive(payload)
+    @Suppress("ReturnCount")
+    public suspend fun receive(payload: IncomingCallingPayload, eventIdempotencyKey: String): CallingResult {
+        if (lifecycle != Lifecycle.OPEN) return CallingResult.Failure(unavailableFailure())
+        val context = when (val result = contextProvider.getForCall(payload.callHostConversationId)) {
+            is ConversationContextResult.Success -> result.context
+            is ConversationContextResult.Failure -> return CallingResult.Failure(
+                CallingFailure.Conversation(result.failure.toString()),
+            )
+        }
+        val result = when (val controlResult = controlHandler.handle(payload, eventIdempotencyKey)) {
+            CallingControlResult.ForwardToAvs -> engine.receive(payload, context, eventIdempotencyKey)
             CallingControlResult.Handled -> CallingResult.Success
             is CallingControlResult.Failure -> CallingResult.Failure(controlResult.failure)
         }
         return result.also {
             when (result) {
-                CallingResult.Success -> emitSafely(CallLifecycleEvent.SignallingReceived(payload))
+                CallingResult.Success -> emitSafely(CallLifecycleEvent.SignallingReceived(payload, eventIdempotencyKey))
                 is CallingResult.Failure -> emitSafely(CallLifecycleEvent.Failed(payload.callHostConversationId, result.failure))
             }
         }
     }
 
     public suspend fun sendSignal(signal: OutgoingCallingSignal): CallingResult =
-        if (lifecycle != Lifecycle.OPEN) CallingResult.Failure(CallingFailure.RuntimeClosed) else transport.sendSignal(signal)
+        if (lifecycle != Lifecycle.OPEN) CallingResult.Failure(unavailableFailure()) else transport.sendSignal(signal)
 
     public suspend fun getCallConfig(limit: Int?): CallConfigResult =
-        if (lifecycle != Lifecycle.OPEN) CallConfigResult.Failure(CallingFailure.RuntimeClosed) else transport.getCallConfig(limit)
+        if (lifecycle != Lifecycle.OPEN) CallConfigResult.Failure(unavailableFailure()) else transport.getCallConfig(limit)
 
     public suspend fun connectToSft(url: String, payload: ByteArray): SftConnectionResult =
         if (lifecycle != Lifecycle.OPEN) {
-            SftConnectionResult.Failure(CallingFailure.RuntimeClosed)
+            SftConnectionResult.Failure(unavailableFailure())
         } else {
             transport.connectToSft(url, payload)
         }
@@ -374,23 +434,24 @@ public class CallingRuntime(
     }
 
     public suspend fun close(): CallingResult = operationMutex.withLock {
-        if (lifecycle == Lifecycle.CLOSED) return@withLock lastCloseFailure ?: CallingResult.Success
+        if (lifecycle == Lifecycle.CLOSED) return@withLock CallingResult.Success
         lifecycle = Lifecycle.CLOSING
         var firstFailure: CallingResult.Failure? = null
         stateStore.activeCalls().forEach {
             val result = leaveLocked(it.conversationId, allowClosed = true)
             if (result is CallingResult.Failure && firstFailure == null) firstFailure = result
         }
-        val engineResult = engine.close()
-        if (engineResult is CallingResult.Failure && firstFailure == null) firstFailure = engineResult
-        lastCloseFailure = firstFailure
-        lifecycle = Lifecycle.CLOSED
+        if (firstFailure == null) {
+            val engineResult = engine.close()
+            if (engineResult is CallingResult.Failure) firstFailure = engineResult
+        }
+        if (firstFailure == null) lifecycle = Lifecycle.CLOSED
         firstFailure ?: CallingResult.Success
     }
 
     @Suppress("ReturnCount")
     private suspend fun leaveLocked(conversationId: ConversationId, allowClosed: Boolean = false): CallingResult {
-        if (lifecycle != Lifecycle.OPEN && !allowClosed) return CallingResult.Failure(CallingFailure.RuntimeClosed)
+        if (lifecycle != Lifecycle.OPEN && !allowClosed) return CallingResult.Failure(unavailableFailure())
         val call = stateStore.activeCalls().firstOrNull { it.conversationId == conversationId }
             ?: return CallingResult.Failure(CallingFailure.NotActive)
         val leavingStateResult = stateStore.update(call.copy(status = ActiveCallStatus.LEAVING))
@@ -428,12 +489,20 @@ public class CallingRuntime(
         CallingResult.Failure(CallingFailure.State("Call event sink failed", failure))
     }
 
-    private enum class Lifecycle { OPEN, CLOSING, CLOSED }
+    private fun unavailableFailure(): CallingFailure = when (lifecycle) {
+        Lifecycle.CREATED -> CallingFailure.RuntimeNotReady
+        Lifecycle.OPEN -> error("Runtime is available")
+        Lifecycle.CLOSING,
+        Lifecycle.CLOSED -> CallingFailure.RuntimeClosed
+    }
+
+    private enum class Lifecycle { CREATED, OPEN, CLOSING, CLOSED }
 }
 
 @ExperimentalCallingRuntimeApi
 public fun interface CallingPayloadExtractor<in Event> {
-    public fun extract(event: Event): IncomingCallingPayload?
+    /** Returns every calling payload in stable wire order, including MLS multi-message batches. */
+    public fun extract(event: Event): List<IncomingCallingPayload>
 }
 
 /** Required event handler that forwards only decrypted calling payloads into the AVS runtime. */
@@ -445,21 +514,27 @@ public class CallingEventHandler<Event>(
 ) : EventHandler<Event> {
     override val requirement: EventHandlerRequirement = EventHandlerRequirement.REQUIRED
 
-    override fun accepts(event: Event): Boolean = extractor.extract(event) != null
+    // Extraction may include decoding a multi-message MLS batch, so perform it exactly once in handle.
+    override fun accepts(event: Event): Boolean = true
 
     @Suppress("ReturnCount")
     override suspend fun handle(event: Event, context: EventHandlingContext): EventHandlingResult {
-        val payload = extractor.extract(event) ?: return EventHandlingResult.Ignored
-        when (val handled = idempotencyStore.isHandled(context.idempotencyKey.value)) {
-            is CallingEventIdempotencyResult.Failure -> return EventHandlingResult.Failed(handled.description, handled.cause)
-            is CallingEventIdempotencyResult.Found -> if (handled.handled) return EventHandlingResult.Handled
-        }
-        return when (val result = runtime.receive(payload)) {
-            CallingResult.Success -> when (val marked = idempotencyStore.markHandled(context.idempotencyKey.value)) {
-                is CallingEventIdempotencyResult.Failure -> EventHandlingResult.Failed(marked.description, marked.cause)
-                is CallingEventIdempotencyResult.Found -> EventHandlingResult.Handled
+        val payloads = extractor.extract(event)
+        if (payloads.isEmpty()) return EventHandlingResult.Ignored
+        payloads.forEachIndexed { index, payload ->
+            val payloadKey = "${context.idempotencyKey.value}#$index"
+            when (val handled = idempotencyStore.isHandled(payloadKey)) {
+                is CallingEventIdempotencyResult.Failure -> return EventHandlingResult.Failed(handled.description, handled.cause)
+                is CallingEventIdempotencyResult.Found -> if (handled.handled) return@forEachIndexed
             }
-            is CallingResult.Failure -> EventHandlingResult.Failed(result.failure.toString())
+            when (val result = runtime.receive(payload, payloadKey)) {
+                CallingResult.Success -> when (val marked = idempotencyStore.markHandled(payloadKey)) {
+                    is CallingEventIdempotencyResult.Failure -> return EventHandlingResult.Failed(marked.description, marked.cause)
+                    is CallingEventIdempotencyResult.Found -> Unit
+                }
+                is CallingResult.Failure -> return EventHandlingResult.Failed(result.failure.toString())
+            }
         }
+        return EventHandlingResult.Handled
     }
 }
