@@ -33,6 +33,7 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
+import com.wire.kalium.logic.util.shouldFail
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -45,6 +46,28 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class MemberChangeEventHandlerTest {
+
+    @Test
+    fun givenMutedStatusUpdateFails_whenHandlingEvent_thenFailureIsPropagated() = runTest {
+        val event = TestEvent.memberChangeMutedStatus()
+        val (arrangement, eventHandler) = Arrangement()
+            .withUpdateMutedStatusLocally(Either.Left(StorageFailure.Generic(RuntimeException("update failed"))))
+            .arrange()
+
+        eventHandler.handle(arrangement.transactionContext, event).shouldFail()
+    }
+
+    @Test
+    fun givenMemberUpdateFails_whenHandlingRoleEvent_thenFailureIsPropagated() = runTest {
+        val event = TestEvent.memberChange(member = Member(TestUser.USER_ID, Member.Role.Admin))
+        val (arrangement, eventHandler) = Arrangement()
+            .withFetchConversationIfUnknownSucceeding()
+            .withConversationMemberRole(Member.Role.Member)
+            .withUpdateMemberResult(Either.Left(StorageFailure.Generic(RuntimeException("update failed"))))
+            .arrange()
+
+        eventHandler.handle(arrangement.transactionContext, event).shouldFail()
+    }
 
     @Test
     fun givenMemberChangeEvent_whenHandlingIt_thenShouldFetchConversationIfUnknown() = runTest {
@@ -279,9 +302,13 @@ class MemberChangeEventHandlerTest {
         }
 
         suspend fun withUpdateMemberSucceeding() = apply {
+            withUpdateMemberResult(Either.Right(Unit))
+        }
+
+        suspend fun withUpdateMemberResult(result: Either<CoreFailure, Unit>) = apply {
             everySuspend {
                 conversationRepository.updateMemberFromEvent(any(), any())
-            } returns Either.Right(Unit)
+            } returns result
         }
 
         suspend fun withConversationMemberRole(role: Member.Role?) = apply {

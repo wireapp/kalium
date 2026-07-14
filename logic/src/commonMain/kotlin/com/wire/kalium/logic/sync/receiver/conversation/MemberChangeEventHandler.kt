@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
+import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.getOrNull
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -40,7 +42,10 @@ import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 
 internal interface MemberChangeEventHandler {
-    suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged)
+    suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.MemberChanged
+    ): Either<CoreFailure, Unit>
 }
 
 internal class MemberChangeEventHandlerImpl(
@@ -51,16 +56,20 @@ internal class MemberChangeEventHandlerImpl(
 ) : MemberChangeEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handle(transactionContext: CryptoTransactionContext, event: Event.Conversation.MemberChanged) {
+    override suspend fun handle(
+        transactionContext: CryptoTransactionContext,
+        event: Event.Conversation.MemberChanged
+    ): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
-        when (event) {
+        return when (event) {
             is Event.Conversation.MemberChanged.MemberMutedStatusChanged -> {
                 conversationRepository.updateMutedStatusLocally(
                     event.conversationId,
                     event.mutedConversationStatus,
                     DateTimeUtil.currentInstant().toEpochMilliseconds()
                 )
-                eventLogger.logSuccess()
+                    .onSuccess { eventLogger.logSuccess() }
+                    .onFailure { eventLogger.logFailure(it) }
             }
 
             is Event.Conversation.MemberChanged.MemberArchivedStatusChanged -> {
@@ -69,7 +78,8 @@ internal class MemberChangeEventHandlerImpl(
                     event.isArchiving,
                     DateTimeUtil.currentInstant().toEpochMilliseconds()
                 )
-                eventLogger.logSuccess()
+                    .onSuccess { eventLogger.logSuccess() }
+                    .onFailure { eventLogger.logFailure(it) }
             }
 
             is Event.Conversation.MemberChanged.MemberChangedRole -> {
@@ -81,6 +91,7 @@ internal class MemberChangeEventHandlerImpl(
                     EventLoggingStatus.SKIPPED,
                     arrayOf("info" to "Ignoring 'conversation.member-update' event, not handled yet")
                 )
+                Either.Right(Unit)
             }
         }
     }
@@ -88,13 +99,20 @@ internal class MemberChangeEventHandlerImpl(
     private suspend fun handleMemberChangedRoleEvent(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.MemberChanged.MemberChangedRole
-    ) {
+    ): Either<CoreFailure, Unit> {
         val eventLogger = kaliumLogger.createEventProcessingLogger(event)
+        val updatedMember = event.member ?: run {
+            eventLogger.logComplete(
+                EventLoggingStatus.SKIPPED,
+                arrayOf("info" to "Ignoring member role update without member data")
+            )
+            return Either.Right(Unit)
+        }
         val currentRole = event.member?.id?.let {
             conversationRepository.getConversationMemberRole(event.conversationId, it).getOrNull()
         }
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
-        fetchConversationIfUnknown(transactionContext, event.conversationId)
+        return fetchConversationIfUnknown(transactionContext, event.conversationId)
             .run {
                 onSuccess {
                     val logMap = mapOf("event" to event.toLogMap())
@@ -108,7 +126,7 @@ internal class MemberChangeEventHandlerImpl(
                     logger.w("Failure fetching conversation details on MemberChange Event: ${logMap.toJsonElement()}")
                 }
                 // Even if unable to fetch conversation details, at least attempt updating the member
-                conversationRepository.updateMemberFromEvent(event.member!!, event.conversationId)
+                conversationRepository.updateMemberFromEvent(updatedMember, event.conversationId)
             }
             .onFailure { eventLogger.logFailure(it) }
             .onSuccess {

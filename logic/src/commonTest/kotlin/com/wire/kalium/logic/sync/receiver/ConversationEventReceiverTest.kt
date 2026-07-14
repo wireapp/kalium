@@ -195,6 +195,23 @@ class ConversationEventReceiverTest {
     }
 
     @Test
+    fun givenMemberChangeEvent_whenHandlerFails_thenFailureIsPropagated() = runTest {
+        val memberChangeEvent =
+            TestEvent.memberChange(member = Conversation.Member(TestUser.USER_ID, Conversation.Member.Role.Admin))
+        val (arrangement, conversationEventReceiver) = Arrangement().arrange {
+            withMemberChangeEventResult(Either.Left(failure))
+        }
+
+        val result = conversationEventReceiver.onEvent(
+            arrangement.transactionContext,
+            memberChangeEvent,
+            TestEvent.liveDeliveryInfo
+        )
+
+        result.shouldFail()
+    }
+
+    @Test
     fun givenMLSWelcomeEvent_whenOnEventInvoked_thenMlsWelcomeHandlerShouldBeCalled() = runTest {
         val mlsWelcomeEvent = TestEvent.newMLSWelcomeEvent()
 
@@ -499,7 +516,7 @@ class ConversationEventReceiverTest {
             everySuspend { deletedConversationEventHandler.handle(any(), any()) } returns Unit
             everySuspend { memberJoinEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { memberLeaveEventHandler.handle(any(), any()) } returns Either.Right(Unit)
-            everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Unit
+            everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { mlsWelcomeEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { renamedConversationEventHandler.handle(any()) } returns Unit
             everySuspend { receiptModeUpdateEventHandler.handle(any()) } returns Unit
@@ -512,6 +529,12 @@ class ConversationEventReceiverTest {
             everySuspend {
                 memberLeaveEventHandler.handle(any(), any())
             } returns Either.Right(Unit)
+        }
+
+        suspend fun withMemberChangeEventResult(result: Either<CoreFailure, Unit>) = apply {
+            everySuspend {
+                memberChangeEventHandler.handle(any(), any())
+            } returns result
         }
 
         suspend fun withMemberJoinSucceeded() = apply {

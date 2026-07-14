@@ -101,10 +101,7 @@ internal class ConversationEventReceiverImpl(
 
             is Event.Conversation.MemberLeave -> memberLeaveHandler.handle(transactionContext, event)
 
-            is Event.Conversation.MemberChanged -> {
-                memberChangeHandler.handle(transactionContext, event)
-                Either.Right(Unit)
-            }
+            is Event.Conversation.MemberChanged -> memberChangeHandler.handle(transactionContext, event)
 
             is Event.Conversation.MLSWelcome -> {
                 mlsWelcomeHandler.handle(transactionContext, event)
