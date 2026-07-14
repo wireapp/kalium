@@ -253,7 +253,6 @@ class EndCallOnConversationChangeUseCaseTest {
 
         private val groupConversationDetail = ConversationDetails.Group.Regular(
             conversation = conversation,
-            hasOngoingCall = true,
             isSelfUserMember = false,
             selfRole = null
         )

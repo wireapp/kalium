@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.logic.feature.conversation.RemoveMemberFromConversationUseCase.Result.Failure
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import dev.mokkery.answering.returns
@@ -29,6 +30,7 @@ import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class PromoteAdminAndLeaveConversationUseCaseTest {
@@ -61,7 +63,32 @@ class PromoteAdminAndLeaveConversationUseCaseTest {
     fun givenPromoteSucceedsAndLeaveFails_whenInvoked_thenReturnFailedToLeaveConversation() = runTest {
         val (_, useCase) = Arrangement()
             .withPromoteResult(UpdateConversationMemberRoleResult.Success)
-            .withLeaveResult(RemoveMemberFromConversationUseCase.Result.Failure(StorageFailure.DataNotFound))
+            .withLeaveResult(Failure(StorageFailure.DataNotFound))
+            .arrange()
+
+        val result = useCase(TestConversation.ID, TestUser.OTHER_USER_ID)
+
+        assertIs<PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation>(result)
+    }
+
+    @Test
+    fun givenPromoteSucceedsAndLeaveFailsWithAdminlessError_whenInvoked_thenReturnEligibleMembers() = runTest {
+        val (_, useCase) = Arrangement()
+            .withPromoteResult(UpdateConversationMemberRoleResult.Success)
+            .withLeaveResult(Failure(AdminlessConversationFailure(listOf(TestUser.OTHER_USER_ID))))
+            .arrange()
+
+        val result = useCase(TestConversation.ID, TestUser.OTHER_USER_ID)
+
+        assertIs<PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation>(result)
+        assertEquals(TestUser.OTHER_USER_ID, result.eligibleMembers.first())
+    }
+
+    @Test
+    fun givenPromoteSucceedsAndLeaveFailsWithAdminlessErrorWithoutMembers_whenInvoked_thenReturnFailedToLeaveConversation() = runTest {
+        val (_, useCase) = Arrangement()
+            .withPromoteResult(UpdateConversationMemberRoleResult.Success)
+            .withLeaveResult(Failure(AdminlessConversationFailure(emptyList())))
             .arrange()
 
         val result = useCase(TestConversation.ID, TestUser.OTHER_USER_ID)

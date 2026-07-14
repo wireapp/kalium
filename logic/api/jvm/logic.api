@@ -2440,6 +2440,7 @@ public final class com/wire/kalium/logic/feature/call/CallsScope {
 	public final fun getObserveEndCallDueToDegradationDialog ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveEndCallDueToConversationDegradationUseCase;
 	public final fun getObserveEstablishedCallWithSortedParticipants ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveEstablishedCallWithSortedParticipantsUseCase;
 	public final fun getObserveInCallReactions ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveInCallReactionsUseCase;
+	public final fun getObserveJoinableCalls ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveJoinableCallsUseCase;
 	public final fun getObserveLastActiveCallWithSortedParticipants ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveLastActiveCallWithSortedParticipantsUseCase;
 	public final fun getObserveOngoingCalls ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveOngoingCallsUseCase;
 	public final fun getObserveOutgoingCall ()Lcom/wire/kalium/logic/feature/call/usecase/ObserveOutgoingCallUseCase;
@@ -2580,6 +2581,10 @@ public abstract interface class com/wire/kalium/logic/feature/call/usecase/Obser
 
 public abstract interface class com/wire/kalium/logic/feature/call/usecase/ObserveInCallReactionsUseCase {
 	public abstract fun invoke (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/call/usecase/ObserveJoinableCallsUseCase {
+	public abstract fun invoke ()Lkotlinx/coroutines/flow/Flow;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/call/usecase/ObserveLastActiveCallWithSortedParticipantsUseCase {
@@ -3363,6 +3368,17 @@ public final class com/wire/kalium/logic/feature/conversation/AddServiceToConver
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/wire/kalium/logic/feature/conversation/AdminlessConversationFailure : com/wire/kalium/common/error/CoreFailure$FeatureFailure {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lcom/wire/kalium/logic/feature/conversation/AdminlessConversationFailure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/AdminlessConversationFailure;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/AdminlessConversationFailure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEligibleMembers ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public abstract class com/wire/kalium/logic/feature/conversation/ArchiveStatusUpdateResult {
 }
 
@@ -4053,8 +4069,14 @@ public abstract interface class com/wire/kalium/logic/feature/conversation/Promo
 }
 
 public final class com/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result$FailedToLeaveConversation : com/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result {
-	public static final field INSTANCE Lcom/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result$FailedToLeaveConversation;
+	public fun <init> ()V
+	public fun <init> (Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lcom/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result$FailedToLeaveConversation;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result$FailedToLeaveConversation;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/PromoteAdminAndLeaveConversationUseCase$Result$FailedToLeaveConversation;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEligibleMembers ()Ljava/util/List;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

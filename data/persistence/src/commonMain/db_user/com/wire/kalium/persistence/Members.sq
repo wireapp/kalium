@@ -79,7 +79,7 @@ SELECT user FROM Member WHERE conversation = :conversationId AND user = :userId;
 selectFederatedMembersWithOneOfDomainsFromGroupConversation:
 SELECT mem.* FROM Member AS mem
 JOIN Conversation AS con ON con.qualified_id = mem.conversation
-WHERE con.type == 'GROUP' AND (user LIKE ('%@' || :firstDomain) OR user LIKE ('%@' || :secondDomain));
+WHERE con.type IN ('GROUP', 'CHANNEL', 'MEETING') AND (user LIKE ('%@' || :firstDomain) OR user LIKE ('%@' || :secondDomain));
 
 selectFederatedMembersFromOneOnOneConversations:
 SELECT mem.* FROM Member AS mem

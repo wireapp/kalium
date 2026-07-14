@@ -478,6 +478,10 @@ abstract interface com.wire.kalium.logic.feature.call.usecase/ObserveInCallReact
     abstract fun invoke(com.wire.kalium.logic.data.id/QualifiedID): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.call/InCallReactionMessage> // com.wire.kalium.logic.feature.call.usecase/ObserveInCallReactionsUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
 
+abstract interface com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase { // com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase|null[0]
+    abstract fun invoke(): kotlinx.coroutines.flow/Flow<kotlin.collections/Map<com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.call/Call>> // com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase.invoke|invoke(){}[0]
+}
+
 abstract interface com.wire.kalium.logic.feature.call.usecase/ObserveLastActiveCallWithSortedParticipantsUseCase { // com.wire.kalium.logic.feature.call.usecase/ObserveLastActiveCallWithSortedParticipantsUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.call/CallingParticipantsOrderType = ...): kotlinx.coroutines.flow/Flow<com.wire.kalium.logic.data.call/Call?> // com.wire.kalium.logic.feature.call.usecase/ObserveLastActiveCallWithSortedParticipantsUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.call.CallingParticipantsOrderType){}[0]
 }
@@ -1038,7 +1042,14 @@ abstract interface com.wire.kalium.logic.feature.conversation/PromoteAdminAndLea
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID){}[0]
 
     sealed interface Result { // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result|null[0]
-        final object FailedToLeaveConversation : com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result { // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation|null[0]
+        final class FailedToLeaveConversation : com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result { // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation|null[0]
+            constructor <init>(kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID> = ...) // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation.<init>|<init>(kotlin.collections.List<com.wire.kalium.logic.data.id.QualifiedID>){}[0]
+
+            final val eligibleMembers // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation.eligibleMembers|{}eligibleMembers[0]
+                final fun <get-eligibleMembers>(): kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID> // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation.eligibleMembers.<get-eligibleMembers>|<get-eligibleMembers>(){}[0]
+
+            final fun component1(): kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID> // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation.component1|component1(){}[0]
+            final fun copy(kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID> = ...): com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation.copy|copy(kotlin.collections.List<com.wire.kalium.logic.data.id.QualifiedID>){}[0]
             final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation.equals|equals(kotlin.Any?){}[0]
             final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation.hashCode|hashCode(){}[0]
             final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/PromoteAdminAndLeaveConversationUseCase.Result.FailedToLeaveConversation.toString|toString(){}[0]
@@ -3465,6 +3476,8 @@ final class com.wire.kalium.logic.feature.call/CallsScope { // com.wire.kalium.l
         final fun <get-observeEstablishedCallWithSortedParticipants>(): com.wire.kalium.logic.feature.call.usecase/ObserveEstablishedCallWithSortedParticipantsUseCase // com.wire.kalium.logic.feature.call/CallsScope.observeEstablishedCallWithSortedParticipants.<get-observeEstablishedCallWithSortedParticipants>|<get-observeEstablishedCallWithSortedParticipants>(){}[0]
     final val observeInCallReactions // com.wire.kalium.logic.feature.call/CallsScope.observeInCallReactions|{}observeInCallReactions[0]
         final fun <get-observeInCallReactions>(): com.wire.kalium.logic.feature.call.usecase/ObserveInCallReactionsUseCase // com.wire.kalium.logic.feature.call/CallsScope.observeInCallReactions.<get-observeInCallReactions>|<get-observeInCallReactions>(){}[0]
+    final val observeJoinableCalls // com.wire.kalium.logic.feature.call/CallsScope.observeJoinableCalls|{}observeJoinableCalls[0]
+        final fun <get-observeJoinableCalls>(): com.wire.kalium.logic.feature.call.usecase/ObserveJoinableCallsUseCase // com.wire.kalium.logic.feature.call/CallsScope.observeJoinableCalls.<get-observeJoinableCalls>|<get-observeJoinableCalls>(){}[0]
     final val observeLastActiveCallWithSortedParticipants // com.wire.kalium.logic.feature.call/CallsScope.observeLastActiveCallWithSortedParticipants|{}observeLastActiveCallWithSortedParticipants[0]
         final fun <get-observeLastActiveCallWithSortedParticipants>(): com.wire.kalium.logic.feature.call.usecase/ObserveLastActiveCallWithSortedParticipantsUseCase // com.wire.kalium.logic.feature.call/CallsScope.observeLastActiveCallWithSortedParticipants.<get-observeLastActiveCallWithSortedParticipants>|<get-observeLastActiveCallWithSortedParticipants>(){}[0]
     final val observeOngoingCalls // com.wire.kalium.logic.feature.call/CallsScope.observeOngoingCalls|{}observeOngoingCalls[0]
@@ -3677,6 +3690,19 @@ final class com.wire.kalium.logic.feature.conversation/AddServiceToConversationU
             final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/AddServiceToConversationUseCase.Result.Success.toString|toString(){}[0]
         }
     }
+}
+
+final class com.wire.kalium.logic.feature.conversation/AdminlessConversationFailure : com.wire.kalium.common.error/CoreFailure.FeatureFailure { // com.wire.kalium.logic.feature.conversation/AdminlessConversationFailure|null[0]
+    constructor <init>(kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID>) // com.wire.kalium.logic.feature.conversation/AdminlessConversationFailure.<init>|<init>(kotlin.collections.List<com.wire.kalium.logic.data.id.QualifiedID>){}[0]
+
+    final val eligibleMembers // com.wire.kalium.logic.feature.conversation/AdminlessConversationFailure.eligibleMembers|{}eligibleMembers[0]
+        final fun <get-eligibleMembers>(): kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID> // com.wire.kalium.logic.feature.conversation/AdminlessConversationFailure.eligibleMembers.<get-eligibleMembers>|<get-eligibleMembers>(){}[0]
+
+    final fun component1(): kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID> // com.wire.kalium.logic.feature.conversation/AdminlessConversationFailure.component1|component1(){}[0]
+    final fun copy(kotlin.collections/List<com.wire.kalium.logic.data.id/QualifiedID> = ...): com.wire.kalium.logic.feature.conversation/AdminlessConversationFailure // com.wire.kalium.logic.feature.conversation/AdminlessConversationFailure.copy|copy(kotlin.collections.List<com.wire.kalium.logic.data.id.QualifiedID>){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/AdminlessConversationFailure.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/AdminlessConversationFailure.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/AdminlessConversationFailure.toString|toString(){}[0]
 }
 
 final class com.wire.kalium.logic.feature.conversation/CheckConversationInviteCodeUseCase { // com.wire.kalium.logic.feature.conversation/CheckConversationInviteCodeUseCase|null[0]

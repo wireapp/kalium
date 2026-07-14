@@ -193,6 +193,7 @@ internal class CallMapperImpl(
     private fun toConversationEntityType(conversationType: Conversation.Type): ConversationEntity.Type = when (conversationType) {
         Conversation.Type.Group.Regular -> ConversationEntity.Type.GROUP
         Conversation.Type.Group.Channel -> ConversationEntity.Type.GROUP
+        Conversation.Type.Group.Meeting -> ConversationEntity.Type.GROUP
         else -> ConversationEntity.Type.ONE_ON_ONE
     }
 
@@ -205,6 +206,8 @@ internal class CallMapperImpl(
 
     override fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {
         ConversationEntity.Type.GROUP -> Conversation.Type.Group.Regular
+        ConversationEntity.Type.CHANNEL -> Conversation.Type.Group.Channel
+        ConversationEntity.Type.MEETING -> Conversation.Type.Group.Meeting
         else -> Conversation.Type.OneOnOne
     }
 

@@ -17,26 +17,3 @@
  */
 
 package com.wire.kalium.persistence.adapter
-
-import app.cash.sqldelight.ColumnAdapter
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-
-internal object GroupTypeAdapter : ColumnAdapter<ConversationEntity.GroupType, String> {
-    override fun decode(databaseValue: String): ConversationEntity.GroupType = when (databaseValue) {
-        GROUP -> ConversationEntity.GroupType.Group
-        CHANNEL -> ConversationEntity.GroupType.Channel
-        MEETING -> ConversationEntity.GroupType.Meeting
-        else -> ConversationEntity.GroupType.Unknown(databaseValue)
-    }
-
-    override fun encode(value: ConversationEntity.GroupType): String = when (value) {
-        is ConversationEntity.GroupType.Group -> GROUP
-        is ConversationEntity.GroupType.Channel -> CHANNEL
-        is ConversationEntity.GroupType.Meeting -> MEETING
-        is ConversationEntity.GroupType.Unknown -> value.name
-    }
-
-    private const val GROUP = "GROUP"
-    private const val CHANNEL = "CHANNEL"
-    private const val MEETING = "MEETING"
-}

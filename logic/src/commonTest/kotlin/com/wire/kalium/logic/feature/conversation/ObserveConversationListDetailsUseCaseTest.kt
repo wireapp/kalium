@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import app.cash.turbine.test
 import com.wire.kalium.common.error.StorageFailure
+import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -28,7 +29,6 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.user.type.UserTypeInfo
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
@@ -241,62 +241,6 @@ class ObserveConversationListDetailsUseCaseTest {
 
             conversationListUpdates.close()
             awaitComplete()
-        }
-    }
-
-    @Suppress("FunctionNaming")
-    @Test
-    fun givenAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldHaveAnOngoingCall() = runTest {
-        // Given
-        val groupConversation = TestConversation.GROUP()
-        val fetchArchivedConversations = false
-        val groupConversationDetails = ConversationDetails.Group.Regular(
-            groupConversation,
-            isSelfUserMember = true,
-            selfRole = Conversation.Member.Role.Member
-        )
-
-        val firstConversationsList = listOf(groupConversation)
-
-        val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
-        conversationListUpdates.send(firstConversationsList)
-
-        val (_, observeConversationsUseCase) = Arrangement()
-            .withConversationsList(conversationListUpdates)
-            .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
-            .arrange()
-
-        // When, Then
-        observeConversationsUseCase(fetchArchivedConversations).test {
-            assertEquals(true, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
-        }
-    }
-
-    @Test
-    fun givenAConversationWithoutAnOngoingCall_whenFetchingConversationDetails_thenTheConversationShouldNotHaveAnOngoingCall() = runTest {
-        // Given
-        val groupConversation = TestConversation.GROUP()
-        val fetchArchivedConversations = false
-
-        val groupConversationDetails = ConversationDetails.Group.Regular(
-            groupConversation,
-            isSelfUserMember = true,
-            selfRole = Conversation.Member.Role.Member
-        )
-
-        val firstConversationsList = listOf(groupConversation)
-
-        val conversationListUpdates = Channel<List<Conversation>>(Channel.UNLIMITED)
-        conversationListUpdates.send(firstConversationsList)
-
-        val (_, observeConversationsUseCase) = Arrangement()
-            .withConversationsList(conversationListUpdates)
-            .withSuccessfulConversationsDetailsListUpdates(groupConversation, listOf(groupConversationDetails))
-            .arrange()
-
-        // When, Then
-        observeConversationsUseCase(fetchArchivedConversations).test {
-            assertEquals(false, (awaitItem()[0] as ConversationDetails.Group).hasOngoingCall)
         }
     }
 

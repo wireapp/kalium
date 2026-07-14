@@ -59,7 +59,6 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toCrypto
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -77,6 +76,7 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -84,7 +84,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flattenConcat
@@ -110,6 +110,8 @@ internal interface CallRepository {
     fun incomingCallsFlow(): Flow<List<Call>>
     fun outgoingCallsFlow(): Flow<List<Call>>
     fun ongoingCallsFlow(): Flow<List<Call>>
+    fun joinableCallsFlow(): Flow<List<Call>>
+    fun joinableCallsByConversationIdFlow(): Flow<Map<ConversationId, Call>>
     fun establishedCallsFlow(): Flow<List<Call>>
     fun activeCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallConversationId(): ConversationId?
@@ -133,10 +135,9 @@ internal interface CallRepository {
     suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>)
     fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: Map<UserId, List<String>>)
     fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
-    suspend fun updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards: Boolean = true)
     fun setStaleOpenCallsCleanupFinished()
     fun observeStaleOpenCallsCleanupFinished(): Flow<Boolean>
-    suspend fun leavePreviouslyJoinedMlsConferences()
+    suspend fun leaveStaleMlsConferenceIfNeeded(conversationId: ConversationId)
     suspend fun persistMissedCall(conversationId: ConversationId)
     suspend fun joinMlsConference(
         conversationId: ConversationId,
@@ -209,17 +210,34 @@ internal class CallDataSource(
 
     override fun getCallMetadata(conversationId: ConversationId): CallMetadata? = _callMetadataProfile[conversationId]
 
-    override fun callsFlow(): Flow<List<Call>> = callDAO.observeCalls().combineWithCallsMetadata()
+    override fun callsFlow(): Flow<List<Call>> = callMetadataProfileFlow()
 
-    override fun incomingCallsFlow(): Flow<List<Call>> = callDAO.observeIncomingCalls().combineWithCallsMetadata()
-    override fun outgoingCallsFlow(): Flow<List<Call>> = callDAO.observeOutgoingCalls().combineWithCallsMetadata()
+    override fun incomingCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.INCOMING)
+    override fun outgoingCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.STARTED)
 
-    override fun ongoingCallsFlow(): Flow<List<Call>> = callDAO.observeOngoingCalls().combineWithCallsMetadata()
+    override fun ongoingCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.STILL_ONGOING)
 
-    override fun establishedCallsFlow(): Flow<List<Call>> = callDAO.observeEstablishedCalls().combineWithCallsMetadata()
+    override fun joinableCallsFlow(): Flow<List<Call>> =
+        joinableCallsByConversationIdFlow().map { it.values.toList() }
 
-    override fun activeCallsFlow(): Flow<List<Call>> = callDAO.observeActiveCalls().combineWithCallsMetadata()
+    override fun joinableCallsByConversationIdFlow(): Flow<Map<ConversationId, Call>> =
+        callMetadataProfileMapFlow(CallStatus.INCOMING, CallStatus.STILL_ONGOING)
 
+    override fun establishedCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(CallStatus.ANSWERED, CallStatus.ESTABLISHED)
+
+    override fun activeCallsFlow(): Flow<List<Call>> = callMetadataProfileFlow(
+        CallStatus.STARTED,
+        CallStatus.INCOMING,
+        CallStatus.ANSWERED,
+        CallStatus.ESTABLISHED,
+        CallStatus.STILL_ONGOING
+    )
+
+    private val activePersistedCallStatuses = listOf(
+        CallEntity.Status.ESTABLISHED,
+        CallEntity.Status.ANSWERED,
+        CallEntity.Status.STILL_ONGOING
+    )
     private val mutexProvider = MutexProvider<ConversationId>()
 
     // TODO This method needs to be simplified and optimized
@@ -275,37 +293,36 @@ internal class CallDataSource(
         val lastCallStatus = callDAO.getCallStatusByConversationId(conversationId = callEntity.conversationId)
 
         val isOneOnOneCall = callEntity.conversationType == ConversationEntity.Type.ONE_ON_ONE
-        val isGroupCall = callEntity.conversationType == ConversationEntity.Type.GROUP
+        val isGroupCall = callEntity.conversationType.isGroup
 
-        val activeCallStatus = listOf(
-            CallEntity.Status.ESTABLISHED,
-            CallEntity.Status.ANSWERED,
-            CallEntity.Status.STILL_ONGOING
-        )
+        val hasStalePersistedActiveCall = !isCallInCurrentSession && lastCallStatus in activePersistedCallStatuses
+        val currentSessionLastCallStatus = if (hasStalePersistedActiveCall) null else lastCallStatus
 
         callingLogger.i(
             "[CallRepository][createCall] -> lastCallStatus: [$lastCallStatus] |" +
                     " ConversationId: [${conversationId.toLogString()}] " +
                     "| status: [$status] | isCallInCurrentSession: [$isCallInCurrentSession]"
         )
-        if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
-            // Save into metadata
+        if (hasStalePersistedActiveCall) {
+            callingLogger.i("[CallRepository][createCall] -> Closing stale persisted active call")
+            leaveStaleMlsConferenceIfNeeded(conversationId, type)
+            updateCallStatusInDatabaseById(
+                conversationId = conversationId,
+                status = CallStatus.CLOSED
+            )
+        }
+
+        val currentCallStatus = _callMetadataProfile.value[conversationId]?.callStatus
+        if (shouldUpdateCallMetadataFromCreateCall(currentCallStatus, currentSessionLastCallStatus, activePersistedCallStatuses, status)) {
             _callMetadataProfile.update { callMetadataProfile ->
                 callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
             }
-            val callNewStatus = if (isGroupCall) CallStatus.STILL_ONGOING else CallStatus.CLOSED
-            if (lastCallStatus in activeCallStatus) { // LAST CALL ACTIVE
-                callingLogger.i("[CallRepository][createCall] -> Update.1 | callNewStatus: [$callNewStatus]")
-                // Update database
-                updateCallStatusById(
-                    conversationId = conversationId,
-                    status = callNewStatus
-                )
-            }
+        }
 
-            if ((lastCallStatus !in activeCallStatus && isGroupCall) || isOneOnOneCall) {
+        if (status == CallStatus.INCOMING && !isCallInCurrentSession) {
+            if ((currentSessionLastCallStatus !in activePersistedCallStatuses && isGroupCall) || isOneOnOneCall) {
                 callingLogger.i(
-                    "[CallRepository][createCall] -> Update.2 | lastCallStatus: [$lastCallStatus] " +
+                    "[CallRepository][createCall] -> Update.2 | lastCallStatus: [$currentSessionLastCallStatus] " +
                             "| isGroupCall: [$isGroupCall] | isOneOnOneCall: [$isOneOnOneCall]"
                 )
 
@@ -316,21 +333,13 @@ internal class CallDataSource(
             }
         } else {
             callingLogger.i(
-                "[CallRepository][createCall] -> else | lastCallStatus: [$lastCallStatus] | status: [$status]"
+                "[CallRepository][createCall] -> else | lastCallStatus: [$currentSessionLastCallStatus]" +
+                        " | status: [$status]"
             )
-            if (lastCallStatus == callMapper.toCallEntityStatus(status)) {
+            if (currentSessionLastCallStatus == callMapper.toCallEntityStatus(status)) {
                 callingLogger.i("[CallRepository][createCall] -> Update Call with same status")
-                // Update the metadata
-                _callMetadataProfile.update { callMetadataProfile ->
-                    callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
-                }
-            } else if (lastCallStatus !in activeCallStatus || (status == CallStatus.STARTED)) {
+            } else if (currentSessionLastCallStatus !in activePersistedCallStatuses || (status == CallStatus.STARTED)) {
                 callingLogger.i("[CallRepository][createCall] -> Insert Call")
-                // Save into metadata
-                _callMetadataProfile.update { callMetadataProfile ->
-                    callMetadataProfile.plus(conversationId = conversationId, metadata = metadata)
-                }
-
                 // Save into database
                 wrapStorageRequest {
                     callDAO.insertCall(call = callEntity)
@@ -339,7 +348,27 @@ internal class CallDataSource(
         }
     }
 
+    private suspend fun leaveStaleMlsConferenceIfNeeded(conversationId: ConversationId, type: ConversationTypeForCall) {
+        if (type == ConversationTypeForCall.ConferenceMls) {
+            leaveMlsConference(conversationId)
+        }
+    }
+
     override suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus) {
+        updateCallStatusInDatabaseById(conversationId, status)
+
+        _callMetadataProfile.update(conversationId) { callMetadata ->
+            callMetadata.copy(
+                callStatus = status,
+                establishedTime = when (status) {
+                    CallStatus.ESTABLISHED -> DateTimeUtil.currentIsoDateTimeString()
+                    else -> callMetadata.establishedTime
+                },
+            )
+        }
+    }
+
+    private suspend fun updateCallStatusInDatabaseById(conversationId: ConversationId, status: CallStatus) {
         // Update Call in Database
         wrapStorageRequest {
             callDAO.updateLastCallStatusByConversationId(
@@ -353,16 +382,6 @@ internal class CallDataSource(
                         " ConversationId: [${conversationId.value.obfuscateId()}" +
                         "@${conversationId.domain.obfuscateDomain()}]" +
                         " " + "| status: [$status]"
-            )
-        }
-
-        _callMetadataProfile.update(conversationId) { callMetadata ->
-            callMetadata.copy(
-                callStatus = status,
-                establishedTime = when (status) {
-                    CallStatus.ESTABLISHED -> DateTimeUtil.currentIsoDateTimeString()
-                    else -> callMetadata.establishedTime
-                },
             )
         }
     }
@@ -397,7 +416,7 @@ internal class CallDataSource(
     }
 
     override suspend fun updateIsCbrEnabled(isCbrEnabled: Boolean) {
-        val conversationId = callDAO.getEstablishedCall().conversationId.toModel()
+        val conversationId = establishedCallsFlow().first().firstOrNull()?.conversationId ?: return
         _callMetadataProfile.update(conversationId) { callMetadata ->
             callMetadata.copy(isCbrEnabled = isCbrEnabled)
         }
@@ -550,16 +569,6 @@ internal class CallDataSource(
             )
         )
 
-    override suspend fun updateOpenCallsToClosedStatus(setStaleOpenCallsCleanupFinishedAfterwards: Boolean) {
-        leavePreviouslyJoinedMlsConferences()
-        val count = callDAO.observeEstablishedCalls().first().size
-        callingLogger.i("Updating open calls to closed status if there are any $count")
-        callDAO.updateOpenCallsToClosedStatus()
-        if (setStaleOpenCallsCleanupFinishedAfterwards) {
-            setStaleOpenCallsCleanupFinished()
-        }
-    }
-
     override fun setStaleOpenCallsCleanupFinished() {
         staleOpenCallsCleanupFinishedFlow.value = true
         callingLogger.i("Stale open calls cleanup is done")
@@ -567,33 +576,48 @@ internal class CallDataSource(
     override fun observeStaleOpenCallsCleanupFinished(): Flow<Boolean> = staleOpenCallsCleanupFinishedFlow
 
     override suspend fun establishedCallConversationId(): ConversationId? =
-        callDAO
-            .observeEstablishedCalls()
-            .combineWithCallsMetadata()
+        establishedCallsFlow()
             .first()
             .firstOrNull()
             ?.conversationId
 
-    private fun Flow<List<CallEntity>>.combineWithCallsMetadata(): Flow<List<Call>> =
-        this.combine(_callMetadataProfile) { calls, callMetadataProfile ->
-            calls.map { callEntity ->
-                callMapper.toCall(callEntity = callEntity, metadata = callMetadataProfile[callEntity.conversationId.toModel()])
-            }
+    private fun callMetadataProfileFlow(vararg statuses: CallStatus): Flow<List<Call>> =
+        callMetadataProfileMapFlow(*statuses)
+            .map { it.values.toList() }
+            .distinctUntilChanged()
+
+    private fun callMetadataProfileMapFlow(vararg statuses: CallStatus): Flow<Map<ConversationId, Call>> =
+        _callMetadataProfile.map { callMetadataProfile ->
+            val statusFilter = statuses.toSet()
+            callMetadataProfile
+                .filterValues { metadata -> statusFilter.isEmpty() || metadata.callStatus in statusFilter }
+                .mapValues { (conversationId, metadata) -> metadata.toCall(conversationId) }
+        }.distinctUntilChanged()
+
+    override suspend fun leaveStaleMlsConferenceIfNeeded(conversationId: ConversationId) {
+        if (_callMetadataProfile.value.containsKey(conversationId)) {
+            callingLogger.i(
+                "[CallRepository][leaveStaleMlsConferenceIfNeeded] -> Skipping current session call for " +
+                        conversationId.toLogString()
+            )
+            return
         }
 
-    private fun Flow<CallEntity?>.combineWithCallMetadata(): Flow<Call?> =
-        this.map { listOfNotNull(it) } // create a list to re-use combineWithCallsMetadata
-            .combineWithCallsMetadata()
-            .map { it.firstOrNull() } // get the call from the list or null if there is no call
-
-    override suspend fun leavePreviouslyJoinedMlsConferences() {
-        callingLogger.i("Leaving previously joined MLS conferences")
-
-        callDAO.observeEstablishedCalls()
-            .first()
-            .filter { it.type == CallEntity.Type.MLS_CONFERENCE }
-            .forEach {
-                leaveMlsConference(it.conversationId.toModel())
+        conversationRepository.getConversationProtocolInfo(conversationId)
+            .onSuccess { protocolInfo ->
+                if (protocolInfo is Conversation.ProtocolInfo.MLS) {
+                    callingLogger.i(
+                        "[CallRepository][leaveStaleMlsConferenceIfNeeded] -> Leaving stale MLS conference for " +
+                                conversationId.toLogString()
+                    )
+                    leaveMlsConference(conversationId)
+                }
+            }
+            .onFailure {
+                callingLogger.w(
+                    "[CallRepository][leaveStaleMlsConferenceIfNeeded] -> Could not get protocol for " +
+                            conversationId.toLogString()
+                )
             }
     }
 
@@ -690,6 +714,7 @@ internal class CallDataSource(
             epochInfo
         }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>> =
         conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
@@ -742,8 +767,19 @@ internal class CallDataSource(
     }
 
     override fun observeLastActiveCallByConversationId(conversationId: ConversationId): Flow<Call?> =
-        callDAO.observeLastActiveCallByConversationId(callMapper.fromConversationIdToQualifiedIDEntity(conversationId))
-            .combineWithCallMetadata()
+        _callMetadataProfile.map { callMetadataProfile ->
+            callMetadataProfile[conversationId]
+                ?.takeIf { metadata ->
+                    metadata.callStatus in listOf(
+                        CallStatus.STARTED,
+                        CallStatus.INCOMING,
+                        CallStatus.ANSWERED,
+                        CallStatus.ESTABLISHED,
+                        CallStatus.STILL_ONGOING
+                    )
+                }
+                ?.toCall(conversationId)
+        }.distinctUntilChanged()
 
     override fun updateCallQualityData(conversationId: ConversationId, callQualityData: CallQualityData) =
         _callQualityDataProfile.update { it.plus(conversationId, callQualityData) }
@@ -762,3 +798,29 @@ private inline fun MutableStateFlow<CallMetadataProfile>.update(conversationId: 
     updateAndGet {
         it[conversationId]?.let { currentMetadata -> it.plus(conversationId, function(currentMetadata)) } ?: it
     }[conversationId]
+
+private fun CallMetadata.toCall(conversationId: ConversationId): Call = Call(
+    conversationId = conversationId,
+    status = callStatus,
+    isMuted = isMuted,
+    isCameraOn = isCameraOn,
+    isCbrEnabled = isCbrEnabled,
+    callerId = callerId,
+    conversationName = conversationName,
+    conversationType = conversationType,
+    callerName = callerName,
+    callerTeamName = callerTeamName,
+    establishedTime = establishedTime,
+    participants = getFullParticipants(),
+    maxParticipants = maxParticipants
+)
+
+private fun shouldUpdateCallMetadataFromCreateCall(
+    currentCallStatus: CallStatus?,
+    currentSessionLastCallStatus: CallEntity.Status?,
+    activeCallStatus: List<CallEntity.Status>,
+    status: CallStatus
+): Boolean =
+    currentCallStatus !in listOf(CallStatus.ANSWERED, CallStatus.ESTABLISHED) ||
+            currentSessionLastCallStatus !in activeCallStatus ||
+            status == CallStatus.STARTED

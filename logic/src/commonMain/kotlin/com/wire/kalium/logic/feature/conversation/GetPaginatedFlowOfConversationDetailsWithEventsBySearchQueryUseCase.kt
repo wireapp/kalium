@@ -19,12 +19,16 @@ package com.wire.kalium.logic.feature.conversation
 
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetailsWithEvents
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.ConversationQueryConfig
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 
 /**
  * This use case will observe and return a flow of paginated searched conversation details with last message and unread events counts.
@@ -35,18 +39,28 @@ import kotlinx.coroutines.flow.flowOn
 public class GetPaginatedFlowOfConversationDetailsWithEventsBySearchQueryUseCase internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val conversationRepository: ConversationRepository,
+    private val callRepository: CallRepository,
 ) {
     public suspend operator fun invoke(
         queryConfig: ConversationQueryConfig,
         pagingConfig: PagingConfig,
         startingOffset: Long,
         strictMlsFilter: Boolean
-    ): Flow<PagingData<ConversationDetailsWithEvents>> = conversationRepository.extensions
-        .getPaginatedConversationDetailsWithEventsBySearchQuery(
+    ): Flow<PagingData<ConversationDetailsWithEvents>> {
+        val joinableCallConversationIdsFlow = callRepository.joinableCallsByConversationIdFlow()
+            .map { joinableCallsByConversationId -> joinableCallsByConversationId.keys.toSet() }
+            .distinctUntilChanged()
+            .map { joinableCallConversationIds -> joinableCallConversationIds.toList() }
+        val initialJoinableCallConversationIds = joinableCallConversationIdsFlow.first()
+
+        return conversationRepository.extensions.getPaginatedConversationDetailsWithEventsBySearchQuery(
             queryConfig = queryConfig,
             pagingConfig = pagingConfig,
             startingOffset = startingOffset,
-            strictMlsFilter = strictMlsFilter
+            strictMlsFilter = strictMlsFilter,
+            ongoingCallConversationIds = initialJoinableCallConversationIds,
+            ongoingCallConversationIdsFlow = joinableCallConversationIdsFlow
         )
-        .flowOn(dispatcher.io)
+            .flowOn(dispatcher.io)
+    }
 }
