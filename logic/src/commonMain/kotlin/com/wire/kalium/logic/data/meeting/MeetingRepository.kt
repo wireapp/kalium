@@ -27,6 +27,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.meeting.MeetingApi
 import com.wire.kalium.persistence.dao.meeting.MeetingDao
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity
+import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -36,6 +37,7 @@ import kotlin.time.Duration.Companion.days
 
 internal interface MeetingRepository {
     suspend fun fetchAndPersistMeetings(
+        generateOccurrencesFrom: Instant = occurrenceOutdatedThreshold(),
         generateOccurrencesUntil: Instant = occurrenceGenerationUntil()
     ): Either<CoreFailure, List<MeetingEntity>>
 
@@ -50,20 +52,26 @@ internal class MeetingDataSource(
     private val meetingApi: MeetingApi,
     private val meetingMapper: MeetingMapper = MapperProvider.meetingMapper()
 ) : MeetingRepository {
-    override suspend fun fetchAndPersistMeetings(generateOccurrencesUntil: Instant): Either<CoreFailure, List<MeetingEntity>> =
+    override suspend fun fetchAndPersistMeetings(
+        generateOccurrencesFrom: Instant,
+        generateOccurrencesUntil: Instant
+    ): Either<CoreFailure, List<MeetingEntity>> =
         wrapApiRequest {
             meetingApi.fetchMeetings()
         }.flatMap { meetings ->
             wrapStorageRequest {
                 meetings.map { meetingMapper.fromApiToDao(it) }
-                    .also { meetingDAO.upsertMeetings(it, generateOccurrencesUntil) }
+                    .also { meetingDAO.upsertMeetings(it, GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)) }
             }
         }
 
-    override suspend fun syncMeetingOccurrences(removeOlderThan: Instant, generateOccurrencesUntil: Instant): Either<CoreFailure, Unit> =
+    override suspend fun syncMeetingOccurrences(
+        removeOlderThan: Instant,
+        generateOccurrencesUntil: Instant
+    ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             meetingDAO.removeOutdatedMeetings(removeOlderThan)
-            meetingDAO.insertMissingOccurrences(generateOccurrencesUntil)
+            meetingDAO.insertMissingOccurrences(from = removeOlderThan, until = generateOccurrencesUntil)
         }
 }
 

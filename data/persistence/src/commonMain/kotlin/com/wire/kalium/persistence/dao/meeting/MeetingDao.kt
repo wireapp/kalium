@@ -22,21 +22,22 @@ import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
 import com.wire.kalium.persistence.Meeting
 import com.wire.kalium.persistence.MeetingsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
 interface MeetingDao {
-    suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesUntil: Instant)
+    suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesWindow: GenerationLimit.Window)
     suspend fun removeOutdatedMeetings(olderThan: Instant)
-    suspend fun insertMissingOccurrences(until: Instant)
+    suspend fun insertMissingOccurrences(from: Instant, until: Instant)
 }
 
 internal class MeetingDaoImpl(
     private val meetingsQueries: MeetingsQueries,
     private val writeDispatcher: WriteDispatcher,
 ) : MeetingDao {
-    override suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesUntil: Instant) {
+    override suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesWindow: GenerationLimit.Window) {
         if (meetings.isEmpty()) return
 
         withContext(writeDispatcher.value) {
@@ -59,7 +60,7 @@ internal class MeetingDaoImpl(
                 }
                 meetingsQueries.insertGeneratedOccurrences(
                     meetings = meetings,
-                    limit = MeetingOccurrencesGenerator.GenerationLimit.Until(generateOccurrencesUntil),
+                    limit = generateOccurrencesWindow,
                     shouldRegenerateOccurrences = meetings.associate {
                         it.meetingId to (it.meetingId in meetingIdsRequiringOccurrenceRefresh)
                     },
@@ -70,17 +71,20 @@ internal class MeetingDaoImpl(
 
     override suspend fun removeOutdatedMeetings(olderThan: Instant) {
         withContext(writeDispatcher.value) {
-            meetingsQueries.removeOutdatedMeetings(outdatedThreshold = olderThan)
+            meetingsQueries.transaction {
+                meetingsQueries.removeOutdatedMeetings(outdatedThreshold = olderThan)
+                meetingsQueries.removeOutdatedMeetingOccurrences(outdatedThreshold = olderThan)
+            }
         }
     }
 
-    override suspend fun insertMissingOccurrences(until: Instant) {
+    override suspend fun insertMissingOccurrences(from: Instant, until: Instant) {
         withContext(writeDispatcher.value) {
             meetingsQueries.transaction {
                 meetingsQueries.selectRecurringMeetings(MeetingMapper::fromViewToModel).awaitAsList().let { meetings ->
                     meetingsQueries.insertGeneratedOccurrences(
                         meetings = meetings,
-                        limit = MeetingOccurrencesGenerator.GenerationLimit.Until(until),
+                        limit = MeetingOccurrencesGenerator.GenerationLimit.Window(from = from, until = until),
                         shouldRegenerateOccurrences = meetings.associate { it.meetingId to false },
                     )
                 }

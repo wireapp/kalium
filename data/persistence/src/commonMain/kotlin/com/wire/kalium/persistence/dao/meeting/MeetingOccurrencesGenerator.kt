@@ -32,9 +32,10 @@ object MeetingOccurrencesGenerator {
         limit: GenerationLimit,
     ): List<MeetingOccurrenceEntity> {
         if (meetings.isEmpty()) return emptyList()
-        val maxDateLimit = (limit as? GenerationLimit.Until)?.until
+        val maxDateLimit = (limit as? GenerationLimit.Window)?.until
+        val minDateLimit = (limit as? GenerationLimit.Window)?.from
         val totalCountToGenerate = (limit as? GenerationLimit.Count)?.totalCount
-        val statesList = meetings.initialGeneratorStates(lastGeneratedStarts)
+        val statesList = meetings.initialGeneratorStates(lastGeneratedStarts, minDateLimit)
         return generateOccurrences(statesList, maxDateLimit, totalCountToGenerate)
     }
 
@@ -54,15 +55,18 @@ object MeetingOccurrencesGenerator {
     }
 
     private fun List<MeetingEntity>.initialGeneratorStates(
-        lastGeneratedStarts: Map<QualifiedIDEntity, Instant>
+        lastGeneratedStarts: Map<QualifiedIDEntity, Instant>,
+        minDateLimit: Instant?,
     ): MutableList<MeetingGeneratorState> =
         this.mapNotNull { meeting ->
-            meeting.toGeneratorState(lastGeneratedStarts[meeting.meetingId])
+            meeting.toGeneratorState(lastGeneratedStarts[meeting.meetingId], minDateLimit)
         }.toMutableList()
 
-    private fun MeetingEntity.toGeneratorState(lastStart: Instant?): MeetingGeneratorState? {
+    private fun MeetingEntity.toGeneratorState(lastStart: Instant?, minDateLimit: Instant?): MeetingGeneratorState? {
         val interval = recurrence?.interval?.toInt() ?: 1
-        val firstCandidateStart = firstCandidateStart(lastStart, interval)
+        val firstCandidateStart = firstCandidateStart(lastStart, interval)?.let {
+            advanceUntilAfter(candidateStart = it, minDateLimit = minDateLimit, interval = interval)
+        }
         return if (firstCandidateStart == null || isBeyondSeriesEnd(firstCandidateStart)) {
             null
         } else {
@@ -123,6 +127,25 @@ object MeetingOccurrencesGenerator {
         }
     }
 
+    private fun MeetingEntity.advanceUntilAfter(candidateStart: Instant, minDateLimit: Instant?, interval: Int): Instant? {
+        val duration = endTime - startTime
+        val recurrence = recurrence
+        var nextCandidateStart: Instant? = candidateStart
+        while (minDateLimit != null && nextCandidateStart != null && nextCandidateStart + duration <= minDateLimit) {
+            nextCandidateStart = if (recurrence != null) {
+                val advancedStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval)
+                if (advancedStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(advancedStart)) {
+                    advancedStart
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
+        }
+        return nextCandidateStart
+    }
+
     private fun MeetingEntity.isBeyondSeriesEnd(candidateStart: Instant): Boolean =
         recurrence?.until?.let { candidateStart > it } ?: false
 
@@ -144,6 +167,6 @@ object MeetingOccurrencesGenerator {
 
     sealed interface GenerationLimit {
         data class Count(val totalCount: Int) : GenerationLimit
-        data class Until(val until: Instant) : GenerationLimit
+        data class Window(val from: Instant, val until: Instant) : GenerationLimit
     }
 }

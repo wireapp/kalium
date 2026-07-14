@@ -53,9 +53,10 @@ class MeetingOccurrencesGeneratorTest {
     }
 
     @Test
-    fun givenUntilLimit_whenGeneratingOccurrences_thenReturnsOccurrencesUntilLimitInclusively() {
+    fun givenWindowLimit_whenGeneratingOccurrences_thenReturnsOccurrencesUntilLimitInclusively() {
+        val from = MEETING.startTime - 1.days
         val until = MEETING.startTime.plus(2.days)
-        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Until(until))
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Window(from = from, until = until))
 
         assertContentEquals(
             listOf(MEETING.startTime, MEETING.startTime.plus(1.days), until),
@@ -64,6 +65,18 @@ class MeetingOccurrencesGeneratorTest {
         assertContentEquals(
             occurrences.map { it.occurrenceStart + 1.hours },
             occurrences.map { it.occurrenceEnd }
+        )
+    }
+
+    @Test
+    fun givenWindowLimitWithFrom_whenGeneratingOccurrences_thenReturnsOccurrencesAfterFrom() {
+        val from = MEETING.startTime.plus(1.days) + 1.hours
+        val until = MEETING.startTime.plus(3.days)
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Window(from = from, until = until))
+
+        assertContentEquals(
+            listOf(MEETING.startTime.plus(2.days), MEETING.startTime.plus(3.days)),
+            occurrences.map { it.occurrenceStart }
         )
     }
 

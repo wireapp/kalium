@@ -83,6 +83,10 @@ WHERE (
     AND recurrence_end_date <= :outdatedThreshold
 );
 
+removeOutdatedMeetingOccurrences:
+DELETE FROM MeetingOccurrence
+WHERE occurrence_end <= :outdatedThreshold;
+
 selectRecurringMeetings:
 SELECT *
 FROM Meeting
