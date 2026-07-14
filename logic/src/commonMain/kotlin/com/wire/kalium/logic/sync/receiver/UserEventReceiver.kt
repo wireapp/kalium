@@ -83,7 +83,7 @@ internal class UserEventReceiverImpl internal constructor(
             is Event.User.LegalHoldRequest -> legalHoldRequestHandler.handle(event)
             is Event.User.LegalHoldEnabled -> legalHoldHandler.handleEnable(event)
             is Event.User.LegalHoldDisabled -> legalHoldHandler.handleDisable(event)
-            is Event.User.SessionRefreshSuggested -> handleSessionRefreshSuggested(event)
+            is Event.User.SessionRefreshSuggested -> handleSessionRefreshSuggested(event, deliveryInfo)
         }
     }
 
@@ -192,10 +192,21 @@ internal class UserEventReceiverImpl internal constructor(
         }
     }
 
-    private suspend fun handleSessionRefreshSuggested(event: Event.User.SessionRefreshSuggested): Either<CoreFailure, Unit> {
+    private suspend fun handleSessionRefreshSuggested(
+        event: Event.User.SessionRefreshSuggested,
+        deliveryInfo: EventDeliveryInfo
+    ): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
         return sessionRefreshSuggestedEventHandler.handle(event)
             .onSuccess { logger.logSuccess() }
-            .onFailure { logger.logFailure(it) }
+            .onFailure {
+                logger.logComplete(
+                    if (deliveryInfo.source == EventSource.PENDING) EventLoggingStatus.SKIPPED else EventLoggingStatus.FAILURE,
+                    arrayOf("errorInfo" to it)
+                )
+            }
+            .flatMapLeft {
+                if (deliveryInfo.source == EventSource.PENDING) Either.Right(Unit) else Either.Left(it)
+            }
     }
 }
