@@ -46,7 +46,7 @@ data object MeetingMapper {
         endTime = endDate,
         trial = trial,
         recurrence = when {
-            recurrenceFrequency != null && recurrenceInterval != null -> MeetingEntity.RecurrenceEntity(
+            recurrenceFrequency != null -> MeetingEntity.RecurrenceEntity(
                 frequency = recurrenceFrequency,
                 interval = recurrenceInterval,
                 until = recurrenceEndDate

@@ -39,6 +39,18 @@ class MeetingOccurrencesGeneratorTest {
     }
 
     @Test
+    fun givenRecurringMeetingWithoutInterval_whenGeneratingOccurrences_thenUsesDefaultInterval() {
+        val meeting = newMeeting(recurrence = MeetingEntity.RecurrenceEntity(MeetingEntity.RecurrenceEntity.Frequency.DAILY, null, null))
+
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = 2), meeting = meeting)
+
+        assertContentEquals(
+            listOf(meeting.startTime, meeting.startTime.plus(1.days)),
+            occurrences.map { it.occurrenceStart }
+        )
+    }
+
+    @Test
     fun givenZeroCountLimit_whenGeneratingOccurrences_thenReturnsNoOccurrences() {
         val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = 0))
 
@@ -96,7 +108,8 @@ class MeetingOccurrencesGeneratorTest {
     private fun generateOccurrences(
         limit: MeetingOccurrencesGenerator.GenerationLimit,
         lastGeneratedStarts: Map<QualifiedIDEntity, Instant> = emptyMap(),
-    ) = MeetingOccurrencesGenerator.generate(meetings = listOf(MEETING), lastGeneratedStarts = lastGeneratedStarts, limit = limit)
+        meeting: MeetingEntity = MEETING,
+    ) = MeetingOccurrencesGenerator.generate(meetings = listOf(meeting), lastGeneratedStarts = lastGeneratedStarts, limit = limit)
 }
 
 private val MEETING = newMeeting(recurrence = MeetingEntity.RecurrenceEntity(MeetingEntity.RecurrenceEntity.Frequency.DAILY, 1, null))

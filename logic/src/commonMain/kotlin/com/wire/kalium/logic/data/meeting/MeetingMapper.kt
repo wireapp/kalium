@@ -27,35 +27,49 @@ import com.wire.kalium.persistence.dao.meeting.MeetingEntity
 import com.wire.kalium.persistence.dao.meeting.MeetingEntity.RecurrenceEntity
 
 internal interface MeetingMapper {
-    fun fromApiToDao(meeting: MeetingDTO): MeetingEntity
-    fun fromApiToDao(recurrence: MeetingRecurrenceDTO): RecurrenceEntity
-    fun fromApiToDao(frequency: MeetingFrequencyDTO): RecurrenceEntity.Frequency
+    fun fromApiToDao(meeting: MeetingDTO): MeetingEntity?
+    fun fromApiToDao(recurrence: MeetingRecurrenceDTO): RecurrenceEntity?
 }
 
 internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider.idMapper()) : MeetingMapper {
-    override fun fromApiToDao(meeting: MeetingDTO): MeetingEntity = MeetingEntity(
-        meetingId = idMapper.fromApiToDao(meeting.meetingId),
-        conversationId = idMapper.fromApiToDao(meeting.conversationId),
-        creatorId = idMapper.fromApiToDao(meeting.creatorId),
-        createdAt = meeting.createdAt,
-        updatedAt = meeting.updatedAt,
-        title = meeting.title,
-        startTime = meeting.startTime,
-        endTime = meeting.endTime,
-        trial = meeting.trial,
-        recurrence = meeting.recurrence?.let { fromApiToDao(it) }
-    )
+    override fun fromApiToDao(meeting: MeetingDTO): MeetingEntity? {
+        val recurrence = meeting.recurrence?.let { fromApiToDao(it) }
+        return if (meeting.recurrence != null && recurrence == null) {
+            null // it means the recurrence is not supported, so the meeting is ignored
+        } else {
+            MeetingEntity(
+                meetingId = idMapper.fromApiToDao(meeting.meetingId),
+                conversationId = idMapper.fromApiToDao(meeting.conversationId),
+                creatorId = idMapper.fromApiToDao(meeting.creatorId),
+                createdAt = meeting.createdAt,
+                updatedAt = meeting.updatedAt,
+                title = meeting.title,
+                startTime = meeting.startTime,
+                endTime = meeting.endTime,
+                trial = meeting.trial,
+                recurrence = recurrence
+            )
+        }
+    }
 
-    override fun fromApiToDao(recurrence: MeetingRecurrenceDTO): RecurrenceEntity = RecurrenceEntity(
-        frequency = fromApiToDao(recurrence.frequency),
-        interval = recurrence.interval,
-        until = recurrence.until
-    )
+    override fun fromApiToDao(recurrence: MeetingRecurrenceDTO): RecurrenceEntity? = recurrence.frequency.toDaoFrequency()
+        ?.takeIf { recurrence.frequency to (recurrence.interval ?: 1) in SUPPORTED_RECURRENCES }
+        ?.let { RecurrenceEntity(frequency = it, interval = recurrence.interval, until = recurrence.until) }
 
-    override fun fromApiToDao(frequency: MeetingFrequencyDTO): RecurrenceEntity.Frequency = when (frequency) {
-        MeetingFrequencyDTO.DAILY -> RecurrenceEntity.Frequency.DAILY
-        MeetingFrequencyDTO.WEEKLY -> RecurrenceEntity.Frequency.WEEKLY
-        MeetingFrequencyDTO.MONTHLY -> RecurrenceEntity.Frequency.MONTHLY
-        MeetingFrequencyDTO.YEARLY -> RecurrenceEntity.Frequency.YEARLY
+    private fun MeetingFrequencyDTO.toDaoFrequency(): RecurrenceEntity.Frequency? =
+        when (this) {
+            MeetingFrequencyDTO.DAILY -> RecurrenceEntity.Frequency.DAILY
+            MeetingFrequencyDTO.WEEKLY -> RecurrenceEntity.Frequency.WEEKLY
+            MeetingFrequencyDTO.MONTHLY,
+            MeetingFrequencyDTO.YEARLY -> null
+        }
+
+    private companion object {
+        val SUPPORTED_RECURRENCES = listOf(
+            MeetingFrequencyDTO.DAILY to 1L,    // daily
+            MeetingFrequencyDTO.WEEKLY to 1L,   // weekly
+            MeetingFrequencyDTO.WEEKLY to 2L,   // every 2 weeks
+            MeetingFrequencyDTO.WEEKLY to 4L    // every 4 weeks
+        )
     }
 }

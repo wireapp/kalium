@@ -106,7 +106,7 @@ object MeetingOccurrencesGenerator {
 
     private fun MeetingGeneratorState.nextState(): MeetingGeneratorState? {
         val recurrence = meeting.recurrence ?: return null
-        val interval = recurrence.interval.toInt()
+        val interval = recurrence.interval?.toInt() ?: 1
         val nextStart = nextCandidateStart.plusPeriod(recurrence.frequency, interval)
         return if (nextStart > nextCandidateStart && recurrence.isBeforeSeriesEnd(nextStart)) {
             copy(nextCandidateStart = nextStart)
@@ -154,8 +154,6 @@ object MeetingOccurrencesGenerator {
         val period = when (frequency) {
             MeetingEntity.RecurrenceEntity.Frequency.DAILY -> DateTimePeriod(days = interval)
             MeetingEntity.RecurrenceEntity.Frequency.WEEKLY -> DateTimePeriod(days = interval * 7)
-            MeetingEntity.RecurrenceEntity.Frequency.MONTHLY -> DateTimePeriod(months = interval)
-            MeetingEntity.RecurrenceEntity.Frequency.YEARLY -> DateTimePeriod(years = interval)
         }
         return this.plus(period, timeZone)
     }

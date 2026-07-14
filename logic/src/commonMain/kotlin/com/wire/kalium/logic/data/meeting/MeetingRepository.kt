@@ -60,8 +60,15 @@ internal class MeetingDataSource(
             meetingApi.fetchMeetings()
         }.flatMap { meetings ->
             wrapStorageRequest {
-                meetings.map { meetingMapper.fromApiToDao(it) }
-                    .also { meetingDAO.upsertMeetings(it, GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)) }
+                meetings.mapNotNull { meetingMapper.fromApiToDao(it) }
+                    .also { meetingsToPersist ->
+                        if (meetingsToPersist.isNotEmpty()) {
+                            meetingDAO.upsertMeetings(
+                                meetings = meetingsToPersist,
+                                generateOccurrencesWindow = GenerationLimit.Window(generateOccurrencesFrom, generateOccurrencesUntil)
+                            )
+                        }
+                    }
             }
         }
 
