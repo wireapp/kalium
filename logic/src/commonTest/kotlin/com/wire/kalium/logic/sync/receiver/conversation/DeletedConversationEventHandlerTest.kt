@@ -34,8 +34,6 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
-import com.wire.kalium.logic.util.shouldFail
-import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.messaging.hooks.ConversationDeleteEventData
 import com.wire.kalium.messaging.hooks.NoOpPersistenceEventHookNotifier
 import com.wire.kalium.messaging.hooks.ConversationLastReadEventData
@@ -65,7 +63,7 @@ class DeletedConversationEventHandlerTest {
             withDeletingConversationSucceeding()
         }
 
-        eventHandler.handle(arrangement.transactionContext, event).shouldSucceed()
+        eventHandler.handle(arrangement.transactionContext, event)
 
         with(arrangement) {
             verifySuspend(VerifyMode.not) {
@@ -75,14 +73,14 @@ class DeletedConversationEventHandlerTest {
     }
 
     @Test
-    fun givenConversationLookupFails_whenHandlingDeleteEvent_thenFailureIsPropagated() = runTest {
+    fun givenConversationLookupFails_whenHandlingDeleteEvent_thenConversationIsNotDeleted() = runTest {
         val event = TestEvent.deletedConversation()
         val failure = StorageFailure.Generic(RuntimeException("lookup failed"))
         val (arrangement, eventHandler) = arrange {
             withGetConversationByIdFailure(failure)
         }
 
-        eventHandler.handle(arrangement.transactionContext, event).shouldFail()
+        eventHandler.handle(arrangement.transactionContext, event)
 
         verifySuspend(VerifyMode.not) {
             arrangement.deleteConversation(any(), any())
@@ -100,7 +98,7 @@ class DeletedConversationEventHandlerTest {
             withDeletingConversationSucceeding()
         }
 
-        eventHandler.handle(arrangement.transactionContext, event).shouldSucceed()
+        eventHandler.handle(arrangement.transactionContext, event)
 
         with(arrangement) {
             verifySuspend(VerifyMode.exactly(1)) {
@@ -132,7 +130,7 @@ class DeletedConversationEventHandlerTest {
             withDeletingConversationFailing()
         }
 
-        eventHandler.handle(arrangement.transactionContext, event).shouldFail()
+        eventHandler.handle(arrangement.transactionContext, event)
 
         with(arrangement) {
             verifySuspend(VerifyMode.not) {

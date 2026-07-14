@@ -18,9 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.StorageFailure
-import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.common.functional.onFailure
 import com.wire.kalium.common.functional.onSuccess
@@ -43,7 +41,7 @@ internal interface DeletedConversationEventHandler {
     suspend fun handle(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.DeletedConversation
-    ): Either<CoreFailure, Unit>
+    )
 }
 
 internal class DeletedConversationEventHandlerImpl(
@@ -58,9 +56,9 @@ internal class DeletedConversationEventHandlerImpl(
     override suspend fun handle(
         transactionContext: CryptoTransactionContext,
         event: Event.Conversation.DeletedConversation
-    ): Either<CoreFailure, Unit> {
+    ) {
         val logger = kaliumLogger.createEventProcessingLogger(event)
-        val result: Either<CoreFailure, Unit> = conversationRepository.getConversationById(event.conversationId)
+        conversationRepository.getConversationById(event.conversationId)
             .fold(
                 { failure ->
                     if (failure is StorageFailure.DataNotFound) {
@@ -68,10 +66,8 @@ internal class DeletedConversationEventHandlerImpl(
                             EventLoggingStatus.SKIPPED,
                             arrayOf("info" to "Conversation delete event was already handled")
                         )
-                        Either.Right(Unit)
                     } else {
                         logger.logFailure(failure)
-                        Either.Left(failure)
                     }
                 },
                 { conversation ->
@@ -90,6 +86,5 @@ internal class DeletedConversationEventHandlerImpl(
             ConversationDeleteEventData(event.conversationId),
             selfUserId
         )
-        return result
     }
 }

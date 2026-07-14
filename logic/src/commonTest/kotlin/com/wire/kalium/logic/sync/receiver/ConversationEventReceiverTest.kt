@@ -134,22 +134,6 @@ class ConversationEventReceiverTest {
     }
 
     @Test
-    fun givenDeletedConversationEvent_whenHandlerFails_thenFailureIsPropagated() = runTest {
-        val deletedConversationEvent = TestEvent.deletedConversation()
-        val (arrangement, conversationEventReceiver) = Arrangement().arrange {
-            withDeletedConversationEventResult(Either.Left(failure))
-        }
-
-        val result = conversationEventReceiver.onEvent(
-            arrangement.transactionContext,
-            deletedConversationEvent,
-            TestEvent.liveDeliveryInfo
-        )
-
-        result.shouldFail()
-    }
-
-    @Test
     fun givenMemberJoinEvent_whenOnEventInvoked_thenMemberJoinHandlerShouldBeCalled() = runTest {
         val memberJoinEvent = TestEvent.memberJoin()
 
@@ -512,7 +496,7 @@ class ConversationEventReceiverTest {
             everySuspend { newMessageEventHandler.handleNewProteusMessage(any(), any(), any()) } returns Unit
             everySuspend { newMessageEventHandler.handleNewMLSMessage(any(), any(), any()) } returns Unit
             everySuspend { newConversationEventHandler.handle(any(), any()) } returns Unit
-            everySuspend { deletedConversationEventHandler.handle(any(), any()) } returns Either.Right(Unit)
+            everySuspend { deletedConversationEventHandler.handle(any(), any()) } returns Unit
             everySuspend { memberJoinEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { memberLeaveEventHandler.handle(any(), any()) } returns Either.Right(Unit)
             everySuspend { memberChangeEventHandler.handle(any(), any()) } returns Unit
@@ -528,12 +512,6 @@ class ConversationEventReceiverTest {
             everySuspend {
                 memberLeaveEventHandler.handle(any(), any())
             } returns Either.Right(Unit)
-        }
-
-        suspend fun withDeletedConversationEventResult(result: Either<CoreFailure, Unit>) = apply {
-            everySuspend {
-                deletedConversationEventHandler.handle(any(), any())
-            } returns result
         }
 
         suspend fun withMemberJoinSucceeded() = apply {
