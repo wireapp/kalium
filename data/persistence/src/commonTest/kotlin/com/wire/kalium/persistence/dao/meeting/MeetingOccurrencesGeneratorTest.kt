@@ -39,6 +39,20 @@ class MeetingOccurrencesGeneratorTest {
     }
 
     @Test
+    fun givenZeroCountLimit_whenGeneratingOccurrences_thenReturnsNoOccurrences() {
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = 0))
+
+        assertEquals(0, occurrences.size)
+    }
+
+    @Test
+    fun givenNegativeCountLimit_whenGeneratingOccurrences_thenReturnsNoOccurrences() {
+        val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Count(totalCount = -1))
+
+        assertEquals(0, occurrences.size)
+    }
+
+    @Test
     fun givenUntilLimit_whenGeneratingOccurrences_thenReturnsOccurrencesUntilLimitInclusively() {
         val until = MEETING.startTime.plus(2.days)
         val occurrences = generateOccurrences(MeetingOccurrencesGenerator.GenerationLimit.Until(until))

@@ -33,7 +33,7 @@ object MeetingOccurrencesGenerator {
     ): List<MeetingOccurrenceEntity> {
         if (meetings.isEmpty()) return emptyList()
         val maxDateLimit = (limit as? GenerationLimit.Until)?.until
-        val totalCountToGenerate = (limit as? GenerationLimit.Count)?.totalCount ?: 0
+        val totalCountToGenerate = (limit as? GenerationLimit.Count)?.totalCount
         val statesList = meetings.initialGeneratorStates(lastGeneratedStarts)
         return generateOccurrences(statesList, maxDateLimit, totalCountToGenerate)
     }
@@ -41,7 +41,7 @@ object MeetingOccurrencesGenerator {
     private fun generateOccurrences(
         statesList: MutableList<MeetingGeneratorState>,
         maxDateLimit: Instant?,
-        totalCountToGenerate: Int
+        totalCountToGenerate: Int?
     ): List<MeetingOccurrenceEntity> {
         val allOccurrences = mutableListOf<MeetingOccurrenceEntity>()
         while (statesList.isNotEmpty()) {
@@ -74,15 +74,11 @@ object MeetingOccurrencesGenerator {
         currentState: MeetingGeneratorState,
         currentCount: Int,
         maxDateLimit: Instant?,
-        totalCountToGenerate: Int
+        totalCountToGenerate: Int?
     ): Boolean {
-        val hasEnoughItems = totalCountToGenerate in 1..currentCount
+        val hasEnoughItems = totalCountToGenerate != null && currentCount >= totalCountToGenerate
         val isBeyondWindow = maxDateLimit != null && currentState.nextCandidateStart > maxDateLimit
-        return if (maxDateLimit != null) {
-            isBeyondWindow && (totalCountToGenerate <= 0 || hasEnoughItems)
-        } else {
-            hasEnoughItems
-        }
+        return hasEnoughItems || isBeyondWindow
     }
 
     private fun MeetingGeneratorState.toOccurrence(): MeetingOccurrenceEntity {
