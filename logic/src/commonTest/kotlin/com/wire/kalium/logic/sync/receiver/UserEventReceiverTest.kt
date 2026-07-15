@@ -210,6 +210,19 @@ class UserEventReceiverTest {
     }
 
     @Test
+    fun givenPendingSessionRefreshSuggestedEvent_whenRefreshFails_thenEventIsSkipped() = runTest {
+        val event = TestEvent.sessionRefreshSuggested(EVENT_ID)
+        val failure = StorageFailure.Generic(Throwable("refresh failed"))
+        val (arrangement, eventReceiver) = arrange {
+            withSessionRefreshSuggestedHandlerResult(Either.Left(failure))
+        }
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
+
+        assertIs<Either.Right<Unit>>(result)
+    }
+
+    @Test
     fun givenNewConnectionEvent_thenConnectionIsPersisted() = runTest {
         val event = TestEvent.newConnection(status = ConnectionState.PENDING)
         val (arrangement, eventReceiver) = arrange {
