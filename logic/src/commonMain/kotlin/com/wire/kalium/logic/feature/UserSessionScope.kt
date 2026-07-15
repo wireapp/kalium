@@ -2919,6 +2919,7 @@ public class UserSessionScope internal constructor(
             },
             sessionManager = sessionManager,
             accessTokenApi = authenticatedNetworkContainer.accessTokenApi,
+            userId = userId,
         )
     }
 

@@ -53,14 +53,6 @@ internal class CellUsersDataSource(
         }
     }
 
-    override suspend fun getUserTypeById(userId: String) = withContext(dispatchers.io) {
-        wrapStorageRequest {
-            userId.toQualifiedIdOrNull()?.let { qualifiedId ->
-                userDAO.getUserDetailsByQualifiedID(qualifiedId)?.userType
-            }
-        }
-    }
-
     override suspend fun getUserTeamId(userId: UserId) = withContext(dispatchers.io) {
         wrapStorageRequest {
             userDAO.getUserDetailsByQualifiedID(QualifiedIDEntity(userId.value, userId.domain))?.team
