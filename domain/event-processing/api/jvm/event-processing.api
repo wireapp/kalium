@@ -1,0 +1,285 @@
+public abstract interface class com/wire/kalium/event/processing/EventDecoder {
+	public abstract fun decode (Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/event/processing/EventDecryptor {
+	public abstract fun decrypt (Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/event/processing/EventHandler {
+	public abstract fun accepts (Ljava/lang/Object;)Z
+	public abstract fun getRequirement ()Lcom/wire/kalium/event/processing/EventHandlerRequirement;
+	public abstract fun handle (Ljava/lang/Object;Lcom/wire/kalium/event/processing/EventHandlingContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/event/processing/EventHandlerRequirement : java/lang/Enum {
+	public static final field OPTIONAL Lcom/wire/kalium/event/processing/EventHandlerRequirement;
+	public static final field REQUIRED Lcom/wire/kalium/event/processing/EventHandlerRequirement;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/wire/kalium/event/processing/EventHandlerRequirement;
+	public static fun values ()[Lcom/wire/kalium/event/processing/EventHandlerRequirement;
+}
+
+public final class com/wire/kalium/event/processing/EventHandlingContext {
+	public fun <init> (Lcom/wire/kalium/events/EventIdempotencyKey;Ljava/lang/String;)V
+	public final fun component1 ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Lcom/wire/kalium/events/EventIdempotencyKey;Ljava/lang/String;)Lcom/wire/kalium/event/processing/EventHandlingContext;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventHandlingContext;Lcom/wire/kalium/events/EventIdempotencyKey;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventHandlingContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBackendEventId ()Ljava/lang/String;
+	public final fun getIdempotencyKey ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/event/processing/EventHandlingResult {
+}
+
+public final class com/wire/kalium/event/processing/EventHandlingResult$Failed : com/wire/kalium/event/processing/EventHandlingResult {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/event/processing/EventHandlingResult$Failed;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventHandlingResult$Failed;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventHandlingResult$Failed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventHandlingResult$Handled : com/wire/kalium/event/processing/EventHandlingResult {
+	public static final field INSTANCE Lcom/wire/kalium/event/processing/EventHandlingResult$Handled;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventHandlingResult$Ignored : com/wire/kalium/event/processing/EventHandlingResult {
+	public static final field INSTANCE Lcom/wire/kalium/event/processing/EventHandlingResult$Ignored;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/event/processing/EventProcessingFailure {
+}
+
+public final class com/wire/kalium/event/processing/EventProcessingFailure$Acknowledgement : com/wire/kalium/event/processing/EventProcessingFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/event/processing/EventProcessingFailure$Acknowledgement;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventProcessingFailure$Acknowledgement;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventProcessingFailure$Acknowledgement;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventProcessingFailure$Decode : com/wire/kalium/event/processing/EventProcessingFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/event/processing/EventProcessingFailure$Decode;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventProcessingFailure$Decode;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventProcessingFailure$Decode;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventProcessingFailure$Decrypt : com/wire/kalium/event/processing/EventProcessingFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/event/processing/EventProcessingFailure$Decrypt;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventProcessingFailure$Decrypt;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventProcessingFailure$Decrypt;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventProcessingFailure$DeliveryState : com/wire/kalium/event/processing/EventProcessingFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/event/processing/EventProcessingFailure$DeliveryState;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventProcessingFailure$DeliveryState;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventProcessingFailure$DeliveryState;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventProcessingFailure$RequiredHandler : com/wire/kalium/event/processing/EventProcessingFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/event/processing/EventProcessingFailure$RequiredHandler;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventProcessingFailure$RequiredHandler;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventProcessingFailure$RequiredHandler;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventProcessingFailure$Source : com/wire/kalium/event/processing/EventProcessingFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/event/processing/EventProcessingFailure$Source;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventProcessingFailure$Source;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventProcessingFailure$Source;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/event/processing/EventProcessingOutcome {
+}
+
+public final class com/wire/kalium/event/processing/EventProcessingOutcome$AcknowledgementRecovered : com/wire/kalium/event/processing/EventProcessingOutcome {
+	public fun <init> (Lcom/wire/kalium/events/EventIdempotencyKey;)V
+	public final fun component1 ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public final fun copy (Lcom/wire/kalium/events/EventIdempotencyKey;)Lcom/wire/kalium/event/processing/EventProcessingOutcome$AcknowledgementRecovered;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventProcessingOutcome$AcknowledgementRecovered;Lcom/wire/kalium/events/EventIdempotencyKey;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventProcessingOutcome$AcknowledgementRecovered;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKey ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventProcessingOutcome$Duplicate : com/wire/kalium/event/processing/EventProcessingOutcome {
+	public fun <init> (Lcom/wire/kalium/events/EventIdempotencyKey;)V
+	public final fun component1 ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public final fun copy (Lcom/wire/kalium/events/EventIdempotencyKey;)Lcom/wire/kalium/event/processing/EventProcessingOutcome$Duplicate;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventProcessingOutcome$Duplicate;Lcom/wire/kalium/events/EventIdempotencyKey;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventProcessingOutcome$Duplicate;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getKey ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventProcessingOutcome$Failed : com/wire/kalium/event/processing/EventProcessingOutcome {
+	public fun <init> (Lcom/wire/kalium/events/EventIdempotencyKey;Lcom/wire/kalium/event/processing/EventProcessingFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public final fun component2 ()Lcom/wire/kalium/event/processing/EventProcessingFailure;
+	public final fun copy (Lcom/wire/kalium/events/EventIdempotencyKey;Lcom/wire/kalium/event/processing/EventProcessingFailure;)Lcom/wire/kalium/event/processing/EventProcessingOutcome$Failed;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventProcessingOutcome$Failed;Lcom/wire/kalium/events/EventIdempotencyKey;Lcom/wire/kalium/event/processing/EventProcessingFailure;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventProcessingOutcome$Failed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFailure ()Lcom/wire/kalium/event/processing/EventProcessingFailure;
+	public final fun getKey ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventProcessingOutcome$Processed : com/wire/kalium/event/processing/EventProcessingOutcome {
+	public fun <init> (Lcom/wire/kalium/events/EventIdempotencyKey;ILjava/util/List;)V
+	public final fun component1 ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public final fun component2 ()I
+	public final fun component3 ()Ljava/util/List;
+	public final fun copy (Lcom/wire/kalium/events/EventIdempotencyKey;ILjava/util/List;)Lcom/wire/kalium/event/processing/EventProcessingOutcome$Processed;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventProcessingOutcome$Processed;Lcom/wire/kalium/events/EventIdempotencyKey;ILjava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventProcessingOutcome$Processed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHandledCount ()I
+	public final fun getKey ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public final fun getOptionalFailures ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventProcessingOutcome$Ready : com/wire/kalium/event/processing/EventProcessingOutcome {
+	public fun <init> (Lcom/wire/kalium/events/EventCursor;)V
+	public final fun component1 ()Lcom/wire/kalium/events/EventCursor;
+	public final fun copy (Lcom/wire/kalium/events/EventCursor;)Lcom/wire/kalium/event/processing/EventProcessingOutcome$Ready;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventProcessingOutcome$Ready;Lcom/wire/kalium/events/EventCursor;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventProcessingOutcome$Ready;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAcknowledgedCursor ()Lcom/wire/kalium/events/EventCursor;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventProcessor {
+	public fun <init> (Lcom/wire/kalium/events/EventSource;Lcom/wire/kalium/events/EventDeliveryStateStore;Lcom/wire/kalium/event/processing/EventDecoder;Lcom/wire/kalium/event/processing/EventDecryptor;Lcom/wire/kalium/event/processing/EventRouter;)V
+	public final fun process ()Lkotlinx/coroutines/flow/Flow;
+}
+
+public final class com/wire/kalium/event/processing/EventRouter {
+	public fun <init> (Ljava/util/List;)V
+	public final fun route (Ljava/lang/Object;Lcom/wire/kalium/event/processing/EventHandlingContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/event/processing/EventRoutingResult {
+}
+
+public final class com/wire/kalium/event/processing/EventRoutingResult$Completed : com/wire/kalium/event/processing/EventRoutingResult {
+	public fun <init> (ILjava/util/List;)V
+	public final fun component1 ()I
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (ILjava/util/List;)Lcom/wire/kalium/event/processing/EventRoutingResult$Completed;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventRoutingResult$Completed;ILjava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventRoutingResult$Completed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHandledCount ()I
+	public final fun getOptionalFailures ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventRoutingResult$RequiredHandlerFailed : com/wire/kalium/event/processing/EventRoutingResult {
+	public fun <init> (Lcom/wire/kalium/event/processing/EventHandlingResult$Failed;)V
+	public final fun component1 ()Lcom/wire/kalium/event/processing/EventHandlingResult$Failed;
+	public final fun copy (Lcom/wire/kalium/event/processing/EventHandlingResult$Failed;)Lcom/wire/kalium/event/processing/EventRoutingResult$RequiredHandlerFailed;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventRoutingResult$RequiredHandlerFailed;Lcom/wire/kalium/event/processing/EventHandlingResult$Failed;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventRoutingResult$RequiredHandlerFailed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFailure ()Lcom/wire/kalium/event/processing/EventHandlingResult$Failed;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/event/processing/EventTransformationResult {
+}
+
+public final class com/wire/kalium/event/processing/EventTransformationResult$Failure : com/wire/kalium/event/processing/EventTransformationResult {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/event/processing/EventTransformationResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventTransformationResult$Failure;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventTransformationResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/event/processing/EventTransformationResult$Success : com/wire/kalium/event/processing/EventTransformationResult {
+	public fun <init> (Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;)Lcom/wire/kalium/event/processing/EventTransformationResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/event/processing/EventTransformationResult$Success;Ljava/lang/Object;ILjava/lang/Object;)Lcom/wire/kalium/event/processing/EventTransformationResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface annotation class com/wire/kalium/event/processing/ExperimentalEventProcessingApi : java/lang/annotation/Annotation {
+}
+

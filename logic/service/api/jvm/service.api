@@ -1,0 +1,50 @@
+public abstract interface class com/wire/kalium/logic/service/EncryptedCallingSignalSender {
+	public abstract fun send (Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/KaliumService {
+	public static final field INSTANCE Lcom/wire/kalium/logic/service/KaliumService;
+	public final fun create (Lcom/wire/kalium/logic/service/api/ServiceConfig;Lcom/wire/kalium/logic/service/KaliumServiceComponents;Lcom/wire/kalium/logic/service/api/ServiceObserver;)Lcom/wire/kalium/logic/service/api/KaliumServiceRuntime;
+}
+
+public final class com/wire/kalium/logic/service/KaliumServiceComponents {
+	public fun <init> (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lcom/wire/kalium/logic/service/api/ServiceSessionManager;Lcom/wire/kalium/logic/service/api/ServiceCryptoRuntime;Lcom/wire/kalium/events/EventSource;Lcom/wire/kalium/events/EventDeliveryStateStore;Lcom/wire/kalium/event/processing/EventDecoder;Lcom/wire/kalium/event/processing/EventDecryptor;Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers;Lcom/wire/kalium/calling/runtime/CallingPayloadExtractor;Lcom/wire/kalium/calling/runtime/CallingEventIdempotencyStore;Lcom/wire/kalium/conversation/ConversationContextProvider;Lcom/wire/kalium/conversation/ConversationProtocolStateStore;Lcom/wire/kalium/calling/runtime/CallTransport;Lcom/wire/kalium/calling/runtime/ConferenceMembership;Lcom/wire/kalium/calling/runtime/AvsCallingEngine;Lcom/wire/kalium/calling/runtime/ServiceSelfConversationProvider;Lcom/wire/kalium/calling/runtime/CallingControlHandler;Lcom/wire/kalium/calling/runtime/CallEventSink;)V
+	public final fun getAvsCallingEngine ()Lcom/wire/kalium/calling/runtime/AvsCallingEngine;
+	public final fun getCallEventSink ()Lcom/wire/kalium/calling/runtime/CallEventSink;
+	public final fun getCallTransport ()Lcom/wire/kalium/calling/runtime/CallTransport;
+	public final fun getCallingControlHandler ()Lcom/wire/kalium/calling/runtime/CallingControlHandler;
+	public final fun getCallingEventIdempotencyStore ()Lcom/wire/kalium/calling/runtime/CallingEventIdempotencyStore;
+	public final fun getCallingPayloadExtractor ()Lcom/wire/kalium/calling/runtime/CallingPayloadExtractor;
+	public final fun getConferenceMembership ()Lcom/wire/kalium/calling/runtime/ConferenceMembership;
+	public final fun getConversationContextProvider ()Lcom/wire/kalium/conversation/ConversationContextProvider;
+	public final fun getConversationProtocolStateStore ()Lcom/wire/kalium/conversation/ConversationProtocolStateStore;
+	public final fun getCryptoRuntime ()Lcom/wire/kalium/logic/service/api/ServiceCryptoRuntime;
+	public final fun getEventDecoder ()Lcom/wire/kalium/event/processing/EventDecoder;
+	public final fun getEventDecryptor ()Lcom/wire/kalium/event/processing/EventDecryptor;
+	public final fun getEventDeliveryStateStore ()Lcom/wire/kalium/events/EventDeliveryStateStore;
+	public final fun getEventSource ()Lcom/wire/kalium/events/EventSource;
+	public final fun getIdentity ()Lcom/wire/kalium/logic/service/api/ServiceIdentity;
+	public final fun getProtocolEventHandlers ()Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers;
+	public final fun getSelfConversationProvider ()Lcom/wire/kalium/calling/runtime/ServiceSelfConversationProvider;
+	public final fun getSessionManager ()Lcom/wire/kalium/logic/service/api/ServiceSessionManager;
+}
+
+public final class com/wire/kalium/logic/service/RequiredProtocolEventHandlers {
+	public static final field Companion Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers$Companion;
+	public synthetic fun <init> (Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+}
+
+public final class com/wire/kalium/logic/service/RequiredProtocolEventHandlers$Companion {
+	public final fun forProteusAndMls (Lcom/wire/kalium/event/processing/EventHandler;Lcom/wire/kalium/event/processing/EventHandler;Ljava/util/List;)Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers;
+	public static synthetic fun forProteusAndMls$default (Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers$Companion;Lcom/wire/kalium/event/processing/EventHandler;Lcom/wire/kalium/event/processing/EventHandler;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers;
+	public final fun unified (Lcom/wire/kalium/event/processing/EventHandler;Ljava/util/List;)Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers;
+	public static synthetic fun unified$default (Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers$Companion;Lcom/wire/kalium/event/processing/EventHandler;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers;
+}
+
+public final class com/wire/kalium/logic/service/WireCallTransport : com/wire/kalium/calling/runtime/CallTransport {
+	public fun <init> (Lcom/wire/kalium/network/api/base/authenticated/CallApi;Lcom/wire/kalium/logic/service/EncryptedCallingSignalSender;)V
+	public fun connectToSft (Ljava/lang/String;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getCallConfig (Ljava/lang/Integer;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun sendSignal (Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

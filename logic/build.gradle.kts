@@ -41,6 +41,7 @@ kotlin {
     @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
     abiValidation {
         enabled.set(true)
+        legacyDump.referenceDumpDir.set(layout.projectDirectory.dir("abi"))
         filters {
             exclude {
                 annotatedWith.add("com.wire.kalium.util.InternalKaliumApi")

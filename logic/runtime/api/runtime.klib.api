@@ -1,0 +1,19 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, macosArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.wire.kalium:logic-runtime>
+final class <#A: kotlin/Any?, #B: kotlin/Any?, #C: kotlin/Any?> com.wire.kalium.logic.service.runtime/SharedKaliumServiceRuntime : com.wire.kalium.logic.service.api/KaliumServiceRuntime { // com.wire.kalium.logic.service.runtime/SharedKaliumServiceRuntime|null[0]
+    constructor <init>(com.wire.kalium.logic.service.api/ServiceConfig, com.wire.kalium.logic.service.api/ServiceSessionManager, com.wire.kalium.logic.service.api/ServiceCryptoRuntime, com.wire.kalium.events/EventSource<#A>, com.wire.kalium.event.processing/EventProcessor<#A, #B, #C>, com.wire.kalium.calling.runtime/CallingRuntime, com.wire.kalium.logic.service.api/ServiceObserver) // com.wire.kalium.logic.service.runtime/SharedKaliumServiceRuntime.<init>|<init>(com.wire.kalium.logic.service.api.ServiceConfig;com.wire.kalium.logic.service.api.ServiceSessionManager;com.wire.kalium.logic.service.api.ServiceCryptoRuntime;com.wire.kalium.events.EventSource<1:0>;com.wire.kalium.event.processing.EventProcessor<1:0,1:1,1:2>;com.wire.kalium.calling.runtime.CallingRuntime;com.wire.kalium.logic.service.api.ServiceObserver){}[0]
+
+    final val calls // com.wire.kalium.logic.service.runtime/SharedKaliumServiceRuntime.calls|{}calls[0]
+        final fun <get-calls>(): com.wire.kalium.logic.service.api/ServiceCalling // com.wire.kalium.logic.service.runtime/SharedKaliumServiceRuntime.calls.<get-calls>|<get-calls>(){}[0]
+    final val state // com.wire.kalium.logic.service.runtime/SharedKaliumServiceRuntime.state|{}state[0]
+        final fun <get-state>(): kotlinx.coroutines.flow/StateFlow<com.wire.kalium.logic.service.api/ServiceRuntimeState> // com.wire.kalium.logic.service.runtime/SharedKaliumServiceRuntime.state.<get-state>|<get-state>(){}[0]
+
+    final suspend fun close(): com.wire.kalium.logic.service.api/ServiceResult // com.wire.kalium.logic.service.runtime/SharedKaliumServiceRuntime.close|close(){}[0]
+    final suspend fun start(): com.wire.kalium.logic.service.api/ServiceResult // com.wire.kalium.logic.service.runtime/SharedKaliumServiceRuntime.start|start(){}[0]
+}

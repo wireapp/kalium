@@ -1,0 +1,17 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, macosArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.wire.kalium:data-conversation-local>
+abstract fun interface com.wire.kalium.conversation.local/LocalConversationContextDataSource { // com.wire.kalium.conversation.local/LocalConversationContextDataSource|null[0]
+    abstract suspend fun load(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.conversation/ConversationContextResult // com.wire.kalium.conversation.local/LocalConversationContextDataSource.load|load(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+}
+
+final class com.wire.kalium.conversation.local/LocalConversationContextProvider : com.wire.kalium.conversation/ConversationContextProvider { // com.wire.kalium.conversation.local/LocalConversationContextProvider|null[0]
+    constructor <init>(com.wire.kalium.conversation.local/LocalConversationContextDataSource) // com.wire.kalium.conversation.local/LocalConversationContextProvider.<init>|<init>(com.wire.kalium.conversation.local.LocalConversationContextDataSource){}[0]
+
+    final suspend fun getForCall(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.conversation/ConversationContextResult // com.wire.kalium.conversation.local/LocalConversationContextProvider.getForCall|getForCall(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+}

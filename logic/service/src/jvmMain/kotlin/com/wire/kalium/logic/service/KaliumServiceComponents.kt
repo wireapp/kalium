@@ -39,6 +39,7 @@ import com.wire.kalium.conversation.ConversationProtocolStateStore
 import com.wire.kalium.event.processing.EventDecoder
 import com.wire.kalium.event.processing.EventDecryptor
 import com.wire.kalium.event.processing.EventHandler
+import com.wire.kalium.event.processing.EventHandlerRequirement
 import com.wire.kalium.events.EventDeliveryStateStore
 import com.wire.kalium.events.EventSource
 import com.wire.kalium.logic.service.api.ExperimentalKaliumServiceApi
@@ -57,6 +58,12 @@ import com.wire.kalium.logic.service.api.ServiceSessionManager
 public class RequiredProtocolEventHandlers<Event> private constructor(
     internal val ordered: List<EventHandler<Event>>,
 ) {
+    init {
+        require(ordered.all { it.requirement == EventHandlerRequirement.REQUIRED }) {
+            "Every installed protocol event handler must declare REQUIRED processing"
+        }
+    }
+
     public companion object {
         public fun <Event> forProteusAndMls(
             proteus: EventHandler<Event>,

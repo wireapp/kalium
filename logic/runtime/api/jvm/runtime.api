@@ -1,0 +1,8 @@
+public final class com/wire/kalium/logic/service/runtime/SharedKaliumServiceRuntime : com/wire/kalium/logic/service/api/KaliumServiceRuntime {
+	public fun <init> (Lcom/wire/kalium/logic/service/api/ServiceConfig;Lcom/wire/kalium/logic/service/api/ServiceSessionManager;Lcom/wire/kalium/logic/service/api/ServiceCryptoRuntime;Lcom/wire/kalium/events/EventSource;Lcom/wire/kalium/event/processing/EventProcessor;Lcom/wire/kalium/calling/runtime/CallingRuntime;Lcom/wire/kalium/logic/service/api/ServiceObserver;)V
+	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun getCalls ()Lcom/wire/kalium/logic/service/api/ServiceCalling;
+	public fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

@@ -1,0 +1,5 @@
+public final class com/wire/kalium/conversation/remote/RemoteConversationContextProvider : com/wire/kalium/conversation/ConversationContextProvider {
+	public fun <init> (Lcom/wire/kalium/network/api/base/authenticated/conversation/ConversationApi;Lcom/wire/kalium/network/api/base/authenticated/client/ClientApi;Ljava/lang/String;)V
+	public fun getForCall (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

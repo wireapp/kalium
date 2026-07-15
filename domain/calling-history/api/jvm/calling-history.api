@@ -1,0 +1,9 @@
+public abstract interface class com/wire/kalium/calling/history/CallHistoryWriter {
+	public abstract fun record (Lcom/wire/kalium/calling/runtime/CallLifecycleEvent;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/calling/history/HistoryRecordingCallEventSink : com/wire/kalium/calling/runtime/CallEventSink {
+	public fun <init> (Lcom/wire/kalium/calling/history/CallHistoryWriter;Lcom/wire/kalium/calling/runtime/CallEventSink;)V
+	public fun emit (Lcom/wire/kalium/calling/runtime/CallLifecycleEvent;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

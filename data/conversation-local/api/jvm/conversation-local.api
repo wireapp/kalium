@@ -1,0 +1,9 @@
+public abstract interface class com/wire/kalium/conversation/local/LocalConversationContextDataSource {
+	public abstract fun load (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/conversation/local/LocalConversationContextProvider : com/wire/kalium/conversation/ConversationContextProvider {
+	public fun <init> (Lcom/wire/kalium/conversation/local/LocalConversationContextDataSource;)V
+	public fun getForCall (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

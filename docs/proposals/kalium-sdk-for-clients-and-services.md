@@ -53,6 +53,25 @@ New tests, fixtures, and changes to existing tests are deferred until calling-te
 This implementation pass uses focused production compilation, static checks, dependency-graph
 inspection, and ABI validation. It must not claim that the deferred or existing tests passed.
 
+### Implementation record
+
+The pre-review implementation completed the proposal phases as separate commits:
+
+| Phase | Commit | Result |
+| --- | --- | --- |
+| 0 | `0bc2e039d008` | Accepted the experimental ADR and recorded the provisional contracts. |
+| 1 | `9c0a45df184c` | Added storage-neutral durable event delivery and processing contracts. |
+| 2 | `768c0913f673` | Added local/remote conversation context and protocol-state boundaries. |
+| 3 | `7d36a1dbb97b` | Extracted headless calling runtime and optional calling-history behavior. |
+| 4 | `f3860a54ce8b` | Added explicit headless service composition and PSTN host sample. |
+| 5 | `e038b1d6315b` | Added the explicit full-client composition while retaining `:logic` compatibility. |
+| 6 | Recorded by the final implementation commit | Adds ABI baselines, executable module-graph checks, operations guidance, release notes, and this deferred-validation record. |
+
+Phase 5 intentionally retains the transitional `:logic:client -> :logic` dependency so existing
+class locations, constructors, Apple exports, and ABI do not move without the deferred client
+regression and performance suite. The ownership reversal and an Apple export for the new client
+artifact remain required follow-up work after calling-team confirmation.
+
 ## Problem
 
 ### Current shape

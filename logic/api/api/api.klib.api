@@ -1,0 +1,211 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, macosArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.wire.kalium:logic-api>
+open annotation class com.wire.kalium.logic.service.api/ExperimentalKaliumServiceApi : kotlin/Annotation { // com.wire.kalium.logic.service.api/ExperimentalKaliumServiceApi|null[0]
+    constructor <init>() // com.wire.kalium.logic.service.api/ExperimentalKaliumServiceApi.<init>|<init>(){}[0]
+}
+
+final enum class com.wire.kalium.logic.service.api/ServiceRuntimeState : kotlin/Enum<com.wire.kalium.logic.service.api/ServiceRuntimeState> { // com.wire.kalium.logic.service.api/ServiceRuntimeState|null[0]
+    enum entry CLOSED // com.wire.kalium.logic.service.api/ServiceRuntimeState.CLOSED|null[0]
+    enum entry CLOSING // com.wire.kalium.logic.service.api/ServiceRuntimeState.CLOSING|null[0]
+    enum entry CREATED // com.wire.kalium.logic.service.api/ServiceRuntimeState.CREATED|null[0]
+    enum entry FAILED // com.wire.kalium.logic.service.api/ServiceRuntimeState.FAILED|null[0]
+    enum entry READY // com.wire.kalium.logic.service.api/ServiceRuntimeState.READY|null[0]
+    enum entry STARTING // com.wire.kalium.logic.service.api/ServiceRuntimeState.STARTING|null[0]
+
+    final val entries // com.wire.kalium.logic.service.api/ServiceRuntimeState.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<com.wire.kalium.logic.service.api/ServiceRuntimeState> // com.wire.kalium.logic.service.api/ServiceRuntimeState.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): com.wire.kalium.logic.service.api/ServiceRuntimeState // com.wire.kalium.logic.service.api/ServiceRuntimeState.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<com.wire.kalium.logic.service.api/ServiceRuntimeState> // com.wire.kalium.logic.service.api/ServiceRuntimeState.values|values#static(){}[0]
+}
+
+abstract interface com.wire.kalium.logic.service.api/KaliumServiceRuntime { // com.wire.kalium.logic.service.api/KaliumServiceRuntime|null[0]
+    abstract val calls // com.wire.kalium.logic.service.api/KaliumServiceRuntime.calls|{}calls[0]
+        abstract fun <get-calls>(): com.wire.kalium.logic.service.api/ServiceCalling // com.wire.kalium.logic.service.api/KaliumServiceRuntime.calls.<get-calls>|<get-calls>(){}[0]
+    abstract val state // com.wire.kalium.logic.service.api/KaliumServiceRuntime.state|{}state[0]
+        abstract fun <get-state>(): kotlinx.coroutines.flow/StateFlow<com.wire.kalium.logic.service.api/ServiceRuntimeState> // com.wire.kalium.logic.service.api/KaliumServiceRuntime.state.<get-state>|<get-state>(){}[0]
+
+    abstract suspend fun close(): com.wire.kalium.logic.service.api/ServiceResult // com.wire.kalium.logic.service.api/KaliumServiceRuntime.close|close(){}[0]
+    abstract suspend fun start(): com.wire.kalium.logic.service.api/ServiceResult // com.wire.kalium.logic.service.api/KaliumServiceRuntime.start|start(){}[0]
+}
+
+abstract interface com.wire.kalium.logic.service.api/ServiceCalling { // com.wire.kalium.logic.service.api/ServiceCalling|null[0]
+    abstract fun observeActiveCalls(): kotlinx.coroutines.flow/Flow<kotlin.collections/List<com.wire.kalium.calling.runtime/ActiveCall>> // com.wire.kalium.logic.service.api/ServiceCalling.observeActiveCalls|observeActiveCalls(){}[0]
+    abstract suspend fun join(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.logic.service.api/ServiceCalling.join|join(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    abstract suspend fun leave(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.logic.service.api/ServiceCalling.leave|leave(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+}
+
+abstract interface com.wire.kalium.logic.service.api/ServiceCryptoRuntime { // com.wire.kalium.logic.service.api/ServiceCryptoRuntime|null[0]
+    abstract suspend fun close(): com.wire.kalium.logic.service.api/ServiceResult // com.wire.kalium.logic.service.api/ServiceCryptoRuntime.close|close(){}[0]
+    abstract suspend fun start(com.wire.kalium.logic.service.api/ServiceIdentity): com.wire.kalium.logic.service.api/ServiceResult // com.wire.kalium.logic.service.api/ServiceCryptoRuntime.start|start(com.wire.kalium.logic.service.api.ServiceIdentity){}[0]
+}
+
+abstract interface com.wire.kalium.logic.service.api/ServiceObserver { // com.wire.kalium.logic.service.api/ServiceObserver|null[0]
+    open fun onEvent(com.wire.kalium.event.processing/EventProcessingOutcome) // com.wire.kalium.logic.service.api/ServiceObserver.onEvent|onEvent(com.wire.kalium.event.processing.EventProcessingOutcome){}[0]
+    open fun onFailure(com.wire.kalium.logic.service.api/ServiceFailure) // com.wire.kalium.logic.service.api/ServiceObserver.onFailure|onFailure(com.wire.kalium.logic.service.api.ServiceFailure){}[0]
+    open fun onStateChanged(com.wire.kalium.logic.service.api/ServiceRuntimeState) // com.wire.kalium.logic.service.api/ServiceObserver.onStateChanged|onStateChanged(com.wire.kalium.logic.service.api.ServiceRuntimeState){}[0]
+}
+
+abstract interface com.wire.kalium.logic.service.api/ServiceSessionManager { // com.wire.kalium.logic.service.api/ServiceSessionManager|null[0]
+    abstract suspend fun close(): com.wire.kalium.logic.service.api/ServiceResult // com.wire.kalium.logic.service.api/ServiceSessionManager.close|close(){}[0]
+    abstract suspend fun start(com.wire.kalium.logic.service.api/ServiceIdentity): com.wire.kalium.logic.service.api/ServiceResult // com.wire.kalium.logic.service.api/ServiceSessionManager.start|start(com.wire.kalium.logic.service.api.ServiceIdentity){}[0]
+}
+
+sealed interface com.wire.kalium.logic.service.api/ServiceFailure { // com.wire.kalium.logic.service.api/ServiceFailure|null[0]
+    final class Calling : com.wire.kalium.logic.service.api/ServiceFailure { // com.wire.kalium.logic.service.api/ServiceFailure.Calling|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.logic.service.api/ServiceFailure.Calling.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.logic.service.api/ServiceFailure.Calling.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.logic.service.api/ServiceFailure.Calling.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.logic.service.api/ServiceFailure.Calling.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Calling.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Calling.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.logic.service.api/ServiceFailure.Calling.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.logic.service.api/ServiceFailure.Calling // com.wire.kalium.logic.service.api/ServiceFailure.Calling.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.service.api/ServiceFailure.Calling.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceFailure.Calling.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Calling.toString|toString(){}[0]
+    }
+
+    final class Cleanup : com.wire.kalium.logic.service.api/ServiceFailure { // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.logic.service.api/ServiceFailure.Cleanup // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Cleanup.toString|toString(){}[0]
+    }
+
+    final class Crypto : com.wire.kalium.logic.service.api/ServiceFailure { // com.wire.kalium.logic.service.api/ServiceFailure.Crypto|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.logic.service.api/ServiceFailure.Crypto.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.logic.service.api/ServiceFailure.Crypto.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.logic.service.api/ServiceFailure.Crypto.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.logic.service.api/ServiceFailure.Crypto.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Crypto.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Crypto.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.logic.service.api/ServiceFailure.Crypto.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.logic.service.api/ServiceFailure.Crypto // com.wire.kalium.logic.service.api/ServiceFailure.Crypto.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.service.api/ServiceFailure.Crypto.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceFailure.Crypto.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Crypto.toString|toString(){}[0]
+    }
+
+    final class Events : com.wire.kalium.logic.service.api/ServiceFailure { // com.wire.kalium.logic.service.api/ServiceFailure.Events|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.logic.service.api/ServiceFailure.Events.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.logic.service.api/ServiceFailure.Events.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.logic.service.api/ServiceFailure.Events.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.logic.service.api/ServiceFailure.Events.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Events.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Events.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.logic.service.api/ServiceFailure.Events.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.logic.service.api/ServiceFailure.Events // com.wire.kalium.logic.service.api/ServiceFailure.Events.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.service.api/ServiceFailure.Events.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceFailure.Events.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Events.toString|toString(){}[0]
+    }
+
+    final class Session : com.wire.kalium.logic.service.api/ServiceFailure { // com.wire.kalium.logic.service.api/ServiceFailure.Session|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.logic.service.api/ServiceFailure.Session.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.logic.service.api/ServiceFailure.Session.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.logic.service.api/ServiceFailure.Session.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.logic.service.api/ServiceFailure.Session.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Session.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Session.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.logic.service.api/ServiceFailure.Session.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.logic.service.api/ServiceFailure.Session // com.wire.kalium.logic.service.api/ServiceFailure.Session.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.service.api/ServiceFailure.Session.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceFailure.Session.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Session.toString|toString(){}[0]
+    }
+
+    final object AlreadyStarted : com.wire.kalium.logic.service.api/ServiceFailure { // com.wire.kalium.logic.service.api/ServiceFailure.AlreadyStarted|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.service.api/ServiceFailure.AlreadyStarted.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceFailure.AlreadyStarted.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.AlreadyStarted.toString|toString(){}[0]
+    }
+
+    final object Closed : com.wire.kalium.logic.service.api/ServiceFailure { // com.wire.kalium.logic.service.api/ServiceFailure.Closed|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.service.api/ServiceFailure.Closed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceFailure.Closed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.service.api/ServiceFailure.Closed.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.logic.service.api/ServiceResult { // com.wire.kalium.logic.service.api/ServiceResult|null[0]
+    final class Failure : com.wire.kalium.logic.service.api/ServiceResult { // com.wire.kalium.logic.service.api/ServiceResult.Failure|null[0]
+        constructor <init>(com.wire.kalium.logic.service.api/ServiceFailure) // com.wire.kalium.logic.service.api/ServiceResult.Failure.<init>|<init>(com.wire.kalium.logic.service.api.ServiceFailure){}[0]
+
+        final val failure // com.wire.kalium.logic.service.api/ServiceResult.Failure.failure|{}failure[0]
+            final fun <get-failure>(): com.wire.kalium.logic.service.api/ServiceFailure // com.wire.kalium.logic.service.api/ServiceResult.Failure.failure.<get-failure>|<get-failure>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.service.api/ServiceFailure // com.wire.kalium.logic.service.api/ServiceResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.service.api/ServiceFailure = ...): com.wire.kalium.logic.service.api/ServiceResult.Failure // com.wire.kalium.logic.service.api/ServiceResult.Failure.copy|copy(com.wire.kalium.logic.service.api.ServiceFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.service.api/ServiceResult.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceResult.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.service.api/ServiceResult.Failure.toString|toString(){}[0]
+    }
+
+    final object Success : com.wire.kalium.logic.service.api/ServiceResult { // com.wire.kalium.logic.service.api/ServiceResult.Success|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.service.api/ServiceResult.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceResult.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.service.api/ServiceResult.Success.toString|toString(){}[0]
+    }
+}
+
+final class com.wire.kalium.logic.service.api/ServiceConfig { // com.wire.kalium.logic.service.api/ServiceConfig|null[0]
+    constructor <init>(com.wire.kalium.logic.service.api/ServiceIdentity, kotlin/Int = ..., kotlin/Long = ...) // com.wire.kalium.logic.service.api/ServiceConfig.<init>|<init>(com.wire.kalium.logic.service.api.ServiceIdentity;kotlin.Int;kotlin.Long){}[0]
+
+    final val identity // com.wire.kalium.logic.service.api/ServiceConfig.identity|{}identity[0]
+        final fun <get-identity>(): com.wire.kalium.logic.service.api/ServiceIdentity // com.wire.kalium.logic.service.api/ServiceConfig.identity.<get-identity>|<get-identity>(){}[0]
+    final val maxConcurrentCalls // com.wire.kalium.logic.service.api/ServiceConfig.maxConcurrentCalls|{}maxConcurrentCalls[0]
+        final fun <get-maxConcurrentCalls>(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceConfig.maxConcurrentCalls.<get-maxConcurrentCalls>|<get-maxConcurrentCalls>(){}[0]
+    final val shutdownTimeoutMillis // com.wire.kalium.logic.service.api/ServiceConfig.shutdownTimeoutMillis|{}shutdownTimeoutMillis[0]
+        final fun <get-shutdownTimeoutMillis>(): kotlin/Long // com.wire.kalium.logic.service.api/ServiceConfig.shutdownTimeoutMillis.<get-shutdownTimeoutMillis>|<get-shutdownTimeoutMillis>(){}[0]
+
+    final fun component1(): com.wire.kalium.logic.service.api/ServiceIdentity // com.wire.kalium.logic.service.api/ServiceConfig.component1|component1(){}[0]
+    final fun component2(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceConfig.component2|component2(){}[0]
+    final fun component3(): kotlin/Long // com.wire.kalium.logic.service.api/ServiceConfig.component3|component3(){}[0]
+    final fun copy(com.wire.kalium.logic.service.api/ServiceIdentity = ..., kotlin/Int = ..., kotlin/Long = ...): com.wire.kalium.logic.service.api/ServiceConfig // com.wire.kalium.logic.service.api/ServiceConfig.copy|copy(com.wire.kalium.logic.service.api.ServiceIdentity;kotlin.Int;kotlin.Long){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.service.api/ServiceConfig.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceConfig.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.service.api/ServiceConfig.toString|toString(){}[0]
+}
+
+final class com.wire.kalium.logic.service.api/ServiceIdentity { // com.wire.kalium.logic.service.api/ServiceIdentity|null[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin/String) // com.wire.kalium.logic.service.api/ServiceIdentity.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.String){}[0]
+
+    final val backendDomain // com.wire.kalium.logic.service.api/ServiceIdentity.backendDomain|{}backendDomain[0]
+        final fun <get-backendDomain>(): kotlin/String // com.wire.kalium.logic.service.api/ServiceIdentity.backendDomain.<get-backendDomain>|<get-backendDomain>(){}[0]
+    final val clientId // com.wire.kalium.logic.service.api/ServiceIdentity.clientId|{}clientId[0]
+        final fun <get-clientId>(): kotlin/String // com.wire.kalium.logic.service.api/ServiceIdentity.clientId.<get-clientId>|<get-clientId>(){}[0]
+    final val userId // com.wire.kalium.logic.service.api/ServiceIdentity.userId|{}userId[0]
+        final fun <get-userId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.service.api/ServiceIdentity.userId.<get-userId>|<get-userId>(){}[0]
+
+    final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.logic.service.api/ServiceIdentity.component1|component1(){}[0]
+    final fun component2(): kotlin/String // com.wire.kalium.logic.service.api/ServiceIdentity.component2|component2(){}[0]
+    final fun component3(): kotlin/String // com.wire.kalium.logic.service.api/ServiceIdentity.component3|component3(){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String = ..., kotlin/String = ...): com.wire.kalium.logic.service.api/ServiceIdentity // com.wire.kalium.logic.service.api/ServiceIdentity.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.String){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.service.api/ServiceIdentity.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.logic.service.api/ServiceIdentity.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.logic.service.api/ServiceIdentity.toString|toString(){}[0]
+}

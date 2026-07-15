@@ -1,0 +1,221 @@
+public final class com/wire/kalium/conversation/CallClient {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;)Lcom/wire/kalium/conversation/CallClient;
+	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/CallClient;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/conversation/CallClient;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getClientId ()Ljava/lang/String;
+	public final fun getUserId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/conversation/CallConversationContext {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/conversation/CallConversationType;Lcom/wire/kalium/conversation/CallConversationProtocol;Ljava/util/List;Ljava/util/List;Ljava/lang/String;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2 ()Lcom/wire/kalium/conversation/CallConversationType;
+	public final fun component3 ()Lcom/wire/kalium/conversation/CallConversationProtocol;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Ljava/util/List;
+	public final fun component6 ()Ljava/lang/String;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/conversation/CallConversationType;Lcom/wire/kalium/conversation/CallConversationProtocol;Ljava/util/List;Ljava/util/List;Ljava/lang/String;)Lcom/wire/kalium/conversation/CallConversationContext;
+	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/CallConversationContext;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/conversation/CallConversationType;Lcom/wire/kalium/conversation/CallConversationProtocol;Ljava/util/List;Ljava/util/List;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/conversation/CallConversationContext;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getClients ()Ljava/util/List;
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getMembers ()Ljava/util/List;
+	public final fun getProtocol ()Lcom/wire/kalium/conversation/CallConversationProtocol;
+	public final fun getTeamId ()Ljava/lang/String;
+	public final fun getType ()Lcom/wire/kalium/conversation/CallConversationType;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/conversation/CallConversationProtocol {
+}
+
+public final class com/wire/kalium/conversation/CallConversationProtocol$Mixed : com/wire/kalium/conversation/CallConversationProtocol {
+	public synthetic fun <init> (Ljava/lang/String;Lkotlin/ULong;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-w8gwwBg ()Ljava/lang/String;
+	public final fun component2-6VbMDqA ()Lkotlin/ULong;
+	public final fun copy-w6GrgPw (Ljava/lang/String;Lkotlin/ULong;)Lcom/wire/kalium/conversation/CallConversationProtocol$Mixed;
+	public static synthetic fun copy-w6GrgPw$default (Lcom/wire/kalium/conversation/CallConversationProtocol$Mixed;Ljava/lang/String;Lkotlin/ULong;ILjava/lang/Object;)Lcom/wire/kalium/conversation/CallConversationProtocol$Mixed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEpoch-6VbMDqA ()Lkotlin/ULong;
+	public final fun getGroupId-w8gwwBg ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/conversation/CallConversationProtocol$Mls : com/wire/kalium/conversation/CallConversationProtocol {
+	public synthetic fun <init> (Ljava/lang/String;Lkotlin/ULong;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-w8gwwBg ()Ljava/lang/String;
+	public final fun component2-6VbMDqA ()Lkotlin/ULong;
+	public final fun copy-w6GrgPw (Ljava/lang/String;Lkotlin/ULong;)Lcom/wire/kalium/conversation/CallConversationProtocol$Mls;
+	public static synthetic fun copy-w6GrgPw$default (Lcom/wire/kalium/conversation/CallConversationProtocol$Mls;Ljava/lang/String;Lkotlin/ULong;ILjava/lang/Object;)Lcom/wire/kalium/conversation/CallConversationProtocol$Mls;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEpoch-6VbMDqA ()Lkotlin/ULong;
+	public final fun getGroupId-w8gwwBg ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/conversation/CallConversationProtocol$Proteus : com/wire/kalium/conversation/CallConversationProtocol {
+	public static final field INSTANCE Lcom/wire/kalium/conversation/CallConversationProtocol$Proteus;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/conversation/CallConversationType : java/lang/Enum {
+	public static final field CHANNEL Lcom/wire/kalium/conversation/CallConversationType;
+	public static final field CONNECTION_PENDING Lcom/wire/kalium/conversation/CallConversationType;
+	public static final field GROUP Lcom/wire/kalium/conversation/CallConversationType;
+	public static final field MEETING Lcom/wire/kalium/conversation/CallConversationType;
+	public static final field ONE_TO_ONE Lcom/wire/kalium/conversation/CallConversationType;
+	public static final field SELF Lcom/wire/kalium/conversation/CallConversationType;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/wire/kalium/conversation/CallConversationType;
+	public static fun values ()[Lcom/wire/kalium/conversation/CallConversationType;
+}
+
+public final class com/wire/kalium/conversation/CallMember {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ZZ)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Z
+	public final fun component4 ()Z
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ZZ)Lcom/wire/kalium/conversation/CallMember;
+	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/CallMember;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ZZILjava/lang/Object;)Lcom/wire/kalium/conversation/CallMember;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRole ()Ljava/lang/String;
+	public final fun getUserId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun hashCode ()I
+	public final fun isSelf ()Z
+	public final fun isService ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/conversation/ConversationContextFailure {
+}
+
+public final class com/wire/kalium/conversation/ConversationContextFailure$AccessDenied : com/wire/kalium/conversation/ConversationContextFailure {
+	public static final field INSTANCE Lcom/wire/kalium/conversation/ConversationContextFailure$AccessDenied;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/conversation/ConversationContextFailure$Invalid : com/wire/kalium/conversation/ConversationContextFailure {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/wire/kalium/conversation/ConversationContextFailure$Invalid;
+	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/ConversationContextFailure$Invalid;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/conversation/ConversationContextFailure$Invalid;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/conversation/ConversationContextFailure$Local : com/wire/kalium/conversation/ConversationContextFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/conversation/ConversationContextFailure$Local;
+	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/ConversationContextFailure$Local;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/conversation/ConversationContextFailure$Local;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/conversation/ConversationContextFailure$NotFound : com/wire/kalium/conversation/ConversationContextFailure {
+	public static final field INSTANCE Lcom/wire/kalium/conversation/ConversationContextFailure$NotFound;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/conversation/ConversationContextFailure$Remote : com/wire/kalium/conversation/ConversationContextFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/conversation/ConversationContextFailure$Remote;
+	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/ConversationContextFailure$Remote;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/conversation/ConversationContextFailure$Remote;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/conversation/ConversationContextProvider {
+	public abstract fun getForCall (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/conversation/ConversationContextResult {
+}
+
+public final class com/wire/kalium/conversation/ConversationContextResult$Failure : com/wire/kalium/conversation/ConversationContextResult {
+	public fun <init> (Lcom/wire/kalium/conversation/ConversationContextFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/conversation/ConversationContextFailure;
+	public final fun copy (Lcom/wire/kalium/conversation/ConversationContextFailure;)Lcom/wire/kalium/conversation/ConversationContextResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/ConversationContextResult$Failure;Lcom/wire/kalium/conversation/ConversationContextFailure;ILjava/lang/Object;)Lcom/wire/kalium/conversation/ConversationContextResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFailure ()Lcom/wire/kalium/conversation/ConversationContextFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/conversation/ConversationContextResult$Success : com/wire/kalium/conversation/ConversationContextResult {
+	public fun <init> (Lcom/wire/kalium/conversation/CallConversationContext;)V
+	public final fun component1 ()Lcom/wire/kalium/conversation/CallConversationContext;
+	public final fun copy (Lcom/wire/kalium/conversation/CallConversationContext;)Lcom/wire/kalium/conversation/ConversationContextResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/ConversationContextResult$Success;Lcom/wire/kalium/conversation/CallConversationContext;ILjava/lang/Object;)Lcom/wire/kalium/conversation/ConversationContextResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getContext ()Lcom/wire/kalium/conversation/CallConversationContext;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/conversation/ConversationProtocolStateResult {
+}
+
+public final class com/wire/kalium/conversation/ConversationProtocolStateResult$Failure : com/wire/kalium/conversation/ConversationProtocolStateResult {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/conversation/ConversationProtocolStateResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/ConversationProtocolStateResult$Failure;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/conversation/ConversationProtocolStateResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/conversation/ConversationProtocolStateResult$Success : com/wire/kalium/conversation/ConversationProtocolStateResult {
+	public fun <init> (Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;)Lcom/wire/kalium/conversation/ConversationProtocolStateResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/ConversationProtocolStateResult$Success;Ljava/lang/Object;ILjava/lang/Object;)Lcom/wire/kalium/conversation/ConversationProtocolStateResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/conversation/ConversationProtocolStateStore {
+	public abstract fun get (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun remove (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun save (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/conversation/CallConversationProtocol;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface annotation class com/wire/kalium/conversation/ExperimentalConversationApi : java/lang/annotation/Annotation {
+}
+

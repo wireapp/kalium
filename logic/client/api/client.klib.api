@@ -1,0 +1,14 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, macosArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.wire.kalium:logic-client>
+final class com.wire.kalium.logic.client/KaliumClient { // com.wire.kalium.logic.client/KaliumClient|null[0]
+    constructor <init>(kotlin/String, com.wire.kalium.persistence.kmmSettings/ApplePersistenceConfig, com.wire.kalium.logic.featureFlags/KaliumConfigs, kotlin/String, kotlin/Boolean = ..., com.wire.kalium.usernetwork.di/UserAuthenticatedNetworkProvider = ...) // com.wire.kalium.logic.client/KaliumClient.<init>|<init>(kotlin.String;com.wire.kalium.persistence.kmmSettings.ApplePersistenceConfig;com.wire.kalium.logic.featureFlags.KaliumConfigs;kotlin.String;kotlin.Boolean;com.wire.kalium.usernetwork.di.UserAuthenticatedNetworkProvider){}[0]
+
+    final val logic // com.wire.kalium.logic.client/KaliumClient.logic|{}logic[0]
+        final fun <get-logic>(): com.wire.kalium.logic/CoreLogic // com.wire.kalium.logic.client/KaliumClient.logic.<get-logic>|<get-logic>(){}[0]
+}

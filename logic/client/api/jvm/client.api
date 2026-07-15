@@ -1,0 +1,6 @@
+public final class com/wire/kalium/logic/client/KaliumClient {
+	public fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;Ljava/lang/String;ZLcom/wire/kalium/usernetwork/di/UserAuthenticatedNetworkProvider;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/wire/kalium/logic/featureFlags/KaliumConfigs;Ljava/lang/String;ZLcom/wire/kalium/usernetwork/di/UserAuthenticatedNetworkProvider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getLogic ()Lcom/wire/kalium/logic/CoreLogic;
+}
+

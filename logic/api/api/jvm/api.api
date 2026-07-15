@@ -1,0 +1,189 @@
+public abstract interface annotation class com/wire/kalium/logic/service/api/ExperimentalKaliumServiceApi : java/lang/annotation/Annotation {
+}
+
+public abstract interface class com/wire/kalium/logic/service/api/KaliumServiceRuntime {
+	public abstract fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun getCalls ()Lcom/wire/kalium/logic/service/api/ServiceCalling;
+	public abstract fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/service/api/ServiceCalling {
+	public abstract fun join (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun leave (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun observeActiveCalls ()Lkotlinx/coroutines/flow/Flow;
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceConfig {
+	public fun <init> (Lcom/wire/kalium/logic/service/api/ServiceIdentity;IJ)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/service/api/ServiceIdentity;IJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/service/api/ServiceIdentity;
+	public final fun component2 ()I
+	public final fun component3 ()J
+	public final fun copy (Lcom/wire/kalium/logic/service/api/ServiceIdentity;IJ)Lcom/wire/kalium/logic/service/api/ServiceConfig;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/api/ServiceConfig;Lcom/wire/kalium/logic/service/api/ServiceIdentity;IJILjava/lang/Object;)Lcom/wire/kalium/logic/service/api/ServiceConfig;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getIdentity ()Lcom/wire/kalium/logic/service/api/ServiceIdentity;
+	public final fun getMaxConcurrentCalls ()I
+	public final fun getShutdownTimeoutMillis ()J
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/service/api/ServiceCryptoRuntime {
+	public abstract fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun start (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/service/api/ServiceFailure {
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceFailure$AlreadyStarted : com/wire/kalium/logic/service/api/ServiceFailure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/service/api/ServiceFailure$AlreadyStarted;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceFailure$Calling : com/wire/kalium/logic/service/api/ServiceFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/logic/service/api/ServiceFailure$Calling;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/api/ServiceFailure$Calling;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/api/ServiceFailure$Calling;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceFailure$Cleanup : com/wire/kalium/logic/service/api/ServiceFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/logic/service/api/ServiceFailure$Cleanup;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/api/ServiceFailure$Cleanup;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/api/ServiceFailure$Cleanup;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceFailure$Closed : com/wire/kalium/logic/service/api/ServiceFailure {
+	public static final field INSTANCE Lcom/wire/kalium/logic/service/api/ServiceFailure$Closed;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceFailure$Crypto : com/wire/kalium/logic/service/api/ServiceFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/logic/service/api/ServiceFailure$Crypto;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/api/ServiceFailure$Crypto;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/api/ServiceFailure$Crypto;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceFailure$Events : com/wire/kalium/logic/service/api/ServiceFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/logic/service/api/ServiceFailure$Events;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/api/ServiceFailure$Events;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/api/ServiceFailure$Events;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceFailure$Session : com/wire/kalium/logic/service/api/ServiceFailure {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/logic/service/api/ServiceFailure$Session;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/api/ServiceFailure$Session;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/api/ServiceFailure$Session;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceIdentity {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/service/api/ServiceIdentity;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/api/ServiceIdentity;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBackendDomain ()Ljava/lang/String;
+	public final fun getClientId ()Ljava/lang/String;
+	public final fun getUserId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/service/api/ServiceObserver {
+	public fun onEvent (Lcom/wire/kalium/event/processing/EventProcessingOutcome;)V
+	public fun onFailure (Lcom/wire/kalium/logic/service/api/ServiceFailure;)V
+	public fun onStateChanged (Lcom/wire/kalium/logic/service/api/ServiceRuntimeState;)V
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceObserver$DefaultImpls {
+	public static fun onEvent (Lcom/wire/kalium/logic/service/api/ServiceObserver;Lcom/wire/kalium/event/processing/EventProcessingOutcome;)V
+	public static fun onFailure (Lcom/wire/kalium/logic/service/api/ServiceObserver;Lcom/wire/kalium/logic/service/api/ServiceFailure;)V
+	public static fun onStateChanged (Lcom/wire/kalium/logic/service/api/ServiceObserver;Lcom/wire/kalium/logic/service/api/ServiceRuntimeState;)V
+}
+
+public abstract interface class com/wire/kalium/logic/service/api/ServiceResult {
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceResult$Failure : com/wire/kalium/logic/service/api/ServiceResult {
+	public fun <init> (Lcom/wire/kalium/logic/service/api/ServiceFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/service/api/ServiceFailure;
+	public final fun copy (Lcom/wire/kalium/logic/service/api/ServiceFailure;)Lcom/wire/kalium/logic/service/api/ServiceResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/api/ServiceResult$Failure;Lcom/wire/kalium/logic/service/api/ServiceFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/api/ServiceResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFailure ()Lcom/wire/kalium/logic/service/api/ServiceFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceResult$Success : com/wire/kalium/logic/service/api/ServiceResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/service/api/ServiceResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/api/ServiceRuntimeState : java/lang/Enum {
+	public static final field CLOSED Lcom/wire/kalium/logic/service/api/ServiceRuntimeState;
+	public static final field CLOSING Lcom/wire/kalium/logic/service/api/ServiceRuntimeState;
+	public static final field CREATED Lcom/wire/kalium/logic/service/api/ServiceRuntimeState;
+	public static final field FAILED Lcom/wire/kalium/logic/service/api/ServiceRuntimeState;
+	public static final field READY Lcom/wire/kalium/logic/service/api/ServiceRuntimeState;
+	public static final field STARTING Lcom/wire/kalium/logic/service/api/ServiceRuntimeState;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/wire/kalium/logic/service/api/ServiceRuntimeState;
+	public static fun values ()[Lcom/wire/kalium/logic/service/api/ServiceRuntimeState;
+}
+
+public abstract interface class com/wire/kalium/logic/service/api/ServiceSessionManager {
+	public abstract fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun start (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

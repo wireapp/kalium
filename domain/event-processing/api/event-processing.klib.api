@@ -1,0 +1,332 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, macosArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.wire.kalium:domain-event-processing>
+open annotation class com.wire.kalium.event.processing/ExperimentalEventProcessingApi : kotlin/Annotation { // com.wire.kalium.event.processing/ExperimentalEventProcessingApi|null[0]
+    constructor <init>() // com.wire.kalium.event.processing/ExperimentalEventProcessingApi.<init>|<init>(){}[0]
+}
+
+final enum class com.wire.kalium.event.processing/EventHandlerRequirement : kotlin/Enum<com.wire.kalium.event.processing/EventHandlerRequirement> { // com.wire.kalium.event.processing/EventHandlerRequirement|null[0]
+    enum entry OPTIONAL // com.wire.kalium.event.processing/EventHandlerRequirement.OPTIONAL|null[0]
+    enum entry REQUIRED // com.wire.kalium.event.processing/EventHandlerRequirement.REQUIRED|null[0]
+
+    final val entries // com.wire.kalium.event.processing/EventHandlerRequirement.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<com.wire.kalium.event.processing/EventHandlerRequirement> // com.wire.kalium.event.processing/EventHandlerRequirement.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): com.wire.kalium.event.processing/EventHandlerRequirement // com.wire.kalium.event.processing/EventHandlerRequirement.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<com.wire.kalium.event.processing/EventHandlerRequirement> // com.wire.kalium.event.processing/EventHandlerRequirement.values|values#static(){}[0]
+}
+
+abstract fun interface <#A: in kotlin/Any?, #B: out kotlin/Any?> com.wire.kalium.event.processing/EventDecoder { // com.wire.kalium.event.processing/EventDecoder|null[0]
+    abstract suspend fun decode(#A): com.wire.kalium.event.processing/EventTransformationResult<#B> // com.wire.kalium.event.processing/EventDecoder.decode|decode(1:0){}[0]
+}
+
+abstract fun interface <#A: in kotlin/Any?, #B: out kotlin/Any?> com.wire.kalium.event.processing/EventDecryptor { // com.wire.kalium.event.processing/EventDecryptor|null[0]
+    abstract suspend fun decrypt(#A): com.wire.kalium.event.processing/EventTransformationResult<#B> // com.wire.kalium.event.processing/EventDecryptor.decrypt|decrypt(1:0){}[0]
+}
+
+abstract interface <#A: in kotlin/Any?> com.wire.kalium.event.processing/EventHandler { // com.wire.kalium.event.processing/EventHandler|null[0]
+    abstract val requirement // com.wire.kalium.event.processing/EventHandler.requirement|{}requirement[0]
+        abstract fun <get-requirement>(): com.wire.kalium.event.processing/EventHandlerRequirement // com.wire.kalium.event.processing/EventHandler.requirement.<get-requirement>|<get-requirement>(){}[0]
+
+    abstract fun accepts(#A): kotlin/Boolean // com.wire.kalium.event.processing/EventHandler.accepts|accepts(1:0){}[0]
+    abstract suspend fun handle(#A, com.wire.kalium.event.processing/EventHandlingContext): com.wire.kalium.event.processing/EventHandlingResult // com.wire.kalium.event.processing/EventHandler.handle|handle(1:0;com.wire.kalium.event.processing.EventHandlingContext){}[0]
+}
+
+sealed interface <#A: out kotlin/Any?> com.wire.kalium.event.processing/EventTransformationResult { // com.wire.kalium.event.processing/EventTransformationResult|null[0]
+    final class <#A1: kotlin/Any?> Success : com.wire.kalium.event.processing/EventTransformationResult<#A1> { // com.wire.kalium.event.processing/EventTransformationResult.Success|null[0]
+        constructor <init>(#A1) // com.wire.kalium.event.processing/EventTransformationResult.Success.<init>|<init>(1:0){}[0]
+
+        final val value // com.wire.kalium.event.processing/EventTransformationResult.Success.value|{}value[0]
+            final fun <get-value>(): #A1 // com.wire.kalium.event.processing/EventTransformationResult.Success.value.<get-value>|<get-value>(){}[0]
+
+        final fun component1(): #A1 // com.wire.kalium.event.processing/EventTransformationResult.Success.component1|component1(){}[0]
+        final fun copy(#A1 = ...): com.wire.kalium.event.processing/EventTransformationResult.Success<#A1> // com.wire.kalium.event.processing/EventTransformationResult.Success.copy|copy(1:0){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventTransformationResult.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventTransformationResult.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventTransformationResult.Success.toString|toString(){}[0]
+    }
+
+    final class Failure : com.wire.kalium.event.processing/EventTransformationResult<kotlin/Nothing> { // com.wire.kalium.event.processing/EventTransformationResult.Failure|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.event.processing/EventTransformationResult.Failure.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.event.processing/EventTransformationResult.Failure.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.event.processing/EventTransformationResult.Failure.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.event.processing/EventTransformationResult.Failure.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.event.processing/EventTransformationResult.Failure.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.event.processing/EventTransformationResult.Failure.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.event.processing/EventTransformationResult.Failure.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.event.processing/EventTransformationResult.Failure // com.wire.kalium.event.processing/EventTransformationResult.Failure.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventTransformationResult.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventTransformationResult.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventTransformationResult.Failure.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.event.processing/EventHandlingResult { // com.wire.kalium.event.processing/EventHandlingResult|null[0]
+    final class Failed : com.wire.kalium.event.processing/EventHandlingResult { // com.wire.kalium.event.processing/EventHandlingResult.Failed|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.event.processing/EventHandlingResult.Failed.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.event.processing/EventHandlingResult.Failed.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.event.processing/EventHandlingResult.Failed.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.event.processing/EventHandlingResult.Failed.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.event.processing/EventHandlingResult.Failed.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.event.processing/EventHandlingResult.Failed.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.event.processing/EventHandlingResult.Failed.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.event.processing/EventHandlingResult.Failed // com.wire.kalium.event.processing/EventHandlingResult.Failed.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventHandlingResult.Failed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventHandlingResult.Failed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventHandlingResult.Failed.toString|toString(){}[0]
+    }
+
+    final object Handled : com.wire.kalium.event.processing/EventHandlingResult { // com.wire.kalium.event.processing/EventHandlingResult.Handled|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventHandlingResult.Handled.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventHandlingResult.Handled.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventHandlingResult.Handled.toString|toString(){}[0]
+    }
+
+    final object Ignored : com.wire.kalium.event.processing/EventHandlingResult { // com.wire.kalium.event.processing/EventHandlingResult.Ignored|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventHandlingResult.Ignored.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventHandlingResult.Ignored.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventHandlingResult.Ignored.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.event.processing/EventProcessingFailure { // com.wire.kalium.event.processing/EventProcessingFailure|null[0]
+    final class Acknowledgement : com.wire.kalium.event.processing/EventProcessingFailure { // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Acknowledgement.toString|toString(){}[0]
+    }
+
+    final class Decode : com.wire.kalium.event.processing/EventProcessingFailure { // com.wire.kalium.event.processing/EventProcessingFailure.Decode|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.event.processing/EventProcessingFailure.Decode.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.event.processing/EventProcessingFailure.Decode.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.Decode.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.event.processing/EventProcessingFailure.Decode.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Decode.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Decode.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.Decode.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.event.processing/EventProcessingFailure.Decode // com.wire.kalium.event.processing/EventProcessingFailure.Decode.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventProcessingFailure.Decode.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingFailure.Decode.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Decode.toString|toString(){}[0]
+    }
+
+    final class Decrypt : com.wire.kalium.event.processing/EventProcessingFailure { // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.event.processing/EventProcessingFailure.Decrypt // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Decrypt.toString|toString(){}[0]
+    }
+
+    final class DeliveryState : com.wire.kalium.event.processing/EventProcessingFailure { // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.DeliveryState.toString|toString(){}[0]
+    }
+
+    final class RequiredHandler : com.wire.kalium.event.processing/EventProcessingFailure { // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.RequiredHandler.toString|toString(){}[0]
+    }
+
+    final class Source : com.wire.kalium.event.processing/EventProcessingFailure { // com.wire.kalium.event.processing/EventProcessingFailure.Source|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable? = ...) // com.wire.kalium.event.processing/EventProcessingFailure.Source.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
+
+        final val cause // com.wire.kalium.event.processing/EventProcessingFailure.Source.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.Source.cause.<get-cause>|<get-cause>(){}[0]
+        final val description // com.wire.kalium.event.processing/EventProcessingFailure.Source.description|{}description[0]
+            final fun <get-description>(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Source.description.<get-description>|<get-description>(){}[0]
+
+        final fun component1(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Source.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable? // com.wire.kalium.event.processing/EventProcessingFailure.Source.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable? = ...): com.wire.kalium.event.processing/EventProcessingFailure.Source // com.wire.kalium.event.processing/EventProcessingFailure.Source.copy|copy(kotlin.String;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventProcessingFailure.Source.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingFailure.Source.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventProcessingFailure.Source.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.event.processing/EventProcessingOutcome { // com.wire.kalium.event.processing/EventProcessingOutcome|null[0]
+    final class AcknowledgementRecovered : com.wire.kalium.event.processing/EventProcessingOutcome { // com.wire.kalium.event.processing/EventProcessingOutcome.AcknowledgementRecovered|null[0]
+        constructor <init>(com.wire.kalium.events/EventIdempotencyKey) // com.wire.kalium.event.processing/EventProcessingOutcome.AcknowledgementRecovered.<init>|<init>(com.wire.kalium.events.EventIdempotencyKey){}[0]
+
+        final val key // com.wire.kalium.event.processing/EventProcessingOutcome.AcknowledgementRecovered.key|{}key[0]
+            final fun <get-key>(): com.wire.kalium.events/EventIdempotencyKey // com.wire.kalium.event.processing/EventProcessingOutcome.AcknowledgementRecovered.key.<get-key>|<get-key>(){}[0]
+
+        final fun component1(): com.wire.kalium.events/EventIdempotencyKey // com.wire.kalium.event.processing/EventProcessingOutcome.AcknowledgementRecovered.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.events/EventIdempotencyKey = ...): com.wire.kalium.event.processing/EventProcessingOutcome.AcknowledgementRecovered // com.wire.kalium.event.processing/EventProcessingOutcome.AcknowledgementRecovered.copy|copy(com.wire.kalium.events.EventIdempotencyKey){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventProcessingOutcome.AcknowledgementRecovered.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingOutcome.AcknowledgementRecovered.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventProcessingOutcome.AcknowledgementRecovered.toString|toString(){}[0]
+    }
+
+    final class Duplicate : com.wire.kalium.event.processing/EventProcessingOutcome { // com.wire.kalium.event.processing/EventProcessingOutcome.Duplicate|null[0]
+        constructor <init>(com.wire.kalium.events/EventIdempotencyKey) // com.wire.kalium.event.processing/EventProcessingOutcome.Duplicate.<init>|<init>(com.wire.kalium.events.EventIdempotencyKey){}[0]
+
+        final val key // com.wire.kalium.event.processing/EventProcessingOutcome.Duplicate.key|{}key[0]
+            final fun <get-key>(): com.wire.kalium.events/EventIdempotencyKey // com.wire.kalium.event.processing/EventProcessingOutcome.Duplicate.key.<get-key>|<get-key>(){}[0]
+
+        final fun component1(): com.wire.kalium.events/EventIdempotencyKey // com.wire.kalium.event.processing/EventProcessingOutcome.Duplicate.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.events/EventIdempotencyKey = ...): com.wire.kalium.event.processing/EventProcessingOutcome.Duplicate // com.wire.kalium.event.processing/EventProcessingOutcome.Duplicate.copy|copy(com.wire.kalium.events.EventIdempotencyKey){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventProcessingOutcome.Duplicate.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingOutcome.Duplicate.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventProcessingOutcome.Duplicate.toString|toString(){}[0]
+    }
+
+    final class Failed : com.wire.kalium.event.processing/EventProcessingOutcome { // com.wire.kalium.event.processing/EventProcessingOutcome.Failed|null[0]
+        constructor <init>(com.wire.kalium.events/EventIdempotencyKey?, com.wire.kalium.event.processing/EventProcessingFailure) // com.wire.kalium.event.processing/EventProcessingOutcome.Failed.<init>|<init>(com.wire.kalium.events.EventIdempotencyKey?;com.wire.kalium.event.processing.EventProcessingFailure){}[0]
+
+        final val failure // com.wire.kalium.event.processing/EventProcessingOutcome.Failed.failure|{}failure[0]
+            final fun <get-failure>(): com.wire.kalium.event.processing/EventProcessingFailure // com.wire.kalium.event.processing/EventProcessingOutcome.Failed.failure.<get-failure>|<get-failure>(){}[0]
+        final val key // com.wire.kalium.event.processing/EventProcessingOutcome.Failed.key|{}key[0]
+            final fun <get-key>(): com.wire.kalium.events/EventIdempotencyKey? // com.wire.kalium.event.processing/EventProcessingOutcome.Failed.key.<get-key>|<get-key>(){}[0]
+
+        final fun component1(): com.wire.kalium.events/EventIdempotencyKey? // com.wire.kalium.event.processing/EventProcessingOutcome.Failed.component1|component1(){}[0]
+        final fun component2(): com.wire.kalium.event.processing/EventProcessingFailure // com.wire.kalium.event.processing/EventProcessingOutcome.Failed.component2|component2(){}[0]
+        final fun copy(com.wire.kalium.events/EventIdempotencyKey? = ..., com.wire.kalium.event.processing/EventProcessingFailure = ...): com.wire.kalium.event.processing/EventProcessingOutcome.Failed // com.wire.kalium.event.processing/EventProcessingOutcome.Failed.copy|copy(com.wire.kalium.events.EventIdempotencyKey?;com.wire.kalium.event.processing.EventProcessingFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventProcessingOutcome.Failed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingOutcome.Failed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventProcessingOutcome.Failed.toString|toString(){}[0]
+    }
+
+    final class Processed : com.wire.kalium.event.processing/EventProcessingOutcome { // com.wire.kalium.event.processing/EventProcessingOutcome.Processed|null[0]
+        constructor <init>(com.wire.kalium.events/EventIdempotencyKey, kotlin/Int, kotlin.collections/List<com.wire.kalium.event.processing/EventHandlingResult.Failed>) // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.<init>|<init>(com.wire.kalium.events.EventIdempotencyKey;kotlin.Int;kotlin.collections.List<com.wire.kalium.event.processing.EventHandlingResult.Failed>){}[0]
+
+        final val handledCount // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.handledCount|{}handledCount[0]
+            final fun <get-handledCount>(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.handledCount.<get-handledCount>|<get-handledCount>(){}[0]
+        final val key // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.key|{}key[0]
+            final fun <get-key>(): com.wire.kalium.events/EventIdempotencyKey // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.key.<get-key>|<get-key>(){}[0]
+        final val optionalFailures // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.optionalFailures|{}optionalFailures[0]
+            final fun <get-optionalFailures>(): kotlin.collections/List<com.wire.kalium.event.processing/EventHandlingResult.Failed> // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.optionalFailures.<get-optionalFailures>|<get-optionalFailures>(){}[0]
+
+        final fun component1(): com.wire.kalium.events/EventIdempotencyKey // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.component1|component1(){}[0]
+        final fun component2(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.component2|component2(){}[0]
+        final fun component3(): kotlin.collections/List<com.wire.kalium.event.processing/EventHandlingResult.Failed> // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.component3|component3(){}[0]
+        final fun copy(com.wire.kalium.events/EventIdempotencyKey = ..., kotlin/Int = ..., kotlin.collections/List<com.wire.kalium.event.processing/EventHandlingResult.Failed> = ...): com.wire.kalium.event.processing/EventProcessingOutcome.Processed // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.copy|copy(com.wire.kalium.events.EventIdempotencyKey;kotlin.Int;kotlin.collections.List<com.wire.kalium.event.processing.EventHandlingResult.Failed>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventProcessingOutcome.Processed.toString|toString(){}[0]
+    }
+
+    final class Ready : com.wire.kalium.event.processing/EventProcessingOutcome { // com.wire.kalium.event.processing/EventProcessingOutcome.Ready|null[0]
+        constructor <init>(com.wire.kalium.events/EventCursor?) // com.wire.kalium.event.processing/EventProcessingOutcome.Ready.<init>|<init>(com.wire.kalium.events.EventCursor?){}[0]
+
+        final val acknowledgedCursor // com.wire.kalium.event.processing/EventProcessingOutcome.Ready.acknowledgedCursor|{}acknowledgedCursor[0]
+            final fun <get-acknowledgedCursor>(): com.wire.kalium.events/EventCursor? // com.wire.kalium.event.processing/EventProcessingOutcome.Ready.acknowledgedCursor.<get-acknowledgedCursor>|<get-acknowledgedCursor>(){}[0]
+
+        final fun component1(): com.wire.kalium.events/EventCursor? // com.wire.kalium.event.processing/EventProcessingOutcome.Ready.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.events/EventCursor? = ...): com.wire.kalium.event.processing/EventProcessingOutcome.Ready // com.wire.kalium.event.processing/EventProcessingOutcome.Ready.copy|copy(com.wire.kalium.events.EventCursor?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventProcessingOutcome.Ready.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventProcessingOutcome.Ready.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventProcessingOutcome.Ready.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.event.processing/EventRoutingResult { // com.wire.kalium.event.processing/EventRoutingResult|null[0]
+    final class Completed : com.wire.kalium.event.processing/EventRoutingResult { // com.wire.kalium.event.processing/EventRoutingResult.Completed|null[0]
+        constructor <init>(kotlin/Int, kotlin.collections/List<com.wire.kalium.event.processing/EventHandlingResult.Failed>) // com.wire.kalium.event.processing/EventRoutingResult.Completed.<init>|<init>(kotlin.Int;kotlin.collections.List<com.wire.kalium.event.processing.EventHandlingResult.Failed>){}[0]
+
+        final val handledCount // com.wire.kalium.event.processing/EventRoutingResult.Completed.handledCount|{}handledCount[0]
+            final fun <get-handledCount>(): kotlin/Int // com.wire.kalium.event.processing/EventRoutingResult.Completed.handledCount.<get-handledCount>|<get-handledCount>(){}[0]
+        final val optionalFailures // com.wire.kalium.event.processing/EventRoutingResult.Completed.optionalFailures|{}optionalFailures[0]
+            final fun <get-optionalFailures>(): kotlin.collections/List<com.wire.kalium.event.processing/EventHandlingResult.Failed> // com.wire.kalium.event.processing/EventRoutingResult.Completed.optionalFailures.<get-optionalFailures>|<get-optionalFailures>(){}[0]
+
+        final fun component1(): kotlin/Int // com.wire.kalium.event.processing/EventRoutingResult.Completed.component1|component1(){}[0]
+        final fun component2(): kotlin.collections/List<com.wire.kalium.event.processing/EventHandlingResult.Failed> // com.wire.kalium.event.processing/EventRoutingResult.Completed.component2|component2(){}[0]
+        final fun copy(kotlin/Int = ..., kotlin.collections/List<com.wire.kalium.event.processing/EventHandlingResult.Failed> = ...): com.wire.kalium.event.processing/EventRoutingResult.Completed // com.wire.kalium.event.processing/EventRoutingResult.Completed.copy|copy(kotlin.Int;kotlin.collections.List<com.wire.kalium.event.processing.EventHandlingResult.Failed>){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventRoutingResult.Completed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventRoutingResult.Completed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventRoutingResult.Completed.toString|toString(){}[0]
+    }
+
+    final class RequiredHandlerFailed : com.wire.kalium.event.processing/EventRoutingResult { // com.wire.kalium.event.processing/EventRoutingResult.RequiredHandlerFailed|null[0]
+        constructor <init>(com.wire.kalium.event.processing/EventHandlingResult.Failed) // com.wire.kalium.event.processing/EventRoutingResult.RequiredHandlerFailed.<init>|<init>(com.wire.kalium.event.processing.EventHandlingResult.Failed){}[0]
+
+        final val failure // com.wire.kalium.event.processing/EventRoutingResult.RequiredHandlerFailed.failure|{}failure[0]
+            final fun <get-failure>(): com.wire.kalium.event.processing/EventHandlingResult.Failed // com.wire.kalium.event.processing/EventRoutingResult.RequiredHandlerFailed.failure.<get-failure>|<get-failure>(){}[0]
+
+        final fun component1(): com.wire.kalium.event.processing/EventHandlingResult.Failed // com.wire.kalium.event.processing/EventRoutingResult.RequiredHandlerFailed.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.event.processing/EventHandlingResult.Failed = ...): com.wire.kalium.event.processing/EventRoutingResult.RequiredHandlerFailed // com.wire.kalium.event.processing/EventRoutingResult.RequiredHandlerFailed.copy|copy(com.wire.kalium.event.processing.EventHandlingResult.Failed){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventRoutingResult.RequiredHandlerFailed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventRoutingResult.RequiredHandlerFailed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventRoutingResult.RequiredHandlerFailed.toString|toString(){}[0]
+    }
+}
+
+final class <#A: kotlin/Any?, #B: kotlin/Any?, #C: kotlin/Any?> com.wire.kalium.event.processing/EventProcessor { // com.wire.kalium.event.processing/EventProcessor|null[0]
+    constructor <init>(com.wire.kalium.events/EventSource<#A>, com.wire.kalium.events/EventDeliveryStateStore, com.wire.kalium.event.processing/EventDecoder<#A, #B>, com.wire.kalium.event.processing/EventDecryptor<#B, #C>, com.wire.kalium.event.processing/EventRouter<#C>) // com.wire.kalium.event.processing/EventProcessor.<init>|<init>(com.wire.kalium.events.EventSource<1:0>;com.wire.kalium.events.EventDeliveryStateStore;com.wire.kalium.event.processing.EventDecoder<1:0,1:1>;com.wire.kalium.event.processing.EventDecryptor<1:1,1:2>;com.wire.kalium.event.processing.EventRouter<1:2>){}[0]
+
+    final fun process(): kotlinx.coroutines.flow/Flow<com.wire.kalium.event.processing/EventProcessingOutcome> // com.wire.kalium.event.processing/EventProcessor.process|process(){}[0]
+}
+
+final class <#A: kotlin/Any?> com.wire.kalium.event.processing/EventRouter { // com.wire.kalium.event.processing/EventRouter|null[0]
+    constructor <init>(kotlin.collections/List<com.wire.kalium.event.processing/EventHandler<#A>>) // com.wire.kalium.event.processing/EventRouter.<init>|<init>(kotlin.collections.List<com.wire.kalium.event.processing.EventHandler<1:0>>){}[0]
+
+    final suspend fun route(#A, com.wire.kalium.event.processing/EventHandlingContext): com.wire.kalium.event.processing/EventRoutingResult // com.wire.kalium.event.processing/EventRouter.route|route(1:0;com.wire.kalium.event.processing.EventHandlingContext){}[0]
+}
+
+final class com.wire.kalium.event.processing/EventHandlingContext { // com.wire.kalium.event.processing/EventHandlingContext|null[0]
+    constructor <init>(com.wire.kalium.events/EventIdempotencyKey, kotlin/String?) // com.wire.kalium.event.processing/EventHandlingContext.<init>|<init>(com.wire.kalium.events.EventIdempotencyKey;kotlin.String?){}[0]
+
+    final val backendEventId // com.wire.kalium.event.processing/EventHandlingContext.backendEventId|{}backendEventId[0]
+        final fun <get-backendEventId>(): kotlin/String? // com.wire.kalium.event.processing/EventHandlingContext.backendEventId.<get-backendEventId>|<get-backendEventId>(){}[0]
+    final val idempotencyKey // com.wire.kalium.event.processing/EventHandlingContext.idempotencyKey|{}idempotencyKey[0]
+        final fun <get-idempotencyKey>(): com.wire.kalium.events/EventIdempotencyKey // com.wire.kalium.event.processing/EventHandlingContext.idempotencyKey.<get-idempotencyKey>|<get-idempotencyKey>(){}[0]
+
+    final fun component1(): com.wire.kalium.events/EventIdempotencyKey // com.wire.kalium.event.processing/EventHandlingContext.component1|component1(){}[0]
+    final fun component2(): kotlin/String? // com.wire.kalium.event.processing/EventHandlingContext.component2|component2(){}[0]
+    final fun copy(com.wire.kalium.events/EventIdempotencyKey = ..., kotlin/String? = ...): com.wire.kalium.event.processing/EventHandlingContext // com.wire.kalium.event.processing/EventHandlingContext.copy|copy(com.wire.kalium.events.EventIdempotencyKey;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.event.processing/EventHandlingContext.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.event.processing/EventHandlingContext.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.event.processing/EventHandlingContext.toString|toString(){}[0]
+}

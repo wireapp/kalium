@@ -27,6 +27,7 @@ import com.wire.kalium.calling.runtime.CallingFailure
 import com.wire.kalium.calling.runtime.CallingResult
 import com.wire.kalium.calling.runtime.OutgoingCallingSignal
 import com.wire.kalium.calling.runtime.SftConnectionResult
+import com.wire.kalium.logic.service.api.ExperimentalKaliumServiceApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.utils.NetworkResponse
 
@@ -35,11 +36,13 @@ import com.wire.kalium.network.utils.NetworkResponse
  * Wire MessageApi or MLSMessageApi. Implementations must use durable crypto state and must not
  * route calling content through chat persistence.
  */
+@ExperimentalKaliumServiceApi
 public fun interface EncryptedCallingSignalSender {
     public suspend fun send(signal: OutgoingCallingSignal): CallingResult
 }
 
 /** Wire HTTP call configuration/SFT adapter plus encrypted signalling sender. */
+@ExperimentalKaliumServiceApi
 public class WireCallTransport(
     private val callApi: CallApi,
     private val signalSender: EncryptedCallingSignalSender,

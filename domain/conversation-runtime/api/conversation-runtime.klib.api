@@ -1,0 +1,21 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, macosArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.wire.kalium:domain-conversation-runtime>
+final class com.wire.kalium.conversation.runtime/ConversationRuntime : com.wire.kalium.conversation/ConversationContextProvider { // com.wire.kalium.conversation.runtime/ConversationRuntime|null[0]
+    constructor <init>(com.wire.kalium.conversation/ConversationContextProvider, kotlin/Int = ..., kotlin.time/Duration = ...) // com.wire.kalium.conversation.runtime/ConversationRuntime.<init>|<init>(com.wire.kalium.conversation.ConversationContextProvider;kotlin.Int;kotlin.time.Duration){}[0]
+
+    final suspend fun clear() // com.wire.kalium.conversation.runtime/ConversationRuntime.clear|clear(){}[0]
+    final suspend fun getForCall(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.conversation/ConversationContextResult // com.wire.kalium.conversation.runtime/ConversationRuntime.getForCall|getForCall(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    final suspend fun invalidate(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.conversation.runtime/ConversationRuntime.invalidate|invalidate(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+}
+
+final class com.wire.kalium.conversation.runtime/ProtocolRecordingConversationContextProvider : com.wire.kalium.conversation/ConversationContextProvider { // com.wire.kalium.conversation.runtime/ProtocolRecordingConversationContextProvider|null[0]
+    constructor <init>(com.wire.kalium.conversation/ConversationContextProvider, com.wire.kalium.conversation/ConversationProtocolStateStore) // com.wire.kalium.conversation.runtime/ProtocolRecordingConversationContextProvider.<init>|<init>(com.wire.kalium.conversation.ConversationContextProvider;com.wire.kalium.conversation.ConversationProtocolStateStore){}[0]
+
+    final suspend fun getForCall(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.conversation/ConversationContextResult // com.wire.kalium.conversation.runtime/ProtocolRecordingConversationContextProvider.getForCall|getForCall(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+}

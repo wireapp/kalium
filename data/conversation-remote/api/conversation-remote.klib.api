@@ -1,0 +1,13 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, macosArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.wire.kalium:data-conversation-remote>
+final class com.wire.kalium.conversation.remote/RemoteConversationContextProvider : com.wire.kalium.conversation/ConversationContextProvider { // com.wire.kalium.conversation.remote/RemoteConversationContextProvider|null[0]
+    constructor <init>(com.wire.kalium.network.api.base.authenticated.conversation/ConversationApi, com.wire.kalium.network.api.base.authenticated.client/ClientApi, kotlin/String?) // com.wire.kalium.conversation.remote/RemoteConversationContextProvider.<init>|<init>(com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi;com.wire.kalium.network.api.base.authenticated.client.ClientApi;kotlin.String?){}[0]
+
+    final suspend fun getForCall(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.conversation/ConversationContextResult // com.wire.kalium.conversation.remote/RemoteConversationContextProvider.getForCall|getForCall(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+}

@@ -1,0 +1,17 @@
+// Klib ABI Dump
+// Targets: [iosArm64, iosSimulatorArm64, macosArm64]
+// Rendering settings:
+// - Signature version: 2
+// - Show manifest properties: true
+// - Show declarations: true
+
+// Library unique name: <com.wire.kalium:domain-calling-history>
+abstract fun interface com.wire.kalium.calling.history/CallHistoryWriter { // com.wire.kalium.calling.history/CallHistoryWriter|null[0]
+    abstract suspend fun record(com.wire.kalium.calling.runtime/CallLifecycleEvent): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.history/CallHistoryWriter.record|record(com.wire.kalium.calling.runtime.CallLifecycleEvent){}[0]
+}
+
+final class com.wire.kalium.calling.history/HistoryRecordingCallEventSink : com.wire.kalium.calling.runtime/CallEventSink { // com.wire.kalium.calling.history/HistoryRecordingCallEventSink|null[0]
+    constructor <init>(com.wire.kalium.calling.history/CallHistoryWriter, com.wire.kalium.calling.runtime/CallEventSink) // com.wire.kalium.calling.history/HistoryRecordingCallEventSink.<init>|<init>(com.wire.kalium.calling.history.CallHistoryWriter;com.wire.kalium.calling.runtime.CallEventSink){}[0]
+
+    final suspend fun emit(com.wire.kalium.calling.runtime/CallLifecycleEvent): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.history/HistoryRecordingCallEventSink.emit|emit(com.wire.kalium.calling.runtime.CallLifecycleEvent){}[0]
+}
