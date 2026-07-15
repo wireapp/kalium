@@ -21,10 +21,14 @@ import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.functional.left
 import com.wire.kalium.common.functional.right
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.Result
 import dev.mokkery.answering.returns
+import dev.mokkery.every
 import dev.mokkery.everySuspend
 import dev.mokkery.mock
+import dev.mokkery.verify.VerifyMode
+import dev.mokkery.verifySuspend
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -34,6 +38,7 @@ class MeetingOccurrencesSyncWorkerTest {
     @Test
     fun givenRepositorySyncSucceeds_whenDoingWork_thenSuccessIsReturned() = runTest {
         val (_, worker) = Arrangement()
+            .withMeetingsSupported(true)
             .withSyncMeetingOccurrencesSuccess()
             .arrange()
         val result = worker.doWork()
@@ -43,20 +48,39 @@ class MeetingOccurrencesSyncWorkerTest {
     @Test
     fun givenRepositorySyncFails_whenDoingWork_thenFailureIsReturned() = runTest {
         val (_, worker) = Arrangement()
+            .withMeetingsSupported(true)
             .withSyncMeetingOccurrencesFailure()
             .arrange()
         val result = worker.doWork()
         assertEquals(Result.Failure, result)
     }
 
+    @Test
+    fun givenMeetingsNotSupported_whenDoingWork_thenRepositorySyncIsNotCalled() = runTest {
+        val (arrangement, worker) = Arrangement()
+            .withMeetingsSupported(false)
+            .arrange()
+
+        val result = worker.doWork()
+
+        assertEquals(Result.Success, result)
+        verifySuspend(VerifyMode.not) {
+            arrangement.meetingRepository.syncMeetingOccurrences()
+        }
+    }
+
     inner class Arrangement {
         internal val meetingRepository = mock<MeetingRepository>()
+        internal val featureSupport = mock<FeatureSupport>()
+        fun withMeetingsSupported(isSupported: Boolean = true) = apply {
+            every { featureSupport.isMeetingsSupported } returns isSupported
+        }
         fun withSyncMeetingOccurrencesSuccess() = apply {
             everySuspend { meetingRepository.syncMeetingOccurrences() } returns Unit.right()
         }
         fun withSyncMeetingOccurrencesFailure() = apply {
             everySuspend { meetingRepository.syncMeetingOccurrences() } returns CoreFailure.Unknown(RuntimeException("sync failed")).left()
         }
-        internal fun arrange() = this to MeetingOccurrencesSyncWorkerImpl(meetingRepository)
+        internal fun arrange() = this to MeetingOccurrencesSyncWorkerImpl(meetingRepository, featureSupport)
     }
 }
