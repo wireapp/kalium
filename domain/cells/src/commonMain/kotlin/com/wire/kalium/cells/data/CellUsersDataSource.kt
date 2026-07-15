@@ -20,6 +20,7 @@ package com.wire.kalium.cells.data
 import com.wire.kalium.cells.domain.CellUsersRepository
 import com.wire.kalium.cells.util.toQualifiedIdOrNull
 import com.wire.kalium.common.error.wrapStorageRequest
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
@@ -49,6 +50,20 @@ internal class CellUsersDataSource(
             userId.toQualifiedIdOrNull()?.let { qualifiedId ->
                 userDAO.getUserDetailsByQualifiedID(qualifiedId)?.name
             }
+        }
+    }
+
+    override suspend fun getUserTypeById(userId: String) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            userId.toQualifiedIdOrNull()?.let { qualifiedId ->
+                userDAO.getUserDetailsByQualifiedID(qualifiedId)?.userType
+            }
+        }
+    }
+
+    override suspend fun getUserTeamId(userId: UserId) = withContext(dispatchers.io) {
+        wrapStorageRequest {
+            userDAO.getUserDetailsByQualifiedID(QualifiedIDEntity(userId.value, userId.domain))?.team
         }
     }
 

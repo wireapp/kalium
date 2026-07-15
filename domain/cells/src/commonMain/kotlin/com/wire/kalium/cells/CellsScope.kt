@@ -131,6 +131,8 @@ import com.wire.kalium.cells.domain.usecase.GetConversationNameUseCase
 import com.wire.kalium.cells.domain.usecase.GetConversationNameUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.GetUserNameUseCase
 import com.wire.kalium.cells.domain.usecase.GetUserNameUseCaseImpl
+import com.wire.kalium.cells.domain.usecase.IsSelfGuestInConversationUseCase
+import com.wire.kalium.cells.domain.usecase.IsSelfGuestInConversationUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.ObserveIsAtLeastOneCellAvailableUseCase
 import com.wire.kalium.cells.domain.usecase.ObserveIsAtLeastOneCellAvailableUseCaseImpl
 import com.wire.kalium.cells.domain.usecase.offline.GetOfflineFileUseCase
@@ -142,6 +144,7 @@ import com.wire.kalium.cells.domain.usecase.offline.ObserveOfflineFilesByConvers
 import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCase
 import com.wire.kalium.cells.domain.usecase.offline.SaveOfflineFileUseCaseImpl
 import com.wire.kalium.cells.sdk.kmp.api.NodeServiceApi
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.dao.UserDAO
@@ -169,6 +172,7 @@ public class CellsScope(
     private val dao: CellScopeDao,
     private val sessionManager: SessionManager,
     private val accessTokenApi: AccessTokenApi,
+    private val userId: UserId,
 ) : CoroutineScope {
 
     public data class CellScopeDao(
@@ -456,5 +460,13 @@ public class CellsScope(
 
     public val getUserName: GetUserNameUseCase by lazy {
         GetUserNameUseCaseImpl(usersRepository)
+    }
+
+    public val isSelfGuestInConversation: IsSelfGuestInConversationUseCase by lazy {
+        IsSelfGuestInConversationUseCaseImpl(
+            selfUserId = userId,
+            usersRepository = usersRepository,
+            conversationRepository = cellsConversationRepository,
+        )
     }
 }

@@ -66,6 +66,15 @@ internal class CellConversationDataSource(
             }
         }
 
+    override suspend fun getConversationTeamId(conversationId: String): Either<StorageFailure, String?> =
+        withContext(dispatchers.io) {
+            wrapStorageRequest {
+                conversationId.toQualifiedIdOrNull()?.let { qualifiedId ->
+                    conversationDao.getConversationById(qualifiedId)?.teamId
+                }
+            }
+        }
+
     override suspend fun hasConversationWithCell(): Either<StorageFailure, Boolean> =
         withContext(dispatchers.io) {
             wrapStorageRequest {

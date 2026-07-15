@@ -17,8 +17,6 @@
  */
 package com.wire.kalium.cells.data
 
-import dev.mokkery.MockMode
-import dev.mokkery.answering.returns
 import com.wire.kalium.cells.domain.model.CellConversation
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ConversationDetails
@@ -26,8 +24,10 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import dev.mokkery.matcher.any
+import dev.mokkery.MockMode
+import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
+import dev.mokkery.matcher.any
 import dev.mokkery.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -287,6 +287,24 @@ class CellConversationRepositoryTest {
         assertEquals(CONVERSATION_ID_1, conversations[0].id)
     }
 
+    @Test
+    fun given_ConversationWithTeam_whenGetConversationTeamId_thenReturnTeamId() = runTest {
+        val conv = createGroupConversationEntity(
+            CONVERSATION_ID_1,
+            CONVERSATION_NAME_1,
+            channelAccess = null,
+            wireCell = "cell1"
+        )
+        val (_, repository) = Arrangement()
+            .withConversationById(conv)
+            .arrange()
+
+        val result = repository.getConversationTeamId("conv1@wire.com")
+
+        assertIs<Either.Right<String?>>(result)
+        assertEquals("team123", result.value)
+    }
+
     private fun createGroupConversationEntity(
         conversationId: ConversationId,
         name: String,
@@ -324,9 +342,14 @@ class CellConversationRepositoryTest {
         private val conversationDAO = mock<ConversationDAO>(mode = MockMode.autoUnit)
         private var conversations: List<ConversationEntity> = emptyList()
         private var pagedConversations: Map<Int, List<ConversationEntity>> = emptyMap()
+        private var conversationById: ConversationEntity? = null
 
         fun withConversations(convs: List<ConversationEntity>) = apply {
             conversations = convs
+        }
+
+        fun withConversationById(conv: ConversationEntity?) = apply {
+            conversationById = conv
         }
 
         fun withPagedConversations(conversations: List<ConversationEntity>, offset: Int = 0) = apply {
@@ -349,6 +372,10 @@ class CellConversationRepositoryTest {
                     conversationDAO.getCellGroupConversationsPaged(any(), any(), any())
                 }.returns(emptyList())
             }
+
+            everySuspend {
+                conversationDAO.getConversationById(any())
+            }.returns(conversationById)
 
             return this to CellConversationDataSource(conversationDAO)
         }
