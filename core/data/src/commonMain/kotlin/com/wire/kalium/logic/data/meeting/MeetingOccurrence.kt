@@ -48,7 +48,7 @@ data class MeetingOccurrence(
         val interval: Long,
         val until: Instant?
     ) {
-        enum class Frequency { DAILY, WEEKLY, MONTHLY, YEARLY }
+        enum class Frequency { DAILY, WEEKLY }
     }
 
     enum class SelfRole { Creator, Member }
