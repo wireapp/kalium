@@ -74,6 +74,9 @@ public class JvmServiceNetworkOwner(
     @Volatile
     private var closed: Boolean = false
 
+    @Volatile
+    private var notificationDeliveryMode: WireNotificationDeliveryMode = WireNotificationDeliveryMode.LEGACY
+
     private var currentSession: SessionDTO? = null
     private var sessionStoreClosed: Boolean = sessionStore !is AutoCloseable
 
@@ -125,10 +128,10 @@ public class JvmServiceNetworkOwner(
                         sessionMutex.withLock { currentSession = null }
                         return@withLock sessionFailure("The backend returned a different Wire client identity")
                     }
-                    if (ClientCapabilityDTO.ConsumableNotifications !in client.capabilities) {
-                        releaseFailedCandidate(candidate)
-                        sessionMutex.withLock { currentSession = null }
-                        return@withLock sessionFailure("The Wire client does not support consumable notifications")
+                    notificationDeliveryMode = if (ClientCapabilityDTO.ConsumableNotifications in client.capabilities) {
+                        WireNotificationDeliveryMode.CONSUMABLE
+                    } else {
+                        WireNotificationDeliveryMode.LEGACY
                     }
                 }
             }
@@ -158,6 +161,11 @@ public class JvmServiceNetworkOwner(
     }
 
     internal fun networkOrNull(): AuthenticatedNetworkContainer? = ownedNetwork
+
+    internal fun notificationDeliveryMode(): WireNotificationDeliveryMode {
+        check(started) { "The service network owner has not been started" }
+        return notificationDeliveryMode
+    }
 
     override suspend fun session(): SessionDTO? = sessionMutex.withLock { currentSession }
 
@@ -210,6 +218,7 @@ public class JvmServiceNetworkOwner(
         if (closed && ownedNetwork == null && sessionStoreClosed) return@withLock ServiceResult.Success
         closed = true
         started = false
+        notificationDeliveryMode = WireNotificationDeliveryMode.LEGACY
         sessionMutex.withLock { currentSession = null }
 
         var firstFailure: Throwable? = null
@@ -276,4 +285,9 @@ public class JvmServiceNetworkOwner(
             // Retain ownership so an explicit close can retry the failed cleanup.
         }
     }
+}
+
+internal enum class WireNotificationDeliveryMode {
+    CONSUMABLE,
+    LEGACY,
 }

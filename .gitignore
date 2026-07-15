@@ -1,5 +1,9 @@
 .DS_Store
 native/
+sample/call-recorder-service/call-recorder-config.json
+sample/call-recorder-service/call-recorder-crypto/
+sample/call-recorder-service/call-recorder-state/
+sample/call-recorder-service/recordings/
 
 # Built application files
 *.apk

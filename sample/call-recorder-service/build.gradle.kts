@@ -36,7 +36,11 @@ kotlin {
 }
 
 tasks.withType<JavaExec>().configureEach {
-    jvmArgs("-Djava.library.path=./native/libs")
+    val nativeLibs = rootProject.layout.projectDirectory.dir("native/libs").asFile.absolutePath
+    jvmArgs(
+        "-Djava.library.path=$nativeLibs",
+        "-Djna.library.path=$nativeLibs",
+    )
 }
 
 val recorderRuntimeClasspath = configurations.named("jvmRuntimeClasspath")

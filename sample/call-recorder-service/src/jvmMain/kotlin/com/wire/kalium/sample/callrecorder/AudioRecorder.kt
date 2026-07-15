@@ -99,6 +99,10 @@ internal class AvsWavAudioRecorder(
         recording = null
         try {
             awaitRawFileClosed(paths.rawPartial)
+            if (Files.size(paths.rawPartial) == 0L) {
+                Files.delete(paths.rawPartial)
+                return@withContext AudioRecordingResult.NoRecording
+            }
             writeWav(paths.rawPartial, paths.wavPartial)
             moveAtomically(paths.wavPartial, paths.wav)
             Files.delete(paths.rawPartial)

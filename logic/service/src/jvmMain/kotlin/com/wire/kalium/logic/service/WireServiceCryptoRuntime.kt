@@ -239,7 +239,7 @@ public class WireServiceCryptoRuntime(
         Files.createDirectories(root)
         val keystore = root.resolve(KEYSTORE_FILE)
         val identityMarker = root.resolve(IDENTITY_MARKER_FILE)
-        val expectedMarker = identityMarkerBytes()
+        val expectedMarker = serviceIdentityMarkerBytes(expectedIdentity)
         when (mode) {
             ServiceCryptoStorageMode.CREATE_NEW -> {
                 require(!Files.exists(keystore)) {
@@ -337,18 +337,30 @@ public class WireServiceCryptoRuntime(
     private fun hasOwnedCryptoResources(): Boolean =
         mlsClient != null || mlsCentral != null || proteusClient != null || proteusCentral != null
 
-    private fun identityMarkerBytes(): ByteArray {
-        val canonicalIdentity = listOf(
-            expectedIdentity.backendDomain,
-            expectedIdentity.userId.domain,
-            expectedIdentity.userId.value,
-            expectedIdentity.clientId,
-        ).joinToString(separator = "\u0000")
-        return MessageDigest.getInstance("SHA-256").digest(canonicalIdentity.encodeToByteArray())
-    }
-
     private companion object {
-        const val KEYSTORE_FILE = "keystore"
-        const val IDENTITY_MARKER_FILE = ".kalium-service-identity"
+        const val KEYSTORE_FILE = SERVICE_KEYSTORE_FILE
+        const val IDENTITY_MARKER_FILE = SERVICE_IDENTITY_MARKER_FILE
     }
+}
+
+internal const val SERVICE_KEYSTORE_FILE: String = "keystore"
+internal const val SERVICE_IDENTITY_MARKER_FILE: String = ".kalium-service-identity"
+
+internal fun serviceIdentityMarkerBytes(identity: ServiceIdentity): ByteArray {
+    val canonicalIdentity = listOf(
+        identity.backendDomain,
+        identity.userId.domain,
+        identity.userId.value,
+        identity.clientId,
+    ).joinToString(separator = "\u0000")
+    return MessageDigest.getInstance("SHA-256").digest(canonicalIdentity.encodeToByteArray())
+}
+
+internal fun bindProvisionedServiceStorage(root: Path, identity: ServiceIdentity) {
+    Files.write(
+        root.resolve(SERVICE_IDENTITY_MARKER_FILE),
+        serviceIdentityMarkerBytes(identity),
+        StandardOpenOption.CREATE_NEW,
+        StandardOpenOption.WRITE,
+    )
 }

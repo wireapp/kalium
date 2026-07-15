@@ -29,6 +29,7 @@ import com.wire.kalium.calling.runtime.OutgoingCallingSignal
 import com.wire.kalium.calling.runtime.SftConnectionResult
 import com.wire.kalium.logic.service.api.ExperimentalKaliumServiceApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 
 /**
@@ -58,9 +59,18 @@ public class WireCallTransport(
         when (val response = callApi.connectToSFT(url, payload.decodeToString())) {
             is NetworkResponse.Success -> SftConnectionResult.Success(response.value)
             is NetworkResponse.Error -> SftConnectionResult.Failure(
-                CallingFailure.Transport("SFT request failed", response.kException),
+                CallingFailure.Transport("SFT request failed (${response.kException.safeKind()})", response.kException),
             )
         }
 
     override suspend fun sendSignal(signal: OutgoingCallingSignal): CallingResult = signalSender.send(signal)
+}
+
+private fun KaliumException.safeKind(): String = when (this) {
+    is KaliumException.GenericError -> "GenericError/${cause::class.simpleName ?: "unknown"}"
+    is KaliumException.InvalidRequestError -> "HTTP ${errorResponse.code}"
+    is KaliumException.RedirectError -> "HTTP ${errorResponse.code}"
+    is KaliumException.ServerError -> "HTTP ${errorResponse.code}"
+    is KaliumException.Unauthorized -> "HTTP $errorCode"
+    else -> this::class.simpleName ?: "unknown"
 }

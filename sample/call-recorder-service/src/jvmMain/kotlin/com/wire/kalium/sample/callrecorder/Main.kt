@@ -69,6 +69,7 @@ private suspend fun runApplication(args: Array<String>): Int {
 }
 
 private fun parseOptions(args: Array<String>): ApplicationOptions? {
+    var configFile = Path.of("./call-recorder-config.json")
     var recordingsDirectory = Path.of("./recordings")
     var shutdownTimeoutSeconds = DEFAULT_SHUTDOWN_TIMEOUT_SECONDS
     var notificationTimeoutSeconds = DEFAULT_NOTIFICATION_TIMEOUT_SECONDS
@@ -79,6 +80,7 @@ private fun parseOptions(args: Array<String>): ApplicationOptions? {
                 printUsage()
                 return null
             }
+            "--config" -> configFile = Path.of(args.requireValue(++index, option))
             "--recordings-dir" -> recordingsDirectory = Path.of(args.requireValue(++index, option))
             "--shutdown-timeout-seconds" -> shutdownTimeoutSeconds = args.positiveLong(++index, option)
             "--notification-open-timeout-seconds" -> notificationTimeoutSeconds = args.positiveLong(++index, option)
@@ -87,6 +89,7 @@ private fun parseOptions(args: Array<String>): ApplicationOptions? {
         index++
     }
     return ApplicationOptions(
+        configFile = configFile,
         recordingsDirectory = recordingsDirectory,
         shutdownTimeoutMillis = shutdownTimeoutSeconds * MILLIS_PER_SECOND,
         notificationOpenTimeoutMillis = notificationTimeoutSeconds * MILLIS_PER_SECOND,
@@ -107,13 +110,14 @@ private fun printUsage() {
         Usage: ./gradlew :sample:call-recorder-service:jvmRun --args="[options]"
 
         Options:
+          --config PATH                         Test JSON config (default: ./call-recorder-config.json)
           --recordings-dir PATH                 WAV output directory (default: ./recordings)
           --shutdown-timeout-seconds SECONDS    Graceful runtime shutdown timeout (default: 30)
           --notification-open-timeout-seconds S WebSocket readiness timeout (default: 30)
           --help                                Show this help
 
-        Identity, session, backend, and storage secrets are accepted only through environment
-        variables. See sample/call-recorder-service/README.md.
+        This test sample reads all account, backend, client, and local database configuration
+        from the JSON file. See sample/call-recorder-service/README.md.
         """.trimIndent(),
     )
 }

@@ -1,6 +1,10 @@
 # initial setup/bootstrap related targets
 SHELL := /bin/bash
-AVS_VERSION := 10.1.41
+AVS_VERSION := $(shell awk -F'"' '/^avs = / { print $$2; exit }' gradle/libs.versions.toml)
+
+ifeq ($(strip $(AVS_VERSION)),)
+$(error Could not resolve the AVS version from gradle/libs.versions.toml)
+endif
 
 ifeq ($(JAVA_HOME),)
 	export JAVA_HOME := $(shell /usr/libexec/java_home)
@@ -26,6 +30,8 @@ AVS_FRAMEWORK_URL := https://github.com/wireapp/wire-avs/releases/download/$(AVS
 AVS_FRAMEWORK_ZIP := $(NATIVE_TARBALLS)/$(AVS_LIB_NAME)
 AVS_FRAMEWORK_UNZIP := native/avs.framework_$(AVS_VERSION)
 AVS_FRAMEWORK_ARTIFACT := $(NATIVE_LIBS)/$(AVS_ARTIFACT_FILE)
+AVS_JNA_LIB_NAME := libavs.dylib
+AVS_JNA_LIB_TARGET := $(AVS_ARTIFACT_FILE)/avs
 
 # override framework location for linux
 # osx	=> ./native/avs.framework_10.1.41/Carthage/Build/iOS/avs.framework
@@ -33,9 +39,13 @@ AVS_FRAMEWORK_ARTIFACT := $(NATIVE_LIBS)/$(AVS_ARTIFACT_FILE)
 AVS_FRAMEWORK_LOCATION := $(AVS_FRAMEWORK_UNZIP)/Carthage/Build/iOS/avs.framework
 ifeq ($(OS), linux)
 	AVS_FRAMEWORK_LOCATION = $(AVS_FRAMEWORK_UNZIP)/avscore/lib
+	AVS_JNA_LIB_NAME = libavs.so
+	AVS_JNA_LIB_TARGET = $(AVS_ARTIFACT_FILE)/libavs.so
 endif
 
-all: $(AVS_FRAMEWORK_ARTIFACT)
+AVS_JNA_LIB := $(NATIVE_LIBS)/$(AVS_JNA_LIB_NAME)
+
+all: $(AVS_FRAMEWORK_ARTIFACT) $(AVS_JNA_LIB)
 
 .PHONY: clean-native
 clean-native:
@@ -67,6 +77,9 @@ $(AVS_FRAMEWORK_LOCATION): $(AVS_FRAMEWORK_UNZIP)
 
 $(AVS_FRAMEWORK_ARTIFACT): $(AVS_FRAMEWORK_LOCATION)
 	cp -r "$<" "$@"
+
+$(AVS_JNA_LIB): $(AVS_FRAMEWORK_ARTIFACT)
+	ln -sfn "$(AVS_JNA_LIB_TARGET)" "$@"
 
 setup/pre-push-hook:
 	mkdir -p .git/hooks

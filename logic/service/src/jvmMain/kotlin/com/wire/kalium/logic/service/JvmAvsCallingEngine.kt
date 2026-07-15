@@ -33,6 +33,7 @@ import com.wire.kalium.calling.callbacks.CloseCallHandler
 import com.wire.kalium.calling.callbacks.ConstantBitRateStateChangeHandler
 import com.wire.kalium.calling.callbacks.EstablishedCallHandler
 import com.wire.kalium.calling.callbacks.IncomingCallHandler
+import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.MissedCallHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
@@ -95,6 +96,8 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+
+private const val AVS_SFT_NO_RESPONSE_DATA = 1
 
 /** Locally owned JVM AVS user runtime. Process setup/run/close are reference-counted across identities. */
 @ExperimentalKaliumServiceApi
@@ -182,7 +185,9 @@ public class JvmAvsCallingEngine(
                 retainedCallbacks.video,
                 null,
             )
-            check(created.value != 0L) { "AVS returned an invalid user handle" }
+            // JNA populates IntegerType through setValue after constructing Uint32_t, so the
+            // Kotlin constructor property can remain zero even when the native value is valid.
+            check(created.toLong() != 0L) { "AVS returned an invalid user handle" }
             callbacks = retainedCallbacks
             handle = created
             calling.wcall_set_req_clients_handler(created, retainedCallbacks.clients)
@@ -486,11 +491,13 @@ public class JvmAvsCallingEngine(
                 AVS_SUCCESS
             }
         }
-        val sft = SFTRequestHandler { context, url, data, length, _ ->
-            if (data == null || length.value !in 0..MAX_NATIVE_PAYLOAD_BYTES) {
+        val sft = SFTRequestHandler { context, url, data, _, _ ->
+            if (data == null) {
                 AVS_INVALID_ARGUMENT
             } else {
-                val payload = data.getByteArray(0, length.value.toInt())
+                // Match the Android client callback exactly: AVS supplies a NUL-terminated C
+                // string here, while the accompanying length is not the JSON payload length.
+                val payload = data.getString(0, Charsets.UTF_8.name()).encodeToByteArray()
                 scope.launch {
                     val result = transport.connectToSft(url, payload)
                     lifecycleMutex.withLock {
@@ -503,13 +510,16 @@ public class JvmAvsCallingEngine(
                                 result.response.size,
                                 context,
                             )
-                            is SftConnectionResult.Failure -> calling.wcall_sft_resp(
-                                native,
-                                AVS_TRANSPORT_ERROR,
-                                ByteArray(0),
-                                0,
-                                context,
-                            )
+                            is SftConnectionResult.Failure -> {
+                                calling.wcall_sft_resp(
+                                    native,
+                                    AVS_SFT_NO_RESPONSE_DATA,
+                                    ByteArray(0),
+                                    0,
+                                    context,
+                                )
+                                emitEvent(AvsCallingEvent.Failed(null, result.failure))
+                            }
                         }
                     }
                 }
@@ -554,7 +564,9 @@ public class JvmAvsCallingEngine(
             scope.launch {
                 val result = transport.getCallConfig(null)
                 synchronized(nativeCallbackMonitor) {
-                    if (closed || !readyForCalls || handle != native) return@synchronized
+                    // The callback's native instance is authoritative. Handle is a JNA
+                    // IntegerType whose Kotlin constructor property is not a reliable identity.
+                    if (closed) return@synchronized
                     when (result) {
                         is com.wire.kalium.calling.runtime.CallConfigResult.Success -> calling.wcall_config_update(
                             native,
@@ -847,6 +859,7 @@ public class JvmAvsCallingEngine(
                     calling.wcall_close()
                     error("AVS run failed with code $run")
                 }
+                calling.wcall_set_log_handler(SilentNativeLogHandler, null)
             }
             users += 1
         }
@@ -861,6 +874,10 @@ public class JvmAvsCallingEngine(
                 users = 0
             }
         }
+    }
+
+    private object SilentNativeLogHandler : LogHandler {
+        override fun onLog(level: Int, message: String, arg: Pointer?) = Unit
     }
 
     private companion object {

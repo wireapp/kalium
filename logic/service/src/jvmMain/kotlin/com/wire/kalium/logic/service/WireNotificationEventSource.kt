@@ -67,10 +67,58 @@ public data class WireRawEvent(
     public val event: EventResponseToStore,
 )
 
-/** Consumable-notification event source for a started [JvmServiceNetworkOwner]. */
+/** Incremental Wire event source selecting consumable or legacy notification delivery per client capability. */
 @ExperimentalKaliumServiceApi
-@Suppress("CyclomaticComplexMethod", "LongMethod", "NestedBlockDepth", "ReturnCount", "ThrowsCount", "TooManyFunctions")
 public class WireNotificationEventSource(
+    private val owner: JvmServiceNetworkOwner,
+    openTimeoutMillis: Long = DEFAULT_OPEN_TIMEOUT_MILLIS,
+) : EventSource<WireRawEvent> {
+    private val consumable = ConsumableWireNotificationEventSource(owner, openTimeoutMillis)
+    private val legacy = WireLegacyNotificationEventSource(owner, openTimeoutMillis)
+
+    @Volatile
+    private var active: EventSource<WireRawEvent>? = null
+
+    override suspend fun open(from: EventCursor?): EventStreamResult<WireRawEvent> = open(from, emptyList())
+
+    override suspend fun open(
+        from: EventCursor?,
+        pendingAcknowledgements: List<PendingEventAcknowledgement>,
+    ): EventStreamResult<WireRawEvent> {
+        val selected = selectedSource()
+        check(active == null || active === selected) { "The notification delivery mode changed while the source was active" }
+        active = selected
+        return selected.open(from, pendingAcknowledgements)
+    }
+
+    override suspend fun acknowledge(acknowledgement: EventAcknowledgement): EventSourceResult =
+        (active ?: selectedSource()).acknowledge(acknowledgement)
+
+    override suspend fun close(): EventSourceResult {
+        val consumableResult = consumable.close()
+        val legacyResult = legacy.close()
+        active = null
+        return if (consumableResult is EventSourceResult.Failure) consumableResult else legacyResult
+    }
+
+    internal suspend fun failClosed(description: String, cause: Throwable?) {
+        consumable.failClosed(description, cause)
+        legacy.failClosed(description, cause)
+    }
+
+    private fun selectedSource(): EventSource<WireRawEvent> = when (owner.notificationDeliveryMode()) {
+        WireNotificationDeliveryMode.CONSUMABLE -> consumable
+        WireNotificationDeliveryMode.LEGACY -> legacy
+    }
+
+    private companion object {
+        const val DEFAULT_OPEN_TIMEOUT_MILLIS = 30_000L
+    }
+}
+
+/** Acknowledged consumable-notification transport used by [WireNotificationEventSource]. */
+@Suppress("CyclomaticComplexMethod", "LongMethod", "NestedBlockDepth", "ReturnCount", "ThrowsCount", "TooManyFunctions")
+private class ConsumableWireNotificationEventSource(
     private val owner: JvmServiceNetworkOwner,
     private val openTimeoutMillis: Long = DEFAULT_OPEN_TIMEOUT_MILLIS,
 ) : EventSource<WireRawEvent> {

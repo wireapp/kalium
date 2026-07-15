@@ -93,6 +93,10 @@ internal class UnauthenticatedNetworkClient(
     val httpClient: HttpClient = provideBaseHttpClient(engine, kaliumLogger) {
         installWireDefaultRequest(backendLinks)
     }
+
+    fun close() {
+        httpClient.close()
+    }
 }
 
 /**

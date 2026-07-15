@@ -1,7 +1,7 @@
 # JVM Wire call-recorder service
 
-This experimental headless sample owns one Kalium service runtime for one pre-provisioned Wire
-identity. It receives and checkpoints authenticated events, decodes/decrypts calling signalling,
+This experimental headless sample registers and owns one Kalium service runtime for a dedicated Wire
+account. It receives and checkpoints authenticated events, decodes/decrypts calling signalling,
 forwards signalling to AVS, automatically answers eligible ringing calls, maintains Wire/SFT/MLS
 calling transport, and records remote playout to a separate WAV file for each sequential call.
 
@@ -19,85 +19,70 @@ also cannot isolate concurrent calls, so this service enforces one active call p
 sequential calls are supported. If WAV finalization fails, the raw `.pcm.partial` file is retained
 for recovery instead of being silently deleted.
 
-## Required configuration
+## Local test configuration
 
-Use a dedicated, already registered Wire user/client. The current Kalium service composition
-restores session and crypto identity state; it does not perform email/password login, register a
-client, publish Proteus prekeys, or discover self-conversation IDs. On the first launch of a
-pre-provisioned state directory, `WIRE_ACCESS_TOKEN` and `WIRE_REFRESH_TOKEN` seed the encrypted
-session store. Later launches read the stored, refreshable session and do not require token
-variables.
+This sample intentionally uses one plain JSON file for fast local testing. It contains the Wire
+email/password, backend links, conversation targets, generated state/crypto database passwords,
+and the registered client ID. Do not use this credential layout for deployment or commit the
+filled file.
 
-Required identity/backend variables:
+Copy the template and fill the account and backend fields:
 
-```text
-WIRE_USER_ID
-WIRE_USER_DOMAIN
-WIRE_CLIENT_ID
-WIRE_BACKEND_DOMAIN                 # optional; defaults to WIRE_USER_DOMAIN
-WIRE_API_URL
-WIRE_WEBSOCKET_URL
-WIRE_API_VERSION                    # optional; defaults to 12
-WIRE_FEDERATION                     # optional; defaults to true
-WIRE_ON_PREMISES                    # optional; defaults to true
+```bash
+cp sample/call-recorder-service/call-recorder-config.example.json \
+  sample/call-recorder-service/call-recorder-config.json
 ```
 
-Required encrypted state variables:
-
-```text
-WIRE_STATE_KEY_BASE64
-WIRE_PROTEUS_PASSPHRASE_BASE64
-WIRE_MLS_PASSPHRASE_BASE64
-WIRE_STATE_DIR                      # optional; defaults to ./call-recorder-state
-WIRE_CRYPTO_DIR                     # optional; defaults to ./call-recorder-crypto
-WIRE_CRYPTO_MODE                    # RESTORE_EXISTING (default) or CREATE_NEW
+```json
+{
+  "email": "recorder@example.com",
+  "password": "replace-me",
+  "backendDomain": "example.com",
+  "apiUrl": "https://api.example.com",
+  "webSocketUrl": "https://api.example.com",
+  "selfConversations": "auto"
+}
 ```
 
-The decoded values must be non-empty. Keep keys outside the state/recording directories and inject
-them through the deployment secret manager. Never place them in shell history, process arguments,
-logs, or source control.
+Keep the other fields from the template. On the first run, the sample:
 
-Required self-conversation targets are comma-separated. Each entry uses `qualified-id|protocol`:
+1. Logs in with the email and password.
+2. Generates local state, Proteus, and MLS database passwords.
+3. Generates Proteus prekeys and registers a permanent recorder client.
+4. For an MLS target, uses the returned client ID to initialize MLS, publish its public key, and upload key packages.
+5. Writes the discovered backend API version, `userId`, `userDomain`, `clientId`, and generated database passwords back to the JSON.
 
-```text
-WIRE_SELF_CONVERSATIONS='opaque-id@example.com|proteus'
-WIRE_SELF_CONVERSATIONS='opaque-id@example.com|mls|opaque-group-id|0'
-```
+The service chooses notification delivery from the registered client capability. When consumable
+notifications are unavailable, it incrementally fetches pending legacy notifications from its
+durable checkpoint before continuing on the legacy live WebSocket.
 
-The MLS epoch is optional. Multiple restored Proteus/MLS self-conversation targets may be listed.
-The group ID is the CoreCrypto MLS group identifier expected by the service runtime.
+Later runs log in again and restore that client and its crypto databases. The account password and
+access/refresh tokens are never logged; tokens remain in the runtime's encrypted state files. The
+JSON still contains enough secrets to unlock those files, which is acceptable only for this test.
 
-Session variables are required only when the encrypted state store has no session:
+`selfConversations` defaults to `auto`, which discovers the account's self-conversations from the
+backend and caches them in the running service. For an explicit override, entries are comma-separated. Proteus entries use
+`qualified-conversation-id|proteus`. MLS entries use
+`qualified-conversation-id|mls|group-id|optional-epoch`.
 
-```text
-WIRE_ACCESS_TOKEN
-WIRE_REFRESH_TOKEN
-WIRE_TOKEN_TYPE                     # optional; defaults to Bearer
-WIRE_COOKIE_LABEL                   # optional
-```
-
-Optional backend link variables (`WIRE_ACCOUNTS_URL`, `WIRE_BLACKLIST_URL`, `WIRE_TEAMS_URL`,
-`WIRE_WEBSITE_URL`) default to `WIRE_API_URL`. `WIRE_USER_AGENT`, `WIRE_TEAM_ID`,
-`WIRE_AUDIO_CBR`, `WIRE_MLS_CIPHERSUITE`, and `WIRE_AVS_READY_TIMEOUT_SECONDS` are also supported.
-Certificate pinning and authenticated API proxies are intentionally not configurable in this first
-sample. E2EI conversations that return CRL distribution points fail closed because the sample has
-no deployment-specific CRL verifier.
+The optional fields in the template cover 2FA (`verificationCode`), API version, alternate backend
+links, client label/model, state directories, MLS ciphersuite, team ID, and AVS settings. E2EI
+backends requiring certificate enrollment are not supported by this quick provisioning path.
 
 ## Run
 
-Build the native AVS libraries into `./native/libs` first, then explicitly select local provider
-caches and run:
+Build the native AVS libraries into `./native/libs`, then run with the JSON file:
 
 ```bash
+make
 ./gradlew :sample:call-recorder-service:jvmRun \
   -Pkalium.providerCacheScope=LOCAL \
   --args="--recordings-dir ./recordings"
 ```
 
-Other safe command-line options are `--shutdown-timeout-seconds` and
-`--notification-open-timeout-seconds`. Credentials are deliberately not accepted as arguments.
-Send `SIGTERM`/`SIGINT` for graceful shutdown. Lifecycle logs contain no user, client,
-conversation, token, group, or calling-message identifiers.
+Other options are `--shutdown-timeout-seconds` and `--notification-open-timeout-seconds`. Send
+`SIGTERM`/`SIGINT` for graceful shutdown. Lifecycle logs contain no user, client, conversation,
+token, group, or calling-message identifiers.
 
 ## Recording files and operations
 

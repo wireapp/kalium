@@ -165,7 +165,9 @@ private class AutoAnswerRecorder(private val outputDirectory: Path) : CallEventS
     }
 
     private suspend fun finishIfTerminalFailure(event: CallLifecycleEvent.Failed): CallingResult {
-        val conversationId = event.conversationId ?: return CallingResult.Success
+        val conversationId = event.conversationId ?: return CallingResult.Success.also {
+            SafeLog.error("Call transport operation failed", event.failure)
+        }
         val isStillActive = calls.observeActiveCalls().first().any { it.conversationId == conversationId }
         return if (isStillActive) {
             SafeLog.warn("A non-terminal call operation failed; recording remains active")
@@ -246,8 +248,32 @@ internal object SafeLog {
 
     fun error(message: String, failure: Any? = null) {
         val kind = failure?.let { it::class.simpleName } ?: "unknown"
-        System.err.println("ERROR $message [$kind]")
+        val description = when (failure) {
+            is ServiceFailure -> failure.safeDescription()
+            is CallingFailure -> failure.safeDescription()
+            else -> null
+        }
+        System.err.println("ERROR $message${description?.let { ": $it" }.orEmpty()} [$kind]")
     }
+}
+
+private fun ServiceFailure.safeDescription(): String? = when (this) {
+    is ServiceFailure.Session -> description
+    is ServiceFailure.Crypto -> description
+    is ServiceFailure.Events -> description
+    is ServiceFailure.Calling -> description
+    is ServiceFailure.Cleanup -> description
+    ServiceFailure.AlreadyStarted,
+    ServiceFailure.Closed -> null
+}
+
+private fun CallingFailure.safeDescription(): String? = when (this) {
+    is CallingFailure.Conversation -> description
+    is CallingFailure.Crypto -> description
+    is CallingFailure.Avs -> description
+    is CallingFailure.Transport -> description
+    is CallingFailure.State -> description
+    else -> null
 }
 
 private fun CallingFailure.safeName(): String = this::class.simpleName ?: "calling failure"

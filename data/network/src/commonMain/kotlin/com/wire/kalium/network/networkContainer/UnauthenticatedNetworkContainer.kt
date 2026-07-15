@@ -50,7 +50,7 @@ import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 
 @Suppress("MagicNumber", "LongParameterList")
-interface UnauthenticatedNetworkContainer {
+interface UnauthenticatedNetworkContainer : AutoCloseable {
     val loginApi: LoginApi
     val registerApi: RegisterApi
     val sso: SSOLoginApi
@@ -222,7 +222,7 @@ interface UnauthenticatedNetworkContainer {
     }
 }
 
-internal interface UnauthenticatedNetworkClientProvider {
+internal interface UnauthenticatedNetworkClientProvider : AutoCloseable {
     val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
 }
 
@@ -230,7 +230,13 @@ internal class UnauthenticatedNetworkClientProviderImpl internal constructor(
     backendLinks: ServerConfigDTO,
     engine: HttpClientEngine
 ) : UnauthenticatedNetworkClientProvider {
-    override val unauthenticatedNetworkClient by lazy {
+    private val unauthenticatedNetworkClientDelegate = lazy {
         UnauthenticatedNetworkClient(engine, backendLinks)
+    }
+    override val unauthenticatedNetworkClient: UnauthenticatedNetworkClient
+        get() = unauthenticatedNetworkClientDelegate.value
+
+    override fun close() {
+        if (unauthenticatedNetworkClientDelegate.isInitialized()) unauthenticatedNetworkClient.close()
     }
 }

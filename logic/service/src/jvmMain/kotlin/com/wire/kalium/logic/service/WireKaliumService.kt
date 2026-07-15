@@ -64,7 +64,6 @@ public data class WireKaliumServiceConfig(
     init {
         require(stateStore.identity == service.identity) { "Encrypted state and service config identities must match" }
         require(userAgent.isNotBlank()) { "userAgent must not be blank" }
-        require(selfConversationTargets.isNotEmpty()) { "Durable self-conversation targets must not be empty" }
         require(notificationOpenTimeoutMillis > 0) { "notificationOpenTimeoutMillis must be positive" }
         require(avsReadyTimeoutMillis > 0) { "avsReadyTimeoutMillis must be positive" }
     }
@@ -196,7 +195,11 @@ public object WireKaliumService {
             callTransport = transport,
             conferenceMembership = conferenceMembership,
             avsCallingEngine = engine,
-            selfConversationProvider = ConfiguredServiceSelfConversationProvider(config.selfConversationTargets),
+            selfConversationProvider = if (config.selfConversationTargets.isEmpty()) {
+                WireRemoteSelfConversationProvider(networkOwner)
+            } else {
+                ConfiguredServiceSelfConversationProvider(config.selfConversationTargets)
+            },
             callingControlHandler = ForwardAllCallingControlHandler,
             callEventSink = config.callEventSink,
         )
