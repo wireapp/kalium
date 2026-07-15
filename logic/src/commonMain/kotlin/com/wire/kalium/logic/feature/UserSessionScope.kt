@@ -465,6 +465,8 @@ import com.wire.kalium.logic.sync.incremental.IncrementalSyncWorkerImpl
 import com.wire.kalium.logic.sync.local.LocalEventManagerImpl
 import com.wire.kalium.logic.sync.local.LocalEventRepository
 import com.wire.kalium.logic.sync.local.LocalEventRepositoryImpl
+import com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncWorker
+import com.wire.kalium.logic.sync.periodic.MeetingOccurrencesSyncWorkerImpl
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorker
 import com.wire.kalium.logic.sync.periodic.UserConfigSyncWorkerImpl
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
@@ -2307,6 +2309,11 @@ public class UserSessionScope internal constructor(
         )
     }
 
+    internal val meetingOccurrencesSyncWorker: MeetingOccurrencesSyncWorker = MeetingOccurrencesSyncWorkerImpl(
+        meetingRepository = meetingRepository,
+        featureSupport = featureSupport
+    )
+
     internal fun buildAudioNormalizedLoudnessWorker(
         conversationId: ConversationId,
         messageId: String
@@ -3058,6 +3065,7 @@ public class UserSessionScope internal constructor(
         }
 
         userSessionWorkScheduler.schedulePeriodicUserConfigSync()
+        userSessionWorkScheduler.schedulePeriodicMeetingOccurrencesSync()
 
         launch {
             waitUntilClientIdIsAvailable()

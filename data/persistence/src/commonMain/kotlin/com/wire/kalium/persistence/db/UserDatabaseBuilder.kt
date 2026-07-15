@@ -209,6 +209,7 @@ class UserDatabaseBuilder internal constructor(
         AppAdapter = TableMapper.appAdapter,
         PendingActionsAdapter = TableMapper.pendingActionsAdapter,
         MeetingAdapter = TableMapper.meetingAdapter,
+        MeetingOccurrenceAdapter = TableMapper.meetingOccurrenceAdapter,
     )
 
     init {

@@ -34,7 +34,7 @@ data class MeetingDTO(
     @SerialName("updated_at") val updatedAt: Instant?,
     @SerialName("title") val title: String,
     @SerialName("start_time") val startTime: Instant,
-    @SerialName("end_time") val endTime: Instant?,
+    @SerialName("end_time") val endTime: Instant,
     @SerialName("trial") val trial: Boolean,
     @SerialName("recurrence") val recurrence: MeetingRecurrenceDTO?
 )
@@ -42,7 +42,7 @@ data class MeetingDTO(
 @Serializable
 data class MeetingRecurrenceDTO(
     @SerialName("frequency") val frequency: MeetingFrequencyDTO,
-    @SerialName("interval") val interval: Long,
+    @SerialName("interval") val interval: Long?,
     @SerialName("until") val until: Instant?
 )
 
