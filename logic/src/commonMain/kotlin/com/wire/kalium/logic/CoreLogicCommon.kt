@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic
 
+import com.wire.kalium.common.logger.CoreLogger
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.IdMapper
@@ -51,6 +53,17 @@ public abstract class CoreLogicCommon internal constructor(
 ) {
     init {
         configurePersistenceDebug(kaliumConfigs.isDebug)
+    }
+
+    /**
+     * Registers a logger configuration for Kalium.
+     * This can be called after CoreLogic initialization to enable logging.
+     * Can be called multiple times to update the logger configuration.
+     *
+     * @param config The logger configuration to register
+     */
+    public fun registerLogger(config: KaliumLogger.Config) {
+        CoreLogger.init(config)
     }
 
     protected abstract val globalPreferences: GlobalPrefProvider
