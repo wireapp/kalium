@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.common.error.CoreFailure
 import com.wire.kalium.common.error.MLSFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -49,7 +50,10 @@ import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
+import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isConversationNotFound
 import io.mockative.Mockable
 import kotlinx.coroutines.flow.first
 import kotlin.io.encoding.Base64
@@ -79,6 +83,7 @@ internal class MLSWelcomeEventHandlerImpl(
             kaliumLogger.w("$TAG: mls is disabled to handle welcome message")
             return Unit.right()
         }
+        var wasConversationDeleted = false
 
         return fetchConversationIfUnknown(transactionContext, event.conversationId)
             .flatMap {
@@ -96,9 +101,18 @@ internal class MLSWelcomeEventHandlerImpl(
                 kaliumLogger.d("$TAG: Resolving conversation if one-on-one ${event.conversationId.toLogString()}")
                 resolveConversationIfOneOnOne(transactionContext, event.conversationId)
             }
-            .flatMapLeft {
-                when (it) {
-                    is MLSFailure.OrphanWelcome -> {
+            .flatMapLeft { failure ->
+                when {
+                    failure.isConversationNotFoundFailure() -> {
+                        wasConversationDeleted = true
+                        kaliumLogger.w(
+                            "$TAG: Discarding welcome because the conversation no longer exists " +
+                                    "[conversationId=${event.conversationId.toLogString()}]"
+                        )
+                        Either.Right(Unit)
+                    }
+
+                    failure is MLSFailure.OrphanWelcome -> {
                         if (isAlreadyEstablishedLocally(mlsContext, event.conversationId)) {
                             kaliumLogger.w(
                                 "$TAG: OrphanWelcome for already established local MLS group. " +
@@ -117,12 +131,17 @@ internal class MLSWelcomeEventHandlerImpl(
                     }
 
                     else -> {
-                        Either.Left(it)
+                        Either.Left(failure)
                     }
                 }
             }
             .onSuccess {
-                transactionContext.wrapInMLSContext { mlsContext ->
+                if (wasConversationDeleted) {
+                    eventLogger.logComplete(
+                        EventLoggingStatus.SKIPPED,
+                        arrayOf("info" to "Conversation no longer exists")
+                    )
+                } else transactionContext.wrapInMLSContext { mlsContext ->
                     val didSucceedRefillingKeyPackages = when (val refillResult = refillKeyPackages(mlsContext)) {
                         is RefillKeyPackagesResult.Failure -> {
                             val exception = (refillResult.failure as? CoreFailure.Unknown)?.rootCause
@@ -226,4 +245,10 @@ internal class MLSWelcomeEventHandlerImpl(
         private const val TAG = "[MLSWelcomeEventHandler]"
     }
 
+}
+
+private fun CoreFailure.isConversationNotFoundFailure(): Boolean {
+    val invalidRequest = (this as? NetworkFailure.ServerMiscommunication)
+        ?.kaliumException as? KaliumException.InvalidRequestError
+    return invalidRequest?.isConversationNotFound() == true
 }
