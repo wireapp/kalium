@@ -293,7 +293,13 @@ public class CellsScope(
     }
 
     public val observeFiles: GetPaginatedNodesUseCase by lazy {
-        GetPaginatedNodesUseCaseImpl(cellsRepository, cellsConversationRepository, cellAttachmentsRepository, usersRepository)
+        GetPaginatedNodesUseCaseImpl(
+            cellsRepository,
+            cellsConversationRepository,
+            cellAttachmentsRepository,
+            usersRepository,
+            isSelfGuestInConversation,
+        )
     }
 
     public val observePagedFiles: GetCellFilesPagedUseCase by lazy {
@@ -462,7 +468,7 @@ public class CellsScope(
         GetUserNameUseCaseImpl(usersRepository)
     }
 
-    public val isSelfGuestInConversation: IsSelfGuestInConversationUseCase by lazy {
+    private val isSelfGuestInConversation: IsSelfGuestInConversationUseCase by lazy {
         IsSelfGuestInConversationUseCaseImpl(
             selfUserId = userId,
             usersRepository = usersRepository,

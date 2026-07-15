@@ -18,6 +18,7 @@
 package com.wire.kalium.cells.domain.usecase
 
 import dev.mokkery.MockMode
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import com.wire.kalium.cells.data.FileFilters
 import com.wire.kalium.cells.domain.CellAttachmentsRepository
@@ -124,12 +125,55 @@ class GetPaginatedNodesUseCaseTest {
         assertEquals(result.getOrNull()?.data?.all { it.conversationName == "conversation_name" }, true)
     }
 
+    @Test
+    fun givenSelfIsGuestInConversation_whenUseCaseInvoked_thenNodesFromThatConversationAreViewerOnly() = runTest {
+        val (_, useCase) = Arrangement()
+            .withGuestConversations("conversation_id")
+            .arrange()
+
+        val result = useCase(
+            conversationId = null,
+            query = "",
+            limit = 100,
+            offset = 0,
+            fileFilters = FileFilters()
+        )
+
+        assertTrue(result.isRight())
+        val data = result.getOrNull()?.data.orEmpty()
+        assertEquals(true, (data.first { it.uuid == "uuid_1" } as Node.File).isViewerOnly)
+        assertEquals(false, (data.first { it.uuid == "uuid_3" } as Node.File).isViewerOnly)
+    }
+
+    @Test
+    fun givenSelfIsNotGuestInAnyConversation_whenUseCaseInvoked_thenNoNodeIsViewerOnly() = runTest {
+        val (_, useCase) = Arrangement().arrange()
+
+        val result = useCase(
+            conversationId = null,
+            query = "",
+            limit = 100,
+            offset = 0,
+            fileFilters = FileFilters()
+        )
+
+        assertTrue(result.isRight())
+        assertEquals(result.getOrNull()?.data?.none { (it as Node.File).isViewerOnly }, true)
+    }
+
     private inner class Arrangement {
 
         val cellsRepository = mock<CellsRepository>(mode = MockMode.autoUnit)
         val conversationRepository = mock<CellConversationRepository>(mode = MockMode.autoUnit)
         val attachmentsRepository = mock<CellAttachmentsRepository>(mode = MockMode.autoUnit)
         val usersRepository = mock<CellUsersRepository>(mode = MockMode.autoUnit)
+        val isSelfGuestInConversation = mock<IsSelfGuestInConversationUseCase>(mode = MockMode.autoUnit)
+
+        private var guestConversations: Set<String> = emptySet()
+
+        fun withGuestConversations(vararg conversationIds: String) = apply {
+            guestConversations = conversationIds.toSet()
+        }
 
         suspend fun arrange(): Pair<Arrangement, GetPaginatedNodesUseCase> {
 
@@ -157,11 +201,14 @@ class GetPaginatedNodesUseCaseTest {
 
             everySuspend { attachmentsRepository.getStandaloneAssetPaths() }.returns(testAssetPaths.right())
 
+            everySuspend { isSelfGuestInConversation(any()) } calls { (it.args[0] as String) in guestConversations }
+
             return this to GetPaginatedNodesUseCaseImpl(
                 cellsRepository = cellsRepository,
                 conversationRepository = conversationRepository,
                 attachmentsRepository = attachmentsRepository,
-                usersRepository = usersRepository
+                usersRepository = usersRepository,
+                isSelfGuestInConversation = isSelfGuestInConversation,
             )
         }
     }

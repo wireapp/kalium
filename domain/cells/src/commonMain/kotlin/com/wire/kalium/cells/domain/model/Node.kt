@@ -46,6 +46,7 @@ public sealed class Node {
         override val size: Long?,
         override val tags: List<String> = emptyList(),
         val publicLinkId: String? = null,
+        val isViewerOnly: Boolean = false,
     ) : Node()
 
     /**
@@ -73,6 +74,7 @@ public sealed class Node {
         override val tags: List<String> = emptyList(),
         val isEditSupported: Boolean = false,
         val conversationId: String?,
+        val isViewerOnly: Boolean = false,
     ) : Node()
 }
 

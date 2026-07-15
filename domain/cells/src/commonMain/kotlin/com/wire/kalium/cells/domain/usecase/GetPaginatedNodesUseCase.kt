@@ -62,6 +62,7 @@ internal class GetPaginatedNodesUseCaseImpl(
     private val conversationRepository: CellConversationRepository,
     private val attachmentsRepository: CellAttachmentsRepository,
     private val usersRepository: CellUsersRepository,
+    private val isSelfGuestInConversation: IsSelfGuestInConversationUseCase,
 ) : GetPaginatedNodesUseCase {
 
     override suspend operator fun invoke(
@@ -87,14 +88,22 @@ internal class GetPaginatedNodesUseCaseImpl(
             fileFilters = fileFilters,
             sortingSpec = sortingSpec,
         ).map { nodes ->
+            val viewerOnlyByConversation = nodes.data
+                .mapNotNull { it.conversationId }
+                .distinct()
+                .associateWith { isSelfGuestInConversation(it) }
+
             PaginatedList(
                 data = nodes.data.asSequence()
                     .filterNot { it.isDraft }
                     .map { node ->
+                        val isViewerOnly = node.conversationId?.let { viewerOnlyByConversation[it] } ?: false
+
                         if (node.type == CellNodeType.FOLDER.value) {
                             node.toFolderModel().copy(
                                 userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
                                 conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
+                                isViewerOnly = isViewerOnly,
                             )
                         } else {
                             val attachment = attachments.firstOrNull { attachment -> attachment.id == node.uuid }
@@ -104,6 +113,7 @@ internal class GetPaginatedNodesUseCaseImpl(
                                 userName = userNames.firstOrNull { it.first == node.ownerUserId }?.second,
                                 conversationName = conversationNames.firstOrNull { it.first == node.conversationId }?.second,
                                 isEditSupported = node.supportedEditors.isNotEmpty(),
+                                isViewerOnly = isViewerOnly,
                             )
                         }
                     }.toList(),
