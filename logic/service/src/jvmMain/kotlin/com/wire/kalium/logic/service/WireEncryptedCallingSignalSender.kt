@@ -28,6 +28,7 @@ import com.wire.kalium.calling.runtime.CallingResult
 import com.wire.kalium.calling.runtime.OutgoingCallingSignal
 import com.wire.kalium.calling.runtime.SelfConversationResult
 import com.wire.kalium.calling.runtime.SelfConversationTarget
+import com.wire.kalium.calling.WireCallingMessageCodec
 import com.wire.kalium.calling.runtime.ServiceSelfConversationProvider
 import com.wire.kalium.conversation.CallClient
 import com.wire.kalium.conversation.CallConversationProtocol
@@ -49,9 +50,6 @@ import com.wire.kalium.network.api.model.QualifiedID as NetworkQualifiedId
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.protobuf.encodeToByteArray
-import com.wire.kalium.protobuf.messages.Calling
-import com.wire.kalium.protobuf.messages.GenericMessage
-import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
@@ -176,18 +174,11 @@ public class WireEncryptedCallingSignalSender(
     }
 
     private suspend fun encrypt(messageId: String, signal: OutgoingCallingSignal): StoredSignal {
-        val genericMessage = GenericMessage(
-            messageId = messageId,
-            content = GenericMessage.Content.Calling(
-                Calling(
-                    content = signal.content,
-                    qualifiedConversationId = QualifiedConversationId(
-                        signal.callHostConversationId.value,
-                        signal.callHostConversationId.domain,
-                    ),
-                ),
-            ),
-        ).encodeToByteArray()
+        val genericMessage = WireCallingMessageCodec.encode(
+            messageId,
+            signal.content,
+            signal.callHostConversationId,
+        )
         return when (val protocol = signal.protocol) {
             is CallConversationProtocol.Mls -> {
                 val groupId = protocol.groupId.value

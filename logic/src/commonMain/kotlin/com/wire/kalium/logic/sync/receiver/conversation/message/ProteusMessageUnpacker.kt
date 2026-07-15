@@ -29,9 +29,8 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusCoreCryptoContext
-import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.EncryptedData
-import com.wire.kalium.cryptography.utils.decryptDataWithAES256
+import com.wire.kalium.calling.WireCallingMessageCodec
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.event.Event
@@ -132,31 +131,12 @@ internal class ProteusMessageUnpackerImpl(
 
     private fun getReadableMessageContent(
         plainMessageBlob: PlainMessageBlob,
-        encryptedData: EncryptedData?
-    ) = when (val protoContent = protoContentMapper.decodeFromProtobuf(plainMessageBlob)) {
-        is ProtoContent.Readable -> Either.Right(protoContent)
-        is ProtoContent.ExternalMessageInstructions -> encryptedData?.let {
-            solveExternalContentForProteusMessage(protoContent, encryptedData)
-        } ?: run {
-            val rootCause = IllegalArgumentException(
-                "Null external content when processing external message instructions."
-            )
-            Either.Left(CoreFailure.Unknown(rootCause))
-        }
-    }
-
-    private fun solveExternalContentForProteusMessage(
-        externalInstructions: ProtoContent.ExternalMessageInstructions,
-        externalData: EncryptedData
+        encryptedData: EncryptedData?,
     ): Either<CoreFailure, ProtoContent.Readable> = wrapProteusRequest {
-        val decryptedExternalMessage = decryptDataWithAES256(externalData, AES256Key(externalInstructions.otrKey)).data
-        PlainMessageBlob(decryptedExternalMessage)
+        PlainMessageBlob(WireCallingMessageCodec.resolveExternal(plainMessageBlob.data, encryptedData?.data))
     }.map(protoContentMapper::decodeFromProtobuf).flatMap { decodedProtobuf ->
         if (decodedProtobuf !is ProtoContent.Readable) {
-            val rootCause = IllegalArgumentException(
-                "матрёшка! External message can't contain another external message inside!"
-            )
-            Either.Left(CoreFailure.Unknown(rootCause))
+            Either.Left(CoreFailure.Unknown(IllegalArgumentException("Message content is not readable")))
         } else {
             Either.Right(decodedProtobuf)
         }

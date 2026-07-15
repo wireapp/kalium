@@ -46,6 +46,22 @@ data class QualifiedID(
 const val VALUE_DOMAIN_SEPARATOR = '@'
 val FEDERATION_REGEX = """[^@.]+@[^@.]+\.[^@]+""".toRegex()
 
+/** Parses an AVS/Wire identifier while lazily applying the caller's local-domain fallback. */
+fun String.parseQualifiedID(defaultDomain: () -> String): QualifiedID {
+    require(isNotBlank()) { "Qualified ID cannot be blank" }
+    val separatorCount = count { it == VALUE_DOMAIN_SEPARATOR }
+    val components = split(VALUE_DOMAIN_SEPARATOR).filter(String::isNotBlank)
+    require(components.isNotEmpty()) { "Qualified ID value cannot be empty" }
+    return when {
+        separatorCount > 1 -> QualifiedID(
+            value = substringBeforeLast(VALUE_DOMAIN_SEPARATOR).removePrefix(VALUE_DOMAIN_SEPARATOR.toString()),
+            domain = substringAfterLast(VALUE_DOMAIN_SEPARATOR).ifBlank(defaultDomain),
+        )
+        separatorCount == 1 && components.size == 2 -> QualifiedID(components.first(), components.last())
+        else -> QualifiedID(components.first(), defaultDomain())
+    }
+}
+
 typealias ConversationId = QualifiedID
 
 @JvmInline

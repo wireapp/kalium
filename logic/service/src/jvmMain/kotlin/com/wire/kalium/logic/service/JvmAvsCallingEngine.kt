@@ -23,6 +23,12 @@
 package com.wire.kalium.logic.service
 
 import com.sun.jna.Pointer
+import com.wire.kalium.calling.AvsCallConfigRequestHandler
+import com.wire.kalium.calling.AvsProcessLease
+import com.wire.kalium.calling.AvsProcessMode
+import com.wire.kalium.calling.AvsProcessRuntime
+import com.wire.kalium.calling.AvsSftRequestHandler
+import com.wire.kalium.calling.AvsSendRequestHandler
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.ConversationTypeCalling
@@ -33,7 +39,6 @@ import com.wire.kalium.calling.callbacks.CloseCallHandler
 import com.wire.kalium.calling.callbacks.ConstantBitRateStateChangeHandler
 import com.wire.kalium.calling.callbacks.EstablishedCallHandler
 import com.wire.kalium.calling.callbacks.IncomingCallHandler
-import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.MissedCallHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
@@ -63,6 +68,7 @@ import com.wire.kalium.conversation.ConversationContextProvider
 import com.wire.kalium.conversation.ConversationContextResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.parseQualifiedID
 import com.wire.kalium.logic.service.api.ExperimentalKaliumServiceApi
 import com.wire.kalium.logic.service.api.ServiceIdentity
 import java.nio.file.Files
@@ -141,7 +147,7 @@ public class JvmAvsCallingEngine(
 
     @Volatile
     private var readyForCalls: Boolean = false
-    private var processAcquired: Boolean = false
+    private var processLease: AvsProcessLease? = null
     private var closed: Boolean = false
 
     init {
@@ -153,7 +159,7 @@ public class JvmAvsCallingEngine(
     override suspend fun start(selfConversationProvider: ServiceSelfConversationProvider): CallingResult = lifecycleMutex.withLock {
         if (closed) return@withLock CallingResult.Failure(CallingFailure.RuntimeClosed)
         if (readyForCalls) return@withLock CallingResult.Success
-        if (handle != null || processAcquired) {
+        if (handle != null || processLease != null) {
             try {
                 releaseNative()
             } catch (failure: Throwable) {
@@ -164,8 +170,7 @@ public class JvmAvsCallingEngine(
         }
         val ready = CompletableDeferred<Unit>()
         return@withLock try {
-            ProcessRuntime.acquire(calling)
-            processAcquired = true
+            processLease = AvsProcessRuntime.acquire(calling, AvsProcessMode.DESKTOP)
             this.selfConversationProvider = selfConversationProvider
             val retainedCallbacks = createCallbacks(ready)
             val created = calling.wcall_create(
@@ -413,7 +418,7 @@ public class JvmAvsCallingEngine(
     }
 
     override suspend fun close(): CallingResult = lifecycleMutex.withLock {
-        if (closed && handle == null && !processAcquired) return@withLock CallingResult.Success
+        if (closed && handle == null && processLease == null) return@withLock CallingResult.Success
         closed = true
         readyForCalls = false
         scope.cancel()
@@ -430,7 +435,7 @@ public class JvmAvsCallingEngine(
         } catch (failure: Throwable) {
             if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
         }
-        if (handle == null && !processAcquired) {
+        if (handle == null && processLease == null) {
             contexts.clear()
             nativeConversationIds.clear()
             pendingIncoming.clear()
@@ -450,82 +455,74 @@ public class JvmAvsCallingEngine(
     @Suppress("LongMethod")
     private fun createCallbacks(readySignal: CompletableDeferred<Unit>): CallbackBundle {
         val ready = ReadyHandler { _, _ -> readySignal.complete(Unit) }
-        val send = SendHandler { context, remoteConversationId, remoteSelfUserId, remoteClientId, recipients, destination, data,
-            length, isTransient, myClientsOnly, _ ->
-            if (
-                !matchesSelf(remoteSelfUserId, remoteClientId) ||
-                data == null ||
-                !fitsDurableCallingEntry(length.value, recipients, destination)
-            ) {
-                AVS_INVALID_ARGUMENT
-            } else {
-                val payload = data.getByteArray(0, length.value.toInt()).decodeToString()
+        val send = AvsSendRequestHandler(
+            matchesSelf = ::matchesSelf,
+            acceptsPayload = ::fitsDurableCallingEntry,
+            onRequest = { request ->
                 val requestKey = UUID.nameUUIDFromBytes(
                     listOf(
                         nativeRequestNamespace,
-                        context?.let(Pointer::nativeValue)?.toString().orEmpty(),
-                        remoteConversationId,
-                        recipients.orEmpty(),
-                        destination.orEmpty(),
-                        payload,
+                        request.context?.let(Pointer::nativeValue)?.toString().orEmpty(),
+                        request.remoteConversationId,
+                        request.recipientsJson.orEmpty(),
+                        request.clientDestination.orEmpty(),
+                        request.content,
                     ).joinToString("\u0000").encodeToByteArray(),
                 ).toString()
                 scope.launch {
                     val result = sendFromAvs(
-                        remoteConversationId,
-                        recipients,
-                        destination,
-                        payload,
-                        isTransient,
-                        myClientsOnly,
+                        request.remoteConversationId,
+                        request.recipientsJson,
+                        request.clientDestination,
+                        request.content,
+                        request.isTransient,
+                        request.myClientsOnly,
                         requestKey,
                     )
                     lifecycleMutex.withLock {
                         val native = handle?.takeIf { readyForCalls } ?: return@withLock
                         when (result) {
-                            CallingResult.Success -> calling.wcall_resp(native, HTTP_OK, "", context)
-                            is CallingResult.Failure -> calling.wcall_resp(native, HTTP_BAD_REQUEST, "Calling signal failed", context)
-                        }
-                    }
-                }
-                AVS_SUCCESS
-            }
-        }
-        val sft = SFTRequestHandler { context, url, data, _, _ ->
-            if (data == null) {
-                AVS_INVALID_ARGUMENT
-            } else {
-                // Match the Android client callback exactly: AVS supplies a NUL-terminated C
-                // string here, while the accompanying length is not the JSON payload length.
-                val payload = data.getString(0, Charsets.UTF_8.name()).encodeToByteArray()
-                scope.launch {
-                    val result = transport.connectToSft(url, payload)
-                    lifecycleMutex.withLock {
-                        val native = handle?.takeIf { readyForCalls } ?: return@withLock
-                        when (result) {
-                            is SftConnectionResult.Success -> calling.wcall_sft_resp(
+                            CallingResult.Success -> calling.wcall_resp(native, HTTP_OK, "", request.context)
+                            is CallingResult.Failure -> calling.wcall_resp(
                                 native,
-                                AVS_SUCCESS,
-                                result.response,
-                                result.response.size,
-                                context,
+                                HTTP_BAD_REQUEST,
+                                "Calling signal failed",
+                                request.context,
                             )
-                            is SftConnectionResult.Failure -> {
-                                calling.wcall_sft_resp(
-                                    native,
-                                    AVS_SFT_NO_RESPONSE_DATA,
-                                    ByteArray(0),
-                                    0,
-                                    context,
-                                )
-                                emitEvent(AvsCallingEvent.Failed(null, result.failure))
-                            }
                         }
                     }
                 }
-                AVS_SUCCESS
-            }
-        }
+            },
+            acceptedResult = AVS_SUCCESS,
+            invalidArgumentResult = AVS_INVALID_ARGUMENT,
+        )
+        val sft = AvsSftRequestHandler(
+            scope = scope,
+            connect = { url, payload ->
+                when (val result = transport.connectToSft(url, payload)) {
+                    is SftConnectionResult.Success -> result.response
+                    is SftConnectionResult.Failure -> {
+                        emitEvent(AvsCallingEvent.Failed(null, result.failure))
+                        null
+                    }
+                }
+            },
+            respond = { context, response ->
+                lifecycleMutex.withLock {
+                    val native = handle?.takeIf { readyForCalls } ?: return@withLock
+                    val payload = response ?: ByteArray(0)
+                    calling.wcall_sft_resp(
+                        native,
+                        if (response == null) AVS_SFT_NO_RESPONSE_DATA else AVS_SUCCESS,
+                        payload,
+                        payload.size,
+                        context,
+                    )
+                }
+            },
+            callbackResult = AVS_SUCCESS,
+            invalidPayloadResult = AVS_INVALID_ARGUMENT,
+        )
         val incoming = IncomingCallHandler { conversation, messageTime, user, client, video, ring, _, _ ->
             val conversationId = resolveConversationId(conversation)
             pendingIncoming += conversationId
@@ -560,29 +557,27 @@ public class JvmAvsCallingEngine(
             emitEvent(AvsCallingEvent.Closed(id, reason.toString()))
         }
         val metrics = MetricsHandler { _, _, _ -> Unit }
-        val config = CallConfigRequestHandler { native, _ ->
-            scope.launch {
-                val result = transport.getCallConfig(null)
+        val config = AvsCallConfigRequestHandler(
+            scope = scope,
+            loadConfig = {
+                when (val result = transport.getCallConfig(null)) {
+                    is com.wire.kalium.calling.runtime.CallConfigResult.Success -> result.config.payload
+                    is com.wire.kalium.calling.runtime.CallConfigResult.Failure -> null
+                }
+            },
+            respond = { native, payload ->
                 synchronized(nativeCallbackMonitor) {
                     // The callback's native instance is authoritative. Handle is a JNA
-                    // IntegerType whose Kotlin constructor property is not a reliable identity.
-                    if (closed) return@synchronized
-                    when (result) {
-                        is com.wire.kalium.calling.runtime.CallConfigResult.Success -> calling.wcall_config_update(
-                            native,
-                            AVS_SUCCESS,
-                            result.config.payload,
-                        )
-                        is com.wire.kalium.calling.runtime.CallConfigResult.Failure -> calling.wcall_config_update(
-                            native,
-                            AVS_TRANSPORT_ERROR,
-                            "{}",
-                        )
-                    }
+                    // IntegerType whose Kotlin constructor property can remain zero.
+                    if (!closed) calling.wcall_config_update(
+                        native,
+                        if (payload == null) AVS_TRANSPORT_ERROR else AVS_SUCCESS,
+                        payload ?: "{}",
+                    )
                 }
-            }
-            AVS_SUCCESS
-        }
+            },
+            callbackResult = AVS_SUCCESS,
+        )
         val cbr = ConstantBitRateStateChangeHandler { _, _, _, _ -> Unit }
         val video = VideoReceiveStateHandler { _, _, _, _, _ -> Unit }
         val clients = object : ClientsRequestHandler {
@@ -764,14 +759,8 @@ public class JvmAvsCallingEngine(
     private fun resolveConversationId(value: String): ConversationId = nativeConversationIds[value]
         ?: parseId(value, identity.userId.domain).also { nativeConversationIds[value] = it }
 
-    private fun parseId(value: String, fallbackDomain: String): QualifiedID {
-        val separator = value.lastIndexOf('@')
-        return if (separator > 0 && separator < value.lastIndex) {
-            QualifiedID(value.substring(0, separator), value.substring(separator + 1))
-        } else {
-            QualifiedID(value, fallbackDomain)
-        }
-    }
+    private fun parseId(value: String, fallbackDomain: String): QualifiedID =
+        value.parseQualifiedID { fallbackDomain }
 
     private fun matchesSelf(userId: String, clientId: String): Boolean =
         (userId == identity.userId.value || userId == identity.userId.toString()) && clientId == identity.clientId
@@ -814,10 +803,8 @@ public class JvmAvsCallingEngine(
                 callbacks = null
             }
         }
-        if (processAcquired) {
-            ProcessRuntime.release(calling)
-            processAcquired = false
-        }
+        processLease?.close()
+        processLease = null
     }
 
     private data class CallbackBundle(
@@ -841,43 +828,6 @@ public class JvmAvsCallingEngine(
         data object Accepted : NativeDeliveryResult
         data class NotAccepted(val failure: CallingFailure) : NativeDeliveryResult
         data class Ambiguous(val failure: CallingFailure) : NativeDeliveryResult
-    }
-
-    private object ProcessRuntime {
-        private val monitor = Any()
-        private var users: Int = 0
-
-        fun acquire(calling: Calling): Unit = synchronized(monitor) {
-            if (users == 0) {
-                val setup = calling.wcall_setup()
-                if (setup != AVS_SUCCESS) {
-                    calling.wcall_close()
-                    error("AVS setup failed with code $setup")
-                }
-                val run = calling.wcall_run()
-                if (run != AVS_SUCCESS) {
-                    calling.wcall_close()
-                    error("AVS run failed with code $run")
-                }
-                calling.wcall_set_log_handler(SilentNativeLogHandler, null)
-            }
-            users += 1
-        }
-
-        fun release(calling: Calling): Unit = synchronized(monitor) {
-            if (users == 0) return
-            if (users > 1) {
-                users -= 1
-            } else {
-                // Keep the final reference when global close fails, allowing the same engine to retry.
-                calling.wcall_close()
-                users = 0
-            }
-        }
-    }
-
-    private object SilentNativeLogHandler : LogHandler {
-        override fun onLog(level: Int, message: String, arg: Pointer?) = Unit
     }
 
     private companion object {

@@ -36,6 +36,13 @@ kotlin {
     }
 
     sourceSets {
+        val commonMain by getting {
+            dependencies {
+                implementation(projects.core.cryptography)
+                implementation(projects.core.data)
+                implementation(projects.data.protobuf)
+            }
+        }
         val androidDeviceTest by getting {
             dependencies {
                 implementation(libs.androidtest.runner)
@@ -45,6 +52,7 @@ kotlin {
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
+                implementation(libs.coroutines.core)
                 api(libs.avs)
                 api(
                     libs.jna.map {
@@ -63,6 +71,7 @@ kotlin {
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
+                implementation(libs.coroutines.core)
                 implementation(libs.jna)
             }
         }

@@ -30,31 +30,7 @@ public interface QualifiedIdMapper {
 internal class QualifiedIdMapperImpl internal constructor(
     private val selfUserId: UserId?
 ) : QualifiedIdMapper {
-    override fun fromStringToQualifiedID(id: String): QualifiedID {
-        require(id.isNotBlank()) { "Qualified ID cannot be blank" }
-
-        val components = id.split(VALUE_DOMAIN_SEPARATOR).filter { it.isNotBlank() }
-        val count = id.count { it == VALUE_DOMAIN_SEPARATOR }
-        return when {
-            components.isEmpty() -> {
-                throw IllegalArgumentException("Qualified ID value cannot be empty")
-            }
-
-            count > 1 -> {
-                val value = id.substringBeforeLast(VALUE_DOMAIN_SEPARATOR).removePrefix(VALUE_DOMAIN_SEPARATOR.toString())
-                val domain = id.substringAfterLast(VALUE_DOMAIN_SEPARATOR).ifBlank { selfUserDomain() }
-                QualifiedID(value = value, domain = domain)
-            }
-
-            count == 1 && components.size == 2 -> {
-                QualifiedID(value = components.first(), domain = components.last())
-            }
-
-            else -> {
-                QualifiedID(value = components.first(), domain = selfUserDomain())
-            }
-        }
-    }
+    override fun fromStringToQualifiedID(id: String): QualifiedID = id.parseQualifiedID(::selfUserDomain)
 
     private fun selfUserDomain(): String = selfUserId?.domain?.takeIf { it.isNotBlank() } ?: run {
         val cause = IllegalStateException("self_user_domain_missing_or_blank")

@@ -18,52 +18,36 @@
 
 package com.wire.kalium.logic.feature.call.scenario
 
-import com.sun.jna.Pointer
+import com.wire.kalium.calling.AvsCallConfigRequestHandler
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.CallConfigRequestHandler
-import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.common.logger.callingLogger
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.feature.call.AvsCallBackError
-import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.nullableFold
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
-// TODO(testing): create unit test
-internal class OnConfigRequest(
-    private val calling: Calling,
-    private val callRepository: CallRepository,
-    private val callingScope: CoroutineScope,
-    private val configTransformer: ((String) -> String)? = null
-) : CallConfigRequestHandler {
-    override fun onConfigRequest(inst: Handle, arg: Pointer?): Int {
-        callingLogger.i("[OnConfigRequest] - STARTED")
-        callingScope.launch {
-            callRepository.getCallConfigResponse(limit = null)
-                .fold({
+@Suppress("FunctionNaming")
+internal fun OnConfigRequest(
+    calling: Calling,
+    callRepository: CallRepository,
+    callingScope: CoroutineScope,
+    configTransformer: ((String) -> String)? = null,
+): CallConfigRequestHandler = AvsCallConfigRequestHandler(
+        scope = callingScope,
+        loadConfig = {
+            callingLogger.i("[OnConfigRequest] - STARTED")
+            callRepository.getCallConfigResponse(limit = null).nullableFold(
+                {
                     callingLogger.w("[OnConfigRequest] - Error: $it")
-                    // We can call config_update with an error if there was a connectivity issue
-                    // AVS will eventually ask us again for the config
-                    // TODO(improvement): We can retry it ourselves and improve the app responsiveness.
-                    //                    Maybe add a retry mechanism that listens for the network state
-                    //                    Caches the config string and exposes a "invalidate" function
-                    //                    That we could call when AVS requests new config.
-                    calling.wcall_config_update(
-                        inst = inst,
-                        error = 1,
-                        jsonString = ""
-                    )
-                }, { config ->
-                    val finalConfig = configTransformer?.invoke(config) ?: config
-                    calling.wcall_config_update(
-                        inst = inst,
-                        error = 0,
-                        jsonString = finalConfig
-                    )
-                    callingLogger.i("[OnConfigRequest] - wcall_config_update()")
-                })
-        }
-
-        return AvsCallBackError.NONE.value
-    }
-}
+                    null
+                },
+                { config -> configTransformer?.invoke(config) ?: config },
+            )
+        },
+        respond = { inst, config ->
+            calling.wcall_config_update(inst, if (config == null) 1 else 0, config.orEmpty())
+            if (config != null) callingLogger.i("[OnConfigRequest] - wcall_config_update()")
+        },
+        callbackResult = AvsCallBackError.NONE.value,
+    )

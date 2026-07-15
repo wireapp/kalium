@@ -21,8 +21,9 @@
 package com.wire.kalium.logic.feature.call
 
 import com.sun.jna.Pointer
+import com.wire.kalium.calling.AvsProcessMode
+import com.wire.kalium.calling.AvsProcessRuntime
 import com.wire.kalium.calling.Calling
-import com.wire.kalium.calling.ENVIRONMENT_DEFAULT
 import com.wire.kalium.calling.callbacks.LogHandler
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.common.logger.callingLogger
@@ -60,21 +61,18 @@ internal actual class GlobalCallManager actual constructor(
         ConcurrentHashMap()
     }
 
-    private val calling by lazy {
-        Calling.INSTANCE.apply {
-            if (CurrentPlatform().type == PlatformType.ANDROID)
-                wcall_init(env = ENVIRONMENT_DEFAULT)
-            else {
-                wcall_setup()
-                wcall_run()
-            }
-            wcall_set_log_handler(
-                logHandler = LogHandlerImpl,
-                arg = null
-            )
-            callingLogger.i("GlobalCallManager -> wcall_init")
+    // The client keeps its lease for the lifetime of this process-level composition, matching the
+    // previous GlobalCallManager ownership while allowing headless runtimes to share AVS safely.
+    private val callingLease by lazy {
+        AvsProcessRuntime.acquire(
+            mode = if (CurrentPlatform().type == PlatformType.ANDROID) AvsProcessMode.ANDROID else AvsProcessMode.DESKTOP,
+            logHandler = LogHandlerImpl,
+        ).also {
+            callingLogger.i("GlobalCallManager -> AVS process acquired")
         }
     }
+
+    private val calling: Calling get() = callingLease.calling
 
     /**
      * Get a [CallManager] for a session, shouldn't be instantiated more than one CallManager for a single session.

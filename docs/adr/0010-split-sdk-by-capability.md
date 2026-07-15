@@ -59,6 +59,23 @@ Dependencies remain explicit through constructor injection. No dependency-inject
 new external library is introduced. New service-facing APIs are marked experimental or internal
 until the calling team confirms the final shape.
 
+Native and wire-format mechanics are shared below both compositions. In particular, client and
+service use one reference-counted AVS process owner, the same AVS request validation and transport
+callbacks, the same qualified-ID parser, and the same calling protobuf/external-payload codec.
+Composition adapters retain only behavior that is intentionally different:
+
+- client event delivery remains coupled to full-sync persistence and incremental-sync phases;
+  service event delivery uses durable acknowledgement recovery without installing client sync;
+- client conference membership records call history and UI-facing state; service membership owns
+  restart reconciliation, pending CRLs, and pending MLS commits in its encrypted state store;
+- both use `SessionManager` and `AuthenticatedNetworkContainer`, while their token persistence and
+  logout/close policies remain storage-specific;
+- both use the storage-neutral conversation, event-processing, and calling runtime contracts.
+
+These policy adapters must not duplicate AVS lifecycle, native request parsing, Wire calling
+protobuf encoding, external-message resolution, authenticated network construction, or core
+protocol types.
+
 Implementation follows Phases 0 through 6 in the detailed proposal. During this pre-confirmation
 pass, production compilation, static analysis, module-graph inspection, and ABI checks replace the
 new test work described by the proposal. New tests, fixtures, and changes to existing tests are

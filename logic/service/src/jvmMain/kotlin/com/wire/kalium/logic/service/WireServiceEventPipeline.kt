@@ -27,6 +27,7 @@ package com.wire.kalium.logic.service
 import com.wire.kalium.calling.runtime.CallingPayloadExtractor
 import com.wire.kalium.calling.runtime.CallingResult
 import com.wire.kalium.calling.runtime.IncomingCallingPayload
+import com.wire.kalium.calling.WireCallingMessageCodec
 import com.wire.kalium.conversation.CallConversationProtocol
 import com.wire.kalium.conversation.ConversationContextProvider
 import com.wire.kalium.conversation.ConversationContextResult
@@ -35,9 +36,6 @@ import com.wire.kalium.conversation.ConversationProtocolStateStore
 import com.wire.kalium.cryptography.CryptoClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.CryptoSessionId
-import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.EncryptedData
-import com.wire.kalium.cryptography.utils.decryptDataWithAES256
 import com.wire.kalium.event.processing.EventDecoder
 import com.wire.kalium.event.processing.EventDecryptor
 import com.wire.kalium.event.processing.EventHandler
@@ -287,18 +285,12 @@ public class WireServiceEventDecryptor(
                 CryptoClientId(event.data.sender),
             )
             context.decryptMessage(sessionId, Base64.decode(event.data.text)) { plaintext ->
-                val generic = GenericMessage.decodeFromByteArray(plaintext)
-                val external = generic.external ?: return@decryptMessage generic
-                val encryptedExternal = requireNotNull(event.data.encryptedExternalData) {
-                    "Proteus external message instructions are missing their encrypted payload"
-                }
-                val readable = decryptDataWithAES256(
-                    EncryptedData(Base64.decode(encryptedExternal)),
-                    AES256Key(external.otrKey.array),
-                ).data
-                GenericMessage.decodeFromByteArray(readable).also {
-                    require(it.external == null) { "Nested external Proteus messages are not supported" }
-                }
+                GenericMessage.decodeFromByteArray(
+                    WireCallingMessageCodec.resolveExternal(
+                        plaintext,
+                        event.data.encryptedExternalData?.let(Base64::decode),
+                    ),
+                )
             }
         }
 
