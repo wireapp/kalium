@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
@@ -49,6 +50,8 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.util.EventLoggingStatus
 import com.wire.kalium.logic.util.createEventProcessingLogger
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isNotFound
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
@@ -115,6 +118,14 @@ internal class UserEventReceiverImpl internal constructor(
     ): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
         return userRepository.fetchUserInfo(event.connection.qualifiedToId)
+            .flatMapLeft { failure ->
+                if (failure.isUserNotFoundFailure()) {
+                    kaliumLogger.w("Ignoring missing user details while processing a connection event")
+                    Either.Right(Unit)
+                } else {
+                    Either.Left(failure)
+                }
+            }
             .flatMap {
                 val previousStatus = connectionRepository.getConnection(event.connection.qualifiedConversationId)
                     .map { it.connection.status }.getOrNull()
@@ -210,3 +221,7 @@ internal class UserEventReceiverImpl internal constructor(
             }
     }
 }
+
+private fun CoreFailure.isUserNotFoundFailure(): Boolean =
+    ((this as? NetworkFailure.ServerMiscommunication)?.kaliumException as? KaliumException.InvalidRequestError)
+        ?.isNotFound() == true
