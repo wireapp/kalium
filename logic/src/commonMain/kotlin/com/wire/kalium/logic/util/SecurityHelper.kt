@@ -183,24 +183,32 @@ internal class SecurityHelperImpl(
 
     private fun ByteArray.toSqlCipherRawKey(): ByteArray {
         require(size == MIN_DATABASE_SECRET_LENGTH)
-        val hexDigits = "0123456789abcdef".encodeToByteArray()
-        return ByteArray(SQLCIPHER_RAW_KEY_PAYLOAD_LENGTH).also { result ->
-            result[0] = 'x'.code.toByte()
-            result[1] = '\''.code.toByte()
-            forEachIndexed { index, byte ->
-                val unsignedByte = byte.toInt() and UNSIGNED_BYTE_MASK
-            result[RAW_KEY_PREFIX_LENGTH + index * HEX_CHARS_PER_BYTE] = hexDigits[unsignedByte ushr NIBBLE_BITS]
-            result[RAW_KEY_PREFIX_LENGTH + index * HEX_CHARS_PER_BYTE + 1] = hexDigits[unsignedByte and LOW_NIBBLE_MASK]
-            }
-            result[result.lastIndex] = '\''.code.toByte()
+
+        val hexDigits = HEX_DIGITS.encodeToByteArray()
+        val result = ByteArray(SQLCIPHER_RAW_KEY_PAYLOAD_LENGTH)
+        result[0] = SQLCIPHER_RAW_KEY_MARKER
+        result[1] = SQLCIPHER_RAW_KEY_QUOTE
+
+        var sourceIndex = 0
+        var destinationIndex = RAW_KEY_PREFIX_LENGTH
+        while (sourceIndex < size) {
+            val unsignedByte = this[sourceIndex].toInt() and UNSIGNED_BYTE_MASK
+            result[destinationIndex++] = hexDigits[unsignedByte ushr NIBBLE_BITS]
+            result[destinationIndex++] = hexDigits[unsignedByte and LOW_NIBBLE_MASK]
+            sourceIndex++
         }
+
+        result[destinationIndex] = SQLCIPHER_RAW_KEY_QUOTE
+        return result
     }
 
     private companion object {
+        const val HEX_DIGITS = "0123456789abcdef"
         const val MIN_DATABASE_SECRET_LENGTH = 32
+        const val SQLCIPHER_RAW_KEY_MARKER: Byte = 0x78
         const val SQLCIPHER_RAW_KEY_PAYLOAD_LENGTH = 67
+        const val SQLCIPHER_RAW_KEY_QUOTE: Byte = 0x27
         const val RAW_KEY_PREFIX_LENGTH = 2
-        const val HEX_CHARS_PER_BYTE = 2
         const val NIBBLE_BITS = 4
         const val LOW_NIBBLE_MASK = 0x0F
         const val UNSIGNED_BYTE_MASK = 0xFF
