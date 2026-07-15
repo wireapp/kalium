@@ -40,6 +40,7 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -88,6 +89,21 @@ class MLSWelcomeEventHandlerTest {
 
         verifySuspend(VerifyMode.not) {
             arrangement.conversationRepository.updateConversationGroupState(any(), any())
+        }
+    }
+
+    @Test
+    fun givenConversationWasDeleted_whenHandlingWelcome_thenShouldSkipStaleEvent() = runTest {
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.noConversation)
+        val (arrangement, mlsWelcomeEventHandler) = arrange {
+            withFetchConversationIfUnknownFailingWith(failure)
+        }
+
+        mlsWelcomeEventHandler.handle(arrangement.transactionContext, WELCOME_EVENT).shouldSucceed()
+
+        verifySuspend(VerifyMode.not) {
+            arrangement.mlsContext.processWelcomeMessage(any())
+            arrangement.refillKeyPackagesUseCase.invoke(any())
         }
     }
 
