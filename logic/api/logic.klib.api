@@ -133,6 +133,10 @@ abstract fun interface com.wire.kalium.logic.feature.conversation/ObserveConvers
     abstract suspend fun invoke(kotlin/Boolean): kotlinx.coroutines.flow/Flow<kotlin.collections/List<com.wire.kalium.logic.data.conversation/ConversationDetails>> // com.wire.kalium.logic.feature.conversation/ObserveConversationListDetailsUseCase.invoke|invoke(kotlin.Boolean){}[0]
 }
 
+abstract fun interface com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserUseCase { // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserUseCase|null[0]
+    abstract suspend fun invoke(): com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserUseCase.invoke|invoke(){}[0]
+}
+
 abstract fun interface com.wire.kalium.logic.feature.team/DeleteTeamConversationUseCase { // com.wire.kalium.logic.feature.team/DeleteTeamConversationUseCase|null[0]
     abstract suspend fun invoke(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.logic.feature.team/Result // com.wire.kalium.logic.feature.team/DeleteTeamConversationUseCase.invoke|invoke(com.wire.kalium.logic.data.id.QualifiedID){}[0]
 }
@@ -2284,6 +2288,27 @@ sealed interface com.wire.kalium.logic.feature.conversation/ConversationUpdateRe
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/ConversationUpdateReceiptModeResult.Success.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/ConversationUpdateReceiptModeResult.Success.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/ConversationUpdateReceiptModeResult.Success.toString|toString(){}[0]
+    }
+}
+
+sealed interface com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult { // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult|null[0]
+    final class Failure : com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult { // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure|null[0]
+        constructor <init>(com.wire.kalium.common.error/CoreFailure) // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure.<init>|<init>(com.wire.kalium.common.error.CoreFailure){}[0]
+
+        final val cause // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure.cause|{}cause[0]
+            final fun <get-cause>(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure.cause.<get-cause>|<get-cause>(){}[0]
+
+        final fun component1(): com.wire.kalium.common.error/CoreFailure // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.common.error/CoreFailure = ...): com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure.copy|copy(com.wire.kalium.common.error.CoreFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Failure.toString|toString(){}[0]
+    }
+
+    final object Success : com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult { // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Success|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Success.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Success.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserResult.Success.toString|toString(){}[0]
     }
 }
 
@@ -5192,6 +5217,8 @@ final class com.wire.kalium.logic.feature/UserSessionScope : kotlinx.coroutines/
         final fun <get-persistScreenshotCensoringConfig>(): com.wire.kalium.logic.feature.user.screenshotCensoring/PersistScreenshotCensoringConfigUseCase // com.wire.kalium.logic.feature/UserSessionScope.persistScreenshotCensoringConfig.<get-persistScreenshotCensoringConfig>|<get-persistScreenshotCensoringConfig>(){}[0]
     final val qualifiedIdMapper // com.wire.kalium.logic.feature/UserSessionScope.qualifiedIdMapper|{}qualifiedIdMapper[0]
         final fun <get-qualifiedIdMapper>(): com.wire.kalium.logic.data.id/QualifiedIdMapper // com.wire.kalium.logic.feature/UserSessionScope.qualifiedIdMapper.<get-qualifiedIdMapper>|<get-qualifiedIdMapper>(){}[0]
+    final val recoverMLSConversationsForUser // com.wire.kalium.logic.feature/UserSessionScope.recoverMLSConversationsForUser|{}recoverMLSConversationsForUser[0]
+        final fun <get-recoverMLSConversationsForUser>(): com.wire.kalium.logic.feature.conversation/RecoverMLSConversationsForUserUseCase // com.wire.kalium.logic.feature/UserSessionScope.recoverMLSConversationsForUser.<get-recoverMLSConversationsForUser>|<get-recoverMLSConversationsForUser>(){}[0]
     final val resetMlsConversation // com.wire.kalium.logic.feature/UserSessionScope.resetMlsConversation|{}resetMlsConversation[0]
         final fun <get-resetMlsConversation>(): com.wire.kalium.logic.data.conversation/ResetMLSConversationUseCase // com.wire.kalium.logic.feature/UserSessionScope.resetMlsConversation.<get-resetMlsConversation>|<get-resetMlsConversation>(){}[0]
     final val search // com.wire.kalium.logic.feature/UserSessionScope.search|{}search[0]

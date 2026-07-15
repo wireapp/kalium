@@ -956,6 +956,7 @@ public final class com/wire/kalium/logic/feature/UserSessionScope : kotlinx/coro
 	public final fun getPersistPersistentWebSocketConnectionStatus ()Lcom/wire/kalium/logic/feature/user/webSocketStatus/PersistPersistentWebSocketConnectionStatusUseCase;
 	public final fun getPersistScreenshotCensoringConfig ()Lcom/wire/kalium/logic/feature/user/screenshotCensoring/PersistScreenshotCensoringConfigUseCase;
 	public final fun getQualifiedIdMapper ()Lcom/wire/kalium/logic/data/id/QualifiedIdMapper;
+	public final fun getRecoverMLSConversationsForUser ()Lcom/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserUseCase;
 	public final fun getResetMlsConversation ()Lcom/wire/kalium/logic/data/conversation/ResetMLSConversationUseCase;
 	public final fun getSearch ()Lcom/wire/kalium/logic/feature/search/SearchScope;
 	public final fun getService ()Lcom/wire/kalium/logic/feature/service/ServiceScope;
@@ -4093,6 +4094,31 @@ public final class com/wire/kalium/logic/feature/conversation/PromoteAdminAndLea
 	public fun equals (Ljava/lang/Object;)Z
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserResult {
+}
+
+public final class com/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserResult$Failure : com/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserResult {
+	public fun <init> (Lcom/wire/kalium/common/error/CoreFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/common/error/CoreFailure;
+	public final fun copy (Lcom/wire/kalium/common/error/CoreFailure;)Lcom/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserResult$Failure;Lcom/wire/kalium/common/error/CoreFailure;ILjava/lang/Object;)Lcom/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Lcom/wire/kalium/common/error/CoreFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserResult$Success : com/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/feature/conversation/RecoverMLSConversationsForUserUseCase {
+	public abstract fun invoke (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/logic/feature/conversation/RefreshConversationsWithoutMetadataUseCase {
