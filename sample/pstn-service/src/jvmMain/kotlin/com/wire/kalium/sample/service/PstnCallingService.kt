@@ -27,6 +27,8 @@ import com.wire.kalium.calling.runtime.CallingResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.service.KaliumService
 import com.wire.kalium.logic.service.KaliumServiceComponents
+import com.wire.kalium.logic.service.WireKaliumService
+import com.wire.kalium.logic.service.WireKaliumServiceConfig
 import com.wire.kalium.logic.service.api.ExperimentalKaliumServiceApi
 import com.wire.kalium.logic.service.api.KaliumServiceRuntime
 import com.wire.kalium.logic.service.api.ServiceConfig
@@ -45,9 +47,18 @@ public class PstnCallingService private constructor(private val runtime: KaliumS
 
     public suspend fun leave(conversationId: ConversationId): CallingResult = runtime.calls.leave(conversationId)
 
+    public suspend fun recordAudio(path: String): CallingResult = runtime.calls.recordAudio(path)
+
     public suspend fun close(): ServiceResult = runtime.close()
 
     public companion object {
+        /** Creates the complete authenticated/decrypting/encrypting JVM service graph. */
+        public fun create(
+            config: WireKaliumServiceConfig,
+            observer: ServiceObserver,
+        ): PstnCallingService = PstnCallingService(WireKaliumService.create(config, observer))
+
+        /** Compatibility hook for callers that still supply every service contract manually. */
         public fun <RawEvent, DecodedEvent, DecryptedEvent> create(
             config: ServiceConfig,
             components: KaliumServiceComponents<RawEvent, DecodedEvent, DecryptedEvent>,

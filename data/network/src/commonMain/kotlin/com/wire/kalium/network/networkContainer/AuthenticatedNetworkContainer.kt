@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("TooGenericExceptionCaught")
+
 package com.wire.kalium.network.networkContainer
 
 import com.wire.kalium.logger.KaliumLogger
@@ -81,6 +83,9 @@ interface AuthenticatedNetworkContainer {
      * of the access token from the session manager on the next request.
      */
     suspend fun clearCachedToken()
+
+    /** Closes every HTTP and WebSocket client owned by this container. */
+    suspend fun close()
 
     val accessTokenApi: AccessTokenApi
 
@@ -339,6 +344,7 @@ internal interface AuthenticatedHttpClientProvider {
     val websocketClient: AuthenticatedWebSocketClient
     val networkClientWithoutCompression: AuthenticatedNetworkClient
     suspend fun clearCachedToken()
+    suspend fun close()
 }
 
 internal class AuthenticatedHttpClientProviderImpl(
@@ -349,6 +355,8 @@ internal class AuthenticatedHttpClientProviderImpl(
     private val webSocketSessionProvider: ((HttpClient, String) -> WebSocketSession)?,
     private val kaliumLogger: KaliumLogger,
 ) : AuthenticatedHttpClientProvider {
+
+    private var closed = false
 
     override suspend fun clearCachedToken() {
         bearerAuthProvider.clearToken()
@@ -380,7 +388,7 @@ internal class AuthenticatedHttpClientProviderImpl(
 
     override val backendConfig = sessionManager.serverConfig().links
 
-    override val networkClient by lazy {
+    private val networkClientDelegate = lazy {
         AuthenticatedNetworkClient(
             engine,
             sessionManager.serverConfig(),
@@ -388,7 +396,9 @@ internal class AuthenticatedHttpClientProviderImpl(
             kaliumLogger
         )
     }
-    override val websocketClient by lazy {
+    override val networkClient: AuthenticatedNetworkClient get() = networkClientDelegate.value
+
+    private val websocketClientDelegate = lazy {
         AuthenticatedWebSocketClient(
             engine,
             bearerAuthProvider,
@@ -397,7 +407,9 @@ internal class AuthenticatedHttpClientProviderImpl(
             webSocketSessionProvider
         )
     }
-    override val networkClientWithoutCompression by lazy {
+    override val websocketClient: AuthenticatedWebSocketClient get() = websocketClientDelegate.value
+
+    private val networkClientWithoutCompressionDelegate = lazy {
         AuthenticatedNetworkClient(
             engine,
             sessionManager.serverConfig(),
@@ -405,5 +417,34 @@ internal class AuthenticatedHttpClientProviderImpl(
             kaliumLogger,
             installCompression = false
         )
+    }
+    override val networkClientWithoutCompression: AuthenticatedNetworkClient
+        get() = networkClientWithoutCompressionDelegate.value
+
+    override suspend fun close() {
+        if (closed) return
+        var firstFailure: Throwable? = null
+        try {
+            if (websocketClientDelegate.isInitialized()) websocketClientDelegate.value.close()
+        } catch (failure: Throwable) {
+            firstFailure = failure
+        }
+        try {
+            if (networkClientDelegate.isInitialized()) networkClientDelegate.value.close()
+        } catch (failure: Throwable) {
+            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+        }
+        try {
+            if (networkClientWithoutCompressionDelegate.isInitialized()) networkClientWithoutCompressionDelegate.value.close()
+        } catch (failure: Throwable) {
+            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+        }
+        try {
+            engine.close()
+        } catch (failure: Throwable) {
+            if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+        }
+        firstFailure?.let { throw it }
+        closed = true
     }
 }

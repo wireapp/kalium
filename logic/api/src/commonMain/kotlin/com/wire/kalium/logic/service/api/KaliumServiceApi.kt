@@ -140,6 +140,9 @@ public interface ServiceCalling {
     public suspend fun join(conversationId: ConversationId): CallingResult
 
     public suspend fun leave(conversationId: ConversationId): CallingResult
+
+    /** Starts AVS raw PCM playout recording at a service-owned filesystem path. */
+    public suspend fun recordAudio(path: String): CallingResult
 }
 
 @ExperimentalKaliumServiceApi

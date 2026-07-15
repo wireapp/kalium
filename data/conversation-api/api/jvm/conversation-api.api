@@ -1,13 +1,16 @@
 public final class com/wire/kalium/conversation/CallClient {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Z)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;)Lcom/wire/kalium/conversation/CallClient;
-	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/CallClient;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/conversation/CallClient;
+	public final fun component3 ()Z
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Z)Lcom/wire/kalium/conversation/CallClient;
+	public static synthetic fun copy$default (Lcom/wire/kalium/conversation/CallClient;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ZILjava/lang/Object;)Lcom/wire/kalium/conversation/CallClient;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getClientId ()Ljava/lang/String;
 	public final fun getUserId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public fun hashCode ()I
+	public final fun isMemberOfSubconversation ()Z
 	public fun toString ()Ljava/lang/String;
 }
 

@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("TooGenericExceptionCaught")
+
 package com.wire.kalium.network.api.v9.authenticated
 
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
@@ -30,6 +32,7 @@ import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.PATH_EV
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.SYNC_MARKER_KEY
 import com.wire.kalium.network.api.v8.authenticated.NotificationApiV8
 import com.wire.kalium.network.kaliumLogger
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.deleteSensitiveItemsFromJson
@@ -39,15 +42,19 @@ import com.wire.kalium.network.utils.wrapRequest
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.websocket.Frame
+import io.ktor.websocket.CloseReason
 import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.close
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.encodeToJsonElement
 
 internal open class NotificationApiV9 internal constructor(
@@ -76,17 +83,36 @@ internal open class NotificationApiV9 internal constructor(
         }
     }
 
-    override suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest) {
+    override suspend fun acknowledgeEvents(
+        clientId: String,
+        markerId: String,
+        eventAcknowledgeRequest: EventAcknowledgeRequest,
+    ): NetworkResponse<Unit> {
         val session = getOrCreateAsyncEventsWebSocketSession(clientId, markerId, ::acknowledgeEvents.name)
 
-        KtxSerializer.json.encodeToJsonElement(eventAcknowledgeRequest).let { json ->
-            val result = session.outgoing.trySend(Frame.Text(json.toString()))
-            if (result.isSuccess) {
+        return KtxSerializer.json.encodeToJsonElement(eventAcknowledgeRequest).let { json ->
+            try {
+                session.outgoing.send(Frame.Text(json.toString()))
                 kaliumLogger.i("Acknowledge event sent successfully $json on $this")
-            } else {
-                kaliumLogger.e("Failed to send acknowledge event $json", result.exceptionOrNull())
+                NetworkResponse.Success(Unit, emptyMap(), 0)
+            } catch (failure: Throwable) {
+                kaliumLogger.e("Failed to send acknowledge event $json", failure)
+                NetworkResponse.Error(KaliumException.GenericError(failure))
             }
         }
+    }
+
+    override suspend fun closeLiveEvents(): NetworkResponse<Unit> = try {
+        val current = mutex.withLock { session }
+        current?.close(CloseReason(CloseReason.Codes.NORMAL, "Live event owner closed"))
+        current?.cancel()
+        if (current != null) authenticatedWebSocketClient.releaseWebSocketSession(current)
+        mutex.withLock {
+            if (session === current) session = null
+        }
+        NetworkResponse.Success(Unit, emptyMap(), 0)
+    } catch (failure: Throwable) {
+        NetworkResponse.Error(KaliumException.GenericError(failure))
     }
 
     override suspend fun consumeLiveEvents(
@@ -119,10 +145,17 @@ internal open class NotificationApiV9 internal constructor(
         defaultClientWebSocketSession.incoming
             .consumeAsFlow()
             .onCompletion {
-                defaultClientWebSocketSession.cancel()
+                withContext(NonCancellable) {
+                    try {
+                        defaultClientWebSocketSession.cancel()
+                    } finally {
+                        authenticatedWebSocketClient.releaseWebSocketSession(defaultClientWebSocketSession)
+                        mutex.withLock {
+                            if (session === defaultClientWebSocketSession) session = null
+                        }
+                    }
+                }
                 logger.w("Websocket Closed", it)
-                session?.cancel()
-                session = null
                 emit(WebSocketEvent.Close(it))
             }
             .collect { frame ->

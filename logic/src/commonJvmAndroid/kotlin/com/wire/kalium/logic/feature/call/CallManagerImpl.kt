@@ -366,7 +366,7 @@ internal class CallManagerImpl internal constructor(
                             inst = deferredHandle.await(),
                             conversationId = federatedIdMapper.parseToFederatedId(conversationId),
                             callType = callType.avsValue,
-                            cbrEnabled = isAudioCbr
+                            audioCbr = if (isAudioCbr) 1 else 0
                         )
                         callingLogger.i(
                             "$tagWithUserId: wcall_answer() called -> Incoming call for conversationId: " +
@@ -382,7 +382,7 @@ internal class CallManagerImpl internal constructor(
                     inst = deferredHandle.await(),
                     conversationId = federatedIdMapper.parseToFederatedId(conversationId),
                     callType = callType.avsValue,
-                    cbrEnabled = isAudioCbr
+                    audioCbr = if (isAudioCbr) 1 else 0
                 )
                 callingLogger.i(
                     "$tagWithUserId: wcall_answer() called -> Incoming call for conversationId: " +

@@ -194,16 +194,19 @@ sealed interface com.wire.kalium.conversation/ConversationContextResult { // com
 }
 
 final class com.wire.kalium.conversation/CallClient { // com.wire.kalium.conversation/CallClient|null[0]
-    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String) // com.wire.kalium.conversation/CallClient.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String){}[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin/Boolean = ...) // com.wire.kalium.conversation/CallClient.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.Boolean){}[0]
 
     final val clientId // com.wire.kalium.conversation/CallClient.clientId|{}clientId[0]
         final fun <get-clientId>(): kotlin/String // com.wire.kalium.conversation/CallClient.clientId.<get-clientId>|<get-clientId>(){}[0]
+    final val isMemberOfSubconversation // com.wire.kalium.conversation/CallClient.isMemberOfSubconversation|{}isMemberOfSubconversation[0]
+        final fun <get-isMemberOfSubconversation>(): kotlin/Boolean // com.wire.kalium.conversation/CallClient.isMemberOfSubconversation.<get-isMemberOfSubconversation>|<get-isMemberOfSubconversation>(){}[0]
     final val userId // com.wire.kalium.conversation/CallClient.userId|{}userId[0]
         final fun <get-userId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.conversation/CallClient.userId.<get-userId>|<get-userId>(){}[0]
 
     final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.conversation/CallClient.component1|component1(){}[0]
     final fun component2(): kotlin/String // com.wire.kalium.conversation/CallClient.component2|component2(){}[0]
-    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String = ...): com.wire.kalium.conversation/CallClient // com.wire.kalium.conversation/CallClient.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String){}[0]
+    final fun component3(): kotlin/Boolean // com.wire.kalium.conversation/CallClient.component3|component3(){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String = ..., kotlin/Boolean = ...): com.wire.kalium.conversation/CallClient // com.wire.kalium.conversation/CallClient.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.Boolean){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.conversation/CallClient.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.conversation/CallClient.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.conversation/CallClient.toString|toString(){}[0]

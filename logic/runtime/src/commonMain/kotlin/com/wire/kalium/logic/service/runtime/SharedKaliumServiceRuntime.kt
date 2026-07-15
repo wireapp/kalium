@@ -82,6 +82,8 @@ public class SharedKaliumServiceRuntime<RawEvent, DecodedEvent, DecryptedEvent>(
     private var eventJob: Job? = null
     private var sessionStarted: Boolean = false
     private var cryptoStarted: Boolean = false
+    private var sessionClosed: Boolean = false
+    private var cryptoClosed: Boolean = false
     private var eventSourceClosed: Boolean = false
     private var callingClosed: Boolean = false
 
@@ -98,13 +100,15 @@ public class SharedKaliumServiceRuntime<RawEvent, DecodedEvent, DecryptedEvent>(
         }
         transition(ServiceRuntimeState.STARTING)
         try {
+            sessionStarted = true
             when (val result = startSession()) {
                 is ServiceResult.Failure -> return@withLock failStartup(result.failure)
-                ServiceResult.Success -> sessionStarted = true
+                ServiceResult.Success -> Unit
             }
+            cryptoStarted = true
             when (val result = startCrypto()) {
                 is ServiceResult.Failure -> return@withLock failStartup(result.failure)
-                ServiceResult.Success -> cryptoStarted = true
+                ServiceResult.Success -> Unit
             }
             when (val result = startCalling()) {
                 is CallingResult.Failure -> return@withLock failStartup(ServiceFailure.Calling(result.failure.toString()))
@@ -276,13 +280,24 @@ public class SharedKaliumServiceRuntime<RawEvent, DecodedEvent, DecryptedEvent>(
             val failure = closeCalls()
             if (failure == null) callingClosed = true else if (firstFailure == null) firstFailure = failure
         }
-        if (cryptoStarted) {
+        val dependantsClosed = eventSourceClosed && eventJob == null && callingClosed
+        if (dependantsClosed && !cryptoClosed) {
             val failure = closeCrypto()
-            if (failure == null) cryptoStarted = false else if (firstFailure == null) firstFailure = failure
+            if (failure == null) {
+                cryptoStarted = false
+                cryptoClosed = true
+            } else if (firstFailure == null) {
+                firstFailure = failure
+            }
         }
-        if (sessionStarted) {
+        if (dependantsClosed && cryptoClosed && !sessionClosed) {
             val failure = closeSession()
-            if (failure == null) sessionStarted = false else if (firstFailure == null) firstFailure = failure
+            if (failure == null) {
+                sessionStarted = false
+                sessionClosed = true
+            } else if (firstFailure == null) {
+                firstFailure = failure
+            }
         }
         ownedScope.cancel()
         return firstFailure
@@ -341,6 +356,13 @@ private class RuntimeServiceCalling(
     override suspend fun leave(conversationId: ConversationId): CallingResult = when (state.value) {
         ServiceRuntimeState.READY,
         ServiceRuntimeState.FAILED -> delegate.leave(conversationId)
+        ServiceRuntimeState.CLOSING,
+        ServiceRuntimeState.CLOSED -> CallingResult.Failure(CallingFailure.RuntimeClosed)
+        else -> CallingResult.Failure(CallingFailure.RuntimeNotReady)
+    }
+
+    override suspend fun recordAudio(path: String): CallingResult = when (state.value) {
+        ServiceRuntimeState.READY -> delegate.recordAudio(path)
         ServiceRuntimeState.CLOSING,
         ServiceRuntimeState.CLOSED -> CallingResult.Failure(CallingFailure.RuntimeClosed)
         else -> CallingResult.Failure(CallingFailure.RuntimeNotReady)

@@ -44,6 +44,9 @@ abstract interface com.wire.kalium.calling.runtime/AvsCallingEngine { // com.wir
     abstract suspend fun leave(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/AvsCallingEngine.leave|leave(com.wire.kalium.logic.data.id.QualifiedID){}[0]
     abstract suspend fun receive(com.wire.kalium.calling.runtime/IncomingCallingPayload, com.wire.kalium.conversation/CallConversationContext, kotlin/String): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/AvsCallingEngine.receive|receive(com.wire.kalium.calling.runtime.IncomingCallingPayload;com.wire.kalium.conversation.CallConversationContext;kotlin.String){}[0]
     abstract suspend fun start(com.wire.kalium.calling.runtime/ServiceSelfConversationProvider): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/AvsCallingEngine.start|start(com.wire.kalium.calling.runtime.ServiceSelfConversationProvider){}[0]
+    open fun observeEvents(): kotlinx.coroutines.flow/Flow<com.wire.kalium.calling.runtime/AvsCallingEvent> // com.wire.kalium.calling.runtime/AvsCallingEngine.observeEvents|observeEvents(){}[0]
+    open suspend fun recordAudio(kotlin/String): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/AvsCallingEngine.recordAudio|recordAudio(kotlin.String){}[0]
+    open suspend fun updateEpoch(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.calling.runtime/CallEpoch): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/AvsCallingEngine.updateEpoch|updateEpoch(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.calling.runtime.CallEpoch){}[0]
 }
 
 abstract interface com.wire.kalium.calling.runtime/CallStateStore { // com.wire.kalium.calling.runtime/CallStateStore|null[0]
@@ -68,6 +71,92 @@ abstract interface com.wire.kalium.calling.runtime/ConferenceMembership { // com
     abstract fun observeEpochs(com.wire.kalium.logic.data.id/QualifiedID): kotlinx.coroutines.flow/Flow<com.wire.kalium.calling.runtime/CallEpoch> // com.wire.kalium.calling.runtime/ConferenceMembership.observeEpochs|observeEpochs(com.wire.kalium.logic.data.id.QualifiedID){}[0]
     abstract suspend fun join(com.wire.kalium.conversation/CallConversationContext): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/ConferenceMembership.join|join(com.wire.kalium.conversation.CallConversationContext){}[0]
     abstract suspend fun leave(com.wire.kalium.calling.runtime/ActiveCall): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/ConferenceMembership.leave|leave(com.wire.kalium.calling.runtime.ActiveCall){}[0]
+}
+
+sealed interface com.wire.kalium.calling.runtime/AvsCallingEvent { // com.wire.kalium.calling.runtime/AvsCallingEvent|null[0]
+    final class Answered : com.wire.kalium.calling.runtime/AvsCallingEvent { // com.wire.kalium.calling.runtime/AvsCallingEvent.Answered|null[0]
+        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.calling.runtime/AvsCallingEvent.Answered.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+
+        final val conversationId // com.wire.kalium.calling.runtime/AvsCallingEvent.Answered.conversationId|{}conversationId[0]
+            final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/AvsCallingEvent.Answered.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/AvsCallingEvent.Answered.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.calling.runtime/AvsCallingEvent.Answered // com.wire.kalium.calling.runtime/AvsCallingEvent.Answered.copy|copy(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.calling.runtime/AvsCallingEvent.Answered.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.calling.runtime/AvsCallingEvent.Answered.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.calling.runtime/AvsCallingEvent.Answered.toString|toString(){}[0]
+    }
+
+    final class Closed : com.wire.kalium.calling.runtime/AvsCallingEvent { // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed|null[0]
+        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, kotlin/String?) // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?){}[0]
+
+        final val conversationId // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed.conversationId|{}conversationId[0]
+            final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+        final val reason // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed.reason|{}reason[0]
+            final fun <get-reason>(): kotlin/String? // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed.reason.<get-reason>|<get-reason>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed.component1|component1(){}[0]
+        final fun component2(): kotlin/String? // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed.component2|component2(){}[0]
+        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String? = ...): com.wire.kalium.calling.runtime/AvsCallingEvent.Closed // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;kotlin.String?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.calling.runtime/AvsCallingEvent.Closed.toString|toString(){}[0]
+    }
+
+    final class Established : com.wire.kalium.calling.runtime/AvsCallingEvent { // com.wire.kalium.calling.runtime/AvsCallingEvent.Established|null[0]
+        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.calling.runtime/AvsCallingEvent.Established.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+
+        final val conversationId // com.wire.kalium.calling.runtime/AvsCallingEvent.Established.conversationId|{}conversationId[0]
+            final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/AvsCallingEvent.Established.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/AvsCallingEvent.Established.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.calling.runtime/AvsCallingEvent.Established // com.wire.kalium.calling.runtime/AvsCallingEvent.Established.copy|copy(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.calling.runtime/AvsCallingEvent.Established.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.calling.runtime/AvsCallingEvent.Established.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.calling.runtime/AvsCallingEvent.Established.toString|toString(){}[0]
+    }
+
+    final class Failed : com.wire.kalium.calling.runtime/AvsCallingEvent { // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed|null[0]
+        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID?, com.wire.kalium.calling.runtime/CallingFailure) // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID?;com.wire.kalium.calling.runtime.CallingFailure){}[0]
+
+        final val conversationId // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed.conversationId|{}conversationId[0]
+            final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID? // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+        final val failure // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed.failure|{}failure[0]
+            final fun <get-failure>(): com.wire.kalium.calling.runtime/CallingFailure // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed.failure.<get-failure>|<get-failure>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.id/QualifiedID? // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed.component1|component1(){}[0]
+        final fun component2(): com.wire.kalium.calling.runtime/CallingFailure // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed.component2|component2(){}[0]
+        final fun copy(com.wire.kalium.logic.data.id/QualifiedID? = ..., com.wire.kalium.calling.runtime/CallingFailure = ...): com.wire.kalium.calling.runtime/AvsCallingEvent.Failed // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed.copy|copy(com.wire.kalium.logic.data.id.QualifiedID?;com.wire.kalium.calling.runtime.CallingFailure){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.calling.runtime/AvsCallingEvent.Failed.toString|toString(){}[0]
+    }
+
+    final class Incoming : com.wire.kalium.calling.runtime/AvsCallingEvent { // com.wire.kalium.calling.runtime/AvsCallingEvent.Incoming|null[0]
+        constructor <init>(com.wire.kalium.calling.runtime/NativeIncomingCall) // com.wire.kalium.calling.runtime/AvsCallingEvent.Incoming.<init>|<init>(com.wire.kalium.calling.runtime.NativeIncomingCall){}[0]
+
+        final val call // com.wire.kalium.calling.runtime/AvsCallingEvent.Incoming.call|{}call[0]
+            final fun <get-call>(): com.wire.kalium.calling.runtime/NativeIncomingCall // com.wire.kalium.calling.runtime/AvsCallingEvent.Incoming.call.<get-call>|<get-call>(){}[0]
+
+        final fun component1(): com.wire.kalium.calling.runtime/NativeIncomingCall // com.wire.kalium.calling.runtime/AvsCallingEvent.Incoming.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.calling.runtime/NativeIncomingCall = ...): com.wire.kalium.calling.runtime/AvsCallingEvent.Incoming // com.wire.kalium.calling.runtime/AvsCallingEvent.Incoming.copy|copy(com.wire.kalium.calling.runtime.NativeIncomingCall){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.calling.runtime/AvsCallingEvent.Incoming.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.calling.runtime/AvsCallingEvent.Incoming.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.calling.runtime/AvsCallingEvent.Incoming.toString|toString(){}[0]
+    }
+
+    final class Missed : com.wire.kalium.calling.runtime/AvsCallingEvent { // com.wire.kalium.calling.runtime/AvsCallingEvent.Missed|null[0]
+        constructor <init>(com.wire.kalium.logic.data.id/QualifiedID) // com.wire.kalium.calling.runtime/AvsCallingEvent.Missed.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+
+        final val conversationId // com.wire.kalium.calling.runtime/AvsCallingEvent.Missed.conversationId|{}conversationId[0]
+            final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/AvsCallingEvent.Missed.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+
+        final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/AvsCallingEvent.Missed.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ...): com.wire.kalium.calling.runtime/AvsCallingEvent.Missed // com.wire.kalium.calling.runtime/AvsCallingEvent.Missed.copy|copy(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.calling.runtime/AvsCallingEvent.Missed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // com.wire.kalium.calling.runtime/AvsCallingEvent.Missed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // com.wire.kalium.calling.runtime/AvsCallingEvent.Missed.toString|toString(){}[0]
+    }
 }
 
 sealed interface com.wire.kalium.calling.runtime/CallConfigResult { // com.wire.kalium.calling.runtime/CallConfigResult|null[0]
@@ -158,13 +247,13 @@ sealed interface com.wire.kalium.calling.runtime/CallLifecycleEvent { // com.wir
     }
 
     final class Incoming : com.wire.kalium.calling.runtime/CallLifecycleEvent { // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming|null[0]
-        constructor <init>(com.wire.kalium.calling.runtime/IncomingCallingPayload) // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.<init>|<init>(com.wire.kalium.calling.runtime.IncomingCallingPayload){}[0]
+        constructor <init>(com.wire.kalium.calling.runtime/NativeIncomingCall) // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.<init>|<init>(com.wire.kalium.calling.runtime.NativeIncomingCall){}[0]
 
-        final val payload // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.payload|{}payload[0]
-            final fun <get-payload>(): com.wire.kalium.calling.runtime/IncomingCallingPayload // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.payload.<get-payload>|<get-payload>(){}[0]
+        final val call // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.call|{}call[0]
+            final fun <get-call>(): com.wire.kalium.calling.runtime/NativeIncomingCall // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.call.<get-call>|<get-call>(){}[0]
 
-        final fun component1(): com.wire.kalium.calling.runtime/IncomingCallingPayload // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.component1|component1(){}[0]
-        final fun copy(com.wire.kalium.calling.runtime/IncomingCallingPayload = ...): com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.copy|copy(com.wire.kalium.calling.runtime.IncomingCallingPayload){}[0]
+        final fun component1(): com.wire.kalium.calling.runtime/NativeIncomingCall // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.component1|component1(){}[0]
+        final fun copy(com.wire.kalium.calling.runtime/NativeIncomingCall = ...): com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.copy|copy(com.wire.kalium.calling.runtime.NativeIncomingCall){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.calling.runtime/CallLifecycleEvent.Incoming.toString|toString(){}[0]
@@ -603,6 +692,7 @@ final class com.wire.kalium.calling.runtime/CallingRuntime { // com.wire.kalium.
     final suspend fun join(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/CallingRuntime.join|join(com.wire.kalium.logic.data.id.QualifiedID){}[0]
     final suspend fun leave(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/CallingRuntime.leave|leave(com.wire.kalium.logic.data.id.QualifiedID){}[0]
     final suspend fun receive(com.wire.kalium.calling.runtime/IncomingCallingPayload, kotlin/String): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/CallingRuntime.receive|receive(com.wire.kalium.calling.runtime.IncomingCallingPayload;kotlin.String){}[0]
+    final suspend fun recordAudio(kotlin/String): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/CallingRuntime.recordAudio|recordAudio(kotlin.String){}[0]
     final suspend fun sendSignal(com.wire.kalium.calling.runtime/OutgoingCallingSignal): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/CallingRuntime.sendSignal|sendSignal(com.wire.kalium.calling.runtime.OutgoingCallingSignal){}[0]
     final suspend fun start(): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.calling.runtime/CallingRuntime.start|start(){}[0]
 }
@@ -617,7 +707,7 @@ final class com.wire.kalium.calling.runtime/InMemoryCallStateStore : com.wire.ka
 }
 
 final class com.wire.kalium.calling.runtime/IncomingCallingPayload { // com.wire.kalium.calling.runtime/IncomingCallingPayload|null[0]
-    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin/Long, kotlin/String, kotlin/Boolean) // com.wire.kalium.calling.runtime/IncomingCallingPayload.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.Long;kotlin.String;kotlin.Boolean){}[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin/Long, kotlin/String, kotlin/Boolean, kotlin/String? = ...) // com.wire.kalium.calling.runtime/IncomingCallingPayload.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.Long;kotlin.String;kotlin.Boolean;kotlin.String?){}[0]
 
     final val callHostConversationId // com.wire.kalium.calling.runtime/IncomingCallingPayload.callHostConversationId|{}callHostConversationId[0]
         final fun <get-callHostConversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/IncomingCallingPayload.callHostConversationId.<get-callHostConversationId>|<get-callHostConversationId>(){}[0]
@@ -625,6 +715,8 @@ final class com.wire.kalium.calling.runtime/IncomingCallingPayload { // com.wire
         final fun <get-content>(): kotlin/String // com.wire.kalium.calling.runtime/IncomingCallingPayload.content.<get-content>|<get-content>(){}[0]
     final val isSelfMessage // com.wire.kalium.calling.runtime/IncomingCallingPayload.isSelfMessage|{}isSelfMessage[0]
         final fun <get-isSelfMessage>(): kotlin/Boolean // com.wire.kalium.calling.runtime/IncomingCallingPayload.isSelfMessage.<get-isSelfMessage>|<get-isSelfMessage>(){}[0]
+    final val messageId // com.wire.kalium.calling.runtime/IncomingCallingPayload.messageId|{}messageId[0]
+        final fun <get-messageId>(): kotlin/String? // com.wire.kalium.calling.runtime/IncomingCallingPayload.messageId.<get-messageId>|<get-messageId>(){}[0]
     final val messageTimestampSeconds // com.wire.kalium.calling.runtime/IncomingCallingPayload.messageTimestampSeconds|{}messageTimestampSeconds[0]
         final fun <get-messageTimestampSeconds>(): kotlin/Long // com.wire.kalium.calling.runtime/IncomingCallingPayload.messageTimestampSeconds.<get-messageTimestampSeconds>|<get-messageTimestampSeconds>(){}[0]
     final val senderClientId // com.wire.kalium.calling.runtime/IncomingCallingPayload.senderClientId|{}senderClientId[0]
@@ -641,19 +733,50 @@ final class com.wire.kalium.calling.runtime/IncomingCallingPayload { // com.wire
     final fun component5(): kotlin/Long // com.wire.kalium.calling.runtime/IncomingCallingPayload.component5|component5(){}[0]
     final fun component6(): kotlin/String // com.wire.kalium.calling.runtime/IncomingCallingPayload.component6|component6(){}[0]
     final fun component7(): kotlin/Boolean // com.wire.kalium.calling.runtime/IncomingCallingPayload.component7|component7(){}[0]
-    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String = ..., kotlin/Long = ..., kotlin/String = ..., kotlin/Boolean = ...): com.wire.kalium.calling.runtime/IncomingCallingPayload // com.wire.kalium.calling.runtime/IncomingCallingPayload.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.Long;kotlin.String;kotlin.Boolean){}[0]
+    final fun component8(): kotlin/String? // com.wire.kalium.calling.runtime/IncomingCallingPayload.component8|component8(){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String = ..., kotlin/Long = ..., kotlin/String = ..., kotlin/Boolean = ..., kotlin/String? = ...): com.wire.kalium.calling.runtime/IncomingCallingPayload // com.wire.kalium.calling.runtime/IncomingCallingPayload.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.Long;kotlin.String;kotlin.Boolean;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.calling.runtime/IncomingCallingPayload.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.calling.runtime/IncomingCallingPayload.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.calling.runtime/IncomingCallingPayload.toString|toString(){}[0]
 }
 
+final class com.wire.kalium.calling.runtime/NativeIncomingCall { // com.wire.kalium.calling.runtime/NativeIncomingCall|null[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, kotlin/Long, kotlin/Boolean, kotlin/Boolean) // com.wire.kalium.calling.runtime/NativeIncomingCall.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.Long;kotlin.Boolean;kotlin.Boolean){}[0]
+
+    final val conversationId // com.wire.kalium.calling.runtime/NativeIncomingCall.conversationId|{}conversationId[0]
+        final fun <get-conversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/NativeIncomingCall.conversationId.<get-conversationId>|<get-conversationId>(){}[0]
+    final val isVideoCall // com.wire.kalium.calling.runtime/NativeIncomingCall.isVideoCall|{}isVideoCall[0]
+        final fun <get-isVideoCall>(): kotlin/Boolean // com.wire.kalium.calling.runtime/NativeIncomingCall.isVideoCall.<get-isVideoCall>|<get-isVideoCall>(){}[0]
+    final val messageTimestampSeconds // com.wire.kalium.calling.runtime/NativeIncomingCall.messageTimestampSeconds|{}messageTimestampSeconds[0]
+        final fun <get-messageTimestampSeconds>(): kotlin/Long // com.wire.kalium.calling.runtime/NativeIncomingCall.messageTimestampSeconds.<get-messageTimestampSeconds>|<get-messageTimestampSeconds>(){}[0]
+    final val senderClientId // com.wire.kalium.calling.runtime/NativeIncomingCall.senderClientId|{}senderClientId[0]
+        final fun <get-senderClientId>(): kotlin/String // com.wire.kalium.calling.runtime/NativeIncomingCall.senderClientId.<get-senderClientId>|<get-senderClientId>(){}[0]
+    final val senderUserId // com.wire.kalium.calling.runtime/NativeIncomingCall.senderUserId|{}senderUserId[0]
+        final fun <get-senderUserId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/NativeIncomingCall.senderUserId.<get-senderUserId>|<get-senderUserId>(){}[0]
+    final val shouldRing // com.wire.kalium.calling.runtime/NativeIncomingCall.shouldRing|{}shouldRing[0]
+        final fun <get-shouldRing>(): kotlin/Boolean // com.wire.kalium.calling.runtime/NativeIncomingCall.shouldRing.<get-shouldRing>|<get-shouldRing>(){}[0]
+
+    final fun component1(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/NativeIncomingCall.component1|component1(){}[0]
+    final fun component2(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/NativeIncomingCall.component2|component2(){}[0]
+    final fun component3(): kotlin/String // com.wire.kalium.calling.runtime/NativeIncomingCall.component3|component3(){}[0]
+    final fun component4(): kotlin/Long // com.wire.kalium.calling.runtime/NativeIncomingCall.component4|component4(){}[0]
+    final fun component5(): kotlin/Boolean // com.wire.kalium.calling.runtime/NativeIncomingCall.component5|component5(){}[0]
+    final fun component6(): kotlin/Boolean // com.wire.kalium.calling.runtime/NativeIncomingCall.component6|component6(){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String = ..., kotlin/Long = ..., kotlin/Boolean = ..., kotlin/Boolean = ...): com.wire.kalium.calling.runtime/NativeIncomingCall // com.wire.kalium.calling.runtime/NativeIncomingCall.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;kotlin.Long;kotlin.Boolean;kotlin.Boolean){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.calling.runtime/NativeIncomingCall.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // com.wire.kalium.calling.runtime/NativeIncomingCall.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // com.wire.kalium.calling.runtime/NativeIncomingCall.toString|toString(){}[0]
+}
+
 final class com.wire.kalium.calling.runtime/OutgoingCallingSignal { // com.wire.kalium.calling.runtime/OutgoingCallingSignal|null[0]
-    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, com.wire.kalium.calling.runtime/CallSignalTarget, kotlin/Boolean, com.wire.kalium.conversation/CallConversationProtocol) // com.wire.kalium.calling.runtime/OutgoingCallingSignal.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;com.wire.kalium.calling.runtime.CallSignalTarget;kotlin.Boolean;com.wire.kalium.conversation.CallConversationProtocol){}[0]
+    constructor <init>(com.wire.kalium.logic.data.id/QualifiedID, com.wire.kalium.logic.data.id/QualifiedID, kotlin/String, com.wire.kalium.calling.runtime/CallSignalTarget, kotlin/Boolean, com.wire.kalium.conversation/CallConversationProtocol, kotlin/String? = ...) // com.wire.kalium.calling.runtime/OutgoingCallingSignal.<init>|<init>(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;com.wire.kalium.calling.runtime.CallSignalTarget;kotlin.Boolean;com.wire.kalium.conversation.CallConversationProtocol;kotlin.String?){}[0]
 
     final val callHostConversationId // com.wire.kalium.calling.runtime/OutgoingCallingSignal.callHostConversationId|{}callHostConversationId[0]
         final fun <get-callHostConversationId>(): com.wire.kalium.logic.data.id/QualifiedID // com.wire.kalium.calling.runtime/OutgoingCallingSignal.callHostConversationId.<get-callHostConversationId>|<get-callHostConversationId>(){}[0]
     final val content // com.wire.kalium.calling.runtime/OutgoingCallingSignal.content|{}content[0]
         final fun <get-content>(): kotlin/String // com.wire.kalium.calling.runtime/OutgoingCallingSignal.content.<get-content>|<get-content>(){}[0]
+    final val idempotencyKey // com.wire.kalium.calling.runtime/OutgoingCallingSignal.idempotencyKey|{}idempotencyKey[0]
+        final fun <get-idempotencyKey>(): kotlin/String? // com.wire.kalium.calling.runtime/OutgoingCallingSignal.idempotencyKey.<get-idempotencyKey>|<get-idempotencyKey>(){}[0]
     final val isTransient // com.wire.kalium.calling.runtime/OutgoingCallingSignal.isTransient|{}isTransient[0]
         final fun <get-isTransient>(): kotlin/Boolean // com.wire.kalium.calling.runtime/OutgoingCallingSignal.isTransient.<get-isTransient>|<get-isTransient>(){}[0]
     final val protocol // com.wire.kalium.calling.runtime/OutgoingCallingSignal.protocol|{}protocol[0]
@@ -669,7 +792,8 @@ final class com.wire.kalium.calling.runtime/OutgoingCallingSignal { // com.wire.
     final fun component4(): com.wire.kalium.calling.runtime/CallSignalTarget // com.wire.kalium.calling.runtime/OutgoingCallingSignal.component4|component4(){}[0]
     final fun component5(): kotlin/Boolean // com.wire.kalium.calling.runtime/OutgoingCallingSignal.component5|component5(){}[0]
     final fun component6(): com.wire.kalium.conversation/CallConversationProtocol // com.wire.kalium.calling.runtime/OutgoingCallingSignal.component6|component6(){}[0]
-    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String = ..., com.wire.kalium.calling.runtime/CallSignalTarget = ..., kotlin/Boolean = ..., com.wire.kalium.conversation/CallConversationProtocol = ...): com.wire.kalium.calling.runtime/OutgoingCallingSignal // com.wire.kalium.calling.runtime/OutgoingCallingSignal.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;com.wire.kalium.calling.runtime.CallSignalTarget;kotlin.Boolean;com.wire.kalium.conversation.CallConversationProtocol){}[0]
+    final fun component7(): kotlin/String? // com.wire.kalium.calling.runtime/OutgoingCallingSignal.component7|component7(){}[0]
+    final fun copy(com.wire.kalium.logic.data.id/QualifiedID = ..., com.wire.kalium.logic.data.id/QualifiedID = ..., kotlin/String = ..., com.wire.kalium.calling.runtime/CallSignalTarget = ..., kotlin/Boolean = ..., com.wire.kalium.conversation/CallConversationProtocol = ..., kotlin/String? = ...): com.wire.kalium.calling.runtime/OutgoingCallingSignal // com.wire.kalium.calling.runtime/OutgoingCallingSignal.copy|copy(com.wire.kalium.logic.data.id.QualifiedID;com.wire.kalium.logic.data.id.QualifiedID;kotlin.String;com.wire.kalium.calling.runtime.CallSignalTarget;kotlin.Boolean;com.wire.kalium.conversation.CallConversationProtocol;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.calling.runtime/OutgoingCallingSignal.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // com.wire.kalium.calling.runtime/OutgoingCallingSignal.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // com.wire.kalium.calling.runtime/OutgoingCallingSignal.toString|toString(){}[0]

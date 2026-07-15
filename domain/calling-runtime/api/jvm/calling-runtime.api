@@ -26,8 +26,90 @@ public abstract interface class com/wire/kalium/calling/runtime/AvsCallingEngine
 	public abstract fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun join (Lcom/wire/kalium/conversation/CallConversationContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun leave (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun observeEvents ()Lkotlinx/coroutines/flow/Flow;
 	public abstract fun receive (Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;Lcom/wire/kalium/conversation/CallConversationContext;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun recordAudio (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun start (Lcom/wire/kalium/calling/runtime/ServiceSelfConversationProvider;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun updateEpoch (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/calling/runtime/CallEpoch;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/calling/runtime/AvsCallingEngine$DefaultImpls {
+	public static fun observeEvents (Lcom/wire/kalium/calling/runtime/AvsCallingEngine;)Lkotlinx/coroutines/flow/Flow;
+	public static fun recordAudio (Lcom/wire/kalium/calling/runtime/AvsCallingEngine;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun updateEpoch (Lcom/wire/kalium/calling/runtime/AvsCallingEngine;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/calling/runtime/CallEpoch;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/calling/runtime/AvsCallingEvent {
+}
+
+public final class com/wire/kalium/calling/runtime/AvsCallingEvent$Answered : com/wire/kalium/calling/runtime/AvsCallingEvent {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Answered;
+	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Answered;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Answered;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/calling/runtime/AvsCallingEvent$Closed : com/wire/kalium/calling/runtime/AvsCallingEvent {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Closed;
+	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Closed;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Closed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getReason ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/calling/runtime/AvsCallingEvent$Established : com/wire/kalium/calling/runtime/AvsCallingEvent {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Established;
+	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Established;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Established;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/calling/runtime/AvsCallingEvent$Failed : com/wire/kalium/calling/runtime/AvsCallingEvent {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/calling/runtime/CallingFailure;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2 ()Lcom/wire/kalium/calling/runtime/CallingFailure;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/calling/runtime/CallingFailure;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Failed;
+	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Failed;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/calling/runtime/CallingFailure;ILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Failed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getFailure ()Lcom/wire/kalium/calling/runtime/CallingFailure;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/calling/runtime/AvsCallingEvent$Incoming : com/wire/kalium/calling/runtime/AvsCallingEvent {
+	public fun <init> (Lcom/wire/kalium/calling/runtime/NativeIncomingCall;)V
+	public final fun component1 ()Lcom/wire/kalium/calling/runtime/NativeIncomingCall;
+	public final fun copy (Lcom/wire/kalium/calling/runtime/NativeIncomingCall;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Incoming;
+	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Incoming;Lcom/wire/kalium/calling/runtime/NativeIncomingCall;ILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Incoming;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCall ()Lcom/wire/kalium/calling/runtime/NativeIncomingCall;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/calling/runtime/AvsCallingEvent$Missed : com/wire/kalium/calling/runtime/AvsCallingEvent {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Missed;
+	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Missed;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/AvsCallingEvent$Missed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/wire/kalium/calling/runtime/CallConfig {
@@ -148,12 +230,12 @@ public final class com/wire/kalium/calling/runtime/CallLifecycleEvent$Failed : c
 }
 
 public final class com/wire/kalium/calling/runtime/CallLifecycleEvent$Incoming : com/wire/kalium/calling/runtime/CallLifecycleEvent {
-	public fun <init> (Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;)V
-	public final fun component1 ()Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;
-	public final fun copy (Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;)Lcom/wire/kalium/calling/runtime/CallLifecycleEvent$Incoming;
-	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/CallLifecycleEvent$Incoming;Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;ILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/CallLifecycleEvent$Incoming;
+	public fun <init> (Lcom/wire/kalium/calling/runtime/NativeIncomingCall;)V
+	public final fun component1 ()Lcom/wire/kalium/calling/runtime/NativeIncomingCall;
+	public final fun copy (Lcom/wire/kalium/calling/runtime/NativeIncomingCall;)Lcom/wire/kalium/calling/runtime/CallLifecycleEvent$Incoming;
+	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/CallLifecycleEvent$Incoming;Lcom/wire/kalium/calling/runtime/NativeIncomingCall;ILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/CallLifecycleEvent$Incoming;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getPayload ()Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;
+	public final fun getCall ()Lcom/wire/kalium/calling/runtime/NativeIncomingCall;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -474,6 +556,7 @@ public final class com/wire/kalium/calling/runtime/CallingRuntime {
 	public final fun leave (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun observeActiveCalls ()Lkotlinx/coroutines/flow/Flow;
 	public final fun receive (Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun recordAudio (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun sendSignal (Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
@@ -496,7 +579,8 @@ public final class com/wire/kalium/calling/runtime/InMemoryCallStateStore : com/
 }
 
 public final class com/wire/kalium/calling/runtime/IncomingCallingPayload {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JLjava/lang/String;Z)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JLjava/lang/String;ZLjava/lang/String;)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JLjava/lang/String;ZLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun component2 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun component3 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
@@ -504,11 +588,13 @@ public final class com/wire/kalium/calling/runtime/IncomingCallingPayload {
 	public final fun component5 ()J
 	public final fun component6 ()Ljava/lang/String;
 	public final fun component7 ()Z
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JLjava/lang/String;Z)Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;
-	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JLjava/lang/String;ZILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;
+	public final fun component8 ()Ljava/lang/String;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JLjava/lang/String;ZLjava/lang/String;)Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;
+	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JLjava/lang/String;ZLjava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCallHostConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun getContent ()Ljava/lang/String;
+	public final fun getMessageId ()Ljava/lang/String;
 	public final fun getMessageTimestampSeconds ()J
 	public final fun getSenderClientId ()Ljava/lang/String;
 	public final fun getSenderUserId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
@@ -518,19 +604,43 @@ public final class com/wire/kalium/calling/runtime/IncomingCallingPayload {
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/wire/kalium/calling/runtime/NativeIncomingCall {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JZZ)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()J
+	public final fun component5 ()Z
+	public final fun component6 ()Z
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JZZ)Lcom/wire/kalium/calling/runtime/NativeIncomingCall;
+	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/NativeIncomingCall;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JZZILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/NativeIncomingCall;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getMessageTimestampSeconds ()J
+	public final fun getSenderClientId ()Ljava/lang/String;
+	public final fun getSenderUserId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getShouldRing ()Z
+	public fun hashCode ()I
+	public final fun isVideoCall ()Z
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class com/wire/kalium/calling/runtime/OutgoingCallingSignal {
-	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lcom/wire/kalium/calling/runtime/CallSignalTarget;ZLcom/wire/kalium/conversation/CallConversationProtocol;)V
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lcom/wire/kalium/calling/runtime/CallSignalTarget;ZLcom/wire/kalium/conversation/CallConversationProtocol;Ljava/lang/String;)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lcom/wire/kalium/calling/runtime/CallSignalTarget;ZLcom/wire/kalium/conversation/CallConversationProtocol;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun component2 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Lcom/wire/kalium/calling/runtime/CallSignalTarget;
 	public final fun component5 ()Z
 	public final fun component6 ()Lcom/wire/kalium/conversation/CallConversationProtocol;
-	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lcom/wire/kalium/calling/runtime/CallSignalTarget;ZLcom/wire/kalium/conversation/CallConversationProtocol;)Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;
-	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lcom/wire/kalium/calling/runtime/CallSignalTarget;ZLcom/wire/kalium/conversation/CallConversationProtocol;ILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;
+	public final fun component7 ()Ljava/lang/String;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lcom/wire/kalium/calling/runtime/CallSignalTarget;ZLcom/wire/kalium/conversation/CallConversationProtocol;Ljava/lang/String;)Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;
+	public static synthetic fun copy$default (Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lcom/wire/kalium/calling/runtime/CallSignalTarget;ZLcom/wire/kalium/conversation/CallConversationProtocol;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCallHostConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
 	public final fun getContent ()Ljava/lang/String;
+	public final fun getIdempotencyKey ()Ljava/lang/String;
 	public final fun getProtocol ()Lcom/wire/kalium/conversation/CallConversationProtocol;
 	public final fun getTarget ()Lcom/wire/kalium/calling/runtime/CallSignalTarget;
 	public final fun getTransportConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;

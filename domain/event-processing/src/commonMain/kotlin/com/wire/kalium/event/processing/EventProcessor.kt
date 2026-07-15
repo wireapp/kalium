@@ -179,7 +179,7 @@ public class EventProcessor<RawEvent, DecodedEvent, DecryptedEvent>(
     private val decryptor: EventDecryptor<DecodedEvent, DecryptedEvent>,
     private val router: EventRouter<DecryptedEvent>,
 ) {
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod")
     public fun process(): Flow<EventProcessingOutcome> = flow {
         val initialState = when (val result = loadState()) {
             is StateCall.Success -> result.value
@@ -189,8 +189,10 @@ public class EventProcessor<RawEvent, DecodedEvent, DecryptedEvent>(
             }
         }
 
-        for (pending in initialState.pendingAcknowledgements) {
-            if (pending.acknowledgement.recovery == EventAcknowledgementRecovery.WAIT_FOR_REDELIVERY) continue
+        val waitForRedelivery = initialState.pendingAcknowledgements.filter {
+            it.acknowledgement.recovery == EventAcknowledgementRecovery.WAIT_FOR_REDELIVERY
+        }
+        for (pending in initialState.pendingAcknowledgements - waitForRedelivery.toSet()) {
             val failure = recoverAcknowledgement(pending)
             if (failure != null) {
                 emit(failure)
@@ -200,24 +202,58 @@ public class EventProcessor<RawEvent, DecodedEvent, DecryptedEvent>(
         }
 
         val stream = try {
-            source.open(initialState.acknowledgedCursor)
+            source.open(initialState.acknowledgedCursor, waitForRedelivery)
         } catch (cancellation: CancellationException) {
             throw cancellation
         } catch (failure: Throwable) {
             EventStreamResult.Failure("Event source open threw an exception", failure)
         }
-        val events = when (stream) {
-            is EventStreamResult.Open -> stream.events
+        val opened = when (stream) {
+            is EventStreamResult.Open -> stream
             is EventStreamResult.Failure -> {
                 emit(EventProcessingOutcome.Failed(null, EventProcessingFailure.Source(stream.description, stream.cause)))
                 return@flow
             }
         }
 
-        emit(EventProcessingOutcome.Ready(initialState.acknowledgedCursor))
+        val expectedRecoveries = waitForRedelivery.mapTo(linkedSetOf()) { it.key }
+        val actualRecoveries = opened.recoveredAcknowledgements.toSet()
+        if (actualRecoveries != expectedRecoveries) {
+            emit(
+                EventProcessingOutcome.Failed(
+                    null,
+                    EventProcessingFailure.Acknowledgement(
+                        "The event source did not reconcile every session-scoped acknowledgement",
+                    ),
+                ),
+            )
+            return@flow
+        }
+        opened.recoveredAcknowledgements.forEach { key ->
+            when (val result = recordAcknowledged(key)) {
+                is StateCall.Failure -> {
+                    emit(EventProcessingOutcome.Failed(key, result.failure))
+                    return@flow
+                }
+                is StateCall.Success -> emit(EventProcessingOutcome.AcknowledgementRecovered(key))
+            }
+        }
+
+        val readyState = if (opened.recoveredAcknowledgements.isEmpty()) {
+            initialState
+        } else {
+            when (val result = loadState()) {
+                is StateCall.Failure -> {
+                    emit(EventProcessingOutcome.Failed(null, result.failure))
+                    return@flow
+                }
+                is StateCall.Success -> result.value
+            }
+        }
+        emit(EventProcessingOutcome.Ready(readyState.acknowledgedCursor))
 
         try {
-            events.collect { envelope ->
+            opened.events.collect { envelope ->
                 val outcome = processEnvelope(envelope)
                 emit(outcome)
                 if (outcome is EventProcessingOutcome.Failed) throw StopEventProcessing

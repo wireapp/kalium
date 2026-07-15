@@ -12,6 +12,7 @@ public abstract interface class com/wire/kalium/logic/service/api/ServiceCalling
 	public abstract fun join (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun leave (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun observeActiveCalls ()Lkotlinx/coroutines/flow/Flow;
+	public abstract fun recordAudio (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/service/api/ServiceConfig {

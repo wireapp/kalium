@@ -73,7 +73,11 @@ public sealed interface EventSourceResult {
 @ExperimentalEventApi
 public sealed interface EventStreamResult<out RawEvent> {
     /** A stream opened after authenticated connection and initial synchronization are ready. */
-    public data class Open<RawEvent>(public val events: Flow<EventEnvelope<RawEvent>>) : EventStreamResult<RawEvent>
+    public data class Open<RawEvent>(
+        public val events: Flow<EventEnvelope<RawEvent>>,
+        /** Session-scoped pending acknowledgements reconciled during source synchronization. */
+        public val recoveredAcknowledgements: List<EventIdempotencyKey> = emptyList(),
+    ) : EventStreamResult<RawEvent>
 
     public data class Failure(public val description: String, public val cause: Throwable? = null) :
         EventStreamResult<Nothing>
@@ -92,6 +96,21 @@ public interface EventSource<out RawEvent> {
      * equivalent source) and its initial synchronization marker are ready.
      */
     public suspend fun open(from: EventCursor?): EventStreamResult<RawEvent>
+
+    /**
+     * Opens delivery while reconciling acknowledgements whose tokens cannot be replayed after a
+     * reconnect. Sources that support session-scoped tokens must not report success until every
+     * supplied acknowledgement is either redelivered and acknowledged with its new token or is
+     * proven accepted by the source's synchronization boundary.
+     */
+    public suspend fun open(
+        from: EventCursor?,
+        pendingAcknowledgements: List<PendingEventAcknowledgement>,
+    ): EventStreamResult<RawEvent> = if (pendingAcknowledgements.isEmpty()) {
+        open(from)
+    } else {
+        EventStreamResult.Failure("This event source cannot reconcile session-scoped acknowledgements")
+    }
 
     public suspend fun acknowledge(acknowledgement: EventAcknowledgement): EventSourceResult
 

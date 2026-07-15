@@ -52,7 +52,11 @@ public data class CallMember(
 )
 
 @ExperimentalConversationApi
-public data class CallClient(public val userId: UserId, public val clientId: String)
+public data class CallClient(
+    public val userId: UserId,
+    public val clientId: String,
+    public val isMemberOfSubconversation: Boolean = false,
+)
 
 /** The minimum remote/local conversation view required by calling and MLS signalling. */
 @ExperimentalConversationApi

@@ -45,11 +45,14 @@ kotlin {
                 api(projects.domain.callingRuntime)
                 implementation(projects.logic.runtime)
                 implementation(projects.data.conversationRemote)
+                implementation(projects.data.protobuf)
                 implementation(projects.core.cryptography)
                 implementation(projects.domain.calling)
                 implementation(projects.domain.conversationRuntime)
-                implementation(projects.domain.callingNotifications)
                 implementation(libs.coroutines.core)
+                implementation(libs.jna)
+                implementation(libs.ktxDateTime)
+                implementation(libs.ktxSerialization)
             }
         }
     }

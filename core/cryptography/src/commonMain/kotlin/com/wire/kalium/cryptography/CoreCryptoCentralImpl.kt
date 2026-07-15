@@ -60,6 +60,10 @@ class CoreCryptoCentralImpl(
     private val databaseKey: DatabaseKey
 ) : CoreCryptoCentral {
 
+    override suspend fun close() {
+        cc.close()
+    }
+
     suspend fun transaction(name: String, block: suspend (context: CoreCryptoContext) -> Unit) = cc.transaction(name) {
         block(it)
     }

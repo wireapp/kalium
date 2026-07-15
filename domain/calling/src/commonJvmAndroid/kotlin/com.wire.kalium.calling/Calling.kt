@@ -67,15 +67,21 @@ interface Calling : Library {
         arg: Pointer?
     ): Handle
 
-    fun wcall_setup()
+    /** Releases one user handle created by [wcall_create]. */
+    fun wcall_destroy(inst: Handle)
+
+    /** Shuts down process-level calling resources after every user handle has been destroyed. */
+    fun wcall_close()
+
+    fun wcall_setup(): Int
 
     fun wcall_setup_ex(flags: Int)
 
-    fun wcall_run()
+    fun wcall_run(): Int
 
     fun wcall_start(inst: Handle, conversationId: String, callType: Int, convType: Int, audioCbr: Int, meeting: Int): Int
 
-    fun wcall_answer(inst: Handle, conversationId: String, callType: Int, cbrEnabled: Boolean)
+    fun wcall_answer(inst: Handle, conversationId: String, callType: Int, audioCbr: Int): Int
 
     fun wcall_reject(inst: Handle, conversationId: String)
 
@@ -88,6 +94,9 @@ interface Calling : Library {
     fun wcall_set_log_handler(logHandler: LogHandler, arg: Pointer?)
 
     fun wcall_end(inst: Handle, conversationId: String)
+
+    /** Records 16 kHz mono signed 16-bit PCM playout audio to [path]. */
+    fun wcall_audio_record(inst: Handle, path: String): Int
 
     fun wcall_set_mute(inst: Handle, muted: Int)
 
@@ -156,7 +165,7 @@ interface Calling : Library {
         inst: Handle,
         convId: String,
         clientsJson: String
-    )
+    ): Int
 
     @Suppress("FunctionNaming")
     fun wcall_set_active_speaker_handler(

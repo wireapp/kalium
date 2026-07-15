@@ -25,6 +25,7 @@ abstract interface <#A: out kotlin/Any?> com.wire.kalium.events/EventSource { //
     abstract suspend fun acknowledge(com.wire.kalium.events/EventAcknowledgement): com.wire.kalium.events/EventSourceResult // com.wire.kalium.events/EventSource.acknowledge|acknowledge(com.wire.kalium.events.EventAcknowledgement){}[0]
     abstract suspend fun close(): com.wire.kalium.events/EventSourceResult // com.wire.kalium.events/EventSource.close|close(){}[0]
     abstract suspend fun open(com.wire.kalium.events/EventCursor?): com.wire.kalium.events/EventStreamResult<#A> // com.wire.kalium.events/EventSource.open|open(com.wire.kalium.events.EventCursor?){}[0]
+    open suspend fun open(com.wire.kalium.events/EventCursor?, kotlin.collections/List<com.wire.kalium.events/PendingEventAcknowledgement>): com.wire.kalium.events/EventStreamResult<#A> // com.wire.kalium.events/EventSource.open|open(com.wire.kalium.events.EventCursor?;kotlin.collections.List<com.wire.kalium.events.PendingEventAcknowledgement>){}[0]
 }
 
 abstract interface com.wire.kalium.events/EventDeliveryStateStore { // com.wire.kalium.events/EventDeliveryStateStore|null[0]
@@ -67,13 +68,16 @@ sealed interface <#A: out kotlin/Any?> com.wire.kalium.events/EventDeliveryState
 
 sealed interface <#A: out kotlin/Any?> com.wire.kalium.events/EventStreamResult { // com.wire.kalium.events/EventStreamResult|null[0]
     final class <#A1: kotlin/Any?> Open : com.wire.kalium.events/EventStreamResult<#A1> { // com.wire.kalium.events/EventStreamResult.Open|null[0]
-        constructor <init>(kotlinx.coroutines.flow/Flow<com.wire.kalium.events/EventEnvelope<#A1>>) // com.wire.kalium.events/EventStreamResult.Open.<init>|<init>(kotlinx.coroutines.flow.Flow<com.wire.kalium.events.EventEnvelope<1:0>>){}[0]
+        constructor <init>(kotlinx.coroutines.flow/Flow<com.wire.kalium.events/EventEnvelope<#A1>>, kotlin.collections/List<com.wire.kalium.events/EventIdempotencyKey> = ...) // com.wire.kalium.events/EventStreamResult.Open.<init>|<init>(kotlinx.coroutines.flow.Flow<com.wire.kalium.events.EventEnvelope<1:0>>;kotlin.collections.List<com.wire.kalium.events.EventIdempotencyKey>){}[0]
 
         final val events // com.wire.kalium.events/EventStreamResult.Open.events|{}events[0]
             final fun <get-events>(): kotlinx.coroutines.flow/Flow<com.wire.kalium.events/EventEnvelope<#A1>> // com.wire.kalium.events/EventStreamResult.Open.events.<get-events>|<get-events>(){}[0]
+        final val recoveredAcknowledgements // com.wire.kalium.events/EventStreamResult.Open.recoveredAcknowledgements|{}recoveredAcknowledgements[0]
+            final fun <get-recoveredAcknowledgements>(): kotlin.collections/List<com.wire.kalium.events/EventIdempotencyKey> // com.wire.kalium.events/EventStreamResult.Open.recoveredAcknowledgements.<get-recoveredAcknowledgements>|<get-recoveredAcknowledgements>(){}[0]
 
         final fun component1(): kotlinx.coroutines.flow/Flow<com.wire.kalium.events/EventEnvelope<#A1>> // com.wire.kalium.events/EventStreamResult.Open.component1|component1(){}[0]
-        final fun copy(kotlinx.coroutines.flow/Flow<com.wire.kalium.events/EventEnvelope<#A1>> = ...): com.wire.kalium.events/EventStreamResult.Open<#A1> // com.wire.kalium.events/EventStreamResult.Open.copy|copy(kotlinx.coroutines.flow.Flow<com.wire.kalium.events.EventEnvelope<1:0>>){}[0]
+        final fun component2(): kotlin.collections/List<com.wire.kalium.events/EventIdempotencyKey> // com.wire.kalium.events/EventStreamResult.Open.component2|component2(){}[0]
+        final fun copy(kotlinx.coroutines.flow/Flow<com.wire.kalium.events/EventEnvelope<#A1>> = ..., kotlin.collections/List<com.wire.kalium.events/EventIdempotencyKey> = ...): com.wire.kalium.events/EventStreamResult.Open<#A1> // com.wire.kalium.events/EventStreamResult.Open.copy|copy(kotlinx.coroutines.flow.Flow<com.wire.kalium.events.EventEnvelope<1:0>>;kotlin.collections.List<com.wire.kalium.events.EventIdempotencyKey>){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // com.wire.kalium.events/EventStreamResult.Open.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // com.wire.kalium.events/EventStreamResult.Open.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // com.wire.kalium.events/EventStreamResult.Open.toString|toString(){}[0]

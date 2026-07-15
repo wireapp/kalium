@@ -39,6 +39,7 @@ abstract interface com.wire.kalium.logic.service.api/ServiceCalling { // com.wir
     abstract fun observeActiveCalls(): kotlinx.coroutines.flow/Flow<kotlin.collections/List<com.wire.kalium.calling.runtime/ActiveCall>> // com.wire.kalium.logic.service.api/ServiceCalling.observeActiveCalls|observeActiveCalls(){}[0]
     abstract suspend fun join(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.logic.service.api/ServiceCalling.join|join(com.wire.kalium.logic.data.id.QualifiedID){}[0]
     abstract suspend fun leave(com.wire.kalium.logic.data.id/QualifiedID): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.logic.service.api/ServiceCalling.leave|leave(com.wire.kalium.logic.data.id.QualifiedID){}[0]
+    abstract suspend fun recordAudio(kotlin/String): com.wire.kalium.calling.runtime/CallingResult // com.wire.kalium.logic.service.api/ServiceCalling.recordAudio|recordAudio(kotlin.String){}[0]
 }
 
 abstract interface com.wire.kalium.logic.service.api/ServiceCryptoRuntime { // com.wire.kalium.logic.service.api/ServiceCryptoRuntime|null[0]

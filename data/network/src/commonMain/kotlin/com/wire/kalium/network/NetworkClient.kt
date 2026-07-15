@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("TooGenericExceptionCaught")
+
 package com.wire.kalium.network
 
 import com.wire.kalium.logger.KaliumLogger
@@ -44,6 +46,8 @@ import io.ktor.http.Url
 import io.ktor.http.appendPathSegments
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.websocket.WebSocketSession
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Provides a [HttpClient] that has all the
@@ -70,6 +74,10 @@ internal class AuthenticatedNetworkClient(
             mls()
             xprotobuf()
         }
+    }
+
+    fun close() {
+        httpClient.close()
     }
 }
 
@@ -111,6 +119,8 @@ internal class AuthenticatedWebSocketClient(
     private val kaliumLogger: KaliumLogger,
     private val webSocketSessionProvider: ((HttpClient, String) -> WebSocketSession)? = null
 ) {
+    private val clientsMutex = Mutex()
+    private val disposableClients = mutableMapOf<WebSocketSession, HttpClient>()
 
     /**
      * Creates a [Url] for the WebSocket connection with the ability to be versioned.
@@ -152,9 +162,32 @@ internal class AuthenticatedWebSocketClient(
 
     suspend fun createWebSocketSession(clientId: String, block: HttpRequestBuilder.() -> Unit): WebSocketSession {
         val client = createDisposableHttpClient()
-        return webSocketSessionProvider?.let {
-            return it(client, clientId)
-        } ?: client.webSocketSession(block)
+        return try {
+            val session = webSocketSessionProvider?.let { it(client, clientId) } ?: client.webSocketSession(block)
+            clientsMutex.withLock { disposableClients[session] = client }
+            session
+        } catch (failure: Throwable) {
+            client.close()
+            throw failure
+        }
+    }
+
+    suspend fun releaseWebSocketSession(session: WebSocketSession) {
+        clientsMutex.withLock { disposableClients.remove(session) }?.close()
+    }
+
+    suspend fun close() {
+        val clients = clientsMutex.withLock { disposableClients.toMap() }
+        var firstFailure: Throwable? = null
+        clients.forEach { (session, client) ->
+            try {
+                client.close()
+                clientsMutex.withLock { disposableClients.remove(session) }
+            } catch (failure: Throwable) {
+                if (firstFailure == null) firstFailure = failure else firstFailure.addSuppressed(failure)
+            }
+        }
+        firstFailure?.let { throw it }
     }
 }
 

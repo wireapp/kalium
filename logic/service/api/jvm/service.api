@@ -1,5 +1,244 @@
+public abstract interface class com/wire/kalium/logic/service/AvsDeliveryJournal {
+	public abstract fun markDeliveryAccepted (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun releaseDelivery (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun reserveDelivery (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/service/AvsDeliveryReservationResult {
+}
+
+public final class com/wire/kalium/logic/service/AvsDeliveryReservationResult$Acquired : com/wire/kalium/logic/service/AvsDeliveryReservationResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/service/AvsDeliveryReservationResult$Acquired;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/AvsDeliveryReservationResult$AlreadyAccepted : com/wire/kalium/logic/service/AvsDeliveryReservationResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/service/AvsDeliveryReservationResult$AlreadyAccepted;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/AvsDeliveryReservationResult$Ambiguous : com/wire/kalium/logic/service/AvsDeliveryReservationResult {
+	public static final field INSTANCE Lcom/wire/kalium/logic/service/AvsDeliveryReservationResult$Ambiguous;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/AvsDeliveryReservationResult$Failure : com/wire/kalium/logic/service/AvsDeliveryReservationResult {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/logic/service/AvsDeliveryReservationResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/AvsDeliveryReservationResult$Failure;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/AvsDeliveryReservationResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/service/CallingSignalOutbox {
+	public abstract fun loadSignals (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun putSignal (Ljava/lang/String;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun removeSignal (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/ConferenceProtocolState {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/service/ConferenceProtocolState;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/ConferenceProtocolState;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/ConferenceProtocolState;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getParentGroupId ()Ljava/lang/String;
+	public final fun getSubgroupId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/service/ConferenceProtocolStateResult {
+}
+
+public final class com/wire/kalium/logic/service/ConferenceProtocolStateResult$Failure : com/wire/kalium/logic/service/ConferenceProtocolStateResult {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/logic/service/ConferenceProtocolStateResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/ConferenceProtocolStateResult$Failure;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/ConferenceProtocolStateResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/ConferenceProtocolStateResult$Success : com/wire/kalium/logic/service/ConferenceProtocolStateResult {
+	public fun <init> (Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;)Lcom/wire/kalium/logic/service/ConferenceProtocolStateResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/ConferenceProtocolStateResult$Success;Ljava/lang/Object;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/ConferenceProtocolStateResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/service/ConferenceProtocolStateStore {
+	public abstract fun loadConference (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun loadConferences (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun loadPendingConferenceCrl (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun loadPendingConferenceCrls (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun removeConference (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun removePendingConferenceCrl (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun saveConference (Lcom/wire/kalium/logic/service/ConferenceProtocolState;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun savePendingConferenceCrl (Lcom/wire/kalium/logic/service/PendingConferenceCrlState;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/ConfiguredServiceSelfConversationProvider : com/wire/kalium/calling/runtime/ServiceSelfConversationProvider {
+	public fun <init> (Ljava/util/List;)V
+	public fun getSelfConversations (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/service/DecryptedEventJournal {
+	public abstract fun eventKeys (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun loadEvent (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun removeEvent (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun saveEvent (Ljava/lang/String;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public abstract interface class com/wire/kalium/logic/service/EncryptedCallingSignalSender {
 	public abstract fun send (Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/EncryptedJvmServiceStateStore : com/wire/kalium/calling/runtime/CallingEventIdempotencyStore, com/wire/kalium/conversation/ConversationProtocolStateStore, com/wire/kalium/events/EventDeliveryStateStore, com/wire/kalium/logic/service/AvsDeliveryJournal, com/wire/kalium/logic/service/CallingSignalOutbox, com/wire/kalium/logic/service/ConferenceProtocolStateStore, com/wire/kalium/logic/service/DecryptedEventJournal, com/wire/kalium/logic/service/PendingMlsCommitStore, com/wire/kalium/logic/service/ServiceSessionStore, java/lang/AutoCloseable {
+	public static final field Companion Lcom/wire/kalium/logic/service/EncryptedJvmServiceStateStore$Companion;
+	public static final field DEFAULT_MAX_ENTRIES I
+	public fun <init> (Ljava/nio/file/Path;Lcom/wire/kalium/logic/service/api/ServiceIdentity;[BI)V
+	public synthetic fun <init> (Ljava/nio/file/Path;Lcom/wire/kalium/logic/service/api/ServiceIdentity;[BIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close ()V
+	public fun eventKeys (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun get (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getIdentity ()Lcom/wire/kalium/logic/service/api/ServiceIdentity;
+	public fun isHandled (Lcom/wire/kalium/events/EventIdempotencyKey;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun isHandled (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadConference (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadConferences (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadEvent (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadPendingConferenceCrl (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadPendingConferenceCrls (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadPendingMlsCommits (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadSession (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadSignals (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadState (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun markDeliveryAccepted (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun markHandled (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun putSignal (Ljava/lang/String;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun recordAcknowledged (Lcom/wire/kalium/events/EventIdempotencyKey;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun recordHandled (Lcom/wire/kalium/events/EventIdempotencyKey;Lcom/wire/kalium/events/EventCursor;Lcom/wire/kalium/events/EventAcknowledgement;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun releaseDelivery (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun remove (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun removeConference (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun removeEvent (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun removePendingConferenceCrl (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun removePendingMlsCommit (Ljava/lang/String;JLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun removeSignal (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun reserveDelivery (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun save (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/conversation/CallConversationProtocol;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun saveConference (Lcom/wire/kalium/logic/service/ConferenceProtocolState;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun saveEvent (Ljava/lang/String;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun savePendingConferenceCrl (Lcom/wire/kalium/logic/service/PendingConferenceCrlState;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun saveSession (Lcom/wire/kalium/network/api/model/SessionDTO;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun schedulePendingMlsCommit (Ljava/lang/String;JLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/EncryptedJvmServiceStateStore$Companion {
+}
+
+public abstract interface class com/wire/kalium/logic/service/EncryptedServiceStateResult {
+}
+
+public final class com/wire/kalium/logic/service/EncryptedServiceStateResult$Failure : com/wire/kalium/logic/service/EncryptedServiceStateResult {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lcom/wire/kalium/logic/service/EncryptedServiceStateResult$Failure;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/EncryptedServiceStateResult$Failure;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/EncryptedServiceStateResult$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getDescription ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/EncryptedServiceStateResult$Success : com/wire/kalium/logic/service/EncryptedServiceStateResult {
+	public fun <init> (Ljava/lang/Object;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun copy (Ljava/lang/Object;)Lcom/wire/kalium/logic/service/EncryptedServiceStateResult$Success;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/EncryptedServiceStateResult$Success;Ljava/lang/Object;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/EncryptedServiceStateResult$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValue ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/ForwardAllCallingControlHandler : com/wire/kalium/calling/runtime/CallingControlHandler {
+	public static final field INSTANCE Lcom/wire/kalium/logic/service/ForwardAllCallingControlHandler;
+	public fun handle (Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/JournaledEventDeliveryStateStore : com/wire/kalium/events/EventDeliveryStateStore {
+	public fun <init> (Lcom/wire/kalium/events/EventDeliveryStateStore;Lcom/wire/kalium/logic/service/DecryptedEventJournal;)V
+	public fun isHandled (Lcom/wire/kalium/events/EventIdempotencyKey;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun loadState (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun recordAcknowledged (Lcom/wire/kalium/events/EventIdempotencyKey;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun recordHandled (Lcom/wire/kalium/events/EventIdempotencyKey;Lcom/wire/kalium/events/EventCursor;Lcom/wire/kalium/events/EventAcknowledgement;ZLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/JvmAvsCallingEngine : com/wire/kalium/calling/runtime/AvsCallingEngine {
+	public static final field AVS_INVALID_ARGUMENT I
+	public static final field AVS_SUCCESS I
+	public static final field AVS_TRANSPORT_ERROR I
+	public static final field DEFAULT_READY_TIMEOUT_MILLIS J
+	public static final field EVENT_BUFFER_CAPACITY I
+	public static final field HTTP_BAD_REQUEST I
+	public static final field HTTP_OK I
+	public static final field MAX_ENCRYPTED_STORE_BLOB_BYTES J
+	public static final field MAX_NATIVE_PAYLOAD_BYTES J
+	public static final field MIN_CALLING_CODEC_OVERHEAD_BYTES J
+	public static final field UINT32_MAX J
+	public fun <init> (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lcom/wire/kalium/calling/runtime/CallTransport;Lcom/wire/kalium/conversation/ConversationContextProvider;Lcom/wire/kalium/logic/service/WireConferenceMembership;Lcom/wire/kalium/logic/service/AvsDeliveryJournal;Lkotlin/jvm/functions/Function1;ZLcom/wire/kalium/calling/Calling;JZ)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lcom/wire/kalium/calling/runtime/CallTransport;Lcom/wire/kalium/conversation/ConversationContextProvider;Lcom/wire/kalium/logic/service/WireConferenceMembership;Lcom/wire/kalium/logic/service/AvsDeliveryJournal;Lkotlin/jvm/functions/Function1;ZLcom/wire/kalium/calling/Calling;JZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun join (Lcom/wire/kalium/conversation/CallConversationContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun leave (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun observeEvents ()Lkotlinx/coroutines/flow/Flow;
+	public fun receive (Lcom/wire/kalium/calling/runtime/IncomingCallingPayload;Lcom/wire/kalium/conversation/CallConversationContext;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun recordAudio (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun start (Lcom/wire/kalium/calling/runtime/ServiceSelfConversationProvider;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun updateEpoch (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/calling/runtime/CallEpoch;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/JvmServiceNetworkOwner : com/wire/kalium/logic/service/api/ServiceSessionManager, com/wire/kalium/network/session/SessionManager {
+	public fun <init> (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lcom/wire/kalium/logic/service/ServiceSessionStore;Lcom/wire/kalium/network/api/unbound/configuration/ServerConfigDTO;Ljava/lang/String;Ljava/util/Map;Lcom/wire/kalium/logger/KaliumLogger;Ljava/lang/String;Lcom/wire/kalium/network/api/model/ProxyCredentialsDTO;)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lcom/wire/kalium/logic/service/ServiceSessionStore;Lcom/wire/kalium/network/api/unbound/configuration/ServerConfigDTO;Ljava/lang/String;Ljava/util/Map;Lcom/wire/kalium/logger/KaliumLogger;Ljava/lang/String;Lcom/wire/kalium/network/api/model/ProxyCredentialsDTO;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getIdentity ()Lcom/wire/kalium/logic/service/api/ServiceIdentity;
+	public fun nomadServiceUrl ()Ljava/lang/String;
+	public fun proxyCredentials ()Lcom/wire/kalium/network/api/model/ProxyCredentialsDTO;
+	public final fun requireNetwork ()Lcom/wire/kalium/network/networkContainer/AuthenticatedNetworkContainer;
+	public fun serverConfig ()Lcom/wire/kalium/network/api/unbound/configuration/ServerConfigDTO;
+	public fun session (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun start (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun updateToken (Lcom/wire/kalium/network/api/base/authenticated/AccessTokenApi;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class com/wire/kalium/logic/service/KaliumService {
@@ -29,6 +268,25 @@ public final class com/wire/kalium/logic/service/KaliumServiceComponents {
 	public final fun getSessionManager ()Lcom/wire/kalium/logic/service/api/ServiceSessionManager;
 }
 
+public final class com/wire/kalium/logic/service/PendingConferenceCrlState {
+	public fun <init> (Lcom/wire/kalium/logic/service/ConferenceProtocolState;Ljava/util/List;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/service/ConferenceProtocolState;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Lcom/wire/kalium/logic/service/ConferenceProtocolState;Ljava/util/List;)Lcom/wire/kalium/logic/service/PendingConferenceCrlState;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/PendingConferenceCrlState;Lcom/wire/kalium/logic/service/ConferenceProtocolState;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/PendingConferenceCrlState;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConference ()Lcom/wire/kalium/logic/service/ConferenceProtocolState;
+	public final fun getDistributionPoints ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/service/PendingMlsCommitStore {
+	public abstract fun loadPendingMlsCommits (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun removePendingMlsCommit (Ljava/lang/String;JLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun schedulePendingMlsCommit (Ljava/lang/String;JLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public final class com/wire/kalium/logic/service/RequiredProtocolEventHandlers {
 	public static final field Companion Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers$Companion;
 	public synthetic fun <init> (Ljava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -41,10 +299,379 @@ public final class com/wire/kalium/logic/service/RequiredProtocolEventHandlers$C
 	public static synthetic fun unified$default (Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers$Companion;Lcom/wire/kalium/event/processing/EventHandler;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/RequiredProtocolEventHandlers;
 }
 
+public abstract interface class com/wire/kalium/logic/service/ServiceCrlDistributionPointHandler {
+	public abstract fun handle (Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/ServiceCryptoStorage {
+	public fun <init> (Ljava/nio/file/Path;[BLjava/nio/file/Path;[BLcom/wire/kalium/logic/service/ServiceCryptoStorageMode;Ljava/util/List;Lcom/wire/kalium/cryptography/MLSCiphersuite;)V
+	public final fun component1 ()Ljava/nio/file/Path;
+	public final fun component2 ()[B
+	public final fun component3 ()Ljava/nio/file/Path;
+	public final fun component4 ()[B
+	public final fun component5 ()Lcom/wire/kalium/logic/service/ServiceCryptoStorageMode;
+	public final fun component6 ()Ljava/util/List;
+	public final fun component7 ()Lcom/wire/kalium/cryptography/MLSCiphersuite;
+	public final fun copy (Ljava/nio/file/Path;[BLjava/nio/file/Path;[BLcom/wire/kalium/logic/service/ServiceCryptoStorageMode;Ljava/util/List;Lcom/wire/kalium/cryptography/MLSCiphersuite;)Lcom/wire/kalium/logic/service/ServiceCryptoStorage;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/ServiceCryptoStorage;Ljava/nio/file/Path;[BLjava/nio/file/Path;[BLcom/wire/kalium/logic/service/ServiceCryptoStorageMode;Ljava/util/List;Lcom/wire/kalium/cryptography/MLSCiphersuite;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/ServiceCryptoStorage;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAllowedCipherSuites ()Ljava/util/List;
+	public final fun getDefaultCipherSuite ()Lcom/wire/kalium/cryptography/MLSCiphersuite;
+	public final fun getMlsPassphrase ()[B
+	public final fun getMlsRoot ()Ljava/nio/file/Path;
+	public final fun getMode ()Lcom/wire/kalium/logic/service/ServiceCryptoStorageMode;
+	public final fun getProteusPassphrase ()[B
+	public final fun getProteusRoot ()Ljava/nio/file/Path;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/ServiceCryptoStorageMode : java/lang/Enum {
+	public static final field CREATE_NEW Lcom/wire/kalium/logic/service/ServiceCryptoStorageMode;
+	public static final field RESTORE_EXISTING Lcom/wire/kalium/logic/service/ServiceCryptoStorageMode;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/wire/kalium/logic/service/ServiceCryptoStorageMode;
+	public static fun values ()[Lcom/wire/kalium/logic/service/ServiceCryptoStorageMode;
+}
+
+public final class com/wire/kalium/logic/service/ServiceMlsEpoch {
+	public synthetic fun <init> (Ljava/lang/String;JLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2-s-VKNKU ()J
+	public final fun copy-2TYgG_w (Ljava/lang/String;J)Lcom/wire/kalium/logic/service/ServiceMlsEpoch;
+	public static synthetic fun copy-2TYgG_w$default (Lcom/wire/kalium/logic/service/ServiceMlsEpoch;Ljava/lang/String;JILjava/lang/Object;)Lcom/wire/kalium/logic/service/ServiceMlsEpoch;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEpoch-s-VKNKU ()J
+	public final fun getGroupId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/wire/kalium/logic/service/ServiceSessionStore {
+	public abstract fun loadSession (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun saveSession (Lcom/wire/kalium/network/api/model/SessionDTO;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
 public final class com/wire/kalium/logic/service/WireCallTransport : com/wire/kalium/calling/runtime/CallTransport {
 	public fun <init> (Lcom/wire/kalium/network/api/base/authenticated/CallApi;Lcom/wire/kalium/logic/service/EncryptedCallingSignalSender;)V
 	public fun connectToSft (Ljava/lang/String;[BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getCallConfig (Ljava/lang/Integer;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun sendSignal (Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/WireCallingPayloadExtractor : com/wire/kalium/calling/runtime/CallingPayloadExtractor {
+	public static final field INSTANCE Lcom/wire/kalium/logic/service/WireCallingPayloadExtractor;
+	public fun extract (Lcom/wire/kalium/logic/service/WireDecryptedEvent;)Ljava/util/List;
+	public synthetic fun extract (Ljava/lang/Object;)Ljava/util/List;
+}
+
+public final class com/wire/kalium/logic/service/WireConferenceMembership : com/wire/kalium/calling/runtime/ConferenceMembership {
+	public static final field CONFERENCE_SUBCONVERSATION_ID Ljava/lang/String;
+	public static final field EPOCH_SECRET_SIZE I
+	public static final field INITIAL_EPOCH J
+	public static final field STALE_EPOCH_HOURS I
+	public fun <init> (Lcom/wire/kalium/network/api/base/authenticated/conversation/ConversationApi;Lcom/wire/kalium/logic/service/WireServiceCryptoRuntime;Lcom/wire/kalium/logic/service/WireMlsEpochBus;Lcom/wire/kalium/logic/service/ConferenceProtocolStateStore;Lcom/wire/kalium/logic/service/ServiceCrlDistributionPointHandler;Lcom/wire/kalium/logic/service/WirePendingMlsCommitScheduler;Lkotlin/jvm/functions/Function0;)V
+	public synthetic fun <init> (Lcom/wire/kalium/network/api/base/authenticated/conversation/ConversationApi;Lcom/wire/kalium/logic/service/WireServiceCryptoRuntime;Lcom/wire/kalium/logic/service/WireMlsEpochBus;Lcom/wire/kalium/logic/service/ConferenceProtocolStateStore;Lcom/wire/kalium/logic/service/ServiceCrlDistributionPointHandler;Lcom/wire/kalium/logic/service/WirePendingMlsCommitScheduler;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun advanceEpoch (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun cleanupForAccessLoss (Lcom/wire/kalium/logic/data/id/QualifiedID;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun join (Lcom/wire/kalium/conversation/CallConversationContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun leave (Lcom/wire/kalium/calling/runtime/ActiveCall;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun observeEpochs (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lkotlinx/coroutines/flow/Flow;
+	public final fun reconcileStartup (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/WireDecodedEvent {
+	public fun <init> (Lcom/wire/kalium/events/EventIdempotencyKey;Lcom/wire/kalium/network/api/authenticated/notification/EventResponse;)V
+	public final fun component1 ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public final fun component2 ()Lcom/wire/kalium/network/api/authenticated/notification/EventResponse;
+	public final fun copy (Lcom/wire/kalium/events/EventIdempotencyKey;Lcom/wire/kalium/network/api/authenticated/notification/EventResponse;)Lcom/wire/kalium/logic/service/WireDecodedEvent;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/WireDecodedEvent;Lcom/wire/kalium/events/EventIdempotencyKey;Lcom/wire/kalium/network/api/authenticated/notification/EventResponse;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireDecodedEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEvent ()Lcom/wire/kalium/network/api/authenticated/notification/EventResponse;
+	public final fun getKey ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireDecryptedEvent {
+	public fun <init> (Ljava/util/List;Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;Ljava/util/List;)Lcom/wire/kalium/logic/service/WireDecryptedEvent;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/WireDecryptedEvent;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireDecryptedEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCallingPayloads ()Ljava/util/List;
+	public final fun getProtocolOperations ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireEncryptedCallingSignalSender : com/wire/kalium/logic/service/EncryptedCallingSignalSender {
+	public fun <init> (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lcom/wire/kalium/logic/service/JvmServiceNetworkOwner;Lcom/wire/kalium/logic/service/WireServiceCryptoRuntime;Lcom/wire/kalium/conversation/ConversationContextProvider;Lcom/wire/kalium/logic/service/CallingSignalOutbox;)V
+	public final fun flushPending (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun send (Lcom/wire/kalium/calling/runtime/OutgoingCallingSignal;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/WireKaliumService {
+	public static final field INSTANCE Lcom/wire/kalium/logic/service/WireKaliumService;
+	public final fun create (Lcom/wire/kalium/logic/service/WireKaliumServiceConfig;Lcom/wire/kalium/logic/service/api/ServiceObserver;)Lcom/wire/kalium/logic/service/api/KaliumServiceRuntime;
+}
+
+public final class com/wire/kalium/logic/service/WireKaliumServiceConfig {
+	public fun <init> (Lcom/wire/kalium/logic/service/api/ServiceConfig;Lcom/wire/kalium/logic/service/EncryptedJvmServiceStateStore;Lcom/wire/kalium/logic/service/ServiceCryptoStorage;Lcom/wire/kalium/network/api/unbound/configuration/ServerConfigDTO;Ljava/lang/String;Ljava/util/Map;Ljava/util/List;Ljava/lang/String;Lcom/wire/kalium/logic/service/ServiceCrlDistributionPointHandler;Lcom/wire/kalium/calling/runtime/CallEventSink;Lcom/wire/kalium/logger/KaliumLogger;Ljava/lang/String;Lcom/wire/kalium/network/api/model/ProxyCredentialsDTO;JJZ)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/service/api/ServiceConfig;Lcom/wire/kalium/logic/service/EncryptedJvmServiceStateStore;Lcom/wire/kalium/logic/service/ServiceCryptoStorage;Lcom/wire/kalium/network/api/unbound/configuration/ServerConfigDTO;Ljava/lang/String;Ljava/util/Map;Ljava/util/List;Ljava/lang/String;Lcom/wire/kalium/logic/service/ServiceCrlDistributionPointHandler;Lcom/wire/kalium/calling/runtime/CallEventSink;Lcom/wire/kalium/logger/KaliumLogger;Ljava/lang/String;Lcom/wire/kalium/network/api/model/ProxyCredentialsDTO;JJZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/service/api/ServiceConfig;
+	public final fun component10 ()Lcom/wire/kalium/calling/runtime/CallEventSink;
+	public final fun component11 ()Lcom/wire/kalium/logger/KaliumLogger;
+	public final fun component12 ()Ljava/lang/String;
+	public final fun component13 ()Lcom/wire/kalium/network/api/model/ProxyCredentialsDTO;
+	public final fun component14 ()J
+	public final fun component15 ()J
+	public final fun component16 ()Z
+	public final fun component2 ()Lcom/wire/kalium/logic/service/EncryptedJvmServiceStateStore;
+	public final fun component3 ()Lcom/wire/kalium/logic/service/ServiceCryptoStorage;
+	public final fun component4 ()Lcom/wire/kalium/network/api/unbound/configuration/ServerConfigDTO;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/util/Map;
+	public final fun component7 ()Ljava/util/List;
+	public final fun component8 ()Ljava/lang/String;
+	public final fun component9 ()Lcom/wire/kalium/logic/service/ServiceCrlDistributionPointHandler;
+	public final fun copy (Lcom/wire/kalium/logic/service/api/ServiceConfig;Lcom/wire/kalium/logic/service/EncryptedJvmServiceStateStore;Lcom/wire/kalium/logic/service/ServiceCryptoStorage;Lcom/wire/kalium/network/api/unbound/configuration/ServerConfigDTO;Ljava/lang/String;Ljava/util/Map;Ljava/util/List;Ljava/lang/String;Lcom/wire/kalium/logic/service/ServiceCrlDistributionPointHandler;Lcom/wire/kalium/calling/runtime/CallEventSink;Lcom/wire/kalium/logger/KaliumLogger;Ljava/lang/String;Lcom/wire/kalium/network/api/model/ProxyCredentialsDTO;JJZ)Lcom/wire/kalium/logic/service/WireKaliumServiceConfig;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/WireKaliumServiceConfig;Lcom/wire/kalium/logic/service/api/ServiceConfig;Lcom/wire/kalium/logic/service/EncryptedJvmServiceStateStore;Lcom/wire/kalium/logic/service/ServiceCryptoStorage;Lcom/wire/kalium/network/api/unbound/configuration/ServerConfigDTO;Ljava/lang/String;Ljava/util/Map;Ljava/util/List;Ljava/lang/String;Lcom/wire/kalium/logic/service/ServiceCrlDistributionPointHandler;Lcom/wire/kalium/calling/runtime/CallEventSink;Lcom/wire/kalium/logger/KaliumLogger;Ljava/lang/String;Lcom/wire/kalium/network/api/model/ProxyCredentialsDTO;JJZILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireKaliumServiceConfig;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAudioCbr ()Z
+	public final fun getAvsReadyTimeoutMillis ()J
+	public final fun getCallEventSink ()Lcom/wire/kalium/calling/runtime/CallEventSink;
+	public final fun getCertificatePinning ()Ljava/util/Map;
+	public final fun getCrlHandler ()Lcom/wire/kalium/logic/service/ServiceCrlDistributionPointHandler;
+	public final fun getCryptoStorage ()Lcom/wire/kalium/logic/service/ServiceCryptoStorage;
+	public final fun getLogger ()Lcom/wire/kalium/logger/KaliumLogger;
+	public final fun getNomadServiceUrl ()Ljava/lang/String;
+	public final fun getNotificationOpenTimeoutMillis ()J
+	public final fun getProxyCredentials ()Lcom/wire/kalium/network/api/model/ProxyCredentialsDTO;
+	public final fun getSelfConversationTargets ()Ljava/util/List;
+	public final fun getSelfUserTeamId ()Ljava/lang/String;
+	public final fun getServerConfig ()Lcom/wire/kalium/network/api/unbound/configuration/ServerConfigDTO;
+	public final fun getService ()Lcom/wire/kalium/logic/service/api/ServiceConfig;
+	public final fun getStateStore ()Lcom/wire/kalium/logic/service/EncryptedJvmServiceStateStore;
+	public final fun getUserAgent ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireMlsEpochBus : com/wire/kalium/cryptography/MLSEpochObserver {
+	public fun <init> ()V
+	public final fun observe ()Lkotlinx/coroutines/flow/Flow;
+	public fun onEpochChange-z13BHRw (Ljava/lang/String;JLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/WireMlsProtocolHandler : com/wire/kalium/event/processing/EventHandler {
+	public fun <init> (Lcom/wire/kalium/logic/service/WireServiceCryptoRuntime;Lcom/wire/kalium/conversation/ConversationContextProvider;Lcom/wire/kalium/conversation/ConversationProtocolStateStore;Lcom/wire/kalium/logic/service/WireConferenceMembership;Lcom/wire/kalium/logic/service/ServiceCrlDistributionPointHandler;Lcom/wire/kalium/logic/service/WirePendingMlsCommitScheduler;)V
+	public fun accepts (Lcom/wire/kalium/logic/service/WireDecryptedEvent;)Z
+	public synthetic fun accepts (Ljava/lang/Object;)Z
+	public fun getRequirement ()Lcom/wire/kalium/event/processing/EventHandlerRequirement;
+	public fun handle (Lcom/wire/kalium/logic/service/WireDecryptedEvent;Lcom/wire/kalium/event/processing/EventHandlingContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public synthetic fun handle (Ljava/lang/Object;Lcom/wire/kalium/event/processing/EventHandlingContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/WireMlsTransporter : com/wire/kalium/cryptography/MLSTransporter {
+	public fun <init> (Lcom/wire/kalium/logic/service/JvmServiceNetworkOwner;)V
+	public fun sendCommitBundle (Lcom/wire/kalium/cryptography/CommitBundle;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun sendMessage ([BLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/WireNotificationEventSource : com/wire/kalium/events/EventSource {
+	public static final field ACK_SUBMISSION_TIMEOUT_MILLIS J
+	public static final field BYTE_MASK I
+	public static final field CLOSE_TIMEOUT_MILLIS J
+	public static final field DEFAULT_OPEN_TIMEOUT_MILLIS J
+	public static final field HEX_BYTE_WIDTH I
+	public static final field HEX_RADIX I
+	public static final field INITIAL_PENDING_EVENT_CAPACITY I
+	public static final field INITIAL_RECONNECT_DELAY_MILLIS J
+	public static final field MAX_BACKOFF_EXPONENT I
+	public static final field MAX_CONSECUTIVE_RECONNECT_ATTEMPTS I
+	public static final field MAX_PENDING_EVENTS I
+	public static final field MAX_PENDING_PAYLOAD_CHARACTERS I
+	public static final field MAX_RECONNECT_DELAY_MILLIS J
+	public static final field NANOS_PER_MILLISECOND J
+	public static final field NULL_PAYLOAD_MARKER I
+	public static final field PRESENT_PAYLOAD_MARKER I
+	public static final field STABLE_CONNECTION_MILLIS J
+	public static final field TOKEN_SEPARATOR C
+	public fun <init> (Lcom/wire/kalium/logic/service/JvmServiceNetworkOwner;J)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/service/JvmServiceNetworkOwner;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun acknowledge (Lcom/wire/kalium/events/EventAcknowledgement;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun open (Lcom/wire/kalium/events/EventCursor;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun open (Lcom/wire/kalium/events/EventCursor;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/WirePendingMlsCommitScheduler {
+	public static final field MAX_WAIT_MILLIS J
+	public static final field MILLIS_PER_SECOND J
+	public fun <init> (Lcom/wire/kalium/logic/service/WireServiceCryptoRuntime;Lcom/wire/kalium/logic/service/PendingMlsCommitStore;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function2;)V
+	public synthetic fun <init> (Lcom/wire/kalium/logic/service/WireServiceCryptoRuntime;Lcom/wire/kalium/logic/service/PendingMlsCommitStore;Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun cancel (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun schedule (Ljava/lang/String;JLkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/WireProteusProtocolHandler : com/wire/kalium/event/processing/EventHandler {
+	public fun <init> (Lcom/wire/kalium/logic/service/api/ServiceIdentity;)V
+	public fun accepts (Lcom/wire/kalium/logic/service/WireDecryptedEvent;)Z
+	public synthetic fun accepts (Ljava/lang/Object;)Z
+	public fun getRequirement ()Lcom/wire/kalium/event/processing/EventHandlerRequirement;
+	public fun handle (Lcom/wire/kalium/logic/service/WireDecryptedEvent;Lcom/wire/kalium/event/processing/EventHandlingContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public synthetic fun handle (Ljava/lang/Object;Lcom/wire/kalium/event/processing/EventHandlingContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class com/wire/kalium/logic/service/WireProtocolOperation {
+}
+
+public final class com/wire/kalium/logic/service/WireProtocolOperation$ConversationAccessRevoked : com/wire/kalium/logic/service/WireProtocolOperation {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;)Lcom/wire/kalium/logic/service/WireProtocolOperation$ConversationAccessRevoked;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/WireProtocolOperation$ConversationAccessRevoked;Lcom/wire/kalium/logic/data/id/QualifiedID;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireProtocolOperation$ConversationAccessRevoked;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireProtocolOperation$CrlDistributionPoints : com/wire/kalium/logic/service/WireProtocolOperation {
+	public fun <init> (Ljava/util/List;)V
+	public final fun component1 ()Ljava/util/List;
+	public final fun copy (Ljava/util/List;)Lcom/wire/kalium/logic/service/WireProtocolOperation$CrlDistributionPoints;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/WireProtocolOperation$CrlDistributionPoints;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireProtocolOperation$CrlDistributionPoints;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getValues ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireProtocolOperation$MlsCommitPendingProposals : com/wire/kalium/logic/service/WireProtocolOperation {
+	public synthetic fun <init> (Ljava/lang/String;JLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1-w8gwwBg ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun copy-TgmPKao (Ljava/lang/String;J)Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsCommitPendingProposals;
+	public static synthetic fun copy-TgmPKao$default (Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsCommitPendingProposals;Ljava/lang/String;JILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsCommitPendingProposals;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCommitAtEpochSeconds ()J
+	public final fun getGroupId-w8gwwBg ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireProtocolOperation$MlsMessageProcessed : com/wire/kalium/logic/service/WireProtocolOperation {
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2-w8gwwBg ()Ljava/lang/String;
+	public final fun component3-s-VKNKU ()J
+	public final fun copy-vGtl2bs (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;J)Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsMessageProcessed;
+	public static synthetic fun copy-vGtl2bs$default (Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsMessageProcessed;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;JILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsMessageProcessed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getEpoch-s-VKNKU ()J
+	public final fun getGroupId-w8gwwBg ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireProtocolOperation$MlsReset : com/wire/kalium/logic/service/WireProtocolOperation {
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2-w8gwwBg ()Ljava/lang/String;
+	public final fun component3-w8gwwBg ()Ljava/lang/String;
+	public final fun copy-95g5zvU (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;)Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsReset;
+	public static synthetic fun copy-95g5zvU$default (Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsReset;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsReset;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getNewGroupId-w8gwwBg ()Ljava/lang/String;
+	public final fun getOldGroupId-w8gwwBg ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireProtocolOperation$MlsWelcomeProcessed : com/wire/kalium/logic/service/WireProtocolOperation {
+	public synthetic fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2-w8gwwBg ()Ljava/lang/String;
+	public final fun copy-PJsuwB8 (Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;)Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsWelcomeProcessed;
+	public static synthetic fun copy-PJsuwB8$default (Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsWelcomeProcessed;Lcom/wire/kalium/logic/data/id/QualifiedID;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireProtocolOperation$MlsWelcomeProcessed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getGroupId-w8gwwBg ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireProtocolOperation$ProteusMessageProcessed : com/wire/kalium/logic/service/WireProtocolOperation {
+	public static final field INSTANCE Lcom/wire/kalium/logic/service/WireProtocolOperation$ProteusMessageProcessed;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireProtocolOperation$ProtocolUpdated : com/wire/kalium/logic/service/WireProtocolOperation {
+	public fun <init> (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/network/api/authenticated/conversation/ConvProtocol;)V
+	public final fun component1 ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun component2 ()Lcom/wire/kalium/network/api/authenticated/conversation/ConvProtocol;
+	public final fun copy (Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/network/api/authenticated/conversation/ConvProtocol;)Lcom/wire/kalium/logic/service/WireProtocolOperation$ProtocolUpdated;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/WireProtocolOperation$ProtocolUpdated;Lcom/wire/kalium/logic/data/id/QualifiedID;Lcom/wire/kalium/network/api/authenticated/conversation/ConvProtocol;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireProtocolOperation$ProtocolUpdated;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getConversationId ()Lcom/wire/kalium/logic/data/id/QualifiedID;
+	public final fun getProtocol ()Lcom/wire/kalium/network/api/authenticated/conversation/ConvProtocol;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireProtocolOperation$SelfClientRemoved : com/wire/kalium/logic/service/WireProtocolOperation {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lcom/wire/kalium/logic/service/WireProtocolOperation$SelfClientRemoved;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/WireProtocolOperation$SelfClientRemoved;Ljava/lang/String;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireProtocolOperation$SelfClientRemoved;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getClientId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireRawEvent {
+	public fun <init> (Lcom/wire/kalium/events/EventIdempotencyKey;Lcom/wire/kalium/network/api/authenticated/notification/EventResponseToStore;)V
+	public final fun component1 ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public final fun component2 ()Lcom/wire/kalium/network/api/authenticated/notification/EventResponseToStore;
+	public final fun copy (Lcom/wire/kalium/events/EventIdempotencyKey;Lcom/wire/kalium/network/api/authenticated/notification/EventResponseToStore;)Lcom/wire/kalium/logic/service/WireRawEvent;
+	public static synthetic fun copy$default (Lcom/wire/kalium/logic/service/WireRawEvent;Lcom/wire/kalium/events/EventIdempotencyKey;Lcom/wire/kalium/network/api/authenticated/notification/EventResponseToStore;ILjava/lang/Object;)Lcom/wire/kalium/logic/service/WireRawEvent;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getEvent ()Lcom/wire/kalium/network/api/authenticated/notification/EventResponseToStore;
+	public final fun getKey ()Lcom/wire/kalium/events/EventIdempotencyKey;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/wire/kalium/logic/service/WireServiceCryptoRuntime : com/wire/kalium/logic/service/api/ServiceCryptoRuntime {
+	public static final field IDENTITY_MARKER_FILE Ljava/lang/String;
+	public static final field KEYSTORE_FILE Ljava/lang/String;
+	public fun <init> (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lcom/wire/kalium/logic/service/ServiceCryptoStorage;Lcom/wire/kalium/cryptography/MLSTransporter;Lcom/wire/kalium/logic/service/WireMlsEpochBus;)V
+	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getEpochBus ()Lcom/wire/kalium/logic/service/WireMlsEpochBus;
+	public fun start (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun withMls (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun withProteus (Ljava/lang/String;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/WireServiceEventDecoder : com/wire/kalium/event/processing/EventDecoder {
+	public fun <init> ()V
+	public fun decode (Lcom/wire/kalium/logic/service/WireRawEvent;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public synthetic fun decode (Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/logic/service/WireServiceEventDecryptor : com/wire/kalium/event/processing/EventDecryptor {
+	public fun <init> (Lcom/wire/kalium/logic/service/api/ServiceIdentity;Lcom/wire/kalium/logic/service/WireServiceCryptoRuntime;Lcom/wire/kalium/network/api/base/authenticated/conversation/ConversationApi;Lcom/wire/kalium/conversation/ConversationContextProvider;Lcom/wire/kalium/logic/service/DecryptedEventJournal;)V
+	public fun decrypt (Lcom/wire/kalium/logic/service/WireDecodedEvent;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public synthetic fun decrypt (Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 

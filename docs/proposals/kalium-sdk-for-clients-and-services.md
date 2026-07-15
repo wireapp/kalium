@@ -65,7 +65,15 @@ The pre-review implementation completed the proposal phases as separate commits:
 | 3 | `7d36a1dbb97b` | Extracted headless calling runtime and optional calling-history behavior. |
 | 4 | `f3860a54ce8b` | Added explicit headless service composition and PSTN host sample. |
 | 5 | `e038b1d6315b` | Added the explicit full-client composition while retaining `:logic` compatibility. |
-| 6 | Recorded by the final implementation commit | Adds ABI baselines, executable module-graph checks, operations guidance, release notes, and this deferred-validation record. |
+| 6 | `065cfff2` | Added ABI baselines, executable module-graph checks, operations guidance, release notes, and the deferred-validation record. |
+
+A concrete-wiring follow-up in this implementation adds the production JVM adapters that the
+initial Phase 4 composition deliberately exposed as contracts: encrypted identity-scoped state,
+authenticated network/session ownership, consumable WebSocket delivery and observable ACKs,
+Proteus/MLS decoding and decryption, required protocol handlers, a durable encrypted signalling
+outbox, remote and explicit self-conversation resolution, MLS conference membership, and a locally
+owned AVS engine. `WireKaliumService.create` now assembles that graph and the PSTN sample exposes
+it while retaining the manual-component compatibility entry point.
 
 Phase 5 intentionally retains the transitional `:logic:client -> :logic` dependency so existing
 class locations, constructors, Apple exports, and ABI do not move without the deferred client
@@ -782,6 +790,17 @@ uses the safe defaults above and keeps affected APIs experimental:
 9. Is `:logic:service` published as a normal Maven artifact or consumed from a service-specific
    release line at first?
 10. What load and call concurrency must one runtime and one process support?
+11. Which component will provide bidirectional PSTN media? AVS `wcall_audio_record` is diagnostic
+    process-global playout capture (raw 16 kHz mono signed 16-bit PCM); it is not a microphone input
+    or a PSTN media bridge.
+12. Can CoreCrypto and the service event journal be given a shared transactional boundary? The
+    current encrypted journal writes a pre-mutation intent and fails closed if completion is
+    ambiguous, preventing silent replay but requiring an operator recovery decision. The two
+    independent durable stores still require crash-boundary integration validation and a final
+    recovery policy before production stabilization.
+13. What operational evidence authorizes clearing a crash-ambiguous native AVS delivery intent?
+    The experimental JVM adapter fails closed instead of choosing between a possible duplicate and
+    a possible lost native signal.
 
 ## Decision request
 

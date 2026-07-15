@@ -27,6 +27,9 @@ import kotlin.time.Duration
 
 @Suppress("LongParameterList")
 interface CoreCryptoCentral {
+    /** Closes the underlying CoreCrypto handle when client construction did not complete. */
+    suspend fun close()
+
     suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
         allowedCipherSuites: List<MLSCiphersuite>,

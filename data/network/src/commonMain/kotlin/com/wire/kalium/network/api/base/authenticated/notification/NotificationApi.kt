@@ -78,6 +78,15 @@ interface NotificationApi : BaseApi {
      * @param markerId a random id used to identify the end of the initial sync. This will be received in the events stream.
      */
     suspend fun consumeLiveEvents(clientId: String, markerId: String): NetworkResponse<Flow<WebSocketEvent<ConsumableNotificationResponse>>>
-    suspend fun acknowledgeEvents(clientId: String, markerId: String, eventAcknowledgeRequest: EventAcknowledgeRequest)
+
+    /** Returns success only after the acknowledgement frame has been submitted to the socket. */
+    suspend fun acknowledgeEvents(
+        clientId: String,
+        markerId: String,
+        eventAcknowledgeRequest: EventAcknowledgeRequest,
+    ): NetworkResponse<Unit>
+
+    /** Closes the currently owned live-event session. Implementations must be idempotent. */
+    suspend fun closeLiveEvents(): NetworkResponse<Unit>
 
 }

@@ -116,7 +116,12 @@ public final class com/wire/kalium/events/EventIdempotencyKey {
 public abstract interface class com/wire/kalium/events/EventSource {
 	public abstract fun acknowledge (Lcom/wire/kalium/events/EventAcknowledgement;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun open (Lcom/wire/kalium/events/EventCursor;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun open (Lcom/wire/kalium/events/EventCursor;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class com/wire/kalium/events/EventSource$DefaultImpls {
+	public static fun open (Lcom/wire/kalium/events/EventSource;Lcom/wire/kalium/events/EventCursor;Ljava/util/List;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class com/wire/kalium/events/EventSourceResult {
@@ -161,12 +166,15 @@ public final class com/wire/kalium/events/EventStreamResult$Failure : com/wire/k
 }
 
 public final class com/wire/kalium/events/EventStreamResult$Open : com/wire/kalium/events/EventStreamResult {
-	public fun <init> (Lkotlinx/coroutines/flow/Flow;)V
+	public fun <init> (Lkotlinx/coroutines/flow/Flow;Ljava/util/List;)V
+	public synthetic fun <init> (Lkotlinx/coroutines/flow/Flow;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lkotlinx/coroutines/flow/Flow;
-	public final fun copy (Lkotlinx/coroutines/flow/Flow;)Lcom/wire/kalium/events/EventStreamResult$Open;
-	public static synthetic fun copy$default (Lcom/wire/kalium/events/EventStreamResult$Open;Lkotlinx/coroutines/flow/Flow;ILjava/lang/Object;)Lcom/wire/kalium/events/EventStreamResult$Open;
+	public final fun component2 ()Ljava/util/List;
+	public final fun copy (Lkotlinx/coroutines/flow/Flow;Ljava/util/List;)Lcom/wire/kalium/events/EventStreamResult$Open;
+	public static synthetic fun copy$default (Lcom/wire/kalium/events/EventStreamResult$Open;Lkotlinx/coroutines/flow/Flow;Ljava/util/List;ILjava/lang/Object;)Lcom/wire/kalium/events/EventStreamResult$Open;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEvents ()Lkotlinx/coroutines/flow/Flow;
+	public final fun getRecoveredAcknowledgements ()Ljava/util/List;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
