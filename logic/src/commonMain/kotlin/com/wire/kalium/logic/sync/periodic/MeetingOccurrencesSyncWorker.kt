@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync.periodic
 
 import com.wire.kalium.common.functional.fold
 import com.wire.kalium.logic.data.meeting.MeetingRepository
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.sync.DefaultWorker
 import com.wire.kalium.logic.sync.Result
 
@@ -36,10 +37,14 @@ internal interface MeetingOccurrencesSyncWorker : DefaultWorker {
 }
 
 internal class MeetingOccurrencesSyncWorkerImpl(
-    private val meetingRepository: MeetingRepository
+    private val meetingRepository: MeetingRepository,
+    private val featureSupport: FeatureSupport,
 ) : MeetingOccurrencesSyncWorker {
-    override suspend fun doWork(): Result = meetingRepository.syncMeetingOccurrences().fold(
-        { Result.Failure },
-        { Result.Success }
-    )
+    override suspend fun doWork(): Result = when (featureSupport.isMeetingsSupported) {
+        false -> Result.Success
+        true -> meetingRepository.syncMeetingOccurrences().fold(
+            { Result.Failure },
+            { Result.Success }
+        )
+    }
 }

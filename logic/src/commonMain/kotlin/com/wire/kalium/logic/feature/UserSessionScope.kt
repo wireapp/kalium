@@ -2310,7 +2310,10 @@ public class UserSessionScope internal constructor(
         )
     }
 
-    internal val meetingOccurrencesSyncWorker: MeetingOccurrencesSyncWorker = MeetingOccurrencesSyncWorkerImpl(meetingRepository)
+    internal val meetingOccurrencesSyncWorker: MeetingOccurrencesSyncWorker = MeetingOccurrencesSyncWorkerImpl(
+        meetingRepository = meetingRepository,
+        featureSupport = featureSupport
+    )
 
     internal fun buildAudioNormalizedLoudnessWorker(
         conversationId: ConversationId,

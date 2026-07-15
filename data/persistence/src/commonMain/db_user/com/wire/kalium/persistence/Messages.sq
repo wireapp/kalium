@@ -261,6 +261,9 @@ deleteMessageLinkPreviews:
 DELETE FROM MessageLinkPreview WHERE message_id = ? AND conversation_id = ?;
 
 updateMessageLinkPreviewImageLocalPath:
+-- @NotifyCustomKey message_list_:conversation_id
+-- @NotifyCustomKey conversation_list_last_message
+-- @NotifyCustomKey MessageLinkPreview
 UPDATE MessageLinkPreview
 SET image_local_path = ?
 WHERE message_id = ?
