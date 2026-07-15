@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.common.error.CoreFailure
+import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.error.StorageFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -40,6 +41,7 @@ import com.wire.kalium.logic.sync.receiver.handler.SessionRefreshSuggestedEventH
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CryptoTransactionProviderArrangementMokkeryImpl
 import dev.mokkery.answering.returns
@@ -234,6 +236,39 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.liveDeliveryInfo)
 
         verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.connectionRepository.insertConnectionFromEvent(any(), any())
+        }
+    }
+
+    @Test
+    fun givenStaleNewConnectionEvent_whenUserDetailsReturnNotFound_thenConnectionIsPersisted() = runTest {
+        val event = TestEvent.newConnection(status = ConnectionState.PENDING)
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.notFound)
+        val (arrangement, eventReceiver) = arrange {
+            withFetchUserInfoReturning(Either.Left(failure))
+            withInsertConnectionFromEventSucceeding()
+        }
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
+
+        assertIs<Either.Right<Unit>>(result)
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.connectionRepository.insertConnectionFromEvent(any(), eq(event))
+        }
+    }
+
+    @Test
+    fun givenNewConnectionEvent_whenFetchingUserDetailsFails_thenFailureIsPropagated() = runTest {
+        val event = TestEvent.newConnection(status = ConnectionState.PENDING)
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+        val (arrangement, eventReceiver) = arrange {
+            withFetchUserInfoReturning(Either.Left(failure))
+        }
+
+        val result = eventReceiver.onEvent(arrangement.transactionContext, event, TestEvent.nonLiveDeliveryInfo)
+
+        assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(result)
+        verifySuspend(VerifyMode.not) {
             arrangement.connectionRepository.insertConnectionFromEvent(any(), any())
         }
     }
