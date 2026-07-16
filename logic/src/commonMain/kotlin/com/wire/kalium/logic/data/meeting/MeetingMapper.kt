@@ -111,5 +111,7 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         MeetingFrequencyDTO.YEARLY -> null
     }
 
-    private fun RecurrenceEntity.isSupported() = fromDaoToModel(this).let { it.frequency to it.interval in SUPPORTED_RECURRENCES }
+    private fun RecurrenceEntity.isSupported() = fromDaoToModel(this).let {
+        it.frequency to it.interval in SUPPORTED_RECURRENCES
+    }
 }
