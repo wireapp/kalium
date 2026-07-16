@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.keypackage
 import com.wire.kalium.common.error.NetworkFailure
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toApi
@@ -41,6 +42,7 @@ import com.wire.kalium.network.api.model.FederationErrorResponse
 import com.wire.kalium.network.exceptions.FederationError
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
+import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
 import dev.mokkery.everySuspend
 import dev.mokkery.matcher.any
@@ -49,6 +51,10 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlin.io.encoding.Base64
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -95,6 +101,40 @@ internal class KeyPackageRepositoryTest {
         result.shouldSucceed { keyPackageResult ->
             assertEquals(listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]), keyPackageResult.successfullyFetchedKeyPackages)
         }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenMoreUsersThanConcurrencyLimit_whenClaimingKeyPackages_thenClaimsAreExecutedInBoundedParallelBatches() = runTest {
+        val users = List(3) { index -> Arrangement.USER_ID.copy(value = "user$index") }
+        val releaseClaims = CompletableDeferred<Unit>()
+        var activeClaims = 0
+        var maximumActiveClaims = 0
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withCurrentClientId()
+            .arrange(maxConcurrentClaims = 2)
+
+        everySuspend { arrangement.keyPackageApi.claimKeyPackages(any()) } calls {
+            activeClaims += 1
+            maximumActiveClaims = maxOf(maximumActiveClaims, activeClaims)
+            releaseClaims.await()
+            activeClaims -= 1
+            NetworkResponse.Success(Arrangement.CLAIMED_KEY_PACKAGES, mapOf(), 200)
+        }
+
+        val result = async {
+            keyPackageRepository.claimKeyPackages(users, CIPHER_SUITE)
+        }
+        runCurrent()
+
+        assertEquals(2, activeClaims)
+        assertEquals(2, maximumActiveClaims)
+
+        releaseClaims.complete(Unit)
+        result.await().shouldSucceed { keyPackageResult ->
+            assertEquals(users.size, keyPackageResult.successfullyFetchedKeyPackages.size)
+        }
+        assertEquals(2, maximumActiveClaims)
     }
 
     @Test
@@ -220,7 +260,7 @@ internal class KeyPackageRepositoryTest {
         val (arrangement, keyPackageRepository) = Arrangement()
             .withCurrentClientId()
             .withClaimKeyPackagesNoNetworkError(user1)
-            .arrange()
+            .arrange(maxConcurrentClaims = 1)
 
         val result = keyPackageRepository.claimKeyPackages(listOf(user1, user2), CIPHER_SUITE)
 
@@ -230,6 +270,75 @@ internal class KeyPackageRepositoryTest {
                 eq(KeyPackageApi.Param.SkipOwnClient(user2.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
             )
         }
+    }
+
+    @Test
+    fun givenNetworkFailureInsideBatch_whenClaimingKeyPackages_thenCoBatchUsersAreQueriedButLaterBatchesAreNot() = runTest {
+        // chunked(2) => batch1 = [failingUser, coBatchUser], batch2 = [laterBatchUser]
+        val failingUser = Arrangement.USER_ID.copy(value = "failing")
+        val coBatchUser = Arrangement.USER_ID.copy(value = "coBatch")
+        val laterBatchUser = Arrangement.USER_ID.copy(value = "laterBatch")
+        val (arrangement, keyPackageRepository) = Arrangement()
+            .withCurrentClientId()
+            .withClaimKeyPackagesNoNetworkError(failingUser)
+            .withClaimKeyPackagesSuccessful(coBatchUser)
+            .withClaimKeyPackagesSuccessful(laterBatchUser)
+            .arrange(maxConcurrentClaims = 2)
+
+        val result = keyPackageRepository.claimKeyPackages(listOf(failingUser, coBatchUser, laterBatchUser), CIPHER_SUITE)
+
+        result.shouldFail { assertIs<NetworkFailure.NoNetworkConnection>(it) }
+        // The failing user and its co-batch peer are both dispatched concurrently before the failure aborts the operation.
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.keyPackageApi.claimKeyPackages(
+                eq(KeyPackageApi.Param.SkipOwnClient(coBatchUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+            )
+        }
+        // Users belonging to a later batch are never queried once a preceding batch fails.
+        verifySuspend(VerifyMode.not) {
+            arrangement.keyPackageApi.claimKeyPackages(
+                eq(KeyPackageApi.Param.SkipOwnClient(laterBatchUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+            )
+        }
+    }
+
+    @Test
+    fun givenMixedResults_whenClaimingAtDifferentConcurrencyLevels_thenResultsAreConsistent() = runTest {
+        val successA = Arrangement.USER_ID.copy(value = "successA")
+        val successB = Arrangement.USER_ID.copy(value = "successB")
+        val noKeyPackages = Arrangement.USER_ID.copy(value = "noKP")
+        val federated = UserId("alice", "unreachable.com")
+        val serverError = Arrangement.USER_ID.copy(value = "serverError")
+        val users = listOf(successA, noKeyPackages, federated, successB, serverError)
+
+        suspend fun claimWith(maxConcurrentClaims: Int): KeyPackageClaimResult {
+            val (_, keyPackageRepository) = Arrangement()
+                .withCurrentClientId()
+                .withClaimKeyPackagesSuccessful(successA)
+                .withClaimKeyPackagesSuccessful(successB)
+                .withClaimKeyPackagesSuccessfulWithEmptyResponse(noKeyPackages)
+                .withClaimKeyPackagesFederationError(federated)
+                .withClaimKeyPackagesServerError(serverError)
+                .arrange(maxConcurrentClaims = maxConcurrentClaims)
+
+            lateinit var claimResult: KeyPackageClaimResult
+            keyPackageRepository.claimKeyPackages(users, CIPHER_SUITE).shouldSucceed { claimResult = it }
+            return claimResult
+        }
+
+        // maxConcurrentClaims = 1 reproduces the previous sequential behaviour; higher values are the new batched behaviour.
+        val sequentialResult = claimWith(maxConcurrentClaims = 1)
+        listOf(2, 4, users.size + 1).forEach { concurrency ->
+            assertEquals(
+                sequentialResult,
+                claimWith(maxConcurrentClaims = concurrency),
+                "Result diverged at maxConcurrentClaims=$concurrency"
+            )
+        }
+
+        assertEquals(2, sequentialResult.successfullyFetchedKeyPackages.size)
+        assertEquals(setOf(noKeyPackages), sequentialResult.usersWithoutKeyPackages)
+        assertEquals(setOf(federated, serverError), sequentialResult.usersWithUnreachableBackend)
     }
 
     @Test
@@ -333,7 +442,8 @@ internal class KeyPackageRepositoryTest {
             )
         }
 
-        fun arrange() = this to KeyPackageDataSource(currentClientIdProvider, keyPackageApi, SELF_USER_ID)
+        fun arrange(maxConcurrentClaims: Int = 4) =
+            this to KeyPackageDataSource(currentClientIdProvider, keyPackageApi, SELF_USER_ID, maxConcurrentClaims)
 
         internal companion object {
             const val KEY_PACKAGE_COUNT = 100
