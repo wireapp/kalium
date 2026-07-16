@@ -138,7 +138,9 @@ internal class MeetingPagingSource(
     private suspend fun countMeetingOccurrences(): Int =
         meetingsQueries.countUpcomingMeetingOccurrences(fromDate = parameters.from).awaitAsOne().toInt()
 
-    private suspend fun loadAndObserveAvatars(meetings: List<MeetingOccurrenceDetailsEntity>): Map<QualifiedIDEntity, List<QualifiedIDEntity>> {
+    private suspend fun loadAndObserveAvatars(
+        meetings: List<MeetingOccurrenceDetailsEntity>
+    ): Map<QualifiedIDEntity, List<QualifiedIDEntity>> {
         val conversationIds = meetings.filter { meeting ->
             // Only load avatars for group meeting conversations, as only those have participant avatars to show
             meeting.conversationType == ConversationEntity.Type.MEETING

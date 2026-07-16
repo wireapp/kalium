@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import com.wire.kalium.persistence.db.WriteDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
@@ -110,6 +111,7 @@ internal class MeetingDaoImpl(
         meetingsQueries.selectMeetingOccurrenceDetailsById(occurrenceId = occurrenceId, mapper = MeetingMapper::fromViewToDetails)
             .asFlow()
             .mapToOneOrNull(readDispatcher.value)
+            .flowOn(readDispatcher.value)
 
     override fun getPaginatedMeetingOccurrenceDetails(pagingConfig: PagingConfig, startingOffset: Long, from: Instant) =
         KaliumPager(
