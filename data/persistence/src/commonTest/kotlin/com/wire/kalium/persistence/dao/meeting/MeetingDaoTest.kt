@@ -66,7 +66,7 @@ class MeetingDaoTest : BaseDatabaseTest() {
             val occurrences = occurrencesFor(meeting)
             assertEquals(true, occurrences.isNotEmpty())
             assertEquals(true, occurrences.all { it.occurrence_start > now })
-            assertEquals(true, occurrences.all { it.occurrence_start <= upperBound })
+            assertEquals(true, occurrences.all { it.occurrence_start < upperBound })
         }
 
     @Test

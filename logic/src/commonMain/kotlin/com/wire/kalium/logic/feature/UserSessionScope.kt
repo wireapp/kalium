@@ -346,6 +346,7 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserU
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
+import com.wire.kalium.logic.feature.meeting.MeetingScope
 import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCase
 import com.wire.kalium.logic.feature.meeting.SyncMeetingsUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
@@ -2961,6 +2962,13 @@ public class UserSessionScope internal constructor(
         { this },
         { slowSyncRepository.slowSyncStatus.map { it is SlowSyncStatus.Ongoing } }
     )
+
+    public val meetings: MeetingScope by lazy {
+        MeetingScope(
+            dispatcher = KaliumDispatcherImpl,
+            meetingRepository = meetingRepository,
+        )
+    }
 
     private val meetingRepository: MeetingRepository
         get() = MeetingDataSource(

@@ -17,13 +17,21 @@
  */
 package com.wire.kalium.persistence.dao.meeting
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOneOrNull
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.wire.kalium.persistence.Meeting
 import com.wire.kalium.persistence.MeetingsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.KaliumPager
+import com.wire.kalium.persistence.db.ReadDispatcher
 import com.wire.kalium.persistence.dao.meeting.MeetingOccurrencesGenerator.GenerationLimit
 import com.wire.kalium.persistence.db.WriteDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 
@@ -31,10 +39,17 @@ interface MeetingDao {
     suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesWindow: GenerationLimit.Window)
     suspend fun removeOutdatedMeetings(olderThan: Instant)
     suspend fun insertMissingOccurrences(generateOccurrencesWindow: GenerationLimit.Window)
+    fun getMeetingOccurrenceDetailsFlow(occurrenceId: String): Flow<MeetingOccurrenceDetailsEntity?>
+    fun getPaginatedMeetingOccurrenceDetails(
+        pagingConfig: PagingConfig,
+        startingOffset: Long,
+        from: Instant,
+    ): KaliumPager<MeetingOccurrenceDetailsEntity>
 }
 
 internal class MeetingDaoImpl(
     private val meetingsQueries: MeetingsQueries,
+    private val readDispatcher: ReadDispatcher,
     private val writeDispatcher: WriteDispatcher,
 ) : MeetingDao {
     override suspend fun upsertMeetings(meetings: List<MeetingEntity>, generateOccurrencesWindow: GenerationLimit.Window) {
@@ -91,6 +106,40 @@ internal class MeetingDaoImpl(
             }
         }
     }
+
+    override fun getMeetingOccurrenceDetailsFlow(occurrenceId: String): Flow<MeetingOccurrenceDetailsEntity?> =
+        meetingsQueries.selectMeetingOccurrenceDetailsById(occurrenceId = occurrenceId, mapper = MeetingMapper::fromViewToDetails)
+            .asFlow()
+            .mapToOneOrNull(readDispatcher.value)
+            .flowOn(readDispatcher.value)
+
+    override fun getPaginatedMeetingOccurrenceDetails(pagingConfig: PagingConfig, startingOffset: Long, from: Instant) =
+        KaliumPager(
+            pager = Pager(
+                config = pagingConfig,
+                pagingSourceFactory = {
+                    meetingPagingSource(from, startingOffset, pagingConfig.prefetchDistance)
+                }
+            ),
+            pagingSource = meetingPagingSource(
+                from = from,
+                startingOffset = startingOffset,
+                prefetchDistance = pagingConfig.prefetchDistance
+            ),
+            readDispatcher = readDispatcher,
+        )
+
+    private fun meetingPagingSource(from: Instant, startingOffset: Long, prefetchDistance: Int): MeetingPagingSource =
+        MeetingPagingSource(
+            meetingsQueries = meetingsQueries,
+            readContext = readDispatcher.value,
+            writeContext = writeDispatcher.value,
+            parameters = MeetingPagingParameters(
+                from = from,
+                initialOffset = startingOffset,
+                prefetchDistance = prefetchDistance,
+            ),
+        )
 }
 
 private suspend fun MeetingsQueries.upsertMeeting(meeting: MeetingEntity) {
@@ -138,10 +187,10 @@ internal suspend fun MeetingsQueries.insertGeneratedOccurrences(
 
 private fun Meeting.hasSameScheduleAs(meeting: MeetingEntity): Boolean =
     start_date.isSameStoredInstantAs(meeting.startTime) &&
-        end_date.isSameStoredInstantAs(meeting.endTime) &&
-        recurrence_frequency == meeting.recurrence?.frequency &&
-        recurrence_interval == meeting.recurrence?.interval &&
-        recurrence_end_date.isSameStoredInstantAs(meeting.recurrence?.until)
+            end_date.isSameStoredInstantAs(meeting.endTime) &&
+            recurrence_frequency == meeting.recurrence?.frequency &&
+            recurrence_interval == meeting.recurrence?.interval &&
+            recurrence_end_date.isSameStoredInstantAs(meeting.recurrence?.until)
 
 private fun Instant?.isSameStoredInstantAs(other: Instant?): Boolean =
     this?.toEpochMilliseconds() == other?.toEpochMilliseconds()
