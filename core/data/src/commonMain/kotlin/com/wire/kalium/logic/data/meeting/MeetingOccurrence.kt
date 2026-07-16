@@ -49,6 +49,15 @@ data class MeetingOccurrence(
         val until: Instant?
     ) {
         enum class Frequency { DAILY, WEEKLY }
+
+        companion object {
+            val SUPPORTED_RECURRENCES = listOf(
+                Frequency.DAILY to 1L, // daily
+                Frequency.WEEKLY to 1L, // weekly
+                Frequency.WEEKLY to 2L, // every 2 weeks
+                Frequency.WEEKLY to 4L // every 4 weeks
+            )
+        }
     }
 
     enum class SelfRole { Creator, Member }

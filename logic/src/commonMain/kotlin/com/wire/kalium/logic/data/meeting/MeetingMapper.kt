@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.meeting
 
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.meeting.MeetingOccurrence.Recurrence.Companion.SUPPORTED_RECURRENCES
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.authenticated.meeting.MeetingDTO
 import com.wire.kalium.network.api.authenticated.meeting.MeetingFrequencyDTO
@@ -58,8 +59,8 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
     }
 
     override fun fromApiToDao(recurrence: MeetingRecurrenceDTO): RecurrenceEntity? = recurrence.frequency.toDaoFrequency()
-        ?.takeIf { recurrence.frequency to (recurrence.interval ?: 1) in SUPPORTED_RECURRENCES }
         ?.let { RecurrenceEntity(frequency = it, interval = recurrence.interval, until = recurrence.until) }
+        ?.takeIf { it.isSupported() }
 
     override fun fromDaoToModel(meeting: MeetingOccurrenceDetailsEntity): MeetingOccurrence = MeetingOccurrence(
         meetingId = meeting.meeting.meetingId.toModel(),
@@ -110,12 +111,5 @@ internal class MeetingMapperImpl(private val idMapper: IdMapper = MapperProvider
         MeetingFrequencyDTO.YEARLY -> null
     }
 
-    private companion object {
-        val SUPPORTED_RECURRENCES = listOf(
-            MeetingFrequencyDTO.DAILY to 1L, // daily
-            MeetingFrequencyDTO.WEEKLY to 1L, // weekly
-            MeetingFrequencyDTO.WEEKLY to 2L, // every 2 weeks
-            MeetingFrequencyDTO.WEEKLY to 4L // every 4 weeks
-        )
-    }
+    private fun RecurrenceEntity.isSupported() = fromDaoToModel(this).let { it.frequency to it.interval in SUPPORTED_RECURRENCES }
 }
