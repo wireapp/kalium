@@ -51,9 +51,9 @@ import dev.mokkery.mock
 import dev.mokkery.verify.VerifyMode
 import dev.mokkery.verifySuspend
 import kotlin.io.encoding.Base64
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -105,21 +105,24 @@ internal class KeyPackageRepositoryTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenMoreUsersThanConcurrencyLimit_whenClaimingKeyPackages_thenClaimsAreExecutedInBoundedParallelBatches() = runTest {
+    fun givenMoreUsersThanConcurrencyLimit_whenClaimingKeyPackages_thenSemaphoreKeepsClaimsWithinLimit() = runTest {
         val users = List(3) { index -> Arrangement.USER_ID.copy(value = "user$index") }
-        val releaseClaims = CompletableDeferred<Unit>()
-        var activeClaims = 0
-        var maximumActiveClaims = 0
+        val claimStarted = List(users.size) { CompletableDeferred<Unit>() }
+        val releaseClaim = List(users.size) { CompletableDeferred<Unit>() }
         val (arrangement, keyPackageRepository) = Arrangement()
             .withCurrentClientId()
             .arrange(maxConcurrentClaims = 2)
 
-        everySuspend { arrangement.keyPackageApi.claimKeyPackages(any()) } calls {
-            activeClaims += 1
-            maximumActiveClaims = maxOf(maximumActiveClaims, activeClaims)
-            releaseClaims.await()
-            activeClaims -= 1
-            NetworkResponse.Success(Arrangement.CLAIMED_KEY_PACKAGES, mapOf(), 200)
+        users.forEachIndexed { index, user ->
+            everySuspend {
+                arrangement.keyPackageApi.claimKeyPackages(
+                    eq(KeyPackageApi.Param.SkipOwnClient(user.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                )
+            } calls {
+                claimStarted[index].complete(Unit)
+                releaseClaim[index].await()
+                NetworkResponse.Success(Arrangement.CLAIMED_KEY_PACKAGES, mapOf(), 200)
+            }
         }
 
         val result = async {
@@ -127,14 +130,21 @@ internal class KeyPackageRepositoryTest {
         }
         runCurrent()
 
-        assertEquals(2, activeClaims)
-        assertEquals(2, maximumActiveClaims)
+        assertEquals(true, claimStarted[0].isCompleted)
+        assertEquals(true, claimStarted[1].isCompleted)
+        assertEquals(false, claimStarted[2].isCompleted)
 
-        releaseClaims.complete(Unit)
+        releaseClaim[0].complete(Unit)
+        runCurrent()
+
+        // A free semaphore permit starts the next claim without waiting for the other active claim.
+        assertEquals(true, claimStarted[2].isCompleted)
+
+        releaseClaim[1].complete(Unit)
+        releaseClaim[2].complete(Unit)
         result.await().shouldSucceed { keyPackageResult ->
             assertEquals(users.size, keyPackageResult.successfullyFetchedKeyPackages.size)
         }
-        assertEquals(2, maximumActiveClaims)
     }
 
     @Test
@@ -273,33 +283,53 @@ internal class KeyPackageRepositoryTest {
     }
 
     @Test
-    fun givenNetworkFailureInsideBatch_whenClaimingKeyPackages_thenCoBatchUsersAreQueriedButLaterBatchesAreNot() = runTest {
-        // chunked(2) => batch1 = [failingUser, coBatchUser], batch2 = [laterBatchUser]
+    fun givenFatalFailure_whenClaimingKeyPackages_thenActiveClaimsFinishButWaitingClaimsDoNotStart() = runTest {
         val failingUser = Arrangement.USER_ID.copy(value = "failing")
-        val coBatchUser = Arrangement.USER_ID.copy(value = "coBatch")
-        val laterBatchUser = Arrangement.USER_ID.copy(value = "laterBatch")
+        val activeUser = Arrangement.USER_ID.copy(value = "active")
+        val waitingUser = Arrangement.USER_ID.copy(value = "waiting")
+        val activeClaimStarted = CompletableDeferred<Unit>()
+        val releaseActiveClaim = CompletableDeferred<Unit>()
         val (arrangement, keyPackageRepository) = Arrangement()
             .withCurrentClientId()
-            .withClaimKeyPackagesNoNetworkError(failingUser)
-            .withClaimKeyPackagesSuccessful(coBatchUser)
-            .withClaimKeyPackagesSuccessful(laterBatchUser)
             .arrange(maxConcurrentClaims = 2)
 
-        val result = keyPackageRepository.claimKeyPackages(listOf(failingUser, coBatchUser, laterBatchUser), CIPHER_SUITE)
+        everySuspend {
+            arrangement.keyPackageApi.claimKeyPackages(
+                eq(KeyPackageApi.Param.SkipOwnClient(failingUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+            )
+        } calls {
+            activeClaimStarted.await()
+            NetworkResponse.Error(KaliumException.NoNetwork())
+        }
+        everySuspend {
+            arrangement.keyPackageApi.claimKeyPackages(
+                eq(KeyPackageApi.Param.SkipOwnClient(activeUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+            )
+        } calls {
+            activeClaimStarted.complete(Unit)
+            releaseActiveClaim.await()
+            NetworkResponse.Success(Arrangement.CLAIMED_KEY_PACKAGES, mapOf(), 200)
+        }
 
-        result.shouldFail { assertIs<NetworkFailure.NoNetworkConnection>(it) }
-        // The failing user and its co-batch peer are both dispatched concurrently before the failure aborts the operation.
+        val result = async {
+            keyPackageRepository.claimKeyPackages(listOf(failingUser, activeUser, waitingUser), CIPHER_SUITE)
+        }
+        runCurrent()
+
+        assertEquals(false, result.isCompleted)
         verifySuspend(VerifyMode.exactly(1)) {
             arrangement.keyPackageApi.claimKeyPackages(
-                eq(KeyPackageApi.Param.SkipOwnClient(coBatchUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                eq(KeyPackageApi.Param.SkipOwnClient(activeUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
             )
         }
-        // Users belonging to a later batch are never queried once a preceding batch fails.
         verifySuspend(VerifyMode.not) {
             arrangement.keyPackageApi.claimKeyPackages(
-                eq(KeyPackageApi.Param.SkipOwnClient(laterBatchUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                eq(KeyPackageApi.Param.SkipOwnClient(waitingUser.toApi(), Arrangement.SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
             )
         }
+
+        releaseActiveClaim.complete(Unit)
+        result.await().shouldFail { assertIs<NetworkFailure.NoNetworkConnection>(it) }
     }
 
     @Test
