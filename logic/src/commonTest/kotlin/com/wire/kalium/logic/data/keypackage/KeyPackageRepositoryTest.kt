@@ -103,6 +103,30 @@ internal class KeyPackageRepositoryTest {
         }
     }
 
+    @Test
+    fun givenUserHasKeyPackagesForMultipleClients_whenClaimingKeyPackages_thenAllClientKeyPackagesAreCollectedAndUserIsNotMissing() =
+        runTest {
+            val user = Arrangement.USER_ID
+            val (_, keyPackageRepository) = Arrangement()
+                .withCurrentClientId()
+                .withClaimKeyPackagesForMultipleClients(user)
+                .arrange()
+
+            val result = keyPackageRepository.claimKeyPackages(listOf(user), CIPHER_SUITE)
+
+            result.shouldSucceed { keyPackageResult ->
+                // Every client's key package present in the response is collected.
+                assertEquals(
+                    Arrangement.MULTI_CLIENT_CLAIMED_KEY_PACKAGES.keyPackages,
+                    keyPackageResult.successfullyFetchedKeyPackages
+                )
+                // A user is only reported as missing when the response is empty; a non-empty (incl. partial-client) response
+                // counts as a success, so the user must not appear in either failure bucket.
+                assertEquals(emptySet(), keyPackageResult.usersWithoutKeyPackages)
+                assertEquals(emptySet(), keyPackageResult.usersWithUnreachableBackend)
+            }
+        }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenMoreUsersThanConcurrencyLimit_whenClaimingKeyPackages_thenSemaphoreKeepsClaimsWithinLimit() = runTest {
@@ -424,6 +448,14 @@ internal class KeyPackageRepositoryTest {
             }.returns(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
+        suspend fun withClaimKeyPackagesForMultipleClients(userId: UserId) = apply {
+            everySuspend {
+                keyPackageApi.claimKeyPackages(
+                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                )
+            }.returns(NetworkResponse.Success(MULTI_CLIENT_CLAIMED_KEY_PACKAGES, mapOf(), 200))
+        }
+
         suspend fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
             everySuspend {
                 keyPackageApi.claimKeyPackages(
@@ -491,6 +523,12 @@ internal class KeyPackageRepositoryTest {
             val CLAIMED_KEY_PACKAGES = ClaimedKeyPackageList(
                 listOf(
                     KeyPackageDTO(OTHER_CLIENT_ID.value, "wire.com", KeyPackage(), KeyPackageRef(), "user_id")
+                )
+            )
+            val MULTI_CLIENT_CLAIMED_KEY_PACKAGES = ClaimedKeyPackageList(
+                listOf(
+                    KeyPackageDTO("client_a", "wire.com", "keyPackageA", "refA", USER_ID.value),
+                    KeyPackageDTO("client_b", "wire.com", "keyPackageB", "refB", USER_ID.value),
                 )
             )
         }
