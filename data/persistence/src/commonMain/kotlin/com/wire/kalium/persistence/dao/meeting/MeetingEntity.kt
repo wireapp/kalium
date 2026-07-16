@@ -28,15 +28,22 @@ data class MeetingEntity(
     val updatedAt: Instant?,
     val title: String,
     val startTime: Instant,
-    val endTime: Instant?,
+    val endTime: Instant,
     val trial: Boolean,
     val recurrence: RecurrenceEntity?
 ) {
     data class RecurrenceEntity(
         val frequency: Frequency,
-        val interval: Long,
+        val interval: Long?,
         val until: Instant?
     ) {
-        enum class Frequency { DAILY, WEEKLY, MONTHLY, YEARLY }
+        enum class Frequency { DAILY, WEEKLY }
     }
 }
+
+data class MeetingOccurrenceEntity(
+    val occurrenceId: String,
+    val meetingId: QualifiedIDEntity,
+    val occurrenceStart: Instant,
+    val occurrenceEnd: Instant
+)

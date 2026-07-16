@@ -11,7 +11,7 @@ CREATE TABLE Meeting (
     last_edit_date INTEGER AS Instant,
     title TEXT NOT NULL,
     start_date INTEGER AS Instant NOT NULL,
-    end_date INTEGER AS Instant,
+    end_date INTEGER AS Instant NOT NULL,
     trial INTEGER  AS Boolean NOT NULL,
     recurrence_frequency TEXT AS MeetingEntity.RecurrenceEntity.Frequency,
     recurrence_interval INTEGER,
