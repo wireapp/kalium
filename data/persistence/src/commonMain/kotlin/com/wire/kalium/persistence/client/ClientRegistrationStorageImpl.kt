@@ -68,6 +68,8 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
         }
 
     override suspend fun isBlockedByE2EI(): Boolean = metadataDAO.valueByKey(CLIENT_REGISTRATION_BLOCKED_BY_E2EI).toBoolean()
+
+    // TODO: Always delete for now, until https://wearezeta.atlassian.net/wiki/x/OQBhpQ is addressed
     override suspend fun setHasConsumableNotifications(hasConsumableNotifications: Boolean) {
         metadataDAO.deleteValue(CLIENT_HAS_CONSUMABLE_NOTIFICATIONS)
     }
