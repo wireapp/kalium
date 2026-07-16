@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.client
 import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -42,8 +43,6 @@ interface ClientRegistrationStorage {
     suspend fun isBlockedByE2EI(): Boolean
     suspend fun setHasConsumableNotifications(hasConsumableNotifications: Boolean)
     suspend fun observeHasConsumableNotifications(): Flow<Boolean>
-    suspend fun setShouldUpdateClientConsumableNotificationsCapability(shouldUpdate: Boolean)
-    suspend fun shouldUpdateClientConsumableNotificationsCapability(): Boolean
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -69,21 +68,14 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
         }
 
     override suspend fun isBlockedByE2EI(): Boolean = metadataDAO.valueByKey(CLIENT_REGISTRATION_BLOCKED_BY_E2EI).toBoolean()
+
+    // TODO: Always delete for now, until https://wearezeta.atlassian.net/wiki/x/OQBhpQ is addressed
     override suspend fun setHasConsumableNotifications(hasConsumableNotifications: Boolean) {
-        metadataDAO.insertValue(hasConsumableNotifications.toString(), CLIENT_HAS_CONSUMABLE_NOTIFICATIONS)
+        metadataDAO.deleteValue(CLIENT_HAS_CONSUMABLE_NOTIFICATIONS)
     }
 
-    override suspend fun observeHasConsumableNotifications(): Flow<Boolean> =
-        metadataDAO.valueByKeyFlow(CLIENT_HAS_CONSUMABLE_NOTIFICATIONS).map {
-            it.toBoolean() && !it.isNullOrEmpty()
-        }
-
-    override suspend fun setShouldUpdateClientConsumableNotificationsCapability(shouldUpdate: Boolean) {
-        metadataDAO.insertValue(shouldUpdate.toString(), SHOULD_UPGRADE_CLIENT_CONSUMABLE_NOTIFICATIONS_CAPABILITY)
-    }
-
-    override suspend fun shouldUpdateClientConsumableNotificationsCapability(): Boolean =
-        metadataDAO.valueByKey(SHOULD_UPGRADE_CLIENT_CONSUMABLE_NOTIFICATIONS_CAPABILITY)?.toBoolean() ?: true
+    // TODO: Always false for now, until https://wearezeta.atlassian.net/wiki/x/OQBhpQ is addressed
+    override suspend fun observeHasConsumableNotifications(): Flow<Boolean> = flowOf(false)
 
     override suspend fun setClientRegistrationBlockedByE2EI() =
         metadataDAO.insertValue(true.toString(), CLIENT_REGISTRATION_BLOCKED_BY_E2EI)
@@ -101,7 +93,5 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
         private const val HAS_REGISTERED_MLS_CLIENT_KEY = "has_registered_mls_client"
         private const val CLIENT_REGISTRATION_BLOCKED_BY_E2EI = "client_registration_blocked_by_e2ei"
         private const val CLIENT_HAS_CONSUMABLE_NOTIFICATIONS = "client_has_consumable_notifications"
-        private const val SHOULD_UPGRADE_CLIENT_CONSUMABLE_NOTIFICATIONS_CAPABILITY =
-            "should_upgrade_client_consumable_notifications_capability"
     }
 }
