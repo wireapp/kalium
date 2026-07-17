@@ -120,7 +120,13 @@ internal fun IncrementalSyncManager(
 
             incrementalSyncRecoveryHandler.recover(failure = failure) {
                 logger.i("Triggering delay($delay) and waiting for reconnection")
-                networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
+                val didReconnect = networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
+                if (didReconnect) {
+                    // Retry immediately. If DNS is still catching up, the resulting failure will
+                    // use the minimum delay instead of inheriting the stale pre-reconnect backoff.
+                    logger.i("Network reconnected - resetting retry delay")
+                    exponentialDurationHelper.reset()
+                }
                 logger.i("Delay and waiting for connection finished - retrying")
                 onRetry()
             }

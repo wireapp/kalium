@@ -19,12 +19,24 @@ package com.wire.kalium.logic.fakes.sync
 
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.onCompletion
 
 internal class FakeIncrementalSyncManager(
     val fakeSyncFlow: MutableSharedFlow<IncrementalSyncStatus> = MutableStateFlow(IncrementalSyncStatus.Pending)
 ) : IncrementalSyncManager {
+    var performSyncFlowCount: Int = 0
+        private set
+
+    var cancelledSyncFlowCount: Int = 0
+        private set
+
     override fun performSyncFlow(): Flow<IncrementalSyncStatus> = fakeSyncFlow
+        .onCompletion { cause ->
+            if (cause is CancellationException) cancelledSyncFlowCount++
+        }
+        .also { performSyncFlowCount++ }
 }

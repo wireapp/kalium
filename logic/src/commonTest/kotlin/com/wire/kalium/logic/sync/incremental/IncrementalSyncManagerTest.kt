@@ -23,11 +23,11 @@ import com.wire.kalium.common.logger.kaliumLogger
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.fakes.network.FakeNetworkStateObserver
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.logic.util.flowThatFailsOnFirstTime
 import com.wire.kalium.network.NetworkState
-import com.wire.kalium.network.NetworkStateObserver
 import dev.mokkery.MockMode
 import dev.mokkery.answering.calls
 import dev.mokkery.answering.returns
@@ -46,12 +46,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 class IncrementalSyncManagerTest {
@@ -144,6 +148,41 @@ class IncrementalSyncManagerTest {
             verifySuspend(VerifyMode.exactly(2)) {
                 arrangement.incrementalSyncWorker.processEventsFlow()
             }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenDnsIsNotReadyImmediately_whenNetworkReconnects_thenShouldRetryWithMinimumDelay() = runTest {
+        val networkState = MutableStateFlow<NetworkState>(NetworkState.NotConnected)
+        var attempts = 0
+        val workerFlow = flow<EventSource> {
+            attempts++
+            if (attempts <= 2) throw IOException("DNS is not ready")
+        }
+        val (arrangement, incrementalSyncManager) = Arrangement()
+            .withWorkerReturning(workerFlow)
+            .withRecoveringFromFailure()
+            .withNetworkState(networkState)
+            .withExponentialDurationHelper(ExponentialDurationHelper(1.seconds, 10.minutes))
+            .arrange()
+
+        incrementalSyncManager.performSyncFlow().test {
+            awaitItem()
+            runCurrent()
+            assertEquals(
+                1.seconds,
+                (arrangement.incrementalSyncRepository.incrementalSyncState.first() as IncrementalSyncStatus.Failed).retryDelay
+            )
+
+            networkState.value = NetworkState.ConnectedWithInternet
+            runCurrent()
+
+            assertEquals(2, attempts)
+            assertEquals(
+                1.seconds,
+                (arrangement.incrementalSyncRepository.incrementalSyncState.first() as IncrementalSyncStatus.Failed).retryDelay
+            )
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -311,8 +350,8 @@ class IncrementalSyncManagerTest {
         val incrementalSyncWorker = mock<IncrementalSyncWorker>()
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
         val incrementalSyncRecoveryHandler = mock<IncrementalSyncRecoveryHandler>()
-        val networkStateObserver: NetworkStateObserver = mock(mode = MockMode.autoUnit)
-        val exponentialDurationHelper: ExponentialDurationHelper = mock(mode = MockMode.autoUnit)
+        val networkStateObserver = FakeNetworkStateObserver()
+        var exponentialDurationHelper: ExponentialDurationHelper = mock(mode = MockMode.autoUnit)
         val userSessionWorkScheduler: UserSessionWorkScheduler = mock(mode = MockMode.autoUnit)
 
         init {
@@ -336,15 +375,17 @@ class IncrementalSyncManagerTest {
         }
 
         fun withNetworkState(networkStateFlow: StateFlow<NetworkState>) = apply {
-            every {
-                networkStateObserver.observeNetworkState()
-            } returns networkStateFlow
+            networkStateObserver.networkStateFlow = networkStateFlow
         }
 
         fun withNextExponentialDuration(duration: Duration) = apply {
             every {
                 exponentialDurationHelper.next()
             } returns duration
+        }
+
+        fun withExponentialDurationHelper(helper: ExponentialDurationHelper) = apply {
+            exponentialDurationHelper = helper
         }
 
         fun arrange() = this to IncrementalSyncManager(

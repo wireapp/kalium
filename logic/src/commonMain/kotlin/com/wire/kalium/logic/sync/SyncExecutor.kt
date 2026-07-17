@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.launch
 
 public abstract class SyncExecutor {
@@ -99,6 +100,16 @@ internal class SyncExecutorImpl(
     userScopedLogger: KaliumLogger = kaliumLogger,
 ) : SyncExecutor() {
 
+    private data class SyncDemand(
+        val requesterCount: Int = 0,
+        val restartVersion: Long = 0,
+    )
+
+    private data class SyncExecution(
+        val shouldSync: Boolean,
+        val restartVersion: Long,
+    )
+
     private val syncStateFlow = MutableStateFlow<SyncState>(SyncState.Waiting)
     private val logger by lazy { userScopedLogger.withFeatureId(SYNC).withTextTag("SyncExecutor") }
 
@@ -111,10 +122,26 @@ internal class SyncExecutorImpl(
                 .onEach {
                     logger.d("!! Sync requester count changed to $it")
                 }
-                .map { count -> count > 0 }
+                .runningFold(SyncDemand()) { previous, requesterCount ->
+                    val requestAdded = requesterCount > previous.requesterCount
+                    // The first request starts sync. An additional request restarts it only when
+                    // recovery is backing off, avoiding disruption to an already-live connection.
+                    val shouldRestart = requestAdded &&
+                        (previous.requesterCount == 0 || syncStateFlow.value is SyncState.Failed)
+                    SyncDemand(
+                        requesterCount = requesterCount,
+                        restartVersion = previous.restartVersion + if (shouldRestart) 1 else 0,
+                    )
+                }
+                .map { demand ->
+                    SyncExecution(
+                        shouldSync = demand.requesterCount > 0,
+                        restartVersion = demand.restartVersion,
+                    )
+                }
                 .distinctUntilChanged()
-                .collectLatest { shouldSync ->
-                    if (shouldSync) {
+                .collectLatest { execution ->
+                    if (execution.shouldSync) {
                         logger.i("!! Starting Sync to fulfill requests !!")
                         performSync()
                     } else {

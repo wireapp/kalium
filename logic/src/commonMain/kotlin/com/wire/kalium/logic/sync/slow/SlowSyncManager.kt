@@ -115,7 +115,13 @@ internal fun SlowSyncManager(
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure, delay))
             slowSyncRecoveryHandler.recover(failure) {
                 logger.i("SlowSync Triggering delay($delay) and waiting for reconnection")
-                networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
+                val didReconnect = networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
+                if (didReconnect) {
+                    // Retry immediately. If DNS is still catching up, the resulting failure will
+                    // use the minimum delay instead of inheriting the stale pre-reconnect backoff.
+                    logger.i("SlowSync network reconnected - resetting retry delay")
+                    exponentialDurationHelper.reset()
+                }
                 logger.i("SlowSync Delay and waiting for connection finished - retrying")
                 logger.i("SlowSync Connected - retrying")
                 onRetry()
@@ -151,6 +157,8 @@ internal fun SlowSyncManager(
 
     override fun performSyncFlow(): Flow<SlowSyncStatus> = channelFlow {
         coroutineScope {
+            // A new sync request must not inherit a stale retry delay from a previous collector.
+            exponentialDurationHelper.reset()
             launch {
                 // TODO: Instead of forwarding repository state, we could just emit within the flow. Killing the repository completely.
                 slowSyncRepository.slowSyncStatus.collect { slowSyncStatus ->
