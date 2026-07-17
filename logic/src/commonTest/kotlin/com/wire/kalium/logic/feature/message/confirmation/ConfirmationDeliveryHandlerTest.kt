@@ -100,6 +100,43 @@ class ConfirmationDeliveryHandlerTest {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
+    fun givenMLSConversation_whenCollectingDeliveryConfirmations_thenShouldNotSendAndShouldClearQueue() = runTest {
+        val (arrangement, sut) = Arrangement()
+            .withConversationDetailsResult(flowOf(TestConversation.MLS_CONVERSATION.right()))
+            .arrange()
+
+        val job = launch { sut.sendPendingConfirmations() }
+        advanceUntilIdle()
+
+        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        advanceUntilIdle()
+        job.cancel()
+
+        verifySuspend(VerifyMode.not) { arrangement.sendDeliverSignal(any(), any()) }
+        assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenMixedConversation_whenCollectingDeliveryConfirmations_thenShouldSendUsingProteus() = runTest {
+        val (arrangement, sut) = Arrangement()
+            .withConversationDetailsResult(flowOf(TestConversation.MIXED_CONVERSATION.right()))
+            .withSendDeliverSignalResult()
+            .arrange()
+
+        val job = launch { sut.sendPendingConfirmations() }
+        advanceUntilIdle()
+
+        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        advanceUntilIdle()
+        job.cancel()
+
+        verifySuspend(VerifyMode.exactly(1)) { arrangement.sendDeliverSignal(any(), any()) }
+        assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
     fun givenMessagesEnqueued_whenCollectingThemAndNoSession_thenShouldStopCollecting() = runTest {
         val (arrangement, sut) = Arrangement()
             .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION.right()))

@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message.receipt
 
 import com.wire.kalium.common.functional.Either
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -50,6 +51,52 @@ class SendConfirmationUseCaseTest {
         val (arrangement, sendConfirmation) = Arrangement()
             .withCurrentClientIdProvider()
             .withGetConversationByIdSuccessful()
+            .withToggleReadReceiptsStatus(true)
+            .withPendingMessagesResponse()
+            .withSendMessageSuccess()
+            .arrange()
+
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
+
+        result.toEither().shouldSucceed()
+        verifySuspend(VerifyMode.exactly(1)) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenMLSConversation_whenSendingReadConfirmation_thenShouldNotSendConfirmation() = runTest {
+        val (arrangement, sendConfirmation) = Arrangement()
+            .withGetConversationByIdSuccessful(TestConversation.MLS_CONVERSATION)
+            .arrange()
+
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
+
+        result.toEither().shouldSucceed()
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageRepository.getPendingConfirmationMessagesByConversationAfterDate(
+                any(),
+                eq(after),
+                eq(until),
+                any()
+            )
+        }
+        verifySuspend(VerifyMode.not) {
+            arrangement.messageSender.sendMessage(any(), any())
+        }
+    }
+
+    @Test
+    fun givenMixedConversation_whenSendingReadConfirmation_thenShouldSendConfirmationUsingProteus() = runTest {
+        val (arrangement, sendConfirmation) = Arrangement()
+            .withCurrentClientIdProvider()
+            .withGetConversationByIdSuccessful(TestConversation.MIXED_CONVERSATION)
             .withToggleReadReceiptsStatus(true)
             .withPendingMessagesResponse()
             .withSendMessageSuccess()
@@ -116,10 +163,12 @@ class SendConfirmationUseCaseTest {
             } returns Either.Right(Unit)
         }
 
-        suspend fun withGetConversationByIdSuccessful() = apply {
+        suspend fun withGetConversationByIdSuccessful(
+            conversation: Conversation = TestConversation.CONVERSATION
+        ) = apply {
             everySuspend {
                 conversationRepository.getConversationById(any())
-            } returns Either.Right(TestConversation.CONVERSATION)
+            } returns Either.Right(conversation)
         }
 
         suspend fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
