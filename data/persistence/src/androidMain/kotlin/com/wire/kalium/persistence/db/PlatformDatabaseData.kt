@@ -31,7 +31,9 @@ import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
  * in the future like [nuke]
  */
 actual class PlatformDatabaseData(
-    val context: Context
+    val context: Context,
+    internal val globalDatabaseMigrationRawKey: ByteArray? = null,
+    internal val onGlobalDatabaseMigratedToRawKey: () -> Unit = {}
 )
 
 @Suppress("LongParameterList")
