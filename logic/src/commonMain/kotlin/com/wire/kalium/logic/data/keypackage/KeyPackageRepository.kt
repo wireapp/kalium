@@ -25,6 +25,7 @@ import com.wire.kalium.common.error.wrapMLSRequest
 import com.wire.kalium.common.functional.Either
 import com.wire.kalium.common.functional.flatMap
 import com.wire.kalium.common.functional.fold
+import com.wire.kalium.common.functional.foldToEitherWhileRight
 import com.wire.kalium.common.functional.map
 import com.wire.kalium.cryptography.MlsCoreCryptoContext
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -33,9 +34,17 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlin.io.encoding.Base64
 
 internal interface KeyPackageRepository {
@@ -80,43 +89,78 @@ internal class KeyPackageDataSource(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val keyPackageApi: KeyPackageApi,
     private val selfUserId: UserId,
+    private val maxConcurrentClaims: Int = DEFAULT_MAX_CONCURRENT_CLAIMS,
 ) : KeyPackageRepository {
+
+    init {
+        require(maxConcurrentClaims > 0) { "maxConcurrentClaims must be greater than zero" }
+    }
 
     override suspend fun claimKeyPackages(
         userIds: List<UserId>,
         cipherSuite: CipherSuite
     ): Either<CoreFailure, KeyPackageClaimResult> =
         currentClientIdProvider().flatMap { selfClientId ->
-            val noKeyPackageUsers = mutableSetOf<UserId>()
-            val federationFailedUsers = mutableSetOf<UserId>()
-            val claimedKeyPackages = mutableListOf<KeyPackageDTO>()
-            for (userId in userIds) {
-                wrapApiRequest {
-                    keyPackageApi.claimKeyPackages(
-                        KeyPackageApi.Param.SkipOwnClient(
-                            userId.toApi(),
-                            selfClientId.value,
-                            cipherSuite = cipherSuite.tag
-                        )
-                    )
-                }.fold({ failure ->
-                    when (failure) {
-                        is NetworkFailure.NoNetworkConnection,
-                        is NetworkFailure.ProxyError -> return@flatMap Either.Left(failure)
-                        is NetworkFailure.FederatedBackendFailure -> federationFailedUsers.add(userId)
-                        else -> federationFailedUsers.add(userId)
+            claimConcurrently(userIds, selfClientId, cipherSuite)
+                .foldToEitherWhileRight(KeyPackageClaims(), ::accumulateClaim)
+                .map(KeyPackageClaims::toResult)
+        }
+
+    private suspend fun claimConcurrently(
+        userIds: List<UserId>,
+        selfClientId: ClientId,
+        cipherSuite: CipherSuite,
+    ): List<UserKeyPackageClaim> = coroutineScope {
+        val semaphore = Semaphore(maxConcurrentClaims)
+        val abortStateMutex = Mutex()
+        var fatalFailureDetected = false
+
+        userIds.map { userId ->
+            async {
+                semaphore.withPermit {
+                    if (abortStateMutex.withLock { fatalFailureDetected }) {
+                        return@withPermit null
                     }
-                }) {
-                    if (it.keyPackages.isEmpty() && userId != selfUserId) {
-                        noKeyPackageUsers.add(userId)
-                    } else {
-                        claimedKeyPackages.addAll(it.keyPackages)
+
+                    UserKeyPackageClaim(
+                        userId = userId,
+                        result = wrapApiRequest {
+                            keyPackageApi.claimKeyPackages(
+                                KeyPackageApi.Param.SkipOwnClient(
+                                    userId.toApi(),
+                                    selfClientId.value,
+                                    cipherSuite = cipherSuite.tag
+                                )
+                            )
+                        }
+                    ).also { claim ->
+                        if (claim.hasFatalFailure()) {
+                            abortStateMutex.withLock { fatalFailureDetected = true }
+                        }
                     }
                 }
             }
+        }.awaitAll().filterNotNull()
+    }
 
-            Either.Right(KeyPackageClaimResult(claimedKeyPackages, noKeyPackageUsers, federationFailedUsers))
+    private fun accumulateClaim(
+        claim: UserKeyPackageClaim,
+        accumulatedClaims: KeyPackageClaims,
+    ): Either<CoreFailure, KeyPackageClaims> = claim.result.fold({ failure ->
+        if (failure.isFatalClaimFailure()) {
+            Either.Left(failure)
+        } else {
+            accumulatedClaims.usersWithUnreachableBackend.add(claim.userId)
+            Either.Right(accumulatedClaims)
         }
+    }) { claimedKeyPackages ->
+        if (claimedKeyPackages.keyPackages.isEmpty() && claim.userId != selfUserId) {
+            accumulatedClaims.usersWithoutKeyPackages.add(claim.userId)
+        } else {
+            accumulatedClaims.successfullyFetchedKeyPackages.addAll(claimedKeyPackages.keyPackages)
+        }
+        Either.Right(accumulatedClaims)
+    }
 
     override suspend fun uploadNewKeyPackages(
         mlsContext: MlsCoreCryptoContext,
@@ -163,4 +207,31 @@ internal class KeyPackageDataSource(
         wrapApiRequest {
             keyPackageApi.getAvailableKeyPackageCount(clientId.value, cipherSuite.tag)
         }
+
+    private companion object {
+        const val DEFAULT_MAX_CONCURRENT_CLAIMS = 4
+    }
+}
+
+private fun UserKeyPackageClaim.hasFatalFailure(): Boolean =
+    result is Either.Left && result.value.isFatalClaimFailure()
+
+private fun NetworkFailure.isFatalClaimFailure(): Boolean =
+    this is NetworkFailure.NoNetworkConnection || this is NetworkFailure.ProxyError
+
+private data class UserKeyPackageClaim(
+    val userId: UserId,
+    val result: Either<NetworkFailure, ClaimedKeyPackageList>,
+)
+
+private class KeyPackageClaims {
+    val successfullyFetchedKeyPackages = mutableListOf<KeyPackageDTO>()
+    val usersWithoutKeyPackages = mutableSetOf<UserId>()
+    val usersWithUnreachableBackend = mutableSetOf<UserId>()
+
+    fun toResult() = KeyPackageClaimResult(
+        successfullyFetchedKeyPackages = successfullyFetchedKeyPackages.toList(),
+        usersWithoutKeyPackages = usersWithoutKeyPackages.toSet(),
+        usersWithUnreachableBackend = usersWithUnreachableBackend.toSet(),
+    )
 }
