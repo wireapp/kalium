@@ -36,33 +36,6 @@ CREATE TABLE MeetingOccurrence (
 CREATE INDEX IF NOT EXISTS idx_occurrences_meeting ON MeetingOccurrence(meeting_id);
 CREATE INDEX IF NOT EXISTS idx_occurrences_start ON MeetingOccurrence(occurrence_start);
 
-CREATE VIEW MeetingOccurrenceDetails AS
-SELECT
-    MeetingOccurrence.occurrence_id AS occurrenceId,
-    MeetingOccurrence.meeting_id AS occurrenceMeetingId,
-    MeetingOccurrence.occurrence_start AS occurrenceStart,
-    MeetingOccurrence.occurrence_end AS occurrenceEnd,
-    Meeting.meeting_id AS meetingId,
-    Meeting.conversation_id AS conversationId,
-    Meeting.creator_id AS creatorId,
-    Meeting.creation_date AS creationDate,
-    Meeting.last_edit_date AS lastEditDate,
-    Meeting.title AS meetingTitle,
-    Meeting.start_date AS startDate,
-    Meeting.end_date AS endDate,
-    Meeting.trial AS trial,
-    Meeting.recurrence_frequency AS recurrenceFrequency,
-    Meeting.recurrence_interval AS recurrenceInterval,
-    Meeting.recurrence_end_date AS recurrenceEndDate,
-    ConversationDetails.name AS conversationName,
-    ConversationDetails.type AS conversationType,
-    ConversationDetails.previewAssetId AS previewAssetId,
-    ConversationDetails.channel_access AS channelAccess,
-    ConversationDetails.selfUserId AS selfUserId
-FROM MeetingOccurrence
-JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
-JOIN ConversationDetails ON ConversationDetails.qualifiedId = Meeting.conversation_id;
-
 upsertMeeting:
 INSERT INTO Meeting(meeting_id, conversation_id, creator_id, creation_date, last_edit_date, title, start_date, end_date, trial, recurrence_frequency, recurrence_interval, recurrence_end_date)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -134,13 +107,82 @@ selectMeetingOccurrenceDetailsById:
 -- @CustomKey MeetingOccurrence
 -- @CustomKey Meeting
 -- @CustomKey conversation_list_membership
-SELECT * FROM MeetingOccurrenceDetails WHERE occurrenceId = :occurrenceId;
+SELECT
+    MeetingOccurrence.occurrence_id AS occurrenceId,
+    MeetingOccurrence.meeting_id AS occurrenceMeetingId,
+    MeetingOccurrence.occurrence_start AS occurrenceStart,
+    MeetingOccurrence.occurrence_end AS occurrenceEnd,
+    Meeting.meeting_id AS meetingId,
+    Meeting.conversation_id AS conversationId,
+    Meeting.creator_id AS creatorId,
+    Meeting.creation_date AS creationDate,
+    Meeting.last_edit_date AS lastEditDate,
+    Meeting.title AS meetingTitle,
+    Meeting.start_date AS startDate,
+    Meeting.end_date AS endDate,
+    Meeting.trial AS trial,
+    Meeting.recurrence_frequency AS recurrenceFrequency,
+    Meeting.recurrence_interval AS recurrenceInterval,
+    Meeting.recurrence_end_date AS recurrenceEndDate,
+    CASE Conversation.type
+        WHEN 'ONE_ON_ONE' THEN otherUser.name
+        ELSE Conversation.name
+    END AS conversationName,
+    Conversation.type AS conversationType,
+    CASE Conversation.type
+        WHEN 'ONE_ON_ONE' THEN otherUser.preview_asset_id
+    END AS previewAssetId,
+    Conversation.channel_access AS channelAccess,
+    SelfUser.id AS selfUserId
+FROM MeetingOccurrence
+JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
+JOIN Conversation ON Conversation.qualified_id = Meeting.conversation_id
+JOIN SelfUser
+LEFT JOIN Member ON Member.conversation = Conversation.qualified_id
+    AND Conversation.type IS 'ONE_ON_ONE'
+    AND Member.user IS NOT SelfUser.id
+LEFT JOIN User AS otherUser ON otherUser.qualified_id = Member.user
+WHERE occurrenceId = :occurrenceId;
 
 selectPagedMeetingOccurrenceDetails:
 -- @CustomKey MeetingOccurrence
 -- @CustomKey Meeting
 -- @CustomKey conversation_list_membership
-SELECT * FROM MeetingOccurrenceDetails
+SELECT
+    MeetingOccurrence.occurrence_id AS occurrenceId,
+    MeetingOccurrence.meeting_id AS occurrenceMeetingId,
+    MeetingOccurrence.occurrence_start AS occurrenceStart,
+    MeetingOccurrence.occurrence_end AS occurrenceEnd,
+    Meeting.meeting_id AS meetingId,
+    Meeting.conversation_id AS conversationId,
+    Meeting.creator_id AS creatorId,
+    Meeting.creation_date AS creationDate,
+    Meeting.last_edit_date AS lastEditDate,
+    Meeting.title AS meetingTitle,
+    Meeting.start_date AS startDate,
+    Meeting.end_date AS endDate,
+    Meeting.trial AS trial,
+    Meeting.recurrence_frequency AS recurrenceFrequency,
+    Meeting.recurrence_interval AS recurrenceInterval,
+    Meeting.recurrence_end_date AS recurrenceEndDate,
+    CASE Conversation.type
+        WHEN 'ONE_ON_ONE' THEN otherUser.name
+        ELSE Conversation.name
+    END AS conversationName,
+    Conversation.type AS conversationType,
+    CASE Conversation.type
+        WHEN 'ONE_ON_ONE' THEN otherUser.preview_asset_id
+    END AS previewAssetId,
+    Conversation.channel_access AS channelAccess,
+    SelfUser.id AS selfUserId
+FROM MeetingOccurrence
+JOIN Meeting ON Meeting.meeting_id = MeetingOccurrence.meeting_id
+JOIN Conversation ON Conversation.qualified_id = Meeting.conversation_id
+JOIN SelfUser
+LEFT JOIN Member ON Member.conversation = Conversation.qualified_id
+    AND Conversation.type IS 'ONE_ON_ONE'
+    AND Member.user IS NOT SelfUser.id
+LEFT JOIN User AS otherUser ON otherUser.qualified_id = Member.user
 WHERE occurrenceStart >= :fromDate
 ORDER BY occurrenceStart ASC,
     CASE WHEN occurrenceEnd IS NULL THEN 1 ELSE 0 END ASC,
