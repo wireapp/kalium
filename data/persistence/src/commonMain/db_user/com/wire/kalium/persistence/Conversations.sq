@@ -424,7 +424,10 @@ updateConversationGroupIdAndProtocolInfo {
 -- @NotifyCustomKey conversation_list_membership
 -- @NotifyCustomKey Conversation
 UPDATE Conversation
-SET mls_group_id = :groupId, protocol = :protocol, mls_cipher_suite = :mls_cipher_suite
+SET mls_group_id = :groupId,
+    protocol = :protocol,
+    mls_cipher_suite = :mls_cipher_suite,
+    receipt_mode = CASE WHEN :protocol = 'MLS' THEN 'DISABLED' ELSE receipt_mode END
 WHERE qualified_id = :qualified_id AND
  protocol != :protocol;
 SELECT changes();

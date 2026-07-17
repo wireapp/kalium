@@ -587,7 +587,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
     @Test
     fun givenNewValue_whenUpdatingProtocol_thenItsUpdatedAndReportedAsChanged() = runTest(dispatcher) {
-        val conversation = conversationEntity5
+        val conversation = conversationEntity5.copy(receiptMode = ConversationEntity.ReceiptMode.ENABLED)
         val groupId = "groupId"
         val updatedCipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
         val updatedProtocol = ConversationEntity.Protocol.MLS
@@ -600,6 +600,28 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(conversationDAO.getConversationDetailsById(conversation.id)?.protocol, updatedProtocol)
         assertEquals(conversationDAO.getConversationDetailsById(conversation.id)?.mlsGroupId, groupId)
         assertEquals(conversationDAO.getConversationDetailsById(conversation.id)?.mlsCipherSuite, updatedCipherSuite)
+        assertEquals(
+            ConversationEntity.ReceiptMode.DISABLED,
+            conversationDAO.getConversationDetailsById(conversation.id)?.receiptMode
+        )
+    }
+
+    @Test
+    fun givenReadReceiptsEnabled_whenUpdatingProtocolToMixed_thenReadReceiptsRemainEnabled() = runTest(dispatcher) {
+        val conversation = conversationEntity5.copy(receiptMode = ConversationEntity.ReceiptMode.ENABLED)
+
+        conversationDAO.insertConversation(conversation)
+        conversationDAO.updateConversationProtocolAndCipherSuite(
+            conversation.id,
+            groupID = "groupId",
+            protocol = ConversationEntity.Protocol.MIXED,
+            cipherSuite = ConversationEntity.CipherSuite.UNKNOWN
+        )
+
+        assertEquals(
+            ConversationEntity.ReceiptMode.ENABLED,
+            conversationDAO.getConversationDetailsById(conversation.id)?.receiptMode
+        )
     }
 
     @Test
