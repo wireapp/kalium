@@ -33,10 +33,13 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.logic.util.DatabaseKeyLock
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.persistence.util.FileNameUtil
 
 @Suppress("LongParameterList")
 internal fun UserSessionScope(
@@ -60,7 +63,13 @@ internal fun UserSessionScope(
     val securityHelper = SecurityHelperImpl(globalPreferences.passphraseStorage)
     val platformUserStorageProperties =
         PlatformUserStorageProperties(applicationContext) { userId ->
-            securityHelper.userDBSecret(userId)
+            val userIdEntity = UserIDEntity(userId.value, userId.domain)
+            val databaseExists = applicationContext
+                .getDatabasePath(FileNameUtil.userDBName(userIdEntity))
+                .exists()
+            DatabaseKeyLock.withLock {
+                securityHelper.userDBSecret(userId, databaseExists)
+            }
         }
 
     val clientConfig: ClientConfig = ClientConfigImpl(applicationContext)
