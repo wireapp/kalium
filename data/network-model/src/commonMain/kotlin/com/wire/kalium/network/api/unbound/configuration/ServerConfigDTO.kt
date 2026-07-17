@@ -32,7 +32,8 @@ data class ServerConfigDTO(
         val website: String,
         val title: String,
         val isOnPremises: Boolean,
-        val apiProxy: ApiProxy?
+        val apiProxy: ApiProxy?,
+        val supportEmail: String? = null,
     )
 
     data class MetaData(

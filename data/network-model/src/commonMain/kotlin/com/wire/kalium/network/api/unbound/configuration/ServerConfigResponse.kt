@@ -28,7 +28,8 @@ import kotlinx.serialization.Serializable
 data class ServerConfigResponse(
     @SerialName("endpoints") val endpoints: EndPoints,
     @SerialName("title") val title: String,
-    @SerialName("apiProxy") val apiProxy: ApiProxy?
+    @SerialName("apiProxy") val apiProxy: ApiProxy? = null,
+    @SerialName("supportEmail") val supportEmail: String? = null,
 )
 
 @Serializable
