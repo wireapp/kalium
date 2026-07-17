@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.network.telemetryName
 import com.wire.kalium.logic.util.ExponentialDurationHelper
 import com.wire.kalium.network.NetworkStateObserver
 import kotlin.time.Duration
@@ -34,12 +35,30 @@ internal suspend fun NetworkStateObserver.delayBeforeSyncRetry(
     retryDelay: Duration,
     exponentialDurationHelper: ExponentialDurationHelper,
     logger: KaliumLogger,
+    syncType: SyncType,
 ) {
-    logger.i("Waiting $retryDelay or until reconnection before retrying")
-    if (delayUntilConnectedWithInternetAgain(retryDelay)) {
-        logger.i("Network reconnected - resetting retry delay and retrying")
+    val component = syncType.telemetryComponent()
+    logger.logSyncTelemetry(
+        event = SyncTelemetryEvent.RETRY_WAIT_STARTED,
+        component = component,
+        data = retryTelemetryData(retryDelay)
+    )
+    val reconnected = delayUntilConnectedWithInternetAgain(retryDelay)
+    if (reconnected) {
         exponentialDurationHelper.reset()
-    } else {
-        logger.i("Retry delay elapsed - retrying")
     }
+    logger.logSyncTelemetry(
+        event = SyncTelemetryEvent.RETRY_TRIGGERED,
+        component = component,
+        data = retryTelemetryData(retryDelay) + mapOf(
+            "trigger" to if (reconnected) "NETWORK_RECONNECTED" else "RETRY_DELAY_ELAPSED",
+            "backoffReset" to reconnected,
+        )
+    )
+}
+
+private fun NetworkStateObserver.retryTelemetryData(retryDelay: Duration): Map<String, Any?> = buildMap {
+    put("retryDelayInMillis", retryDelay.inWholeMilliseconds)
+    put("networkState", observeNetworkState().value.telemetryName())
+    observeCurrentNetwork().value?.id?.let { put("networkId", it) }
 }
