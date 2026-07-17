@@ -127,7 +127,7 @@ internal class SyncExecutorImpl(
                     // The first request starts sync. An additional request restarts it only when
                     // recovery is backing off, avoiding disruption to an already-live connection.
                     val shouldRestart = requestAdded &&
-                        (previous.requesterCount == 0 || syncStateFlow.value is SyncState.Failed)
+                        (previous.requesterCount == 0 || syncStateObserver.syncState.value is SyncState.Failed)
                     SyncDemand(
                         requesterCount = requesterCount,
                         restartVersion = previous.restartVersion + if (shouldRestart) 1 else 0,
