@@ -98,6 +98,27 @@ class SyncExecutorTest {
     }
 
     @Test
+    fun givenRequestWithWaiter_whenNoOtherRequests_thenShouldStartSync() = runTest(TestKaliumDispatcher.default) {
+        val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+        val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+        syncExecutor.startAndStopSyncAsNeeded()
+
+        val waitingJob = backgroundScope.launch {
+            syncExecutor.request {
+                waitUntilLiveOrFailure()
+            }
+        }
+        advanceUntilIdle()
+
+        assertEquals(1, arrangement.slowSyncManager.fakeSyncFlow.subscriptionCount.value)
+
+        arrangement.syncStateObserver.mutableSyncState.emit(SyncState.Live)
+        waitingJob.join()
+        syncScope.cancel()
+    }
+
+    @Test
     fun givenWaitingUntilPendingEvents_whenStateIsReached_thenShouldProceed() = runTest(TestKaliumDispatcher.default) {
         val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
         val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
@@ -310,7 +331,64 @@ class SyncExecutorTest {
         }
 
     @Test
-    fun givenFailureHasNotReachedMirroredState_whenNewRequestStarts_thenShouldRestartSyncImmediately() =
+    fun givenExistingRequestAndFailedSync_whenWaitingForLive_thenShouldNotRestartSync() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+                advanceUntilIdle()
+                assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+
+                arrangement.syncStateObserver.mutableSyncState.emit(
+                    SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds)
+                )
+                advanceUntilIdle()
+
+                assertIs<SyncRequestResult.Failure>(waitUntilLiveOrFailure())
+                advanceUntilIdle()
+
+                assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+                assertEquals(0, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+            }
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenFailedSync_whenNewRequestWaitsForLive_thenShouldRestartSyncExactlyOnce() =
+        runTest(TestKaliumDispatcher.default) {
+            val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
+            val (arrangement, syncExecutor) = Arrangement(syncScope).arrange()
+
+            syncExecutor.startAndStopSyncAsNeeded()
+
+            syncExecutor.request {
+                arrangement.slowSyncManager.fakeSyncFlow.emit(SlowSyncStatus.Complete)
+                advanceUntilIdle()
+                assertEquals(1, arrangement.incrementalSyncManager.performSyncFlowCount)
+
+                arrangement.syncStateObserver.mutableSyncState.emit(
+                    SyncState.Failed(CoreFailure.SyncEventOrClientNotFound, 10.seconds)
+                )
+                advanceUntilIdle()
+
+                val result = syncExecutor.request {
+                    waitUntilLiveOrFailure()
+                }
+                advanceUntilIdle()
+
+                assertIs<SyncRequestResult.Failure>(result)
+                assertEquals(2, arrangement.incrementalSyncManager.performSyncFlowCount)
+                assertEquals(1, arrangement.incrementalSyncManager.cancelledSyncFlowCount)
+            }
+            syncScope.cancel()
+        }
+
+    @Test
+    fun givenFailedStateNotYetDeliveredToCollectors_whenNewRequestStarts_thenShouldRestartSyncImmediately() =
         runTest(TestKaliumDispatcher.default) {
             val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
             val syncStateObserver = PausableSyncStateObserver()
@@ -338,7 +416,7 @@ class SyncExecutorTest {
         }
 
     @Test
-    fun givenRecoveryHasNotReachedMirroredState_whenNewRequestStarts_thenShouldNotRestartSync() =
+    fun givenRecoveredStateNotYetDeliveredToCollectors_whenNewRequestStarts_thenShouldNotRestartSync() =
         runTest(TestKaliumDispatcher.default) {
             val syncScope = CoroutineScope(coroutineContext + SupervisorJob())
             val syncStateObserver = PausableSyncStateObserver()

@@ -27,9 +27,8 @@ import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.collect
@@ -110,15 +109,14 @@ internal class SyncExecutorImpl(
         val restartVersion: Long,
     )
 
-    private val syncStateFlow = MutableStateFlow<SyncState>(SyncState.Waiting)
+    // Keep logical request lifetimes separate from transient collectors that only wait for a sync state.
+    // Never emits; its subscriptionCount (non-conflated) is the requester count.
+    private val syncRequestDemandFlow = MutableSharedFlow<Unit>()
     private val logger by lazy { userScopedLogger.withFeatureId(SYNC).withTextTag("SyncExecutor") }
 
     override fun startAndStopSyncAsNeeded() {
         scope.launch {
-            syncStateObserver.syncState.collect { syncStateFlow.value = it }
-        }
-        scope.launch {
-            syncStateFlow.subscriptionCount
+            syncRequestDemandFlow.subscriptionCount
                 .onEach {
                     logger.d("!! Sync requester count changed to $it")
                 }
@@ -172,11 +170,9 @@ internal class SyncExecutorImpl(
      */
     private fun startNewSyncRequest(): Request {
         val syncJob = scope.launch {
-            syncStateFlow.collect { state ->
-                awaitCancellation()
-            }
+            syncRequestDemandFlow.collect()
         }
-        return Request(syncStateFlow, syncJob, logger)
+        return Request(syncStateObserver.syncState, syncJob, logger)
     }
 
     override suspend fun <T> request(
