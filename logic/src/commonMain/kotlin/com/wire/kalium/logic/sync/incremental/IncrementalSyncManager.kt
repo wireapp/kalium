@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.SyncType
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
+import com.wire.kalium.logic.sync.delayBeforeSyncRetry
 import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
 import com.wire.kalium.logic.sync.slow.SlowSyncManager
 import com.wire.kalium.logic.util.ExponentialDurationHelper
@@ -119,15 +120,7 @@ internal fun IncrementalSyncManager(
             )
 
             incrementalSyncRecoveryHandler.recover(failure = failure) {
-                logger.i("Triggering delay($delay) and waiting for reconnection")
-                val didReconnect = networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
-                if (didReconnect) {
-                    // Retry immediately. If DNS is still catching up, the resulting failure will
-                    // use the minimum delay instead of inheriting the stale pre-reconnect backoff.
-                    logger.i("Network reconnected - resetting retry delay")
-                    exponentialDurationHelper.reset()
-                }
-                logger.i("Delay and waiting for connection finished - retrying")
+                networkStateObserver.delayBeforeSyncRetry(delay, exponentialDurationHelper, logger)
                 onRetry()
             }
         }

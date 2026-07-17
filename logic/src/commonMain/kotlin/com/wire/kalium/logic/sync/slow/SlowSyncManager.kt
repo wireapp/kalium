@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.sync.SyncExceptionHandler
 import com.wire.kalium.logic.sync.SyncType
+import com.wire.kalium.logic.sync.delayBeforeSyncRetry
 import com.wire.kalium.logic.sync.incremental.IncrementalSyncManager
 import com.wire.kalium.logic.sync.provideNewSyncManagerLogger
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
@@ -101,7 +102,7 @@ internal fun SlowSyncManager(
     )
 ): SlowSyncManager = object : SlowSyncManager {
 
-    private val logger = userScopedLogger.withFeatureId(SYNC)
+    private val logger = userScopedLogger.withFeatureId(SYNC).withTextTag("SlowSyncManager")
 
     private fun coroutineExceptionHandler(onRetry: suspend () -> Unit) = SyncExceptionHandler(
         onCancellation = {
@@ -114,16 +115,7 @@ internal fun SlowSyncManager(
             val delay = exponentialDurationHelper.next()
             slowSyncRepository.updateSlowSyncStatus(SlowSyncStatus.Failed(failure, delay))
             slowSyncRecoveryHandler.recover(failure) {
-                logger.i("SlowSync Triggering delay($delay) and waiting for reconnection")
-                val didReconnect = networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
-                if (didReconnect) {
-                    // Retry immediately. If DNS is still catching up, the resulting failure will
-                    // use the minimum delay instead of inheriting the stale pre-reconnect backoff.
-                    logger.i("SlowSync network reconnected - resetting retry delay")
-                    exponentialDurationHelper.reset()
-                }
-                logger.i("SlowSync Delay and waiting for connection finished - retrying")
-                logger.i("SlowSync Connected - retrying")
+                networkStateObserver.delayBeforeSyncRetry(delay, exponentialDurationHelper, logger)
                 onRetry()
             }
         }
