@@ -6,6 +6,12 @@ Date: 2026-07-13
 
 Accepted for spike; production acceptance depends on the feasibility gates in this ADR.
 
+Implementation note (2026-07-18): a real-account integration entry point now temporarily reuses
+the full `:logic` session graph to validate authenticated catch-up and real Proteus/MLS decryption.
+It suppresses transport ACKs because its handoff is volatile. This is an explicit spike exception
+to the target lightweight module graph, not a production architecture change. See
+`docs/spikes/ios-nse-real-account-spike.md`.
+
 ## Context
 
 The new iOS application will not embed the full `KaliumLogic` SDK. Its Notification Service
@@ -84,8 +90,9 @@ additional work:
   `domain/userstorage/src/appleMain/kotlin/com/wire/kalium/userstorage/di/PlatformUserStorageProvider.kt`
   pass no database passphrase on Apple.
 - `data/persistence/src/appleMain/kotlin/com/wire/kalium/persistence/kmmSettings/ApplePersistenceConfig.kt`
-  currently exposes only a Keychain service name. The current `KeychainSettings` construction does
-  not configure a shared Keychain access group or an NSE-compatible accessibility class.
+  now exposes a Keychain service name and optional shared access group. An NSE-compatible
+  accessibility class and migration of entries created in a target-specific default group remain
+  host integration work.
 - Apple storage and CoreCrypto locations are derived from the caller-provided root path. The host
   must deliberately use an App Group container if the app and extension are to see the same files.
 

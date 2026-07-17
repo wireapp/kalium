@@ -33,7 +33,11 @@ package com.wire.kalium.persistence.kmmSettings
  *  Must be stable across app reinstalls — typically the host app's bundle identifier.
  *  Must NOT be derived from `NSHomeDirectory()`, which embeds the iOS Application UUID
  *  and changes on every reinstall, orphaning every previously stored entry.
+ * @property accessGroup Optional iOS Keychain Sharing access group. The host app and its
+ *  Notification Service Extension must pass the same fully qualified value and include it in both
+ *  targets' entitlements when they need to share Kalium auth tokens and storage passphrases.
  */
 public data class ApplePersistenceConfig(
     val serviceName: String,
+    val accessGroup: String? = null,
 )

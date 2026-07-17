@@ -1,6 +1,6 @@
  Lightweight Kalium for iOS NSE — Spike Progress
 
-Last updated: 2026-07-13
+Last updated: 2026-07-18
 
 ## Working Agreement
 
@@ -39,6 +39,27 @@ Provide a lightweight Kalium framework for an iOS Notification Service Extension
 | 8. Foreground importer contract/integration | Completed | `7a098a341c5b` | Kotlin/Swift compile, KMP/native probes, token parity, dependency audit, detekt, independent review | Real native app mapping and production storage/path/device gates remain open |
 | 9. Resilience, security, and performance | Completed | `f7dff7073677` | macOS/simulator hardening probes, Swift token/import parity, bounded-sync budget probe, Apple/metadata compilation | External native app, encrypted storage, signing, backend, physical-device, and product budget approvals remain explicit |
 | 10. Rollout and observability | Completed | `378b222b265a` | Metadata/Apple compilation, simulator framework/Swift host probe, dependency/header/privacy audits, detekt, independent review | External rollout ownership, privacy approval, signing, backend, and physical-device validation remain explicit |
+| 11. Real-account integration path | Implemented for host/NSE testing | This commit | JVM logic compile, iOS Simulator compile/link, generated-header inspection, application-extension Swift type-check, detekt, dependency review | Temporarily reuses full `:logic`; transport ACKs and disk handoff remain disabled until encrypted durability is available |
+
+## Milestone 11 — Real-account integration path
+
+Status: Implemented for signed host-app/NSE testing on 2026-07-18
+
+This spike adds `RealNotificationExtension`, which accepts a qualified user ID and deadline, resolves
+the existing registered client, uses the authenticated consumable-notification API, runs one bounded
+marker catch-up, and applies real Proteus/MLS receive-only decryption before returning extracted
+notification candidates. It reuses the established `UserSessionScope` providers rather than
+duplicating auth, networking, conversation metadata, or CoreCrypto construction.
+
+Apple Keychain configuration now accepts an optional shared access group. The real NSE entry point
+requires one, and the normal app-side `CoreLogic` must use the same service/access-group pair.
+
+For this integration spike the notification framework temporarily depends on the full `:logic`
+module. The per-run inbox is volatile and delivery tags are removed before they reach the bounded
+engine, so the backend is never ACKed without encrypted crash-durable handoff storage. This is safe
+for a real decryption demonstration but deliberately does not open the production factory gates.
+The host runbook and output inspection contract are recorded in
+`docs/spikes/ios-nse-real-account-spike.md`.
 
 ## Milestone 0 — Architecture and Contracts
 

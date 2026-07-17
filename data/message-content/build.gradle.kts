@@ -30,6 +30,8 @@ kotlin {
             dependencies {
                 api(projects.core.data)
                 implementation(projects.data.protobuf)
+                implementation(libs.ktxDateTime)
+                implementation(libs.okio.core)
             }
         }
     }

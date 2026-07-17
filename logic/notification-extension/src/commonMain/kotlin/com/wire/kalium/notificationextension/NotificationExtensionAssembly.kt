@@ -359,7 +359,7 @@ private fun NotificationExtensionRequest.isValid(): Boolean {
             maxRunDurationMillis > 0
 }
 
-private fun BoundedNotificationSyncResult.toExtensionResult(): NotificationExtensionResult {
+internal fun BoundedNotificationSyncResult.toExtensionResult(): NotificationExtensionResult {
     val status = when (this) {
         is BoundedNotificationSyncResult.Complete -> NotificationExtensionStatus.COMPLETE
         is BoundedNotificationSyncResult.Partial -> NotificationExtensionStatus.PARTIAL

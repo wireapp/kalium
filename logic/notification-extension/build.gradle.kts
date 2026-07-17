@@ -57,6 +57,10 @@ kotlin {
         val appleMain by getting {
             dependencies {
                 implementation(projects.data.syncCoordination)
+                // Spike-only: reuse the authenticated session and CoreCrypto graph that already
+                // exists in :logic. This deliberately trades framework size for a real end-to-end
+                // account path while the narrow production graph is still being extracted.
+                implementation(projects.logic)
             }
         }
     }

@@ -19,13 +19,29 @@
 package com.wire.kalium.persistence.kmmSettings
 
 import com.russhwolf.settings.ExperimentalSettingsImplementation
+import com.russhwolf.settings.ExperimentalSettingsApi
 import com.russhwolf.settings.KeychainSettings
 import com.russhwolf.settings.Settings
+import kotlinx.cinterop.ExperimentalForeignApi
+import platform.Foundation.CFBridgingRetain
+import platform.Security.kSecAttrAccessGroup
+import platform.Security.kSecAttrService
 
-@OptIn(ExperimentalSettingsImplementation::class)
+@OptIn(
+    ExperimentalSettingsImplementation::class,
+    ExperimentalSettingsApi::class,
+    ExperimentalForeignApi::class
+)
 internal actual fun buildSettings(
     options: SettingOptions,
     param: EncryptedSettingsPlatformParam
-): Settings = KeychainSettings(param.keychainConfig.serviceName)
+): Settings = param.keychainConfig.let { configuration ->
+    configuration.accessGroup?.let { accessGroup ->
+        KeychainSettings(
+            kSecAttrService to CFBridgingRetain(configuration.serviceName),
+            kSecAttrAccessGroup to CFBridgingRetain(accessGroup)
+        )
+    } ?: KeychainSettings(configuration.serviceName)
+}
 
 internal actual class EncryptedSettingsPlatformParam(val keychainConfig: ApplePersistenceConfig)
