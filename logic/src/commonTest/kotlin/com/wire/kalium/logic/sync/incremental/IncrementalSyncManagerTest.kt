@@ -160,11 +160,13 @@ class IncrementalSyncManagerTest {
             attempts++
             if (attempts <= 2) throw IOException("DNS is not ready")
         }
-        val (arrangement, incrementalSyncManager) = Arrangement()
+        val (arrangement, incrementalSyncManager) = Arrangement(
+            exponentialDurationHelper = ExponentialDurationHelper(1.seconds, 10.minutes),
+            configureDefaultExponentialDuration = false,
+        )
             .withWorkerReturning(workerFlow)
             .withRecoveringFromFailure()
             .withNetworkState(networkState)
-            .withExponentialDurationHelper(ExponentialDurationHelper(1.seconds, 10.minutes))
             .arrange()
 
         incrementalSyncManager.performSyncFlow().test {
@@ -345,18 +347,22 @@ class IncrementalSyncManagerTest {
         }
     }
 
-    private class Arrangement {
+    private class Arrangement(
+        val exponentialDurationHelper: ExponentialDurationHelper = mock(mode = MockMode.autoUnit),
+        private val configureDefaultExponentialDuration: Boolean = true,
+    ) {
 
         val incrementalSyncWorker = mock<IncrementalSyncWorker>()
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
         val incrementalSyncRecoveryHandler = mock<IncrementalSyncRecoveryHandler>()
         val networkStateObserver = FakeNetworkStateObserver()
-        var exponentialDurationHelper: ExponentialDurationHelper = mock(mode = MockMode.autoUnit)
         val userSessionWorkScheduler: UserSessionWorkScheduler = mock(mode = MockMode.autoUnit)
 
         init {
             withNetworkState(MutableStateFlow(NetworkState.ConnectedWithInternet))
-            withNextExponentialDuration(1.seconds)
+            if (configureDefaultExponentialDuration) {
+                withNextExponentialDuration(1.seconds)
+            }
         }
 
         suspend fun withWorkerReturning(sourceFlow: Flow<EventSource>) = apply {
@@ -382,10 +388,6 @@ class IncrementalSyncManagerTest {
             every {
                 exponentialDurationHelper.next()
             } returns duration
-        }
-
-        fun withExponentialDurationHelper(helper: ExponentialDurationHelper) = apply {
-            exponentialDurationHelper = helper
         }
 
         fun arrange() = this to IncrementalSyncManager(
